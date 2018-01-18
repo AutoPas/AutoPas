@@ -87,7 +87,7 @@ int main(void) {
 
 	LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc;
 //	VerletLists<MyMolecule, FullParticleCell<MyMolecule>> vl;
-	Direct<MyMolecule, FullParticleCell<MyMolecule>> dir;
+	DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir;
 
 	cout << "Hodor" << endl;
 	return EXIT_SUCCESS;

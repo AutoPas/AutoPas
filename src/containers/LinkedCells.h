@@ -25,6 +25,11 @@ public:
 		// TODO only for the tests
 		this->_data.at(i).addParticle(p); // at performs an out of bounds check
 	}
+
+	void iteratePairwise(Functor<Particle> f) {
+
+	}
+
 private:
 	// ThreeDimensionalCellHandler
 };

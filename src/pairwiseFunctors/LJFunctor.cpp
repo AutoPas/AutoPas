@@ -9,10 +9,14 @@
 
 namespace autopas {
 
-double LJFunctor::CUTOFFSQUARE;
-double LJFunctor::EPSILON24;
-double LJFunctor::SIGMASQUARE;
-double LJFunctor::SHIFT6;
+//
+//template<class T> double LJFunctor<T>::CUTOFFSQUARE;
+//
+//template<class T> double LJFunctor<T>::EPSILON24;
+//
+//template<class T> double LJFunctor<T>::SIGMASQUARE;
+//
+//template<class T> double LJFunctor<T>::SHIFT6;
 
 
 } /* namespace autopas */

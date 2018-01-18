@@ -14,7 +14,8 @@
 namespace autopas {
 
 // can we do this without a template? Maybe. But we want to inline it anyway :)
-class LJFunctor: public Functor<MoleculeLJ> {
+template<class Particle>
+class LJFunctor: public Functor<Particle> {
 public:
 	// todo: add macroscopic quantities
 	void AoSFunctor(MoleculeLJ & i, MoleculeLJ & j) {
@@ -48,6 +49,15 @@ public:
 	static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
 
 };
+
+
+template<class T> double LJFunctor<T>::CUTOFFSQUARE;
+
+template<class T> double LJFunctor<T>::EPSILON24;
+
+template<class T> double LJFunctor<T>::SIGMASQUARE;
+
+template<class T> double LJFunctor<T>::SHIFT6;
 
 } /* namespace autopas */
 

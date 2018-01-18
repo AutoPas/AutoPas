@@ -9,6 +9,7 @@
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECONTAINER_H_
 
 #include "iterators/ParticleIterator.h"
+#include "pairwiseFunctors/Functor.h"
 #include <array>
 
 namespace autopas {
@@ -23,6 +24,8 @@ public:
 	virtual void init() {}
 
 	virtual void addParticle(Particle& p) = 0;
+
+	virtual void iteratePairwise(Functor<Particle> f) = 0;
 
 	iterator begin() {return ParticleIterator<Particle, ParticleCell>(&_data);}
 

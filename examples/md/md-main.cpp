@@ -46,21 +46,23 @@ void addAFewParticles(ParticleCell& pc) {
 	}
 }
 
+void testForceLJ();
+
 int main(void) {
 //	LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lc; - need to implement addParticle
 //	VerletLists<PrintableMolecule, FullParticleCell<PrintableMolecule>> vl; - need to implement addParticle
-	Direct<PrintableMolecule, FullParticleCell<PrintableMolecule>> dir;
+	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dir;
 
-	MoleculeLJ::setEpsilon(1.0 / 7.0);
-	MoleculeLJ::setSigma(1.0 / 13.0);
+	PrintableMolecule::setEpsilon(1.0);
+	PrintableMolecule::setSigma(1.0);
 
-	cout << "epsilon: " << MoleculeLJ::getEpsilon() << endl;
-	cout << "sigma: " << MoleculeLJ::getSigma() << endl;
+	cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
+	cout << "sigma: " << PrintableMolecule::getSigma() << endl;
 
-	LJFunctor func;
-	func.setGlobals(10.0, 1.0, 1.0, 0.0);
+	LJFunctor<PrintableMolecule>::setGlobals(10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
 	PrintableMolecule p1({0.0, 0.0, 0.0}, 0);
 	PrintableMolecule p2({1.0, 0.0, 0.0}, 1);
+	LJFunctor<PrintableMolecule> func;
 	func.AoSFunctor(p1, p2);
 	p1.print();
 	p2.print();
@@ -68,8 +70,22 @@ int main(void) {
 	p1.print();
 	p2.print();
 
+	testForceLJ();
+
 
 
 	cout << "winter is coming" << endl;
 	return EXIT_SUCCESS;
+}
+
+void testForceLJ() {
+	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> container;
+	PrintableMolecule p1({0.0, 0.0, 0.0}, 0);
+	PrintableMolecule p2({1.0, 0.0, 0.0}, 1);
+	PrintableMolecule p3({0.0, 1.0, 0.0}, 1);
+	PrintableMolecule p4({1.0, 1.0, 0.0}, 1);
+
+	LJFunctor<PrintableMolecule> func;
+	container.iteratePairwise(func);
+
 }

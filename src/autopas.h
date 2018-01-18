@@ -22,6 +22,7 @@
 #include "cells/ParticleCell.h"
 #include "cells/RMMParticleCell.h"
 #include "cells/FullParticleCell.h"
+#include "containers/DirectSum.h"
 
 // iterators
 #include "iterators/SingleCellIterator.h"
@@ -31,9 +32,6 @@
 #include "containers/ParticleContainer.h"
 #include "containers/LinkedCells.h"
 #include "containers/VerletLists.h"
-#include "containers/Direct.h"
-
-// functors
 #include "pairwiseFunctors/Functor.h"
 #include "pairwiseFunctors/LJFunctor.h"
 
