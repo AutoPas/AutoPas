@@ -1,3 +1,6 @@
+INCLUDEFLAGS = -I../src
+LIBS = -lgtest -lgtest_main -lpthread
+
 default:
-	g++ allTests.cpp -lgtest -lgtest_main -lpthread -o runTests
+	g++ allTests.cpp myMoleculeTest.cpp  $(INCLUDEFLAGS) $(LIBS) -o runTests
 	./runTests
