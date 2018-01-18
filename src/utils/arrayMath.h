@@ -12,8 +12,10 @@
 
 namespace autopas {
 
+namespace arrayMath {
+
 template<class T, std::size_t SIZE>
-std::array<T, SIZE> arrayAdd(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
+std::array<T, SIZE> add(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
 	std::array<T, SIZE> result;
 	for (std::size_t d = 0; d < SIZE; ++d) {
 		result[d] = a[d] + b[d];
@@ -22,7 +24,7 @@ std::array<T, SIZE> arrayAdd(const std::array<T, SIZE>& a, const std::array<T, S
 }
 
 template<class T, std::size_t SIZE>
-std::array<T, SIZE> arraySub(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
+std::array<T, SIZE> sub(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
 	std::array<T, SIZE> result;
 	for (std::size_t d = 0; d < SIZE; ++d) {
 		result[d] = a[d] - b[d];
@@ -31,7 +33,7 @@ std::array<T, SIZE> arraySub(const std::array<T, SIZE>& a, const std::array<T, S
 }
 
 template<class T, std::size_t SIZE>
-std::array<T, SIZE> arrayMul(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
+std::array<T, SIZE> mul(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
 	std::array<T, SIZE> result;
 	for (std::size_t d = 0; d < SIZE; ++d) {
 		result[d] = a[d] * b[d];
@@ -40,13 +42,15 @@ std::array<T, SIZE> arrayMul(const std::array<T, SIZE>& a, const std::array<T, S
 }
 
 template<class T, std::size_t SIZE>
-T arrayDot(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
+T dot(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
 	T result = static_cast<T>(0.0);
 	for (std::size_t d = 0; d < SIZE; ++d) {
 		result += a[d] * b[d];
 	}
 	return result;
 }
+
+} /* namespace arrayMath */
 
 } /* namespace autopas */
 

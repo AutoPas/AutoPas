@@ -8,6 +8,7 @@
 #ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_
 
+#include "utils/arrayMath.h"
 #include <array>
 
 namespace autopas {
@@ -24,17 +25,9 @@ public:
 
 	void setF(const std::array<double, 3>& f) { _f = f; }
 
-	void addF(const std::array<double, 3>& f) {
-		for (int d = 0; d < 3; ++d) {
-			_f[d] += f[d];
-		}
-	}
+	void addF(const std::array<double, 3>& f) { _f = arrayMath::add(_f, f); }
 
-	void subF(const std::array<double, 3>& f) {
-		for (int d = 0; d < 3; ++d) {
-			_f[d] -= f[d];
-		}
-	}
+	void subF(const std::array<double, 3>& f) { _f = arrayMath::sub(_f, f); }
 
 	unsigned long getID() const { return _id; }
 

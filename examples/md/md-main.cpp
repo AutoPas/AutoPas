@@ -58,6 +58,6 @@ int main(void) {
 	cout << "sigma: " << MoleculeLJ::getSigma() << endl;
 
 
-	cout << "Hodor" << endl;
+	cout << "winter is coming" << endl;
 	return EXIT_SUCCESS;
 }

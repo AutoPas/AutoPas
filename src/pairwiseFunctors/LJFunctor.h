@@ -16,21 +16,14 @@ namespace autopas {
 // can we do this without a template? Maybe. But we want to inline it anyway :)
 class LJFunctor: public Functor<MoleculeLJ> {
 	void AoSFunctor(MoleculeLJ & i, MoleculeLJ & j) {
-		std::array<double, 3> dr, iR, jR;
+		std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
+		double r2 = arrayMath::dot(dr, dr);
 
 		double f[3];
 		double u;
 		double drs[3], dr2; // site distance vector & length^2
 
-		iR = i.getR();
-		jR = j.getR();
 
-		double r2 = 0.0;
-
-		for (int d = 0; d < 3 ; ++d ) {
-			dr[d] = iR - jR;
-			r2 += dr[d] * dr[d];
-		}
 
 		if (r2 > CUTOFFSQUARE)
 			return;
