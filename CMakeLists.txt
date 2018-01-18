@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 2.8)
+
+project(autopas)
+
+set(CMAKE_CXX_STANDARD 11)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(examples)
+ADD_SUBDIRECTORY(tests)
+#ADD_SUBDIRECTORY(moduleB)
