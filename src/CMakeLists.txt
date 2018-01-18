@@ -1,3 +1,2 @@
-#ADD_LIBRARY(autopas STATIC
-#        ${MY_LIBSRCS}
-#        )
+ADD_LIBRARY(autopas INTERFACE)
+TARGET_INCLUDE_DIRECTORIES(autopas INTERFACE .)
