@@ -86,6 +86,16 @@ void measureDirect(int numMolecules, int numIterations) {
 //	for (auto it = cont.begin(); it.isValid(); ++it) {
 //		it->print();
 //	}
+	// print one molecule, to be sure compiler isnt optimising stuff away
+
+	int i = 0;
+	for (auto it = cont.begin(); it.isValid(); ++it) {
+		if (i == 2) {
+			break;
+		}
+		it->print();
+		++i;
+	}
 
 	cout << "measuring done" << endl;
 }

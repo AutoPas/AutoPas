@@ -49,8 +49,6 @@ std::array<double, 3> randomPosition(const std::array<double, 3>& boxMin, const 
 
 template<class Molecule, class MoleculeCell>
 void fillContainerWithMolecules(int numMolecules, ParticleContainer<Molecule, MoleculeCell>* cont) {
-	PrintableMolecule p1({0.0, 0.0, 0.0}, 0);
-
 	srand(42); // fixed seedpoint
 
 	std::array<double ,3> boxMin(cont->getBoxMin()), boxMax(cont->getBoxMax());
