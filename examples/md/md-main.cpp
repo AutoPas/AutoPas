@@ -7,48 +7,20 @@
 
 
 #include "autopas.h"
+#include "mdutils.h"
+#include "utils/Timer.h"
+
 #include <iostream>
+#include <cstdlib>
 
 using namespace std;
 using namespace autopas;
 
-class PrintableMolecule : public MoleculeLJ {
-public:
-	PrintableMolecule() : MoleculeLJ() {}
-	PrintableMolecule(std::array<double, 3> r, unsigned long i) : MoleculeLJ(r, i) {}
-	void print() {
-		cout << "Molecule with position: ";
-		for (auto & r : getR()) {
-			cout << r << ", " ;
-		}
-		cout << "and force: ";
-
-		for (auto & f : getF()) {
-			cout << f << ", " ;
-		}
-		cout << "ID: " << getID();
-		cout << endl;
-	}
-};
-
-// how do we recommend to use this thing?
-// the user should create a wrapper around our ParticleContainer? That way they can compile whatever they actually need w.r.t. templates once.
-// with a bit of documentation, they can
-
-template<class ParticleCell>
-void addAFewParticles(ParticleCell& pc) {
-	static int i = 0;
-	int iEnd = i + 4;
-	for ( ; i < iEnd; ++i) {
-		std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
-		PrintableMolecule m(arr, static_cast<unsigned long>(i));
-		pc.addParticle(m);
-	}
-}
-
 void testForceLJ();
 
-int main(void) {
+void measureDirect(int numMolecules, int numIterations);
+
+int main(int argc, char * argv[]) {
 //	LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lc; - need to implement addParticle
 //	VerletLists<PrintableMolecule, FullParticleCell<PrintableMolecule>> vl; - need to implement addParticle
 	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dir;
@@ -64,18 +36,58 @@ int main(void) {
 	PrintableMolecule p2({1.0, 0.0, 0.0}, 1);
 	LJFunctor<PrintableMolecule> func;
 	func.AoSFunctor(p1, p2);
-	p1.print();
-	p2.print();
+//	p1.print();
+//	p2.print();
 	func.AoSFunctor(p2, p1);
-	p1.print();
-	p2.print();
+//	p1.print();
+//	p2.print();
 
 	testForceLJ();
 
+	int numMols = 100;
+	int numIts = 100;
+	if (argc == 3) {
+		numMols = atoi(argv[1]);
+		numIts = atoi(argv[2]);
+	}
 
+	measureDirect(numMols, numIts);
 
 	cout << "winter is coming" << endl;
 	return EXIT_SUCCESS;
+}
+
+void measureDirect(int numMolecules, int numIterations) {
+	cout << "measuring" << endl;
+	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> cont;
+	cont.init();
+	std::array<double, 3> boxMin({0.0, 0.0, 0.0});
+	std::array<double, 3> boxMax({10.0, 10.0, 10.0});
+	cont.setBoxMin(boxMin);
+	cont.setBoxMax(boxMax);
+	fillContainerWithMolecules(numMolecules, &cont);
+
+	LJFunctor<PrintableMolecule> func;
+
+	utils::Timer t;
+
+	t.start();
+	for (int i = 0; i < numIterations; ++i) {
+		cont.iteratePairwise(&func);
+	}
+	double elapsedTime = t.stop();
+
+	double MFUPS = numMolecules * numIterations / elapsedTime * 1e-6;
+	cout << "Number of Molecules: " << numMolecules << endl;
+	cout << "Number of Force updates: " << numIterations << endl;
+	cout << "Elapsed time: " << elapsedTime << endl;
+	cout << "MFUPS: " << MFUPS << endl;
+
+//	for (auto it = cont.begin(); it.isValid(); ++it) {
+//		it->print();
+//	}
+
+	cout << "measuring done" << endl;
 }
 
 void testForceLJ() {
@@ -95,9 +107,9 @@ void testForceLJ() {
 	LJFunctor<PrintableMolecule> func;
 	container.iteratePairwise(&func);
 
-	for (auto it = container.begin(); it.isValid(); ++it) {
-		it->print();
-	}
+//	for (auto it = container.begin(); it.isValid(); ++it) {
+//		it->print();
+//	}
 
 	cout << "done testing iterate pairwise" << endl;
 }
