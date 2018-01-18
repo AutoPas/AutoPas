@@ -23,11 +23,32 @@ public:
 		getCell()->addParticle(p);
 	}
 
-	void iteratePairwise(Functor<Particle> f) {
+	void iteratePairwise(Functor<Particle>* f) {
+		// AoS version
+
+		for (auto outer = getIt(); outer.isValid(); ++outer) {
+			Particle & p1 = *outer;
+
+			int ind = outer.getIndex() + 1;
+
+			for (auto inner = getIt(ind); inner.isValid(); ++inner) {
+				Particle & p2 = *inner;
+
+				f->AoSFunctor(p1, p2);
+			}
+		}
 
 	}
 
 private:
+	// for convenience
+
+	typedef SingleCellIterator<Particle, ParticleCell> singIterator;
+
+	singIterator getIt(int index = 0) {
+		return singIterator(getCell(), index);
+	}
+
 	ParticleCell * getCell() {return &(this->_data.at(0));};
 };
 

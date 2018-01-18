@@ -9,7 +9,9 @@
 #define SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_
 
 #include "Functor.h"
-#include "particles/MoleculeLJ.h"
+#include "utils/arrayMath.h"
+//#include "particles/MoleculeLJ.h"
+#include <array>
 
 namespace autopas {
 
@@ -18,7 +20,7 @@ template<class Particle>
 class LJFunctor: public Functor<Particle> {
 public:
 	// todo: add macroscopic quantities
-	void AoSFunctor(MoleculeLJ & i, MoleculeLJ & j) {
+	void AoSFunctor(Particle & i, Particle & j) {
 		std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
 		double dr2 = arrayMath::dot(dr, dr);
 		if (dr2 > CUTOFFSQUARE)

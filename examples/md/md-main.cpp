@@ -79,13 +79,25 @@ int main(void) {
 }
 
 void testForceLJ() {
+	cout << "testing iterate pairwise" << endl;
+
 	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> container;
+	container.init();
 	PrintableMolecule p1({0.0, 0.0, 0.0}, 0);
 	PrintableMolecule p2({1.0, 0.0, 0.0}, 1);
-	PrintableMolecule p3({0.0, 1.0, 0.0}, 1);
-	PrintableMolecule p4({1.0, 1.0, 0.0}, 1);
+	PrintableMolecule p3({0.0, 1.0, 0.0}, 2);
+	PrintableMolecule p4({1.0, 1.0, 0.0}, 3);
+	container.addParticle(p1);
+	container.addParticle(p2);
+	container.addParticle(p3);
+	container.addParticle(p4);
 
 	LJFunctor<PrintableMolecule> func;
-	container.iteratePairwise(func);
+	container.iteratePairwise(&func);
 
+	for (auto it = container.begin(); it.isValid(); ++it) {
+		it->print();
+	}
+
+	cout << "done testing iterate pairwise" << endl;
 }
