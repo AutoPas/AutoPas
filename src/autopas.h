@@ -10,6 +10,7 @@
 
 // utils
 #include "utils/SoA.h"
+#include "utils/arrayMath.h"
 
 // particles
 #include "particles/Particle.h"

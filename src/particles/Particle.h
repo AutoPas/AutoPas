@@ -24,6 +24,18 @@ public:
 
 	void setF(const std::array<double, 3>& f) { _f = f; }
 
+	void addF(const std::array<double, 3>& f) {
+		for (int d = 0; d < 3; ++d) {
+			_f[d] += f[d];
+		}
+	}
+
+	void subF(const std::array<double, 3>& f) {
+		for (int d = 0; d < 3; ++d) {
+			_f[d] -= f[d];
+		}
+	}
+
 	unsigned long getID() const { return _id; }
 
 	void setID(unsigned long id) { _id = id; }

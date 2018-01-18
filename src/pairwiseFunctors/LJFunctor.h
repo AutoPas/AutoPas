@@ -44,8 +44,6 @@ class LJFunctor: public Functor<MoleculeLJ> {
 		for (unsigned short d = 0; d < 3; ++d)
 			f[d] = fac * dr[d];
 
-		TODO: continue here
-
 	}
 	void SoAFunctor() {
 
