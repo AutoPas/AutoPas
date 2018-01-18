@@ -1,1 +1,10 @@
-this is a first version of the autopas library
+AUTOPAS Library
+Version 0.0.1 prealpha
+
+build instructions:
+
+mkdir build
+cd build
+cmake ..
+make
+
