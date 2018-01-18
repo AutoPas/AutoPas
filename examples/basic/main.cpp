@@ -81,6 +81,9 @@ int main(void) {
 	double rd = arrayMath::dot(ad, ad);
 	cout << "dot {1.1, 2.2, 3.3} and {1.1, 2.2, 3.3} = {" << rd << "}" << endl;
 
+	resultd = arrayMath::mulScalar(ad, 2.0);
+	cout << "mulScalar {1.1, 2.2, 3.3} and 2.0 = {" << resultd[0] << ", " << resultd[1] << ", " << resultd[2] << "}" << endl;
+
 
 	LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc;
 //	VerletLists<MyMolecule, FullParticleCell<MyMolecule>> vl;

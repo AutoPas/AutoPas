@@ -8,6 +8,8 @@
 #ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_
 
+//TODO: separate autopas.h and autopasmd.h
+
 // utils
 #include "utils/SoA.h"
 #include "utils/arrayMath.h"
@@ -30,5 +32,10 @@
 #include "containers/LinkedCells.h"
 #include "containers/VerletLists.h"
 #include "containers/Direct.h"
+
+// functors
+#include "pairwiseFunctors/Functor.h"
+#include "pairwiseFunctors/LJFunctor.h"
+
 
 #endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_ */

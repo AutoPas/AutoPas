@@ -15,34 +15,37 @@ namespace autopas {
 
 // can we do this without a template? Maybe. But we want to inline it anyway :)
 class LJFunctor: public Functor<MoleculeLJ> {
+public:
+	// todo: add macroscopic quantities
 	void AoSFunctor(MoleculeLJ & i, MoleculeLJ & j) {
 		std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
-		double r2 = arrayMath::dot(dr, dr);
-
-		double f[3];
-		double u;
-		double drs[3], dr2; // site distance vector & length^2
-
-
-
-		if (r2 > CUTOFFSQUARE)
+		double dr2 = arrayMath::dot(dr, dr);
+		if (dr2 > CUTOFFSQUARE)
 			return;
 
 		double invdr2 = 1. / dr2;
-		double lj6 = SIGMA2 * invdr2; lj6 = lj6 * lj6 * lj6;
+		double lj6 = SIGMASQUARE * invdr2;
+		lj6 = lj6 * lj6 * lj6;
 		double lj12 = lj6 * lj6;
 		double lj12m6 = lj12 - lj6;
-//		u6 = EPSILON24 * lj12m6;
+//		u6 = EPSILON24 * lj12m6 + SHIFT6;
 		double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
-		for (unsigned short d = 0; d < 3; ++d)
-			f[d] = fac * dr[d];
-
+		std::array<double, 3> f = arrayMath::mulScalar(dr, fac);
+		i.addF(f);
+		j.subF(f);
 	}
 	void SoAFunctor() {
 
 	}
 
-	static double CUTOFFSQUARE, EPSILON24, SIGMA2, SHIFT6;
+	static void setGlobals(double cutoff, double epsilon, double sigma, double shift) {
+		CUTOFFSQUARE = cutoff * cutoff;
+		EPSILON24 = epsilon * 24.0;
+		SIGMASQUARE = sigma * sigma;
+		SHIFT6 = shift * 6.0;
+	}
+
+	static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
 
 };
 

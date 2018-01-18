@@ -15,7 +15,7 @@ using namespace autopas;
 class PrintableMolecule : public MoleculeLJ {
 public:
 	PrintableMolecule() : MoleculeLJ() {}
-	PrintableMolecule(std::array<double, 3> r, unsigned long i, int myvar) : MoleculeLJ(r, i) {}
+	PrintableMolecule(std::array<double, 3> r, unsigned long i) : MoleculeLJ(r, i) {}
 	void print() {
 		cout << "Molecule with position: ";
 		for (auto & r : getR()) {
@@ -41,7 +41,7 @@ void addAFewParticles(ParticleCell& pc) {
 	int iEnd = i + 4;
 	for ( ; i < iEnd; ++i) {
 		std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
-		PrintableMolecule m(arr, static_cast<unsigned long>(i), i);
+		PrintableMolecule m(arr, static_cast<unsigned long>(i));
 		pc.addParticle(m);
 	}
 }
@@ -56,6 +56,18 @@ int main(void) {
 
 	cout << "epsilon: " << MoleculeLJ::getEpsilon() << endl;
 	cout << "sigma: " << MoleculeLJ::getSigma() << endl;
+
+	LJFunctor func;
+	func.setGlobals(10.0, 1.0, 1.0, 0.0);
+	PrintableMolecule p1({0.0, 0.0, 0.0}, 0);
+	PrintableMolecule p2({1.0, 0.0, 0.0}, 1);
+	func.AoSFunctor(p1, p2);
+	p1.print();
+	p2.print();
+	func.AoSFunctor(p2, p1);
+	p1.print();
+	p2.print();
+
 
 
 	cout << "winter is coming" << endl;
