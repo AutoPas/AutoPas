@@ -1,2 +1,3 @@
 default:
-	g++ main.cpp -lgtest -lgtest_main -lpthread
+	g++ allTests.cpp -lgtest -lgtest_main -lpthread -o runTests
+	./runTests
