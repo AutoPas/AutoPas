@@ -25,7 +25,7 @@ public:
 
 	virtual void addParticle(Particle& p) = 0;
 
-	virtual void iteratePairwise(Functor<Particle>* f) = 0;
+	virtual void iteratePairwise(Functor<Particle>* f, bool countFlops = false) = 0;
 
 	iterator begin() {return ParticleIterator<Particle, ParticleCell>(&_data);}
 

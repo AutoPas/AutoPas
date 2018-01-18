@@ -15,6 +15,7 @@ class Functor {
 public:
 	virtual ~Functor() {}
 	virtual void AoSFunctor(Particle &, Particle &) {}
+	virtual void AoSFlopFunctor(Particle &, Particle &) {}
 	virtual void SoAFunctor() {}
 //	virtual void SoALoader() = 0
 //	virtual void SoAStorer() = 0

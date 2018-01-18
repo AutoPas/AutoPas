@@ -23,18 +23,32 @@ public:
 		getCell()->addParticle(p);
 	}
 
-	void iteratePairwise(Functor<Particle>* f) {
+	void iteratePairwise(Functor<Particle>* f, bool countFlops = false) {
 		// AoS version
 
-		for (auto outer = getIt(); outer.isValid(); ++outer) {
-			Particle & p1 = *outer;
+		if (not countFlops) {
+			for (auto outer = getIt(); outer.isValid(); ++outer) {
+				Particle & p1 = *outer;
 
-			int ind = outer.getIndex() + 1;
+				int ind = outer.getIndex() + 1;
 
-			for (auto inner = getIt(ind); inner.isValid(); ++inner) {
-				Particle & p2 = *inner;
+				for (auto inner = getIt(ind); inner.isValid(); ++inner) {
+					Particle & p2 = *inner;
 
-				f->AoSFunctor(p1, p2);
+					f->AoSFunctor(p1, p2);
+				}
+			}
+		} else {
+			for (auto outer = getIt(); outer.isValid(); ++outer) {
+				Particle & p1 = *outer;
+
+				int ind = outer.getIndex() + 1;
+
+				for (auto inner = getIt(ind); inner.isValid(); ++inner) {
+					Particle & p2 = *inner;
+
+					f->AoSFlopFunctor(p1, p2);
+				}
 			}
 		}
 

@@ -26,7 +26,7 @@ public:
 		this->_data.at(i).addParticle(p); // at performs an out of bounds check
 	}
 
-	void iteratePairwise(Functor<Particle> f) {
+	void iteratePairwise(Functor<Particle>* f, bool countFlops = false) {
 
 	}
 
