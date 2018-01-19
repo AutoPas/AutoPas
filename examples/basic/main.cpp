@@ -73,30 +73,6 @@ int main(void) {
     testParticleContainerFull();
     testParticleContainerRMM();
 
-    std::array<int, 3> a({1, 2, 3}), b({4, 5, 6});
-    std::array<int, 3> result = arrayMath::add(a, b);
-    cout << "adding {1, 2, 3} and {4, 5, 6} = {" << result[0] << ", " << result[1] << ", " << result[2] << "}" << endl;
-
-    std::array<double, 3> ad({1.1, 2.2, 3.3}), bd({4.4, 5.5, 6.6});
-    std::array<double, 3> resultd = arrayMath::add(ad, bd);
-    cout << "adding {1.1, 2.2, 3.3} and {4.4, 5.5, 6.6} = {" << resultd[0] << ", " << resultd[1] << ", " << resultd[2]
-         << "}" << endl;
-    resultd = arrayMath::add(resultd, ad);
-    cout << "adding {5.5, 7.7, 9.9} and {1.1, 2.2, 3.3} = {" << resultd[0] << ", " << resultd[1] << ", " << resultd[2]
-         << "}" << endl;
-
-    resultd = arrayMath::mul(ad, ad);
-    cout << "mul {1.1, 2.2, 3.3} and {1.1, 2.2, 3.3} = {" << resultd[0] << ", " << resultd[1] << ", " << resultd[2]
-         << "}" << endl;
-
-    double rd = arrayMath::dot(ad, ad);
-    cout << "dot {1.1, 2.2, 3.3} and {1.1, 2.2, 3.3} = {" << rd << "}" << endl;
-
-    resultd = arrayMath::mulScalar(ad, 2.0);
-    cout << "mulScalar {1.1, 2.2, 3.3} and 2.0 = {" << resultd[0] << ", " << resultd[1] << ", " << resultd[2] << "}"
-         << endl;
-
-
     LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc;
 //	VerletLists<MyMolecule, FullParticleCell<MyMolecule>> vl;
     DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir;
