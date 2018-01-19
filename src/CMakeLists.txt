@@ -1,6 +1,5 @@
-SET(MY_SRC
-        utils/Timer.cpp
-        particles/MoleculeLJ.cpp
+file(GLOB_RECURSE MY_SRC
+        "*.cpp"
         )
 
 ADD_LIBRARY(autopas STATIC

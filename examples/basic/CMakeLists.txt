@@ -1,6 +1,7 @@
-SET(MY_SRC
-        main.cpp
+file(GLOB_RECURSE MY_SRC
+        "*.cpp"
         )
+
 
 ADD_EXECUTABLE(basic
         ${MY_SRC}

@@ -1,7 +1,7 @@
-SET(MY_SRC
-        allTests.cpp
-        myMoleculeTest.cpp
+file(GLOB_RECURSE MY_SRC
+        "*.cpp"
         )
+
 
 ADD_EXECUTABLE(runTests
         ${MY_SRC}
