@@ -20,7 +20,7 @@ template<class Particle>
 class LJFunctor: public Functor<Particle> {
 public:
 	// todo: add macroscopic quantities
-	void AoSFunctor(Particle & i, Particle & j) {
+	void AoSFunctor(Particle & i, Particle & j) override {
 		std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
 		double dr2 = arrayMath::dot(dr, dr);
 
@@ -38,7 +38,7 @@ public:
 		j.subF(f);
 	}
 
-	void AoSFlopFunctor(Particle & i, Particle & j) {
+	void AoSFlopFunctor(Particle & i, Particle & j) override {
 		std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
 		double dr2 = arrayMath::dot(dr, dr);
 
@@ -48,7 +48,7 @@ public:
 
 	}
 
-	void SoAFunctor() {
+	void SoAFunctor() override {
 
 	}
 

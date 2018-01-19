@@ -15,15 +15,15 @@ namespace autopas {
 template<class Particle, class ParticleCell>
 class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 public:
-	void init() {
+	void init() override {
 		this->_data.resize(1);
 	}
 
-	void addParticle(Particle& p) {
+	void addParticle(Particle& p) override {
 		getCell()->addParticle(p);
 	}
 
-	void iteratePairwise(Functor<Particle>* f, bool countFlops = false) {
+	void iteratePairwise(Functor<Particle>* f, bool countFlops = false) override {
 		// AoS version
 
 		if (not countFlops) {

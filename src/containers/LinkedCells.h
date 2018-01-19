@@ -15,10 +15,10 @@ namespace autopas {
 template<class Particle, class ParticleCell>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 public:
-	void init() {
+	void init() override {
 		this->_data.resize(5); // TODO
 	}
-	void addParticle(Particle& p) {
+	void addParticle(Particle& p) override {
 		this->_data[0].addParticle(p);
 	}
 	void addParticle(Particle& p, int i) {
@@ -26,7 +26,7 @@ public:
 		this->_data.at(i).addParticle(p); // at performs an out of bounds check
 	}
 
-	void iteratePairwise(Functor<Particle>* f, bool countFlops = false) {
+	void iteratePairwise(Functor<Particle>* f, bool countFlops = false) override {
 
 	}
 

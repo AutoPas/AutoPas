@@ -16,14 +16,14 @@ namespace autopas {
 template<class Particle>
 class FullParticleCell : public ParticleCell<Particle> {
 public:
-	void moleculesAt(int i, Particle *& rmm_or_not_pointer) {
+	void moleculesAt(int i, Particle *& rmm_or_not_pointer) override {
 		rmm_or_not_pointer = &_mols.at(i);
 	}
-	void addParticle(Particle& m) {
+	void addParticle(Particle& m) override {
 		_mols.push_back(m);
 	}
-	int numParticles() const  {return _mols.size();}
-	bool isNotEmpty() const { return numParticles() > 0 ; }
+	int numParticles() const override {return _mols.size();}
+	bool isNotEmpty() const override { return numParticles() > 0 ; }
 	std::vector<Particle> _mols;
 };
 
