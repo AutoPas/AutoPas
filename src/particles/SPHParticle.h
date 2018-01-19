@@ -19,7 +19,11 @@ namespace autopas {
 
 
     private:
+        
 
+        double density;
+        double pressure;
+        double surf_norm;
     };
 }  // namespace autopas
 
