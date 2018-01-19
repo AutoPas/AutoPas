@@ -30,6 +30,7 @@
 
 // containers
 #include "containers/ParticleContainer.h"
+#include "containers/CellBlock3D.h"
 #include "containers/LinkedCells.h"
 #include "containers/VerletLists.h"
 #include "pairwiseFunctors/Functor.h"

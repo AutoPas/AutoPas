@@ -9,6 +9,7 @@
 #define SRC_CONTAINERS_LINKEDCELLS_H_
 
 #include "ParticleContainer.h"
+#include "CellBlock3D.h"
 
 namespace autopas {
 
@@ -31,6 +32,7 @@ public:
 	}
 
 private:
+	CellBlock3D<ParticleCell> _cellBlock;
 	// ThreeDimensionalCellHandler
 };
 

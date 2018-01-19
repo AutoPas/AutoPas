@@ -14,6 +14,8 @@
 
 namespace autopas {
 
+// consider multiple inheritance or delegation vor avoidane of virtual call to Functor
+
 template<class Particle, class ParticleCell>
 class ParticleContainer {
 public:
