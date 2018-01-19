@@ -56,6 +56,15 @@ TEST(ArrayMathTest, testDot) {
 	ASSERT_DOUBLE_EQ(38.720, arrayMath::dot(a,b));
 }
 
+TEST(ArrayMathTest, testAddScalar) {
+	std::array<double, 3> a({1.1, 2.2, 3.3});
+	std::array<double, 3> correctResult({3.1, 4.2, 5.3});
+	std::array<double, 3> result = arrayMath::addScalar(a, 2.0);
+	for (int d = 0; d < 3; ++d) {
+		ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
+	}
+}
+
 TEST(ArrayMathTest, testMulScalar) {
 	std::array<double, 3> a({1.1, 2.2, 3.3});
 	std::array<double, 3> correctResult({2.2, 4.4, 6.6});
