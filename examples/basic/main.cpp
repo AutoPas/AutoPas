@@ -41,10 +41,6 @@ private:
 // the user should create a wrapper around our ParticleContainer? That way they can compile whatever they actually need w.r.t. templates once.
 // with a bit of documentation, they can
 
-void testFullParticleCell();
-
-void testRMMParticleCell();
-
 void testParticleIteratorFull();
 
 void testParticleIteratorRMM();
@@ -65,9 +61,6 @@ void addAFewParticles(ParticleCell &pc) {
 }
 
 int main(void) {
-    // test FullParticleCell:
-    testFullParticleCell();
-    testRMMParticleCell();
     testParticleIteratorFull();
     testParticleIteratorRMM();
     testParticleContainerFull();
@@ -79,30 +72,6 @@ int main(void) {
 
     cout << "Hodor" << endl;
     return EXIT_SUCCESS;
-}
-
-void testFullParticleCell() {
-    FullParticleCell<MyMolecule> fpc;
-    addAFewParticles(fpc);
-
-
-    SingleCellIterator<MyMolecule, FullParticleCell<MyMolecule>> it(&fpc);
-    for (; it.isValid(); ++it) {
-        it->print();
-    }
-}
-
-void testRMMParticleCell() {
-    RMMParticleCell<MyMolecule> rmmc;
-    addAFewParticles(rmmc);
-
-    cout << "===============" << endl;
-    cout << "well, ids are not saved yet: " << endl;
-    SingleCellIterator<MyMolecule, RMMParticleCell<MyMolecule>> it(&rmmc);
-    for (; it.isValid(); ++it) {
-        it->print();
-    }
-    cout << "===============" << endl;
 }
 
 void testParticleIteratorFull() {
