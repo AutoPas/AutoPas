@@ -10,6 +10,7 @@
 #include <iostream>
 
 using namespace autopas;
+
 class MyMolecule : public Particle {
 public:
 	MyMolecule() : Particle(), _myvar(0) {}
@@ -28,30 +29,26 @@ public:
 		std::cout << " myvar: " << _myvar << std::endl;
 	}
 
+	int getMyvar() const {
+		return _myvar;
+	}
+
 private:
 	int _myvar;
 };
 
-template<class ParticleCell>
-void addAFewParticles(ParticleCell& pc) {
-	static int i = 0;
-	int iEnd = i + 4;
-	for ( ; i < iEnd; ++i) {
-		std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
-		MyMolecule m(arr, {0.,0.,0.}, static_cast<unsigned long>(i), i);
-		pc.addParticle(m);
+TEST(myMoleculeTest, testConstructorAndGetters) {
+	std::array<double, 3> r({1.1, 2.2, 3.3});
+	int myvar = 5;
+	std::array<double, 3> vel({4.4, 5.5, 6.6 });
+	unsigned long id = 17ul;
+	MyMolecule m(r, vel, id, myvar);
+
+	for (int d = 0; d < 3; ++d) {
+		ASSERT_DOUBLE_EQ(m.getR()[d], r[d]);
+		ASSERT_DOUBLE_EQ(m.getV()[d], vel[d]);
 	}
+	ASSERT_EQ(id, m.getID());
+	ASSERT_EQ(myvar, m.getMyvar());
 }
 
-
-TEST(myMoleculeTest, testFullParticleCell)
-{
-	FullParticleCell<MyMolecule> fpc;
-	addAFewParticles(fpc);
-
-
-	SingleCellIterator<MyMolecule, FullParticleCell<MyMolecule>> it(&fpc);
-	for (; it.isValid(); ++it) {
-		it->print();
-	}
-}
