@@ -5,7 +5,7 @@
 #ifndef AUTOPAS_SPHPARTICLE_H
 #define AUTOPAS_SPHPARTICLE_H
 
-#include "Particle.h"
+#include "particles/Particle.h"
 
 namespace autopas {
 
@@ -21,9 +21,8 @@ namespace autopas {
     private:
         
 
-        double density;
-        double pressure;
-        double surf_norm;
+        double _density;
+        double _pressure;
     };
 }  // namespace autopas
 
