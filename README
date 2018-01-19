@@ -1,6 +1,7 @@
 AUTOPAS Library
 Version 0.0.1 prealpha
 
+==========BUILD============
 build instructions:
 
 mkdir build
@@ -8,6 +9,15 @@ cd build
 cmake ..
 make
 
+==========TESTS============
 to run tests:
 
 make test
+
+or using the ctest environment:
+
+ctest
+
+to get verbose output:
+
+ctest --verbose
