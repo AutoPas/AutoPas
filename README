@@ -8,3 +8,6 @@ cd build
 cmake ..
 make
 
+to run tests:
+
+make test
