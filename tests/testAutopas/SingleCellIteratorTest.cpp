@@ -6,17 +6,8 @@
  */
 
 #include "SingleCellIteratorTest.h"
-
-/*
- * SingleCellIteratorTest.cpp
- *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
- */
-
 #include "autopas.h"
 #include "gtest/gtest.h"
-#include <iostream>
 
 using namespace autopas;
 

@@ -41,10 +41,6 @@ private:
 // the user should create a wrapper around our ParticleContainer? That way they can compile whatever they actually need w.r.t. templates once.
 // with a bit of documentation, they can
 
-void testParticleIteratorFull();
-
-void testParticleIteratorRMM();
-
 void testParticleContainerFull();
 
 void testParticleContainerRMM();
@@ -61,8 +57,6 @@ void addAFewParticles(ParticleCell &pc) {
 }
 
 int main(void) {
-    testParticleIteratorFull();
-    testParticleIteratorRMM();
     testParticleContainerFull();
     testParticleContainerRMM();
 
@@ -72,128 +66,6 @@ int main(void) {
 
     cout << "Hodor" << endl;
     return EXIT_SUCCESS;
-}
-
-void testParticleIteratorFull() {
-    cout << " ============ testing FullCell ============ " << endl;
-    std::vector<FullParticleCell<MyMolecule>> vec;
-    vec.resize(1);
-
-    cout << "one set" << endl;
-    addAFewParticles(vec[0]);
-    for (ParticleIterator<MyMolecule, FullParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "two sets" << endl;
-    vec.resize(2);
-    addAFewParticles(vec[1]);
-
-    for (ParticleIterator<MyMolecule, FullParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "empty " << endl;
-    vec.clear();
-    for (ParticleIterator<MyMolecule, FullParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "empty full " << endl;
-    vec.resize(2);
-    addAFewParticles(vec[1]);
-    for (ParticleIterator<MyMolecule, FullParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "empty full empty" << endl;
-    vec.resize(3);
-    for (ParticleIterator<MyMolecule, FullParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "empty full empty full" << endl;
-    vec.resize(4);
-    addAFewParticles(vec[3]);
-    for (ParticleIterator<MyMolecule, FullParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "full empty " << endl;
-    vec.clear();
-    vec.resize(2);
-    addAFewParticles(vec[0]);
-    for (ParticleIterator<MyMolecule, FullParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-}
-
-void testParticleIteratorRMM() {
-    cout << " ============ testing RMMCell ============ " << endl;
-    std::vector<RMMParticleCell<MyMolecule>> vec;
-    vec.resize(1);
-
-    cout << "one set" << endl;
-    addAFewParticles(vec[0]);
-    for (ParticleIterator<MyMolecule, RMMParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "two sets" << endl;
-    vec.resize(2);
-    addAFewParticles(vec[1]);
-
-    for (ParticleIterator<MyMolecule, RMMParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "empty " << endl;
-    vec.clear();
-    for (ParticleIterator<MyMolecule, RMMParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "empty full " << endl;
-    vec.resize(2);
-    addAFewParticles(vec[1]);
-    for (ParticleIterator<MyMolecule, RMMParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "empty full empty" << endl;
-    vec.resize(3);
-    for (ParticleIterator<MyMolecule, RMMParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "empty full empty full" << endl;
-    vec.resize(4);
-    addAFewParticles(vec[3]);
-    for (ParticleIterator<MyMolecule, RMMParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
-
-    cout << "full empty " << endl;
-    vec.clear();
-    vec.resize(2);
-    addAFewParticles(vec[0]);
-    for (ParticleIterator<MyMolecule, RMMParticleCell<MyMolecule>> pi(&vec);
-         pi.isValid(); ++pi) {
-        pi->print();
-    }
 }
 
 void testParticleContainerFull() {
