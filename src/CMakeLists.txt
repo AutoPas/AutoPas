@@ -4,5 +4,6 @@ file(GLOB_RECURSE MY_SRC
         )
 
 ADD_LIBRARY(autopas STATIC
-        ${MY_SRC})
+        ${MY_SRC}
+        )
 TARGET_INCLUDE_DIRECTORIES(autopas INTERFACE .)

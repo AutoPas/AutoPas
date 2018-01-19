@@ -8,8 +8,8 @@
 
 namespace autopas {
 
-double MoleculeLJ::EPSILON;
-double MoleculeLJ::SIGMA;
+    double MoleculeLJ::EPSILON;
+    double MoleculeLJ::SIGMA;
 
 }
 

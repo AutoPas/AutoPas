@@ -12,22 +12,25 @@
 
 namespace autopas {
 
-class MoleculeLJ : public Particle {
-public:
-	MoleculeLJ() : Particle() {}
-	MoleculeLJ(std::array<double, 3> r, unsigned long id) : Particle(r, id) {}
+    class MoleculeLJ : public Particle {
+    public:
+        MoleculeLJ() : Particle() {}
 
-	static double getEpsilon() { return EPSILON; }
+        MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
 
-	static void setEpsilon(double epsilon) { EPSILON = epsilon; }
+        virtual ~MoleculeLJ() {};
 
-	static double getSigma() { return SIGMA; }
+        static double getEpsilon() { return EPSILON; }
 
-	static void setSigma(double sigma) { SIGMA = sigma; }
+        static void setEpsilon(double epsilon) { EPSILON = epsilon; }
 
-private:
-	static double EPSILON, SIGMA;
-};
+        static double getSigma() { return SIGMA; }
+
+        static void setSigma(double sigma) { SIGMA = sigma; }
+
+    private:
+        static double EPSILON, SIGMA;
+    };
 
 } /* namespace autopas */
 

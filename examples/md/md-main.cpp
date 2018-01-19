@@ -32,8 +32,8 @@ int main(int argc, char * argv[]) {
 	cout << "sigma: " << PrintableMolecule::getSigma() << endl;
 
 	LJFunctor<PrintableMolecule>::setGlobals(10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
-	PrintableMolecule p1({0.0, 0.0, 0.0}, 0);
-	PrintableMolecule p2({1.0, 0.0, 0.0}, 1);
+	PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
+	PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
 	LJFunctor<PrintableMolecule> func;
 	func.AoSFunctor(p1, p2);
 //	p1.print();
@@ -115,10 +115,10 @@ void testForceLJ() {
 
 	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> container;
 	container.init();
-	PrintableMolecule p1({0.0, 0.0, 0.0}, 0);
-	PrintableMolecule p2({1.0, 0.0, 0.0}, 1);
-	PrintableMolecule p3({0.0, 1.0, 0.0}, 2);
-	PrintableMolecule p4({1.0, 1.0, 0.0}, 3);
+	PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
+	PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
+	PrintableMolecule p3({0.0, 1.0, 0.0}, {0.0, 0.0, 0.0}, 2);
+	PrintableMolecule p4({1.0, 1.0, 0.0}, {0.0, 0.0, 0.0}, 3);
 	container.addParticle(p1);
 	container.addParticle(p2);
 	container.addParticle(p3);

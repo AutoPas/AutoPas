@@ -18,7 +18,7 @@ using namespace autopas;
 class PrintableMolecule : public MoleculeLJ {
 public:
 	PrintableMolecule() : MoleculeLJ() {}
-	PrintableMolecule(std::array<double, 3> r, unsigned long i) : MoleculeLJ(r, i) {}
+	PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : MoleculeLJ(r, v, i) {}
 	void print() {
 		cout << "Molecule with position: ";
 		for (auto & r : getR()) {
@@ -55,7 +55,7 @@ void fillContainerWithMolecules(int numMolecules, ParticleContainer<Molecule, Mo
 
 	for (int i = 0; i < numMolecules; ++i) {
 		unsigned long id = static_cast<unsigned long >(i);
-		PrintableMolecule m(randomPosition(boxMin, boxMax), id);
+		PrintableMolecule m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
 		cont->addParticle(m);
 	}
 
