@@ -13,5 +13,13 @@ TARGET_LINK_LIBRARIES(runTests
         libgtest
         )
 
+include(FindGTest)
+
+
+GTEST_ADD_TESTS(runTests
+        ""
+        ${MY_SRC}
+        )
+
 ADD_TEST(NAME testAutopas
         COMMAND runTests)
