@@ -6,7 +6,7 @@
 #include "utils/arrayMath.h"
 #include "SPHKernels.h"
 
-using namespace autopas;
+using namespace autopas::sph;
 
 void SPHCalcDensityFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
     const std::array<double, 3> dr = arrayMath::sub(j.getR(), i.getR());  // ep_j[j].pos - ep_i[i].pos;

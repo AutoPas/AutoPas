@@ -9,7 +9,7 @@
 const double pi = atan(1.0) * 4.0;
 const double kernelSupportRadius = 2.5;
 
-double W(const std::array<double, 3> dr, const double h) {
+double autopas::sph::W(const std::array<double, 3> dr, const double h) {
     const double H = kernelSupportRadius * h;
     const double s = sqrt(autopas::arrayMath::dot(dr, dr)) / H;  // sqrt(dr * dr) / H;
     const double s1 = (1.0 - s < 0) ? 0 : 1.0 - s;
@@ -20,7 +20,7 @@ double W(const std::array<double, 3> dr, const double h) {
     return r_value;
 }
 
-std::array<double, 3> gradW(const std::array<double, 3> dr, const double h) {
+std::array<double, 3> autopas::sph::gradW(const std::array<double, 3> dr, const double h) {
     const double H = kernelSupportRadius * h;
     const double drabs = sqrt(autopas::arrayMath::dot(dr, dr));
     const double s = drabs / H;  // sqrt(dr * dr) / H;

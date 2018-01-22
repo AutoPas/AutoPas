@@ -5,7 +5,7 @@
 #include "SPHCalcHydroForceFunctor.h"
 #include "SPHKernels.h"
 
-using namespace autopas;
+using namespace autopas::sph;
 
 void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
     const std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());

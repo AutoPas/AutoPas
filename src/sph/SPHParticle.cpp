@@ -5,7 +5,7 @@
 #include "SPHParticle.h"
 #include "autopas.h"
 
-using namespace autopas;
+using namespace autopas::sph;
 
 void SPHParticle::addAcc(const std::array<double, 3>& acc) {
     _acc = arrayMath::add(_acc, acc);
