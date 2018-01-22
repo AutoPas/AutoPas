@@ -32,3 +32,4 @@ std::array<double, 3> autopas::sph::gradW(const std::array<double, 3> dr, const 
     const double scale = r_value / (drabs * H + 1.0e-6 * h);
     return autopas::arrayMath::mulScalar(dr, scale);  // dr * r_value / (sqrt(dr * dr) * H + 1.0e-6 * h);
 }
+

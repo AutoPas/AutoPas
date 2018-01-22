@@ -13,14 +13,24 @@ namespace autopas {
         public:
             SPHParticle() : autopas::Particle(), _density(0.), _pressure(0.), _mass(0.), _smth(0.), _snds(0.),
                     //temporaries / helpers
-                            _v_sig_max(0.), _acc({0., 0., 0.}), _eng_dot(0.) {
+                            _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.) {
+            }
+
+            SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
+                    : autopas::Particle(r, v, id), _density(0.), _pressure(0.), _mass(0.), _smth(0.), _snds(0.),
+                    //temporaries / helpers
+                      _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.) {
+            }
+
+            SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id, double mass, double smth,
+                        double snds)
+                    : autopas::Particle(r, v, id), _density(0.), _pressure(0.), _mass(mass), _smth(smth), _snds(snds),
+                    //temporaries / helpers
+                      _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.) {
 
             }
 
             virtual ~SPHParticle() {}
-
-            SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : autopas::Particle(r, v,
-                                                                                                                id) {}
 
 
             double getDensity() const {
@@ -39,6 +49,7 @@ namespace autopas {
                 return _pressure;
             }
 
+            void calcPressure();
             void setPressure(double pressure) {
                 _pressure = pressure;
             }
@@ -103,6 +114,14 @@ namespace autopas {
                 _eng_dot = eng_dot;
             }
 
+            double getEng() const {
+                return _eng;
+            }
+
+            void setEng(double eng) {
+                _eng = eng;
+            }
+
         private:
             double _density;
             double _pressure;
@@ -114,6 +133,7 @@ namespace autopas {
             double _v_sig_max;
             std::array<double, 3> _acc;
             double _eng_dot;
+            double _eng;
         };
     }  // namespace autopas
 }  // namespace autopas

@@ -6,7 +6,7 @@
 #include "sph/autopassph.h"
 #include "autopas.h"
 
-TEST(SPHTest, testW) {
+TEST_F(SPHTest, testW) {
     double value = autopas::sph::W({1., 1., 1.}, 1.);
     double should_be_value = 0.00944773;
     EXPECT_NEAR(value, should_be_value, 1e-8);
@@ -16,7 +16,7 @@ TEST(SPHTest, testW) {
     EXPECT_NEAR(value, should_be_value, 1e-8);
 }
 
-TEST(SPHTest, testGradW) {
+TEST_F(SPHTest, testGradW) {
     std::array<double,3> value = autopas::sph::gradW({1., 1., 1.}, 1.);
     std::array<double,3> should_be_value = {-0.0213086,   -0.0213086,    -0.0213086};
     for(int i=0;i<3;i++) {
@@ -28,4 +28,64 @@ TEST(SPHTest, testGradW) {
     for(int i=0;i<3;i++) {
         EXPECT_NEAR(value[i], should_be_value[i], 1e-7);
     }
+}
+
+TEST_F(SPHTest, testSPHCalcDensityFunctor) {
+    autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+
+    autopas::sph::SPHCalcDensityFunctor densityFunctor;
+    densityFunctor.AoSFunctor(sphParticle1,sphParticle2);
+    densityFunctor.AoSFunctor(sphParticle2,sphParticle1);
+
+    EXPECT_NEAR(sphParticle1.getDensity(),0.559026,1e-6);
+    EXPECT_NEAR(sphParticle2.getDensity(),0.172401,1e-6);
+
+}
+
+TEST_F(SPHTest, testSPHCalcPressure) {
+    autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+
+    // simulate density functor call:
+    sphParticle1.addDensity(0.559026);
+    sphParticle2.addDensity(0.172401);
+
+    // set pressure:
+    sphParticle1.setEng(2.5);
+    sphParticle2.setEng(2.5);
+    sphParticle1.calcPressure();
+    sphParticle2.calcPressure();
+
+    EXPECT_NEAR(sphParticle1.getPressure(),0.559026,1e-6);
+    EXPECT_NEAR(sphParticle2.getPressure(),0.172401,1e-6);
+    EXPECT_NEAR(sphParticle1.getSnds(),1.18322,1e-5);
+    EXPECT_NEAR(sphParticle2.getSnds(),1.18322,1e-5);
+
+
+}
+
+TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
+    autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+
+    // simulate density functor call:
+    sphParticle1.addDensity(0.559026);
+    sphParticle2.addDensity(0.172401);
+
+    // set pressure:
+    sphParticle1.setEng(2.5);
+    sphParticle2.setEng(2.5);
+    sphParticle1.setPressure(0.559026);
+    sphParticle2.setPressure(0.172401);
+    sphParticle1.setSnds(1.18322);
+    sphParticle2.setSnds(1.18322);
+
+    autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+    hydroForceFunctor.AoSFunctor(sphParticle1,sphParticle2);
+    hydroForceFunctor.AoSFunctor(sphParticle2,sphParticle1);
+
+    //EXPECT_NEAR(sphParticle1.getDensity(),0.559026,1e-6);
+    //EXPECT_NEAR(sphParticle2.getDensity(),0.172401,1e-6);
+
 }

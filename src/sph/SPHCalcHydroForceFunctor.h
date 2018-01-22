@@ -11,7 +11,7 @@
 namespace autopas {
     namespace sph {
         class SPHCalcHydroForceFunctor : public autopas::Functor<SPHParticle> {
-
+        public:
             void AoSFunctor(SPHParticle &i, SPHParticle &j) override;
 
         };
