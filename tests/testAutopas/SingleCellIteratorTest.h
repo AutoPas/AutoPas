@@ -21,10 +21,6 @@ public:
 
 	~SingleCellIteratorTest() {}
 
-	void testFullParticleCell();
-
-	void testRMMParticleCell();
-
 	void fillWithParticles(autopas::ParticleCell<autopas::MoleculeLJ> * pc);
 
 protected:

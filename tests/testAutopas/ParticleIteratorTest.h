@@ -21,14 +21,6 @@ public:
 
 	~ParticleIteratorTest() {}
 
-	void testFullIterator_EFEFFEEFEF();
-
-	void testFullIterator_FEFEEFFEFE();
-
-	void testRMMIterator_EFEFFEEFEF();
-
-	void testRMMIterator_FEFEEFFEFE();
-
 	void fillWithParticles(autopas::ParticleCell<autopas::MoleculeLJ> * pc);
 
 protected:

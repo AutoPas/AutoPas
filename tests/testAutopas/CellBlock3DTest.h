@@ -20,11 +20,6 @@ public:
 	}
 	virtual ~CellBlock3DTest() {}
 
-	void test1x1x1();
-
-	void test2x2x2();
-
-	void test3x3x3();
 
 protected:
 	std::vector<std::array<double, 3>> getMesh(std::array<double, 3> start,
