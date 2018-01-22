@@ -19,7 +19,9 @@ public:
 	SlicedTraversal(
 		std::vector<ParticleCell>& cells,
 		const std::array<unsigned long, 3>& dims,
-		CellFunctor * cellfunctor): CellPairTraversals<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {}
+		CellFunctor * cellfunctor): CellPairTraversals<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {
+		computeOffsets();
+	}
 
 	void traverseCellPairs() override;
 
