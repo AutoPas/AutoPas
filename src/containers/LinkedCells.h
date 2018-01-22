@@ -11,6 +11,7 @@
 #include "ParticleContainer.h"
 #include "CellBlock3D.h"
 #include "utils/inBox.h"
+#include "containers/cellPairTraversals/SlicedTraversal.h"
 
 namespace autopas {
 
@@ -33,6 +34,15 @@ public:
 	}
 
 	void iteratePairwise(Functor<Particle>* f) override {
+
+	}
+
+	template<class ParticleFunctor>
+	void iteratePairwise2(ParticleFunctor * f) {
+		CellFunctor<Particle, ParticleCell, ParticleFunctor> cellFunctor(f);
+//		cellFunctor.processCellAoSN3(this->_data[13]);
+		SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor>> traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
+		traversal.traverseCellPairs();
 
 	}
 

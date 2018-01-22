@@ -9,6 +9,9 @@
 #define SRC_CONTAINERS_DIRECTSUM_H_
 
 #include "ParticleContainer.h"
+#include "pairwiseFunctors/CellFunctor.h"
+#include "utils/inBox.h"
+#include "pairwiseFunctors/LJFunctor.h"
 
 namespace autopas {
 
@@ -21,10 +24,19 @@ public:
 	}
 
 	void addParticle(Particle& p) override {
-		getCell()->addParticle(p);
+		bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
+		if(inBox) {
+			getCell()->addParticle(p);
+		} else {
+			// todo
+		}
 	}
 
 	void iteratePairwise(Functor<Particle>* f) override {
+//		CellFunctor<Particle, ParticleCell,LJFunctor<Particle>> cellFunctor(f);
+//		cellFunctor.processCellAoSN3(*getCell());
+
+#if 0
 		for (auto outer = getIt(); outer.isValid(); ++outer) {
 			Particle & p1 = *outer;
 
@@ -36,7 +48,15 @@ public:
 				f->AoSFunctor(p1, p2);
 			}
 		}
+#endif
 	}
+
+	template<class ParticleFunctor>
+	void iteratePairwise2(ParticleFunctor* f) {
+		CellFunctor<Particle, ParticleCell, ParticleFunctor> cellFunctor(f);
+		cellFunctor.processCellAoSN3(*getCell());
+	}
+
 
 private:
 	// for convenience

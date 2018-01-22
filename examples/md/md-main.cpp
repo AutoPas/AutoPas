@@ -63,8 +63,8 @@ int main(int argc, char * argv[]) {
 void measureDirect(int numMolecules, int numIterations) {
 	cout << "measuring" << endl;
     std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
-    double cutoff = 10.0;
-	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> cont(boxMin, boxMax, cutoff);
+    double cutoff = 1.0;
+	LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> cont(boxMin, boxMax, cutoff);
 	fillContainerWithMolecules(numMolecules, &cont);
 
 	LJFunctor<PrintableMolecule> func;
@@ -72,12 +72,12 @@ void measureDirect(int numMolecules, int numIterations) {
 
 	utils::Timer t;
 
-	cont.iteratePairwise(&flopFunctor);
+	cont.iteratePairwise2(&flopFunctor);
 	double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
 	t.start();
 	for (int i = 0; i < numIterations; ++i) {
-		cont.iteratePairwise(&func);
+		cont.iteratePairwise2(&func);
 	}
 	double elapsedTime = t.stop();
 

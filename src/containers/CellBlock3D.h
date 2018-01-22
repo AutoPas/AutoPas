@@ -37,6 +37,10 @@ public:
 	std::array<index_t, 3> get3DIndexOfPosition(const std::array<double, 3>& pos) const;
 	index_t get1DIndexOfPosition(const std::array<double, 3>& pos) const;
 
+	const std::array<index_t, 3>& getCellsPerDimensionWithHalo() const {
+		return _cellsPerDimensionWithHalo;
+	}
+
 private:
 	std::array<index_t ,3> index3D(index_t index1d) const;
 	index_t index1D(const std::array<index_t ,3>& index3d) const;
