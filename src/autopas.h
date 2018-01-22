@@ -33,8 +33,11 @@
 #include "containers/CellBlock3D.h"
 #include "containers/LinkedCells.h"
 #include "containers/VerletLists.h"
+
+// pariwise functors
 #include "pairwiseFunctors/Functor.h"
 #include "pairwiseFunctors/LJFunctor.h"
+#include "pairwiseFunctors/FlopCounterFunctor.h"
 
 
 #endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_ */

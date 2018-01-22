@@ -67,12 +67,15 @@ void measureDirect(int numMolecules, int numIterations) {
 	cont.setBoxMax(boxMax);
 	fillContainerWithMolecules(numMolecules, &cont);
 
+	double cutoff = 10.0;
+
 	LJFunctor<PrintableMolecule> func;
+	FlopCounterFunctor<PrintableMolecule> flopFunctor(cutoff);
 
 	utils::Timer t;
 
-	cont.iteratePairwise(&func, true);
-	double flops = LJFunctor<PrintableMolecule>::getFlops();
+	cont.iteratePairwise(&flopFunctor);
+	double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
 	t.start();
 	for (int i = 0; i < numIterations; ++i) {
@@ -80,7 +83,7 @@ void measureDirect(int numMolecules, int numIterations) {
 	}
 	double elapsedTime = t.stop();
 
-	flops *= numIterations;
+	double flops = flopsPerIteration * numIterations;
 
 	double MFUPS = numMolecules * numIterations / elapsedTime * 1e-6;
 	cout << "Number of Molecules: " << numMolecules << endl;
@@ -88,9 +91,7 @@ void measureDirect(int numMolecules, int numIterations) {
 	cout << "Elapsed time: " << elapsedTime << endl;
 	cout << "MFUPS: " << MFUPS << endl;
 	cout << "FLOPs: " << flops << endl;
-	cout << "Num distance calculations per iteration: " << LJFunctor<PrintableMolecule>::DISTANCECALCULATIONS << endl;
-	cout << "Num kernel calls per iteration: " << LJFunctor<PrintableMolecule>::KERNELCALLS << endl;
-	cout << "hit rate: " << static_cast<double>(LJFunctor<PrintableMolecule>::KERNELCALLS) / static_cast<double>(LJFunctor<PrintableMolecule>::DISTANCECALCULATIONS) << endl;
+	cout << "hit rate: " << flopFunctor.getHitRate() << endl;
 	cout << "GFLOP/sec:" << flops / elapsedTime * 1e-9 << endl;
 
 //	for (auto it = cont.begin(); it.isValid(); ++it) {

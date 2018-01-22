@@ -38,16 +38,6 @@ public:
 		j.subF(f);
 	}
 
-	void AoSFlopFunctor(Particle & i, Particle & j) override {
-		std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
-		double dr2 = arrayMath::dot(dr, dr);
-
-		++DISTANCECALCULATIONS;
-
-		if (dr2 <= CUTOFFSQUARE) ++KERNELCALLS;
-
-	}
-
 	void SoAFunctor() override {
 
 	}
@@ -59,21 +49,14 @@ public:
 		SHIFT6 = shift * 6.0;
 	}
 
-	static double getFlops() {
-		// 3 sub + 3 square + 2 add
-		double distanceFlops = 8;
+	static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
 
+	static unsigned long getNumFlopsPerKernelCall() {
 		// Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale)
 		// sum Forces: 6 (forces)
 		// kernel total = 12 + 6 = 18
-		double kernelFlops = 18;
-
-		return DISTANCECALCULATIONS * distanceFlops + KERNELCALLS * kernelFlops;
+		return 18ul;
 	}
-
-	static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
-	static unsigned long DISTANCECALCULATIONS, KERNELCALLS;
-
 };
 
 
@@ -84,10 +67,6 @@ template<class T> double LJFunctor<T>::EPSILON24;
 template<class T> double LJFunctor<T>::SIGMASQUARE;
 
 template<class T> double LJFunctor<T>::SHIFT6;
-
-template<class T> unsigned long LJFunctor<T>::DISTANCECALCULATIONS = 0ul;
-
-template<class T> unsigned long LJFunctor<T>::KERNELCALLS = 0ul;
 
 } /* namespace autopas */
 
