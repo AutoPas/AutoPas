@@ -7,22 +7,6 @@
 
 #include "CellBlock3DTest.h"
 
-void CellBlock3DTest::SetUp() {
-	// init
-	std::array<double, 3> bMin({0.0, 0.0, 0.0});
-	std::array<double, 3> bMax({10.0, 10.0, 10.0});
-	double intLength;
-
-	intLength = 10.0;
-	_cells_1x1x1.init(&_vec1, bMin, bMax, intLength);
-
-	intLength = 5.0;
-	_cells_2x2x2.init(&_vec2, bMin, bMax, intLength);
-
-	intLength = 3.0;
-	_cells_3x3x3.init(&_vec3, bMin, bMax, intLength);
-}
-
 TEST_F(CellBlock3DTest, test1x1x1) {
 	std::array<double, 3> start = { -5., -5., -5. }, dr = { 10.0, 10.0, 10.0 };
 	std::array<int, 3> numParts = { 3, 3, 3 };

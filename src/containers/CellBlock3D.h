@@ -20,10 +20,15 @@ class CellBlock3D {
 public:
 	typedef std::size_t index_t;
 
-	ParticleCell & getCell(index_t index1d);
-	ParticleCell & getCell(const std::array<index_t, 3>& index3d);
+	CellBlock3D(std::vector<ParticleCell>& vec, const std::array<double, 3> bMin,
+			const std::array<double, 3> bMax, double interactionLength) {
+		rebuild(vec, bMin, bMax, interactionLength);
+	}
 
-	void init(std::vector<ParticleCell>* vec, const std::array<double, 3> bMin,
+	ParticleCell & getCell(index_t index1d) const ;
+	ParticleCell & getCell(const std::array<index_t, 3>& index3d) const ;
+
+	void rebuild(std::vector<ParticleCell>& vec, const std::array<double, 3> bMin,
 			const std::array<double, 3> bMax, double interactionLength);
 
 	// this class doesn't actually know about particles
@@ -86,9 +91,9 @@ inline ParticleCell& CellBlock3D<ParticleCell>::getContainingCell(
 }
 
 template<class ParticleCell>
-inline void CellBlock3D<ParticleCell>::init(std::vector<ParticleCell>* vec, const std::array<double, 3> bMin,
+inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell>& vec, const std::array<double, 3> bMin,
 		const std::array<double, 3> bMax, double interactionLength) {
-	_vec1D = vec;
+	_vec1D = &vec;
 	_boxMin = bMin;
 	_boxMax = bMax;
 	_interactionLength = interactionLength;
@@ -124,12 +129,12 @@ inline void CellBlock3D<ParticleCell>::init(std::vector<ParticleCell>* vec, cons
 }
 
 template<class ParticleCell>
-inline ParticleCell& CellBlock3D<ParticleCell>::getCell(index_t index1d) {
+inline ParticleCell& CellBlock3D<ParticleCell>::getCell(index_t index1d) const {
 	return _vec1D->at(index1d);
 }
 
 template<class ParticleCell>
-inline ParticleCell& CellBlock3D<ParticleCell>::getCell(const std::array<index_t, 3>& index3d) {
+inline ParticleCell& CellBlock3D<ParticleCell>::getCell(const std::array<index_t, 3>& index3d) const {
 	return _vec1D->at(index1D(index3d));
 }
 

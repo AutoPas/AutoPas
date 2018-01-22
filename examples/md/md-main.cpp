@@ -21,9 +21,12 @@ void testForceLJ();
 void measureDirect(int numMolecules, int numIterations);
 
 int main(int argc, char * argv[]) {
+    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+    double cutoff = 1.0;
+
 //	LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lc; - need to implement addParticle
 //	VerletLists<PrintableMolecule, FullParticleCell<PrintableMolecule>> vl; - need to implement addParticle
-	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dir;
+	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dir(boxMin, boxMax, cutoff);
 
 	PrintableMolecule::setEpsilon(1.0);
 	PrintableMolecule::setSigma(1.0);
@@ -59,15 +62,10 @@ int main(int argc, char * argv[]) {
 
 void measureDirect(int numMolecules, int numIterations) {
 	cout << "measuring" << endl;
-	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> cont;
-	cont.init();
-	std::array<double, 3> boxMin({0.0, 0.0, 0.0});
-	std::array<double, 3> boxMax({10.0, 10.0, 10.0});
-	cont.setBoxMin(boxMin);
-	cont.setBoxMax(boxMax);
+    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+    double cutoff = 10.0;
+	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> cont(boxMin, boxMax, cutoff);
 	fillContainerWithMolecules(numMolecules, &cont);
-
-	double cutoff = 10.0;
 
 	LJFunctor<PrintableMolecule> func;
 	FlopCounterFunctor<PrintableMolecule> flopFunctor(cutoff);
@@ -113,9 +111,10 @@ void measureDirect(int numMolecules, int numIterations) {
 
 void testForceLJ() {
 	cout << "testing iterate pairwise" << endl;
+    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+    double cutoff = 1.0;
 
-	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> container;
-	container.init();
+	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> container(boxMin, boxMax, cutoff);
 	PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
 	PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
 	PrintableMolecule p3({0.0, 1.0, 0.0}, {0.0, 0.0, 0.0}, 2);

@@ -19,6 +19,10 @@ namespace autopas {
 template<class Particle, class ParticleCell>
 class ParticleContainer {
 public:
+	ParticleContainer(const std::array<double, 3> boxMin,
+			const std::array<double, 3> boxMax, double cutoff) :
+			_boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {
+	}
 	virtual ~ParticleContainer(){}
 
 	typedef ParticleIterator<Particle, ParticleCell> iterator;

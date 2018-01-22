@@ -60,9 +60,12 @@ int main(void) {
     testParticleContainerFull();
     testParticleContainerRMM();
 
-    LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc;
+    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+    double cutoff = 1.0;
+
+    LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
 //	VerletLists<MyMolecule, FullParticleCell<MyMolecule>> vl;
-    DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir;
+    DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
 
     cout << "Hodor" << endl;
     return EXIT_SUCCESS;
@@ -70,20 +73,23 @@ int main(void) {
 
 void testParticleContainerFull() {
     cout << " =========== testing ParticleContainerFull ============" << endl;
-    LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> pc;
+    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+    double cutoff = 1.0;
+
+    LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> pc(boxMin, boxMax, cutoff);
     pc.init(); // empty full empty full empty
 
     // add a few particles to the second cell
     for (int i = 0; i < 4; ++i) {
         std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
         MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
-        pc.addParticle(m, 1);
+        pc.addParticle(m);
     }
     // add a few particles to the fourth cell
     for (int i = 4; i < 8; ++i) {
         std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
         MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
-        pc.addParticle(m, 3);
+        pc.addParticle(m);
     }
 
     for (auto pi = pc.begin(); pi.isValid(); ++pi) {
@@ -95,20 +101,22 @@ void testParticleContainerFull() {
 
 void testParticleContainerRMM() {
     cout << " =========== testing ParticleContainerRMM ============" << endl;
-    LinkedCells<MyMolecule, RMMParticleCell<MyMolecule>> pc;
+    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+    double cutoff = 1.0;
+    LinkedCells<MyMolecule, RMMParticleCell<MyMolecule>> pc(boxMin, boxMax, cutoff);
     pc.init(); // empty full empty full empty
 
     // add a few particles to the second cell
     for (int i = 0; i < 4; ++i) {
         std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
         MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
-        pc.addParticle(m, 1);
+        pc.addParticle(m);
     }
     // add a few particles to the fourth cell
     for (int i = 4; i < 8; ++i) {
         std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
         MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
-        pc.addParticle(m, 3);
+        pc.addParticle(m);
     }
 
     for (auto pi = pc.begin(); pi.isValid(); ++pi) {

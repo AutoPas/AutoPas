@@ -10,21 +10,26 @@
 
 #include "ParticleContainer.h"
 #include "CellBlock3D.h"
+#include "utils/inBox.h"
 
 namespace autopas {
 
 template<class Particle, class ParticleCell>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 public:
-	void init() override {
-		this->_data.resize(5); // TODO
+	LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff) :
+		ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff),
+		_cellBlock(this->_data, boxMin, boxMax, cutoff) {
 	}
+
 	void addParticle(Particle& p) override {
-		this->_data[0].addParticle(p);
-	}
-	void addParticle(Particle& p, int i) {
-		// TODO only for the tests
-		this->_data.at(i).addParticle(p); // at performs an out of bounds check
+		bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
+		if(inBox) {
+			ParticleCell& cell =_cellBlock.getContainingCell(p.getR());
+			cell.addParticle(p);
+		} else {
+			// todo
+		}
 	}
 
 	void iteratePairwise(Functor<Particle>* f) override {

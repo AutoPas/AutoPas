@@ -15,7 +15,8 @@ namespace autopas {
 template<class Particle, class ParticleCell>
 class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 public:
-	void init() override {
+	DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff) :
+		ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff) {
 		this->_data.resize(1);
 	}
 
