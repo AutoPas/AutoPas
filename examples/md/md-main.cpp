@@ -24,8 +24,8 @@ template<class Container>
 void measureContainer(Container * cont, int numMolecules, int numIterations);
 
 int main(int argc, char * argv[]) {
-    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
-    double cutoff = 1.0;
+	std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+	double cutoff = 1.0;
 
 //	LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lc; - need to implement addParticle
 //	VerletLists<PrintableMolecule, FullParticleCell<PrintableMolecule>> vl; - need to implement addParticle
