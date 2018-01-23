@@ -8,6 +8,7 @@
 
 const double pi = atan(1.0) * 4.0;
 const double kernelSupportRadius = 2.5;
+//const double C_CFL = 0.3;
 
 double autopas::sph::W(const std::array<double, 3> dr, const double h) {
     const double H = kernelSupportRadius * h;

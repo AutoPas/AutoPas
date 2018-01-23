@@ -85,7 +85,18 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
     hydroForceFunctor.AoSFunctor(sphParticle1,sphParticle2);
     hydroForceFunctor.AoSFunctor(sphParticle2,sphParticle1);
 
-    //EXPECT_NEAR(sphParticle1.getDensity(),0.559026,1e-6);
-    //EXPECT_NEAR(sphParticle2.getDensity(),0.172401,1e-6);
 
+    EXPECT_NEAR(sphParticle1.getAcc().at(0),-2.26921,1e-5);
+    EXPECT_NEAR(sphParticle1.getAcc().at(1),-4.53843,1e-5);
+    EXPECT_NEAR(sphParticle1.getAcc().at(2),-6.80764,1e-5);
+    EXPECT_NEAR(sphParticle2.getAcc().at(0),3.78202,1e-5);
+    EXPECT_NEAR(sphParticle2.getAcc().at(1),7.56405,1e-5);
+    EXPECT_NEAR(sphParticle2.getAcc().at(2),11.3461,1e-4);
+    EXPECT_NEAR(sphParticle1.getEngDot(),5.46311,1e-5);
+    EXPECT_NEAR(sphParticle2.getEngDot(),13.0197,1e-4);
+
+    sphParticle1.calcDt();
+    sphParticle2.calcDt();
+    EXPECT_NEAR(sphParticle1.getDt(),0.0595165,1e-7);
+    EXPECT_NEAR(sphParticle2.getDt(),0.110531,1e-6);
 }

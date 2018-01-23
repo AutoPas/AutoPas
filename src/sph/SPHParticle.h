@@ -13,20 +13,20 @@ namespace autopas {
         public:
             SPHParticle() : autopas::Particle(), _density(0.), _pressure(0.), _mass(0.), _smth(0.), _snds(0.),
                     //temporaries / helpers
-                            _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.) {
+                            _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.), _dt(0.) {
             }
 
             SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
                     : autopas::Particle(r, v, id), _density(0.), _pressure(0.), _mass(0.), _smth(0.), _snds(0.),
                     //temporaries / helpers
-                      _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.) {
+                      _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.), _dt(0.) {
             }
 
             SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id, double mass, double smth,
                         double snds)
                     : autopas::Particle(r, v, id), _density(0.), _pressure(0.), _mass(mass), _smth(smth), _snds(snds),
                     //temporaries / helpers
-                      _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.) {
+                      _v_sig_max(0.), _acc{0., 0., 0.}, _eng_dot(0.), _eng(0.), _dt(0.) {
 
             }
 
@@ -122,6 +122,18 @@ namespace autopas {
                 _eng = eng;
             }
 
+            double getDt() const {
+                return _dt;
+            }
+
+            void setDt(double dt) {
+                _dt = dt;
+            }
+
+            void calcDt(){
+                const double C_CFL = 0.3;
+                _dt = C_CFL * 2.0 * _smth / _v_sig_max;
+            }
         private:
             double _density;
             double _pressure;
@@ -134,6 +146,7 @@ namespace autopas {
             std::array<double, 3> _acc;
             double _eng_dot;
             double _eng;
+            double _dt;
         };
     }  // namespace autopas
 }  // namespace autopas
