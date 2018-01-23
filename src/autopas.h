@@ -34,7 +34,7 @@
 #include "containers/LinkedCells.h"
 #include "containers/VerletLists.h"
 
-// pariwise functors
+// pairwise functors
 #include "pairwiseFunctors/Functor.h"
 #include "pairwiseFunctors/LJFunctor.h"
 #include "pairwiseFunctors/FlopCounterFunctor.h"
