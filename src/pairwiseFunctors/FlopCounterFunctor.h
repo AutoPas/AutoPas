@@ -43,6 +43,15 @@ public:
 		return distFlops + kernFlops;
 	}
 
+	unsigned long getDistanceCalculations() const {
+		return _distanceCalculations;
+	}
+
+	unsigned long getKernelCalls() const {
+		return _kernelCalls;
+	}
+
+private:
 	double _cutoffSquare;
 	unsigned long _distanceCalculations, _kernelCalls;
 };
