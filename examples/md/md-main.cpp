@@ -18,7 +18,10 @@ using namespace autopas;
 
 void testForceLJ();
 
-void measureDirect(int numMolecules, int numIterations);
+void measure(int which, int numMolecules, int numIterations);
+
+template<class Container>
+void measureContainer(Container * cont, int numMolecules, int numIterations);
 
 int main(int argc, char * argv[]) {
     std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
@@ -49,35 +52,36 @@ int main(int argc, char * argv[]) {
 
 	int numMols = 100;
 	int numIts = 100;
-	if (argc == 3) {
-		numMols = atoi(argv[1]);
-		numIts = atoi(argv[2]);
+	int which = 0;
+	if (argc == 4) {
+		which = atoi(argv[1]);
+		numMols = atoi(argv[2]);
+		numIts = atoi(argv[3]);
+
+	} else {
+		cout << endl << "NEEDS THREE ARGUMENTS: <which> <numMolecules> <numIterations>" << endl;
+		cout << "running: 0(linked cells), 100, 100" << endl << endl;
 	}
 
-	measureDirect(numMols, numIts);
+	measure(which, numMols, numIts);
 
 	cout << "winter is coming" << endl;
 	return EXIT_SUCCESS;
 }
 
-void measureDirect(int numMolecules, int numIterations) {
-	cout << "measuring" << endl;
-    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
-    double cutoff = 1.0;
-	LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> cont(boxMin, boxMax, cutoff);
-	fillContainerWithMolecules(numMolecules, &cont);
-
+template<class Container>
+void measureContainer(Container * cont, int numMolecules, int numIterations) {
 	LJFunctor<PrintableMolecule> func;
-	FlopCounterFunctor<PrintableMolecule> flopFunctor(cutoff);
+	FlopCounterFunctor<PrintableMolecule> flopFunctor(cont->getCutoff());
 
 	utils::Timer t;
 
-	cont.iteratePairwise2(&flopFunctor);
+	cont->iteratePairwise2(&flopFunctor);
 	double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
 	t.start();
 	for (int i = 0; i < numIterations; ++i) {
-		cont.iteratePairwise2(&func);
+		cont->iteratePairwise2(&func);
 	}
 	double elapsedTime = t.stop();
 
@@ -92,21 +96,33 @@ void measureDirect(int numMolecules, int numIterations) {
 	cout << "hit rate: " << flopFunctor.getHitRate() << endl;
 	cout << "GFLOP/sec:" << flops / elapsedTime * 1e-9 << endl;
 
-//	for (auto it = cont.begin(); it.isValid(); ++it) {
-//		it->print();
-//	}
-	// print one molecule, to be sure compiler isnt optimising stuff away
+	cout << "measuring done" << endl;
 
-	int i = 0;
-	for (auto it = cont.begin(); it.isValid(); ++it) {
-		if (i == 2) {
-			break;
-		}
-		it->print();
-		++i;
+}
+
+void measure(int which, int numMolecules, int numIterations) {
+	cout << "measuring" << endl;
+    std::array<double, 3>boxMin({0., 0., 0.}), boxMax({5., 5., 5.});
+    double cutoff = 1.0;
+
+	LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lcCont(boxMin, boxMax, cutoff);
+	DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dirCont(boxMin, boxMax, cutoff);
+
+	fillContainerWithMolecules(numMolecules, &lcCont);
+	for (auto it = lcCont.begin(); it.isValid(); ++it) {
+		dirCont.addParticle(*it);
 	}
 
-	cout << "measuring done" << endl;
+	if (which == 0) {
+		cout << "LINKED CELLS ************************" << endl;
+		measureContainer(&lcCont, numMolecules, numIterations);
+		cout << "LINKED CELLS DONE *******************" << endl;
+	} else if (which == 1) {
+		cout << "DIRECT SUM **************************" << endl;
+		measureContainer(&dirCont, numMolecules, numIterations);
+		cout << "DIRECT SUM DONE *********************" << endl;
+	}
+
 }
 
 void testForceLJ() {
