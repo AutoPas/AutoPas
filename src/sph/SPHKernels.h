@@ -10,7 +10,7 @@
 namespace autopas {
     namespace sph {
         double W(const std::array<double, 3> dr, const double h);
-
+        unsigned long getFlopsW();
         std::array<double, 3> gradW(const std::array<double, 3> dr, const double h);
     }  // namespace autopas
 }  // namespace autopas

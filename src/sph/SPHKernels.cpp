@@ -21,6 +21,16 @@ double autopas::sph::W(const std::array<double, 3> dr, const double h) {
     return r_value;
 }
 
+unsigned long autopas::sph::getFlopsW(){
+    unsigned long flops = 0;
+    flops += 1;  // calculating H
+    flops += 5;  // dot product for s
+    flops += 1 + 1;  // s (except dot product)
+    flops += 1;  // calculating s1 and s2 (either for s1 or s2 one flop will be necessary
+    flops += 6 + 4;  // calculating r_value
+    return flops;
+}
+
 std::array<double, 3> autopas::sph::gradW(const std::array<double, 3> dr, const double h) {
     const double H = kernelSupportRadius * h;
     const double drabs = sqrt(autopas::arrayMath::dot(dr, dr));

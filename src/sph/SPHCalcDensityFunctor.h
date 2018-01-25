@@ -14,7 +14,7 @@ namespace autopas {
         public:
 
             void AoSFunctor(SPHParticle &i, SPHParticle &j) override;
-
+            static unsigned long getNumFlopsPerKernelCall();
         };
     }  // namespace autopas
 }  // namespace autopas

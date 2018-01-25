@@ -43,3 +43,8 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
     //hydro[i].eng_dot += ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens * ep_i[i].dens) + 0.5 * AV) * dv * gradW_ij;
 
 }
+
+unsigned long SPHCalcHydroForceFunctor::getNumFlopsPerKernelCall() {
+    /// @TODO: correct
+    return 1ul;
+}

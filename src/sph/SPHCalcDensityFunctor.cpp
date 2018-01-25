@@ -13,3 +13,12 @@ void SPHCalcDensityFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
     const double density = j.getMass() * W(dr, i.getSmth());  // ep_j[j].mass * W(dr, ep_i[i].smth)
     i.addDensity(density);
 }
+
+unsigned long SPHCalcDensityFunctor::getNumFlopsPerKernelCall(){
+    unsigned long flops = 0;
+    flops += 3;  // calculating dr
+    flops += getFlopsW();  // flops for calling W
+    flops += 1;  // calculating density
+    flops += 1;  // adding density
+    return flops;
+}
