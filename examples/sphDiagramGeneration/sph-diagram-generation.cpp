@@ -117,7 +117,7 @@ void measureContainer(Container * cont, int numParticles, int numIterations) {
 
     double MFUPS = numParticles * numIterations / elapsedTime * 1e-6;
 
-    std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime << "\t" << MFUPS;
+    std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime/numIterations << "\t" << MFUPS;
     std::cout << "\t" << flops;
     std::cout << "\t" << flopFunctor.getHitRate();
     std::cout << "\t" << flops / elapsedTime * 1e-9 << std::endl;
