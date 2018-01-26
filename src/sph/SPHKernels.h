@@ -30,7 +30,7 @@ namespace autopas {
                     //if # of dimension == 3
                     r_value *= 16.0 / pi / (H * H * H);
                     return r_value;
-                } else { return 0; }
+                } else { return 0.; }
             }
 
             static unsigned long getFlopsW();

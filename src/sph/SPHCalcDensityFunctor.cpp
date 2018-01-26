@@ -8,11 +8,6 @@
 
 using namespace autopas::sph;
 
-void SPHCalcDensityFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
-    const std::array<double, 3> dr = arrayMath::sub(j.getR(), i.getR());  // ep_j[j].pos - ep_i[i].pos;
-    const double density = j.getMass() * SPHKernels::W(dr, i.getSmth());  // ep_j[j].mass * W(dr, ep_i[i].smth)
-    i.addDensity(density);
-}
 
 unsigned long SPHCalcDensityFunctor::getNumFlopsPerKernelCall(){
     unsigned long flops = 0;

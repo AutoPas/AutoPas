@@ -10,7 +10,7 @@
 #include "utils/Timer.h"
 
 template<class Container>
-void measureContainer(Container * cont, int numMolecules, int numIterations);
+void measureContainer(Container *cont, int numMolecules, int numIterations);
 
 double fRand(double fMin, double fMax) {
     double f = static_cast<double>(rand()) / RAND_MAX;
@@ -37,8 +37,8 @@ addParticles(
 
     for (int i = 0; i < numParticles; ++i) {
         unsigned long id = static_cast<unsigned long >(i);
-        autopas::sph::SPHParticle particle(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
-        autopas::sph::SPHParticle ith(randomPosition(boxMin, boxMax), {0, 0, 0}, i++, 0.75, 0.012, 0.);
+        autopas::sph::SPHParticle particle(randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012, 0.);
+        //autopas::sph::SPHParticle ith(randomPosition(boxMin, boxMax), {0, 0, 0}, i++, 0.75, 0.012, 0. );
         sph_system.addParticle(particle);
     }
 
@@ -55,16 +55,18 @@ addParticles(
 }
 
 
-int main(int argc, char * argv[]) {
+int main(int argc, char *argv[]) {
     std::array<double, 3> boxMin({0., 0., 0.}), boxMax;
-    boxMax[0] = 1.0;
+    boxMax[0] = 0.15;
     boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
-    double cutoff = .2;
+    double cutoff = .03;
 
     autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
             boxMin, boxMax, cutoff);
 
-    autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(boxMin, boxMax, cutoff);
+    autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(boxMin,
+                                                                                                                boxMax,
+                                                                                                                cutoff);
 
     int numParticles = 16;
     int numIterations = 100000;
@@ -75,7 +77,7 @@ int main(int argc, char * argv[]) {
         numIterations = atoi(argv[2]);
         whichContainer = atoi(argv[3]);
         whichFunctor = atoi(argv[4]);
-    } else{
+    } else {
         exit(1);
     }
 
@@ -85,20 +87,17 @@ int main(int argc, char * argv[]) {
         dirCont.addParticle(*it);
     }
 
-    if(whichContainer == 0) {
+    if (whichContainer == 0) {
         measureContainer(&lcCont, numParticles, numIterations);
-    } else if (whichContainer == 1){
+    } else if (whichContainer == 1) {
         measureContainer(&dirCont, numParticles, numIterations);
     }
-
-
-
 
 
 }
 
 template<class Container>
-void measureContainer(Container * cont, int numParticles, int numIterations) {
+void measureContainer(Container *cont, int numParticles, int numIterations) {
     autopas::sph::SPHCalcHydroForceFunctor func;
     autopas::FlopCounterFunctor<autopas::sph::SPHParticle> flopFunctor(cont->getCutoff());
 
@@ -117,7 +116,7 @@ void measureContainer(Container * cont, int numParticles, int numIterations) {
 
     double MFUPS = numParticles * numIterations / elapsedTime * 1e-6;
 
-    std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime/numIterations << "\t" << MFUPS;
+    std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime / numIterations << "\t" << MFUPS;
     std::cout << "\t" << flops;
     std::cout << "\t" << flopFunctor.getHitRate();
     std::cout << "\t" << flops / elapsedTime * 1e-9 << std::endl;
