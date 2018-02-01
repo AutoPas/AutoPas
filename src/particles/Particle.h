@@ -20,7 +20,7 @@ namespace autopas {
         Particle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : _r(r), _v(v),
                                                                                        _f({0.0, 0.0, 0.0}), _id(id) {}
 
-        virtual ~Particle() {}
+        virtual ~Particle() = default;
 
         const std::array<double, 3> &getF() const { return _f; }
 

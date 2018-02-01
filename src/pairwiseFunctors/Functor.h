@@ -13,8 +13,9 @@ namespace autopas {
 template<class Particle>
 class Functor {
 public:
-	virtual ~Functor() {}
-	virtual void AoSFunctor(Particle &, Particle &) {}
+	virtual ~Functor() = default;
+
+    virtual void AoSFunctor(Particle &, Particle &) {}
 	virtual void SoAFunctor() {}
 //	virtual void SoALoader() = 0
 //	virtual void SoAStorer() = 0

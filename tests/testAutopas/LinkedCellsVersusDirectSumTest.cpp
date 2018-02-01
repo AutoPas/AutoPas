@@ -28,7 +28,7 @@ double LinkedCellsVersusDirectSumTest::fRand(double fMin, double fMax) const {
 std::array<double, 3> LinkedCellsVersusDirectSumTest::randomPosition(
 	const std::array<double, 3>& boxMin,
 	const std::array<double, 3>& boxMax) const {
-	std::array<double, 3> r;
+	std::array<double, 3> r{};
 	for (int d = 0; d < 3; ++d) {
 		r[d] = fRand(boxMin[d], boxMax[d]);
 	}
@@ -44,7 +44,7 @@ void LinkedCellsVersusDirectSumTest::fillContainerWithMolecules(
 	std::array<double ,3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
 
 	for (int i = 0; i < numMolecules; ++i) {
-		unsigned long id = static_cast<unsigned long >(i);
+		auto id = static_cast<unsigned long >(i);
 		autopas::MoleculeLJ m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
 		cont.addParticle(m);
 	}

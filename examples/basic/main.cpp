@@ -56,7 +56,7 @@ void addAFewParticles(ParticleCell &pc) {
     }
 }
 
-int main(void) {
+int main() {
     testParticleContainerFull();
     testParticleContainerRMM();
 

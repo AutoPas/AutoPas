@@ -61,7 +61,7 @@ std::array<T, SIZE> mulScalar(const std::array<T, SIZE>& a, T s) {
 
 template<class T, std::size_t SIZE>
 T dot(const std::array<T, SIZE>& a, const std::array<T, SIZE>& b) {
-	T result = static_cast<T>(0.0);
+	auto result = static_cast<T>(0.0);
 	for (std::size_t d = 0; d < SIZE; ++d) {
 		result += a[d] * b[d];
 	}

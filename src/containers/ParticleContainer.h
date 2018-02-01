@@ -21,11 +21,11 @@ class ParticleContainer {
 public:
 	ParticleContainer(const std::array<double, 3> boxMin,
 			const std::array<double, 3> boxMax, double cutoff) :
-			_boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {
+			_data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {
 	}
-	virtual ~ParticleContainer(){}
+	virtual ~ParticleContainer() = default;
 
-	typedef ParticleIterator<Particle, ParticleCell> iterator;
+    typedef ParticleIterator<Particle, ParticleCell> iterator;
 
 	virtual void init() {}
 

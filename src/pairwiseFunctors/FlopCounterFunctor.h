@@ -16,7 +16,7 @@ namespace autopas {
 template<class Particle>
 class FlopCounterFunctor: public Functor<Particle> {
 public:
-	FlopCounterFunctor<Particle>(double c) :
+	explicit FlopCounterFunctor<Particle>(double c) :
 			Functor<Particle>(), _cutoffSquare(c * c),
 			_distanceCalculations(0ul), _kernelCalls(0ul) {
 	}

@@ -13,7 +13,7 @@ namespace autopas {
 template<class Particle>
 class ParticleCell {
 public:
-	virtual ~ParticleCell() {}
+	virtual ~ParticleCell() = default;
 	virtual void addParticle(Particle& p) = 0;
 	virtual void moleculesAt(int i, Particle *& rmm_or_not_pointer) = 0; // TODO: consider making return type Particle*
 	virtual int numParticles() const = 0;

@@ -15,7 +15,7 @@ namespace autopas {
 template<class Particle, class ParticleCell, class ParticleFunctor>
 class CellFunctor {
 public:
-	CellFunctor(ParticleFunctor* f) : _functor(f) {
+	explicit CellFunctor(ParticleFunctor* f) : _functor(f) {
 	}
 	void processCell(ParticleCell & cell) {
 		processCellAoSN3(cell);

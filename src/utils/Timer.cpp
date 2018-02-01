@@ -10,15 +10,14 @@
 
 using namespace std;
 
-utils::Timer::Timer() {
-	struct timespec info;
+utils::Timer::Timer() : _startTime{} {
+	struct timespec info{};
 	if (clock_getres(CLOCK_REALTIME, &info)) {
 		std::cout << "Could not retrieve time resolution!" << endl;
 	}
 }
 
-utils::Timer::~Timer() {
-}
+utils::Timer::~Timer() = default;
 
 void utils::Timer::start() {
 	if (clock_gettime(CLOCK_REALTIME, &_startTime)) {
@@ -28,7 +27,7 @@ void utils::Timer::start() {
 
 
 double utils::Timer::stop() {
-	struct timespec time;
+	struct timespec time{};
 	if (clock_gettime(CLOCK_REALTIME, &time)) {
 		std::cout << "Could not retrieve time!" << endl;
 	}

@@ -13,7 +13,7 @@ using namespace autopas;
 
 void SingleCellIteratorTest::SetUp() {
 	for (int i = 0; i < 4; ++i) {
-		std::array<double, 3> arr;
+		std::array<double, 3> arr{};
 		for (auto & a : arr) {
 			a = static_cast<double>(i);
 		}

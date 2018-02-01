@@ -14,11 +14,11 @@ namespace autopas {
 
     class MoleculeLJ : public Particle {
     public:
-        MoleculeLJ() : Particle() {}
+        MoleculeLJ() = default;
 
-        MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
+        explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
 
-        virtual ~MoleculeLJ() {};
+        virtual ~MoleculeLJ() = default;;
 
         static double getEpsilon() { return EPSILON; }
 

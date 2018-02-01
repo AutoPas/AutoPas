@@ -21,7 +21,7 @@ public:
 		const std::array<unsigned long, 3>& dims,
 		CellFunctor * cellFunctor): _cells(&cells), _dims(dims), _cellFunctor(cellFunctor) {}
 
-	virtual ~CellPairTraversals() {}
+	virtual ~CellPairTraversals() = default;
 
 	virtual void rebuild(std::vector<ParticleCell> &cells,
 						 const std::array<unsigned long, 3> &dims) {

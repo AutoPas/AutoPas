@@ -64,7 +64,7 @@ SetupIC(autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCel
 
 
 int main() {
-    std::array<double, 3> boxMin({0., 0., 0.}), boxMax;
+    std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
     boxMax[0] = 1.0;
     boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
     double cutoff = 3.;

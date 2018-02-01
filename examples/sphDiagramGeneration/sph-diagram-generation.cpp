@@ -10,7 +10,7 @@
 #include "utils/Timer.h"
 
 template<class Container>
-void measureContainer(Container *cont, int numMolecules, int numIterations);
+void measureContainer(Container *cont, int numParticles, int numIterations);
 
 double fRand(double fMin, double fMax) {
     double f = static_cast<double>(rand()) / RAND_MAX;
@@ -18,7 +18,7 @@ double fRand(double fMin, double fMax) {
 }
 
 std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
-    std::array<double, 3> r;
+    std::array<double, 3> r{0, 0, 0};
     for (int d = 0; d < 3; ++d) {
         r[d] = fRand(boxMin[d], boxMax[d]);
     }
@@ -36,7 +36,7 @@ addParticles(
     std::array<double, 3> boxMin(sph_system.getBoxMin()), boxMax(sph_system.getBoxMax());
 
     for (int i = 0; i < numParticles; ++i) {
-        unsigned long id = static_cast<unsigned long >(i);
+        auto id = static_cast<unsigned long >(i);
         autopas::sph::SPHParticle particle(randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012, 0.);
         //autopas::sph::SPHParticle ith(randomPosition(boxMin, boxMax), {0, 0, 0}, i++, 0.75, 0.012, 0. );
         sph_system.addParticle(particle);
@@ -56,7 +56,7 @@ addParticles(
 
 
 int main(int argc, char *argv[]) {
-    std::array<double, 3> boxMin({0., 0., 0.}), boxMax;
+    std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
     boxMax[0] = 0.15;
     boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
     double cutoff = .03;

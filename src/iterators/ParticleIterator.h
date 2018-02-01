@@ -16,7 +16,8 @@ namespace autopas {
 template<class Particle, class ParticleCell>
 class ParticleIterator {
 public:
-	ParticleIterator(std::vector<ParticleCell> * cont) : _vectorOfCells(cont), _iteratorAcrossCells(cont->begin()), _iteratorWithinOneCell() {
+
+    explicit ParticleIterator(std::vector<ParticleCell> * cont) : _vectorOfCells(cont), _iteratorAcrossCells(cont->begin()), _iteratorWithinOneCell() {
 		if (_iteratorAcrossCells < cont->end()) {
 			_iteratorWithinOneCell = SingleCellIterator<Particle, ParticleCell>(&(*_iteratorAcrossCells));
 			if (not _iteratorWithinOneCell.isValid()) {
@@ -25,7 +26,7 @@ public:
 		}
 	}
 
-	void operator ++ () {
+	ParticleIterator<Particle, ParticleCell>& operator ++ () {
 		if (_iteratorWithinOneCell.isValid()) {
 			++_iteratorWithinOneCell;
 		}
@@ -35,6 +36,7 @@ public:
 		if (not _iteratorWithinOneCell.isValid()) {
 			next_non_empty_cell();
 		}
+        return *this;
 	}
 	void next_non_empty_cell() {
 		// find the next non-empty cell
