@@ -22,7 +22,7 @@ public:
 	void addParticle(Particle& m) override {
 		_mols.push_back(m);
 	}
-	int numParticles() const override {return _mols.size();}
+	unsigned long numParticles() const override {return _mols.size();}
 	bool isNotEmpty() const override { return numParticles() > 0 ; }
 	std::vector<Particle> _mols;
 };

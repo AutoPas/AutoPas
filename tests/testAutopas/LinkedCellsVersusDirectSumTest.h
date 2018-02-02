@@ -39,11 +39,11 @@ protected:
 		const std::array<double, 3>& boxMin,
 		const std::array<double, 3>& boxMax) const;
 
-	void fillContainerWithMolecules(int numMolecules,
+	void fillContainerWithMolecules(unsigned long numMolecules,
 		autopas::ParticleContainer<autopas::MoleculeLJ,
 			autopas::FullParticleCell<autopas::MoleculeLJ>>& cont) const;
 
-	void test(int numMolecules, double rel_err_tolerance);
+	void test(unsigned long numMolecules, double rel_err_tolerance);
 
 	autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
 	autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;

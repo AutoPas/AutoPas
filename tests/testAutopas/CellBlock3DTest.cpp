@@ -14,7 +14,7 @@ TEST_F(CellBlock3DTest, test1x1x1) {
 
 	int counter = 0;
 	for (auto & m : mesh) {
-		int index = _cells_1x1x1.get1DIndexOfPosition(m);
+		unsigned long index = _cells_1x1x1.get1DIndexOfPosition(m);
 		ASSERT_EQ(index, counter);
 		++counter;
 	}
@@ -27,7 +27,7 @@ TEST_F(CellBlock3DTest, test2x2x2) {
 
 	int counter = 0;
 	for (auto & m : mesh) {
-		int index = _cells_2x2x2.get1DIndexOfPosition(m);
+		unsigned long index = _cells_2x2x2.get1DIndexOfPosition(m);
 		ASSERT_EQ(index, counter);
 		++counter;
 	}
@@ -40,7 +40,7 @@ TEST_F(CellBlock3DTest, test3x3x3) {
 
 	int counter = 0;
 	for (auto & m : mesh) {
-		int index = _cells_3x3x3.get1DIndexOfPosition(m);
+		unsigned long index = _cells_3x3x3.get1DIndexOfPosition(m);
 		ASSERT_EQ(index, counter);
 		++counter;
 	}

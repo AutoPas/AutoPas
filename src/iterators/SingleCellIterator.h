@@ -49,13 +49,13 @@ public:
         _AoSReservoir=cellIterator._AoSReservoir;
         _index=cellIterator._index;
     }
-	Particle& operator *() const {
+	Particle& operator *() {
 		Particle * ptr = nullptr;
 		ptr = const_cast<Particle *>(& _AoSReservoir);
-		_cell->moleculesAt(_index, ptr);
+        _cell->moleculesAt(_index, ptr);
 		return *ptr;
 	}
-	Particle* operator->() const {
+	Particle* operator->() {
 		return &(this->operator*());
 	}
     SingleCellIterator& operator ++() { ++_index; return *this;}

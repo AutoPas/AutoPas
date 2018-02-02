@@ -32,7 +32,7 @@ void ParticleIteratorTest::fillWithParticles(
 		autopas::ParticleCell<autopas::MoleculeLJ>* pc) {
 
 	// insert four particles
-	for (int i = _currentIndex; i < _currentIndex + 4; ++i) {
+	for (unsigned long i = _currentIndex; i < _currentIndex + 4; ++i) {
 		pc->addParticle(_vecOfMolecules.at(i));
 	}
 	_currentIndex += 4;
@@ -42,7 +42,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
 	// Empty Full Empty Full Full Empty Empty Full Empty Full
 	std::vector<FullParticleCell<MoleculeLJ>> data(10);
 
-	for (auto i : {1, 3, 4, 7, 9}) {
+	for (auto i : {1ul, 3ul, 4ul, 7ul, 9ul}) {
 		fillWithParticles(&data.at(i));
 	}
 
@@ -61,7 +61,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE) {
 	// Full Empty Full Empty Empty Full Full Empty Full Empty
 	std::vector<FullParticleCell<MoleculeLJ>> data(10);
 
-	for (auto i : {0, 2, 5, 6, 8}) {
+	for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
 		fillWithParticles(&data.at(i));
 	}
 
@@ -79,7 +79,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
 	// Empty Full Empty Full Full Empty Empty Full Empty Full
 	std::vector<RMMParticleCell<MoleculeLJ>> data(10);
 
-	for (auto i : {1, 3, 4, 7, 9}) {
+	for (auto i : {1u, 3u, 4u, 7u, 9u}) {
 		fillWithParticles(&data.at(i));
 	}
 
@@ -98,7 +98,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
 	// Full Empty Full Empty Empty Full Full Empty Full Empty
 	std::vector<RMMParticleCell<MoleculeLJ>> data(10);
 
-	for (auto i : {0, 2, 5, 6, 8}) {
+	for (auto i : {0u, 2u, 5u, 6u, 8u}) {
 		fillWithParticles(&data.at(i));
 	}
 

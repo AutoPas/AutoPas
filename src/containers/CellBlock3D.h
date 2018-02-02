@@ -106,7 +106,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell>& vec, c
 	_numCells = 1;
 	for (int d = 0; d < 3; ++d) {
 		double diff = _boxMax[d] - _boxMin[d];
-		index_t cellsPerDim = std::floor((diff) / _interactionLength);
+		index_t cellsPerDim = static_cast<unsigned long>(std::floor((diff) / _interactionLength));
 		// at least one central cell
 		cellsPerDim = std::max(cellsPerDim, 1ul);
 

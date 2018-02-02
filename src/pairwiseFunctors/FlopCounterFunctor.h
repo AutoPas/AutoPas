@@ -35,7 +35,7 @@ public:
 		return static_cast<double>(_kernelCalls) / static_cast<double>(_distanceCalculations);
 	}
 
-	double getFlops(unsigned numFlopsPerKernelCall) const {
+	double getFlops(unsigned long numFlopsPerKernelCall) const {
 		// 3 sub + 3 square + 2 add
 		const double numFlopsPerDistanceCalculation = 8;
 		const double distFlops = numFlopsPerDistanceCalculation * static_cast<double>(_distanceCalculations);

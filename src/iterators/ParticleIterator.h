@@ -51,10 +51,10 @@ public:
 			}
 		}
 	}
-	Particle& operator *  () const {
+	Particle& operator *  () {
 		return _iteratorWithinOneCell.operator*();
 	}
-	Particle* operator -> () const {
+	Particle* operator -> () {
 		return &(this->operator*());
 	}
 	void deleteCurrentParticle() {

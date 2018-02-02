@@ -31,7 +31,8 @@ public:
 	std::array<double, 3> readFor(int i) const {
 		return std::array<double, 3>({_forX[i], _forY[i], _forZ[i]});
 	}
-	int getNumParticles() const {
+
+	unsigned long getNumParticles() const {
 		return _posX.size();
 	}
 private:

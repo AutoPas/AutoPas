@@ -36,9 +36,9 @@ std::array<double, 3> LinkedCellsVersusDirectSumTest::randomPosition(
 }
 
 void LinkedCellsVersusDirectSumTest::fillContainerWithMolecules(
-	int numMolecules,
-	autopas::ParticleContainer<autopas::MoleculeLJ,
-		autopas::FullParticleCell<autopas::MoleculeLJ>>& cont) const {
+		unsigned long numMolecules,
+		autopas::ParticleContainer<autopas::MoleculeLJ,
+				autopas::FullParticleCell<autopas::MoleculeLJ>>& cont) const {
 	srand(42); // fixed seedpoint
 
 	std::array<double ,3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
@@ -50,7 +50,7 @@ void LinkedCellsVersusDirectSumTest::fillContainerWithMolecules(
 	}
 }
 
-void LinkedCellsVersusDirectSumTest::test(int numMolecules, double rel_err_tolerance) {
+void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
 	fillContainerWithMolecules(numMolecules, _directSum);
 	// now fill second container with the molecules from the first one, because otherwise we generate new particles
 	for (auto it = _directSum.begin(); it.isValid(); ++it) {
@@ -96,7 +96,7 @@ void LinkedCellsVersusDirectSumTest::test(int numMolecules, double rel_err_toler
 }
 
 TEST_F(LinkedCellsVersusDirectSumTest, test100) {
-	int numMolecules = 100;
+	unsigned long numMolecules = 100;
 
 	// empirically determined and set near the minimal possible value
 	// i.e. if something changes, it may be needed to increase value
@@ -107,7 +107,7 @@ TEST_F(LinkedCellsVersusDirectSumTest, test100) {
 }
 
 TEST_F(LinkedCellsVersusDirectSumTest, test1000) {
-	int numMolecules = 1000;
+	unsigned long numMolecules = 1000;
 
 	// empirically determined and set near the minimal possible value
 	// i.e. if something changes, it may be needed to increase value
@@ -117,7 +117,7 @@ TEST_F(LinkedCellsVersusDirectSumTest, test1000) {
 }
 
 TEST_F(LinkedCellsVersusDirectSumTest, test2000) {
-	int numMolecules = 2000;
+	unsigned long numMolecules = 2000;
 
 	// empirically determined and set near the minimal possible value
 	// i.e. if something changes, it may be needed to increase value

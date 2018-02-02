@@ -44,13 +44,13 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::processBaseCell(
 
 	const int num_pairs = _cellPairOffsets.size();
 	for(int j = 0; j < num_pairs; ++j) {
-		pair<long, long> current_pair = _cellPairOffsets[j];
+		pair<unsigned long, unsigned long> current_pair = _cellPairOffsets[j];
 
-		unsigned offset1 = current_pair.first;
-		unsigned cellIndex1 = baseIndex + offset1;
+		unsigned long offset1 = current_pair.first;
+		unsigned long cellIndex1 = baseIndex + offset1;
 
-		unsigned offset2 = current_pair.second;
-		unsigned cellIndex2 = baseIndex + offset2;
+		unsigned long offset2 = current_pair.second;
+		unsigned long cellIndex2 = baseIndex + offset2;
 
 		ParticleCell& cell1 = this->_cells->at(cellIndex1);
 		ParticleCell& cell2 = this->_cells->at(cellIndex2);

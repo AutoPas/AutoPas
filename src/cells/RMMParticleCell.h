@@ -27,7 +27,8 @@ public:
 		_soa.pushPos(m.getR());
 		_soa.pushFor(m.getF());
 	}
-	int numParticles() const override {return _soa.getNumParticles();}
+
+	unsigned long numParticles() const override {return _soa.getNumParticles();}
 	bool isNotEmpty() const override { return numParticles() > 0; }
 	SoA _soa;
 };
