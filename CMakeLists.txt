@@ -24,3 +24,4 @@ ADD_SUBDIRECTORY(tests)
 
 include(clang-tidy.cmake)
 include(clang-format.cmake)
+include(doxygen.cmake)

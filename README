@@ -1,7 +1,6 @@
 AUTOPAS Library
-Version 0.0.1 prealpha
 
-==========BUILD============
+==========BUILD===========
 build instructions:
 
 mkdir build
@@ -9,7 +8,7 @@ cd build
 cmake ..
 make
 
-==========TESTS============
+==========TESTS===========
 * to run tests:
 	make test
   or using the ctest environment:
@@ -23,3 +22,16 @@ to run specific tests:
 	GTEST_FILTER="ArrayMathTest.testAdd*" ctest --verbose
 
 
+
+=======DOCUMENTATION======
+* to build the documentation:
+    make doc_doxygen
+* requirements:
+    doxygen
+
+==========CODING==========
+* We use google code style.
+* code style can be build with
+	make clangformat
+* requirements:
+	clang-format

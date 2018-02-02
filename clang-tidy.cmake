@@ -1,5 +1,5 @@
 if (CMAKE_VERSION GREATER "3.5")
-    set(ENABLE_CLANG_TIDY OFF CACHE BOOL "Add clang-tidy automatically to builds")
+    set(ENABLE_CLANG_TIDY OFF BOOL "Add clang-tidy automatically to builds")
     #set(ENABLE_CLANG_TIDY ON BOOL "Add clang-tidy automatically to builds")
     if (ENABLE_CLANG_TIDY)
         find_program(CLANG_TIDY_EXE
