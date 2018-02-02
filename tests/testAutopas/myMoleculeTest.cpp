@@ -44,6 +44,7 @@ TEST(myMoleculeTest, testConstructorAndGetters) {
 	unsigned long id = 17ul;
 	MyMolecule m(r, vel, id, myvar);
 
+
 	for (int d = 0; d < 3; ++d) {
 		ASSERT_DOUBLE_EQ(m.getR()[d], r[d]);
 		ASSERT_DOUBLE_EQ(m.getV()[d], vel[d]);

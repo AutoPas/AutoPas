@@ -54,7 +54,7 @@ std::vector<std::array<double, 3> > CellBlock3DTest::getMesh(
 	for (int z = 0; z < numParts[2]; ++z) {
 		for (int y = 0; y < numParts[1]; ++y) {
 			for (int x = 0; x < numParts[0]; ++x) {
-				std::array<double, 3> pos;
+				std::array<double, 3> pos{};
 				pos[0] = start[0] + x * dr[0];
 				pos[1] = start[1] + y * dr[1];
 				pos[2] = start[2] + z * dr[2];

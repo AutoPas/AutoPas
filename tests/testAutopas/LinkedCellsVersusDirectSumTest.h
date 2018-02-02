@@ -16,7 +16,7 @@ public:
 
 	LinkedCellsVersusDirectSumTest();
 
-	virtual ~LinkedCellsVersusDirectSumTest() override = default;
+	~LinkedCellsVersusDirectSumTest() override = default;
 
 	std::array<double, 3> getBoxMin() const {
 		return { 0.0, 0.0, 0.0 };

@@ -50,8 +50,9 @@ public:
         _index=cellIterator._index;
     }
 	Particle& operator *() {
-		Particle * ptr = nullptr;
-		ptr = const_cast<Particle *>(& _AoSReservoir);
+		//Particle * ptr = nullptr;
+		//ptr = const_cast<Particle *>(& _AoSReservoir);
+		Particle * ptr = &_AoSReservoir;
         _cell->moleculesAt(_index, ptr);
 		return *ptr;
 	}

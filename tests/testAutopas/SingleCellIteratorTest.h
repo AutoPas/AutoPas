@@ -13,13 +13,13 @@
 
 class SingleCellIteratorTest : public ::testing::Test {
 public:
-	SingleCellIteratorTest() {}
+	SingleCellIteratorTest() = default;
 
 	void SetUp() override;
 
 	void TearDown() override;
 
-	~SingleCellIteratorTest() {}
+	~SingleCellIteratorTest() override = default;
 
 	void fillWithParticles(autopas::ParticleCell<autopas::MoleculeLJ> * pc);
 

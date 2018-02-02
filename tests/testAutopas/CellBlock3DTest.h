@@ -18,7 +18,7 @@ public:
 		_cells_2x2x2(_vec2, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({10.0, 10.0, 10.0}), 5.0),
 		_cells_3x3x3(_vec3, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({10.0, 10.0, 10.0}), 3.0) {
 	}
-	virtual ~CellBlock3DTest() {}
+	~CellBlock3DTest() override = default;
 
 
 protected:

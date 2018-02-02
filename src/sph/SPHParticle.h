@@ -30,7 +30,7 @@ namespace autopas {
 
             }
 
-            virtual ~SPHParticle() override = default;
+            ~SPHParticle() override = default;
 
 
             double getDensity() const {

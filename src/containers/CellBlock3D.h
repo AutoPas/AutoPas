@@ -72,7 +72,7 @@ inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::ge
 template<class ParticleCell>
 inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::get3DIndexOfPosition(
 		const std::array<double, 3>& pos) const {
-	std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex;
+	std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
 	std::array<double, 3> localPoint = pos;
 	for (int dim = 0; dim < 3; dim++) {
@@ -106,7 +106,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell>& vec, c
 	_numCells = 1;
 	for (int d = 0; d < 3; ++d) {
 		double diff = _boxMax[d] - _boxMin[d];
-		index_t cellsPerDim = static_cast<unsigned long>(std::floor((diff) / _interactionLength));
+		auto cellsPerDim = static_cast<index_t>(std::floor((diff) / _interactionLength));
 		// at least one central cell
 		cellsPerDim = std::max(cellsPerDim, 1ul);
 
