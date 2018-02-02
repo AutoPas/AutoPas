@@ -8,52 +8,52 @@
 #ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECONTAINER_H_
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECONTAINER_H_
 
+#include <array>
 #include "iterators/ParticleIterator.h"
 #include "pairwiseFunctors/Functor.h"
-#include <array>
 
 namespace autopas {
 
-// consider multiple inheritance or delegation vor avoidane of virtual call to Functor
+// consider multiple inheritance or delegation vor avoidane of virtual call to
+// Functor
 
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 class ParticleContainer {
-public:
-	ParticleContainer(const std::array<double, 3> boxMin,
-			const std::array<double, 3> boxMax, double cutoff) :
-			_data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {
-	}
-	virtual ~ParticleContainer() = default;
+ public:
+  ParticleContainer(const std::array<double, 3> boxMin,
+                    const std::array<double, 3> boxMax, double cutoff)
+      : _data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
+  virtual ~ParticleContainer() = default;
 
-    typedef ParticleIterator<Particle, ParticleCell> iterator;
+  typedef ParticleIterator<Particle, ParticleCell> iterator;
 
-	virtual void init() {}
+  virtual void init() {}
 
-	virtual void addParticle(Particle& p) = 0;
+  virtual void addParticle(Particle &p) = 0;
 
-	virtual void iteratePairwise(Functor<Particle>* f) = 0;
+  virtual void iteratePairwise(Functor<Particle> *f) = 0;
 
-	iterator begin() {return ParticleIterator<Particle, ParticleCell>(&_data);}
+  iterator begin() { return ParticleIterator<Particle, ParticleCell>(&_data); }
 
-	const std::array<double, 3>& getBoxMax() const { return _boxMax; }
+  const std::array<double, 3> &getBoxMax() const { return _boxMax; }
 
-	void setBoxMax(const std::array<double, 3>& boxMax) { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
 
-	const std::array<double, 3>& getBoxMin() const { return _boxMin; }
+  const std::array<double, 3> &getBoxMin() const { return _boxMin; }
 
-	void setBoxMin(const std::array<double, 3>& boxMin) { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
 
-	double getCutoff() const { return _cutoff; }
+  double getCutoff() const { return _cutoff; }
 
-	void setCutoff(double cutoff) { _cutoff = cutoff; }
+  void setCutoff(double cutoff) { _cutoff = cutoff; }
 
-protected:
-	std::vector<ParticleCell> _data;
+ protected:
+  std::vector<ParticleCell> _data;
 
-private:
-	std::array<double, 3> _boxMin;
-	std::array<double, 3> _boxMax;
-	double _cutoff;
+ private:
+  std::array<double, 3> _boxMin;
+  std::array<double, 3> _boxMax;
+  double _cutoff;
 };
 
 } /* namespace autopas */

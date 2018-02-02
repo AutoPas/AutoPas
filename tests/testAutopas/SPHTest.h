@@ -8,11 +8,9 @@
 #include <gtest/gtest.h>
 
 class SPHTest : public ::testing::Test {
+  void SetUp() override{};
 
-    void SetUp() override {};
-
-    void TearDown() override {};
+  void TearDown() override{};
 };
 
-
-#endif //AUTOPAS_SPHTEST_H
+#endif  // AUTOPAS_SPHTEST_H

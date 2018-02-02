@@ -8,36 +8,35 @@
 #ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_
 
-//TODO: separate autopas.h and autopasmd.h
+// TODO: separate autopas.h and autopasmd.h
 
 // utils
 #include "utils/SoA.h"
 #include "utils/arrayMath.h"
 
 // particles
-#include "particles/Particle.h"
 #include "particles/MoleculeLJ.h"
+#include "particles/Particle.h"
 
 // cells
+#include "cells/FullParticleCell.h"
 #include "cells/ParticleCell.h"
 #include "cells/RMMParticleCell.h"
-#include "cells/FullParticleCell.h"
 #include "containers/DirectSum.h"
 
 // iterators
-#include "iterators/SingleCellIterator.h"
 #include "iterators/ParticleIterator.h"
+#include "iterators/SingleCellIterator.h"
 
 // containers
-#include "containers/ParticleContainer.h"
 #include "containers/CellBlock3D.h"
 #include "containers/LinkedCells.h"
+#include "containers/ParticleContainer.h"
 #include "containers/VerletLists.h"
 
 // pairwise functors
+#include "pairwiseFunctors/FlopCounterFunctor.h"
 #include "pairwiseFunctors/Functor.h"
 #include "pairwiseFunctors/LJFunctor.h"
-#include "pairwiseFunctors/FlopCounterFunctor.h"
-
 
 #endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_ */

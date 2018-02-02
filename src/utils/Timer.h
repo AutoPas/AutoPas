@@ -13,22 +13,19 @@
 namespace utils {
 
 class Timer {
+ public:
+  Timer();
 
-public:
-	Timer();
+  virtual ~Timer();
 
-	virtual ~Timer();
+  /** start the timer */
+  void start();
 
-	/** start the timer */
-	void start();
+  /** stops the timer and returns the time elapsed in seconds*/
+  double stop();
 
-	/** stops the timer and returns the time elapsed in seconds*/
-	double stop();
-
-private:
-	struct timespec _startTime;
-
+ private:
+  struct timespec _startTime;
 };
-
 }
 #endif /* TIMER_H_ */

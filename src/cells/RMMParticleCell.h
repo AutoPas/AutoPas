@@ -13,24 +13,24 @@
 
 namespace autopas {
 
-template<class Particle>
+template <class Particle>
 class RMMParticleCell : public ParticleCell<Particle> {
-public:
-	void moleculesAt(int i, Particle*& rmm_or_not_pointer) override {
-		buildMoleculeFromSoA(i, rmm_or_not_pointer);
-	}
-	void buildMoleculeFromSoA(int i, Particle*& rmm_or_not_pointer){
-		rmm_or_not_pointer->setR(_soa.readPos(i));
-		rmm_or_not_pointer->setF(_soa.readFor(i));
-	}
-	void addParticle(Particle& m) override {
-		_soa.pushPos(m.getR());
-		_soa.pushFor(m.getF());
-	}
+ public:
+  void moleculesAt(int i, Particle *&rmm_or_not_pointer) override {
+    buildMoleculeFromSoA(i, rmm_or_not_pointer);
+  }
+  void buildMoleculeFromSoA(int i, Particle *&rmm_or_not_pointer) {
+    rmm_or_not_pointer->setR(_soa.readPos(i));
+    rmm_or_not_pointer->setF(_soa.readFor(i));
+  }
+  void addParticle(Particle &m) override {
+    _soa.pushPos(m.getR());
+    _soa.pushFor(m.getF());
+  }
 
-	unsigned long numParticles() const override {return _soa.getNumParticles();}
-	bool isNotEmpty() const override { return numParticles() > 0; }
-	SoA _soa;
+  unsigned long numParticles() const override { return _soa.getNumParticles(); }
+  bool isNotEmpty() const override { return numParticles() > 0; }
+  SoA _soa;
 };
 
 } /* namespace autopas */

@@ -12,22 +12,23 @@
 #include "gtest/gtest.h"
 
 class ParticleIteratorTest : public testing::Test {
-public:
-    ParticleIteratorTest() : _currentIndex(0ul) {}
+ public:
+  ParticleIteratorTest() : _currentIndex(0ul) {}
 
-    void SetUp() override;
+  void SetUp() override;
 
-    void TearDown() override;
+  void TearDown() override;
 
-    ~ParticleIteratorTest() override = default;
+  ~ParticleIteratorTest() override = default;
 
-    void fillWithParticles(autopas::ParticleCell<autopas::MoleculeLJ> *pc);
+  void fillWithParticles(autopas::ParticleCell<autopas::MoleculeLJ> *pc);
 
-protected:
-    // needs to be protected, because the test fixtures generate a derived class for each unit test.
+ protected:
+  // needs to be protected, because the test fixtures generate a derived class
+  // for each unit test.
 
-    std::vector<autopas::MoleculeLJ> _vecOfMolecules;
-    unsigned long _currentIndex;
+  std::vector<autopas::MoleculeLJ> _vecOfMolecules;
+  unsigned long _currentIndex;
 };
 
 #endif /* TESTS_TESTAUTOPAS_PARTICLEITERATORTEST_H_ */

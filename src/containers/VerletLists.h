@@ -12,11 +12,10 @@
 
 namespace autopas {
 
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 class VerletLists : public ParticleContainer<Particle, ParticleCell> {
-
-private:
-	// ThreeDimensionalCellHandler
+ private:
+  // ThreeDimensionalCellHandler
 };
 
 } /* namespace autopas */

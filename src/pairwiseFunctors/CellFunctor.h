@@ -12,50 +12,47 @@
 
 namespace autopas {
 
-template<class Particle, class ParticleCell, class ParticleFunctor>
+template <class Particle, class ParticleCell, class ParticleFunctor>
 class CellFunctor {
-public:
-	explicit CellFunctor(ParticleFunctor* f) : _functor(f) {
-	}
-	void processCell(ParticleCell & cell) {
-		processCellAoSN3(cell);
-	}
-	void processCellPair(ParticleCell & cell1, ParticleCell & cell2) {
-		processCellPairAoSN3(cell1, cell2);
-	}
+ public:
+  explicit CellFunctor(ParticleFunctor *f) : _functor(f) {}
+  void processCell(ParticleCell &cell) { processCellAoSN3(cell); }
+  void processCellPair(ParticleCell &cell1, ParticleCell &cell2) {
+    processCellPairAoSN3(cell1, cell2);
+  }
 
-	void processCellAoSN3(ParticleCell & cell) {
-		SingleCellIterator<Particle, ParticleCell> outer(&cell);
-		for (; outer.isValid(); ++outer) {
-			Particle & p1 = *outer;
+  void processCellAoSN3(ParticleCell &cell) {
+    SingleCellIterator<Particle, ParticleCell> outer(&cell);
+    for (; outer.isValid(); ++outer) {
+      Particle &p1 = *outer;
 
-			int ind = outer.getIndex() + 1;
+      int ind = outer.getIndex() + 1;
 
-			SingleCellIterator<Particle, ParticleCell> inner(&cell, ind);
-			for (; inner.isValid(); ++inner) {
-				Particle & p2 = *inner;
+      SingleCellIterator<Particle, ParticleCell> inner(&cell, ind);
+      for (; inner.isValid(); ++inner) {
+        Particle &p2 = *inner;
 
-				_functor->AoSFunctor(p1, p2);
-			}
-		}
-	}
+        _functor->AoSFunctor(p1, p2);
+      }
+    }
+  }
 
-	void processCellPairAoSN3(ParticleCell& cell1, ParticleCell& cell2) {
-		SingleCellIterator<Particle, ParticleCell> outer(&cell1);
-		for (; outer.isValid(); ++outer) {
-			Particle & p1 = *outer;
+  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2) {
+    SingleCellIterator<Particle, ParticleCell> outer(&cell1);
+    for (; outer.isValid(); ++outer) {
+      Particle &p1 = *outer;
 
-			SingleCellIterator<Particle, ParticleCell> inner(&cell2);
-			for (; inner.isValid(); ++inner) {
-				Particle & p2 = *inner;
+      SingleCellIterator<Particle, ParticleCell> inner(&cell2);
+      for (; inner.isValid(); ++inner) {
+        Particle &p2 = *inner;
 
-				_functor->AoSFunctor(p1, p2);
-			}
-		}
-	}
+        _functor->AoSFunctor(p1, p2);
+      }
+    }
+  }
 
-private:
-	ParticleFunctor* _functor;
+ private:
+  ParticleFunctor *_functor;
 };
 
 } /* namespace autopas */
