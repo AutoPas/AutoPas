@@ -10,7 +10,7 @@ if (DOXYGEN_FOUND)
     set(DOXY_CONF_DIR docs)
     set(DOXYGEN_IN ${DOXY_CONF_DIR}/Doxyfile.in)
     set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-    set(DOXY_MAIN_PAGE ${DOXY_CONF_DIR}/mainpage.dox)
+    set(DOXY_MAIN_PAGE README.md)
 
     # request to configure the file
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
