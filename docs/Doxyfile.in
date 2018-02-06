@@ -1,11 +1,9 @@
 PROJECT_NAME           = "@CMAKE_PROJECT_NAME@"
 PROJECT_NUMBER         = @VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_PATCH@
-STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src \
-                         @PROJECT_BINARY_DIR@
+STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen/
 INPUT                  = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@ \
                          @PROJECT_SOURCE_DIR@/src/ \
-                         @PROJECT_BINARY_DIR@ \
                          @CMAKE_SOURCE_DIR@/docs
 FILE_PATTERNS          = *.h \
                          *.cpp
