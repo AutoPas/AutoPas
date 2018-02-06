@@ -1,5 +1,5 @@
 if (CMAKE_VERSION VERSION_GREATER "3.5")
-    set(ENABLE_CLANG_TIDY OFF BOOL "Add clang-tidy automatically to builds")
+    option(ENABLE_CLANG_TIDY "Add clang-tidy automatically to builds")
     #set(ENABLE_CLANG_TIDY ON BOOL "Add clang-tidy automatically to builds")
     if (ENABLE_CLANG_TIDY)
         find_program(CLANG_TIDY_EXE
@@ -19,5 +19,5 @@ if (CMAKE_VERSION VERSION_GREATER "3.5")
         message(STATUS "clang tidy disabled, to enable specify -DENABLE_CLANG_TIDY=\"ON\" when calling cmake")
     endif ()
 else ()
-    message(STATUS "cmake (" ${CMAKE_VERSION} ") <= 3.5")
+    message(STATUS "cmake (" ${CMAKE_VERSION} ") <= 3.5: clang-tidy not available.")
 endif ()
