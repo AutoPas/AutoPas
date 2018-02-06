@@ -16,6 +16,6 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<SPHParticle> {
 
   static unsigned long getNumFlopsPerKernelCall();
 };
-}  // namespace autopas
+}  // namespace sph
 }  // namespace autopas
 #endif  // AUTOPAS_SPHCALCHYDROFORCEFUNCTOR_H

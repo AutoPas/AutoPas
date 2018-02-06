@@ -54,6 +54,6 @@ class SPHKernels {
         dr, scale);  // dr * r_value / (sqrt(dr * dr) * H + 1.0e-6 * h);
   }
 };
-}  // namespace autopas
+}  // namespace sph
 }  // namespace autopas
 #endif  // AUTOPAS_SPHKERNELS_H

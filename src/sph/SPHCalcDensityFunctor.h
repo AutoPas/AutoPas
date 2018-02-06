@@ -23,7 +23,7 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle> {
   }
   static unsigned long getNumFlopsPerKernelCall();
 };
-}  // namespace autopas
+}  // namespace sph
 }  // namespace autopas
 
 #endif  // AUTOPAS_SPHCALCDENSITYFUNCTOR_H

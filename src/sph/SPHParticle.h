@@ -129,6 +129,6 @@ class SPHParticle : public autopas::Particle {
   double _eng;
   double _dt;
 };
-}  // namespace autopas
+}  // namespace sph
 }  // namespace autopas
 #endif  // AUTOPAS_SPHPARTICLE_H
