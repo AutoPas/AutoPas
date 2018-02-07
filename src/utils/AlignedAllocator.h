@@ -17,8 +17,7 @@
 template <class T, size_t Alignment = DEFAULT_CACHE_LINE_SIZE>
 class AlignedAllocator {
  public:
-
-  //needed for compatibility with stl::allocator
+  // needed for compatibility with stl::allocator
   typedef T value_type;
   typedef T* pointer;
   typedef const T* const_pointer;
