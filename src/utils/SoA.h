@@ -15,6 +15,12 @@ class SoA {
   SoA() = default;
 
   /**
+   * @brief Copy constructor.
+   * @param soa SoA to copy.
+   */
+  SoA(const SoA &soa) = default;
+
+  /**
    * @brief Destructor.
    */
   ~SoA() {
@@ -29,6 +35,7 @@ class SoA {
    */
   void initArrays(std::vector<int> attributes) {
     for (auto a : attributes) {
+      // TODO: assert attribute value does not already exit
       arrays.insert(
           make_pair(a, new std::vector<double, AlignedAllocator<double>>));
     }
@@ -39,8 +46,9 @@ class SoA {
    * @param attribute Index of array to push to.
    * @param value Value to push.
    */
+  // TODO: for maximum convenience make vectors pushable
   void push(const int attribute, const double value) {
-    arrays.at(attribute)->push_back(value);
+    arrays[attribute]->push_back(value);
   }
 
   /**
@@ -52,14 +60,30 @@ class SoA {
    * @return Array of attributes ordered by given attribute order.
    */
   template<int arrayLength>
-  std::array<double, arrayLength> readParticle(std::vector<int> attributes,
-                                               unsigned int particleId) {
+  std::array<double, arrayLength> read(std::vector<int> attributes,
+                                       unsigned int particleId) {
     std::array<double, arrayLength> retArray;
     int i = 0;
     for (auto a : attributes) {
-      retArray[i++] = arrays.at(a)->at(particleId);
+      retArray[i++] = arrays[a]->at(particleId);
     }
     return retArray;
+  }
+
+  /**
+   * @brief Writes / updates values of attributes for a specific particle.
+   * @tparam ArrayLength length of the attributes and value array.
+   * @param attributes Vector of attributes to update.
+   * @param particleId Particle to update.
+   * @param value New value.
+   */
+  template<int arrayLength>
+  void write(std::array<int, arrayLength> attributes, unsigned int particleId,
+             std::array<double, arrayLength> value) {
+    int i = 0;
+    for (auto a : attributes) {
+      arrays[a]->at(particleId) = value[i++];
+    }
   }
 
   /**

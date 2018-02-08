@@ -24,8 +24,8 @@ class RMMParticleCell : public ParticleCell<Particle> {
     buildMoleculeFromSoA(i, rmm_or_not_pointer);
   }
   void buildMoleculeFromSoA(unsigned int i, Particle *&rmm_or_not_pointer) {
-    rmm_or_not_pointer->setR(_soa.readParticle<3>({posX, posY, posZ}, i));
-    rmm_or_not_pointer->setF(_soa.readParticle<3>({forceX, forceY, forceZ}, i));
+    rmm_or_not_pointer->setR(_soa.read<3>({posX, posY, posZ}, i));
+    rmm_or_not_pointer->setF(_soa.read<3>({forceX, forceY, forceZ}, i));
   }
   void addParticle(Particle &m) override {
     _soa.push(posX, m.getR()[0]);
