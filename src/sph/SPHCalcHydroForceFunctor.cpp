@@ -18,7 +18,7 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
   const double w_ij = (dvdr < 0) ? dvdr / sqrt(arrayMath::dot(dr, dr)) : 0;
   // const PS::F64 w_ij = (dv * dr < 0) ? dv * dr / sqrt(dr * dr) : 0;
 
-  const double v_sig = i.getSnds() + j.getSnds() - 3.0 * w_ij;
+  const double v_sig = i.getSoundSpeed() + j.getSoundSpeed() - 3.0 * w_ij;
   // const PS::F64 v_sig = ep_i[i].snds + ep_j[j].snds - 3.0 * w_ij;
 
   i.checkAndSetVSigMax(v_sig);
@@ -30,8 +30,8 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
   // ep_j[j].dens));
 
   const std::array<double, 3> gradW_ij =
-      arrayMath::mulScalar(arrayMath::add(SPHKernels::gradW(dr, i.getSmth()),
-                                          SPHKernels::gradW(dr, j.getSmth())),
+      arrayMath::mulScalar(arrayMath::add(SPHKernels::gradW(dr, i.getSmoothingLength()),
+                                          SPHKernels::gradW(dr, j.getSmoothingLength())),
                            0.5);
   // const PS::F64vec gradW_ij = 0.5 * (gradW(dr, ep_i[i].smth) + gradW(dr,
   // ep_j[j].smth));
@@ -39,7 +39,7 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
   double scale =
       j.getMass() * (i.getPressure() / (i.getDensity() * i.getDensity()) +
                      j.getPressure() / (j.getDensity() * j.getDensity()) + AV);
-  i.subAcc(arrayMath::mulScalar(gradW_ij, scale));
+  i.subAcceleration(arrayMath::mulScalar(gradW_ij, scale));
   // hydro[i].acc     -= ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
   // ep_i[i].dens) + ep_j[j].pres / (ep_j[j].dens * ep_j[j].dens) + AV) *
   // gradW_ij;

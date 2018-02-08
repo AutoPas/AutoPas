@@ -2,7 +2,7 @@
 Autopas is a node-level auto-tuned particle simulation library developed in the context of the TaLPas project.
 
 ## Documentation
-The documentation can be found at our website:\
+The documentation can be found at our website:
  https://www5.in.tum.de/autopas/doxygen_doc/html/
 
 Alternatively you can build the documentation on your own:
@@ -61,8 +61,8 @@ We have, however, included a variety of examples in the **examples** directory. 
 
 ## Using Autopas
 
-Steps to build a 
-1. Defining Particle classes 
+Steps to using Autopas in your particle simulation program:
+1. Defining your Particle class
 First you will need to define a particle class, the class should 
 ```cpp
 class SPHParticle : public autopas::Particle {
@@ -70,7 +70,7 @@ class SPHParticle : public autopas::Particle {
 }
 
 ```
-
+2.
 
 
 ## Developing Autopas

@@ -56,15 +56,15 @@ TEST_F(SPHTest, testSPHCalcPressure) {
   sphParticle2.addDensity(0.172401);
 
   // set pressure:
-  sphParticle1.setEng(2.5);
-  sphParticle2.setEng(2.5);
+  sphParticle1.setEnergy(2.5);
+  sphParticle2.setEnergy(2.5);
   sphParticle1.calcPressure();
   sphParticle2.calcPressure();
 
   EXPECT_NEAR(sphParticle1.getPressure(), 0.559026, 1e-6);
   EXPECT_NEAR(sphParticle2.getPressure(), 0.172401, 1e-6);
-  EXPECT_NEAR(sphParticle1.getSnds(), 1.18322, 1e-5);
-  EXPECT_NEAR(sphParticle2.getSnds(), 1.18322, 1e-5);
+  EXPECT_NEAR(sphParticle1.getSoundSpeed(), 1.18322, 1e-5);
+  EXPECT_NEAR(sphParticle2.getSoundSpeed(), 1.18322, 1e-5);
 }
 
 TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
@@ -78,23 +78,23 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
   sphParticle2.addDensity(0.172401);
 
   // set pressure:
-  sphParticle1.setEng(2.5);
-  sphParticle2.setEng(2.5);
+  sphParticle1.setEnergy(2.5);
+  sphParticle2.setEnergy(2.5);
   sphParticle1.setPressure(0.559026);
   sphParticle2.setPressure(0.172401);
-  sphParticle1.setSnds(1.18322);
-  sphParticle2.setSnds(1.18322);
+  sphParticle1.setSoundSpeed(1.18322);
+  sphParticle2.setSoundSpeed(1.18322);
 
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
   hydroForceFunctor.AoSFunctor(sphParticle1, sphParticle2);
   hydroForceFunctor.AoSFunctor(sphParticle2, sphParticle1);
 
-  EXPECT_NEAR(sphParticle1.getAcc().at(0), -2.26921, 1e-5);
-  EXPECT_NEAR(sphParticle1.getAcc().at(1), -4.53843, 1e-5);
-  EXPECT_NEAR(sphParticle1.getAcc().at(2), -6.80764, 1e-5);
-  EXPECT_NEAR(sphParticle2.getAcc().at(0), 3.78202, 1e-5);
-  EXPECT_NEAR(sphParticle2.getAcc().at(1), 7.56405, 1e-5);
-  EXPECT_NEAR(sphParticle2.getAcc().at(2), 11.3461, 1e-4);
+  EXPECT_NEAR(sphParticle1.getAcceleration().at(0), -2.26921, 1e-5);
+  EXPECT_NEAR(sphParticle1.getAcceleration().at(1), -4.53843, 1e-5);
+  EXPECT_NEAR(sphParticle1.getAcceleration().at(2), -6.80764, 1e-5);
+  EXPECT_NEAR(sphParticle2.getAcceleration().at(0), 3.78202, 1e-5);
+  EXPECT_NEAR(sphParticle2.getAcceleration().at(1), 7.56405, 1e-5);
+  EXPECT_NEAR(sphParticle2.getAcceleration().at(2), 11.3461, 1e-4);
   EXPECT_NEAR(sphParticle1.getEngDot(), 5.46311, 1e-5);
   EXPECT_NEAR(sphParticle2.getEngDot(), 13.0197, 1e-4);
 
