@@ -53,6 +53,6 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
 }
 
 unsigned long SPHCalcHydroForceFunctor::getNumFlopsPerKernelCall() {
-  /// @TODO: correct
+  /// @todo: correct
   return 1ul;
 }

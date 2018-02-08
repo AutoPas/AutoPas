@@ -11,6 +11,10 @@
 
 namespace autopas {
 namespace sph {
+/**
+ * Class that defines the density functor.
+ * It is used to calculate the density based on the given SPH kernel.
+ */
 class SPHCalcDensityFunctor : public Functor<SPHParticle> {
  public:
   inline void AoSFunctor(SPHParticle &i, SPHParticle &j) override {
@@ -21,6 +25,10 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle> {
             SPHKernels::W(dr, i.getSmoothingLength());  // ep_j[j].mass * W(dr, ep_i[i].smth)
     i.addDensity(density);
   }
+  /**
+   * Get the number of floating point operations used in one full kernel call
+   * @return the number of floating point operations
+   */
   static unsigned long getNumFlopsPerKernelCall();
 };
 }  // namespace sph
