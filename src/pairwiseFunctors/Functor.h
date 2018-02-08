@@ -15,7 +15,16 @@ class Functor {
  public:
   virtual ~Functor() = default;
 
+  /**
+   * Functor for arrays of structures (AoS).
+   * This functor should calculate the forces or any other pair-wise interaction between two particles.
+   * This should include a cutoff check if needed!
+   */
   virtual void AoSFunctor(Particle &, Particle &) {}
+
+  /**
+   *
+   */
   virtual void SoAFunctor() {}
   //	virtual void SoALoader() = 0
   //	virtual void SoAStorer() = 0

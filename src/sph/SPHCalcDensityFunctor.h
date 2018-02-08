@@ -17,6 +17,12 @@ namespace sph {
  */
 class SPHCalcDensityFunctor : public Functor<SPHParticle> {
  public:
+  /**
+   * Calculates the density contribution of the interaction of particle i and j.
+   * It is not symmetric, because the smoothing lenghts of the two particles can be different.
+   * @param i first particle of the interaction
+   * @param j second particle of the interaction
+   */
   inline void AoSFunctor(SPHParticle &i, SPHParticle &j) override {
     const std::array<double, 3> dr =
         arrayMath::sub(j.getR(), i.getR());  // ep_j[j].pos - ep_i[i].pos;
