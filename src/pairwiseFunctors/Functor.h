@@ -35,7 +35,6 @@ class Functor {
    * @param soa2 second structure of arrays
    */
   virtual void SoAFunctor(SoA &soa1, SoA &soa2) {}
-  virtual void SoAFunctor2(SoA &soa1, SoA &soa2) {}
   // TODO: in what form should particles be passed to this?
   virtual void SoALoader(std::vector<Particle> &particles, SoA *soa) {};
   //	virtual void SoAStorer() = 0

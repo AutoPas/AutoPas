@@ -39,38 +39,6 @@ class LJFunctor : public Functor<Particle> {
   enum SoAAttributes { id, posX, posY, posZ, forceX, forceY, forceZ };
 
   void SoAFunctor(SoA &soa1, SoA &soa2) override {
-    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
-      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        if (soa1.read<1>({id}, i)[0] == soa2.read<1>({id}, j)[0]) continue;
-
-        std::array<double, 3> dr =
-            arrayMath::sub(soa1.read<3>({posX, posY, posZ}, i),
-                           soa2.read<3>({posX, posY, posZ}, j));
-        double dr2 = arrayMath::dot(dr, dr);
-
-        if (dr2 > CUTOFFSQUARE) continue;
-        double invdr2 = 1. / dr2;
-        double lj6 = SIGMASQUARE * invdr2;
-        lj6 = lj6 * lj6 * lj6;
-        double lj12 = lj6 * lj6;
-        double lj12m6 = lj12 - lj6;
-        double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
-
-        std::array<double, 3> f = arrayMath::mulScalar(dr, fac);
-
-        std::array<double, 3> newf1 =
-            arrayMath::add(soa1.read<3>({forceX, forceY, forceZ}, i), f);
-        std::array<double, 3> newf2 =
-            arrayMath::sub(soa2.read<3>({forceX, forceY, forceZ}, j), f);
-
-        soa1.write<3>({forceX, forceY, forceZ}, i, newf1);
-        soa2.write<3>({forceX, forceY, forceZ}, j, newf2);
-      }
-    }
-  }
-
-  void SoAFunctor2(SoA &soa1, SoA &soa2) override {
-    // TODO: restrict needed?
     double *const __restrict__ x1ptr = soa1.begin(posX);
     double *const __restrict__ y1ptr = soa1.begin(posY);
     double *const __restrict__ z1ptr = soa1.begin(posZ);
@@ -95,15 +63,17 @@ class LJFunctor : public Functor<Particle> {
       double fyacc = 0;
       double fzacc = 0;
 
+      // icpc vectorizes this.
+      // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = 0; j < numParticles; ++j) {
         if (*(id1ptr + i) == *(id2ptr + j)) {
-          continue; // TODO
+          continue;
         }
 
-        const double drx = *(x1ptr + i) - *(x2ptr + j);
-        const double dry = *(y1ptr + i) - *(y2ptr + j);
-        const double drz = *(z1ptr + i) - *(z2ptr + j);
+        const double drx = x1ptr[i] - x2ptr[j];
+        const double dry = y1ptr[i] - y2ptr[j];
+        const double drz = z1ptr[i] - z2ptr[j];
 
         const double drx2 = drx * drx;
         const double dry2 = dry * dry;
@@ -111,8 +81,8 @@ class LJFunctor : public Functor<Particle> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE) {
-          continue;  // TODO
+        if (dr2 <= CUTOFFSQUARE) {
+          continue;
         }
 
         const double invdr2 = 1. / dr2;
@@ -130,14 +100,15 @@ class LJFunctor : public Functor<Particle> {
         fyacc += fy;
         fzacc += fz;
 
-        *(fx2ptr + j) -= fx;
-        *(fy2ptr + j) -= fy;
-        *(fz2ptr + j) -= fz;
+        fx2ptr[j] -= fx;
+        fy2ptr[j] -= fy;
+        fz2ptr[j] -= fz;
+        //        }
       }
 
-      *(fx1ptr + i) += fxacc;
-      *(fy1ptr + i) += fyacc;
-      *(fz1ptr + i) += fzacc;
+      fx1ptr[i] += fxacc;
+      fy1ptr[i] += fyacc;
+      fz1ptr[i] += fzacc;
     }
   }
 

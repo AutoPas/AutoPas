@@ -55,7 +55,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
 
   ljFunctor.SoALoader(particlesSoA, &soa1);
   start = std::chrono::high_resolution_clock::now();
-  ljFunctor.SoAFunctor2(soa1, soa1);
+  ljFunctor.SoAFunctor(soa1, soa1);
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
 
