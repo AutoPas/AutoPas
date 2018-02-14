@@ -17,7 +17,7 @@ template <class Particle>
 class RMMParticleCell : public ParticleCell<Particle> {
  public:
   RMMParticleCell() {
-    _soa.initArrays({posX, posY, posZ, forceX, forceY, forceZ});
+    _soa.initArrays<6>({posX, posY, posZ, forceX, forceY, forceZ});
   }
 
   void moleculesAt(int i, Particle *&rmm_or_not_pointer) override {

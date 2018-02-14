@@ -8,9 +8,9 @@
 #ifndef SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_
 #define SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_
 
+#include <array>
 #include "Functor.h"
 #include "utils/arrayMath.h"
-#include <array>
 
 namespace autopas {
 
@@ -39,7 +39,6 @@ class LJFunctor : public Functor<Particle> {
   enum SoAAttributes { id, posX, posY, posZ, forceX, forceY, forceZ };
 
   void SoAFunctor(SoA &soa1, SoA &soa2) override {
-//#pragma omp simd collapse 2 // TODO: moep?
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         if (soa1.read<1>({id}, i)[0] == soa2.read<1>({id}, j)[0]) continue;
@@ -70,11 +69,83 @@ class LJFunctor : public Functor<Particle> {
     }
   }
 
+  void SoAFunctor2(SoA &soa1, SoA &soa2) override {
+    // TODO: restrict needed?
+    double *const __restrict__ x1ptr = soa1.begin(posX);
+    double *const __restrict__ y1ptr = soa1.begin(posY);
+    double *const __restrict__ z1ptr = soa1.begin(posZ);
+    double *const __restrict__ x2ptr = soa2.begin(posX);
+    double *const __restrict__ y2ptr = soa2.begin(posY);
+    double *const __restrict__ z2ptr = soa2.begin(posZ);
+
+    double *const __restrict__ fx1ptr = soa1.begin(forceX);
+    double *const __restrict__ fy1ptr = soa1.begin(forceY);
+    double *const __restrict__ fz1ptr = soa1.begin(forceZ);
+    double *const __restrict__ fx2ptr = soa2.begin(forceX);
+    double *const __restrict__ fy2ptr = soa2.begin(forceY);
+    double *const __restrict__ fz2ptr = soa2.begin(forceZ);
+
+    double *const __restrict__ id1ptr = soa1.begin(id);
+    double *const __restrict__ id2ptr = soa2.begin(id);
+
+    const auto numParticles = soa2.getNumParticles();
+
+    for (unsigned int i = 0; i < numParticles; ++i) {
+      double fxacc = 0;
+      double fyacc = 0;
+      double fzacc = 0;
+
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+      for (unsigned int j = 0; j < numParticles; ++j) {
+        if (*(id1ptr + i) == *(id2ptr + j)) {
+          continue; // TODO
+        }
+
+        const double drx = *(x1ptr + i) - *(x2ptr + j);
+        const double dry = *(y1ptr + i) - *(y2ptr + j);
+        const double drz = *(z1ptr + i) - *(z2ptr + j);
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 > CUTOFFSQUARE) {
+          continue;  // TODO
+        }
+
+        const double invdr2 = 1. / dr2;
+        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj6 = lj2 * lj2 * lj2;
+        const double lj12 = lj6 * lj6;
+        const double lj12m6 = lj12 - lj6;
+        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+
+        const double fx = drx * fac;
+        const double fy = dry * fac;
+        const double fz = drz * fac;
+
+        fxacc += fx;
+        fyacc += fy;
+        fzacc += fz;
+
+        *(fx2ptr + j) -= fx;
+        *(fy2ptr + j) -= fy;
+        *(fz2ptr + j) -= fz;
+      }
+
+      *(fx1ptr + i) += fxacc;
+      *(fy1ptr + i) += fyacc;
+      *(fz1ptr + i) += fzacc;
+    }
+  }
+
   void SoALoader(std::vector<Particle> &particles, SoA *soa) override {
-    soa->initArrays({id, posX, posY, posZ, forceX, forceY, forceZ});
+    soa->initArrays<7>({id, posX, posY, posZ, forceX, forceY, forceZ});
 
     // load particles in SoAs
-    for (auto p : particles) {
+    for (auto &&p : particles) {
       soa->push(id, p.getID());
 
       soa->push(posX, p.getR()[0]);
@@ -108,12 +179,11 @@ class LJFunctor : public Functor<Particle> {
   static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
 
   static unsigned long getNumFlopsPerKernelCall() {
-    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale)
-    // sum Forces: 6 (forces)
-    // kernel total = 12 + 6 = 18
+    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply
+    // scale) sum Forces: 6 (forces) kernel total = 12 + 6 = 18
     return 18ul;
   }
-};
+};  // namespace autopas
 
 template <class T>
 double LJFunctor<T>::CUTOFFSQUARE;

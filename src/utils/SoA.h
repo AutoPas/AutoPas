@@ -33,7 +33,8 @@ class SoA {
    * @brief Creates an aligned vector for every given attribute.
    * @param attributes Vector of Attributes that shall be stored.
    */
-  void initArrays(std::vector<int> attributes) {
+  template<std::size_t arraySize>
+  void initArrays(std::array<int, arraySize> attributes) {
     for (auto a : attributes) {
       // TODO: assert attribute value does not already exit
       arrays.insert(
@@ -52,15 +53,15 @@ class SoA {
   }
 
   /**
-   * @brief Reads from all given attribute arrays at position i.
+   * @brief Reads from all given attribute arrays at position `particleId`.
    * @tparam ArrayLength length of the returned array. Should be equal
    * attributes.size().
    * @param attributes Attributes to read from.
    * @param particleId Position to read from.
    * @return Array of attributes ordered by given attribute order.
    */
-  template<int arrayLength>
-  std::array<double, arrayLength> read(std::vector<int> attributes,
+  template<std::size_t arrayLength>
+  std::array<double, arrayLength> read(std::array<int, arrayLength> attributes,
                                        unsigned int particleId) {
     std::array<double, arrayLength> retArray;
     int i = 0;
@@ -71,18 +72,55 @@ class SoA {
   }
 
   /**
+   * @brief Reads the value of a given attribute of a given particle.
+   * @param attributes Attribute to read from.
+   * @param particleId Position to read from.
+   * @return Attribute value.
+   */
+#pragma omp declare simd
+  double read(int attribute, unsigned int particleId) {
+    return arrays[attribute]->at(particleId);
+  }
+
+#pragma omp declare simd
+  double *begin(int attribute) {
+    return &(arrays[attribute]->front());
+  }
+
+  /**
    * @brief Writes / updates values of attributes for a specific particle.
    * @tparam ArrayLength length of the attributes and value array.
-   * @param attributes Vector of attributes to update.
+   * @param attributes Array of attributes to update.
    * @param particleId Particle to update.
    * @param value New value.
    */
+#pragma omp declare simd
   template<int arrayLength>
   void write(std::array<int, arrayLength> attributes, unsigned int particleId,
              std::array<double, arrayLength> value) {
     int i = 0;
     for (auto a : attributes) {
       arrays[a]->at(particleId) = value[i++];
+    }
+  }
+
+#pragma omp declare simd
+  template<int arrayLength>
+  void add(std::array<int, arrayLength> attributes, unsigned int particleId,
+           std::array<double, arrayLength> value) {
+    int i = 0;
+    for (auto a : attributes) {
+      arrays[a]->at(particleId) += value[i++];
+    }
+  }
+
+#pragma omp declare simd
+  template<int arrayLength>
+  void sub(std::array<int, arrayLength> attributes, unsigned int particleId,
+           std::array<double, arrayLength> value) {
+    int i = 0;
+    for (auto a : attributes) {
+      arrays[a]->at(particleId) -= value[i++];
     }
   }
 

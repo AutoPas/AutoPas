@@ -1,11 +1,12 @@
 #include "AoSvsSoATest.h"
+#include <chrono>
 
 using namespace autopas;
 
-#define PARTICLES_PER_DIM 8
+#define PARTICLES_PER_DIM 64
 
 /**
- * @brief Generates a reproducable set of particles
+ * @brief Generates a reproducible set of particles
  * @param particles Vector where particles will be stored.
  */
 void AoSvsSoATest::generateParticles(
@@ -35,6 +36,8 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   ljFunctor.setGlobals(PARTICLES_PER_DIM * 10, 1, 1, 0);
 
   // AoS
+  std::chrono::high_resolution_clock::time_point start, stop;
+  start = std::chrono::high_resolution_clock::now();
   for (unsigned int i = 0; i < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++i) {
     for (unsigned int j = 0; j < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++j) {
       if (i != j) {
@@ -42,13 +45,21 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
       }
     }
   }
+  stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
 
-  std::cout << std::endl << std::endl;
+  std::cout << "AoS : " << duration << " \u03bcs" << std::endl;
+
   // SoA
   SoA soa1;
 
   ljFunctor.SoALoader(particlesSoA, &soa1);
-  ljFunctor.SoAFunctor(soa1, soa1);
+  start = std::chrono::high_resolution_clock::now();
+  ljFunctor.SoAFunctor2(soa1, soa1);
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+
+  std::cout << "SoA : " << duration << " \u03bcs" << std::endl;
 
   // copy back to particle array
   particlesSoA.clear();
@@ -59,8 +70,11 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
 
   // compare particle vectors
   for (unsigned int i = 0; i < particlesAoS.size(); ++i) {
-    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[0], particlesSoA[i].getF()[0]);
-    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[1], particlesSoA[i].getF()[1]);
-    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[2], particlesSoA[i].getF()[2]);
+    ASSERT_NEAR(particlesAoS[i].getF()[0], particlesSoA[i].getF()[0], 0.000000000001);
+    ASSERT_NEAR(particlesAoS[i].getF()[1], particlesSoA[i].getF()[1], 0.000000000001);
+    ASSERT_NEAR(particlesAoS[i].getF()[2], particlesSoA[i].getF()[2], 0.000000000001);
+//    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[0], particlesSoA[i].getF()[0]);
+//    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[1], particlesSoA[i].getF()[1]);
+//    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[2], particlesSoA[i].getF()[2]);
   }
 }
