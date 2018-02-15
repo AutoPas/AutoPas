@@ -3,7 +3,7 @@
 
 using namespace autopas;
 
-#define PARTICLES_PER_DIM 64
+#define PARTICLES_PER_DIM 16
 
 /**
  * @brief Generates a reproducible set of particles
@@ -73,8 +73,5 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
     ASSERT_NEAR(particlesAoS[i].getF()[0], particlesSoA[i].getF()[0], 0.000000000001);
     ASSERT_NEAR(particlesAoS[i].getF()[1], particlesSoA[i].getF()[1], 0.000000000001);
     ASSERT_NEAR(particlesAoS[i].getF()[2], particlesSoA[i].getF()[2], 0.000000000001);
-//    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[0], particlesSoA[i].getF()[0]);
-//    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[1], particlesSoA[i].getF()[1]);
-//    ASSERT_DOUBLE_EQ(particlesAoS[i].getF()[2], particlesSoA[i].getF()[2]);
   }
 }

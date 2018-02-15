@@ -81,7 +81,7 @@ class LJFunctor : public Functor<Particle> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 <= CUTOFFSQUARE) {
+        if (dr2 > CUTOFFSQUARE) {
           continue;
         }
 
