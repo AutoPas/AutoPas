@@ -56,9 +56,7 @@ class LJFunctor : public Functor<Particle> {
     double *const __restrict__ id1ptr = soa1.begin(id);
     double *const __restrict__ id2ptr = soa2.begin(id);
 
-    const auto numParticles = soa2.getNumParticles();
-
-    for (unsigned int i = 0; i < numParticles; ++i) {
+    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
@@ -66,7 +64,7 @@ class LJFunctor : public Functor<Particle> {
       // icpc vectorizes this.
       // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
-      for (unsigned int j = 0; j < numParticles; ++j) {
+      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         if (*(id1ptr + i) == *(id2ptr + j)) {
           continue;
         }
@@ -103,7 +101,6 @@ class LJFunctor : public Functor<Particle> {
         fx2ptr[j] -= fx;
         fy2ptr[j] -= fy;
         fz2ptr[j] -= fz;
-        //        }
       }
 
       fx1ptr[i] += fxacc;

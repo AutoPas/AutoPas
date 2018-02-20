@@ -31,6 +31,52 @@ class FlopCounterFunctor : public Functor<Particle> {
     if (dr2 <= _cutoffSquare) ++_kernelCalls;
   }
 
+  enum SoAAttributes { id, posX, posY, posZ, forceX, forceY, forceZ };
+
+  void SoAFunctor(SoA &soa1, SoA &soa2) override {
+    double *const __restrict__ x1ptr = soa1.begin(posX);
+    double *const __restrict__ y1ptr = soa1.begin(posY);
+    double *const __restrict__ z1ptr = soa1.begin(posZ);
+    double *const __restrict__ x2ptr = soa2.begin(posX);
+    double *const __restrict__ y2ptr = soa2.begin(posY);
+    double *const __restrict__ z2ptr = soa2.begin(posZ);
+
+    double *const __restrict__ id1ptr = soa1.begin(id);
+    double *const __restrict__ id2ptr = soa2.begin(id);
+
+    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
+      unsigned long distanceCalculationsAcc = 0;
+      unsigned long kernelCallsAcc = 0;
+
+      // icpc vectorizes this.
+      // g++ only with -ffast-math or -funsafe-math-optimizations
+#pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
+      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+        if (*(id1ptr + i) == *(id2ptr + j)) {
+          continue;
+        }
+
+        ++distanceCalculationsAcc;
+
+        const double drx = x1ptr[i] - x2ptr[j];
+        const double dry = y1ptr[i] - y2ptr[j];
+        const double drz = z1ptr[i] - z2ptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 <= _cutoffSquare) {
+          ++kernelCallsAcc;
+        }
+      }
+      _distanceCalculations += distanceCalculationsAcc;
+      _kernelCalls += kernelCallsAcc;
+    }
+  }
+
   double getHitRate() {
     return static_cast<double>(_kernelCalls) /
            static_cast<double>(_distanceCalculations);
