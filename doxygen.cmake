@@ -1,5 +1,10 @@
-# first we can indicate the documentation build as an option and set it to ON by default
-option(BUILD_DOC "Build documentation (requires Doxygen)" ON)
+# make doc_doxygen optional if someone does not have / like doxygen
+option(BUILD_TARGET_DOC "Create \"make doc_doxygen\" target (requires Doxygen)" ON)
+
+# do nothing if nothing should be done
+if (NOT BUILD_TARGET_DOC)
+    return()
+endif ()
 
 # check if Doxygen is installed
 find_package(Doxygen
