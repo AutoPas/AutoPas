@@ -11,6 +11,65 @@ if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.1)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsuggest-override")
 endif ()
 
+# TODO: move this to a nicer place (own file?)
+################################### START VECTORIZATION ###################################
+option(USE_VECTORIZATION "Enable generations of SIMD vector instructions" ON)
+if (USE_VECTORIZATION)
+    # list of available options
+    set(VECTOR_INSTRUCTIONS_OPTIONS "NATIVE;SSE;AVX;AVX2;KNL")
+    # set instruction set type
+    set(VECTOR_INSTRUCTIONS "NATIVE" CACHE STRING "Vector instruction set to use\
+ (${VECTOR_INSTRUCTIONS_OPTIONS}).")
+    # let ccmake and cmake-gui offer the options
+    set_property(CACHE VECTOR_INSTRUCTIONS PROPERTY STRINGS ${VECTOR_INSTRUCTIONS_OPTIONS})
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        message("COMPILER IS GCC")
+
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp-simd")
+        # needed for GCC to vectorize LJFunctor.SoAFunctor
+        option(ENABLE_FAST_MATH_GCC "Sets --ffast-math which is needed for gcc to vectoize efficiently" OFF)
+        if (ENABLE_FAST_MATH)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
+        endif ()
+
+        if (VECTOR_INSTRUCTIONS MATCHES "^NATIVE$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+        elseif (VECTOR_INSTRUCTIONS MATCHES "^SSE$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+        elseif (VECTOR_INSTRUCTIONS MATCHES "^AVX$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+        elseif (VECTOR_INSTRUCTIONS MATCHES "^AVX2$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -mfma")
+        elseif (VECTOR_INSTRUCTIONS MATCHES "^KNL$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=knl")
+        else ()
+            message(SEND_ERROR "\"${VECTOR_INSTRUCTIONS}\" is an unknown vector instruction set option.\
+     Available options: ${VECTOR_INSTRUCTIONS_OPTIONS}")
+        endif ()
+
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        message("COMPILER IS ICC")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp-simd")
+
+        if (VECTOR_INSTRUCTIONS MATCHES "^NATIVE$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+        elseif (VECTOR_INSTRUCTIONS MATCHES "^SSE$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+        elseif (VECTOR_INSTRUCTIONS MATCHES "^AVX$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+        elseif (VECTOR_INSTRUCTIONS MATCHES "^AVX2$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=core-avx2 -fma")
+        elseif (VECTOR_INSTRUCTIONS MATCHES "^KNL$")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xMIC-AVX512 -fp-model precise")
+        else ()
+            message(SEND_ERROR "\"${VECTOR_INSTRUCTIONS}\" is an unknown vector instruction set option.\
+     Available options: ${VECTOR_INSTRUCTIONS_OPTIONS}")
+        endif ()
+    endif ()
+endif ()
+###################################  END VECTORIZATION  ###################################
+
 set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

@@ -77,12 +77,10 @@ class SoA {
    * @param particleId Position to read from.
    * @return Attribute value.
    */
-#pragma omp declare simd
   double read(int attribute, unsigned int particleId) {
     return arrays[attribute]->at(particleId);
   }
 
-#pragma omp declare simd
   double *begin(int attribute) {
     return &(arrays[attribute]->front());
   }
@@ -94,7 +92,6 @@ class SoA {
    * @param particleId Particle to update.
    * @param value New value.
    */
-#pragma omp declare simd
   template<int arrayLength>
   void write(std::array<int, arrayLength> attributes, unsigned int particleId,
              std::array<double, arrayLength> value) {
@@ -104,7 +101,6 @@ class SoA {
     }
   }
 
-#pragma omp declare simd
   template<int arrayLength>
   void add(std::array<int, arrayLength> attributes, unsigned int particleId,
            std::array<double, arrayLength> value) {
@@ -114,7 +110,6 @@ class SoA {
     }
   }
 
-#pragma omp declare simd
   template<int arrayLength>
   void sub(std::array<int, arrayLength> attributes, unsigned int particleId,
            std::array<double, arrayLength> value) {
