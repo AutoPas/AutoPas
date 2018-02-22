@@ -5,6 +5,9 @@ CMAKE_POLICY(SET CMP0057 NEW)
 
 project(autopas)
 
+# let ccmake and cmake-gui offer the default build type options
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebInfo;MinSizeRel")
+
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weffc++")
 if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.1)
     #Wsuggest-override only exists for g++ starting at version 5.1
@@ -24,8 +27,6 @@ if (USE_VECTORIZATION)
     set_property(CACHE VECTOR_INSTRUCTIONS PROPERTY STRINGS ${VECTOR_INSTRUCTIONS_OPTIONS})
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        message("COMPILER IS GCC")
-
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp-simd")
         # needed for GCC to vectorize LJFunctor.SoAFunctor
         option(ENABLE_FAST_MATH_GCC "Sets --ffast-math which is needed for gcc to vectoize efficiently" OFF)
@@ -49,7 +50,6 @@ if (USE_VECTORIZATION)
         endif ()
 
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-        message("COMPILER IS ICC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp-simd")
 
         if (VECTOR_INSTRUCTIONS MATCHES "^NATIVE$")
