@@ -81,13 +81,13 @@ void measureContainer(Container *cont, int numMolecules, int numIterations) {
 
   utils::Timer t;
 
-  cont->iteratePairwise2(&flopFunctor);
+  cont->iteratePairwiseAoS2(&flopFunctor);
   double flopsPerIteration =
       flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwise2(&func);
+    cont->iteratePairwiseAoS2(&func);
   }
   double elapsedTime = t.stop();
 
@@ -148,7 +148,7 @@ void testForceLJ() {
   container.addParticle(p4);
 
   LJFunctor<PrintableMolecule> func;
-  container.iteratePairwise(&func);
+  container.iteratePairwiseAoS2(&func);
 
   //	for (auto it = container.begin(); it.isValid(); ++it) {
   //		it->print();

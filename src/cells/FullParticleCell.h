@@ -5,8 +5,8 @@
  *      Author: tchipevn
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_FULLPARTICLECELL_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_FULLPARTICLECELL_H_
+#ifndef AUTOPAS_SRC_FULLPARTICLECELL_H_
+#define AUTOPAS_SRC_FULLPARTICLECELL_H_
 
 #include <vector>
 #include "ParticleCell.h"
@@ -27,4 +27,4 @@ class FullParticleCell : public ParticleCell<Particle> {
 
 } /* namespace autopas */
 
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_FULLPARTICLECELL_H_ */
+#endif /* AUTOPAS_SRC_FULLPARTICLECELL_H_ */

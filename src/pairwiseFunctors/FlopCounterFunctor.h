@@ -31,7 +31,7 @@ class FlopCounterFunctor : public Functor<Particle> {
     if (dr2 <= _cutoffSquare) ++_kernelCalls;
   }
 
-  enum SoAAttributes { id, posX, posY, posZ, forceX, forceY, forceZ };
+  enum SoAAttributes { id, posX, posY, posZ };
 
   void SoAFunctor(SoA &soa1, SoA &soa2) override {
     double *const __restrict__ x1ptr = soa1.begin(posX);

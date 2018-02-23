@@ -108,13 +108,13 @@ void measureContainer(Container *cont, int numParticles, int numIterations) {
 
   utils::Timer t;
 
-  cont->iteratePairwise2(&flopFunctor);
+  cont->iteratePairwiseAoS2(&flopFunctor);
   double flopsPerIteration =
       flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwise2(&func);
+    cont->iteratePairwiseAoS2(&func);
   }
   double elapsedTime = t.stop();
 

@@ -62,6 +62,8 @@ class SingleCellIterator<Particle, autopas::RMMParticleCell<Particle>> {
   }
   bool isValid() { return _cell != nullptr and _index < _cell->numParticles(); }
 
+  int getIndex() const { return _index; }
+
  private:
   RMMParticleCell<Particle> *_cell;
   Particle _AoSReservoir;

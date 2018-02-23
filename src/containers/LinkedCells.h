@@ -5,8 +5,8 @@
  *      Author: tchipevn
  */
 
-#ifndef SRC_CONTAINERS_LINKEDCELLS_H_
-#define SRC_CONTAINERS_LINKEDCELLS_H_
+#ifndef AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_
+#define AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_
 
 #include "CellBlock3D.h"
 #include "ParticleContainer.h"
@@ -33,10 +33,28 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void iteratePairwise(Functor<Particle> *f) override {}
+  void iteratePairwiseAoS(Functor<Particle> *f) override {
+    iteratePairwiseAoS2(f);
+  }
+
+  template<class ParticleFunctor>
+  void iteratePairwiseAoS2(ParticleFunctor *f) {
+    CellFunctor<Particle, ParticleCell, ParticleFunctor> cellFunctor(f);
+    //		cellFunctor.processCellAoSN3(this->_data[13]);
+    SlicedTraversal<ParticleCell,
+                    CellFunctor<Particle, ParticleCell, ParticleFunctor>>
+        traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
+                  &cellFunctor);
+    traversal.traverseCellPairs();
+  }
+
+  void iteratePairwiseSoA(Functor<Particle> *f) override {
+    //TODO: iteratePairwiseSoA
+    iteratePairwiseSoA2(f);
+  }
 
   template <class ParticleFunctor>
-  void iteratePairwise2(ParticleFunctor *f) {
+  void iteratePairwiseSoA2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor> cellFunctor(f);
     //		cellFunctor.processCellAoSN3(this->_data[13]);
     SlicedTraversal<ParticleCell,
@@ -53,4 +71,4 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
 } /* namespace autopas */
 
-#endif /* SRC_CONTAINERS_LINKEDCELLS_H_ */
+#endif /* AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_ */

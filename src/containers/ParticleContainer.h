@@ -31,7 +31,9 @@ class ParticleContainer {
 
   virtual void addParticle(Particle &p) = 0;
 
-  virtual void iteratePairwise(Functor<Particle> *f) = 0;
+  virtual void iteratePairwiseAoS(Functor<Particle> *f) = 0;
+
+  virtual void iteratePairwiseSoA(Functor<Particle> *f) = 0;
 
   iterator begin() { return ParticleIterator<Particle, ParticleCell>(&_data); }
 

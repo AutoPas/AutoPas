@@ -65,7 +65,78 @@ class LJFunctor : public Functor<Particle> {
       // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        if (*(id1ptr + i) == *(id2ptr + j)) {
+        if (id1ptr[i] == id2ptr[j]) {
+          continue;
+        }
+
+        const double drx = x1ptr[i] - x2ptr[j];
+        const double dry = y1ptr[i] - y2ptr[j];
+        const double drz = z1ptr[i] - z2ptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 > CUTOFFSQUARE) {
+          continue;
+        }
+
+        const double invdr2 = 1. / dr2;
+        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj6 = lj2 * lj2 * lj2;
+        const double lj12 = lj6 * lj6;
+        const double lj12m6 = lj12 - lj6;
+        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+
+        const double fx = drx * fac;
+        const double fy = dry * fac;
+        const double fz = drz * fac;
+
+        fxacc += fx;
+        fyacc += fy;
+        fzacc += fz;
+
+        fx2ptr[j] -= fx;
+        fy2ptr[j] -= fy;
+        fz2ptr[j] -= fz;
+      }
+
+      fx1ptr[i] += fxacc;
+      fy1ptr[i] += fyacc;
+      fz1ptr[i] += fzacc;
+    }
+  }
+
+  void SoAFunctor(SoA &soa) override {
+    double *const __restrict__ x1ptr = soa.begin(posX);
+    double *const __restrict__ y1ptr = soa.begin(posY);
+    double *const __restrict__ z1ptr = soa.begin(posZ);
+    double *const __restrict__ x2ptr = soa.begin(posX);
+    double *const __restrict__ y2ptr = soa.begin(posY);
+    double *const __restrict__ z2ptr = soa.begin(posZ);
+
+    double *const __restrict__ fx1ptr = soa.begin(forceX);
+    double *const __restrict__ fy1ptr = soa.begin(forceY);
+    double *const __restrict__ fz1ptr = soa.begin(forceZ);
+    double *const __restrict__ fx2ptr = soa.begin(forceX);
+    double *const __restrict__ fy2ptr = soa.begin(forceY);
+    double *const __restrict__ fz2ptr = soa.begin(forceZ);
+
+    double *const __restrict__ id1ptr = soa.begin(id);
+    double *const __restrict__ id2ptr = soa.begin(id);
+
+    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+      double fxacc = 0;
+      double fyacc = 0;
+      double fzacc = 0;
+
+      // icpc vectorizes this.
+      // g++ only with -ffast-math or -funsafe-math-optimizations
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+      for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
+        if (id1ptr[i] == id2ptr[j]) {
           continue;
         }
 
@@ -134,7 +205,7 @@ class LJFunctor : public Functor<Particle> {
       p.setF(soa->read<3>({forceX, forceY, forceZ}, i));
       particles->push_back(p);
     }
-  };
+  }
 
   static void setGlobals(double cutoff, double epsilon, double sigma,
                          double shift) {
