@@ -8,7 +8,7 @@ endif ()
 
 # check if Doxygen is installed
 find_package(Doxygen
-        REQUIRED dot
+        COMPONENTS dot
         OPTIONAL_COMPONENTS mscgen dia)
 if (DOXYGEN_FOUND)
     # set input and output files
@@ -27,6 +27,7 @@ if (DOXYGEN_FOUND)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             COMMENT "Generating API documentation with Doxygen"
             VERBATIM )
-else (DOXYGEN_FOUND)
-    message(STATUS "Doxygen needs to be installed to generate the doxygen documentation, you might also have to install doc (graphviz)")
-endif (DOXYGEN_FOUND)
+else ()
+    message(WARNING "Doxygen needs to be installed to generate the doxygen documentation, you might also have to install doc (graphviz)")
+    set(BUILD_TARGET_DOC OFF CACHE BOOL "" FORCE)
+endif ()
