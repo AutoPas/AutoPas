@@ -17,7 +17,7 @@ namespace sph {
  * class to define a kernel function for SPH simulations
  */
 class SPHKernels {
-  static constexpr double pi = atan(1.0) * 4.0;
+  static constexpr double pi = M_PI;  // atan(1.0) * 4.0;
   static constexpr double kernelSupportRadius = 2.5;
   // const double C_CFL = 0.3;
  public:
