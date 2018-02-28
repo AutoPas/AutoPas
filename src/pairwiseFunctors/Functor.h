@@ -12,7 +12,7 @@
 
 namespace autopas {
 
-template <class Particle>
+template<class Particle, class ParticleCell>
 class Functor {
  public:
   virtual ~Functor() = default;
@@ -34,13 +34,13 @@ class Functor {
    * @param soa1 first structure of arrays
    * @param soa2 second structure of arrays
    */
-  virtual void SoAFunctor(SoA &soa1, SoA &soa2) {}
   virtual void SoAFunctor(SoA &soa) {}
+  virtual void SoAFunctor(SoA &soa1, SoA &soa2) {}
   // TODO: in what form should particles be passed to this?
-  virtual void SoALoader(std::vector<Particle> &particles, SoA *soa) {};
+  virtual void SoALoader(ParticleCell &cell, SoA *soa) {}
   //	virtual void SoAStorer() = 0
   //	virtual void SoAInserter() = 0;
-  virtual void SoAExtractor(std::vector<Particle> *particles, SoA *soa) {};
+  virtual void SoAExtractor(ParticleCell *cell, SoA *soa) {}
 };
 
 } /* namespace autopas */

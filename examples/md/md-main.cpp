@@ -39,11 +39,11 @@ int main(int argc, char *argv[]) {
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
   cout << "sigma: " << PrintableMolecule::getSigma() << endl;
 
-  LJFunctor<PrintableMolecule>::setGlobals(10.0, MoleculeLJ::getEpsilon(),
-                                           MoleculeLJ::getSigma(), 0.0);
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(10.0, MoleculeLJ::getEpsilon(),
+                                                                                MoleculeLJ::getSigma(), 0.0);
   PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
   PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
-  LJFunctor<PrintableMolecule> func;
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
   func.AoSFunctor(p1, p2);
   //	p1.print();
   //	p2.print();
@@ -76,8 +76,8 @@ int main(int argc, char *argv[]) {
 
 template <class Container>
 void measureContainer(Container *cont, int numMolecules, int numIterations) {
-  LJFunctor<PrintableMolecule> func;
-  FlopCounterFunctor<PrintableMolecule> flopFunctor(cont->getCutoff());
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
+  FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopFunctor(cont->getCutoff());
 
   utils::Timer t;
 
@@ -147,7 +147,7 @@ void testForceLJ() {
   container.addParticle(p3);
   container.addParticle(p4);
 
-  LJFunctor<PrintableMolecule> func;
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
   container.iteratePairwiseAoS2(&func);
 
   //	for (auto it = container.begin(); it.isValid(); ++it) {

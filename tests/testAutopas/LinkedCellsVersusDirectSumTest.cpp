@@ -16,8 +16,11 @@ LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
   double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<autopas::MoleculeLJ>::setGlobals(getCutoff(), eps, sig,
-                                                      shift);
+  autopas::LJFunctor<
+      autopas::MoleculeLJ,
+      autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(getCutoff(),
+                                                                  eps, sig,
+                                                                  shift);
 }
 
 double LinkedCellsVersusDirectSumTest::fRand(double fMin, double fMax) const {
@@ -60,7 +63,7 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules,
     _linkedCells.addParticle(*it);
   }
 
-  autopas::LJFunctor<autopas::MoleculeLJ> func;
+  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func;
   _directSum.iteratePairwiseAoS2(&func);
   _linkedCells.iteratePairwiseAoS2(&func);
 
@@ -90,7 +93,8 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules,
     }
   }
 
-  autopas::FlopCounterFunctor<autopas::MoleculeLJ> flopsDirect(getCutoff()),
+  autopas::FlopCounterFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
+      flopsDirect(getCutoff()),
       flopsLinked(getCutoff());
   _directSum.iteratePairwiseAoS2(&flopsDirect);
   _linkedCells.iteratePairwiseAoS2(&flopsLinked);

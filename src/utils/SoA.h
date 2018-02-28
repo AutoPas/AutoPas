@@ -1,6 +1,7 @@
 #ifndef AUTOPAS_SOA_H
 #define AUTOPAS_SOA_H
 
+#include <cassert>
 #include <map>
 #include <vector>
 #include "AlignedAllocator.h"
@@ -33,12 +34,25 @@ class SoA {
    * @brief Creates an aligned vector for every given attribute.
    * @param attributes Vector of Attributes that shall be stored.
    */
-  template<std::size_t arraySize>
-  void initArrays(std::array<int, arraySize> attributes) {
-    for (auto a : attributes) {
-      // TODO: assert attribute value does not already exit
-      arrays.insert(
-          make_pair(a, new std::vector<double, AlignedAllocator<double>>));
+  //  template<std::size_t numAttributes>
+  //  void initArrays(std::array<int, numAttributes> attributes, size_t length =
+  //  1) { template<class Particle, std::size_t numAttributes> void
+  //  initArrays(const std::array<int, numAttributes> attributes, size_t length
+  //  = 1) {
+  void initArrays(const std::vector<int> attributes, size_t length = 0) {
+    arrays.clear();
+    for (int a : attributes) {
+      // assert that every attribute does not already exist
+      assert(arrays.find(a) == arrays.end());
+      arrays.insert(make_pair(
+          a, new std::vector<double, AlignedAllocator<double>>(length)));
+    }
+  }
+
+  template<std::size_t numAttributes>
+  void resizeArrays(std::array<int, numAttributes> attributes, size_t length) {
+    for (int a : attributes) {
+      arrays[a]->resize(length);
     }
   }
 
@@ -60,11 +74,14 @@ class SoA {
    * @param particleId Position to read from.
    * @return Array of attributes ordered by given attribute order.
    */
-  template<std::size_t arrayLength>
-  std::array<double, arrayLength> read(std::array<int, arrayLength> attributes,
-                                       unsigned int particleId) {
-    std::array<double, arrayLength> retArray;
+  template<std::size_t numAttributes>
+  std::array<double, numAttributes> read(
+      std::array<int, numAttributes> attributes, unsigned int particleId) {
+    std::array<double, numAttributes> retArray;
     int i = 0;
+    if (particleId >= getNumParticles()) {
+      return retArray;
+    }
     for (auto a : attributes) {
       retArray[i++] = arrays[a]->at(particleId);
     }
@@ -81,9 +98,7 @@ class SoA {
     return arrays[attribute]->at(particleId);
   }
 
-  double *begin(int attribute) {
-    return &(arrays[attribute]->front());
-  }
+  double *begin(int attribute) { return &(arrays[attribute]->front()); }
 
   /**
    * @brief Writes / updates values of attributes for a specific particle.
@@ -92,27 +107,27 @@ class SoA {
    * @param particleId Particle to update.
    * @param value New value.
    */
-  template<int arrayLength>
-  void write(std::array<int, arrayLength> attributes, unsigned int particleId,
-             std::array<double, arrayLength> value) {
+  template<int numAttributes>
+  void write(std::array<int, numAttributes> attributes, unsigned int particleId,
+             std::array<double, numAttributes> value) {
     int i = 0;
     for (auto a : attributes) {
       arrays[a]->at(particleId) = value[i++];
     }
   }
 
-  template<int arrayLength>
-  void add(std::array<int, arrayLength> attributes, unsigned int particleId,
-           std::array<double, arrayLength> value) {
+  template<int numAttributes>
+  void add(std::array<int, numAttributes> attributes, unsigned int particleId,
+           std::array<double, numAttributes> value) {
     int i = 0;
     for (auto a : attributes) {
       arrays[a]->at(particleId) += value[i++];
     }
   }
 
-  template<int arrayLength>
-  void sub(std::array<int, arrayLength> attributes, unsigned int particleId,
-           std::array<double, arrayLength> value) {
+  template<int numAttributes>
+  void sub(std::array<int, numAttributes> attributes, unsigned int particleId,
+           std::array<double, numAttributes> value) {
     int i = 0;
     for (auto a : attributes) {
       arrays[a]->at(particleId) -= value[i++];

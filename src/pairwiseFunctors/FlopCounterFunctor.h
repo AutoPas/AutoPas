@@ -13,11 +13,11 @@
 
 namespace autopas {
 
-template <class Particle>
-class FlopCounterFunctor : public Functor<Particle> {
+template<class Particle, class ParticleCell>
+class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
  public:
-  explicit FlopCounterFunctor<Particle>(double c)
-      : autopas::Functor<Particle>(),
+  explicit FlopCounterFunctor<Particle, ParticleCell>(double c)
+      : autopas::Functor<Particle, ParticleCell>(),
         _cutoffSquare(c * c),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
@@ -33,6 +33,10 @@ class FlopCounterFunctor : public Functor<Particle> {
 
   enum SoAAttributes { id, posX, posY, posZ };
 
+  void SoAFunctor(SoA &soa) override {
+    // TODO: implement
+    assert(false);
+  }
   void SoAFunctor(SoA &soa1, SoA &soa2) override {
     double *const __restrict__ x1ptr = soa1.begin(posX);
     double *const __restrict__ y1ptr = soa1.begin(posY);
@@ -79,14 +83,14 @@ class FlopCounterFunctor : public Functor<Particle> {
 
   double getHitRate() {
     return static_cast<double>(_kernelCalls) /
-           static_cast<double>(_distanceCalculations);
+        static_cast<double>(_distanceCalculations);
   }
 
   double getFlops(unsigned long numFlopsPerKernelCall) const {
     // 3 sub + 3 square + 2 add
     const double numFlopsPerDistanceCalculation = 8;
     const double distFlops = numFlopsPerDistanceCalculation *
-                             static_cast<double>(_distanceCalculations);
+        static_cast<double>(_distanceCalculations);
     const double kernFlops =
         numFlopsPerKernelCall * static_cast<double>(_kernelCalls);
     return distFlops + kernFlops;

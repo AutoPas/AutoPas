@@ -67,7 +67,7 @@ void initContainer(
 
 void apply(ParticleContainer<PrintableMolecule,
                              FullParticleCell<PrintableMolecule>> &container,
-           Functor<PrintableMolecule> &functor,
+           Functor<PrintableMolecule, FullParticleCell<PrintableMolecule>> &functor,
            MDFlexParser::DataLayoutOption layoutOption) {
   switch (layoutOption) {
     case MDFlexParser::aos: {
@@ -104,9 +104,9 @@ int main(int argc, char **argv) {
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
   cout << "sigma  : " << PrintableMolecule::getSigma() << endl;
 
-  LJFunctor<PrintableMolecule>::setGlobals(10.0, MoleculeLJ::getEpsilon(),
-                                           MoleculeLJ::getSigma(), 0.0);
-  LJFunctor<PrintableMolecule> functorLJ;
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(10.0, MoleculeLJ::getEpsilon(),
+                                                                                MoleculeLJ::getSigma(), 0.0);
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functorLJ;
 
   startApply = std::chrono::high_resolution_clock::now();
   apply(*container, functorLJ, dataLayoutChoice);
@@ -121,9 +121,15 @@ int main(int argc, char **argv) {
   auto durationApply =
       std::chrono::duration_cast<std::chrono::microseconds>(stopApply - startApply)
           .count();
+  auto durationTotalSec =
+      std::chrono::duration_cast<std::chrono::seconds>(stopTotal - startTotal)
+          .count();
+  auto durationApplySec =
+      std::chrono::duration_cast<std::chrono::seconds>(stopApply - startApply)
+          .count();
 
-  cout << "Time total: " << durationTotal << " \u03bcs" << endl;
-  cout << "Time apply: " << durationApply << " \u03bcs" << endl;
+  cout << "Time total: " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
+  cout << "Time apply: " << durationApply << " \u03bcs (" << durationApplySec << "s)" << endl;
 
   return EXIT_SUCCESS;
 }

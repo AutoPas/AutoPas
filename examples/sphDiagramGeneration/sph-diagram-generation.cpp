@@ -103,7 +103,8 @@ int main(int argc, char *argv[]) {
 template <class Container>
 void measureContainer(Container *cont, int numParticles, int numIterations) {
   autopas::sph::SPHCalcDensityFunctor func;
-  autopas::FlopCounterFunctor<autopas::sph::SPHParticle> flopFunctor(
+  autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
+      flopFunctor(
       cont->getCutoff());
 
   utils::Timer t;

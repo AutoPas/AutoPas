@@ -15,7 +15,7 @@
 
 namespace autopas {
 
-template <class Particle, class ParticleCell>
+template<class Particle, class ParticleCell>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
  public:
   LinkedCells(const std::array<double, 3> boxMin,
@@ -33,32 +33,32 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void iteratePairwiseAoS(Functor<Particle> *f) override {
+  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) override {
     iteratePairwiseAoS2(f);
   }
 
   template<class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f) {
-    CellFunctor<Particle, ParticleCell, ParticleFunctor> cellFunctor(f);
+    CellFunctor<Particle, ParticleCell, ParticleFunctor, false> cellFunctor(f);
     //		cellFunctor.processCellAoSN3(this->_data[13]);
     SlicedTraversal<ParticleCell,
-                    CellFunctor<Particle, ParticleCell, ParticleFunctor>>
+                    CellFunctor<Particle, ParticleCell, ParticleFunctor, false>>
         traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                   &cellFunctor);
     traversal.traverseCellPairs();
   }
 
-  void iteratePairwiseSoA(Functor<Particle> *f) override {
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) override {
     //TODO: iteratePairwiseSoA
     iteratePairwiseSoA2(f);
   }
 
-  template <class ParticleFunctor>
+  template<class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f) {
-    CellFunctor<Particle, ParticleCell, ParticleFunctor> cellFunctor(f);
+    CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);
     //		cellFunctor.processCellAoSN3(this->_data[13]);
     SlicedTraversal<ParticleCell,
-                    CellFunctor<Particle, ParticleCell, ParticleFunctor>>
+                    CellFunctor<Particle, ParticleCell, ParticleFunctor, true>>
         traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                   &cellFunctor);
     traversal.traverseCellPairs();
