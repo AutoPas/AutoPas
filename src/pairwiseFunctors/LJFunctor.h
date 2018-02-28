@@ -180,14 +180,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoALoader(ParticleCell &cell, SoA *soa) override {
-    soa->resizeArrays<7>({Particle::AttributeNames::id,
-                          Particle::AttributeNames::posX,
-                          Particle::AttributeNames::posY,
-                          Particle::AttributeNames::posZ,
-                          Particle::AttributeNames::forceX,
-                          Particle::AttributeNames::forceY,
-                          Particle::AttributeNames::forceZ,
-                         }, cell.numParticles());
+    soa->resizeArrays(cell.numParticles());
 
     double *const __restrict__ idptr = soa->begin(Particle::AttributeNames::id);
     double *const __restrict__ xptr = soa->begin(Particle::AttributeNames::posX);

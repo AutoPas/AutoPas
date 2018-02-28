@@ -34,11 +34,6 @@ class SoA {
    * @brief Creates an aligned vector for every given attribute.
    * @param attributes Vector of Attributes that shall be stored.
    */
-  //  template<std::size_t numAttributes>
-  //  void initArrays(std::array<int, numAttributes> attributes, size_t length =
-  //  1) { template<class Particle, std::size_t numAttributes> void
-  //  initArrays(const std::array<int, numAttributes> attributes, size_t length
-  //  = 1) {
   void initArrays(const std::vector<int> attributes, size_t length = 0) {
     arrays.clear();
     for (int a : attributes) {
@@ -49,10 +44,13 @@ class SoA {
     }
   }
 
-  template<std::size_t numAttributes>
-  void resizeArrays(std::array<int, numAttributes> attributes, size_t length) {
-    for (int a : attributes) {
-      arrays[a]->resize(length);
+  /**
+   * @brief Resizes all Vectors to the given length.
+   * @param length new length.
+   */
+  void resizeArrays(size_t length) {
+    for (auto &&a : arrays) {
+      a.second->resize(length);
     }
   }
 
@@ -61,7 +59,6 @@ class SoA {
    * @param attribute Index of array to push to.
    * @param value Value to push.
    */
-  // TODO: for maximum convenience make vectors pushable
   void push(const int attribute, const double value) {
     arrays[attribute]->push_back(value);
   }
@@ -82,7 +79,7 @@ class SoA {
     if (particleId >= getNumParticles()) {
       return retArray;
     }
-    for (auto a : attributes) {
+    for (auto &&a : attributes) {
       retArray[i++] = arrays[a]->at(particleId);
     }
     return retArray;
@@ -98,6 +95,11 @@ class SoA {
     return arrays[attribute]->at(particleId);
   }
 
+  /**
+   * Returns a pointer to the given attribute vector.
+   * @param attribute ID of the desired attribute.
+   * @return Pointer to the beginning of the attribute vector
+   */
   double *begin(int attribute) { return &(arrays[attribute]->front()); }
 
   /**
@@ -111,7 +113,7 @@ class SoA {
   void write(std::array<int, numAttributes> attributes, unsigned int particleId,
              std::array<double, numAttributes> value) {
     int i = 0;
-    for (auto a : attributes) {
+    for (auto &&a : attributes) {
       arrays[a]->at(particleId) = value[i++];
     }
   }
@@ -120,7 +122,7 @@ class SoA {
   void add(std::array<int, numAttributes> attributes, unsigned int particleId,
            std::array<double, numAttributes> value) {
     int i = 0;
-    for (auto a : attributes) {
+    for (auto &&a : attributes) {
       arrays[a]->at(particleId) += value[i++];
     }
   }
@@ -129,7 +131,7 @@ class SoA {
   void sub(std::array<int, numAttributes> attributes, unsigned int particleId,
            std::array<double, numAttributes> value) {
     int i = 0;
-    for (auto a : attributes) {
+    for (auto &&a : attributes) {
       arrays[a]->at(particleId) -= value[i++];
     }
   }
