@@ -18,7 +18,9 @@ class MDFlexParser {
 
   bool parseInput(int argc, char **argv);
   ContainerOption getContainerOption() const;
+  double getCutoff() const;
   DataLayoutOption getDataLayoutOption() const;
+  FunctorOption getFunctorOption() const;
   size_t getParticlesPerDim() const;
 
  private:
@@ -26,6 +28,7 @@ class MDFlexParser {
   DataLayoutOption dataLayoutOption;
   FunctorOption functorOption;
   size_t particlesPerDim;
+  double cutoff;
 };
 
 #endif  // AUTOPAS_MDFLEXPARSER_H

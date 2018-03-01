@@ -5,17 +5,18 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   int option, option_index;
   static struct option long_options[] = {
       {"container", required_argument, nullptr, 'c'},
+      {"cutoff", required_argument, nullptr, 'C'},
       {"data-layout", required_argument, nullptr, 'd'},
       {"functor", required_argument, nullptr, 'f'},
       {"particles-per-dimension", required_argument, nullptr, 'n'},
   };
-  if (argc > 1) {
+  int numOptions = sizeof(long_options) / sizeof(long_options[0]) * 2 + 1;
+  if (argc == numOptions) {
     string strArg;
     while ((option = getopt_long(argc, argv, "", long_options,
                                  &option_index)) != -1) {
       strArg = optarg;
-      transform(strArg.begin(), strArg.end(),
-                strArg.begin(), ::tolower);
+      transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
       switch (option) {
         case 'c': {
           if (strArg.find("direct") != string::npos) {
@@ -27,7 +28,19 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           } else {
             cerr << "Unknown container : " << strArg << endl;
             cerr << "Please use 'DirectSum' or 'LinkedCells'!" << endl;
+            displayHelp = true;
           }
+          break;
+        }
+        case 'C': {
+          try {
+            cutoff = stod(strArg);
+          } catch (const exception &) {
+            cerr << "Error parsing cutoff Radius: " << optarg << endl;
+            displayHelp = true;
+            break;
+          }
+          cout << "Cutoff radius: " << cutoff << endl;
           break;
         }
         case 'd': {
@@ -40,24 +53,31 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           } else {
             cerr << "Unknown data layout : " << strArg << endl;
             cerr << "Please use 'AoS' or 'SoA'!" << endl;
+            displayHelp = true;
           }
           break;
         }
         case 'f': {
-          if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+          if (strArg.find("lj") != string::npos ||
+              strArg.find("lennard-jones") != string::npos) {
             cout << "Using Lennard-Jones (12-6) Functor" << endl;
             functorOption = lj12_6;
           } else {
             cerr << "Unknown functor : " << strArg << endl;
-            cerr << "Please use 'Lennard-Jones' or '?'!" << endl;
+            cerr << "Please use 'Lennard-Jones', you have no options here :P"
+                 << endl;
+            displayHelp = true;
           }
           break;
         }
         case 'n': {
           try {
-            particlesPerDim = (size_t) strtol(optarg, nullptr, 10);
+            particlesPerDim = stoul(strArg);
           } catch (const exception &) {
-            cerr << "Error parsing number of particles per dimension: " << optarg << endl;
+            cerr << "Error parsing number of particles per dimension: "
+                 << optarg << endl;
+            displayHelp = true;
+            break;
           }
           cout << "Simulating " << particlesPerDim
                << " particles per dimension." << endl;
@@ -70,6 +90,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
     }
   } else {
+    cerr << "Wrong number of arguments!" << endl;
+    cerr << "Received: " << argc << " Expected: " << numOptions << endl;
     displayHelp = true;
   }
   if (displayHelp) {
@@ -87,10 +109,11 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
 MDFlexParser::ContainerOption MDFlexParser::getContainerOption() const {
   return containerOption;
 }
+double MDFlexParser::getCutoff() const { return cutoff; }
 MDFlexParser::DataLayoutOption MDFlexParser::getDataLayoutOption() const {
   return dataLayoutOption;
 }
-size_t MDFlexParser::getParticlesPerDim() const {
-  return particlesPerDim;
+MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const {
+  return functorOption;
 }
-
+size_t MDFlexParser::getParticlesPerDim() const { return particlesPerDim; }

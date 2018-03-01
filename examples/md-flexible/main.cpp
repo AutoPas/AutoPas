@@ -1,9 +1,8 @@
 
 #include <chrono>
 #include <iostream>
-#include "../md/mdutils.h"
+#include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
-#include "autopas.h"
 
 using namespace std;
 using namespace autopas;
@@ -33,15 +32,27 @@ void printMolecules(
   }
 }
 
+/**
+ * @brief Constructs a container and fills it with particles.
+ *
+ * According to the options passed, a %DirectSum or %'LinkedCells' container is
+ * built. It consists of %`FullParticleCells` and is filled with
+ * `PrintableMolecules`. The particles are aligned on a cuboid grid.
+ *
+ * @param containerOption Which container type should be built.
+ * @param container Pointer to where the container should be built.
+ * @param particlesPerDim Number of desired particles per dimension.
+ * @param cutoff Cutoff radius to use. Affects number and size of cells for e.g.
+ * LinkedCells.
+ */
 void initContainer(
     MDFlexParser::ContainerOption containerOption,
     ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>> *
     &container,
-    size_t particlesPerDim) {
+    size_t particlesPerDim, double cutoff) {
   std::array<double, 3> boxMin({0., 0., 0.}),
       boxMax({particlesPerDim + 1.0, particlesPerDim + 1.0,
               particlesPerDim + 1.0});
-  double cutoff = 1.0;
 
   switch (containerOption) {
     case MDFlexParser::directSum: {
@@ -65,10 +76,11 @@ void initContainer(
   fillContainer(container, particlesPerDim);
 }
 
-void apply(ParticleContainer<PrintableMolecule,
-                             FullParticleCell<PrintableMolecule>> &container,
-           Functor<PrintableMolecule, FullParticleCell<PrintableMolecule>> &functor,
-           MDFlexParser::DataLayoutOption layoutOption) {
+void apply(
+    ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
+    &container,
+    Functor<PrintableMolecule, FullParticleCell<PrintableMolecule>> &functor,
+    MDFlexParser::DataLayoutOption layoutOption) {
   switch (layoutOption) {
     case MDFlexParser::aos: {
       container.iteratePairwiseAoS(&functor);
@@ -84,28 +96,29 @@ void apply(ParticleContainer<PrintableMolecule,
 int main(int argc, char **argv) {
   MDFlexParser parser;
   if (!parser.parseInput(argc, argv)) {
-    cerr << "Could not parse arguments!" << endl;
     exit(-1);
   }
 
-  MDFlexParser::ContainerOption containerChoice(parser.getContainerOption());
-  MDFlexParser::DataLayoutOption dataLayoutChoice(parser.getDataLayoutOption());
-  size_t particlesPerDim(parser.getParticlesPerDim());
+  auto containerChoice(parser.getContainerOption());
+  auto dataLayoutChoice(parser.getDataLayoutOption());
+  auto particlesPerDim(parser.getParticlesPerDim());
+  auto cutoff(parser.getCutoff());
 
-  std::chrono::high_resolution_clock::time_point startTotal, stopTotal, startApply, stopApply;
+  std::chrono::high_resolution_clock::time_point startTotal, stopTotal,
+      startApply, stopApply;
 
   startTotal = std::chrono::high_resolution_clock::now();
   ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
       *container = nullptr;
-  initContainer(containerChoice, container, particlesPerDim);
+  initContainer(containerChoice, container, particlesPerDim, cutoff);
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
   cout << "sigma  : " << PrintableMolecule::getSigma() << endl;
 
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(10.0, MoleculeLJ::getEpsilon(),
-                                                                                MoleculeLJ::getSigma(), 0.0);
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(
+      10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functorLJ;
 
   startApply = std::chrono::high_resolution_clock::now();
@@ -113,14 +126,12 @@ int main(int argc, char **argv) {
   stopApply = std::chrono::high_resolution_clock::now();
   stopTotal = std::chrono::high_resolution_clock::now();
 
-//  printMolecules(container);
-
-  auto durationTotal =
-      std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal)
-          .count();
-  auto durationApply =
-      std::chrono::duration_cast<std::chrono::microseconds>(stopApply - startApply)
-          .count();
+  auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(
+      stopTotal - startTotal)
+      .count();
+  auto durationApply = std::chrono::duration_cast<std::chrono::microseconds>(
+      stopApply - startApply)
+      .count();
   auto durationTotalSec =
       std::chrono::duration_cast<std::chrono::seconds>(stopTotal - startTotal)
           .count();
@@ -128,8 +139,10 @@ int main(int argc, char **argv) {
       std::chrono::duration_cast<std::chrono::seconds>(stopApply - startApply)
           .count();
 
-  cout << "Time total: " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
-  cout << "Time apply: " << durationApply << " \u03bcs (" << durationApplySec << "s)" << endl;
+  cout << "Time total: " << durationTotal << " \u03bcs (" << durationTotalSec
+       << "s)" << endl;
+  cout << "Time apply: " << durationApply << " \u03bcs (" << durationApplySec
+       << "s)" << endl;
 
   return EXIT_SUCCESS;
 }
