@@ -21,6 +21,7 @@ class MDFlexParser {
   double getCutoff() const;
   DataLayoutOption getDataLayoutOption() const;
   FunctorOption getFunctorOption() const;
+  size_t getIterations() const;
   size_t getParticlesPerDim() const;
 
  private:
@@ -28,6 +29,7 @@ class MDFlexParser {
   DataLayoutOption dataLayoutOption;
   FunctorOption functorOption;
   size_t particlesPerDim;
+  size_t iterations;
   double cutoff;
 };
 

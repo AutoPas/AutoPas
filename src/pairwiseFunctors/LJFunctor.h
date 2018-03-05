@@ -38,6 +38,9 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA &soa) override {
+    if (soa.getNumParticles() == 0)
+      return;
+
     double *const __restrict__ x1ptr = soa.begin(Particle::AttributeNames::posX);
     double *const __restrict__ y1ptr = soa.begin(Particle::AttributeNames::posY);
     double *const __restrict__ z1ptr = soa.begin(Particle::AttributeNames::posZ);
@@ -64,9 +67,8 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        if (id1ptr[i] == id2ptr[j]) {
+        if (id1ptr[i] == id2ptr[j])
           continue;
-        }
 
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -78,9 +80,8 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE) {
+        if (dr2 > CUTOFFSQUARE)
           continue;
-        }
 
         const double invdr2 = 1. / dr2;
         const double lj2 = SIGMASQUARE * invdr2;
@@ -109,6 +110,9 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA &soa1, SoA &soa2) override {
+    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0)
+      return;
+
     double *const __restrict__ x1ptr = soa1.begin(Particle::AttributeNames::posX);
     double *const __restrict__ y1ptr = soa1.begin(Particle::AttributeNames::posY);
     double *const __restrict__ z1ptr = soa1.begin(Particle::AttributeNames::posZ);
@@ -135,9 +139,8 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        if (id1ptr[i] == id2ptr[j]) {
+        if (id1ptr[i] == id2ptr[j])
           continue;
-        }
 
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -149,9 +152,8 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE) {
+        if (dr2 > CUTOFFSQUARE)
           continue;
-        }
 
         const double invdr2 = 1. / dr2;
         const double lj2 = SIGMASQUARE * invdr2;
@@ -181,6 +183,8 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
   void SoALoader(ParticleCell &cell, SoA *soa) override {
     soa->resizeArrays(cell.numParticles());
+    if (cell.numParticles() == 0)
+      return;
 
     double *const __restrict__ idptr = soa->begin(Particle::AttributeNames::id);
     double *const __restrict__ xptr = soa->begin(Particle::AttributeNames::posX);
@@ -204,6 +208,8 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAExtractor(ParticleCell *cell, SoA *soa) override {
+    if (soa->getNumParticles() == 0)
+      return;
 
     SingleCellIterator<Particle, ParticleCell> cellIter(cell);
 

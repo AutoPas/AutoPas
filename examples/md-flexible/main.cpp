@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
   auto dataLayoutChoice(parser.getDataLayoutOption());
   auto particlesPerDim(parser.getParticlesPerDim());
   auto cutoff(parser.getCutoff());
+  auto numIterations(parser.getIterations());
 
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal,
       startApply, stopApply;
@@ -119,10 +120,12 @@ int main(int argc, char **argv) {
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(
       10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functorLJ;
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
 
   startApply = std::chrono::high_resolution_clock::now();
-  apply(*container, functorLJ, dataLayoutChoice);
+  for (unsigned int i = 0; i < numIterations; ++i) {
+    apply(*container, functor, dataLayoutChoice);
+  }
   stopApply = std::chrono::high_resolution_clock::now();
   stopTotal = std::chrono::high_resolution_clock::now();
 
@@ -132,17 +135,23 @@ int main(int argc, char **argv) {
   auto durationApply = std::chrono::duration_cast<std::chrono::microseconds>(
       stopApply - startApply)
       .count();
-  auto durationTotalSec =
-      std::chrono::duration_cast<std::chrono::seconds>(stopTotal - startTotal)
-          .count();
-  auto durationApplySec =
-      std::chrono::duration_cast<std::chrono::seconds>(stopApply - startApply)
-          .count();
+  auto durationTotalSec = durationTotal * 1e-6;
+  auto durationApplySec = durationApply * 1e-6;
 
-  cout << "Time total: " << durationTotal << " \u03bcs (" << durationTotalSec
-       << "s)" << endl;
-  cout << "Time apply: " << durationApply << " \u03bcs (" << durationApplySec
-       << "s)" << endl;
+  FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(container->getCutoff());
+  apply(*container, flopCounterFunctor, dataLayoutChoice);
+  auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
+  auto mmups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
+
+  cout << fixed << setprecision(2);
+  cout << endl << "Measurements:" << endl;
+  cout << "Time total: " << durationTotal << " \u03bcs ("
+       << durationTotalSec << "s)" << endl;
+  cout << "Time apply: " << durationApply / numIterations << " \u03bcs ("
+       << durationApplySec / numIterations << "s)" << endl;
+  cout << "GFLOPs/sec: " << flops * 1e-9 / durationApplySec << endl;
+  cout << "MMUPs/sec : " << mmups << endl;
+  cout << "Hit rate  : " << flopCounterFunctor.getHitRate() << endl;
 
   return EXIT_SUCCESS;
 }

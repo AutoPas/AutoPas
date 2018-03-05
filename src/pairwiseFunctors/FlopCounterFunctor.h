@@ -34,8 +34,46 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   enum SoAAttributes { id, posX, posY, posZ };
 
   void SoAFunctor(SoA &soa) override {
-    // TODO: implement
-    assert(false);
+    if (soa.getNumParticles() == 0)
+      return;
+
+    double *const __restrict__ x1ptr = soa.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y1ptr = soa.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z1ptr = soa.begin(Particle::AttributeNames::posZ);
+
+    double *const __restrict__ id1ptr = soa.begin(Particle::AttributeNames::id);
+
+    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+      unsigned long distanceCalculationsAcc = 0;
+      unsigned long kernelCallsAcc = 0;
+
+      // icpc vectorizes this.
+      // g++ only with -ffast-math or -funsafe-math-optimizations
+#pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
+      for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
+        if (id1ptr[i] == id1ptr[j])
+          continue;
+
+        ++distanceCalculationsAcc;
+
+        const double drx = x1ptr[i] - x1ptr[j];
+        const double dry = y1ptr[i] - y1ptr[j];
+        const double drz = z1ptr[i] - z1ptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 <= _cutoffSquare)
+          ++kernelCallsAcc;
+
+      }
+
+      _distanceCalculations += distanceCalculationsAcc;
+      _kernelCalls += kernelCallsAcc;
+    }
   }
   void SoAFunctor(SoA &soa1, SoA &soa2) override {
     double *const __restrict__ x1ptr = soa1.begin(posX);

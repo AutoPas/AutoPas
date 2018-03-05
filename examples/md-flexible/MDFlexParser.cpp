@@ -8,6 +8,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       {"cutoff", required_argument, nullptr, 'C'},
       {"data-layout", required_argument, nullptr, 'd'},
       {"functor", required_argument, nullptr, 'f'},
+      {"iterations", required_argument, nullptr, 'i'},
       {"particles-per-dimension", required_argument, nullptr, 'n'},
   };
   int numOptions = sizeof(long_options) / sizeof(long_options[0]) * 2 + 1;
@@ -70,6 +71,19 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           }
           break;
         }
+        case 'i': {
+          try {
+            iterations = stoul(strArg);
+          } catch (const exception &) {
+            cerr << "Error parsing number of iterations: "
+                 << optarg << endl;
+            displayHelp = true;
+            break;
+          }
+          cout << "Simulating " << iterations
+               << " iterations." << endl;
+          break;
+        }
         case 'n': {
           try {
             particlesPerDim = stoul(strArg);
@@ -116,4 +130,11 @@ MDFlexParser::DataLayoutOption MDFlexParser::getDataLayoutOption() const {
 MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const {
   return functorOption;
 }
-size_t MDFlexParser::getParticlesPerDim() const { return particlesPerDim; }
+
+size_t MDFlexParser::getIterations() const {
+  return iterations;
+}
+
+size_t MDFlexParser::getParticlesPerDim() const {
+  return particlesPerDim;
+}
