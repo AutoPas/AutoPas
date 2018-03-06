@@ -10,12 +10,15 @@ using namespace autopas;
 void fillContainer(
     ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
     *container,
-    size_t particlesPerDim) {
+    size_t particlesPerDim, double particelSpacing) {
   for (unsigned int i = 0; i < particlesPerDim; ++i) {
     for (unsigned int j = 0; j < particlesPerDim; ++j) {
       for (unsigned int k = 0; k < particlesPerDim; ++k) {
         auto p = PrintableMolecule(
-            {(double) k + 1, (double) j + 1, (double) i + 1}, {0, 0, 0},
+            {(k + 1) * particelSpacing,
+             (j + 1) * particelSpacing,
+             (i + 1) * particelSpacing},
+            {0, 0, 0},
             i * particlesPerDim * particlesPerDim + j * particlesPerDim + k);
         container->addParticle(p);
       }
@@ -49,10 +52,12 @@ void initContainer(
     MDFlexParser::ContainerOption containerOption,
     ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>> *
     &container,
-    size_t particlesPerDim, double cutoff) {
+    size_t particlesPerDim, double particelSpacing, double cutoff) {
   std::array<double, 3> boxMin({0., 0., 0.}),
-      boxMax({particlesPerDim + 1.0, particlesPerDim + 1.0,
-              particlesPerDim + 1.0});
+      boxMax({(particlesPerDim + 1.0) * particelSpacing,
+              (particlesPerDim + 1.0) * particelSpacing,
+              (particlesPerDim + 1.0) * particelSpacing
+             });
 
   switch (containerOption) {
     case MDFlexParser::directSum: {
@@ -73,7 +78,7 @@ void initContainer(
     }
   }
 
-  fillContainer(container, particlesPerDim);
+  fillContainer(container, particlesPerDim, particelSpacing);
 }
 
 void apply(
@@ -104,6 +109,7 @@ int main(int argc, char **argv) {
   auto particlesPerDim(parser.getParticlesPerDim());
   auto cutoff(parser.getCutoff());
   auto numIterations(parser.getIterations());
+  auto particleSpacing(parser.getParticlesSpacing());
 
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal,
       startApply, stopApply;
@@ -111,7 +117,7 @@ int main(int argc, char **argv) {
   startTotal = std::chrono::high_resolution_clock::now();
   ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
       *container = nullptr;
-  initContainer(containerChoice, container, particlesPerDim, cutoff);
+  initContainer(containerChoice, container, particlesPerDim, particleSpacing, cutoff);
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);

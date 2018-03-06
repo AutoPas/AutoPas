@@ -23,12 +23,14 @@ class MDFlexParser {
   FunctorOption getFunctorOption() const;
   size_t getIterations() const;
   size_t getParticlesPerDim() const;
+  double getParticlesSpacing() const;
 
  private:
   ContainerOption containerOption;
   DataLayoutOption dataLayoutOption;
   FunctorOption functorOption;
   size_t particlesPerDim;
+  double particleSpacing;
   size_t iterations;
   double cutoff;
 };

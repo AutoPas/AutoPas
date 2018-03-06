@@ -10,6 +10,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       {"functor", required_argument, nullptr, 'f'},
       {"iterations", required_argument, nullptr, 'i'},
       {"particles-per-dimension", required_argument, nullptr, 'n'},
+      {"particle-spacing", required_argument, nullptr, 's'},
   };
   int numOptions = sizeof(long_options) / sizeof(long_options[0]) * 2 + 1;
   if (argc == numOptions) {
@@ -97,6 +98,18 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                << " particles per dimension." << endl;
           break;
         }
+        case 's': {
+          try {
+            particleSpacing = stod(strArg);
+          } catch (const exception &) {
+            cerr << "Error parsing separation of particles: "
+                 << optarg << endl;
+            displayHelp = true;
+            break;
+          }
+          cout << "Particles are separated by " << particleSpacing << " [?]" << endl;
+          break;
+        }
         default: {
           // error message handled by getopt
           displayHelp = true;
@@ -137,4 +150,8 @@ size_t MDFlexParser::getIterations() const {
 
 size_t MDFlexParser::getParticlesPerDim() const {
   return particlesPerDim;
+}
+
+double MDFlexParser::getParticlesSpacing() const {
+  return particleSpacing;
 }
