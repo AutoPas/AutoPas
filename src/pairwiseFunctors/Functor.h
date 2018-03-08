@@ -28,18 +28,38 @@ class Functor {
   /**
    * @brief Functor for structure of arrays (SoA)
    *
+   * This functor should calculate the forces or any other pair-wise interaction between all particles in soa.
+   * This should include a cutoff check if needed!
+   *
+   * @param soa Structure of arrays
+   */
+  virtual void SoAFunctor(SoA &soa) {}
+
+  /**
+   * @brief Functor for structure of arrays (SoA)
+   *
    * This functor should calculate the forces or any other pair-wise interaction between all particles of soa1 and soa2.
    * This should include a cutoff check if needed!
    *
-   * @param soa1 first structure of arrays
-   * @param soa2 second structure of arrays
+   * @param soa1 First structure of arrays.
+   * @param soa2 Second structure of arrays.
    */
-  virtual void SoAFunctor(SoA &soa) {}
   virtual void SoAFunctor(SoA &soa1, SoA &soa2) {}
-  // TODO: in what form should particles be passed to this?
+
+  /**
+   * @brief Copies the AoS data of the given cell in the given soa.
+   *
+   * @param cell Cell from where the data is loaded.
+   * @param soa  Structure of arrays where the data is copied to.
+   */
   virtual void SoALoader(ParticleCell &cell, SoA *soa) {}
-  //	virtual void SoAStorer() = 0
-  //	virtual void SoAInserter() = 0;
+
+  /**
+   * @brief Copies the data stored in the soa in the cell.
+   *
+   * @param cell Cell where the data should be stored.
+   * @param soa  Structure of arrays from where the data is loaded.
+   */
   virtual void SoAExtractor(ParticleCell *cell, SoA *soa) {}
 };
 

@@ -41,22 +41,13 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     if (soa.getNumParticles() == 0)
       return;
 
-    double *const __restrict__ x1ptr = soa.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y1ptr = soa.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z1ptr = soa.begin(Particle::AttributeNames::posZ);
-    double *const __restrict__ x2ptr = soa.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y2ptr = soa.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z2ptr = soa.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
 
-    double *const __restrict__ fx1ptr = soa.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fy1ptr = soa.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fz1ptr = soa.begin(Particle::AttributeNames::forceZ);
-    double *const __restrict__ fx2ptr = soa.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fy2ptr = soa.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fz2ptr = soa.begin(Particle::AttributeNames::forceZ);
-
-    double *const __restrict__ id1ptr = soa.begin(Particle::AttributeNames::id);
-    double *const __restrict__ id2ptr = soa.begin(Particle::AttributeNames::id);
+    double *const __restrict__ fxptr = soa.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr = soa.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr = soa.begin(Particle::AttributeNames::forceZ);
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       double fxacc = 0;
@@ -67,12 +58,12 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        if (id1ptr[i] == id2ptr[j])
+        if (i == j)
           continue;
 
-        const double drx = x1ptr[i] - x2ptr[j];
-        const double dry = y1ptr[i] - y2ptr[j];
-        const double drz = z1ptr[i] - z2ptr[j];
+        const double drx = xptr[i] - xptr[j];
+        const double dry = yptr[i] - yptr[j];
+        const double drz = zptr[i] - zptr[j];
 
         const double drx2 = drx * drx;
         const double dry2 = dry * dry;
@@ -98,14 +89,14 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
         fyacc += fy;
         fzacc += fz;
 
-        fx2ptr[j] -= fx;
-        fy2ptr[j] -= fy;
-        fz2ptr[j] -= fz;
+        fxptr[j] -= fx;
+        fyptr[j] -= fy;
+        fzptr[j] -= fz;
       }
 
-      fx1ptr[i] += fxacc;
-      fy1ptr[i] += fyacc;
-      fz1ptr[i] += fzacc;
+      fxptr[i] += fxacc;
+      fyptr[i] += fyacc;
+      fzptr[i] += fzacc;
     }
   }
 
