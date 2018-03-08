@@ -160,5 +160,7 @@ int main(int argc, char **argv) {
   cout << "MMUPs/sec : " << mmups << endl;
   cout << "Hit rate  : " << flopCounterFunctor.getHitRate() << endl;
 
+  delete container;
+
   return EXIT_SUCCESS;
 }

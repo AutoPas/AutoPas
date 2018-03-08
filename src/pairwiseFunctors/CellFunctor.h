@@ -17,7 +17,7 @@ template<class Particle, class ParticleCell, class ParticleFunctor,
 class CellFunctor {
  public:
   explicit CellFunctor(ParticleFunctor *f) : _functor(f) {}
-  //  template<bool useSoA = false>
+
   void processCell(ParticleCell &cell) {
     if (useSoA) {
       processCellSoA(cell);
@@ -25,7 +25,7 @@ class CellFunctor {
       processCellAoSN3(cell);
     }
   }
-  //  template<bool useSoA>
+
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2) {
     if (useSoA) {
       processCellPairSoA(cell1, cell2);
