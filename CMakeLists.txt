@@ -35,7 +35,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 endif ()
 
 ################################### START VECTORIZATION ###################################
-option(USE_VECTORIZATION "Enable generations of SIMD vector instructions" ON)
+option(USE_VECTORIZATION "Enable generations of SIMD vector instructions through omp-simd" ON)
 if (USE_VECTORIZATION)
     # list of available options
     set(VECTOR_INSTRUCTIONS_OPTIONS "NATIVE;SSE;AVX;AVX2;KNL")
@@ -75,11 +75,17 @@ if (USE_VECTORIZATION)
         elseif (VECTOR_INSTRUCTIONS MATCHES "^AVX2$")
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=core-avx2 -fma")
         elseif (VECTOR_INSTRUCTIONS MATCHES "^KNL$")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xMIC-AVX512 -fp-model precise")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xMIC-AVX512")
         else ()
             message(SEND_ERROR "\"${VECTOR_INSTRUCTIONS}\" is an unknown vector instruction set option.\
      Available options: ${VECTOR_INSTRUCTIONS_OPTIONS}")
         endif ()
+    endif ()
+elseif ()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-vec")
     endif ()
 endif ()
 ###################################  END VECTORIZATION  ###################################

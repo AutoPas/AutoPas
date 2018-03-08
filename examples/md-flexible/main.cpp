@@ -155,6 +155,7 @@ int main(int argc, char **argv) {
        << durationTotalSec << "s)" << endl;
   cout << "Time apply: " << durationApply / numIterations << " \u03bcs ("
        << durationApplySec / numIterations << "s)" << endl;
+  cout << "GFLOPs    : " << flops * 1e-9 << endl;
   cout << "GFLOPs/sec: " << flops * 1e-9 / durationApplySec << endl;
   cout << "MMUPs/sec : " << mmups << endl;
   cout << "Hit rate  : " << flopCounterFunctor.getHitRate() << endl;
