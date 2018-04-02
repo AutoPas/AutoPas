@@ -25,7 +25,7 @@ class SPHParticle : public autopas::Particle {
         _mass(0.),
         _smth(0.),
         _snds(0.),
-      // temporaries / helpers
+        // temporaries / helpers
         _v_sig_max(0.),
         _acc{0., 0., 0.},
         _energy_dot(0.),
@@ -45,7 +45,7 @@ class SPHParticle : public autopas::Particle {
         _mass(0.),
         _smth(0.),
         _snds(0.),
-      // temporaries / helpers
+        // temporaries / helpers
         _v_sig_max(0.),
         _acc{0., 0., 0.},
         _energy_dot(0.),
@@ -69,7 +69,7 @@ class SPHParticle : public autopas::Particle {
         _mass(mass),
         _smth(smth),
         _snds(snds),
-      // temporaries / helpers
+        // temporaries / helpers
         _v_sig_max(0.),
         _acc{0., 0., 0.},
         _energy_dot(0.),
@@ -106,7 +106,8 @@ class SPHParticle : public autopas::Particle {
   double getPressure() const { return _pressure; }
 
   /**
-   * Calculates the pressure within the particle from the energy and density of the particle and updates the pressure and sound of speed
+   * Calculates the pressure within the particle from the energy and density of
+   * the particle and updates the pressure and sound of speed
    */
   void calcPressure();
 
@@ -159,7 +160,8 @@ class SPHParticle : public autopas::Particle {
   double getVSigMax() const { return _v_sig_max; }
 
   /**
-   * Checks if the given signal velocity is higher than the current (local) one and updates the local one if it is.
+   * Checks if the given signal velocity is higher than the current (local) one
+   * and updates the local one if it is.
    * @param v_sig given signal velocity
    */
   void checkAndSetVSigMax(double v_sig) {
@@ -205,7 +207,8 @@ class SPHParticle : public autopas::Particle {
   double getEngDot() const { return _energy_dot; }
 
   /**
-   * Adds the given value to the current value of the time derivative of the energy
+   * Adds the given value to the current value of the time derivative of the
+   * energy
    * @param eng_dot
    */
   void addEngDot(double eng_dot) { _energy_dot += eng_dot; }
@@ -241,7 +244,8 @@ class SPHParticle : public autopas::Particle {
   void setDt(double dt) { _dt = dt; }
 
   /**
-   * Calculate the maximally allowed time step for the particle based on the smoothing length and the signal velocity of the particle
+   * Calculate the maximally allowed time step for the particle based on the
+   * smoothing length and the signal velocity of the particle
    */
   void calcDt() {
     const double C_CFL = 0.3;

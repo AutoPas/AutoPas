@@ -29,10 +29,10 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
   // const PS::F64 AV = - 0.5 * v_sig * w_ij / (0.5 * (ep_i[i].dens +
   // ep_j[j].dens));
 
-  const std::array<double, 3> gradW_ij =
-      arrayMath::mulScalar(arrayMath::add(SPHKernels::gradW(dr, i.getSmoothingLength()),
-                                          SPHKernels::gradW(dr, j.getSmoothingLength())),
-                           0.5);
+  const std::array<double, 3> gradW_ij = arrayMath::mulScalar(
+      arrayMath::add(SPHKernels::gradW(dr, i.getSmoothingLength()),
+                     SPHKernels::gradW(dr, j.getSmoothingLength())),
+      0.5);
   // const PS::F64vec gradW_ij = 0.5 * (gradW(dr, ep_i[i].smth) + gradW(dr,
   // ep_j[j].smth));
 

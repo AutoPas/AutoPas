@@ -71,7 +71,7 @@ class SoA {
    * @param particleId Position to read from.
    * @return Array of attributes ordered by given attribute order.
    */
-  template<std::size_t numAttributes>
+  template <std::size_t numAttributes>
   std::array<double, numAttributes> read(
       std::array<int, numAttributes> attributes, unsigned int particleId) {
     std::array<double, numAttributes> retArray;
@@ -109,7 +109,7 @@ class SoA {
    * @param particleId Particle to update.
    * @param value New value.
    */
-  template<int numAttributes>
+  template <int numAttributes>
   void write(std::array<int, numAttributes> attributes, unsigned int particleId,
              std::array<double, numAttributes> value) {
     int i = 0;
@@ -118,7 +118,7 @@ class SoA {
     }
   }
 
-  template<int numAttributes>
+  template <int numAttributes>
   void add(std::array<int, numAttributes> attributes, unsigned int particleId,
            std::array<double, numAttributes> value) {
     int i = 0;
@@ -127,7 +127,7 @@ class SoA {
     }
   }
 
-  template<int numAttributes>
+  template <int numAttributes>
   void sub(std::array<int, numAttributes> attributes, unsigned int particleId,
            std::array<double, numAttributes> value) {
     int i = 0;

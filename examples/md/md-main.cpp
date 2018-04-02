@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
   cout << "sigma: " << PrintableMolecule::getSigma() << endl;
 
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(10.0, MoleculeLJ::getEpsilon(),
-                                                                                MoleculeLJ::getSigma(), 0.0);
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(
+      10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
   PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
   PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
@@ -77,7 +77,8 @@ int main(int argc, char *argv[]) {
 template <class Container>
 void measureContainer(Container *cont, int numMolecules, int numIterations) {
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
-  FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopFunctor(cont->getCutoff());
+  FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>
+      flopFunctor(cont->getCutoff());
 
   utils::Timer t;
 

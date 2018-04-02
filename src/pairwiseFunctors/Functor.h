@@ -12,7 +12,7 @@
 
 namespace autopas {
 
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 class Functor {
  public:
   virtual ~Functor() = default;
@@ -20,7 +20,8 @@ class Functor {
   /**
    * @brief Functor for arrays of structures (AoS).
    *
-   * This functor should calculate the forces or any other pair-wise interaction between two particles.
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between two particles.
    * This should include a cutoff check if needed!
    */
   virtual void AoSFunctor(Particle &, Particle &) {}
@@ -28,7 +29,8 @@ class Functor {
   /**
    * @brief Functor for structure of arrays (SoA)
    *
-   * This functor should calculate the forces or any other pair-wise interaction between all particles in soa.
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between all particles in soa.
    * This should include a cutoff check if needed!
    *
    * @param soa Structure of arrays
@@ -38,7 +40,8 @@ class Functor {
   /**
    * @brief Functor for structure of arrays (SoA)
    *
-   * This functor should calculate the forces or any other pair-wise interaction between all particles of soa1 and soa2.
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between all particles of soa1 and soa2.
    * This should include a cutoff check if needed!
    *
    * @param soa1 First structure of arrays.

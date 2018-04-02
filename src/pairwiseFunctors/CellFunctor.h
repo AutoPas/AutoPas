@@ -12,8 +12,8 @@
 
 namespace autopas {
 
-template<class Particle, class ParticleCell, class ParticleFunctor,
-    bool useSoA>
+template <class Particle, class ParticleCell, class ParticleFunctor,
+          bool useSoA>
 class CellFunctor {
  public:
   explicit CellFunctor(ParticleFunctor *f) : _functor(f) {}
@@ -76,7 +76,6 @@ class CellFunctor {
   }
 
   void processCellPairSoA(ParticleCell &cell1, ParticleCell &cell2) {
-
     _functor->SoALoader(cell1, &cell1._molsSoABuffer);
     _functor->SoALoader(cell2, &cell2._molsSoABuffer);
 
@@ -87,7 +86,6 @@ class CellFunctor {
   }
 
   void processCellSoA(ParticleCell &cell) {
-
     _functor->SoALoader(cell, &cell._molsSoABuffer);
 
     _functor->SoAFunctor(cell._molsSoABuffer);

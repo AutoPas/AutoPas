@@ -76,13 +76,11 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           try {
             iterations = stoul(strArg);
           } catch (const exception &) {
-            cerr << "Error parsing number of iterations: "
-                 << optarg << endl;
+            cerr << "Error parsing number of iterations: " << optarg << endl;
             displayHelp = true;
             break;
           }
-          cout << "Simulating " << iterations
-               << " iterations." << endl;
+          cout << "Simulating " << iterations << " iterations." << endl;
           break;
         }
         case 'n': {
@@ -102,12 +100,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           try {
             particleSpacing = stod(strArg);
           } catch (const exception &) {
-            cerr << "Error parsing separation of particles: "
-                 << optarg << endl;
+            cerr << "Error parsing separation of particles: " << optarg << endl;
             displayHelp = true;
             break;
           }
-          cout << "Particles are separated by " << particleSpacing << " [?]" << endl;
+          cout << "Particles are separated by " << particleSpacing << " [?]"
+               << endl;
           break;
         }
         default: {
@@ -144,14 +142,8 @@ MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const {
   return functorOption;
 }
 
-size_t MDFlexParser::getIterations() const {
-  return iterations;
-}
+size_t MDFlexParser::getIterations() const { return iterations; }
 
-size_t MDFlexParser::getParticlesPerDim() const {
-  return particlesPerDim;
-}
+size_t MDFlexParser::getParticlesPerDim() const { return particlesPerDim; }
 
-double MDFlexParser::getParticlesSpacing() const {
-  return particleSpacing;
-}
+double MDFlexParser::getParticlesSpacing() const { return particleSpacing; }

@@ -9,14 +9,13 @@ using namespace autopas;
 
 void fillContainer(
     ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-    *container,
+        *container,
     size_t particlesPerDim, double particelSpacing) {
   for (unsigned int i = 0; i < particlesPerDim; ++i) {
     for (unsigned int j = 0; j < particlesPerDim; ++j) {
       for (unsigned int k = 0; k < particlesPerDim; ++k) {
         auto p = PrintableMolecule(
-            {(k + 1) * particelSpacing,
-             (j + 1) * particelSpacing,
+            {(k + 1) * particelSpacing, (j + 1) * particelSpacing,
              (i + 1) * particelSpacing},
             {0, 0, 0},
             i * particlesPerDim * particlesPerDim + j * particlesPerDim + k);
@@ -28,7 +27,7 @@ void fillContainer(
 
 void printMolecules(
     ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-    *container) {
+        *container) {
   for (auto particleIterator = container->begin(); particleIterator.isValid();
        ++particleIterator) {
     particleIterator->print();
@@ -51,13 +50,12 @@ void printMolecules(
 void initContainer(
     MDFlexParser::ContainerOption containerOption,
     ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>> *
-    &container,
+        &container,
     size_t particlesPerDim, double particelSpacing, double cutoff) {
   std::array<double, 3> boxMin({0., 0., 0.}),
       boxMax({(particlesPerDim + 1.0) * particelSpacing,
               (particlesPerDim + 1.0) * particelSpacing,
-              (particlesPerDim + 1.0) * particelSpacing
-             });
+              (particlesPerDim + 1.0) * particelSpacing});
 
   switch (containerOption) {
     case MDFlexParser::directSum: {
@@ -83,7 +81,7 @@ void initContainer(
 
 void apply(
     ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-    &container,
+        &container,
     Functor<PrintableMolecule, FullParticleCell<PrintableMolecule>> &functor,
     MDFlexParser::DataLayoutOption layoutOption) {
   switch (layoutOption) {
@@ -117,7 +115,8 @@ int main(int argc, char **argv) {
   startTotal = std::chrono::high_resolution_clock::now();
   ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
       *container = nullptr;
-  initContainer(containerChoice, container, particlesPerDim, particleSpacing, cutoff);
+  initContainer(containerChoice, container, particlesPerDim, particleSpacing,
+                cutoff);
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
@@ -136,23 +135,26 @@ int main(int argc, char **argv) {
   stopTotal = std::chrono::high_resolution_clock::now();
 
   auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(
-      stopTotal - startTotal)
-      .count();
+                           stopTotal - startTotal)
+                           .count();
   auto durationApply = std::chrono::duration_cast<std::chrono::microseconds>(
-      stopApply - startApply)
-      .count();
+                           stopApply - startApply)
+                           .count();
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
 
-  FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(container->getCutoff());
+  FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>
+      flopCounterFunctor(container->getCutoff());
   apply(*container, flopCounterFunctor, dataLayoutChoice);
-  auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
-  auto mmups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
+  auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) *
+               numIterations;
+  auto mmups = particlesPerDim * particlesPerDim * particlesPerDim *
+               numIterations / durationApplySec * 1e-6;
 
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
-  cout << "Time total: " << durationTotal << " \u03bcs ("
-       << durationTotalSec << "s)" << endl;
+  cout << "Time total: " << durationTotal << " \u03bcs (" << durationTotalSec
+       << "s)" << endl;
   cout << "Time apply: " << durationApply / numIterations << " \u03bcs ("
        << durationApplySec / numIterations << "s)" << endl;
   cout << "GFLOPs    : " << flops * 1e-9 << endl;

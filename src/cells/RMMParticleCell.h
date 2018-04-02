@@ -13,28 +13,28 @@
 
 namespace autopas {
 
-template<class Particle>
+template <class Particle>
 class RMMParticleCell : public ParticleCell<Particle> {
  public:
   RMMParticleCell() {
-    _molsSoABuffer.initArrays({Particle::AttributeNames::posX,
-                               Particle::AttributeNames::posY,
-                               Particle::AttributeNames::posZ,
-                               Particle::AttributeNames::forceX,
-                               Particle::AttributeNames::forceY,
-                               Particle::AttributeNames::forceZ});
+    _molsSoABuffer.initArrays(
+        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+         Particle::AttributeNames::posZ, Particle::AttributeNames::forceX,
+         Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ});
   }
 
   void moleculesAt(int i, Particle *&rmm_or_not_pointer) override {
     buildMoleculeFromSoA(i, rmm_or_not_pointer);
   }
   void buildMoleculeFromSoA(unsigned int i, Particle *&rmm_or_not_pointer) {
-    rmm_or_not_pointer->setR(_molsSoABuffer.read<3>({Particle::AttributeNames::posX,
-                                                     Particle::AttributeNames::posY,
-                                                     Particle::AttributeNames::posZ}, i));
-    rmm_or_not_pointer->setF(_molsSoABuffer.read<3>({Particle::AttributeNames::forceX,
-                                                     Particle::AttributeNames::forceY,
-                                                     Particle::AttributeNames::forceZ}, i));
+    rmm_or_not_pointer->setR(_molsSoABuffer.read<3>(
+        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+         Particle::AttributeNames::posZ},
+        i));
+    rmm_or_not_pointer->setF(_molsSoABuffer.read<3>(
+        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+         Particle::AttributeNames::forceZ},
+        i));
   }
   void addParticle(Particle &m) override {
     _molsSoABuffer.push(Particle::AttributeNames::posX, m.getR()[0]);
@@ -45,7 +45,9 @@ class RMMParticleCell : public ParticleCell<Particle> {
     _molsSoABuffer.push(Particle::AttributeNames::forceZ, m.getF()[2]);
   }
 
-  unsigned long numParticles() const override { return _molsSoABuffer.getNumParticles(); }
+  unsigned long numParticles() const override {
+    return _molsSoABuffer.getNumParticles();
+  }
   bool isNotEmpty() const override { return numParticles() > 0; }
   SoA _molsSoABuffer;
 };

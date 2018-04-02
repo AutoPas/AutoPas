@@ -13,18 +13,16 @@
 
 namespace autopas {
 
-template<class Particle>
+template <class Particle>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
   FullParticleCell() {
-    _molsSoABuffer.initArrays({Particle::AttributeNames::id,
-                               Particle::AttributeNames::posX,
-                               Particle::AttributeNames::posY,
-                               Particle::AttributeNames::posZ,
-                               Particle::AttributeNames::forceX,
-                               Particle::AttributeNames::forceY,
-                               Particle::AttributeNames::forceZ,
-                              });
+    _molsSoABuffer.initArrays({
+        Particle::AttributeNames::id, Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY, Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ,
+    });
   }
   void moleculesAt(int i, Particle *&rmm_or_not_pointer) override {
     rmm_or_not_pointer = &_mols.at(i);

@@ -44,6 +44,7 @@ class Particle {
   void setV(const std::array<double, 3> &v) { _v = v; }
 
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
+
  private:
   std::array<double, 3> _r;
   std::array<double, 3> _v;

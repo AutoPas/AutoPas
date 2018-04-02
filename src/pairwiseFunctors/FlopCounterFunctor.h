@@ -13,7 +13,7 @@
 
 namespace autopas {
 
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
  public:
   explicit FlopCounterFunctor<Particle, ParticleCell>(double c)
@@ -34,12 +34,14 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   enum SoAAttributes { id, posX, posY, posZ };
 
   void SoAFunctor(SoA &soa) override {
-    if (soa.getNumParticles() == 0)
-      return;
+    if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr = soa.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y1ptr = soa.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z1ptr = soa.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x1ptr =
+        soa.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y1ptr =
+        soa.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z1ptr =
+        soa.begin(Particle::AttributeNames::posZ);
 
     double *const __restrict__ id1ptr = soa.begin(Particle::AttributeNames::id);
 
@@ -47,12 +49,11 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       unsigned long distanceCalculationsAcc = 0;
       unsigned long kernelCallsAcc = 0;
 
-      // icpc vectorizes this.
-      // g++ only with -ffast-math or -funsafe-math-optimizations
+// icpc vectorizes this.
+// g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        if (id1ptr[i] == id1ptr[j])
-          continue;
+        if (id1ptr[i] == id1ptr[j]) continue;
 
         ++distanceCalculationsAcc;
 
@@ -66,9 +67,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 <= _cutoffSquare)
-          ++kernelCallsAcc;
-
+        if (dr2 <= _cutoffSquare) ++kernelCallsAcc;
       }
 
       _distanceCalculations += distanceCalculationsAcc;
@@ -90,8 +89,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       unsigned long distanceCalculationsAcc = 0;
       unsigned long kernelCallsAcc = 0;
 
-      // icpc vectorizes this.
-      // g++ only with -ffast-math or -funsafe-math-optimizations
+// icpc vectorizes this.
+// g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         if (*(id1ptr + i) == *(id2ptr + j)) {
@@ -121,14 +120,14 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
   double getHitRate() {
     return static_cast<double>(_kernelCalls) /
-        static_cast<double>(_distanceCalculations);
+           static_cast<double>(_distanceCalculations);
   }
 
   double getFlops(unsigned long numFlopsPerKernelCall) const {
     // 3 sub + 3 square + 2 add
     const double numFlopsPerDistanceCalculation = 8;
     const double distFlops = numFlopsPerDistanceCalculation *
-        static_cast<double>(_distanceCalculations);
+                             static_cast<double>(_distanceCalculations);
     const double kernFlops =
         numFlopsPerKernelCall * static_cast<double>(_kernelCalls);
     return distFlops + kernFlops;

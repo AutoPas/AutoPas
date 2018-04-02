@@ -15,7 +15,7 @@
 
 namespace autopas {
 
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
  public:
   LinkedCells(const std::array<double, 3> boxMin,
@@ -37,7 +37,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     iteratePairwiseAoS2(f);
   }
 
-  template<class ParticleFunctor>
+  template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, false> cellFunctor(f);
     //		cellFunctor.processCellAoSN3(this->_data[13]);
@@ -49,11 +49,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) override {
-    //TODO: iteratePairwiseSoA
+    // TODO: iteratePairwiseSoA
     iteratePairwiseSoA2(f);
   }
 
-  template<class ParticleFunctor>
+  template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);
     //		cellFunctor.processCellAoSN3(this->_data[13]);

@@ -10,13 +10,13 @@
 
 #include <array>
 #include "Functor.h"
-#include "utils/arrayMath.h"
 #include "iterators/SingleCellIterator.h"
+#include "utils/arrayMath.h"
 
 namespace autopas {
 
 // can we do this without a template? Maybe. But we want to inline it anyway :)
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 class LJFunctor : public Functor<Particle, ParticleCell> {
  public:
   // todo: add macroscopic quantities
@@ -38,28 +38,29 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA &soa) override {
-    if (soa.getNumParticles() == 0)
-      return;
+    if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
     double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
     double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
 
-    double *const __restrict__ fxptr = soa.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fyptr = soa.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fzptr = soa.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fxptr =
+        soa.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr =
+        soa.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr =
+        soa.begin(Particle::AttributeNames::forceZ);
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
 
-      // icpc vectorizes this.
-      // g++ only with -ffast-math or -funsafe-math-optimizations
+// icpc vectorizes this.
+// g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        if (i == j)
-          continue;
+        if (i == j) continue;
 
         const double drx = xptr[i] - xptr[j];
         const double dry = yptr[i] - yptr[j];
@@ -71,8 +72,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE)
-          continue;
+        if (dr2 > CUTOFFSQUARE) continue;
 
         const double invdr2 = 1. / dr2;
         const double lj2 = SIGMASQUARE * invdr2;
@@ -101,37 +101,49 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA &soa1, SoA &soa2) override {
-    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0)
-      return;
+    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr = soa1.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y1ptr = soa1.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z1ptr = soa1.begin(Particle::AttributeNames::posZ);
-    double *const __restrict__ x2ptr = soa2.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y2ptr = soa2.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z2ptr = soa2.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x1ptr =
+        soa1.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y1ptr =
+        soa1.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z1ptr =
+        soa1.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x2ptr =
+        soa2.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y2ptr =
+        soa2.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z2ptr =
+        soa2.begin(Particle::AttributeNames::posZ);
 
-    double *const __restrict__ fx1ptr = soa1.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fy1ptr = soa1.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fz1ptr = soa1.begin(Particle::AttributeNames::forceZ);
-    double *const __restrict__ fx2ptr = soa2.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fy2ptr = soa2.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fz2ptr = soa2.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fx1ptr =
+        soa1.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fy1ptr =
+        soa1.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fz1ptr =
+        soa1.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fx2ptr =
+        soa2.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fy2ptr =
+        soa2.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fz2ptr =
+        soa2.begin(Particle::AttributeNames::forceZ);
 
-    double *const __restrict__ id1ptr = soa1.begin(Particle::AttributeNames::id);
-    double *const __restrict__ id2ptr = soa2.begin(Particle::AttributeNames::id);
+    double *const __restrict__ id1ptr =
+        soa1.begin(Particle::AttributeNames::id);
+    double *const __restrict__ id2ptr =
+        soa2.begin(Particle::AttributeNames::id);
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
 
-      // icpc vectorizes this.
-      // g++ only with -ffast-math or -funsafe-math-optimizations
+// icpc vectorizes this.
+// g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        if (id1ptr[i] == id2ptr[j])
-          continue;
+        if (id1ptr[i] == id2ptr[j]) continue;
 
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -143,8 +155,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE)
-          continue;
+        if (dr2 > CUTOFFSQUARE) continue;
 
         const double invdr2 = 1. / dr2;
         const double lj2 = SIGMASQUARE * invdr2;
@@ -174,16 +185,21 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
   void SoALoader(ParticleCell &cell, SoA *soa) override {
     soa->resizeArrays(cell.numParticles());
-    if (cell.numParticles() == 0)
-      return;
+    if (cell.numParticles() == 0) return;
 
     double *const __restrict__ idptr = soa->begin(Particle::AttributeNames::id);
-    double *const __restrict__ xptr = soa->begin(Particle::AttributeNames::posX);
-    double *const __restrict__ yptr = soa->begin(Particle::AttributeNames::posY);
-    double *const __restrict__ zptr = soa->begin(Particle::AttributeNames::posZ);
-    double *const __restrict__ fxptr = soa->begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fyptr = soa->begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fzptr = soa->begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ xptr =
+        soa->begin(Particle::AttributeNames::posX);
+    double *const __restrict__ yptr =
+        soa->begin(Particle::AttributeNames::posY);
+    double *const __restrict__ zptr =
+        soa->begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ fxptr =
+        soa->begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr =
+        soa->begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr =
+        soa->begin(Particle::AttributeNames::forceZ);
 
     SingleCellIterator<Particle, ParticleCell> cellIter(&cell);
     // load particles in SoAs
@@ -199,8 +215,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAExtractor(ParticleCell *cell, SoA *soa) override {
-    if (soa->getNumParticles() == 0)
-      return;
+    if (soa->getNumParticles() == 0) return;
 
     SingleCellIterator<Particle, ParticleCell> cellIter(cell);
 
@@ -208,9 +223,12 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double *const __restrict__ idptr = soa->begin(Particle::AttributeNames::id);
 #endif
 
-    double *const __restrict__ fxptr = soa->begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fyptr = soa->begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fzptr = soa->begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fxptr =
+        soa->begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr =
+        soa->begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr =
+        soa->begin(Particle::AttributeNames::forceZ);
 
     for (unsigned int i = 0; i < soa->getNumParticles(); ++i, ++cellIter) {
       assert(idptr[i] == (*cellIter).getID());
@@ -235,16 +253,16 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
 };  // namespace autopas
 
-template<class T, class U>
+template <class T, class U>
 double LJFunctor<T, U>::CUTOFFSQUARE;
 
-template<class T, class U>
+template <class T, class U>
 double LJFunctor<T, U>::EPSILON24;
 
-template<class T, class U>
+template <class T, class U>
 double LJFunctor<T, U>::SIGMASQUARE;
 
-template<class T, class U>
+template <class T, class U>
 double LJFunctor<T, U>::SHIFT6;
 
 } /* namespace autopas */

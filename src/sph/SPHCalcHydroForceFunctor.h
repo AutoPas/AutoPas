@@ -14,12 +14,15 @@ namespace sph {
  * Class that defines the hydrodynamic force functor.
  * It is used to calculate the force based on the given SPH kernels.
  */
-class SPHCalcHydroForceFunctor : public autopas::Functor<SPHParticle,
-                                                         autopas::FullParticleCell<autopas::sph::SPHParticle>> {
+class SPHCalcHydroForceFunctor
+    : public autopas::Functor<
+          SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> {
  public:
   /**
-   * Calculates the contribution of the interaction of particle i and j to the hydrodynamic force.
-   * It is not symmetric, because the smoothing lenghts of the two particles can be different.
+   * Calculates the contribution of the interaction of particle i and j to the
+   * hydrodynamic force.
+   * It is not symmetric, because the smoothing lenghts of the two particles can
+   * be different.
    * @param i first particle of the interaction
    * @param j second particle of the interaction
    */
