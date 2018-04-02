@@ -7,11 +7,15 @@
 #include <iostream>
 #include "autopas.h"
 #include "sph/autopassph.h"
-void SetupIC(
-    autopas::LinkedCells<autopas::sph::SPHParticle,
-                         autopas::FullParticleCell<autopas::sph::SPHParticle>>
-        &sph_system,
-    double *end_time, const std::array<double, 3> &bBoxMax) {
+
+typedef autopas::LinkedCells<
+    autopas::sph::SPHParticle,
+    autopas::FullParticleCell<autopas::sph::SPHParticle>>
+    LCContainer;
+
+template <class Container>
+void SetupIC(Container& sphSystem, double* end_time,
+             const std::array<double, 3>& bBoxMax) {
   // Place SPH particles
 
   const double dx = 1.0 / 128.0;
@@ -32,7 +36,7 @@ void SetupIC(
         // ith.eng = 2.5;
         // ith.id = i++;
         // ith.smth = 0.012;
-        sph_system.addParticle(ith);
+        sphSystem.addParticle(ith);
       }
     }
   }
@@ -52,15 +56,15 @@ void SetupIC(
         // ith.eng = 2.5;
         // ith.id = i++;
         // ith.smth = 0.012;
-        sph_system.addParticle(ith);
+        sphSystem.addParticle(ith);
       }
     }
   }
-  for (auto part = sph_system.begin(); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->setMass(part->getMass() * bBoxMax[0] * bBoxMax[1] * bBoxMax[2] /
                   (double)(i));
   }
-  std::cout << "# of ptcls is... " << i << std::endl;
+  std::cout << "# of particles is... " << i << std::endl;
 
   // Set the end time
   *end_time = 0.12;
@@ -68,14 +72,74 @@ void SetupIC(
   std::cout << "setup..." << std::endl;
 }
 
+template <class Container>
+void Initialize(Container& sphSystem) {
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    part->calcPressure();
+  }
+}
+
+template <class Container>
+double getTimeStepGlobal(Container& sphSystem) {
+  double dt = 1.0e+30;  // set VERY LARGE VALUE
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    dt = std::min(dt, part->getDt());
+  }
+  return dt;
+}
+
+template <class Container>
+void InitialKick(Container& sphSystem, const double dt) {
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    // TODO: start here again; plus array math
+    part->setVel_half(autopas::arrayMath::add(
+        part->getV(),
+        autopas::arrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+    part->setEng_half(part->getEnergy() + 0.5 * dt * part->getEngDot());
+  }
+}
+
+template <class Container>
+void FullDrift(Container& sphSystem, const double dt) {
+  // time becomes t + dt;
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    part->addR(autopas::arrayMath::mulScalar(part->getVel_half(), dt));
+  }
+}
+
+template <class Container>
+void Predict(LCContainer& sphSystem, const double dt) {
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    part->addV(autopas::arrayMath::addScalar(part->getAcceleration(),dt));
+    part->addEnergy(part->getEngDot()*dt);
+  }
+}
+
+template <class Container>
+void FinalKick(Container& sphSystem, const double dt) {
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    part->setV(autopas::arrayMath::add(
+        part->getVel_half(),
+        autopas::arrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+    part->setEnergy(part->getEng_half() + 0.5 * dt * part->getEngDot());
+  }
+}
+
+template <class Container>
+void setPressure(Container& sphSystem) {
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    part->calcPressure();
+  }
+}
+
 int main() {
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 1.0;
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
   double cutoff = 3.;
-  autopas::LinkedCells<autopas::sph::SPHParticle,
-                       autopas::FullParticleCell<autopas::sph::SPHParticle>>
-      sphSystem(boxMin, boxMax, cutoff);
+
+  LCContainer sphSystem(boxMin, boxMax, cutoff);
   double t_end;
   SetupIC(sphSystem, &t_end, boxMax);
+  Initialize(sphSystem);
 }

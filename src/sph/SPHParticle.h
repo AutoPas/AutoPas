@@ -232,6 +232,12 @@ class SPHParticle : public autopas::Particle {
   void setEnergy(double energy) { _energy = energy; }
 
   /**
+   * Adds the given energy to the energy of the particle
+   * @param energy the energy to be added
+   */
+  void addEnergy(double energy) { _energy += energy; }
+
+  /**
    * Getter for the maximally allowed time step for this particle
    * @return the maximally allowed time step for this particle
    */
@@ -252,12 +258,38 @@ class SPHParticle : public autopas::Particle {
     _dt = C_CFL * 2.0 * _smth / _v_sig_max;
   }
 
+  /**
+   * Getter for velocity at half-time step (leapfrog)
+   * @return
+   */
+  std::array<double, 3> getVel_half() const { return vel_half; }
+
+  /**
+   * Setter for velocity at half-time step (leapfrog)
+   * @param vel_half
+   */
+  void setVel_half(std::array<double, 3> vel_half) {
+    SPHParticle::vel_half = vel_half;
+  }
+
+  /**
+   * Getter for energy at half-time step (leapfrog)
+   * @return
+   */
+  double getEng_half() const { return eng_half; }
+
+  /**
+   * Setter for energy at half-time step (leapfrog)
+   * @param eng_half
+   */
+  void setEng_half(double eng_half) { SPHParticle::eng_half = eng_half; }
+
  private:
-  double _density;
-  double _pressure;
-  double _mass;
-  double _smth;
-  double _snds;
+  double _density;   // density
+  double _pressure;  // pressure
+  double _mass;      // mass
+  double _smth;      // smoothing length
+  double _snds;      // speed of sound
 
   // temporaries / helpers
   double _v_sig_max;
@@ -265,6 +297,10 @@ class SPHParticle : public autopas::Particle {
   double _energy_dot;
   double _energy;
   double _dt;
+
+  // integrator only
+  std::array<double, 3> vel_half;  // velocity at half time-step
+  double eng_half;                 // energy at half time-step
 };
 }  // namespace sph
 }  // namespace autopas

@@ -39,9 +39,13 @@ class Particle {
 
   void setR(const std::array<double, 3> &r) { _r = r; }
 
+  void addR(const std::array<double, 3> &r) { _r = arrayMath::add(_r, r); }
+
   const std::array<double, 3> &getV() const { return _v; }
 
   void setV(const std::array<double, 3> &v) { _v = v; }
+
+  void addV(const std::array<double, 3> &v) { _v = arrayMath::add(_v, v); }
 
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
 

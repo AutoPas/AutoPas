@@ -70,11 +70,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
  private:
+
   // for convenience
+  typedef SingleCellIterator<Particle, ParticleCell> SingIterator;
 
-  typedef SingleCellIterator<Particle, ParticleCell> singIterator;
-
-  singIterator getIt(int index = 0) { return singIterator(getCell(), index); }
+  SingIterator getIt(int index = 0) { return SingIterator(getCell(), index); }
 
   ParticleCell *getCell() { return &(this->_data.at(0)); };
 };
