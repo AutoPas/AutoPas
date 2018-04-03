@@ -30,7 +30,9 @@ class SPHParticle : public autopas::Particle {
         _acc{0., 0., 0.},
         _energy_dot(0.),
         _energy(0.),
-        _dt(0.) {}
+        _dt(0.),
+        _vel_half{0., 0., 0.},
+        _eng_half(0.) {}
   /**
   * Constructor of the SPHParticle class.
   * @param r position of the particle
@@ -50,7 +52,9 @@ class SPHParticle : public autopas::Particle {
         _acc{0., 0., 0.},
         _energy_dot(0.),
         _energy(0.),
-        _dt(0.) {}
+        _dt(0.),
+        _vel_half{0., 0., 0.},
+        _eng_half(0.) {}
 
   /**
    * Constructor of the SPHParticle class.
@@ -74,7 +78,9 @@ class SPHParticle : public autopas::Particle {
         _acc{0., 0., 0.},
         _energy_dot(0.),
         _energy(0.),
-        _dt(0.) {}
+        _dt(0.),
+        _vel_half{0., 0., 0.},
+        _eng_half(0.) {}
 
   /**
    * Destructor of the SPHParticle
@@ -262,27 +268,27 @@ class SPHParticle : public autopas::Particle {
    * Getter for velocity at half-time step (leapfrog)
    * @return
    */
-  std::array<double, 3> getVel_half() const { return vel_half; }
+  std::array<double, 3> getVel_half() const { return _vel_half; }
 
   /**
    * Setter for velocity at half-time step (leapfrog)
    * @param vel_half
    */
   void setVel_half(std::array<double, 3> vel_half) {
-    SPHParticle::vel_half = vel_half;
+    SPHParticle::_vel_half = vel_half;
   }
 
   /**
    * Getter for energy at half-time step (leapfrog)
    * @return
    */
-  double getEng_half() const { return eng_half; }
+  double getEng_half() const { return _eng_half; }
 
   /**
    * Setter for energy at half-time step (leapfrog)
    * @param eng_half
    */
-  void setEng_half(double eng_half) { SPHParticle::eng_half = eng_half; }
+  void setEng_half(double eng_half) { SPHParticle::_eng_half = eng_half; }
 
  private:
   double _density;   // density
@@ -299,8 +305,8 @@ class SPHParticle : public autopas::Particle {
   double _dt;
 
   // integrator only
-  std::array<double, 3> vel_half;  // velocity at half time-step
-  double eng_half;                 // energy at half time-step
+  std::array<double, 3> _vel_half;  // velocity at half time-step
+  double _eng_half;                 // energy at half time-step
 };
 }  // namespace sph
 }  // namespace autopas
