@@ -3,7 +3,6 @@
 //
 
 #include <array>
-#include <cassert>
 #include <iostream>
 #include "autopas.h"
 #include "sph/autopassph.h"

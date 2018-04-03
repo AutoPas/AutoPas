@@ -25,6 +25,7 @@
 #include "containers/DirectSum.h"
 
 // iterators
+#include "iterators/RegionParticleIterator.h"
 #include "iterators/ParticleIterator.h"
 #include "iterators/SingleCellIterator.h"
 

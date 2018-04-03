@@ -10,6 +10,7 @@
 
 #include <array>
 #include "iterators/ParticleIterator.h"
+#include "iterators/RegionParticleIterator.h"
 #include "pairwiseFunctors/Functor.h"
 
 namespace autopas {
@@ -38,9 +39,7 @@ class ParticleContainer {
    * @param other
    * @return
    */
-  ParticleContainer & operator= (const ParticleContainer & other) = delete;
-
-  typedef ParticleIterator<Particle, ParticleCell> iterator;
+  ParticleContainer &operator=(const ParticleContainer &other) = delete;
 
   virtual void init() {}
 
@@ -50,7 +49,14 @@ class ParticleContainer {
 
   virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) = 0;
 
-  iterator begin() { return ParticleIterator<Particle, ParticleCell>(&_data); }
+  typedef ParticleIterator<Particle, ParticleCell> iterator;
+  iterator begin() { return iterator(&_data); }
+
+  typedef RegionParticleIterator<Particle, ParticleCell> regionIterator;
+  regionIterator getRegionIterator(std::array<double, 3> lowerCorner,
+                                   std::array<double, 3> higherCorner) {
+    return regionIterator(&_data, lowerCorner, higherCorner);
+  }
 
   const std::array<double, 3> &getBoxMax() const { return _boxMax; }
 
