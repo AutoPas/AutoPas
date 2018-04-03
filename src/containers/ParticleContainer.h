@@ -25,6 +25,21 @@ class ParticleContainer {
       : _data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
   virtual ~ParticleContainer() = default;
 
+  /**
+   * delete the copy constructor to prevent unwanted copies.
+   * No particle container should ever be copied.
+   * @param obj
+   */
+  ParticleContainer(const ParticleContainer &obj) = delete;
+
+  /**
+   * delete the copy assignment operator to prevent unwanted copies
+   * No particle container should ever be copied.
+   * @param other
+   * @return
+   */
+  ParticleContainer & operator= (const ParticleContainer & other) = delete;
+
   typedef ParticleIterator<Particle, ParticleCell> iterator;
 
   virtual void init() {}
