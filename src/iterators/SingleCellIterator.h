@@ -33,16 +33,22 @@ class SingleCellIterator {
    */
   explicit SingleCellIterator(ParticleCell *cell_arg, int ind = 0)
       : _cell(cell_arg), _index(ind) {}
-  Particle &operator*() const {
-    Particle *ptr = nullptr;
-    _cell->moleculesAt(_index, ptr);
-    return *ptr;
-  }
 
   /**
    * destructor of SingleCellIterator
    */
   virtual ~SingleCellIterator() = default;
+
+  /**
+   * access the particle using *iterator
+   * this is the indirection operator
+   * @return current particle
+   */
+  Particle &operator*() const {
+    Particle *ptr = nullptr;
+    _cell->moleculesAt(_index, ptr);
+    return *ptr;
+  }
 
   /**
    * access particle using "iterator->"
@@ -82,14 +88,32 @@ class SingleCellIterator {
 template <class Particle>
 class SingleCellIterator<Particle, autopas::RMMParticleCell<Particle>> {
  public:
+
+  /**
+   * default constructor of SingleCellIterator
+   */
   SingleCellIterator() : _cell(nullptr), _index(0) {}
+
+  /**
+   * constructor of SingleCellIterator
+   * @param cell_arg pointer to the cell of particles
+   * @param ind index of the first particle
+   */
   explicit SingleCellIterator(RMMParticleCell<Particle> *cell_arg, int ind = 0)
       : _cell(cell_arg), _index(ind) {}
-  SingleCellIterator(const SingleCellIterator &cellIterator) {
-    _cell = cellIterator._cell;
-    _AoSReservoir = cellIterator._AoSReservoir;
-    _index = cellIterator._index;
-  }
+
+
+//  SingleCellIterator(const SingleCellIterator &cellIterator) {
+//    _cell = cellIterator._cell;
+//    _AoSReservoir = cellIterator._AoSReservoir;
+//    _index = cellIterator._index;
+//  }
+
+  /**
+   * access the particle using *iterator
+   * this is the indirection operator
+   * @return current particle
+   */
   Particle &operator*() {
     // Particle * ptr = nullptr;
     // ptr = const_cast<Particle *>(& _AoSReservoir);
@@ -97,13 +121,34 @@ class SingleCellIterator<Particle, autopas::RMMParticleCell<Particle>> {
     _cell->moleculesAt(_index, ptr);
     return *ptr;
   }
+
+  /**
+   * access particle using "iterator->"
+   *
+   * this is the member of pointer operator
+   * @return current particle
+   */
   Particle *operator->() { return &(this->operator*()); }
+
+  /**
+   * increment operator to get the next particle
+   * @return the next particle, usually ignored
+   */
   SingleCellIterator &operator++() {
     ++_index;
     return *this;
   }
+
+  /**
+   * Check whether the iterator is valid
+   * @return returns whether the iterator is valid
+   */
   bool isValid() { return _cell != nullptr and _index < _cell->numParticles(); }
 
+  /**
+   * Get the index of the particle in the cell
+   * @return index of the current particle
+   */
   int getIndex() const { return _index; }
 
  private:

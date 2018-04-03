@@ -61,7 +61,7 @@ class ParticleIterator {
   }
 
   /**
-   * access particle using *iterator
+   * access the particle using *iterator
    * this is the indirection operator
    * @return current particle
    */
@@ -77,7 +77,7 @@ class ParticleIterator {
 
   /**
    * Deletes the current particle
-   * @TODO implement deletion
+   * @todo implement deletion
    */
   void deleteCurrentParticle() {
     //		cout << "deleteCurrentParticle is still ToDo" << endl;
@@ -94,6 +94,9 @@ class ParticleIterator {
   }
 
  protected:
+  /**
+   * the next non-empty cell is selected
+   */
   void next_non_empty_cell() {
     // find the next non-empty cell
     const int stride = 1;  // num threads
