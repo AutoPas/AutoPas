@@ -3,7 +3,6 @@
 //
 
 #include <array>
-#include <cassert>
 #include <iostream>
 #include "autopas.h"
 #include "sph/autopassph.h"
@@ -13,21 +12,21 @@ typedef autopas::LinkedCells<
     autopas::FullParticleCell<autopas::sph::SPHParticle>>
     LCContainer;
 
-template <class Container>
-void SetupIC(Container& sphSystem, double* end_time,
+void SetupIC(LCContainer& sphSystem, double* end_time,
              const std::array<double, 3>& bBoxMax) {
   // Place SPH particles
-
+  std::cout << "setup... started" << std::endl;
   const double dx = 1.0 / 128.0;
   unsigned int i = 0;
-  for (double x = 0; x < bBoxMax[0] * 0.5; x += dx) {
-    for (double y = 0; y < bBoxMax[1]; y += dx) {
-      for (double z = 0; z < bBoxMax[2]; z += dx) {
+  for (double x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
+    for (double y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
+      for (double z = 0; z < bBoxMax[2]; z += dx) {    // NOLINT
         // std::array<double, 3> r, std::array<double, 3> v, unsigned long id,
         // double mass, double smth, double snds
         autopas::sph::SPHParticle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012,
                                       0.);
         ith.setDensity(1.0);
+        ith.setEnergy(2.5);
         // ith.pos.x = x;
         // ith.pos.y = y;
         // ith.pos.z = z;
@@ -40,14 +39,16 @@ void SetupIC(Container& sphSystem, double* end_time,
       }
     }
   }
-  for (double x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.; x += dx * 2.0) {
-    for (double y = 0; y < bBoxMax[1]; y += dx) {
-      for (double z = 0; z < bBoxMax[2]; z += dx) {
+  for (double x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.;
+       x += dx * 2.0) {                              // NOLINT
+    for (double y = 0; y < bBoxMax[1]; y += dx) {    // NOLINT
+      for (double z = 0; z < bBoxMax[2]; z += dx) {  // NOLINT
         // std::array<double, 3> r, std::array<double, 3> v, unsigned long id,
         // double mass, double smth, double snds
         autopas::sph::SPHParticle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012,
                                       0.);
         ith.setDensity(0.5);
+        ith.setEnergy(2.5);
         // ith.pos.x = x;
         // ith.pos.y = y;
         // ith.pos.z = z;
@@ -69,27 +70,28 @@ void SetupIC(Container& sphSystem, double* end_time,
   // Set the end time
   *end_time = 0.12;
   // Fin.
-  std::cout << "setup..." << std::endl;
+  std::cout << "setup... completed" << std::endl;
 }
 
-template <class Container>
-void Initialize(Container& sphSystem) {
+void Initialize(LCContainer& sphSystem) {
+  std::cout << "initialize... started" << std::endl;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->calcPressure();
   }
+  std::cout << "initialize... completed" << std::endl;
 }
 
-template <class Container>
-double getTimeStepGlobal(Container& sphSystem) {
+double getTimeStepGlobal(LCContainer& sphSystem) {
   double dt = 1.0e+30;  // set VERY LARGE VALUE
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    part->calcDt();
     dt = std::min(dt, part->getDt());
   }
+  std::cout << "the time step dt is..." << dt << std::endl;
   return dt;
 }
 
-template <class Container>
-void InitialKick(Container& sphSystem, const double dt) {
+void leapfrogInitialKick(LCContainer& sphSystem, const double dt) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     // TODO: start here again; plus array math
     part->setVel_half(autopas::arrayMath::add(
@@ -99,24 +101,21 @@ void InitialKick(Container& sphSystem, const double dt) {
   }
 }
 
-template <class Container>
-void FullDrift(Container& sphSystem, const double dt) {
+void leapfrogFullDrift(LCContainer& sphSystem, const double dt) {
   // time becomes t + dt;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->addR(autopas::arrayMath::mulScalar(part->getVel_half(), dt));
   }
 }
 
-template <class Container>
-void Predict(LCContainer& sphSystem, const double dt) {
+void leapfrogPredict(LCContainer& sphSystem, const double dt) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    part->addV(autopas::arrayMath::addScalar(part->getAcceleration(),dt));
-    part->addEnergy(part->getEngDot()*dt);
+    part->addV(autopas::arrayMath::addScalar(part->getAcceleration(), dt));
+    part->addEnergy(part->getEngDot() * dt);
   }
 }
 
-template <class Container>
-void FinalKick(Container& sphSystem, const double dt) {
+void leapfrogFinalKick(LCContainer& sphSystem, const double dt) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->setV(autopas::arrayMath::add(
         part->getVel_half(),
@@ -125,21 +124,117 @@ void FinalKick(Container& sphSystem, const double dt) {
   }
 }
 
-template <class Container>
-void setPressure(Container& sphSystem) {
+void setPressure(LCContainer& sphSystem) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->calcPressure();
   }
 }
 
+void periodicBoundaryUpdate(LCContainer& sphSystem,
+                            std::array<double, 3> boxMin,
+                            std::array<double, 3> boxMax) {
+  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    auto posVec = part->getR();
+    for (unsigned int dim = 0; dim < 2; dim++) {
+      auto& pos = posVec[dim];
+      while (pos < boxMin[dim]) {
+        pos += boxMax[dim] - boxMin[dim];
+      }
+      while (pos > boxMax[dim]) {
+        pos -= boxMax[dim] - boxMin[dim];
+      }
+      if (pos == boxMax[dim]) {
+        pos = boxMin[dim];
+      }
+    }
+    part->setR(posVec);
+  }
+}
+
+/**
+ * updates the halo particles
+ * this is done by copying the boundary particles to the halo particles
+ */
+void updateHaloParticles() {
+  // TODO: implement
+}
+
+/**
+ * deletes the halo particles
+ */
+void deleteHaloParticles() {
+  // TODO: implement
+}
+
+void densityPressureHydroForce(LCContainer& sphSystem) {
+  // declare the used functors
+  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+
+  // 1.first calculate density
+  // 1.1 to calculate the density we need the halo particles
+  updateHaloParticles();
+  // 1.2 then calculate density
+  std::cout << "calculation of density... started" << std::endl;
+  sphSystem.iteratePairwiseAoS2(&densityFunctor);
+  std::cout << "calculation of density... completed" << std::endl;
+  // 1.3 delete halo particles, as their values are no longer valid
+  deleteHaloParticles();
+
+  // 2. then update pressure
+  std::cout << "calculation of pressure... started" << std::endl;
+  setPressure(sphSystem);
+  std::cout << "calculation of pressure... completed" << std::endl;
+
+  // 0.3 then calculate hydro force
+  // 0.3.1 to calculate the density we need the halo particles
+  updateHaloParticles();
+  // 0.3.2 then calculate hydro force
+  std::cout << "calculation of hydroforces... started" << std::endl;
+  sphSystem.iteratePairwiseAoS2(&hydroForceFunctor);
+  std::cout << "calculation of hydroforces... completed" << std::endl;
+  // 0.3.3 delete halo particles, as their values are no longer valid
+  deleteHaloParticles();
+}
+
 int main() {
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
-  boxMax[0] = 1.0;
+  boxMax[0] = 1.;
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
-  double cutoff = 3.;
+  double cutoff = .012;
 
   LCContainer sphSystem(boxMin, boxMax, cutoff);
+  double dt;
   double t_end;
   SetupIC(sphSystem, &t_end, boxMax);
   Initialize(sphSystem);
+
+  // 0.1 ---- GET INITIAL FORCES OF SYSTEM ----
+  densityPressureHydroForce(sphSystem);
+
+  // 0.2 get time step
+  dt = getTimeStepGlobal(sphSystem);
+  //---- INITIAL FORCES ARE NOW CALCULATED ----
+
+  // 1 ---- START MAIN LOOP ----
+  size_t step = 0;
+  for (double time = 0.; time < t_end; time += dt, ++step) {
+    std::cout << "time step " << step << "(t = " << time << ")... started"
+              << std::endl;
+    // 1.1 Leap frog: Initial Kick & Full Drift
+    leapfrogInitialKick(sphSystem, dt);
+    leapfrogFullDrift(sphSystem, dt);
+    // 1.2 adjust positions based on boundary conditions (here: periodic)
+    periodicBoundaryUpdate(sphSystem, boxMin, boxMax);
+    // 1.3 Leap frog: predict
+    leapfrogPredict(sphSystem, dt);
+    // 1.4 Calculate density, pressure and hydrodynamic forces
+    densityPressureHydroForce(sphSystem);
+    // 1.5 get time step
+    dt = getTimeStepGlobal(sphSystem);
+    // 1.6 Leap frog: final Kick
+    leapfrogFinalKick(sphSystem, dt);
+    std::cout << "time step " << step << "(t = " << time << ")... completed"
+              << std::endl;
+  }
 }
