@@ -12,7 +12,7 @@
 namespace autopas {
 /**
  * RegionParticleIterator to iterate over all particles within a specific region
- * @TODO optimize the region particle iterater. Currently we iterate over all
+ * @todo optimize the region particle iterater. Currently we iterate over all
  * particles
  * @tparam Particle Particle type over which the iterator iterates
  * @tparam ParticleCell Cell type over which the iterator iterates
@@ -38,11 +38,11 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     }
   }
 
-  // TODO: optimize! this currently just loops over all particles.
+  // todo: optimize! this currently just loops over all particles.
   // Better: implement smart version of next_non_empty_cell.
   /**
    * Increment operator of the iterator
-   * @TODO optimize! this version is currently very slow
+   * @todo optimize! this version is currently very slow
    * @return
    */
   inline RegionParticleIterator<Particle, ParticleCell>& operator++() {
