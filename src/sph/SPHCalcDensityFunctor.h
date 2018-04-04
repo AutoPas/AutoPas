@@ -33,7 +33,16 @@ class SPHCalcDensityFunctor
         SPHKernels::W(
             dr, i.getSmoothingLength());  // ep_j[j].mass * W(dr, ep_i[i].smth)
     i.addDensity(density);
+
+    // Newton 3:
+    // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
+    const double density2 =
+        i.getMass() *
+        SPHKernels::W(
+            dr, j.getSmoothingLength());  // ep_j[j].mass * W(dr, ep_i[i].smth)
+    j.addDensity(density2);
   }
+
   /**
    * Get the number of floating point operations used in one full kernel call
    * @return the number of floating point operations
