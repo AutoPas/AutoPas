@@ -30,6 +30,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   void addParticle(Particle &m) override { _mols.push_back(m); }
   unsigned long numParticles() const override { return _mols.size(); }
   bool isNotEmpty() const override { return numParticles() > 0; }
+  void clear() override {_mols.clear();}
   std::vector<Particle> _mols;
   SoA _molsSoABuffer;
 };

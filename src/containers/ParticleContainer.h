@@ -45,6 +45,10 @@ class ParticleContainer {
 
   virtual void addParticle(Particle &p) = 0;
 
+  virtual void addHaloParticle(Particle &haloParticle) = 0;
+
+  virtual void deleteHaloParticles() = 0;
+
   virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) = 0;
 
   virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) = 0;

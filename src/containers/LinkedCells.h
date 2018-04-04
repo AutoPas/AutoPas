@@ -33,6 +33,20 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
+  void addHaloParticle(Particle &haloParticle) override {
+    bool inHalo = _cellBlock.checkInHalo(haloParticle.getR());
+    if (inHalo) {
+      ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
+      cell.addParticle(haloParticle);
+    } else {
+      // todo
+    }
+  }
+
+  void deleteHaloParticles() override {
+    _cellBlock.clearHaloCells();
+  }
+
   void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) override {
     iteratePairwiseAoS2(f);
   }

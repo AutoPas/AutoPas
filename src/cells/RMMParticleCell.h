@@ -49,6 +49,10 @@ class RMMParticleCell : public ParticleCell<Particle> {
     return _molsSoABuffer.getNumParticles();
   }
   bool isNotEmpty() const override { return numParticles() > 0; }
+
+  void clear() override {
+    //TODO
+  }
   SoA _molsSoABuffer;
 };
 

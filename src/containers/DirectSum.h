@@ -21,7 +21,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   DirectSum(const std::array<double, 3> boxMin,
             const std::array<double, 3> boxMax, double cutoff)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff) {
-    this->_data.resize(1);
+    this->_data.resize(2);
   }
 
   void addParticle(Particle &p) override {
@@ -31,6 +31,19 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     } else {
       // todo
     }
+  }
+
+  void addHaloParticle(Particle &p) override {
+    bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
+    if (not inBox) {
+      getHaloCell()->addParticle(p);
+    } else {  // particle is not outside of own box
+      // todo
+    }
+  }
+
+  void deleteHaloParticles() override {
+    //TODO
   }
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) override {
@@ -76,7 +89,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   SingIterator getIt(int index = 0) { return SingIterator(getCell(), index); }
 
-  ParticleCell *getCell() { return &(this->_data.at(0)); };
+  ParticleCell* getCell() { return &(this->_data.at(0)); };
+
+  ParticleCell* getHaloCell() { return &(this->_data.at(1)); };
 };
 
 } /* namespace autopas */

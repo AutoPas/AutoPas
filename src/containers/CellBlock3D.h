@@ -42,6 +42,38 @@ class CellBlock3D {
     return _cellsPerDimensionWithHalo;
   }
 
+  bool checkInHalo(std::array<double, 3> position) const;
+
+  void clearHaloCells() {
+    // x: min and max of x
+    for (index_t i : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[0] - 1)}) {
+      for (index_t j = 0; j < _cellsPerDimensionWithHalo[1]; j++) {
+        for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
+          index_t index = index1D({i,j,k});
+          (*_vec1D)[index].clear();
+        }
+      }
+    }
+    // y: min and max of y
+    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {  // 0 and cells-1 already done in previous loop
+      for (index_t j : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[1] - 1)}) {
+        for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
+          index_t index = index1D({i,j,k});
+          (*_vec1D)[index].clear();
+        }
+      }
+    }
+    // z: min and max of z
+    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {  // 0 and cells-1 already done in previous loop
+      for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1; j++) {  // 0 and cells-1 already done in previous loop
+        for (index_t k : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[2] - 1)}) {
+          index_t index = index1D({i,j,k});
+          (*_vec1D)[index].clear();
+        }
+      }
+    }
+  }
+
  private:
   std::array<index_t, 3> index3D(index_t index1d) const;
   index_t index1D(const std::array<index_t, 3> &index3d) const;
@@ -169,6 +201,12 @@ CellBlock3D<ParticleCell>::index1D(
                                               _cellsPerDimensionWithHalo);
 }
 
+template <class ParticleCell>
+bool CellBlock3D<ParticleCell>::checkInHalo(
+    std::array<double, 3> position) const {
+  return autopas::inBox(position, _haloBoxMin, _haloBoxMax) &&
+         autopas::notInBox(position, _boxMin, _boxMax);
+}
 } /* namespace autopas */
 
 #endif /* SRC_CONTAINERS_CELLBLOCK3D_H_ */

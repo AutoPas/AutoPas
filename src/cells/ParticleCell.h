@@ -22,6 +22,7 @@ class ParticleCell {
                                            // type Particle*
   virtual unsigned long numParticles() const = 0;
   virtual bool isNotEmpty() const = 0;
+  virtual void clear() = 0;
 };
 
 } /* namespace autopas */
