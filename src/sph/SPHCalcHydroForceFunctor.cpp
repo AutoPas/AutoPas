@@ -37,8 +37,8 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
   // const PS::F64vec gradW_ij = 0.5 * (gradW(dr, ep_i[i].smth) + gradW(dr,
   // ep_j[j].smth));
 
-  double scale = (i.getPressure() / (i.getDensity() * i.getDensity()) +
-                  j.getPressure() / (j.getDensity() * j.getDensity()) + AV);
+  double scale = i.getPressure() / (i.getDensity() * i.getDensity()) +
+                 j.getPressure() / (j.getDensity() * j.getDensity()) + AV;
   i.subAcceleration(arrayMath::mulScalar(gradW_ij, scale * j.getMass()));
   // hydro[i].acc     -= ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
   // ep_i[i].dens) + ep_j[j].pres / (ep_j[j].dens * ep_j[j].dens) + AV) *
@@ -56,7 +56,7 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
 
   double scale2j =
       i.getMass() *
-          (j.getPressure() / (j.getDensity() * j.getDensity()) + 0.5 * AV);
+      (j.getPressure() / (j.getDensity() * j.getDensity()) + 0.5 * AV);
   j.addEngDot(arrayMath::dot(gradW_ij, dv) * scale2j);
   // Newton 3
 }
