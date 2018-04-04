@@ -23,7 +23,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
         _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j) override {
-    std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
+    auto dr = arrayMath::sub(i.getR(), j.getR());
     double dr2 = arrayMath::dot(dr, dr);
 
     ++_distanceCalculations;
@@ -74,6 +74,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       _kernelCalls += kernelCallsAcc;
     }
   }
+
   void SoAFunctor(SoA &soa1, SoA &soa2) override {
     double *const __restrict__ x1ptr = soa1.begin(posX);
     double *const __restrict__ y1ptr = soa1.begin(posY);

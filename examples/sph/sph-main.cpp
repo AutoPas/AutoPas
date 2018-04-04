@@ -197,6 +197,20 @@ void densityPressureHydroForce(LCContainer& sphSystem) {
   deleteHaloParticles();
 }
 
+void printConservativeVariables(LCContainer& sphSystem) {
+  std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
+  double energySum = 0.0;  // total enegry
+  for (auto it = sphSystem.begin(); it.isValid(); ++it) {
+    momSum = autopas::arrayMath::add(momSum,autopas::arrayMath::mulScalar(it->getV(), it->getMass()));
+    energySum += (it->getEnergy() + 0.5 * autopas::arrayMath::dot(it->getV(), it->getV())) *
+           it->getMass();
+  }
+  printf("%.16e\n", energySum);
+  printf("%.16e\n", momSum[0]);
+  printf("%.16e\n", momSum[1]);
+  printf("%.16e\n", momSum[2]);
+}
+
 int main() {
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 1.;
@@ -215,6 +229,8 @@ int main() {
   // 0.2 get time step
   dt = getTimeStepGlobal(sphSystem);
   //---- INITIAL FORCES ARE NOW CALCULATED ----
+
+  printConservativeVariables(sphSystem);
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
@@ -236,5 +252,6 @@ int main() {
     leapfrogFinalKick(sphSystem, dt);
     std::cout << "time step " << step << "(t = " << time << ")... completed"
               << std::endl;
+    printConservativeVariables(sphSystem);
   }
 }

@@ -30,10 +30,6 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
   void processBaseCell(unsigned long baseIndex) const;
   void computeOffsets();
 
-  void processCell(unsigned long cellIndex) const;
-  void processCellPair(unsigned long cellIndex1,
-                       unsigned long cellIndex2) const;
-
   std::array<std::pair<unsigned long, unsigned long>, 14> _cellPairOffsets;
   std::array<unsigned long, 8> _cellOffsets;
 };
@@ -69,16 +65,16 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
   using ThreeDimensionalMapping::threeToOneD;
   using std::make_pair;
 
-  unsigned long int o = threeToOneD(0ul, 0ul, 0ul, this->_dims);  // origin
-  unsigned long int x =
+  unsigned long o = threeToOneD(0ul, 0ul, 0ul, this->_dims);  // origin
+  unsigned long x =
       threeToOneD(1ul, 0ul, 0ul, this->_dims);  // displacement to the right
-  unsigned long int y =
+  unsigned long y =
       threeToOneD(0ul, 1ul, 0ul, this->_dims);  // displacement ...
-  unsigned long int z = threeToOneD(0ul, 0ul, 1ul, this->_dims);
-  unsigned long int xy = threeToOneD(1ul, 1ul, 0ul, this->_dims);
-  unsigned long int yz = threeToOneD(0ul, 1ul, 1ul, this->_dims);
-  unsigned long int xz = threeToOneD(1ul, 0ul, 1ul, this->_dims);
-  unsigned long int xyz = threeToOneD(1ul, 1ul, 1ul, this->_dims);
+  unsigned long z = threeToOneD(0ul, 0ul, 1ul, this->_dims);
+  unsigned long xy = threeToOneD(1ul, 1ul, 0ul, this->_dims);
+  unsigned long yz = threeToOneD(0ul, 1ul, 1ul, this->_dims);
+  unsigned long xz = threeToOneD(1ul, 0ul, 1ul, this->_dims);
+  unsigned long xyz = threeToOneD(1ul, 1ul, 1ul, this->_dims);
 
   int i = 0;
   // if incrementing along X, the following order will be more cache-efficient:
