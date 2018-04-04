@@ -109,14 +109,14 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
 template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   using std::array;
-  array<unsigned long, 3> end;
+  array<unsigned long, 3> endid;
   for (int d = 0; d < 3; ++d) {
-    end[d] = this->_dims[d] - 1;
+    endid[d] = this->_dims[d] - 1;
   }
 
-  for (unsigned long z = 0; z < end[2]; ++z) {
-    for (unsigned long y = 0; y < end[1]; ++y) {
-      for (unsigned long x = 0; x < end[0]; ++x) {
+  for (unsigned long z = 0; z < endid[2]; ++z) {
+    for (unsigned long y = 0; y < endid[1]; ++y) {
+      for (unsigned long x = 0; x < endid[0]; ++x) {
         unsigned long ind =
             ThreeDimensionalMapping::threeToOneD(x, y, z, this->_dims);
         processBaseCell(ind);

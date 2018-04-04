@@ -74,6 +74,8 @@ class ParticleContainer {
 
   void setCutoff(double cutoff) { _cutoff = cutoff; }
 
+  virtual void updateContainer() = 0;
+
  protected:
   std::vector<ParticleCell> _data;
 

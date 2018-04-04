@@ -43,9 +43,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void deleteHaloParticles() override {
-    _cellBlock.clearHaloCells();
-  }
+  void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) override {
     iteratePairwiseAoS2(f);
@@ -76,6 +74,20 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
         traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                   &cellFunctor);
     traversal.traverseCellPairs();
+  }
+
+  void updateContainer() override {
+    // todo optimize
+    std::vector<Particle> invalidParticles;
+    for (auto iter = this->begin(); iter.isValid(); ++iter) {
+      invalidParticles.push_back(*iter);
+    }
+    for (auto &cell : this->_data) {
+      cell.clear();
+    }
+    for (auto &particle : invalidParticles) {
+      addParticle(particle);
+    }
   }
 
  private:

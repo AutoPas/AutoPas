@@ -43,7 +43,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void deleteHaloParticles() override {
-    //TODO
+    getHaloCell()->clear();
   }
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) override {
@@ -80,6 +80,10 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void iteratePairwiseSoA2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);
     cellFunctor.processCell(*getCell());
+  }
+
+  void updateContainer() override {
+    // TODO: might need to do sth. if particles move outside of the box?
   }
 
  private:
