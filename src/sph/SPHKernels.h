@@ -21,6 +21,11 @@ class SPHKernels {
   static constexpr double kernelSupportRadius = 2.5;
   // const double C_CFL = 0.3;
  public:
+
+  static inline double getKernelSupportRadius(){
+    return kernelSupportRadius;
+  }
+
   /**
    * A kernel function for SPH simulations
    *

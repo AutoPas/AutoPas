@@ -22,6 +22,7 @@ class SPHCalcDensityFunctor
    * Calculates the density contribution of the interaction of particle i and j.
    * It is not symmetric, because the smoothing lenghts of the two particles can
    * be different.
+   * @todo newton 3 only symmetric!
    * @param i first particle of the interaction
    * @param j second particle of the interaction
    */

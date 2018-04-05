@@ -10,6 +10,13 @@ using namespace autopas::sph;
 void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
   const std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
   // const PS::F64vec dr = ep_i[i].pos - ep_j[j].pos;
+  // TODO: symmetric only:
+  double cutoff = i.getSmoothingLength() *
+                  autopas::sph::SPHKernels::getKernelSupportRadius();
+
+  if (autopas::arrayMath::dot(dr, dr) >= cutoff * cutoff) {
+    return;
+  }
 
   const std::array<double, 3> dv = arrayMath::sub(i.getV(), j.getV());
   // const PS::F64vec dv = ep_i[i].vel - ep_j[j].vel;

@@ -115,7 +115,7 @@ void leapfrogFullDrift(LCContainer& sphSystem, const double dt) {
 
 void leapfrogPredict(LCContainer& sphSystem, const double dt) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    part->addV(autopas::arrayMath::addScalar(part->getAcceleration(), dt));
+    part->addV(autopas::arrayMath::mulScalar(part->getAcceleration(), dt));
     part->addEnergy(part->getEngDot() * dt);
   }
 }
@@ -236,16 +236,6 @@ void densityPressureHydroForce(LCContainer& sphSystem) {
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
 
-  //  std::cout << "haloparticles:" << std::endl;
-  //  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-  //    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
-  //                           sphSystem.getBoxMax())) {
-  //      std::cout << "Particle " << part->getID() << " at [" <<
-  //      part->getR()[0]
-  //                << ", " << part->getR()[1] << ", " << part->getR()[2] << "]"
-  //                << std::endl;
-  //    }
-  //  }
   std::cout << "\nhaloupdate\n" << std::endl;
 
   // 1.first calculate density
@@ -265,16 +255,6 @@ void densityPressureHydroForce(LCContainer& sphSystem) {
   std::cout << haloparts << std::endl;
   std::cout << "particles... " << innerparts << std::endl;
 
-  //  std::cout << "haloparticles:" << std::endl;
-  //  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-  //    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
-  //                           sphSystem.getBoxMax())) {
-  //      std::cout << "Particle " << part->getID() << " at [" <<
-  //      part->getR()[0]
-  //                << ", " << part->getR()[1] << ", " << part->getR()[2] << "]"
-  //                << std::endl;
-  //    }
-  //  }
   // 1.2 then calculate density
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->setDensity(0.);
@@ -284,16 +264,6 @@ void densityPressureHydroForce(LCContainer& sphSystem) {
   std::cout << "calculation of density... started" << std::endl;
   sphSystem.iteratePairwiseAoS2(&densityFunctor);
   std::cout << "calculation of density... completed" << std::endl;
-  //  std::cout << "haloparticles:" << std::endl;
-  //  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-  //    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
-  //                           sphSystem.getBoxMax())) {
-  //      std::cout << "Particle " << part->getID() << " at [" <<
-  //      part->getR()[0]
-  //                << ", " << part->getR()[1] << ", " << part->getR()[2] << "]"
-  //                << std::endl;
-  //    }
-  //  }
   // 1.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 
@@ -321,12 +291,12 @@ void densityPressureHydroForce(LCContainer& sphSystem) {
 
   // 0.3.2 then calculate hydro force
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    part->setVSigMax(0.);
+    // self interaction leeds to:
+    // 1) vsigmax = 2*part->getSoundSpeed()
+    // 2) no change in acceleration
+    part->setVSigMax(2 * part->getSoundSpeed());
     part->setAcceleration(std::array<double, 3>{0., 0., 0.});
-    hydroForceFunctor.AoSFunctor(*part, *part);
-    part->setVSigMax(part->getVSigMax() / 2);
-    part->setAcceleration(
-        autopas::arrayMath::mulScalar(part->getAcceleration(), 0.5));
+    part->setEngDot(0.);
   }
   std::cout << "calculation of hydroforces... started" << std::endl;
   sphSystem.iteratePairwiseAoS2(&hydroForceFunctor);
@@ -374,20 +344,9 @@ int main() {
 
   printConservativeVariables(sphSystem);
 
-  //  exit(0);
-
-  //  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-  //    printf(
-  //        "%lu\t%lf\t%lf\t%lf\t%lf\t%lf\t"
-  //        "%lf\t%lf\t%lf\t%lf\t%lf\n",
-  //        part->getID(), part->getMass(), part->getR()[0], part->getR()[1],
-  //        part->getR()[2], part->getV()[0], part->getV()[1], part->getV()[2],
-  //        part->getDensity(), part->getEnergy(), part->getPressure());
-  //  }
-  // exit(0);
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  for (double time = 0.; time < t_end && step < 1; time += dt, ++step) {
+  for (double time = 0.; time < t_end; time += dt, ++step) {
     std::cout << "\n-------------------------\ntime step " << step
               << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift
@@ -412,10 +371,12 @@ int main() {
 //    for (auto part = sphSystem.begin(); part.isValid(); ++part) {
 //      printf(
 //          "%lu\t%lf\t%lf\t%lf\t%lf\t%lf\t"
-//          "%lf\t%lf\t%lf\t%lf\t%lf\n",
+//          "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 //          part->getID(), part->getMass(), part->getR()[0], part->getR()[1],
 //          part->getR()[2], part->getV()[0], part->getV()[1], part->getV()[2],
-//          part->getDensity(), part->getEnergy(), part->getPressure());
+//          part->getDensity(), part->getEnergy(), part->getPressure(),
+//          part->getAcceleration()[0], part->getAcceleration()[1],
+//          part->getAcceleration()[2], part->getEngDot(), part->getDt());
 //    }
 
     printConservativeVariables(sphSystem);
