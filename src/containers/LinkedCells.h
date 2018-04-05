@@ -15,9 +15,25 @@
 
 namespace autopas {
 
+/**
+ * LinkedCells class.
+ * This class uses a list of neighboring cells to store the particles.
+ * These cells dimensions at least as large as the given cutoff radius,
+ * therefore short-range interactions only need to be calculated between
+ * particles in neighboring cells.
+ * @tparam Particle type of the particles that need to be stored
+ * @tparam ParticleCell type of the ParticleCells that are used to store the
+ * particles
+ */
 template <class Particle, class ParticleCell>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
  public:
+  /**
+   * Constructor of the LinkedCells class
+   * @param boxMin
+   * @param boxMax
+   * @param cutoff
+   */
   LinkedCells(const std::array<double, 3> boxMin,
               const std::array<double, 3> boxMax, double cutoff)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff),
@@ -49,6 +65,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     iteratePairwiseAoS2(f);
   }
 
+  /**
+   * same as iteratePairwiseAoS, but faster, as the class of the functor is known and thus the compiler can do some better optimizations.
+   * @tparam ParticleFunctor
+   * @param f
+   */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, false> cellFunctor(f);
@@ -65,6 +86,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     iteratePairwiseSoA2(f);
   }
 
+  /**
+   * same as iteratePairwiseSoA, but faster, as the class of the functor is known and thus the compiler can do some better optimizations.
+   * @tparam ParticleFunctor
+   * @param f
+   */
   template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);

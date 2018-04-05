@@ -15,9 +15,22 @@
 
 namespace autopas {
 
+/**
+ * This class stores particles in a single cell.
+ * Interactions are calculated directly, such that each particle interacts with every other particle.
+ * Use this class only if you have a very small amount of particles at hand.
+ * @tparam Particle type of the particles to be stored
+ * @tparam ParticleCell type of the cell that stores the particle
+ */
 template <class Particle, class ParticleCell>
 class DirectSum : public ParticleContainer<Particle, ParticleCell> {
  public:
+  /**
+   * Constructor of the DirectSum class
+   * @param boxMin
+   * @param boxMax
+   * @param cutoff
+   */
   DirectSum(const std::array<double, 3> boxMin,
             const std::array<double, 3> boxMax, double cutoff)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff) {
@@ -66,6 +79,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 #endif
   }
 
+  /**
+   * same as iteratePairwiseAoS, but faster, as the class of the functor is known and thus the compiler can do some better optimizations.
+   * @tparam ParticleFunctor
+   * @param f
+   */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, false> cellFunctor(f);
@@ -76,6 +94,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     iteratePairwiseSoA2(f);
   }
 
+
+  /**
+   * same as iteratePairwiseSoA, but faster, as the class of the functor is known and thus the compiler can do some better optimizations.
+   * @tparam ParticleFunctor
+   * @param f
+   */
   template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);
