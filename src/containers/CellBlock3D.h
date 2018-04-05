@@ -14,60 +14,125 @@
 #include "utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
-
+/**
+ * Class that manages a block of ParticleCells.
+ * It is used to resize the cellblock and to handle the conversion of 3d to 1d indices
+ * @tparam ParticleCell type of the handled ParticleCells
+ */
 template <class ParticleCell>
 class CellBlock3D {
  public:
   typedef std::size_t index_t;
-
+  /**
+   * Constructor of CellBlock3D
+   * @param vec vector of ParticleCells that this class manages
+   * @param bMin lower corner of the cellblock
+   * @param bMax higher corner of the cellblock
+   * @param interactionLength minimal size of each cell
+   */
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin,
               const std::array<double, 3> bMax, double interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength);
   }
 
+  /**
+   * get the ParticleCell of a specified 1d index
+   * @param index1d the index of the cell
+   * @return the specified cell
+   */
   ParticleCell &getCell(index_t index1d) const;
+
+  /**
+   * get the ParticleCell of a specified 3d index
+   * @param index3d the index of the cell
+   * @return the specified cell
+   */
   ParticleCell &getCell(const std::array<index_t, 3> &index3d) const;
 
+  /**
+   * rebuild the cellblock. This resizes the cellblock and sets the appropriate internal variables
+   * @param vec new vector of ParticleCells to which the internal pointer is set
+   * @param bMin new lower corner of the cellblock
+   * @param bMax new higher corner of the cellblock
+   * @param interactionLength new minimal size of each cell
+   */
   void rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin,
                const std::array<double, 3> bMax, double interactionLength);
 
   // this class doesn't actually know about particles
+  /**
+   * Get the containing cell of a specified position
+   * @param pos the position for which the cell is needed
+   * @return cell at the given position
+   */
   ParticleCell &getContainingCell(const std::array<double, 3> &pos) const;
 
+  /**
+   * get the 3d index of the cellblock for a given position
+   * @param pos the position
+   * @return the 3d index
+   */
   std::array<index_t, 3> get3DIndexOfPosition(
       const std::array<double, 3> &pos) const;
+
+  /**
+   * get the 1d index of the cellblock for a given position
+   * @param pos the position
+   * @return the 1d index
+   */
   index_t get1DIndexOfPosition(const std::array<double, 3> &pos) const;
 
+  /**
+   * get the dimension of the cellblock including the haloboxes
+   * @return the dimensions of the cellblock
+   */
   const std::array<index_t, 3> &getCellsPerDimensionWithHalo() const {
     return _cellsPerDimensionWithHalo;
   }
 
+  /**
+   * checks whether a given position is inside the halo region of the managed cell block
+   * @param position the given position
+   * @return true if the position is inside the halo region
+   */
   bool checkInHalo(std::array<double, 3> position) const;
 
+  /**
+   * deletes all particles in the halo cells of the managed cell block
+   */
   void clearHaloCells() {
     // x: min and max of x
-    for (index_t i : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[0] - 1)}) {
+    for (index_t i :
+         {static_cast<index_t>(0),
+          static_cast<index_t>(_cellsPerDimensionWithHalo[0] - 1)}) {
       for (index_t j = 0; j < _cellsPerDimensionWithHalo[1]; j++) {
         for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
-          index_t index = index1D({i,j,k});
+          index_t index = index1D({i, j, k});
           (*_vec1D)[index].clear();
         }
       }
     }
     // y: min and max of y
-    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {  // 0 and cells-1 already done in previous loop
-      for (index_t j : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[1] - 1)}) {
+    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1;
+         i++) {  // 0 and cells-1 already done in previous loop
+      for (index_t j :
+           {static_cast<index_t>(0),
+            static_cast<index_t>(_cellsPerDimensionWithHalo[1] - 1)}) {
         for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
-          index_t index = index1D({i,j,k});
+          index_t index = index1D({i, j, k});
           (*_vec1D)[index].clear();
         }
       }
     }
     // z: min and max of z
-    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {  // 0 and cells-1 already done in previous loop
-      for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1; j++) {  // 0 and cells-1 already done in previous loop
-        for (index_t k : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[2] - 1)}) {
-          index_t index = index1D({i,j,k});
+    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1;
+         i++) {  // 0 and cells-1 already done in previous loop
+      for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1;
+           j++) {  // 0 and cells-1 already done in previous loop
+        for (index_t k :
+             {static_cast<index_t>(0),
+              static_cast<index_t>(_cellsPerDimensionWithHalo[2] - 1)}) {
+          index_t index = index1D({i, j, k});
           (*_vec1D)[index].clear();
         }
       }
