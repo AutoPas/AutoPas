@@ -22,6 +22,10 @@ class SPHKernels {
   // const double C_CFL = 0.3;
  public:
 
+  /**
+   * Get the kernelSupportRadius
+   * @return the kernel support radius
+   */
   static inline double getKernelSupportRadius(){
     return kernelSupportRadius;
   }
