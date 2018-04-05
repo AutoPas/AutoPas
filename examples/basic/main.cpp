@@ -82,7 +82,7 @@ void testParticleContainerFull() {
 
   LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> pc(boxMin, boxMax,
                                                            cutoff);
-  pc.init();  // empty full empty full empty
+  //pc.init();  // empty full empty full empty
 
   // add a few particles to the second cell
   for (int i = 0; i < 4; ++i) {
@@ -113,7 +113,7 @@ void testParticleContainerRMM() {
   double cutoff = 1.0;
   LinkedCells<MyMolecule, RMMParticleCell<MyMolecule>> pc(boxMin, boxMax,
                                                           cutoff);
-  pc.init();  // empty full empty full empty
+  //pc.init();  // empty full empty full empty
 
   // add a few particles to the second cell
   for (int i = 0; i < 4; ++i) {

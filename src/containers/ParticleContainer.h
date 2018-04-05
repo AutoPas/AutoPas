@@ -56,7 +56,7 @@ class ParticleContainer {
    */
   ParticleContainer &operator=(const ParticleContainer &other) = delete;
 
-  virtual void init() {}
+  //virtual void init() {}
 
   /**
    * adds a particle to the container
@@ -90,16 +90,12 @@ class ParticleContainer {
    */
   virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) = 0;
 
-  typedef ParticleIterator<Particle, ParticleCell> iterator;
-
   /**
    * iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter)
    * @return iterator to the first particle
    */
-  iterator begin() { return iterator(&_data); }
-
-  typedef RegionParticleIterator<Particle, ParticleCell> regionIterator;
+  ParticleIterator<Particle, ParticleCell> begin() { return ParticleIterator<Particle, ParticleCell>(&_data); }
 
   /**
    * iterate over all particles in a specified region
@@ -108,9 +104,9 @@ class ParticleContainer {
    * @param higherCorner higher corner of the region
    * @return iterator to iterate over all particles in a specific region
    */
-  regionIterator getRegionIterator(std::array<double, 3> lowerCorner,
+  RegionParticleIterator<Particle, ParticleCell> getRegionIterator(std::array<double, 3> lowerCorner,
                                    std::array<double, 3> higherCorner) {
-    return regionIterator(&_data, lowerCorner, higherCorner);
+    return RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner, higherCorner);
   }
 
   /**
@@ -156,6 +152,10 @@ class ParticleContainer {
   virtual void updateContainer() = 0;
 
  protected:
+  /**
+   * vector of particle cells.
+   * All particle containers store their particles in ParticleCells. This is the common vector for this purpose.
+   */
   std::vector<ParticleCell> _data;
 
  private:
