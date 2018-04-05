@@ -13,9 +13,23 @@
 
 namespace autopas {
 
+/**
+ * This class provides the sliced traversal.
+ * @todo enhance documentation
+ * @tparam ParticleCell the type of cells
+ * @tparam CellFunctor the cell functor that defines the interaction of the particles of two specific cells
+ */
 template <class ParticleCell, class CellFunctor>
 class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
  public:
+  /**
+   * constructor of the sliced traversal
+   * @param cells the cells through which the traversal should traverse
+   * @param dims the dimensions of the cellblock, i.e. the number of cells in x,
+   * y and z direction
+   * @param cellfunctor the cell functor that defines the interaction of
+   * particles between two different cells
+   */
   explicit SlicedTraversal(std::vector<ParticleCell> &cells,
                            const std::array<unsigned long, 3> &dims,
                            CellFunctor *cellfunctor)
@@ -23,7 +37,7 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
                                                       cellfunctor) {
     computeOffsets();
   }
-
+  // documentation in base class
   void traverseCellPairs() override;
 
  private:

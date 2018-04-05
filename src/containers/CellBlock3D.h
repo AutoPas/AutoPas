@@ -22,6 +22,9 @@ namespace autopas {
 template <class ParticleCell>
 class CellBlock3D {
  public:
+  /**
+   * the index type to access the particle cells
+   */
   typedef std::size_t index_t;
   /**
    * Constructor of CellBlock3D
