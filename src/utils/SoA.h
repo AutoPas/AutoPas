@@ -8,6 +8,9 @@
 
 namespace autopas {
 
+/**
+ * structur of array class
+ */
 class SoA {
  public:
   /**

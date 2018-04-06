@@ -14,19 +14,38 @@
 // TODO: maybe move to more sensible place?
 #define DEFAULT_CACHE_LINE_SIZE 64
 
+/**
+ * AlignedAllocator class
+ * @tparam T
+ * @tparam Alignment
+ */
 template <class T, size_t Alignment = DEFAULT_CACHE_LINE_SIZE>
 class AlignedAllocator {
  public:
+
   // needed for compatibility with stl::allocator
+  /// value type
   typedef T value_type;
+  /// pointer type
   typedef T* pointer;
+  /// const pointer type
   typedef const T* const_pointer;
+  /// reference type
   typedef T& reference;
+  /// const reference type
   typedef const T& const_reference;
+  /// size type
   typedef size_t size_type;
 
+  /**
+   * Equivalent allocator for other types
+   * Class whose member other is a typedef of allocator for type Type.
+   * (from cplusplus.com)
+   * @tparam U
+   */
   template <class U>
   struct rebind {
+    /// other
     typedef AlignedAllocator<U, Alignment> other;
   };
 
