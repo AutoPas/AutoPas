@@ -98,7 +98,6 @@ double getTimeStepGlobal(LCContainer& sphSystem) {
 
 void leapfrogInitialKick(LCContainer& sphSystem, const double dt) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    // TODO: start here again; plus array math
     part->setVel_half(autopas::arrayMath::add(
         part->getV(),
         autopas::arrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));

@@ -13,6 +13,10 @@
 
 namespace autopas {
 
+/**
+ * This class handles the storage of particles in their full form.
+ * @tparam Particle
+ */
 template <class Particle>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
@@ -31,7 +35,15 @@ class FullParticleCell : public ParticleCell<Particle> {
   unsigned long numParticles() const override { return _mols.size(); }
   bool isNotEmpty() const override { return numParticles() > 0; }
   void clear() override {_mols.clear();}
+
+  /**
+   * storage of the molecules of the cell
+   */
   std::vector<Particle> _mols;
+
+  /**
+   * the soa buffer of this cell
+   */
   SoA _molsSoABuffer;
 };
 
