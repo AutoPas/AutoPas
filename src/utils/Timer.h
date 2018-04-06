@@ -27,7 +27,8 @@ class Timer {
   void start();
 
   /**
-   * stops the timer and returns the time elapsed in seconds since the last call to start
+   * stops the timer and returns the time elapsed in seconds since the last call
+   * to start
    * @return elapsed time in seconds
    */
   double stop();

@@ -22,7 +22,6 @@
 template <class T, size_t Alignment = DEFAULT_CACHE_LINE_SIZE>
 class AlignedAllocator {
  public:
-
   // needed for compatibility with stl::allocator
   /// value type
   typedef T value_type;

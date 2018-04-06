@@ -66,7 +66,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   /**
-   * same as iteratePairwiseAoS, but faster, as the class of the functor is known and thus the compiler can do some better optimizations.
+   * same as iteratePairwiseAoS, but faster, as the class of the functor is
+   * known and thus the compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
    */
@@ -87,7 +88,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   /**
-   * same as iteratePairwiseSoA, but faster, as the class of the functor is known and thus the compiler can do some better optimizations.
+   * same as iteratePairwiseSoA, but faster, as the class of the functor is
+   * known and thus the compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
    */

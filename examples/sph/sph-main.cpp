@@ -367,16 +367,18 @@ int main() {
     // 1.6 Leap frog: final Kick
     leapfrogFinalKick(sphSystem, dt);
 
-//    for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-//      printf(
-//          "%lu\t%lf\t%lf\t%lf\t%lf\t%lf\t"
-//          "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-//          part->getID(), part->getMass(), part->getR()[0], part->getR()[1],
-//          part->getR()[2], part->getV()[0], part->getV()[1], part->getV()[2],
-//          part->getDensity(), part->getEnergy(), part->getPressure(),
-//          part->getAcceleration()[0], part->getAcceleration()[1],
-//          part->getAcceleration()[2], part->getEngDot(), part->getDt());
-//    }
+    //    for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+    //      printf(
+    //          "%lu\t%lf\t%lf\t%lf\t%lf\t%lf\t"
+    //          "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+    //          part->getID(), part->getMass(), part->getR()[0],
+    //          part->getR()[1],
+    //          part->getR()[2], part->getV()[0], part->getV()[1],
+    //          part->getV()[2],
+    //          part->getDensity(), part->getEnergy(), part->getPressure(),
+    //          part->getAcceleration()[0], part->getAcceleration()[1],
+    //          part->getAcceleration()[2], part->getEngDot(), part->getDt());
+    //    }
 
     printConservativeVariables(sphSystem);
   }

@@ -39,7 +39,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctor) {
 
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   densityFunctor.AoSFunctor(sphParticle1, sphParticle2);
-  //densityFunctor.AoSFunctor(sphParticle2, sphParticle1);
+  // densityFunctor.AoSFunctor(sphParticle2, sphParticle1);
 
   EXPECT_NEAR(sphParticle1.getDensity(), 0.559026, 1e-6);
   EXPECT_NEAR(sphParticle2.getDensity(), 0.172401, 1e-6);
@@ -87,7 +87,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
 
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
   hydroForceFunctor.AoSFunctor(sphParticle1, sphParticle2);
-  //hydroForceFunctor.AoSFunctor(sphParticle2, sphParticle1);
+  // hydroForceFunctor.AoSFunctor(sphParticle2, sphParticle1);
 
   EXPECT_NEAR(sphParticle1.getAcceleration().at(0), -2.26921, 1e-5);
   EXPECT_NEAR(sphParticle1.getAcceleration().at(1), -4.53843, 1e-5);

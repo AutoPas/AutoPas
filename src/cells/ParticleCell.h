@@ -12,7 +12,8 @@ namespace autopas {
 
 /**
  * Class for Cells of Particles.
- * The class handles to storage particles and provides an interface to add the particles
+ * The class handles to storage particles and provides an interface to add the
+ * particles
  * @tparam Particle the type of particles to be stored in the cells
  */
 template <class Particle>

@@ -23,7 +23,8 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
 
   // check the touch using the normal iterator
   for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
-    //  std::cout << "id: " << iterator->getID() << " at [" << iterator->getR()[0]
+    //  std::cout << "id: " << iterator->getID() << " at [" <<
+    //  iterator->getR()[0]
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 

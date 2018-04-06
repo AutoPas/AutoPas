@@ -52,7 +52,8 @@ class CellPairTraversals {
 
   /**
    * traverse all pairs of cells
-   * This function needs to be implemented by derived classes and handles to order in which the cells are traversed
+   * This function needs to be implemented by derived classes and handles to
+   * order in which the cells are traversed
    */
   virtual void traverseCellPairs() = 0;
 
@@ -69,7 +70,8 @@ class CellPairTraversals {
   std::array<unsigned long, 3> _dims;
 
   /**
-   * The cell functor which defines the interaction of the particles between two specific cells.
+   * The cell functor which defines the interaction of the particles between two
+   * specific cells.
    */
   CellFunctor *_cellFunctor;
 };

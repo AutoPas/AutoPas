@@ -15,9 +15,11 @@
 
 namespace autopas {
 
-// TODO: can we do this without a template? Maybe. But we want to inline it anyway :)
+// TODO: can we do this without a template? Maybe. But we want to inline it
+// anyway :)
 /**
- * A functor to handle lennard-jones interactions between two particles (molecules).
+ * A functor to handle lennard-jones interactions between two particles
+ * (molecules).
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
  */

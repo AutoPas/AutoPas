@@ -17,7 +17,8 @@ namespace autopas {
 
 /**
  * This class stores particles in a single cell.
- * Interactions are calculated directly, such that each particle interacts with every other particle.
+ * Interactions are calculated directly, such that each particle interacts with
+ * every other particle.
  * Use this class only if you have a very small amount of particles at hand.
  * @tparam Particle type of the particles to be stored
  * @tparam ParticleCell type of the cell that stores the particle
@@ -55,9 +56,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void deleteHaloParticles() override {
-    getHaloCell()->clear();
-  }
+  void deleteHaloParticles() override { getHaloCell()->clear(); }
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) override {
     //		CellFunctor<Particle, ParticleCell,LJFunctor<Particle>>
@@ -80,7 +79,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   /**
-   * same as iteratePairwiseAoS, but faster, as the class of the functor is known and thus the compiler can do some better optimizations.
+   * same as iteratePairwiseAoS, but faster, as the class of the functor is
+   * known and thus the compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
    */
@@ -94,9 +94,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     iteratePairwiseSoA2(f);
   }
 
-
   /**
-   * same as iteratePairwiseSoA, but faster, as the class of the functor is known and thus the compiler can do some better optimizations.
+   * same as iteratePairwiseSoA, but faster, as the class of the functor is
+   * known and thus the compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
    */
@@ -111,15 +111,14 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
  private:
-
   // for convenience
   typedef SingleCellIterator<Particle, ParticleCell> SingIterator;
 
   SingIterator getIt(int index = 0) { return SingIterator(getCell(), index); }
 
-  ParticleCell* getCell() { return &(this->_data.at(0)); };
+  ParticleCell *getCell() { return &(this->_data.at(0)); };
 
-  ParticleCell* getHaloCell() { return &(this->_data.at(1)); };
+  ParticleCell *getHaloCell() { return &(this->_data.at(1)); };
 };
 
 } /* namespace autopas */

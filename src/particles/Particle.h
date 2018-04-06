@@ -41,7 +41,8 @@ class Particle {
 
   void addR(const std::array<double, 3> &r) { _r = arrayMath::add(_r, r); }
 
-  bool inBox(const std::array<double, 3> &rmin, const std::array<double, 3> rmax){
+  bool inBox(const std::array<double, 3> &rmin,
+             const std::array<double, 3> rmax) {
     bool in = true;
     for (int d = 0; d < 3; ++d) {
       in &= (_r[d] >= rmin[d] and _r[d] < rmax[d]);

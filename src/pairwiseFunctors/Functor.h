@@ -13,8 +13,10 @@
 namespace autopas {
 
 /**
- * Functor class. This class describes the pairwise interactions between particles.
- * Both an array of structure (AoS) and a structure of array (SoA) are supported to be used with functors.
+ * Functor class. This class describes the pairwise interactions between
+ * particles.
+ * Both an array of structure (AoS) and a structure of array (SoA) are supported
+ * to be used with functors.
  * @tparam Particle the type of Particle
  * @tparam ParticleCell the type of ParticleCell
  */

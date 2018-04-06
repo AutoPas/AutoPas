@@ -17,7 +17,8 @@ namespace autopas {
  * This class provides the sliced traversal.
  * @todo enhance documentation
  * @tparam ParticleCell the type of cells
- * @tparam CellFunctor the cell functor that defines the interaction of the particles of two specific cells
+ * @tparam CellFunctor the cell functor that defines the interaction of the
+ * particles of two specific cells
  */
 template <class ParticleCell, class CellFunctor>
 class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {

@@ -34,7 +34,8 @@ class CellFunctor {
 
   /**
    * process the interactions inside one cell
-   * @param cell all pairwise interactions of particles inside this cell are calculated
+   * @param cell all pairwise interactions of particles inside this cell are
+   * calculated
    */
   void processCell(ParticleCell &cell) {
     if (useSoA) {
@@ -45,7 +46,8 @@ class CellFunctor {
   }
 
   /**
-   * process the interactions between the particles of cell1 with particles of cell2.
+   * process the interactions between the particles of cell1 with particles of
+   * cell2.
    * @param cell1
    * @param cell2
    */

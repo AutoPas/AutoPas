@@ -16,7 +16,8 @@
 namespace autopas {
 /**
  * Class that manages a block of ParticleCells.
- * It is used to resize the cellblock and to handle the conversion of 3d to 1d indices
+ * It is used to resize the cellblock and to handle the conversion of 3d to 1d
+ * indices
  * @tparam ParticleCell type of the handled ParticleCells
  */
 template <class ParticleCell>
@@ -53,7 +54,8 @@ class CellBlock3D {
   ParticleCell &getCell(const std::array<index_t, 3> &index3d) const;
 
   /**
-   * rebuild the cellblock. This resizes the cellblock and sets the appropriate internal variables
+   * rebuild the cellblock. This resizes the cellblock and sets the appropriate
+   * internal variables
    * @param vec new vector of ParticleCells to which the internal pointer is set
    * @param bMin new lower corner of the cellblock
    * @param bMax new higher corner of the cellblock
@@ -94,7 +96,8 @@ class CellBlock3D {
   }
 
   /**
-   * checks whether a given position is inside the halo region of the managed cell block
+   * checks whether a given position is inside the halo region of the managed
+   * cell block
    * @param position the given position
    * @return true if the position is inside the halo region
    */

@@ -88,7 +88,6 @@ class SingleCellIterator {
 template <class Particle>
 class SingleCellIterator<Particle, autopas::RMMParticleCell<Particle>> {
  public:
-
   /**
    * default constructor of SingleCellIterator
    */
@@ -102,12 +101,11 @@ class SingleCellIterator<Particle, autopas::RMMParticleCell<Particle>> {
   explicit SingleCellIterator(RMMParticleCell<Particle> *cell_arg, int ind = 0)
       : _cell(cell_arg), _index(ind) {}
 
-
-//  SingleCellIterator(const SingleCellIterator &cellIterator) {
-//    _cell = cellIterator._cell;
-//    _AoSReservoir = cellIterator._AoSReservoir;
-//    _index = cellIterator._index;
-//  }
+  //  SingleCellIterator(const SingleCellIterator &cellIterator) {
+  //    _cell = cellIterator._cell;
+  //    _AoSReservoir = cellIterator._AoSReservoir;
+  //    _index = cellIterator._index;
+  //  }
 
   /**
    * access the particle using *iterator
