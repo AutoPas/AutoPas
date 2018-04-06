@@ -76,7 +76,9 @@ class SPHParticle : public autopas::Particle {
 ## Developing Autopas
 * We use google code style.
 * code style can be build with
+```
 	make clangformat
+```
 * requirements:
 	clang-format
 
