@@ -7,15 +7,15 @@
 #include "autopas.h"
 #include "sph/autopassph.h"
 
-//typedef autopas::LinkedCells<
-//    autopas::sph::SPHParticle,
-//    autopas::FullParticleCell<autopas::sph::SPHParticle>>
-//    Container;
-
-typedef autopas::DirectSum<
+typedef autopas::LinkedCells<
     autopas::sph::SPHParticle,
     autopas::FullParticleCell<autopas::sph::SPHParticle>>
     Container;
+
+//typedef autopas::DirectSum<
+//    autopas::sph::SPHParticle,
+//    autopas::FullParticleCell<autopas::sph::SPHParticle>>
+//    Container;
 
 void SetupIC(Container& sphSystem, double* end_time,
              const std::array<double, 3>& bBoxMax) {

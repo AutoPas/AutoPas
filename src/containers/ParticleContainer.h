@@ -159,7 +159,7 @@ class ParticleContainer {
    * check whether a container is valid, i.e. whether it is safe to use
    * pair-wise interactions or the RegionParticleIteraor right now.
    */
-  virtual bool checkValid() = 0;
+  //virtual bool checkValid() = 0;
 
  protected:
   /**
