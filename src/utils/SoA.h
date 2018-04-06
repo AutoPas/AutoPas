@@ -36,6 +36,7 @@ class SoA {
   /**
    * @brief Creates an aligned vector for every given attribute.
    * @param attributes Vector of Attributes that shall be stored.
+   * @param length length of the attribute vector
    */
   void initArrays(const std::vector<int> attributes, size_t length = 0) {
     arrays.clear();
@@ -90,7 +91,7 @@ class SoA {
 
   /**
    * @brief Reads the value of a given attribute of a given particle.
-   * @param attributes Attribute to read from.
+   * @param attribute Attribute to read from.
    * @param particleId Position to read from.
    * @return Attribute value.
    */
