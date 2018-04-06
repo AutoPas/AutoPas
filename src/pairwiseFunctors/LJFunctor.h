@@ -15,7 +15,12 @@
 
 namespace autopas {
 
-// can we do this without a template? Maybe. But we want to inline it anyway :)
+// TODO: can we do this without a template? Maybe. But we want to inline it anyway :)
+/**
+ * A functor to handle lennard-jones interactions between two particles (molecules).
+ * @tparam Particle the type of particle
+ * @tparam ParticleCell the type of particlecell
+ */
 template <class Particle, class ParticleCell>
 class LJFunctor : public Functor<Particle, ParticleCell> {
  public:
@@ -236,6 +241,13 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
+  /**
+   * Set the global values, i.e. cutoff, epsilon, sigma and shift
+   * @param cutoff
+   * @param epsilon
+   * @param sigma
+   * @param shift
+   */
   static void setGlobals(double cutoff, double epsilon, double sigma,
                          double shift) {
     CUTOFFSQUARE = cutoff * cutoff;
@@ -244,13 +256,21 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     SHIFT6 = shift * 6.0;
   }
 
-  static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
-
+  /**
+   * get the number of flops used per kernel call. This should count the
+   * floating point operations needed for two particles that lie within a cutoff
+   * radius.
+   * @return the number of floating point operations
+   */
   static unsigned long getNumFlopsPerKernelCall() {
     // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply
     // scale) sum Forces: 6 (forces) kernel total = 12 + 6 = 18
     return 18ul;
   }
+
+ private:
+  static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
+
 };  // namespace autopas
 
 template <class T, class U>

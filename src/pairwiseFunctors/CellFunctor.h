@@ -12,12 +12,30 @@
 
 namespace autopas {
 
+/**
+ * A cell functor. This functor is build from the normal Functor of the template
+ * type ParticleFunctor. It is an internal object to handle interactions between
+ * two cells of particles.
+ * @todo: currently always used newton3!
+ * @tparam Particle
+ * @tparam ParticleCell
+ * @tparam ParticleFunctor the functor which
+ * @tparam useSoA
+ */
 template <class Particle, class ParticleCell, class ParticleFunctor,
           bool useSoA>
 class CellFunctor {
  public:
+  /**
+   * The constructor of CellFunctor
+   * @param f the particlefunctor which should be used for the interaction.
+   */
   explicit CellFunctor(ParticleFunctor *f) : _functor(f) {}
 
+  /**
+   * process the interactions inside one cell
+   * @param cell all pairwise interactions of particles inside this cell are calculated
+   */
   void processCell(ParticleCell &cell) {
     if (useSoA) {
       processCellSoA(cell);
@@ -26,6 +44,11 @@ class CellFunctor {
     }
   }
 
+  /**
+   * process the interactions between the particles of cell1 with particles of cell2.
+   * @param cell1
+   * @param cell2
+   */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2) {
     if (useSoA) {
       processCellPairSoA(cell1, cell2);
@@ -34,6 +57,7 @@ class CellFunctor {
     }
   }
 
+ private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of
    * motion

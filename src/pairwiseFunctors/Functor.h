@@ -12,6 +12,12 @@
 
 namespace autopas {
 
+/**
+ * Functor class. This class describes the pairwise interactions between particles.
+ * Both an array of structure (AoS) and a structure of array (SoA) are supported to be used with functors.
+ * @tparam Particle the type of Particle
+ * @tparam ParticleCell the type of ParticleCell
+ */
 template <class Particle, class ParticleCell>
 class Functor {
  public:
@@ -30,7 +36,7 @@ class Functor {
    * @brief Functor for structure of arrays (SoA)
    *
    * This functor should calculate the forces or any other pair-wise interaction
-   * between all particles in soa.
+   * between all particles in an soa.
    * This should include a cutoff check if needed!
    *
    * @param soa Structure of arrays

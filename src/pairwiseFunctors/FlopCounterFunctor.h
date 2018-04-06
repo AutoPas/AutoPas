@@ -12,10 +12,24 @@
 #include "utils/arrayMath.h"
 
 namespace autopas {
-
+/**
+ * This class helps in getting the number of performed floating point
+ * operations. It is a functor that only calculated the amount of floating point
+ * operations.
+ * @todo this class currently is limited to the following case:
+ *  - constant cutoff radius
+ *  - constant amount of floating point operations for one kernel call (distance
+ * < cutoff)
+ * @tparam Particle
+ * @tparam ParticleCell
+ */
 template <class Particle, class ParticleCell>
 class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
  public:
+  /**
+   * constructor of FlopCounterFunctor
+   * @param c the cutoff radius
+   */
   explicit FlopCounterFunctor<Particle, ParticleCell>(double c)
       : autopas::Functor<Particle, ParticleCell>(),
         _cutoffSquare(c * c),
@@ -30,8 +44,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
     if (dr2 <= _cutoffSquare) ++_kernelCalls;
   }
-
-  enum SoAAttributes { id, posX, posY, posZ };
 
   void SoAFunctor(SoA &soa) override {
     if (soa.getNumParticles() == 0) return;
@@ -119,11 +131,21 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
+  /**
+   * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
+   * of kernel calls compared to the number of distance calculations
+   * @return the hit rate
+   */
   double getHitRate() {
     return static_cast<double>(_kernelCalls) /
            static_cast<double>(_distanceCalculations);
   }
 
+  /**
+   * get the total number of flops
+   * @param numFlopsPerKernelCall
+   * @return
+   */
   double getFlops(unsigned long numFlopsPerKernelCall) const {
     // 3 sub + 3 square + 2 add
     const double numFlopsPerDistanceCalculation = 8;
@@ -134,13 +156,24 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     return distFlops + kernFlops;
   }
 
+  /**
+   * get the number of calculated distance operations
+   * @return
+   */
   unsigned long getDistanceCalculations() const {
     return _distanceCalculations;
   }
 
+  /**
+   * get the number of kernel calls, i.e. the number of pairs of particles with
+   * a distance not larger than the cutoff
+   * @return
+   */
   unsigned long getKernelCalls() const { return _kernelCalls; }
 
  private:
+  enum SoAAttributes { id, posX, posY, posZ };
+
   double _cutoffSquare;
   unsigned long _distanceCalculations, _kernelCalls;
 };
