@@ -88,6 +88,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void iteratePairwiseAoS2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, false> cellFunctor(f);
     cellFunctor.processCell(*getCell());
+    cellFunctor.processCellPair(*getCell(),*getHaloCell());
   }
 
   void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) override {
@@ -104,6 +105,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void iteratePairwiseSoA2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);
     cellFunctor.processCell(*getCell());
+    cellFunctor.processCellPair(*getCell(),*getHaloCell());
   }
 
   void updateContainer() override {

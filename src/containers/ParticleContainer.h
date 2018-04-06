@@ -155,6 +155,12 @@ class ParticleContainer {
    */
   virtual void updateContainer() = 0;
 
+  /**
+   * check whether a container is valid, i.e. whether it is safe to use
+   * pair-wise interactions or the RegionParticleIteraor right now.
+   */
+  virtual bool checkValid() = 0;
+
  protected:
   /**
    * vector of particle cells.
