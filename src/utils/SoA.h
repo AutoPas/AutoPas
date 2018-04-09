@@ -171,7 +171,7 @@ class SoA {
    */
   void swap(size_t a, size_t b) {
     for (auto &vec : arrays) {
-      std::swap(vec.second[a], vec.second[b]);
+      std::swap((*(vec.second))[a], (*(vec.second))[b]);
     }
   }
 

@@ -54,7 +54,7 @@ class RMMParticleCell2T
 
   void deleteByIndex(int index) override {
     assert(index >= 0 and index < numParticles());
-
+    assert(numParticles() > 0);
     if (index < numParticles() - 1) {
       _molsSoABuffer.swap(index, numParticles() - 1);
     }
@@ -99,7 +99,7 @@ class RMMParticleCellIterator {
   /**
    * default constructor of SingleCellIterator
    */
-  RMMParticleCellIterator() : _cell(nullptr), _index(0) {}
+  RMMParticleCellIterator() : _cell(nullptr), _index(0), _deleted(false) {}
 
   /**
    * constructor of SingleCellIterator
@@ -109,7 +109,7 @@ class RMMParticleCellIterator {
   RMMParticleCellIterator(
       RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg,
       int ind = 0)
-      : _cell(cell_arg), _index(ind) {}
+      : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   //  SingleCellIterator(const SingleCellIterator &cellIterator) {
   //    _cell = cellIterator._cell;
@@ -144,7 +144,8 @@ class RMMParticleCellIterator {
    * @return the next particle, usually ignored
    */
   RMMParticleCellIterator &operator++() {
-    ++_index;
+    if (not _deleted) ++_index;
+    _deleted = false;
     return *this;
   }
 
@@ -163,12 +164,16 @@ class RMMParticleCellIterator {
   /**
    * Deletes the current particle
    */
-  void deleteCurrentParticle() { _cell->deleteByIndex(_index); }
+  void deleteCurrentParticle() {
+    _cell->deleteByIndex(_index);
+    _deleted = true;
+  }
 
  private:
   RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *_cell;
   Particle _AoSReservoir;
   int _index;
+  bool _deleted;
 };
 
 template <class Particle>

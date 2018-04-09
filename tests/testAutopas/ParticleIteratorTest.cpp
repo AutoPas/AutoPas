@@ -62,6 +62,23 @@ TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE) {
   }
 }
 
+TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
+  // Full Empty Full Empty Empty Full Full Empty Full Empty
+  std::vector<FullParticleCell<MoleculeLJ>> data(10);
+
+  for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
+    fillWithParticles(&data.at(i));
+  }
+
+  ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+  int i = 0;
+  for (; iter.isValid(); ++iter, ++i) {
+      iter.deleteCurrentParticle();
+  }
+  ASSERT_EQ(i, 20);
+}
+
+
 TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full
   std::vector<RMMParticleCell<MoleculeLJ>> data(10);
@@ -96,4 +113,21 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
     }
     //		ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
   }
+}
+
+
+TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
+  // Full Empty Full Empty Empty Full Full Empty Full Empty
+  std::vector<RMMParticleCell<MoleculeLJ>> data(10);
+
+  for (auto i : {0u, 2u, 5u, 6u, 8u}) {
+    fillWithParticles(&data.at(i));
+  }
+
+  ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+  int i = 0;
+  for (; iter.isValid(); ++iter, ++i) {
+    iter.deleteCurrentParticle();
+  }
+  ASSERT_EQ(i, 20);
 }

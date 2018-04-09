@@ -24,7 +24,7 @@ class SingleCellIterator {
   /**
    * default constructor of SingleCellIterator
    */
-  SingleCellIterator() : _cell(nullptr), _index(0) {}
+  SingleCellIterator() : _cell(nullptr), _index(0), _deleted(false) {}
 
   /**
    * constructor of SingleCellIterator
@@ -32,7 +32,7 @@ class SingleCellIterator {
    * @param ind index of the first particle
    */
   explicit SingleCellIterator(ParticleCell *cell_arg, int ind = 0)
-      : _cell(cell_arg), _index(ind) {}
+      : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   /**
    * destructor of SingleCellIterator
@@ -63,7 +63,10 @@ class SingleCellIterator {
    * increment operator to get the next particle
    * @return the next particle, usually ignored
    */
-  SingleCellIterator &operator++() { ++_index; }
+  SingleCellIterator &operator++() {
+    if (not _deleted) ++_index;
+    _deleted = false;
+  }
 
   /**
    * Check whether the iterator is valid
@@ -80,11 +83,15 @@ class SingleCellIterator {
   /**
    * Deletes the current particle
    */
-  void deleteCurrentParticle() { _cell->deleteByIndex(_index); }
+  void deleteCurrentParticle() {
+    _cell->deleteByIndex(_index);
+    _deleted = true;
+  }
 
  private:
   ParticleCell *_cell;
   int _index;
+  bool _deleted;
 };
 
 } /* namespace autopas */
