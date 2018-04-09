@@ -72,7 +72,9 @@ class CellFunctor {
 
       int ind = outer.getIndex() + 1;
 
-      typename ParticleCell::iterator inner(&cell, ind);
+      //typename ParticleCell::iterator inner(&cell, ind);
+      auto inner = outer;
+      ++inner;
       for (; inner.isValid(); ++inner) {
         Particle &p2 = *inner;
 
