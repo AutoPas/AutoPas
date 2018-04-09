@@ -34,12 +34,6 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator, RMMParticleCel
          Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ});
   }
 
-  // TODO: Rethink this function, what is it supposed to do? and what are you
-  // supposed to pass?
-//  void particleAt(int i, Particle *&rmm_or_not_pointer) override {
-//    buildMoleculeFromSoA(i, rmm_or_not_pointer);
-//  }
-
   void addParticle(Particle &m) override {
     _molsSoABuffer.push(Particle::AttributeNames::posX, m.getR()[0]);
     _molsSoABuffer.push(Particle::AttributeNames::posY, m.getR()[1]);
@@ -63,7 +57,14 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator, RMMParticleCel
    */
   SoA _molsSoABuffer;
 
- //private:
+  /**
+   * iterator to iterate through ParticleCell
+   * If you need to explicitly store this iterator use
+   * typename RMMParticleCell<ParticleType>::iterator iter;
+   */
+  typedef Iterator iterator;
+
+ private:
   void buildMoleculeFromSoA(unsigned int i, Particle *&rmm_or_not_pointer) {
     rmm_or_not_pointer->setR(_molsSoABuffer.read<3>(
         {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
@@ -75,9 +76,9 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator, RMMParticleCel
         i));
   }
 
-  //friend class RMMParticleCellIterator;
+  template <class ParticleType>
+  friend class RMMParticleCellIterator;
 
-  typedef Iterator iterator;
 
 };
 
@@ -150,7 +151,7 @@ class RMMParticleCellIterator{
    */
   int getIndex() const { return _index; }
 
- //private:
+ private:
   RMMParticleCell2T<Particle,RMMParticleCellIterator<Particle>> *_cell;
   Particle _AoSReservoir;
   int _index;

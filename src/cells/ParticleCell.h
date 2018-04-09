@@ -30,18 +30,12 @@ class ParticleCell {
    */
   virtual void addParticle(Particle &p) = 0;
 
-//  /**
-//   * Get a particle at a specific index
-//   * @todo enhance documentation: how does the input parameter look like?
-//   * @param i index of the particle
-//   * @param rmm_or_not_pointer returns the particle.
-//   */
-//  virtual void particleAt(
-//      int i,
-//      Particle *&rmm_or_not_pointer) = 0;  // TODO: consider
-//                                           // making return
-//                                           // type Particle*
-
+  /**
+   * Get an iterator to the start of a ParticleCell
+   * normal use:
+   * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
+   * @return the iterator
+   */
   virtual Iterator begin() {
     return Iterator(reinterpret_cast<Derived*>(this));
   }

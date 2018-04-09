@@ -29,9 +29,7 @@ class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Partic
         Particle::AttributeNames::forceZ,
     });
   }
-//  void particleAt(int i, Particle *&rmm_or_not_pointer) override {
-//    rmm_or_not_pointer = &_mols.at(i);
-//  }
+
   void addParticle(Particle &m) override { _mols.push_back(m); }
   unsigned long numParticles() const override { return _mols.size(); }
   bool isNotEmpty() const override { return numParticles() > 0; }
@@ -47,6 +45,11 @@ class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Partic
    */
   SoA _molsSoABuffer;
 
+  /**
+   * iterator to iterate through ParticleCell
+   * If you need to explicitly store this iterator use
+   * typename FullParticleCell<ParticleType>::iterator iter;
+   */
   typedef SingleCellIterator<Particle, FullParticleCell<Particle>> iterator;
 
   template<class ParticleType, class ParticleCellType>
