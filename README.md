@@ -64,15 +64,15 @@ We have, however, included a variety of examples in the **examples** directory. 
 
 Steps to using Autopas in your particle simulation program:
 1. **Defining a Custom Particle Class** <br/>
-First you will need to define a particle class. You can customize your particle class to your liking.
-You can also inherit or just reuse one of the Particle classes defined
-in `src/particles/` if you want to reuse the functionalities provided
-through them.
+First you will need to define a particle class.
+For that we provide some basic Particle classes defined
+in `src/particles/` that you can use either directly
+or you can write your own Particle class by inheriting from
+one of the provided classes.
 ```
-class PositionOnlyParticle {
-    std::array<double, 3> r;
-}
+class SPHParticle : public autopas::Particle {
 
+}
 ```
 2. **AutoPas and Containers**<br>
 adding particles, iterating through containers
