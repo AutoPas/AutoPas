@@ -79,7 +79,11 @@ class ParticleIterator {
    * @todo implement deletion
    */
   void deleteCurrentParticle() {
-    //		cout << "deleteCurrentParticle is still ToDo" << endl;
+    if (_iteratorWithinOneCell.isValid()) {
+      _iteratorWithinOneCell.deleteCurrentParticle();
+    } else {
+      // error
+    }
   }
 
   /**
@@ -102,7 +106,6 @@ class ParticleIterator {
     for (_iteratorAcrossCells += stride;
          _iteratorAcrossCells < _vectorOfCells->end();
          _iteratorAcrossCells += stride) {
-
       if (_iteratorAcrossCells->isNotEmpty()) {
         _iteratorWithinOneCell = _iteratorAcrossCells->begin();
         break;
@@ -114,7 +117,7 @@ class ParticleIterator {
   std::vector<ParticleCell>* _vectorOfCells;
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
   typename ParticleCell::iterator _iteratorWithinOneCell;
-  //SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
+  // SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
 };
 
 } /* namespace autopas */

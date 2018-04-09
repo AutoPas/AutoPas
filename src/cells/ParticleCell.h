@@ -37,7 +37,7 @@ class ParticleCell {
    * @return the iterator
    */
   virtual Iterator begin() {
-    return Iterator(reinterpret_cast<Derived*>(this));
+    return Iterator(reinterpret_cast<Derived *>(this));
   }
 
   /**
@@ -56,6 +56,12 @@ class ParticleCell {
    * Deletes all particles in this cell
    */
   virtual void clear() = 0;
+
+  /**
+   * Deletes the index-th particle
+   * @param index the index of the particle that shall be deleted
+   */
+  virtual void deleteByIndex(int index) = 0;
 };
 
 } /* namespace autopas */

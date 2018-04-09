@@ -47,7 +47,7 @@ class SingleCellIterator {
   Particle &operator*() const {
     Particle *ptr = nullptr;
     //_cell->particleAt(_index, ptr);
-    ptr=&(_cell->_mols.at(_index));
+    ptr = &(_cell->_mols.at(_index));
     return *ptr;
   }
 
@@ -77,12 +77,16 @@ class SingleCellIterator {
    */
   int getIndex() const { return _index; }
 
+  /**
+   * Deletes the current particle
+   */
+  void deleteCurrentParticle() { _cell->deleteByIndex(_index); }
+
  private:
   ParticleCell *_cell;
   int _index;
 };
 
 } /* namespace autopas */
-
 
 #endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_SINGLECELLITERATOR_H_ */

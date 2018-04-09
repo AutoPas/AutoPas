@@ -8,8 +8,8 @@
 #ifndef AUTOPAS_SRC_FULLPARTICLECELL_H_
 #define AUTOPAS_SRC_FULLPARTICLECELL_H_
 
-#include <vector>
 #include <iterators/SingleCellIterator.h>
+#include <vector>
 #include "ParticleCell.h"
 
 namespace autopas {
@@ -19,7 +19,10 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Particle, FullParticleCell<Particle>>, FullParticleCell<Particle>> {
+class FullParticleCell
+    : public ParticleCell<
+          Particle, SingleCellIterator<Particle, FullParticleCell<Particle>>,
+          FullParticleCell<Particle>> {
  public:
   FullParticleCell() {
     _molsSoABuffer.initArrays({
@@ -31,9 +34,21 @@ class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Partic
   }
 
   void addParticle(Particle &m) override { _mols.push_back(m); }
+
   unsigned long numParticles() const override { return _mols.size(); }
+
   bool isNotEmpty() const override { return numParticles() > 0; }
+
   void clear() override { _mols.clear(); }
+
+  void deleteByIndex(int index) override {
+    assert(index >= 0 and index < numParticles());
+
+    if (index < numParticles() - 1) {
+      std::swap(_mols[index], _mols[numParticles() - 1]);
+    }
+    _mols.pop_back();
+  }
 
   /**
    * storage of the molecules of the cell
@@ -52,7 +67,7 @@ class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Partic
    */
   typedef SingleCellIterator<Particle, FullParticleCell<Particle>> iterator;
 
-  template<class ParticleType, class ParticleCellType>
+  template <class ParticleType, class ParticleCellType>
   friend class SingleCellIterator;
 };
 

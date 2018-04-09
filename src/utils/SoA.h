@@ -28,7 +28,7 @@ class SoA {
    * @brief Destructor.
    */
   ~SoA() {
-    for (auto p : arrays) {
+    for (auto &p : arrays) {
       delete p.second;
     }
   }
@@ -153,6 +153,35 @@ class SoA {
       return 0;
     }
     return arrays.begin()->second->size();
+  }
+
+  /**
+   * delete all particles in the soa
+   */
+  void clear() {
+    for (auto &vec : arrays) {
+      vec.second->clear();
+    }
+  }
+
+  /**
+   * swap the position of two particles in the soa
+   * @param a position of the first particle
+   * @param b position of the second particle
+   */
+  void swap(size_t a, size_t b) {
+    for (auto &vec : arrays) {
+      std::swap(vec.second[a], vec.second[b]);
+    }
+  }
+
+  /**
+   * delete the last particle in the soa
+   */
+  void pop_back() {
+    for (auto &vec : arrays) {
+      vec.second->pop_back();
+    }
   }
 
  private:
