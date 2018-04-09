@@ -8,7 +8,7 @@
 #ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_SINGLECELLITERATOR_H_
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_SINGLECELLITERATOR_H_
 
-#include "cells/RMMParticleCell.h"
+#include "cells/RMMParticleCell2T.h"
 
 namespace autopas {
 
@@ -46,7 +46,8 @@ class SingleCellIterator {
    */
   Particle &operator*() const {
     Particle *ptr = nullptr;
-    _cell->particleAt(_index, ptr);
+    //_cell->particleAt(_index, ptr);
+    ptr=&(_cell->_mols.at(_index));
     return *ptr;
   }
 
@@ -81,80 +82,7 @@ class SingleCellIterator {
   int _index;
 };
 
-/**
- * specialization of the SingleCellIterator class for the RMMParticleCell
- * @tparam Particle
- */
-template <class Particle>
-class SingleCellIterator<Particle, autopas::RMMParticleCell<Particle>> {
- public:
-  /**
-   * default constructor of SingleCellIterator
-   */
-  SingleCellIterator() : _cell(nullptr), _index(0) {}
-
-  /**
-   * constructor of SingleCellIterator
-   * @param cell_arg pointer to the cell of particles
-   * @param ind index of the first particle
-   */
-  explicit SingleCellIterator(RMMParticleCell<Particle> *cell_arg, int ind = 0)
-      : _cell(cell_arg), _index(ind) {}
-
-  //  SingleCellIterator(const SingleCellIterator &cellIterator) {
-  //    _cell = cellIterator._cell;
-  //    _AoSReservoir = cellIterator._AoSReservoir;
-  //    _index = cellIterator._index;
-  //  }
-
-  /**
-   * access the particle using *iterator
-   * this is the indirection operator
-   * @return current particle
-   */
-  Particle &operator*() {
-    // Particle * ptr = nullptr;
-    // ptr = const_cast<Particle *>(& _AoSReservoir);
-    Particle *ptr = &_AoSReservoir;
-    _cell->particleAt(_index, ptr);
-    return *ptr;
-  }
-
-  /**
-   * access particle using "iterator->"
-   *
-   * this is the member of pointer operator
-   * @return current particle
-   */
-  Particle *operator->() { return &(this->operator*()); }
-
-  /**
-   * increment operator to get the next particle
-   * @return the next particle, usually ignored
-   */
-  SingleCellIterator &operator++() {
-    ++_index;
-    return *this;
-  }
-
-  /**
-   * Check whether the iterator is valid
-   * @return returns whether the iterator is valid
-   */
-  bool isValid() { return _cell != nullptr and _index < _cell->numParticles(); }
-
-  /**
-   * Get the index of the particle in the cell
-   * @return index of the current particle
-   */
-  int getIndex() const { return _index; }
-
- private:
-  RMMParticleCell<Particle> *_cell;
-  Particle _AoSReservoir;
-  int _index;
-};
-
 } /* namespace autopas */
+
 
 #endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_SINGLECELLITERATOR_H_ */

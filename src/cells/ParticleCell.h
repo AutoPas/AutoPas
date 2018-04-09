@@ -16,7 +16,7 @@ namespace autopas {
  * particles
  * @tparam Particle the type of particles to be stored in the cells
  */
-template <class Particle>
+template <class Particle, class Iterator, class Derived>
 class ParticleCell {
  public:
   /**
@@ -30,17 +30,21 @@ class ParticleCell {
    */
   virtual void addParticle(Particle &p) = 0;
 
-  /**
-   * Get a particle at a specific index
-   * @todo enhance documentation: how does the input parameter look like?
-   * @param i index of the particle
-   * @param rmm_or_not_pointer returns the particle.
-   */
-  virtual void particleAt(
-      int i,
-      Particle *&rmm_or_not_pointer) = 0;  // TODO: consider
-                                           // making return
-                                           // type Particle*
+//  /**
+//   * Get a particle at a specific index
+//   * @todo enhance documentation: how does the input parameter look like?
+//   * @param i index of the particle
+//   * @param rmm_or_not_pointer returns the particle.
+//   */
+//  virtual void particleAt(
+//      int i,
+//      Particle *&rmm_or_not_pointer) = 0;  // TODO: consider
+//                                           // making return
+//                                           // type Particle*
+
+  virtual Iterator begin() {
+    return Iterator(reinterpret_cast<Derived*>(this));
+  }
 
   /**
    * Get the number of particles stored in this cell

@@ -21,7 +21,12 @@ class SingleCellIteratorTest : public ::testing::Test {
 
   ~SingleCellIteratorTest() override = default;
 
-  void fillWithParticles(autopas::ParticleCell<autopas::MoleculeLJ> *pc);
+  template <class Cell>
+  void fillWithParticles(Cell *pc){
+    for (auto &m : _vecOfMolecules) {
+      pc->addParticle(m);
+    }
+  }
 
  protected:
   // needs to be protected, because the test fixtures generate a derived class

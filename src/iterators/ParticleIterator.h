@@ -35,7 +35,7 @@ class ParticleIterator {
         _iteratorWithinOneCell() {
     if (_iteratorAcrossCells < cont->end()) {
       _iteratorWithinOneCell =
-          SingleCellIterator<Particle, ParticleCell>(&(*_iteratorAcrossCells));
+          (typename ParticleCell::iterator)(&(*_iteratorAcrossCells));
       if (not _iteratorWithinOneCell.isValid()) {
         next_non_empty_cell();
       }
@@ -106,7 +106,7 @@ class ParticleIterator {
       const ParticleCell& c = *_iteratorAcrossCells;
 
       if (c.isNotEmpty()) {
-        _iteratorWithinOneCell = SingleCellIterator<Particle, ParticleCell>(
+        _iteratorWithinOneCell = (typename ParticleCell::iterator)(
             &(*_iteratorAcrossCells));
         break;
       }
@@ -116,7 +116,8 @@ class ParticleIterator {
  private:
   std::vector<ParticleCell>* _vectorOfCells;
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
-  SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
+  typename ParticleCell::iterator _iteratorWithinOneCell;
+  //SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
 };
 
 } /* namespace autopas */

@@ -66,13 +66,13 @@ class CellFunctor {
    * @param cell
    */
   void processCellAoSN3(ParticleCell &cell) {
-    SingleCellIterator<Particle, ParticleCell> outer(&cell);
+    typename ParticleCell::iterator outer(&cell);
     for (; outer.isValid(); ++outer) {
       Particle &p1 = *outer;
 
       int ind = outer.getIndex() + 1;
 
-      SingleCellIterator<Particle, ParticleCell> inner(&cell, ind);
+      typename ParticleCell::iterator inner(&cell, ind);
       for (; inner.isValid(); ++inner) {
         Particle &p2 = *inner;
 
@@ -88,11 +88,11 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2) {
-    SingleCellIterator<Particle, ParticleCell> outer(&cell1);
+    typename ParticleCell::iterator outer(&cell1);
     for (; outer.isValid(); ++outer) {
       Particle &p1 = *outer;
 
-      SingleCellIterator<Particle, ParticleCell> inner(&cell2);
+      typename ParticleCell::iterator inner(&cell2);
       for (; inner.isValid(); ++inner) {
         Particle &p2 = *inner;
 

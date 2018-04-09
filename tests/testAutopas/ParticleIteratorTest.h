@@ -21,7 +21,14 @@ class ParticleIteratorTest : public testing::Test {
 
   ~ParticleIteratorTest() override = default;
 
-  void fillWithParticles(autopas::ParticleCell<autopas::MoleculeLJ> *pc);
+  template <class CellType>
+  void fillWithParticles(CellType *pc){
+    // insert four particles
+    for (unsigned long i = _currentIndex; i < _currentIndex + 4; ++i) {
+      pc->addParticle(_vecOfMolecules.at(i));
+    }
+    _currentIndex += 4;
+  }
 
  protected:
   // needs to be protected, because the test fixtures generate a derived class

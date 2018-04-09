@@ -26,14 +26,6 @@ void ParticleIteratorTest::SetUp() {
 
 void ParticleIteratorTest::TearDown() {}
 
-void ParticleIteratorTest::fillWithParticles(
-    autopas::ParticleCell<autopas::MoleculeLJ> *pc) {
-  // insert four particles
-  for (unsigned long i = _currentIndex; i < _currentIndex + 4; ++i) {
-    pc->addParticle(_vecOfMolecules.at(i));
-  }
-  _currentIndex += 4;
-}
 
 TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full

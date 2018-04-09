@@ -22,13 +22,6 @@ void SingleCellIteratorTest::SetUp() {
   }
 }
 
-void SingleCellIteratorTest::fillWithParticles(
-    autopas::ParticleCell<autopas::MoleculeLJ> *pc) {
-  for (auto &m : _vecOfMolecules) {
-    pc->addParticle(m);
-  }
-}
-
 void SingleCellIteratorTest::TearDown() {}
 
 TEST_F(SingleCellIteratorTest, testFullParticleCell) {
@@ -51,7 +44,7 @@ TEST_F(SingleCellIteratorTest, testRMMParticleCell) {
 
   fillWithParticles(&fpc);
 
-  SingleCellIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&fpc);
+  RMMParticleCellIterator<MoleculeLJ> iter(&fpc);
   int i = 0;
   for (; iter.isValid(); ++iter, ++i) {
     for (int d = 0; d < 3; ++d) {

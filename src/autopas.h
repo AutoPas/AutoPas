@@ -21,7 +21,7 @@
 // cells
 #include "cells/FullParticleCell.h"
 #include "cells/ParticleCell.h"
-#include "cells/RMMParticleCell.h"
+#include "cells/RMMParticleCell2T.h"
 #include "containers/DirectSum.h"
 
 // iterators

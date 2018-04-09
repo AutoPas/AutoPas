@@ -9,6 +9,7 @@
 #define AUTOPAS_SRC_FULLPARTICLECELL_H_
 
 #include <vector>
+#include <iterators/SingleCellIterator.h>
 #include "ParticleCell.h"
 
 namespace autopas {
@@ -18,7 +19,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class FullParticleCell : public ParticleCell<Particle> {
+class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Particle, FullParticleCell<Particle>>, FullParticleCell<Particle>> {
  public:
   FullParticleCell() {
     _molsSoABuffer.initArrays({
@@ -28,9 +29,9 @@ class FullParticleCell : public ParticleCell<Particle> {
         Particle::AttributeNames::forceZ,
     });
   }
-  void particleAt(int i, Particle *&rmm_or_not_pointer) override {
-    rmm_or_not_pointer = &_mols.at(i);
-  }
+//  void particleAt(int i, Particle *&rmm_or_not_pointer) override {
+//    rmm_or_not_pointer = &_mols.at(i);
+//  }
   void addParticle(Particle &m) override { _mols.push_back(m); }
   unsigned long numParticles() const override { return _mols.size(); }
   bool isNotEmpty() const override { return numParticles() > 0; }
@@ -45,6 +46,11 @@ class FullParticleCell : public ParticleCell<Particle> {
    * the soa buffer of this cell
    */
   SoA _molsSoABuffer;
+
+  typedef SingleCellIterator<Particle, FullParticleCell<Particle>> iterator;
+
+  template<class ParticleType, class ParticleCellType>
+  friend class SingleCellIterator;
 };
 
 } /* namespace autopas */
