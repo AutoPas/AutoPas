@@ -29,7 +29,7 @@ TEST_F(SingleCellIteratorTest, testFullParticleCell) {
 
   fillWithParticles(&fpc);
 
-  SingleCellIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&fpc);
+  auto iter = fpc.begin();
   int i = 0;
   for (; iter.isValid(); ++iter, ++i) {
     for (int d = 0; d < 3; ++d) {
@@ -44,7 +44,7 @@ TEST_F(SingleCellIteratorTest, testRMMParticleCell) {
 
   fillWithParticles(&fpc);
 
-  RMMParticleCellIterator<MoleculeLJ> iter(&fpc);
+  auto iter = fpc.begin();
   int i = 0;
   for (; iter.isValid(); ++iter, ++i) {
     for (int d = 0; d < 3; ++d) {
