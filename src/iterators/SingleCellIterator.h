@@ -46,7 +46,7 @@ class SingleCellIterator {
    */
   Particle &operator*() const {
     Particle *ptr = nullptr;
-    _cell->moleculesAt(_index, ptr);
+    _cell->particleAt(_index, ptr);
     return *ptr;
   }
 
@@ -116,7 +116,7 @@ class SingleCellIterator<Particle, autopas::RMMParticleCell<Particle>> {
     // Particle * ptr = nullptr;
     // ptr = const_cast<Particle *>(& _AoSReservoir);
     Particle *ptr = &_AoSReservoir;
-    _cell->moleculesAt(_index, ptr);
+    _cell->particleAt(_index, ptr);
     return *ptr;
   }
 

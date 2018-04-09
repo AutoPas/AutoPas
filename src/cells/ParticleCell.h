@@ -36,7 +36,7 @@ class ParticleCell {
    * @param i index of the particle
    * @param rmm_or_not_pointer returns the particle.
    */
-  virtual void moleculesAt(
+  virtual void particleAt(
       int i,
       Particle *&rmm_or_not_pointer) = 0;  // TODO: consider
                                            // making return

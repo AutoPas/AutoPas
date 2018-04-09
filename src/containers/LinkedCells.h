@@ -118,6 +118,17 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
+  bool checkValid() override {
+//    for (auto &cell : this->_data) {
+//      for (auto iter = cell.begin(); iter.isValid(); ++iter) {
+//
+//        if(not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
+//          return false;
+//        }
+//      }
+//    }
+  }
+
  private:
   CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler

@@ -88,7 +88,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void iteratePairwiseAoS2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, false> cellFunctor(f);
     cellFunctor.processCell(*getCell());
-    cellFunctor.processCellPair(*getCell(),*getHaloCell());
+    cellFunctor.processCellPair(*getCell(), *getHaloCell());
   }
 
   void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) override {
@@ -105,18 +105,26 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void iteratePairwiseSoA2(ParticleFunctor *f) {
     CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);
     cellFunctor.processCell(*getCell());
-    cellFunctor.processCellPair(*getCell(),*getHaloCell());
+    cellFunctor.processCellPair(*getCell(), *getHaloCell());
   }
 
   void updateContainer() override {
     // TODO: might need to do sth. if particles move outside of the box?
   }
 
+  bool checkValid() override {
+    for (auto iter = this->begin(); iter.isValid(); ++iter) {
+      if(not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
  private:
   // for convenience
-  typedef SingleCellIterator<Particle, ParticleCell> SingIterator;
-
-  SingIterator getIt(int index = 0) { return SingIterator(getCell(), index); }
+  //typedef SingleCellIterator<Particle, ParticleCell> SingIterator;
+  //SingIterator getIt(int index = 0) { return SingIterator(getCell(), index); }
 
   ParticleCell *getCell() { return &(this->_data.at(0)); };
 

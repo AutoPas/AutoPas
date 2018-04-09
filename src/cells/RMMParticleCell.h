@@ -36,7 +36,7 @@ class RMMParticleCell : public ParticleCell<Particle> {
 
   // TODO: Rethink this function, what is it supposed to do? and what are you
   // supposed to pass?
-  void moleculesAt(int i, Particle *&rmm_or_not_pointer) override {
+  void particleAt(int i, Particle *&rmm_or_not_pointer) override {
     buildMoleculeFromSoA(i, rmm_or_not_pointer);
   }
 

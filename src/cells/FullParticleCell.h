@@ -28,7 +28,7 @@ class FullParticleCell : public ParticleCell<Particle> {
         Particle::AttributeNames::forceZ,
     });
   }
-  void moleculesAt(int i, Particle *&rmm_or_not_pointer) override {
+  void particleAt(int i, Particle *&rmm_or_not_pointer) override {
     rmm_or_not_pointer = &_mols.at(i);
   }
   void addParticle(Particle &m) override { _mols.push_back(m); }
