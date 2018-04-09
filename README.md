@@ -79,8 +79,16 @@ adding particles, iterating through containers
 3. **Defining Functors** <br/>
 Once you have defined your particle you can start
 4. **Iterating Through Particles**
-
-
+```
+for(auto iter = container.begin(), iter.isValid(); ++iter){
+    // user code
+}
+```
+an iterator points to a particle. The particle can be accesses using `iter->`
+(`*iter` is also possible), e.g.
+```
+auto position = iter->getR();
+```
 
 ## Developing Autopas
 * We use google code style.
