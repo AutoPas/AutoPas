@@ -26,7 +26,6 @@ void ParticleIteratorTest::SetUp() {
 
 void ParticleIteratorTest::TearDown() {}
 
-
 TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full
   std::vector<FullParticleCell<MoleculeLJ>> data(10);

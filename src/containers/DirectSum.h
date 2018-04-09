@@ -114,7 +114,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   bool checkValid() override {
     for (auto iter = this->begin(); iter.isValid(); ++iter) {
-      if(not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
+      if (not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
         return false;
       }
     }
@@ -123,8 +123,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
  private:
   // for convenience
-  //typedef SingleCellIterator<Particle, ParticleCell> SingIterator;
-  //SingIterator getIt(int index = 0) { return SingIterator(getCell(), index); }
+  // typedef SingleCellIterator<Particle, ParticleCell> SingIterator;
+  // SingIterator getIt(int index = 0) { return SingIterator(getCell(), index);
+  // }
 
   ParticleCell *getCell() { return &(this->_data.at(0)); };
 

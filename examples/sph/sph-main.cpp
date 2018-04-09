@@ -12,7 +12,7 @@ typedef autopas::LinkedCells<
     autopas::FullParticleCell<autopas::sph::SPHParticle>>
     Container;
 
-//typedef autopas::DirectSum<
+// typedef autopas::DirectSum<
 //    autopas::sph::SPHParticle,
 //    autopas::FullParticleCell<autopas::sph::SPHParticle>>
 //    Container;
@@ -139,8 +139,7 @@ void setPressure(Container& sphSystem) {
   }
 }
 
-void periodicBoundaryUpdate(Container& sphSystem,
-                            std::array<double, 3> boxMin,
+void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
                             std::array<double, 3> boxMax) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     auto posVec = part->getR();

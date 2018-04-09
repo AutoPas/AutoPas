@@ -22,7 +22,9 @@ namespace autopas {
  * @tparam Particle type of particle to be stored
  */
 template <class Particle, class Iterator>
-class RMMParticleCell2T : public ParticleCell<Particle, Iterator, RMMParticleCell2T<Particle, Iterator>> {
+class RMMParticleCell2T
+    : public ParticleCell<Particle, Iterator,
+                          RMMParticleCell2T<Particle, Iterator>> {
  public:
   /**
    * Constructor of RMMParticleCell
@@ -48,8 +50,15 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator, RMMParticleCel
   }
   bool isNotEmpty() const override { return numParticles() > 0; }
 
-  void clear() override {
-    // TODO
+  void clear() override { _molsSoABuffer.clear(); }
+
+  void deleteByIndex(int index) override {
+    assert(index >= 0 and index < numParticles());
+
+    if (index < numParticles() - 1) {
+      _molsSoABuffer.swap(index, numParticles() - 1);
+    }
+    _molsSoABuffer.pop_back();
   }
 
   /**
@@ -78,8 +87,6 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator, RMMParticleCel
 
   template <class ParticleType>
   friend class RMMParticleCellIterator;
-
-
 };
 
 /**
@@ -87,7 +94,7 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator, RMMParticleCel
  * @tparam Particle
  */
 template <class Particle>
-class RMMParticleCellIterator{
+class RMMParticleCellIterator {
  public:
   /**
    * default constructor of SingleCellIterator
@@ -99,7 +106,9 @@ class RMMParticleCellIterator{
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  RMMParticleCellIterator(RMMParticleCell2T<Particle,RMMParticleCellIterator<Particle>> *cell_arg, int ind = 0)
+  RMMParticleCellIterator(
+      RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg,
+      int ind = 0)
       : _cell(cell_arg), _index(ind) {}
 
   //  SingleCellIterator(const SingleCellIterator &cellIterator) {
@@ -151,16 +160,20 @@ class RMMParticleCellIterator{
    */
   int getIndex() const { return _index; }
 
+  /**
+   * Deletes the current particle
+   */
+  void deleteCurrentParticle() { _cell->deleteByIndex(_index); }
+
  private:
-  RMMParticleCell2T<Particle,RMMParticleCellIterator<Particle>> *_cell;
+  RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *_cell;
   Particle _AoSReservoir;
   int _index;
 };
 
-
 template <class Particle>
-using RMMParticleCell = RMMParticleCell2T<Particle,RMMParticleCellIterator<Particle>>;
-
+using RMMParticleCell =
+    RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;
 
 } /* namespace autopas */
 

@@ -89,7 +89,8 @@ class Particle {
   void addR(const std::array<double, 3> &r) { _r = arrayMath::add(_r, r); }
 
   /**
-   * Checks whether the particle is within a cuboidal box specified by rmin and rmax
+   * Checks whether the particle is within a cuboidal box specified by rmin and
+   * rmax
    * @param rmin lower corner of the box
    * @param rmax higher corner of the box
    * @return true if the particle is in the box, false otherwise

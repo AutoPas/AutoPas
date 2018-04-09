@@ -22,7 +22,7 @@ class SingleCellIteratorTest : public ::testing::Test {
   ~SingleCellIteratorTest() override = default;
 
   template <class Cell>
-  void fillWithParticles(Cell *pc){
+  void fillWithParticles(Cell *pc) {
     for (auto &m : _vecOfMolecules) {
       pc->addParticle(m);
     }

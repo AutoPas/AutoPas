@@ -22,7 +22,7 @@ class ParticleIteratorTest : public testing::Test {
   ~ParticleIteratorTest() override = default;
 
   template <class CellType>
-  void fillWithParticles(CellType *pc){
+  void fillWithParticles(CellType *pc) {
     // insert four particles
     for (unsigned long i = _currentIndex; i < _currentIndex + 4; ++i) {
       pc->addParticle(_vecOfMolecules.at(i));
