@@ -41,7 +41,10 @@ void SetupIC(Container& sphSystem, double* end_time,
         // ith.eng = 2.5;
         // ith.id = i++;
         // ith.smth = 0.012;
-        sphSystem.addParticle(ith);
+        if (autopas::inBox(ith.getR(), sphSystem.getBoxMin(),
+                           sphSystem.getBoxMax())) {
+          sphSystem.addParticle(ith);
+        }
       }
     }
   }
@@ -63,7 +66,10 @@ void SetupIC(Container& sphSystem, double* end_time,
         // ith.eng = 2.5;
         // ith.id = i++;
         // ith.smth = 0.012;
-        sphSystem.addParticle(ith);
+        if (autopas::inBox(ith.getR(), sphSystem.getBoxMin(),
+                           sphSystem.getBoxMax())) {
+          sphSystem.addParticle(ith);
+        }
       }
     }
   }
@@ -71,7 +77,10 @@ void SetupIC(Container& sphSystem, double* end_time,
     part->setMass(part->getMass() * bBoxMax[0] * bBoxMax[1] * bBoxMax[2] /
                   (double)(i));
   }
-  std::cout << "# of particles is... " << i << std::endl;
+
+  // we are incrementing i independent of whether we add a particle to the local
+  // sphsystem, or not. So it is still the global number of particles.
+  std::cout << "total # of particles is... " << i << std::endl;
 
   // Set the end time
   *end_time = 0.12;
@@ -87,7 +96,7 @@ void Initialize(Container& sphSystem) {
   std::cout << "initialize... completed" << std::endl;
 }
 
-double getTimeStepGlobal(Container& sphSystem) {
+double getTimeStepGlobal(Container& sphSystem, MPI::Comm& comm) {
   double dt = 1.0e+30;  // set VERY LARGE VALUE
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->calcDt();
@@ -98,6 +107,10 @@ double getTimeStepGlobal(Container& sphSystem) {
     }
     dt = std::min(dt, part->getDt());
   }
+
+  // MPI, global reduction of minimum
+  comm.Allreduce(MPI::IN_PLACE, &dt, 1, MPI::DOUBLE, MPI::MIN);
+
   std::cout << "the time step dt is..." << dt << std::endl;
   return dt;
 }
@@ -142,6 +155,7 @@ void setPressure(Container& sphSystem) {
 
 void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
                             std::array<double, 3> boxMax) {
+  // TODO: MPI: this is not valid anymore!
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     auto posVec = part->getR();
     for (unsigned int dim = 0; dim < 3; dim++) {
@@ -195,6 +209,7 @@ void getRequiredHalo(double boxMin, double boxMax, int diff, double& reqMin,
  * @param sphSystem
  */
 void updateHaloParticles(Container& sphSystem) {
+  // TODO: mpi exchanges!
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
   std::array<double, 3> requiredHaloMin, requiredHaloMax;
@@ -309,7 +324,7 @@ void densityPressureHydroForce(Container& sphSystem) {
   deleteHaloParticles(sphSystem);
 }
 
-void printConservativeVariables(Container& sphSystem) {
+void printConservativeVariables(Container& sphSystem, MPI::Comm& comm) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.0;                       // total enegry
   for (auto it = sphSystem.begin(); it.isValid(); ++it) {
@@ -319,24 +334,61 @@ void printConservativeVariables(Container& sphSystem) {
                   0.5 * autopas::arrayMath::dot(it->getV(), it->getV())) *
                  it->getMass();
   }
-  printf("%.16e\n", energySum);
-  printf("%.16e\n", momSum[0]);
-  printf("%.16e\n", momSum[1]);
-  printf("%.16e\n", momSum[2]);
+
+  // MPI: global reduction
+  comm.Reduce(MPI::IN_PLACE, &energySum, 1, MPI::DOUBLE, MPI::SUM, 0);
+  comm.Reduce(MPI::IN_PLACE, momSum.data(), 3, MPI::DOUBLE, MPI::SUM,0);
+  if (comm.Get_rank() == 0) {
+    printf("%.16e\n", energySum);
+    printf("%.16e\n", momSum[0]);
+    printf("%.16e\n", momSum[1]);
+    printf("%.16e\n", momSum[2]);
+  }
 }
 
-int main(int argc, char *argv[]) {
+MPI::Cartcomm getDecomposition(const std::array<double, 3> globalMin,
+                           const std::array<double, 3> globalMax,
+                           std::array<double, 3>& localMin,
+                           std::array<double, 3>& localMax) {
+  int numProcs = MPI::COMM_WORLD.Get_size();
+  std::array<int, 3> gridSize{0,0,0};
+  MPI::Compute_dims(numProcs, 3, gridSize.data());
+  std::array<bool, 3> period = {true, true, true};
+  auto cart = MPI::COMM_WORLD.Create_cart(3, gridSize.data(), period.data(), false);
+  std::cout << "MPI grid dimensions: " << gridSize[0] << ", " << gridSize[1]
+            << ", " << gridSize[2] << std::endl;
+
+  int rank = cart.Get_rank();
+  std::array<int, 3> coords;
+  cart.Get_coords(rank, 3, coords.data());
+
+  std::cout << "MPI coordinate of current process: " << coords[0] << ", "
+            << coords[1] << ", " << coords[2] << std::endl;
+  return cart;
+}
+
+int main(int argc, char* argv[]) {
   MPI::Init(argc, argv);
 
-  std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
-  boxMax[0] = 1.;
-  boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
+  std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
+  globalBoxMax[0] = 1.;
+  globalBoxMax[1] = globalBoxMax[2] = globalBoxMax[0] / 8.0;
   double cutoff = 0.03;  // 0.012*2.5=0.03; where 2.5 = kernel support radius
 
-  Container sphSystem(boxMin, boxMax, cutoff);
+  std::array<double, 3> localBoxMin{}, localBoxMax{};
+
+  // get the decomposition -- get the local box of the current process from the
+  // global box
+  MPI::Cartcomm comm =
+      getDecomposition(globalBoxMin, globalBoxMax, localBoxMin, localBoxMax);
+
+  Container sphSystem(localBoxMin, localBoxMax, cutoff);
   double dt;
   double t_end;
-  SetupIC(sphSystem, &t_end, boxMax);
+
+  // only adds particles to the current process, due to the right localBoxMin,
+  // localBoxMax
+  SetupIC(sphSystem, &t_end, globalBoxMax);
   Initialize(sphSystem);
 
   // 0.1 ---- GET INITIAL FORCES OF SYSTEM ----
@@ -345,10 +397,10 @@ int main(int argc, char *argv[]) {
   std::cout << "\n----------------------------" << std::endl;
 
   // 0.2 get time step
-  dt = getTimeStepGlobal(sphSystem);
+  dt = getTimeStepGlobal(sphSystem, comm);
   //---- INITIAL FORCES ARE NOW CALCULATED ----
 
-  printConservativeVariables(sphSystem);
+  printConservativeVariables(sphSystem, comm);
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
@@ -357,10 +409,11 @@ int main(int argc, char *argv[]) {
               << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift
     leapfrogInitialKick(sphSystem, dt);
-    leapfrogFullDrift(sphSystem, dt);
+    leapfrogFullDrift(sphSystem, dt);  // changes position
 
+    // TODO: MPI: 1.2.1 and 1.2.2. might be reversed! think about this a bit
     // 1.2.1 adjust positions based on boundary conditions (here: periodic)
-    periodicBoundaryUpdate(sphSystem, boxMin, boxMax);
+    periodicBoundaryUpdate(sphSystem, globalBoxMin, globalBoxMax);
 
     // 1.2.2 positions have changed, so the container needs to be updated!
     sphSystem.updateContainer();
@@ -370,7 +423,7 @@ int main(int argc, char *argv[]) {
     // 1.4 Calculate density, pressure and hydrodynamic forces
     densityPressureHydroForce(sphSystem);
     // 1.5 get time step
-    dt = getTimeStepGlobal(sphSystem);
+    dt = getTimeStepGlobal(sphSystem, comm);
     // 1.6 Leap frog: final Kick
     leapfrogFinalKick(sphSystem, dt);
 
@@ -387,7 +440,7 @@ int main(int argc, char *argv[]) {
     //          part->getAcceleration()[2], part->getEngDot(), part->getDt());
     //    }
 
-    printConservativeVariables(sphSystem);
+    printConservativeVariables(sphSystem, comm);
   }
 
   MPI::Finalize();
