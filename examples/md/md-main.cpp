@@ -5,7 +5,7 @@
  *      Author: tchipevn
  */
 
-#include "autopas.h"
+#include "autopasIncludes.h"
 #include "mdutils.h"
 #include "utils/Timer.h"
 

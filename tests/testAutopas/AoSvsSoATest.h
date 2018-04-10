@@ -5,7 +5,7 @@
 #ifndef AUTOPAS_AOSVSSOATest_H
 #define AUTOPAS_AOSVSSOATest_H
 
-#include <autopas.h>
+#include <autopasIncludes.h>
 #include <gtest/gtest.h>
 
 class AoSvsSoATest : public ::testing::Test {

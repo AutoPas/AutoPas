@@ -5,7 +5,7 @@
  *      Author: tchipevn
  */
 
-#include "autopas.h"
+#include "autopasIncludes.h"
 #include "gtest/gtest.h"
 
 using namespace autopas;

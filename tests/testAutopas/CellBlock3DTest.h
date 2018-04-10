@@ -8,7 +8,7 @@
 #ifndef TESTS_TESTAUTOPAS_CELLBLOCK3DTEST_H_
 #define TESTS_TESTAUTOPAS_CELLBLOCK3DTEST_H_
 
-#include "autopas.h"
+#include "autopasIncludes.h"
 #include "gtest/gtest.h"
 
 class CellBlock3DTest : public ::testing::Test {

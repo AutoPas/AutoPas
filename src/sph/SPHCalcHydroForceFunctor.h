@@ -6,7 +6,7 @@
 #define AUTOPAS_SPHCALCHYDROFORCEFUNCTOR_H
 
 #include "SPHParticle.h"
-#include "autopas.h"
+#include "autopasIncludes.h"
 
 namespace autopas {
 namespace sph {

@@ -6,7 +6,7 @@
  */
 
 #include <iostream>
-#include "autopas.h"
+#include "autopasIncludes.h"
 
 using namespace std;
 using namespace autopas;

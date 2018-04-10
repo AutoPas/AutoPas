@@ -3,7 +3,7 @@
 //
 
 #include "SPHTest.h"
-#include "autopas.h"
+#include "autopasIncludes.h"
 #include "sph/autopassph.h"
 
 TEST_F(SPHTest, testW) {

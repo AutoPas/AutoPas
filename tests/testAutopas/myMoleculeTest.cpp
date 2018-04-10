@@ -4,7 +4,7 @@
  *  Created on: Jan 18, 2018
  *      Author: seckler
  */
-#include "autopas.h"
+#include "autopasIncludes.h"
 #include "gtest/gtest.h"
 
 #include <iostream>

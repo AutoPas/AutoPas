@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas.h"
+#include "autopasIncludes.h"
 #include "gtest/gtest.h"
 
 class TouchableParticle : public autopas::Particle {

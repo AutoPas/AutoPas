@@ -7,7 +7,7 @@
 
 #include "SPHKernels.h"
 #include "SPHParticle.h"
-#include "autopas.h"
+#include "autopasIncludes.h"
 
 namespace autopas {
 namespace sph {

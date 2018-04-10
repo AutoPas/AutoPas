@@ -5,7 +5,7 @@
 #include <mpi.h>
 #include <array>
 #include <iostream>
-#include "autopas.h"
+#include "autopasIncludes.h"
 #include "sph/autopassph.h"
 
 typedef autopas::LinkedCells<

@@ -3,7 +3,7 @@
 //
 
 #include "SPHParticle.h"
-#include "autopas.h"
+#include "autopasIncludes.h"
 
 using namespace autopas::sph;
 
