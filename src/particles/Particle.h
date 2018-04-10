@@ -122,6 +122,9 @@ class Particle {
    */
   void addV(const std::array<double, 3> &v) { _v = arrayMath::add(_v, v); }
 
+  /**
+   * Enums used as ids for accessing and creating a dynamically sized SoA.
+   */
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
 
  private:

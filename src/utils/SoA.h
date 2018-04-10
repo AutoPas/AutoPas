@@ -122,24 +122,6 @@ class SoA {
     }
   }
 
-  template <int numAttributes>
-  void add(std::array<int, numAttributes> attributes, unsigned int particleId,
-           std::array<double, numAttributes> value) {
-    int i = 0;
-    for (auto &&a : attributes) {
-      arrays[a]->at(particleId) += value[i++];
-    }
-  }
-
-  template <int numAttributes>
-  void sub(std::array<int, numAttributes> attributes, unsigned int particleId,
-           std::array<double, numAttributes> value) {
-    int i = 0;
-    for (auto &&a : attributes) {
-      arrays[a]->at(particleId) -= value[i++];
-    }
-  }
-
   /**
    * @brief Returns the number of particles.
    *
@@ -187,6 +169,9 @@ class SoA {
  private:
   // TODO: variable precision (two maps?, user defined via initArrays?)
   // TODO: maybe fix number of attributes via template?
+  /**
+   * Map containing all aligned vectors (aka. arrays) which are mapped to int ids.
+   */
   std::map<int, std::vector<double, AlignedAllocator<double>> *> arrays;
 };
 }  // namespace autopas
