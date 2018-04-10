@@ -33,8 +33,14 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
       : ParticleIterator<Particle, ParticleCell>(cont),
         _startRegion(startRegion),
         _endRegion(endRegion) {
-    if (not(this->operator*()).inBox(_startRegion, _endRegion)) {
-      operator++();
+    // ParticleIterator's constructor will initialize the Iterator, such that it
+    // points to the first particle if one is found, otherwise the pointer is
+    // not valid
+    if (this->isValid()) {  // if there is NO particle, we can not dereference
+                            // it, so we need a check.
+      if (not(this->operator*()).inBox(_startRegion, _endRegion)) {
+        operator++();
+      }
     }
   }
 
