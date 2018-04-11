@@ -51,6 +51,27 @@ class AutoPas {
     return container;
   }
 
+  /**
+   * Adds a particle to the container.
+   * @param p Reference to the particle to be added
+   */
+  void addParticle(Particle &p) { container->addParticle(p); }
+
+  /**
+   * Function to iterate over all pairs of particles in the container.
+   * This function only handles short-range interactions.
+   * @tparam useSoA Bool to decide if SoA or AoS should be used.
+   * @param f Functor that describes the pair-potential
+   */
+  template <bool useSoA>
+  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f) {
+    if (useSoA) {
+      container->iteratePairwiseSoA(f);
+    } else {
+      container->iteratePairwiseAoS(f);
+    }
+  }
+
  private:
   autopas::ParticleContainer<Particle, ParticleCell> *container;
 };

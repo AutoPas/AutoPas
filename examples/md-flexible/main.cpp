@@ -1,6 +1,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <AutoPas.h>
 #include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
 
@@ -118,6 +119,10 @@ int main(int argc, char **argv) {
   initContainer(containerChoice, container, particlesPerDim, particleSpacing,
                 cutoff);
 
+//  AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autoPas;
+//  autoPas.init(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>::directSum, {1,1,1}, 42);
+
+
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
@@ -126,6 +131,8 @@ int main(int argc, char **argv) {
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(
       10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
+
+//  autoPas.iteratePairwise<true>(&functor);
 
   startApply = std::chrono::high_resolution_clock::now();
   for (unsigned int i = 0; i < numIterations; ++i) {
