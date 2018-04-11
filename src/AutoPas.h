@@ -72,6 +72,28 @@ class AutoPas {
     }
   }
 
+  /**
+   * iterate over all particles by using
+   * for(auto iter = container.begin(); iter.isValid(); ++iter)
+   * @return iterator to the first particle
+   */
+  autopas::ParticleIterator<Particle, ParticleCell> begin() {
+      return container->begin();
+  }
+
+
+  /**
+   * iterate over all particles in a specified region
+   * for(auto iter = container.getRegionIterator(lowCorner,
+   * highCorner);iter.isValid();++iter)
+   * @param lowerCorner lower corner of the region
+   * @param higherCorner higher corner of the region
+   * @return iterator to iterate over all particles in a specific region
+   */
+  autopas::RegionParticleIterator<Particle, ParticleCell> getRegionIterator(
+          std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner) {
+      return container->getRegionIterator(lowerCorner, higherCorner);
+  }
  private:
   autopas::ParticleContainer<Particle, ParticleCell> *container;
 };
