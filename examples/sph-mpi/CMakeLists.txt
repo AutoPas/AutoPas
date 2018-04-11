@@ -6,7 +6,7 @@ FILE(GLOB_RECURSE MY_SRC
 FIND_PACKAGE(MPI)
 
 if (NOT ${MPI_CXX_FOUND})
-    message(AUTHOR_WARNING "cxx mpi not found")
+    message(STATUS "cxx mpi not found, not building sph-main-mpi")
     return()
 else()
     message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")

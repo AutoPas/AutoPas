@@ -92,11 +92,13 @@ endif ()
 
 ENABLE_TESTING()
 
-ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(examples)
-ADD_SUBDIRECTORY(tests)
-
+include(address-sanitizer.cmake)
 include(version.cmake)
 include(clang-tidy.cmake)
 include(clang-format.cmake)
 include(doxygen.cmake)
+
+
+ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(examples)
+ADD_SUBDIRECTORY(tests)
