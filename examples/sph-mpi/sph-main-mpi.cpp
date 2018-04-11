@@ -326,7 +326,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 
 void printConservativeVariables(Container& sphSystem, MPI::Comm& comm) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
-  double energySum = 0.0;                       // total enegry
+  double energySum = 0.;                        // total energy
   for (auto it = sphSystem.begin(); it.isValid(); ++it) {
     momSum = autopas::arrayMath::add(
         momSum, autopas::arrayMath::mulScalar(it->getV(), it->getMass()));
@@ -336,31 +336,48 @@ void printConservativeVariables(Container& sphSystem, MPI::Comm& comm) {
   }
 
   // MPI: global reduction
-  comm.Reduce(MPI::IN_PLACE, &energySum, 1, MPI::DOUBLE, MPI::SUM, 0);
-  comm.Reduce(MPI::IN_PLACE, momSum.data(), 3, MPI::DOUBLE, MPI::SUM,0);
   if (comm.Get_rank() == 0) {
+    comm.Reduce(MPI::IN_PLACE, &energySum, 1, MPI::DOUBLE, MPI::SUM, 0);
+    comm.Reduce(MPI::IN_PLACE, momSum.data(), 3, MPI::DOUBLE, MPI::SUM, 0);
     printf("%.16e\n", energySum);
     printf("%.16e\n", momSum[0]);
     printf("%.16e\n", momSum[1]);
     printf("%.16e\n", momSum[2]);
+  } else {
+    comm.Reduce(&energySum, &energySum, 1, MPI::DOUBLE, MPI::SUM, 0);
+    comm.Reduce(momSum.data(), momSum.data(), 3, MPI::DOUBLE, MPI::SUM, 0);
   }
 }
 
 MPI::Cartcomm getDecomposition(const std::array<double, 3> globalMin,
-                           const std::array<double, 3> globalMax,
-                           std::array<double, 3>& localMin,
-                           std::array<double, 3>& localMax) {
+                               const std::array<double, 3> globalMax,
+                               std::array<double, 3>& localMin,
+                               std::array<double, 3>& localMax) {
   int numProcs = MPI::COMM_WORLD.Get_size();
-  std::array<int, 3> gridSize{0,0,0};
+  std::array<int, 3> gridSize{0, 0, 0};
   MPI::Compute_dims(numProcs, 3, gridSize.data());
   std::array<bool, 3> period = {true, true, true};
-  auto cart = MPI::COMM_WORLD.Create_cart(3, gridSize.data(), period.data(), false);
+  auto cart =
+      MPI::COMM_WORLD.Create_cart(3, gridSize.data(), period.data(), false);
   std::cout << "MPI grid dimensions: " << gridSize[0] << ", " << gridSize[1]
             << ", " << gridSize[2] << std::endl;
 
   int rank = cart.Get_rank();
   std::array<int, 3> coords;
   cart.Get_coords(rank, 3, coords.data());
+
+  for (int i = 0; i < 3; ++i) {
+    localMin[i] =
+        coords[i] * (globalMax[i] - globalMin[i]) / gridSize[i] + globalMin[i];
+    localMax[i] =
+        (coords[i] + 1) * (globalMax[i] - globalMin[i]) / gridSize[i] +
+        globalMin[i];
+    if (coords[i] == 0) {
+      localMin[i] = globalMin[i];
+    } else if (coords[i] == gridSize[i] - 1) {
+      localMax[i] = globalMax[i];
+    }
+  }
 
   std::cout << "MPI coordinate of current process: " << coords[0] << ", "
             << coords[1] << ", " << coords[2] << std::endl;
@@ -404,7 +421,7 @@ int main(int argc, char* argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  for (double time = 0.; time < t_end; time += dt, ++step) {
+  for (double time = 0.; time < t_end && step < 2; time += dt, ++step) {
     std::cout << "\n-------------------------\ntime step " << step
               << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift
