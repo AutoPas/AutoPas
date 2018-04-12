@@ -63,7 +63,7 @@ We have, however, included a variety of examples in the **examples** directory. 
 ## Using Autopas
 
 Steps to using Autopas in your particle simulation program:
-1. **Defining a Custom Particle Class** <br/>
+### Defining a Custom Particle Class
 First you will need to define a particle class.
 For that we provide some basic Particle classes defined
 in `src/particles/` that you can use either directly
@@ -74,21 +74,56 @@ class SPHParticle : public autopas::Particle {
 
 }
 ```
-2. **AutoPas and Containers**<br>
-adding particles, iterating through containers
-3. **Defining Functors** <br/>
-Once you have defined your particle you can start
-4. **Iterating Through Particles**
+### AutoPas and Containers
+creating your container, adding particles,
+### Functors
+Once you have defined your particle you can start with functors;
+#### Definition
+#### Usage
+
+### Iterating Through Particles
+Iterators to iterate over particle are provided.
+The particle can be accesses using `iter->` (`*iter` is also possible), e.g.
 ```
 for(auto iter = container.begin(), iter.isValid(); ++iter){
     // user code
+    auto position = iter->getR();
 }
 ```
-an iterator points to a particle. The particle can be accesses using `iter->`
-(`*iter` is also possible), e.g.
+
+### Updating the Container
+#### How
+You can update the container using
 ```
-auto position = iter->getR();
+ParticleContainer::updateContainer()
 ```
+#### When it is necessary
+You have to update the container when the two conditions are fullfilled:
+* If you moved particles
+* You want to use `iteratePairwise()` or a RegionParticleIterator
+
+
+#### When it is not enough
+If you moved particles by more than one interaction length.
+If you are planning to move particles by a long distance,
+e.g. because of boundary conditions please delete the particles and add them again:
+```
+std::vector<autopas::sph::SPHParticle> invalidParticles;
+for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+  if( /*check*/){
+    invalidParticles.push_back(*part);
+    part.deleteCurrentParticle();
+  }
+}
+for (auto p: invalidParticles) {
+  sphSystem.addParticle(p);
+}
+```
+
+#### Special exceptions
+* Verlet-Lists, here it is safe to not update the container
+as long as particles move not more than a skin radius.
+
 
 ## Developing Autopas
 * We use google code style.
