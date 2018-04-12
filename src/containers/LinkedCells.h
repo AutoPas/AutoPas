@@ -114,7 +114,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       cell.clear();
     }
     for (auto &particle : invalidParticles) {
-      addParticle(particle);
+      if (inBox(particle.getR(), this->getBoxMin(), this->getBoxMax())) {
+        addParticle(particle);
+      } else {
+        addHaloParticle(particle);
+      }
     }
   }
 
