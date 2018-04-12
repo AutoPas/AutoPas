@@ -11,6 +11,8 @@
 #include <new>
 #include <utility>
 
+namespace autopas {
+
 // TODO: maybe move to more sensible place?
 #define DEFAULT_CACHE_LINE_SIZE 64
 
@@ -19,20 +21,20 @@
  * @tparam T
  * @tparam Alignment
  */
-template <class T, size_t Alignment = DEFAULT_CACHE_LINE_SIZE>
+template<class T, size_t Alignment = DEFAULT_CACHE_LINE_SIZE>
 class AlignedAllocator {
  public:
   // needed for compatibility with stl::allocator
   /// value type
   typedef T value_type;
   /// pointer type
-  typedef T* pointer;
+  typedef T *pointer;
   /// const pointer type
-  typedef const T* const_pointer;
+  typedef const T *const_pointer;
   /// reference type
-  typedef T& reference;
+  typedef T &reference;
   /// const reference type
-  typedef const T& const_reference;
+  typedef const T &const_reference;
   /// size type
   typedef size_t size_type;
 
@@ -42,7 +44,7 @@ class AlignedAllocator {
    * (from cplusplus.com)
    * @tparam U
    */
-  template <class U>
+  template<class U>
   struct rebind {
     /// other
     typedef AlignedAllocator<U, Alignment> other;
@@ -56,8 +58,8 @@ class AlignedAllocator {
   /**
    * \brief Copy constructor
    */
-  template <class U>
-  AlignedAllocator(const AlignedAllocator<U, Alignment>&) {}
+  template<class U>
+  AlignedAllocator(const AlignedAllocator<U, Alignment> &) {}
 
   /**
    * \brief Default destructor
@@ -76,12 +78,12 @@ class AlignedAllocator {
    * \brief Allocate aligned memory for n objects of type T
    * \return Pointer to the allocated memory
    */
-  T* allocate(std::size_t n) {
+  T *allocate(std::size_t n) {
     if (n <= max_size()) {
 #if defined(_SX)
       T* ptr = static_cast<T*>(malloc(sizeof(T) * n));
 #elif defined(__SSE3__) && !defined(__PGI)
-      T* ptr = static_cast<T*>(_mm_malloc(sizeof(T) * n, Alignment));
+      T *ptr = static_cast<T *>(_mm_malloc(sizeof(T) * n, Alignment));
 #else
       T* ptr = static_cast<T*>(memalign(Alignment, sizeof(T) * n));
 // T* ptr = static_cast<T*>(aligned_alloc(Alignment, sizeof(T) * n));
@@ -98,7 +100,7 @@ class AlignedAllocator {
   /**
    * \brief Deallocate memory pointed to by ptr
    */
-  void deallocate(T* ptr, std::size_t /*n*/) {
+  void deallocate(T *ptr, std::size_t /*n*/) {
 #if defined(__SSE3__) && !defined(__PGI)
     _mm_free(ptr);
 #else
@@ -110,30 +112,32 @@ class AlignedAllocator {
    * \brief Construct object of type U at already allocated memory, pointed to
    * by p
    */
-  template <class U, class... Args>
-  void construct(U* p, Args&&... args) {
-    ::new ((void*)p) U(std::forward<Args>(args)...);
+  template<class U, class... Args>
+  void construct(U *p, Args &&... args) {
+    ::new((void *) p) U(std::forward<Args>(args)...);
   }
 
   /**
    * \brief Destroy object pointed to by p, but does not deallocate the memory
    */
-  template <class U>
-  void destroy(U* p) {
+  template<class U>
+  void destroy(U *p) {
     p->~U();
   }
 };
 
-template <typename T, size_t TAlignment, typename U, size_t UAlignment>
-inline bool operator==(const AlignedAllocator<T, TAlignment>&,
-                       const AlignedAllocator<U, UAlignment>&) {
+template<typename T, size_t TAlignment, typename U, size_t UAlignment>
+inline bool operator==(const AlignedAllocator<T, TAlignment> &,
+                       const AlignedAllocator<U, UAlignment> &) {
   return TAlignment == UAlignment;
 }
 
-template <typename T, size_t TAlignment, typename U, size_t UAlignment>
-inline bool operator!=(const AlignedAllocator<T, TAlignment>& a,
-                       const AlignedAllocator<U, UAlignment>& b) {
+template<typename T, size_t TAlignment, typename U, size_t UAlignment>
+inline bool operator!=(const AlignedAllocator<T, TAlignment> &a,
+                       const AlignedAllocator<U, UAlignment> &b) {
   return !(a == b);
 }
+
+} /* namespace autopas */
 
 #endif  // SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
