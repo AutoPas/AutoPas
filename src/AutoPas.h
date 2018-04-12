@@ -2,6 +2,7 @@
 #define AUTOPAS_AUTOPAS_H
 
 #include <iostream>
+#include <memory>
 #include "autopasIncludes.h"
 
 /**
@@ -24,13 +25,13 @@ class AutoPas {
             double cutoff) {
     switch (containerOption) {
       case directSum: {
-        container = new autopas::DirectSum<Particle, ParticleCell>(
-            {0., 0., 0.}, boxSize, cutoff);
+        container = std::unique_ptr<ContainerType>(new autopas::DirectSum<Particle, ParticleCell>(
+            {0., 0., 0.}, boxSize, cutoff));
         break;
       }
       case linkedCells: {
-        container = new autopas::LinkedCells<Particle, ParticleCell>(
-            {0., 0., 0.}, boxSize, cutoff);
+        container = std::unique_ptr<ContainerType>(new autopas::LinkedCells<Particle, ParticleCell>(
+            {0., 0., 0.}, boxSize, cutoff));
         break;
       }
       default: {
@@ -48,7 +49,7 @@ class AutoPas {
   // TODO: do we need the whole container functionality available to the outside
   // or whould wrapper over some container functions be better?
   autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const {
-    return container;
+    return container.get();
   }
 
   /**
@@ -95,7 +96,8 @@ class AutoPas {
       return container->getRegionIterator(lowerCorner, higherCorner);
   }
  private:
-  autopas::ParticleContainer<Particle, ParticleCell> *container;
+  typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
+  std::unique_ptr<ContainerType> container;
 };
 
 #endif  // AUTOPAS_AUTOPAS_H
