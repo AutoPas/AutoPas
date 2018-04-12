@@ -23,10 +23,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         case 'c': {
           if (strArg.find("direct") != string::npos) {
             cout << "Using container: DirectSum" << endl;
-            containerOption = directSum;
+            containerOption = autopas::directSum;
           } else if (strArg.find("linked") != string::npos) {
             cout << "Using container: LinkedCells" << endl;
-            containerOption = linkedCells;
+            containerOption = autopas::linkedCells;
           } else {
             cerr << "Unknown container : " << strArg << endl;
             cerr << "Please use 'DirectSum' or 'LinkedCells'!" << endl;
@@ -48,10 +48,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         case 'd': {
           if (strArg.find("aos") != string::npos) {
             cout << "Using Array-of-Structures" << endl;
-            dataLayoutOption = aos;
+            dataLayoutOption = autopas::aos;
           } else if (strArg.find("soa") != string::npos) {
             cout << "Using Structure-of-Arrays" << endl;
-            dataLayoutOption = soa;
+            dataLayoutOption = autopas::soa;
           } else {
             cerr << "Unknown data layout : " << strArg << endl;
             cerr << "Please use 'AoS' or 'SoA'!" << endl;
@@ -131,11 +131,11 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
-MDFlexParser::ContainerOption MDFlexParser::getContainerOption() const {
+autopas::ContainerOption MDFlexParser::getContainerOption() const {
   return containerOption;
 }
 double MDFlexParser::getCutoff() const { return cutoff; }
-MDFlexParser::DataLayoutOption MDFlexParser::getDataLayoutOption() const {
+autopas::DataLayoutOption MDFlexParser::getDataLayoutOption() const {
   return dataLayoutOption;
 }
 MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const {

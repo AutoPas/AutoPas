@@ -5,29 +5,28 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <AutoPas.h>
 
 using namespace std;
 
 class MDFlexParser {
  public:
-  enum ContainerOption { directSum, linkedCells };
-  enum DataLayoutOption { aos, soa };
   enum FunctorOption { lj12_6 };
 
   MDFlexParser() = default;
 
   bool parseInput(int argc, char **argv);
-  ContainerOption getContainerOption() const;
+  autopas::ContainerOption getContainerOption() const;
   double getCutoff() const;
-  DataLayoutOption getDataLayoutOption() const;
+  autopas::DataLayoutOption getDataLayoutOption() const;
   FunctorOption getFunctorOption() const;
   size_t getIterations() const;
   size_t getParticlesPerDim() const;
   double getParticlesSpacing() const;
 
  private:
-  ContainerOption containerOption;
-  DataLayoutOption dataLayoutOption;
+  autopas::ContainerOption containerOption;
+  autopas::DataLayoutOption dataLayoutOption;
   FunctorOption functorOption;
   size_t particlesPerDim;
   double particleSpacing;

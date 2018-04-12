@@ -1,16 +1,21 @@
 
+#include <AutoPas.h>
 #include <chrono>
 #include <iostream>
-#include <AutoPas.h>
 #include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
 
 using namespace std;
 using namespace autopas;
 
+/**
+ * Fills the container of a autopas object with a grid of particles.
+ * @param autopas
+ * @param particlesPerDim Particles per dimension.
+ * @param particelSpacing Space between two particles.
+ */
 void fillContainer(
-    ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-        *container,
+    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
     size_t particlesPerDim, double particelSpacing) {
   for (unsigned int i = 0; i < particlesPerDim; ++i) {
     for (unsigned int j = 0; j < particlesPerDim; ++j) {
@@ -20,16 +25,20 @@ void fillContainer(
              (i + 1) * particelSpacing},
             {0, 0, 0},
             i * particlesPerDim * particlesPerDim + j * particlesPerDim + k);
-        container->addParticle(p);
+        autopas.addParticle(p);
       }
     }
   }
 }
 
+/**
+ * Prints position and forces of all particels in the autopas object.
+ * @param autopas
+ */
 void printMolecules(
-    ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-        *container) {
-  for (auto particleIterator = container->begin(); particleIterator.isValid();
+    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>
+        &autopas) {
+  for (auto particleIterator = autopas.begin(); particleIterator.isValid();
        ++particleIterator) {
     particleIterator->print();
   }
@@ -49,55 +58,20 @@ void printMolecules(
  * LinkedCells.
  */
 void initContainer(
-    MDFlexParser::ContainerOption containerOption,
-    ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>> *
-        &container,
+    autopas::ContainerOption containerOption,
+    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
     size_t particlesPerDim, double particelSpacing, double cutoff) {
-  std::array<double, 3> boxMin({0., 0., 0.}),
-      boxMax({(particlesPerDim + 1.0) * particelSpacing,
-              (particlesPerDim + 1.0) * particelSpacing,
-              (particlesPerDim + 1.0) * particelSpacing});
+  std::array<double, 3> boxMax({(particlesPerDim + 1.0) * particelSpacing,
+                                (particlesPerDim + 1.0) * particelSpacing,
+                                (particlesPerDim + 1.0) * particelSpacing});
 
-  switch (containerOption) {
-    case MDFlexParser::directSum: {
-      container =
-          new DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>>(
-              boxMin, boxMax, cutoff);
-      break;
-    }
-    case MDFlexParser::linkedCells: {
-      container = new LinkedCells<PrintableMolecule,
-                                  FullParticleCell<PrintableMolecule>>(
-          boxMin, boxMax, cutoff);
-      break;
-    }
-    default: {
-      cout << "Unknown container Option! " << containerOption << endl;
-      exit(1);
-    }
+  autopas.init(boxMax, cutoff, containerOption);
+
+  fillContainer(autopas, particlesPerDim, particelSpacing);
   }
-
-  fillContainer(container, particlesPerDim, particelSpacing);
-}
-
-void apply(
-    ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-        &container,
-    Functor<PrintableMolecule, FullParticleCell<PrintableMolecule>> &functor,
-    MDFlexParser::DataLayoutOption layoutOption) {
-  switch (layoutOption) {
-    case MDFlexParser::aos: {
-      container.iteratePairwiseAoS(&functor);
-      break;
-    }
-    case MDFlexParser::soa: {
-      container.iteratePairwiseSoA(&functor);
-      break;
-    }
-  }
-}
 
 int main(int argc, char **argv) {
+  // Parsing
   MDFlexParser parser;
   if (!parser.parseInput(argc, argv)) {
     exit(-1);
@@ -114,14 +88,12 @@ int main(int argc, char **argv) {
       startApply, stopApply;
 
   startTotal = std::chrono::high_resolution_clock::now();
-  ParticleContainer<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-      *container = nullptr;
-  initContainer(containerChoice, container, particlesPerDim, particleSpacing,
+
+  // Initialization
+  AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
+
+  initContainer(containerChoice, autopas, particlesPerDim, particleSpacing,
                 cutoff);
-
-//  AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autoPas;
-//  autoPas.init(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>::directSum, {1,1,1}, 42);
-
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
@@ -132,15 +104,15 @@ int main(int argc, char **argv) {
       10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
 
-//  autoPas.iteratePairwise<true>(&functor);
-
   startApply = std::chrono::high_resolution_clock::now();
+  // Calculation
   for (unsigned int i = 0; i < numIterations; ++i) {
-    apply(*container, functor, dataLayoutChoice);
+    autopas.iteratePairwise(&functor, dataLayoutChoice);
   }
   stopApply = std::chrono::high_resolution_clock::now();
   stopTotal = std::chrono::high_resolution_clock::now();
 
+  // Statistics
   auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(
                            stopTotal - startTotal)
                            .count();
@@ -151,13 +123,14 @@ int main(int argc, char **argv) {
   auto durationApplySec = durationApply * 1e-6;
 
   FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-      flopCounterFunctor(container->getCutoff());
-  apply(*container, flopCounterFunctor, dataLayoutChoice);
+      flopCounterFunctor(autopas.getContainer()->getCutoff());
+  autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
   auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) *
                numIterations;
   auto mmups = particlesPerDim * particlesPerDim * particlesPerDim *
                numIterations / durationApplySec * 1e-6;
 
+  // Output
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total: " << durationTotal << " \u03bcs (" << durationTotalSec
@@ -168,8 +141,6 @@ int main(int argc, char **argv) {
   cout << "GFLOPs/sec: " << flops * 1e-9 / durationApplySec << endl;
   cout << "MMUPs/sec : " << mmups << endl;
   cout << "Hit rate  : " << flopCounterFunctor.getHitRate() << endl;
-
-  delete container;
 
   return EXIT_SUCCESS;
 }
