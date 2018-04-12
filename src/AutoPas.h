@@ -15,14 +15,27 @@
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
+  /**
+   * Possible Choices for the particle container type.
+   */
   enum ContainerOption { directSum, linkedCells };
+
+  /**
+   * Possible Choices for the particle data layout.
+   */
   enum DataLayoutOption { aos, soa };
 
   /**
-   * Initialize container
+   * Initialize the particle container.
+   *
+   * For possible container choices see AutoPas::ContainerOption.
+   *
+   * @param boxSize Size of the container.
+   * @param cutoff  Cutoff radius to be used in this container.
+   * @param containerOption Type of the container.
    */
-  void init(ContainerOption containerOption, std::array<double, 3> boxSize,
-            double cutoff) {
+  void init(std::array<double, 3> boxSize,
+            double cutoff, ContainerOption containerOption) {
     switch (containerOption) {
       case directSum: {
         container = std::unique_ptr<ContainerType>(new autopas::DirectSum<Particle, ParticleCell>(
@@ -61,15 +74,18 @@ class AutoPas {
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
-   * @tparam useSoA Bool to decide if SoA or AoS should be used.
    * @param f Functor that describes the pair-potential
+   * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
    */
-  template <bool useSoA>
-  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f) {
-    if (useSoA) {
-      container->iteratePairwiseSoA(f);
-    } else {
-      container->iteratePairwiseAoS(f);
+  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f, DataLayoutOption dataLayoutOption) {
+    switch (dataLayoutOption) {
+      case aos: {
+        container->iteratePairwiseAoS(f);
+        break;
+      }
+      case soa: {
+        container->iteratePairwiseSoA(f);
+      }
     }
   }
 
