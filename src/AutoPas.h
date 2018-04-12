@@ -5,6 +5,18 @@
 #include <memory>
 #include "autopasIncludes.h"
 
+namespace autopas {
+/**
+ * Possible Choices for the particle container type.
+ */
+enum ContainerOption { directSum, linkedCells };
+
+/**
+ * Possible Choices for the particle data layout.
+ */
+enum DataLayoutOption { aos, soa };
+}  // namespace autopas
+
 /**
  * The AutoPas class is intended to be the main point of Interaction for the
  * user. It puts a layer of abstraction over the container and handles the
@@ -16,16 +28,6 @@ template <class Particle, class ParticleCell>
 class AutoPas {
  public:
   /**
-   * Possible Choices for the particle container type.
-   */
-  enum ContainerOption { directSum, linkedCells };
-
-  /**
-   * Possible Choices for the particle data layout.
-   */
-  enum DataLayoutOption { aos, soa };
-
-  /**
    * Initialize the particle container.
    *
    * For possible container choices see AutoPas::ContainerOption.
@@ -34,17 +36,19 @@ class AutoPas {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param containerOption Type of the container.
    */
-  void init(std::array<double, 3> boxSize,
-            double cutoff, ContainerOption containerOption) {
+  void init(std::array<double, 3> boxSize, double cutoff,
+            autopas::ContainerOption containerOption) {
     switch (containerOption) {
-      case directSum: {
-        container = std::unique_ptr<ContainerType>(new autopas::DirectSum<Particle, ParticleCell>(
-            {0., 0., 0.}, boxSize, cutoff));
+      case autopas::directSum: {
+        container = std::unique_ptr<ContainerType>(
+            new autopas::DirectSum<Particle, ParticleCell>({0., 0., 0.},
+                                                           boxSize, cutoff));
         break;
       }
-      case linkedCells: {
-        container = std::unique_ptr<ContainerType>(new autopas::LinkedCells<Particle, ParticleCell>(
-            {0., 0., 0.}, boxSize, cutoff));
+      case autopas::linkedCells: {
+        container = std::unique_ptr<ContainerType>(
+            new autopas::LinkedCells<Particle, ParticleCell>({0., 0., 0.},
+                                                             boxSize, cutoff));
         break;
       }
       default: {
@@ -77,13 +81,14 @@ class AutoPas {
    * @param f Functor that describes the pair-potential
    * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
    */
-  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f, DataLayoutOption dataLayoutOption) {
+  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f,
+                       autopas::DataLayoutOption dataLayoutOption) {
     switch (dataLayoutOption) {
-      case aos: {
+      case autopas::aos: {
         container->iteratePairwiseAoS(f);
         break;
       }
-      case soa: {
+      case autopas::soa: {
         container->iteratePairwiseSoA(f);
       }
     }
@@ -95,9 +100,8 @@ class AutoPas {
    * @return iterator to the first particle
    */
   autopas::ParticleIterator<Particle, ParticleCell> begin() {
-      return container->begin();
+    return container->begin();
   }
-
 
   /**
    * iterate over all particles in a specified region
@@ -108,9 +112,10 @@ class AutoPas {
    * @return iterator to iterate over all particles in a specific region
    */
   autopas::RegionParticleIterator<Particle, ParticleCell> getRegionIterator(
-          std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner) {
-      return container->getRegionIterator(lowerCorner, higherCorner);
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner) {
+    return container->getRegionIterator(lowerCorner, higherCorner);
   }
+
  private:
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
   std::unique_ptr<ContainerType> container;
