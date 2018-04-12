@@ -155,7 +155,7 @@ void setPressure(Container& sphSystem) {
 
 void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
                             std::array<double, 3> boxMax) {
-  // TODO: MPI: this is not valid anymore!
+  std::vector<autopas::sph::SPHParticle> invalidParticles;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     auto posVec = part->getR();
     for (unsigned int dim = 0; dim < 3; dim++) {
@@ -171,6 +171,11 @@ void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
       }
     }
     part->setR(posVec);
+    invalidParticles.push_back(*part);
+    part.deleteCurrentParticle();
+  }
+  for (auto p: invalidParticles) {
+    sphSystem.addParticle(p);
   }
 }
 
@@ -428,12 +433,11 @@ int main(int argc, char* argv[]) {
     leapfrogInitialKick(sphSystem, dt);
     leapfrogFullDrift(sphSystem, dt);  // changes position
 
-    // TODO: MPI: 1.2.1 and 1.2.2. might be reversed! think about this a bit
-    // 1.2.1 adjust positions based on boundary conditions (here: periodic)
-    periodicBoundaryUpdate(sphSystem, globalBoxMin, globalBoxMax);
-
-    // 1.2.2 positions have changed, so the container needs to be updated!
+    // 1.2.1 positions have changed, so the container needs to be updated!
     sphSystem.updateContainer();
+
+    // 1.2.2 adjust positions based on boundary conditions (here: periodic)
+    periodicBoundaryUpdate(sphSystem, globalBoxMin, globalBoxMax);
 
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
