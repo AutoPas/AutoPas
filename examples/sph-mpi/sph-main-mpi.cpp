@@ -158,23 +158,29 @@ void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
   std::vector<autopas::sph::SPHParticle> invalidParticles;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     auto posVec = part->getR();
+    bool modified = false;
     for (unsigned int dim = 0; dim < 3; dim++) {
       auto& pos = posVec[dim];
       while (pos < boxMin[dim]) {
         pos += boxMax[dim] - boxMin[dim];
+        modified = true;
       }
       while (pos > boxMax[dim]) {
         pos -= boxMax[dim] - boxMin[dim];
+        modified = true;
       }
       if (pos == boxMax[dim]) {
         pos = boxMin[dim];
+        modified = true;
       }
     }
-    part->setR(posVec);
-    invalidParticles.push_back(*part);
-    part.deleteCurrentParticle();
+    if (modified) {
+      part->setR(posVec);
+      invalidParticles.push_back(*part);
+      part.deleteCurrentParticle();
+    }
   }
-  for (auto p: invalidParticles) {
+  for (auto p : invalidParticles) {
     sphSystem.addParticle(p);
   }
 }
