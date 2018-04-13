@@ -27,28 +27,30 @@ enum DataLayoutOption { aos, soa };
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
+
   /**
    * Initialize the particle container.
    *
    * For possible container choices see AutoPas::ContainerOption.
    *
-   * @param boxSize Size of the container.
+   * @param boxMin Lower corner of the container.
+   * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
    * @param containerOption Type of the container.
    */
-  void init(std::array<double, 3> boxSize, double cutoff,
+  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
             autopas::ContainerOption containerOption) {
     switch (containerOption) {
       case autopas::directSum: {
         container = std::unique_ptr<ContainerType>(
-            new autopas::DirectSum<Particle, ParticleCell>({0., 0., 0.},
-                                                           boxSize, cutoff));
+            new autopas::DirectSum<Particle, ParticleCell>(boxMin,
+                                                           boxMax, cutoff));
         break;
       }
       case autopas::linkedCells: {
         container = std::unique_ptr<ContainerType>(
-            new autopas::LinkedCells<Particle, ParticleCell>({0., 0., 0.},
-                                                             boxSize, cutoff));
+            new autopas::LinkedCells<Particle, ParticleCell>(boxMin,
+                                                             boxMax, cutoff));
         break;
       }
       default: {
@@ -57,6 +59,18 @@ class AutoPas {
         exit(1);
       }
     }
+  }
+
+  /**
+   * @overload
+   *
+   * @param boxSize Size of the container.
+   * @param cutoff  Cutoff radius to be used in this container.
+   * @param containerOption Type of the container.
+   */
+  void init(std::array<double, 3> boxSize, double cutoff,
+            autopas::ContainerOption containerOption) {
+    init({0,0,0}, boxSize, cutoff, containerOption);
   }
 
   /**
