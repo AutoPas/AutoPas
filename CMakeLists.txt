@@ -1,8 +1,12 @@
+project(AutoPas)
+
 cmake_minimum_required(VERSION 3.3)
 
 CMAKE_POLICY(SET CMP0057 NEW)
 
-project(AutoPas)
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
+
 
 set(CMAKE_CXX_STANDARD 11)
 # cmake < 3.6 ignores "set(CMAKE_CXX_STANDARD 11)" when using icpc
@@ -92,11 +96,13 @@ endif ()
 
 ENABLE_TESTING()
 
-include(address-sanitizer.cmake)
+include(address-sanitizer)
 include(version.cmake)
-include(clang-tidy.cmake)
-include(clang-format.cmake)
-include(doxygen.cmake)
+include(clang-tidy)
+include(clang-format)
+include(doxygen)
+
+include(CodeCoverageAutopas)
 
 
 ADD_SUBDIRECTORY(src)
