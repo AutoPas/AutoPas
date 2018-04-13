@@ -5,8 +5,8 @@
 #ifndef AUTOPAS_SPHPARTICLE_H
 #define AUTOPAS_SPHPARTICLE_H
 
-#include "particles/Particle.h"
 #include <vector>
+#include "particles/Particle.h"
 
 namespace autopas {
 namespace sph {
@@ -305,10 +305,10 @@ class SPHParticle : public autopas::Particle {
     }
 
     for (int i = 0; i < 3; i++) {
-      //stream.push_back(this->getF()[i]);  // not actually needed
+      // stream.push_back(this->getF()[i]);  // not actually needed
     }
     auto id = this->getID();
-    stream.push_back(reinterpret_cast<double&>(id));
+    stream.push_back(reinterpret_cast<double &>(id));
     stream.push_back(_density);
     stream.push_back(_pressure);
     stream.push_back(_mass);
@@ -318,7 +318,7 @@ class SPHParticle : public autopas::Particle {
     for (int i = 0; i < 3; i++) {
       stream.push_back(this->getAcceleration()[i]);
     }
-    // stream.push_back(_energy_dot); // not needed
+    stream.push_back(_energy_dot);
     stream.push_back(_energy);
     // stream.push_back(_dt); // not needed
     for (int i = 0; i < 3; i++) {
@@ -331,18 +331,21 @@ class SPHParticle : public autopas::Particle {
   /**
    * funtion to deserialize an SPHParticle
    * @param stream
-   * @param index start index within the stream, will be increased while deserializing to mark already processed data.
+   * @param index start index within the stream, will be increased while
+   * deserializing to mark already processed data.
    * @return
    */
-  static SPHParticle deserialize(double *stream, size_t& index) {
-    std::array<double,3> r = {stream[index], stream[index+1], stream[index+2]};
-    index+=3;
-    std::array<double,3> v = {stream[index], stream[index+1], stream[index+2]};
-    index+=3;
-    //std::array<double,3> F = {stream[index], stream[index+1], stream[index+2]};  // not needed
-    //index+=3  // not needed
-    unsigned long id = reinterpret_cast<unsigned long&>(stream[index++]);
-
+  static SPHParticle deserialize(double *stream, size_t &index) {
+    std::array<double, 3> r = {stream[index], stream[index + 1],
+                               stream[index + 2]};
+    index += 3;
+    std::array<double, 3> v = {stream[index], stream[index + 1],
+                               stream[index + 2]};
+    index += 3;
+    // std::array<double,3> F = {stream[index], stream[index+1],
+    // stream[index+2]};  // not needed
+    // index+=3  // not needed
+    unsigned long id = reinterpret_cast<unsigned long &>(stream[index++]);
 
     double density = stream[index++];
     double pressure = stream[index++];
@@ -351,19 +354,22 @@ class SPHParticle : public autopas::Particle {
     double smth = stream[index++];
     double snds = stream[index++];
 
-    std::array<double,3> ac = {stream[index], stream[index+1], stream[index+2]};
-    index+=3;
-    // double energy_dot = stream[index++];  // not needed
+    std::array<double, 3> ac = {stream[index], stream[index + 1],
+                                stream[index + 2]};
+    index += 3;
+    double energy_dot = stream[index++];
     double energy = stream[index++];
     // double dt = stream[index++];  // not needed
-    std::array<double,3> vel_half = {stream[index], stream[index+1], stream[index+2]};
-    index+=3;
+    std::array<double, 3> vel_half = {stream[index], stream[index + 1],
+                                      stream[index + 2]};
+    index += 3;
     double eng_half = stream[index++];
 
-    SPHParticle p = SPHParticle( r,  v, id, mass, smth, snds);
+    SPHParticle p = SPHParticle(r, v, id, mass, smth, snds);
     p.setDensity(density);
     p.setPressure(pressure);
     p.setAcceleration(ac);
+    p.setEngDot(energy_dot);
     p.setEnergy(energy);
     p.setVel_half(vel_half);
     p.setEng_half(eng_half);
