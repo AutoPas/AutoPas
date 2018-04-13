@@ -429,58 +429,29 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
 
-//  std::cout << "\nhaloupdate\n" << std::endl;
-
+  
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
-//  std::cout << "haloparticles... ";
-  int haloparts = 0, innerparts = 0;
-  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
-                           sphSystem.getBoxMax())) {
-      haloparts++;
-    } else {
-      innerparts++;
-    }
-  }
-//  std::cout << haloparts << std::endl;
-//  std::cout << "particles... " << innerparts << std::endl;
-
+  
   // 1.2 then calculate density
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->setDensity(0.);
     densityFunctor.AoSFunctor(*part, *part);
     part->setDensity(part->getDensity() / 2);
   }
-//  std::cout << "calculation of density... started" << std::endl;
+
   sphSystem.iteratePairwiseAoS2(&densityFunctor);
-//  std::cout << "calculation of density... completed" << std::endl;
   // 1.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 
   // 2. then update pressure
-//  std::cout << "calculation of pressure... started" << std::endl;
   setPressure(sphSystem);
-//  std::cout << "calculation of pressure... completed" << std::endl;
-
+  
   // 0.3 then calculate hydro force
   // 0.3.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
-
-//  std::cout << "haloparticles... ";
-  haloparts = 0, innerparts = 0;
-  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
-                           sphSystem.getBoxMax())) {
-      haloparts++;
-    } else {
-      innerparts++;
-    }
-  }
-//  std::cout << haloparts << std::endl;
-//  std::cout << "particles... " << innerparts << std::endl;
 
   // 0.3.2 then calculate hydro force
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
@@ -491,9 +462,7 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
     part->setAcceleration(std::array<double, 3>{0., 0., 0.});
     part->setEngDot(0.);
   }
-//  std::cout << "calculation of hydroforces... started" << std::endl;
   sphSystem.iteratePairwiseAoS2(&hydroForceFunctor);
-//  std::cout << "calculation of hydroforces... completed" << std::endl;
   // 0.3.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 }
@@ -637,6 +606,6 @@ int main(int argc, char* argv[]) {
 
     printConservativeVariables(sphSystem, comm);
   }
-  std::cout << "finished" << std::endl;
+  std::cout << "-----------------\nfinished" << std::endl;
   MPI_Finalize();
 }
