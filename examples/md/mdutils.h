@@ -10,6 +10,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include "autopasIncludes.h"
 
 using namespace std;
@@ -24,14 +25,14 @@ class PrintableMolecule : public MoleculeLJ {
   void print() {
     cout << "Molecule with position: ";
     for (auto &r : getR()) {
-      cout << r << ", ";
+      cout << setw(10) <<  r << ", ";
     }
     cout << "and force: ";
 
     for (auto &f : getF()) {
-      cout << f << ", ";
+      cout << setw(15) << f << ", ";
     }
-    cout << "ID: " << getID();
+    cout << "ID: " << setw(5) << getID();
     cout << endl;
   }
 };
