@@ -1,10 +1,10 @@
-# Autopas
-Autopas is a node-level auto-tuned particle simulation library developed
+# AutoPas
+AutoPas is a node-level auto-tuned particle simulation library developed
 in the context of the **TaLPas** project. [![Build Status](https://www5.in.tum.de/jenkins/mardyn/buildStatus/icon?job=AutoPas)](https://www5.in.tum.de/jenkins/mardyn/job/AutoPas)
 
 ## Documentation
 The documentation can be found at our website:
- https://www5.in.tum.de/autopas/doxygen_doc/html/
+ https://www5.in.tum.de/AutoPas/doxygen_doc/html/
 
 Alternatively you can build the documentation on your own:
 * requirements:
@@ -18,7 +18,7 @@ Alternatively you can build the documentation on your own:
 * a c++11 compiler
 
 
-## Building autopas
+## Building AutoPas
 build instructions:
 ```
 mkdir build
@@ -44,7 +44,7 @@ ctest --verbose
 * to run specific tests:
 use the --gtest_filter variable:
 ```
-./tests/testAutopas/runTests --gtest_filter=ArrayMathTest.testAdd*
+./tests/testAutoPas/runTests --gtest_filter=ArrayMathTest.testAdd*
 ```
 or use the GTEST_FILTER environment variable:
 ```
@@ -53,16 +53,16 @@ GTEST_FILTER="ArrayMathTest.testAdd*" ctest --verbose
 
 
 ## Examples
-As AutoPas is only library for particle simulations it itself is not able to run simulations.
+As AutoPas is only a library for particle simulations it itself is not able to run simulations.
 We have, however, included a variety of examples in the **examples** directory. The examples include:
 * Molecular dynamics simulations with 1 centered Lennard-Jones particles.
 * Smoothed particle hydrodynamics simulations
 * Gravity simulations
 
 
-## Using Autopas
+## Using AutoPas
 
-Steps to using Autopas in your particle simulation program:
+Steps to using AutoPas in your particle simulation program:
 ### Defining a Custom Particle Class
 First you will need to define a particle class.
 For that we provide some basic Particle classes defined
@@ -70,7 +70,7 @@ in `src/particles/` that you can use either directly
 or you can write your own Particle class by inheriting from
 one of the provided classes.
 ```
-class SPHParticle : public autopas::Particle {
+class SPHParticle : public AutoPas::Particle {
 
 }
 ```
@@ -108,7 +108,7 @@ If you moved particles by more than one interaction length.
 If you are planning to move particles by a long distance,
 e.g. because of boundary conditions please delete the particles and add them again:
 ```
-std::vector<autopas::sph::SPHParticle> invalidParticles;
+std::vector<AutoPas::sph::SPHParticle> invalidParticles;
 for (auto part = sphSystem.begin(); part.isValid(); ++part) {
   if( /*check*/){
     invalidParticles.push_back(*part);
@@ -125,7 +125,7 @@ for (auto p: invalidParticles) {
 as long as particles move not more than a skin radius.
 
 
-## Developing Autopas
+## Developing AutoPas
 * We use google code style.
 * code style can be build with `make clangformat`
 * requirements:
