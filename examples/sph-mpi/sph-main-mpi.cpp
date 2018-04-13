@@ -4,7 +4,9 @@
 
 #include <mpi.h>
 #include <array>
+#include <cmath>
 #include <iostream>
+
 #include "autopasIncludes.h"
 #include "sph/autopassph.h"
 
@@ -156,9 +158,9 @@ void setPressure(Container& sphSystem) {
 int getSendRecvPartner(const std::array<int, 3> diff, MPI_Comm& comm,
                        bool recvPartner = false) {
   int neighbor;
-  std::array<int, 3> mycoords{0,0,0};
-  std::array<int, 3> neighborcoords{0,0,0};
-  std::array<int, 3> dimSize{0,0,0}, dummy{0,0,0};
+  std::array<int, 3> mycoords{0, 0, 0};
+  std::array<int, 3> neighborcoords{0, 0, 0};
+  std::array<int, 3> dimSize{0, 0, 0}, dummy{0, 0, 0};
   MPI_Cart_get(comm, 3, dimSize.data(), dummy.data(), mycoords.data());
   for (int i = 0; i < 3; ++i) {
     if (recvPartner) {
@@ -211,40 +213,8 @@ void waitSend(MPI_Request& sendRequest) {
   MPI_Wait(&sendRequest, MPI_STATUS_IGNORE);
 }
 
-void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
-                            std::array<double, 3> boxMax) {
-  std::vector<autopas::sph::SPHParticle> invalidParticles;
-  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    auto posVec = part->getR();
-    bool modified = false;
-    for (unsigned int dim = 0; dim < 3; dim++) {
-      auto& pos = posVec[dim];
-      while (pos < boxMin[dim]) {
-        pos += boxMax[dim] - boxMin[dim];
-        modified = true;
-      }
-      while (pos > boxMax[dim]) {
-        pos -= boxMax[dim] - boxMin[dim];
-        modified = true;
-      }
-      if (pos == boxMax[dim]) {
-        pos = boxMin[dim];
-        modified = true;
-      }
-    }
-    if (modified) {
-      part->setR(posVec);
-      invalidParticles.push_back(*part);
-      part.deleteCurrentParticle();
-    }
-  }
-  for (auto p : invalidParticles) {
-    sphSystem.addParticle(p);
-  }
-}
-
 /**
- * get the region of particles we need to send to the neighbour with the
+ * get the haloregion of particles we need to send to the neighbour with the
  * specific diff.
  * Needed for the RegionParticleIterator.
  * @param boxMin
@@ -284,6 +254,46 @@ void getSendHalo(double boxMin, double boxMax, int diff, double& sendMin,
 }
 
 /**
+ * get the region of leaving particles we need to send to the neighbour with the
+ * specific diff.
+ * Needed for the RegionParticleIterator.
+ * @param boxMin
+ * @param boxMax
+ * @param diff
+ * @param sendMin
+ * @param sendMax
+ * @param cutoff
+ * @param shift
+ * @param globalBoxMin
+ * @param globalBoxMax
+ */
+void getSendLeaving(double boxMin, double boxMax, int diff, double& sendMin,
+                    double& sendMax, double cutoff, double& shift,
+                    const double globalBoxMin, const double globalBoxMax) {
+  if (diff == 0) {
+    sendMin = boxMin;
+    sendMax = boxMax;
+    shift = 0;
+  } else if (diff == -1) {
+    sendMin = boxMin - cutoff;
+    sendMax = boxMin;
+    if (boxMin == globalBoxMin) {
+      shift = globalBoxMax - globalBoxMin;
+    } else {
+      shift = 0;
+    }
+  } else if (diff == 1) {
+    sendMin = boxMax;
+    sendMax = boxMax + cutoff;
+    if (boxMax == globalBoxMax) {
+      shift = globalBoxMin - globalBoxMax;
+    } else {
+      shift = 0;
+    }
+  }
+}
+
+/**
  * updates the halo particles
  * this is done by sending the boundary particles to othere processes + shifting
  * them around for periodic boundaries
@@ -295,7 +305,6 @@ void getSendHalo(double boxMin, double boxMax, int diff, double& sendMin,
 void updateHaloParticles(Container& sphSystem, MPI_Comm& comm,
                          const std::array<double, 3>& globalBoxMin,
                          const std::array<double, 3>& globalBoxMax) {
-  // TODO: mpi exchanges!
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
   std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
@@ -351,6 +360,68 @@ void deleteHaloParticles(Container& sphSystem) {
   sphSystem.deleteHaloParticles();
 }
 
+void periodicBoundaryUpdate(Container& sphSystem, MPI_Comm& comm,
+                            std::array<double, 3> globalBoxMin,
+                            std::array<double, 3> globalBoxMax) {
+  std::array<double, 3> boxMin = sphSystem.getBoxMin();
+  std::array<double, 3> boxMax = sphSystem.getBoxMax();
+  std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
+  std::array<int, 3> diff{0, 0, 0};
+  std::array<double, 3> shift{0, 0, 0};
+  double cutoff = sphSystem.getCutoff();
+
+  std::vector<double> buffer;
+  for (diff[0] = -1; diff[0] < 2; diff[0]++) {
+    for (diff[1] = -1; diff[1] < 2; diff[1]++) {
+      for (diff[2] = -1; diff[2] < 2; diff[2]++) {
+        std::vector<autopas::sph::SPHParticle> sendParticles;
+        if (not diff[0] and not diff[1] and not diff[2]) {
+          // at least one dimension has to be non-zero
+          std::cout << "skipping diff: " << diff[0] << ", " << diff[1] << ", "
+                    << diff[2] << std::endl;
+          continue;
+        }
+        // figure out which particles we send
+        for (int i = 0; i < 3; ++i) {
+          getSendLeaving(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i],
+                         requiredHaloMax[i], cutoff, shift[i], globalBoxMin[i],
+                         globalBoxMax[i]);
+        }
+
+        for (auto iterator =
+                 sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax);
+             iterator.isValid(); ++iterator) {
+          autopas::sph::SPHParticle p = *iterator;  // copies Particle
+          // std::cout << "sending particle at (" << p.getR()[0] << ", "
+          //          << p.getR()[1] << ", " << p.getR()[2] << ")" << std::endl;
+          p.addR(shift);
+          sendParticles.push_back(p);
+          iterator.deleteCurrentParticle();
+        }
+        MPI_Request sendRequest;
+        issueSend(sendParticles, diff, comm, sendRequest, buffer);
+
+        std::vector<autopas::sph::SPHParticle> receiveParticles;
+        receive(receiveParticles, diff, comm);
+        for (auto& particle : receiveParticles) {
+          for (int i = 0; i < 3; i++) {
+            auto r = particle.getR();
+            if (r[i] == sphSystem.getBoxMax()[i]) {  // required if -1e20 + 3 =
+                                                     // 3 and not < 3 //
+                                                     // floating point errors
+              r[i] = nextafter(r[i], 0);
+              particle.setR(r);
+            }
+          }
+          sphSystem.addParticle(particle);
+        }
+        waitSend(sendRequest);
+        buffer.clear();
+      }
+    }
+  }
+}
+
 void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
                                const std::array<double, 3>& globalBoxMin,
                                const std::array<double, 3>& globalBoxMax) {
@@ -358,13 +429,13 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
 
-  std::cout << "\nhaloupdate\n" << std::endl;
+//  std::cout << "\nhaloupdate\n" << std::endl;
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
-  std::cout << "haloparticles... ";
+//  std::cout << "haloparticles... ";
   int haloparts = 0, innerparts = 0;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
@@ -374,8 +445,8 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
       innerparts++;
     }
   }
-  std::cout << haloparts << std::endl;
-  std::cout << "particles... " << innerparts << std::endl;
+//  std::cout << haloparts << std::endl;
+//  std::cout << "particles... " << innerparts << std::endl;
 
   // 1.2 then calculate density
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
@@ -383,22 +454,22 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
     densityFunctor.AoSFunctor(*part, *part);
     part->setDensity(part->getDensity() / 2);
   }
-  std::cout << "calculation of density... started" << std::endl;
+//  std::cout << "calculation of density... started" << std::endl;
   sphSystem.iteratePairwiseAoS2(&densityFunctor);
-  std::cout << "calculation of density... completed" << std::endl;
+//  std::cout << "calculation of density... completed" << std::endl;
   // 1.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 
   // 2. then update pressure
-  std::cout << "calculation of pressure... started" << std::endl;
+//  std::cout << "calculation of pressure... started" << std::endl;
   setPressure(sphSystem);
-  std::cout << "calculation of pressure... completed" << std::endl;
+//  std::cout << "calculation of pressure... completed" << std::endl;
 
   // 0.3 then calculate hydro force
   // 0.3.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
-  std::cout << "haloparticles... ";
+//  std::cout << "haloparticles... ";
   haloparts = 0, innerparts = 0;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
@@ -408,8 +479,8 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
       innerparts++;
     }
   }
-  std::cout << haloparts << std::endl;
-  std::cout << "particles... " << innerparts << std::endl;
+//  std::cout << haloparts << std::endl;
+//  std::cout << "particles... " << innerparts << std::endl;
 
   // 0.3.2 then calculate hydro force
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
@@ -420,9 +491,9 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
     part->setAcceleration(std::array<double, 3>{0., 0., 0.});
     part->setEngDot(0.);
   }
-  std::cout << "calculation of hydroforces... started" << std::endl;
+//  std::cout << "calculation of hydroforces... started" << std::endl;
   sphSystem.iteratePairwiseAoS2(&hydroForceFunctor);
-  std::cout << "calculation of hydroforces... completed" << std::endl;
+//  std::cout << "calculation of hydroforces... completed" << std::endl;
   // 0.3.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 }
@@ -529,7 +600,7 @@ int main(int argc, char* argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  for (double time = 0.; time < t_end && step < 2; time += dt, ++step) {
+  for (double time = 0.; time < t_end && step < 55; time += dt, ++step) {
     std::cout << "\n-------------------------\ntime step " << step
               << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift
@@ -540,7 +611,7 @@ int main(int argc, char* argv[]) {
     sphSystem.updateContainer();
 
     // 1.2.2 adjust positions based on boundary conditions (here: periodic)
-    periodicBoundaryUpdate(sphSystem, globalBoxMin, globalBoxMax);
+    periodicBoundaryUpdate(sphSystem, comm, globalBoxMin, globalBoxMax);
 
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
@@ -566,6 +637,6 @@ int main(int argc, char* argv[]) {
 
     printConservativeVariables(sphSystem, comm);
   }
-
+  std::cout << "finished" << std::endl;
   MPI_Finalize();
 }
