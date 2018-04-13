@@ -58,7 +58,7 @@ TEST_F(ForceCalculationTest, testLJwithU0AoS) {
   }
 }
 
-TEST_F(ForceCalculationTest, testLJwithU0AoS) {
+TEST_F(ForceCalculationTest, testLJwithU0SoA) {
   AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
       autoPas;
 
