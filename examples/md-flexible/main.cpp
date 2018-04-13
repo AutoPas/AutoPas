@@ -36,8 +36,7 @@ void fillContainer(
  * @param autopas
  */
 void printMolecules(
-    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-        &autopas) {
+    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas) {
   for (auto particleIterator = autopas.begin(); particleIterator.isValid();
        ++particleIterator) {
     particleIterator->print();
@@ -68,7 +67,7 @@ void initContainer(
   autopas.init(boxMax, cutoff, containerOption);
 
   fillContainer(autopas, particlesPerDim, particelSpacing);
-  }
+}
 
 int main(int argc, char **argv) {
   // Parsing

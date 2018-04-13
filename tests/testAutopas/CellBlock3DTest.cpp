@@ -78,7 +78,6 @@ TEST_F(CellBlock3DTest, testBoundaries) {
         ASSERT_EQ(pos[0], 11 * x_ind + 1);
         ASSERT_EQ(pos[1], 4 * y_ind + 1);
         ASSERT_EQ(pos[2], 4 * z_ind + 1);
-
       }
     }
   }

@@ -427,12 +427,10 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
 
-  
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
-  
   // 1.2 then calculate density
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->setDensity(0.);
@@ -446,7 +444,7 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
 
   // 2. then update pressure
   setPressure(sphSystem);
-  
+
   // 0.3 then calculate hydro force
   // 0.3.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);

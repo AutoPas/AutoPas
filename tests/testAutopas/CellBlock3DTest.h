@@ -20,8 +20,9 @@ class CellBlock3DTest : public ::testing::Test {
                      std::array<double, 3>({10.0, 10.0, 10.0}), 5.0),
         _cells_3x3x3(_vec3, std::array<double, 3>({0.0, 0.0, 0.0}),
                      std::array<double, 3>({10.0, 10.0, 10.0}), 3.0),
-        _cells_11x4x4_nonZeroBoxMin(_vec4, std::array<double, 3>({2./3., 0.0, 0.0}),
-                     std::array<double, 3>({1., .125, .125}), 3./100.){}
+        _cells_11x4x4_nonZeroBoxMin(
+            _vec4, std::array<double, 3>({2. / 3., 0.0, 0.0}),
+            std::array<double, 3>({1., .125, .125}), 3. / 100.) {}
   ~CellBlock3DTest() override = default;
 
  protected:

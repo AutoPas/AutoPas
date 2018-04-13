@@ -176,7 +176,8 @@ class RMMParticleCellIterator {
   bool _deleted;
 };
 
-// provide a simpler template for RMMParticleCell, i.e. RMMParticleCell<Particle>
+// provide a simpler template for RMMParticleCell, i.e.
+// RMMParticleCell<Particle>
 template <class Particle>
 using RMMParticleCell =
     RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;

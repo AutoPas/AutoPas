@@ -73,11 +73,10 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
   ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
   int i = 0;
   for (; iter.isValid(); ++iter, ++i) {
-      iter.deleteCurrentParticle();
+    iter.deleteCurrentParticle();
   }
   ASSERT_EQ(i, 20);
 }
-
 
 TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full
@@ -114,7 +113,6 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
     //		ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
   }
 }
-
 
 TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty

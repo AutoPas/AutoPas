@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam T
  * @tparam Alignment
  */
-template<class T, size_t Alignment = DEFAULT_CACHE_LINE_SIZE>
+template <class T, size_t Alignment = DEFAULT_CACHE_LINE_SIZE>
 class AlignedAllocator {
  public:
   // needed for compatibility with stl::allocator
@@ -44,7 +44,7 @@ class AlignedAllocator {
    * (from cplusplus.com)
    * @tparam U
    */
-  template<class U>
+  template <class U>
   struct rebind {
     /// other
     typedef AlignedAllocator<U, Alignment> other;
@@ -58,7 +58,7 @@ class AlignedAllocator {
   /**
    * \brief Copy constructor
    */
-  template<class U>
+  template <class U>
   AlignedAllocator(const AlignedAllocator<U, Alignment> &) {}
 
   /**
@@ -81,11 +81,11 @@ class AlignedAllocator {
   T *allocate(std::size_t n) {
     if (n <= max_size()) {
 #if defined(_SX)
-      T* ptr = static_cast<T*>(malloc(sizeof(T) * n));
+      T *ptr = static_cast<T *>(malloc(sizeof(T) * n));
 #elif defined(__SSE3__) && !defined(__PGI)
       T *ptr = static_cast<T *>(_mm_malloc(sizeof(T) * n, Alignment));
 #else
-      T* ptr = static_cast<T*>(memalign(Alignment, sizeof(T) * n));
+      T *ptr = static_cast<T *>(memalign(Alignment, sizeof(T) * n));
 // T* ptr = static_cast<T*>(aligned_alloc(Alignment, sizeof(T) * n));
 // T* ptr; posix_memalign(&ptr,Alignment, sizeof(T) * n);
 #endif
@@ -112,27 +112,27 @@ class AlignedAllocator {
    * \brief Construct object of type U at already allocated memory, pointed to
    * by p
    */
-  template<class U, class... Args>
+  template <class U, class... Args>
   void construct(U *p, Args &&... args) {
-    ::new((void *) p) U(std::forward<Args>(args)...);
+    ::new ((void *)p) U(std::forward<Args>(args)...);
   }
 
   /**
    * \brief Destroy object pointed to by p, but does not deallocate the memory
    */
-  template<class U>
+  template <class U>
   void destroy(U *p) {
     p->~U();
   }
 };
 
-template<typename T, size_t TAlignment, typename U, size_t UAlignment>
+template <typename T, size_t TAlignment, typename U, size_t UAlignment>
 inline bool operator==(const AlignedAllocator<T, TAlignment> &,
                        const AlignedAllocator<U, UAlignment> &) {
   return TAlignment == UAlignment;
 }
 
-template<typename T, size_t TAlignment, typename U, size_t UAlignment>
+template <typename T, size_t TAlignment, typename U, size_t UAlignment>
 inline bool operator!=(const AlignedAllocator<T, TAlignment> &a,
                        const AlignedAllocator<U, UAlignment> &b) {
   return !(a == b);

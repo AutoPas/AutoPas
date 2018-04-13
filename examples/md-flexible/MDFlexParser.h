@@ -1,11 +1,11 @@
 #ifndef AUTOPAS_MDFLEXPARSER_H
 #define AUTOPAS_MDFLEXPARSER_H
 
+#include <AutoPas.h>
 #include <getopt.h>
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <AutoPas.h>
 
 using namespace std;
 

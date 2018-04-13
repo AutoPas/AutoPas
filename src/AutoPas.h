@@ -27,7 +27,6 @@ enum DataLayoutOption { aos, soa };
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
-
   /**
    * Initialize the particle container.
    *
@@ -38,19 +37,19 @@ class AutoPas {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param containerOption Type of the container.
    */
-  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
-            autopas::ContainerOption containerOption) {
+  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax,
+            double cutoff, autopas::ContainerOption containerOption) {
     switch (containerOption) {
       case autopas::directSum: {
         container = std::unique_ptr<ContainerType>(
-            new autopas::DirectSum<Particle, ParticleCell>(boxMin,
-                                                           boxMax, cutoff));
+            new autopas::DirectSum<Particle, ParticleCell>(boxMin, boxMax,
+                                                           cutoff));
         break;
       }
       case autopas::linkedCells: {
         container = std::unique_ptr<ContainerType>(
-            new autopas::LinkedCells<Particle, ParticleCell>(boxMin,
-                                                             boxMax, cutoff));
+            new autopas::LinkedCells<Particle, ParticleCell>(boxMin, boxMax,
+                                                             cutoff));
         break;
       }
       default: {
@@ -70,7 +69,7 @@ class AutoPas {
    */
   void init(std::array<double, 3> boxSize, double cutoff,
             autopas::ContainerOption containerOption) {
-    init({0,0,0}, boxSize, cutoff, containerOption);
+    init({0, 0, 0}, boxSize, cutoff, containerOption);
   }
 
   /**
