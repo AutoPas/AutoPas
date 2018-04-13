@@ -3,7 +3,9 @@
 //
 
 #include <array>
+#include <cmath>
 #include <iostream>
+
 #include "autopasIncludes.h"
 #include "sph/autopassph.h"
 
@@ -156,7 +158,11 @@ void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
         modified = true;
       }
       if (pos == boxMax[dim]) {
+#if 0
         pos = boxMin[dim];
+#else
+        pos = nextafter(pos, 0.);
+#endif
         modified = true;
       }
     }
@@ -164,8 +170,10 @@ void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
       part->setR(posVec);
       invalidParticles.push_back(*part);
       part.deleteCurrentParticle();
-      // we have moved particles quite very far, so we have to delete them at this position and store them again!
-      // we can not add particles while an iterator is active, so we have to do that later.
+      // we have moved particles quite very far, so we have to delete them at
+      // this position and store them again!
+      // we can not add particles while an iterator is active, so we have to do
+      // that later.
     }
   }
   for (auto p : invalidParticles) {
@@ -376,7 +384,6 @@ int main() {
 
     // 1.2.2 adjust positions based on boundary conditions (here: periodic)
     periodicBoundaryUpdate(sphSystem, boxMin, boxMax);
-
 
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
