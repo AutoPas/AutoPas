@@ -19,7 +19,9 @@ class CellBlock3DTest : public ::testing::Test {
         _cells_2x2x2(_vec2, std::array<double, 3>({0.0, 0.0, 0.0}),
                      std::array<double, 3>({10.0, 10.0, 10.0}), 5.0),
         _cells_3x3x3(_vec3, std::array<double, 3>({0.0, 0.0, 0.0}),
-                     std::array<double, 3>({10.0, 10.0, 10.0}), 3.0) {}
+                     std::array<double, 3>({10.0, 10.0, 10.0}), 3.0),
+        _cells_11x4x4_nonZeroBoxMin(_vec4, std::array<double, 3>({2./3., 0.0, 0.0}),
+                     std::array<double, 3>({1., .125, .125}), 3./100.){}
   ~CellBlock3DTest() override = default;
 
  protected:
@@ -28,9 +30,9 @@ class CellBlock3DTest : public ::testing::Test {
                                              std::array<int, 3> numParts) const;
 
   std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>> _vec1, _vec2,
-      _vec3;
+      _vec3, _vec4;
   autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>>
-      _cells_1x1x1, _cells_2x2x2, _cells_3x3x3;
+      _cells_1x1x1, _cells_2x2x2, _cells_3x3x3, _cells_11x4x4_nonZeroBoxMin;
 };
 
 #endif /* TESTS_TESTAUTOPAS_CELLBLOCK3DTEST_H_ */

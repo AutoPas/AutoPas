@@ -46,6 +46,44 @@ TEST_F(CellBlock3DTest, test3x3x3) {
   }
 }
 
+TEST_F(CellBlock3DTest, testBoundaries) {
+  std::array<double, 3> position{0, 0, 0};
+  for (int x_ind : {0, 1}) {
+    for (int y_ind : {0, 1}) {
+      for (int z_ind : {0, 1}) {
+        position = {x_ind * 10., y_ind * 10., z_ind * 10.};
+
+        auto pos = _cells_1x1x1.get3DIndexOfPosition(position);
+
+        ASSERT_EQ(pos[0], 1 * x_ind + 1);
+        ASSERT_EQ(pos[1], 1 * y_ind + 1);
+        ASSERT_EQ(pos[2], 1 * z_ind + 1);
+
+        pos = _cells_2x2x2.get3DIndexOfPosition(position);
+
+        ASSERT_EQ(pos[0], 2 * x_ind + 1);
+        ASSERT_EQ(pos[1], 2 * y_ind + 1);
+        ASSERT_EQ(pos[2], 2 * z_ind + 1);
+
+        pos = _cells_3x3x3.get3DIndexOfPosition(position);
+
+        ASSERT_EQ(pos[0], 3 * x_ind + 1);
+        ASSERT_EQ(pos[1], 3 * y_ind + 1);
+        ASSERT_EQ(pos[2], 3 * z_ind + 1);
+
+        position = {x_ind ? 1. : 2. / 3, y_ind * .125, z_ind * .125};
+
+        pos = _cells_11x4x4_nonZeroBoxMin.get3DIndexOfPosition(position);
+
+        ASSERT_EQ(pos[0], 11 * x_ind + 1);
+        ASSERT_EQ(pos[1], 4 * y_ind + 1);
+        ASSERT_EQ(pos[2], 4 * z_ind + 1);
+
+      }
+    }
+  }
+}
+
 std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(
     std::array<double, 3> start, std::array<double, 3> dr,
     std::array<int, 3> numParts) const {
