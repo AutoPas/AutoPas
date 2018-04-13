@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 
 CMAKE_POLICY(SET CMP0057 NEW)
 
-project(autopas)
+project(AutoPas)
 
 set(CMAKE_CXX_STANDARD 11)
 # cmake < 3.6 ignores "set(CMAKE_CXX_STANDARD 11)" when using icpc
