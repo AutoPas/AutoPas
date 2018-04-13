@@ -96,7 +96,7 @@ void Initialize(Container& sphSystem) {
   std::cout << "initialize... completed" << std::endl;
 }
 
-double getTimeStepGlobal(Container& sphSystem, MPI::Comm& comm) {
+double getTimeStepGlobal(Container& sphSystem, MPI_Comm& comm) {
   double dt = 1.0e+30;  // set VERY LARGE VALUE
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->calcDt();
@@ -109,7 +109,7 @@ double getTimeStepGlobal(Container& sphSystem, MPI::Comm& comm) {
   }
 
   // MPI, global reduction of minimum
-  comm.Allreduce(MPI::IN_PLACE, &dt, 1, MPI::DOUBLE, MPI::MIN);
+  MPI_Allreduce(MPI_IN_PLACE, &dt, 1, MPI_DOUBLE, MPI_MIN, comm);
 
   std::cout << "the time step dt is..." << dt << std::endl;
   return dt;
@@ -153,6 +153,64 @@ void setPressure(Container& sphSystem) {
   }
 }
 
+int getSendRecvPartner(const std::array<int, 3> diff, MPI_Comm& comm,
+                       bool recvPartner = false) {
+  int neighbor;
+  std::array<int, 3> mycoords{0,0,0};
+  std::array<int, 3> neighborcoords{0,0,0};
+  std::array<int, 3> dimSize{0,0,0}, dummy{0,0,0};
+  MPI_Cart_get(comm, 3, dimSize.data(), dummy.data(), mycoords.data());
+  for (int i = 0; i < 3; ++i) {
+    if (recvPartner) {
+      neighborcoords[i] = (mycoords[i] + dimSize[i] - diff[i]) % dimSize[i];
+    } else {
+      neighborcoords[i] = (mycoords[i] + diff[i]) % dimSize[i];
+    }
+  }
+  MPI_Cart_rank(comm, neighborcoords.data(), &neighbor);
+  return neighbor;
+}
+
+int getReceivePartner(const std::array<int, 3> diff, MPI_Comm& comm) {
+  return getSendRecvPartner(diff, comm, true);
+}
+
+void issueSend(std::vector<autopas::sph::SPHParticle>& sendParticles,
+               const std::array<int, 3> diff, MPI_Comm& comm,
+               MPI_Request& sendRequest, std::vector<double>& buffer) {
+  int neighbor = getSendRecvPartner(diff, comm);
+  ;
+  for (auto& p : sendParticles) {
+    std::vector<double> serialized = p.serialize();
+    buffer.insert(std::end(buffer), std::begin(serialized),
+                  std::end(serialized));
+  }
+  MPI_Isend(buffer.data(), buffer.size(), MPI_DOUBLE, neighbor, 3, comm,
+            &sendRequest);
+}
+
+void receive(std::vector<autopas::sph::SPHParticle>& receiveParticles,
+             const std::array<int, 3> diff, MPI_Comm& comm) {
+  int neighbor = getReceivePartner(diff, comm);
+
+  int length;
+  MPI_Status status;
+  MPI_Probe(neighbor, 3, comm, &status);
+  MPI_Get_count(&status, MPI_DOUBLE, &length);
+  std::vector<double> recvBuffer(length);
+  MPI_Recv(recvBuffer.data(), length, MPI_DOUBLE, neighbor, 3, comm,
+           MPI_STATUS_IGNORE);
+
+  for (size_t i = 0; i < length;) {
+    auto p = autopas::sph::SPHParticle::deserialize(recvBuffer.data(), i);
+    receiveParticles.push_back(p);
+  }
+}
+
+void waitSend(MPI_Request& sendRequest) {
+  MPI_Wait(&sendRequest, MPI_STATUS_IGNORE);
+}
+
 void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
                             std::array<double, 3> boxMax) {
   std::vector<autopas::sph::SPHParticle> invalidParticles;
@@ -186,68 +244,100 @@ void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
 }
 
 /**
- * get the required region for the regionparticleiterator.
+ * get the region of particles we need to send to the neighbour with the
+ * specific diff.
+ * Needed for the RegionParticleIterator.
  * @param boxMin
  * @param boxMax
  * @param diff
- * @param reqMin
- * @param reqMax
+ * @param sendMin
+ * @param sendMax
  * @param cutoff
  * @param shift
+ * @param globalBoxMin
+ * @param globalBoxMax
  */
-void getRequiredHalo(double boxMin, double boxMax, int diff, double& reqMin,
-                     double& reqMax, double cutoff, double& shift) {
+void getSendHalo(double boxMin, double boxMax, int diff, double& sendMin,
+                 double& sendMax, double cutoff, double& shift,
+                 const double globalBoxMin, const double globalBoxMax) {
   if (diff == 0) {
-    reqMin = boxMin;
-    reqMax = boxMax;
+    sendMin = boxMin;
+    sendMax = boxMax;
     shift = 0;
   } else if (diff == -1) {
-    reqMin = boxMax - cutoff;
-    reqMax = boxMax;
-    shift = boxMin - boxMax;
+    sendMin = boxMin;
+    sendMax = boxMin + cutoff;
+    if (boxMin == globalBoxMin) {
+      shift = globalBoxMax - globalBoxMin;
+    } else {
+      shift = 0;
+    }
   } else if (diff == 1) {
-    reqMin = boxMin;
-    reqMax = boxMin + cutoff;
-    shift = boxMax - boxMin;
+    sendMin = boxMax - cutoff;
+    sendMax = boxMax;
+    if (boxMax == globalBoxMax) {
+      shift = globalBoxMin - globalBoxMax;
+    } else {
+      shift = 0;
+    }
   }
 }
 
 /**
- *
  * updates the halo particles
- * this is done by copying the boundary particles to the halo particles plus
- * adding appropriate shifts
+ * this is done by sending the boundary particles to othere processes + shifting
+ * them around for periodic boundaries
  * @param sphSystem
+ * @param comm
+ * @param globalBoxMin
+ * @param globalBoxMax
  */
-void updateHaloParticles(Container& sphSystem) {
+void updateHaloParticles(Container& sphSystem, MPI_Comm& comm,
+                         const std::array<double, 3>& globalBoxMin,
+                         const std::array<double, 3>& globalBoxMax) {
   // TODO: mpi exchanges!
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
-  std::array<double, 3> requiredHaloMin, requiredHaloMax;
-  std::array<int, 3> diff;
-  std::array<double, 3> shift;
+  std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
+  std::array<int, 3> diff{0, 0, 0};
+  std::array<double, 3> shift{0, 0, 0};
   double cutoff = sphSystem.getCutoff();
+
+  std::vector<double> buffer;
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
+        std::vector<autopas::sph::SPHParticle> sendParticles;
         if (not diff[0] and not diff[1] and not diff[2]) {
           // at least one dimension has to be non-zero
           std::cout << "skipping diff: " << diff[0] << ", " << diff[1] << ", "
                     << diff[2] << std::endl;
           continue;
         }
-        // figure out from where we get our halo particles
+        // figure out which particles we send
         for (int i = 0; i < 3; ++i) {
-          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i],
-                          requiredHaloMax[i], cutoff, shift[i]);
+          getSendHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i],
+                      requiredHaloMax[i], cutoff, shift[i], globalBoxMin[i],
+                      globalBoxMax[i]);
         }
+
         for (auto iterator =
                  sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax);
              iterator.isValid(); ++iterator) {
-          autopas::sph::SPHParticle p = *iterator;
+          autopas::sph::SPHParticle p = *iterator;  // copies Particle
           p.addR(shift);
-          sphSystem.addHaloParticle(p);
+          sendParticles.push_back(p);
         }
+        MPI_Request sendRequest;
+        issueSend(sendParticles, diff, comm, sendRequest, buffer);
+
+        std::vector<autopas::sph::SPHParticle> receiveParticles;
+        receive(receiveParticles, diff, comm);
+        for (auto& particle : receiveParticles) {
+          sphSystem.addHaloParticle(particle);
+        }
+        waitSend(sendRequest);
+        buffer.clear();
       }
     }
   }
@@ -261,7 +351,9 @@ void deleteHaloParticles(Container& sphSystem) {
   sphSystem.deleteHaloParticles();
 }
 
-void densityPressureHydroForce(Container& sphSystem) {
+void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm,
+                               const std::array<double, 3>& globalBoxMin,
+                               const std::array<double, 3>& globalBoxMax) {
   // declare the used functors
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
@@ -270,7 +362,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
-  updateHaloParticles(sphSystem);
+  updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
   std::cout << "haloparticles... ";
   int haloparts = 0, innerparts = 0;
@@ -304,7 +396,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 
   // 0.3 then calculate hydro force
   // 0.3.1 to calculate the density we need the halo particles
-  updateHaloParticles(sphSystem);
+  updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
   std::cout << "haloparticles... ";
   haloparts = 0, innerparts = 0;
@@ -335,7 +427,7 @@ void densityPressureHydroForce(Container& sphSystem) {
   deleteHaloParticles(sphSystem);
 }
 
-void printConservativeVariables(Container& sphSystem, MPI::Comm& comm) {
+void printConservativeVariables(Container& sphSystem, MPI_Comm& comm) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.;                        // total energy
   for (auto it = sphSystem.begin(); it.isValid(); ++it) {
@@ -347,35 +439,40 @@ void printConservativeVariables(Container& sphSystem, MPI::Comm& comm) {
   }
 
   // MPI: global reduction
-  if (comm.Get_rank() == 0) {
-    comm.Reduce(MPI::IN_PLACE, &energySum, 1, MPI::DOUBLE, MPI::SUM, 0);
-    comm.Reduce(MPI::IN_PLACE, momSum.data(), 3, MPI::DOUBLE, MPI::SUM, 0);
+  int myrank;
+  MPI_Comm_rank(comm, &myrank);
+  if (myrank == 0) {
+    MPI_Reduce(MPI_IN_PLACE, &energySum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    MPI_Reduce(MPI_IN_PLACE, momSum.data(), 3, MPI_DOUBLE, MPI_SUM, 0, comm);
     printf("%.16e\n", energySum);
     printf("%.16e\n", momSum[0]);
     printf("%.16e\n", momSum[1]);
     printf("%.16e\n", momSum[2]);
   } else {
-    comm.Reduce(&energySum, &energySum, 1, MPI::DOUBLE, MPI::SUM, 0);
-    comm.Reduce(momSum.data(), momSum.data(), 3, MPI::DOUBLE, MPI::SUM, 0);
+    MPI_Reduce(&energySum, &energySum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    MPI_Reduce(momSum.data(), momSum.data(), 3, MPI_DOUBLE, MPI_SUM, 0, comm);
   }
 }
 
-MPI::Cartcomm getDecomposition(const std::array<double, 3> globalMin,
-                               const std::array<double, 3> globalMax,
-                               std::array<double, 3>& localMin,
-                               std::array<double, 3>& localMax) {
-  int numProcs = MPI::COMM_WORLD.Get_size();
+MPI_Comm getDecomposition(const std::array<double, 3> globalMin,
+                          const std::array<double, 3> globalMax,
+                          std::array<double, 3>& localMin,
+                          std::array<double, 3>& localMax) {
+  int numProcs;
+  MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
   std::array<int, 3> gridSize{0, 0, 0};
-  MPI::Compute_dims(numProcs, 3, gridSize.data());
-  std::array<bool, 3> period = {true, true, true};
-  auto cart =
-      MPI::COMM_WORLD.Create_cart(3, gridSize.data(), period.data(), false);
+  MPI_Dims_create(numProcs, 3, gridSize.data());
+  std::array<int, 3> period = {1, 1, 1};
+  MPI_Comm cart;
+  MPI_Cart_create(MPI_COMM_WORLD, 3, gridSize.data(), period.data(), false,
+                  &cart);
   std::cout << "MPI grid dimensions: " << gridSize[0] << ", " << gridSize[1]
             << ", " << gridSize[2] << std::endl;
 
-  int rank = cart.Get_rank();
+  int rank;
+  MPI_Comm_rank(cart, &rank);
   std::array<int, 3> coords;
-  cart.Get_coords(rank, 3, coords.data());
+  MPI_Cart_coords(cart, rank, 3, coords.data());
 
   for (int i = 0; i < 3; ++i) {
     localMin[i] =
@@ -396,7 +493,7 @@ MPI::Cartcomm getDecomposition(const std::array<double, 3> globalMin,
 }
 
 int main(int argc, char* argv[]) {
-  MPI::Init(argc, argv);
+  MPI_Init(&argc, &argv);
 
   std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
   globalBoxMax[0] = 1.;
@@ -407,7 +504,7 @@ int main(int argc, char* argv[]) {
 
   // get the decomposition -- get the local box of the current process from the
   // global box
-  MPI::Cartcomm comm =
+  MPI_Comm comm =
       getDecomposition(globalBoxMin, globalBoxMax, localBoxMin, localBoxMax);
 
   Container sphSystem(localBoxMin, localBoxMax, cutoff);
@@ -420,7 +517,7 @@ int main(int argc, char* argv[]) {
   Initialize(sphSystem);
 
   // 0.1 ---- GET INITIAL FORCES OF SYSTEM ----
-  densityPressureHydroForce(sphSystem);
+  densityPressureHydroForce(sphSystem, comm, globalBoxMin, globalBoxMax);
 
   std::cout << "\n----------------------------" << std::endl;
 
@@ -448,7 +545,7 @@ int main(int argc, char* argv[]) {
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
     // 1.4 Calculate density, pressure and hydrodynamic forces
-    densityPressureHydroForce(sphSystem);
+    densityPressureHydroForce(sphSystem, comm, globalBoxMin, globalBoxMax);
     // 1.5 get time step
     dt = getTimeStepGlobal(sphSystem, comm);
     // 1.6 Leap frog: final Kick
@@ -470,5 +567,5 @@ int main(int argc, char* argv[]) {
     printConservativeVariables(sphSystem, comm);
   }
 
-  MPI::Finalize();
+  MPI_Finalize();
 }
