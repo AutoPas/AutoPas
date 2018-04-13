@@ -331,6 +331,7 @@ class SPHParticle : public autopas::Particle {
   /**
    * funtion to deserialize an SPHParticle
    * @param stream
+   * @param index start index within the stream, will be increased while deserializing to mark already processed data.
    * @return
    */
   static SPHParticle deserialize(double *stream, size_t& index) {
