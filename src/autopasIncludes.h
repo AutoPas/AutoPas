@@ -13,7 +13,7 @@
 // utils
 #include "utils/SoA.h"
 #include "utils/arrayMath.h"
-
+#include "utils/Logger.h"
 // particles
 #include "particles/MoleculeLJ.h"
 #include "particles/Particle.h"
