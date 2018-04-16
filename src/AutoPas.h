@@ -20,7 +20,8 @@ enum DataLayoutOption { aos, soa };
 /**
  * The AutoPas class is intended to be the main point of Interaction for the
  * user. It puts a layer of abstraction over the container and handles the
- * autotuning. (->TODO)
+ * autotuning.
+ * @todo autotuning
  * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
@@ -74,9 +75,9 @@ class AutoPas {
 
   /**
    * Returns a pointer to the actual container.
+   * @todo do we need the whole container functionality available to the outside
    * @return container
    */
-  // TODO: do we need the whole container functionality available to the outside
   // or whould wrapper over some container functions be better?
   autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const {
     return container.get();

@@ -45,7 +45,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      /// @todo what should happen if a particle should be added, but is not in the boundingbox?
+      /// @todo what should happen if a particle should be added, but is not in
+      /// the boundingbox?
     }
   }
 
@@ -83,7 +84,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) override {
-    // TODO: iteratePairwiseSoA
+    /// @todo iteratePairwiseSoA
     iteratePairwiseSoA2(f);
   }
 
@@ -105,7 +106,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void updateContainer() override {
-    // todo optimize
+    /// @todo optimize
     std::vector<Particle> invalidParticles;
     for (auto iter = this->begin(); iter.isValid(); ++iter) {
       invalidParticles.push_back(*iter);

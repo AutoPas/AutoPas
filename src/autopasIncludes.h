@@ -8,7 +8,7 @@
 #ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_
 
-// TODO: separate autopas.h and autopasmd.h
+/// @todo separate autopas.h and autopasmd.h
 
 // utils
 #include "utils/Logger.h"

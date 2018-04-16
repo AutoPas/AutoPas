@@ -167,11 +167,11 @@ class SoA {
   }
 
  private:
-  // TODO: variable precision (two maps?, user defined via initArrays?)
-  // TODO: maybe fix number of attributes via template?
   /**
    * Map containing all aligned vectors (aka. arrays) which are mapped to int
    * ids.
+   * @todo variable precision (two maps?, user defined via initArrays?)
+   * @todo maybe fix number of attributes via template?
    */
   std::map<int, std::vector<double, AlignedAllocator<double>> *> arrays;
 };

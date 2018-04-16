@@ -44,7 +44,6 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     }
   }
 
-  // todo: optimize! this currently just loops over all particles.
   // Better: implement smart version of next_non_empty_cell.
   /**
    * Increment operator of the iterator

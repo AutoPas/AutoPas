@@ -43,7 +43,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (inBox) {
       getCell()->addParticle(p);
     } else {
-      // todo
+      /// @todo
     }
   }
 
@@ -52,7 +52,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (not inBox) {
       getHaloCell()->addParticle(p);
     } else {  // particle is not outside of own box
-      // todo
+      /// @todo
     }
   }
 
@@ -109,7 +109,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void updateContainer() override {
-    // TODO: might need to do sth. if particles move outside of the box?
+    /// @todo might need to do sth. if particles move outside of the box?
   }
 
   bool checkValid() override {
