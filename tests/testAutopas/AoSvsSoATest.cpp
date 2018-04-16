@@ -78,8 +78,11 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
 
   // compare particle vectors
   for (unsigned int i = 0; i < particlesAoS.size(); ++i) {
-    ASSERT_NEAR(particlesAoS[i].getF()[0], cell._particles[i].getF()[0], 1.0e-13);
-    ASSERT_NEAR(particlesAoS[i].getF()[1], cell._particles[i].getF()[1], 1.0e-13);
-    ASSERT_NEAR(particlesAoS[i].getF()[2], cell._particles[i].getF()[2], 1.0e-13);
+    ASSERT_NEAR(particlesAoS[i].getF()[0], cell._particles[i].getF()[0],
+                1.0e-13);
+    ASSERT_NEAR(particlesAoS[i].getF()[1], cell._particles[i].getF()[1],
+                1.0e-13);
+    ASSERT_NEAR(particlesAoS[i].getF()[2], cell._particles[i].getF()[2],
+                1.0e-13);
   }
 }

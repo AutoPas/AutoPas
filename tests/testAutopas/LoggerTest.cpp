@@ -10,7 +10,7 @@
 
 using namespace autopas::log;
 
-int testLevel(logLevel level, bool enabled=true) {
+int testLevel(logLevel level, bool enabled = true) {
   std::stringstream stream;
   Logger log(level, &stream);
   log.setEnabled(enabled);

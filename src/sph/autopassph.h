@@ -8,4 +8,3 @@
 #include "SPHCalcHydroForceFunctor.h"
 #include "SPHKernels.h"
 #include "SPHParticle.h"
-
