@@ -47,7 +47,7 @@ class SingleCellIterator {
   Particle &operator*() const {
     Particle *ptr = nullptr;
     //_cell->particleAt(_index, ptr);
-    ptr = &(_cell->_mols.at(_index));
+    ptr = &(_cell->_particles.at(_index));
     return *ptr;
   }
 
