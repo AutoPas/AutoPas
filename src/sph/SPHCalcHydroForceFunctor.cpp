@@ -7,10 +7,11 @@
 
 using namespace autopas::sph;
 
-void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
+void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j,
+                                          bool newton3) {
   const std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
   // const PS::F64vec dr = ep_i[i].pos - ep_j[j].pos;
-  // TODO: symmetric only:
+
   double cutoff = i.getSmoothingLength() *
                   autopas::sph::SPHKernels::getKernelSupportRadius();
 
@@ -69,6 +70,6 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j) {
 }
 
 unsigned long SPHCalcHydroForceFunctor::getNumFlopsPerKernelCall() {
-  /// @todo: correct
+  /// @todo correct flopcount
   return 1ul;
 }

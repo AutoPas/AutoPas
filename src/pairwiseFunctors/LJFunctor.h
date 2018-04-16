@@ -15,20 +15,20 @@
 
 namespace autopas {
 
-// TODO: can we do this without a template? Maybe. But we want to inline it
+/// @todo can we do this without a template? Maybe. But we want to inline it
 // anyway :)
 /**
  * A functor to handle lennard-jones interactions between two particles
  * (molecules).
+ * @todo add macroscopic quantities
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
  */
 template <class Particle, class ParticleCell>
 class LJFunctor : public Functor<Particle, ParticleCell> {
  public:
-  // todo: add macroscopic quantities
-  void AoSFunctor(Particle &i, Particle &j) override {
-    std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
+  void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+    auto dr = arrayMath::sub(i.getR(), j.getR());
     double dr2 = arrayMath::dot(dr, dr);
 
     if (dr2 > CUTOFFSQUARE) return;
@@ -39,12 +39,12 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
-    std::array<double, 3> f = arrayMath::mulScalar(dr, fac);
+    auto f = arrayMath::mulScalar(dr, fac);
     i.addF(f);
     j.subF(f);
   }
 
-  void SoAFunctor(SoA &soa) override {
+  void SoAFunctor(SoA &soa, bool newton3 = true) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
@@ -107,7 +107,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA &soa1, SoA &soa2) override {
+  void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr =

@@ -36,7 +36,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
-  void AoSFunctor(Particle &i, Particle &j) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
     auto dr = arrayMath::sub(i.getR(), j.getR());
     double dr2 = arrayMath::dot(dr, dr);
 
@@ -45,7 +45,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     if (dr2 <= _cutoffSquare) ++_kernelCalls;
   }
 
-  void SoAFunctor(SoA &soa) override {
+  void SoAFunctor(SoA &soa, bool newton3 = true) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr =
@@ -87,7 +87,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA &soa1, SoA &soa2) override {
+  void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) override {
     double *const __restrict__ x1ptr = soa1.begin(posX);
     double *const __restrict__ y1ptr = soa1.begin(posY);
     double *const __restrict__ z1ptr = soa1.begin(posZ);

@@ -23,11 +23,11 @@ class SPHCalcHydroForceFunctor
    * hydrodynamic force.
    * It is not symmetric, because the smoothing lenghts of the two particles can
    * be different.
-   * @todo newton 3 only symmetric!
    * @param i first particle of the interaction
    * @param j second particle of the interaction
+   * @param newton3 defines whether or whether not to use newton 3
    */
-  void AoSFunctor(SPHParticle &i, SPHParticle &j) override;
+  void AoSFunctor(SPHParticle &i, SPHParticle &j, bool newton3 = true) override;
 
   /**
    * Get the number of floating point operations used in one full kernel call
