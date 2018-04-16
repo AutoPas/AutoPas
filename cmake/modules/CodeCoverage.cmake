@@ -134,9 +134,11 @@ ENDFUNCTION() # SETUP_TARGET_FOR_COVERAGE
 # Param _targetname     The name of new the custom make target
 # Param _testrunner     The name of the target which runs the tests
 # Param _outputname     cobertura output is generated as _outputname.xml
+# Param _testcommandparam parameters for the test runner
+# Param _customexcludepattern exclude pattern (empty string to not exclude anything)
 # Optional fourth parameter is passed as arguments to _testrunner
 #   Pass them in list form, e.g.: "-j;2" for -j 2
-FUNCTION(SETUP_TARGET_FOR_COVERAGE_COBERTURA _targetname _testrunner _outputname)
+FUNCTION(SETUP_TARGET_FOR_COVERAGE_COBERTURA _targetname _testrunner _outputname _testcommandparam _customexcludepattern)
 
     IF(NOT PYTHON_EXECUTABLE)
         MESSAGE(FATAL_ERROR "Python not found! Aborting...")
@@ -146,13 +148,23 @@ FUNCTION(SETUP_TARGET_FOR_COVERAGE_COBERTURA _targetname _testrunner _outputname
         MESSAGE(FATAL_ERROR "gcovr not found! Aborting...")
     ENDIF() # NOT GCOVR_PATH
 
+    MESSAGE(STATUS "custompatter: ${_customexcludepattern}")
+    IF(_customexcludepattern STREQUAL "")
+        MESSAGE(STATUS "no custom exclude found")
+        SET(COVERAGE_CUSTOMEXCLUDE "LONGSTUPIDDUMMYTHATSHOULDNEVERMATCH")
+    ELSE()
+        MESSAGE(STATUS "custom exclude found")
+        SET(COVERAGE_CUSTOMEXCLUDE "${_customexcludepattern}")
+    ENDIF()
+
     ADD_CUSTOM_TARGET(${_targetname}
 
             # Run tests
-            ${_testrunner} ${ARGV3}
+            ${_testrunner} ${_testcommandparam}
+
 
             # Running gcovr
-            COMMAND ${GCOVR_PATH} -x -r ${CMAKE_SOURCE_DIR} -e '${CMAKE_SOURCE_DIR}/tests/' -e '${CMAKE_SOURCE_DIR}/build/'  -o ${_outputname}.xml
+            COMMAND ${GCOVR_PATH} -x -r ${CMAKE_SOURCE_DIR} -e '${CMAKE_SOURCE_DIR}/tests/' -e '${CMAKE_SOURCE_DIR}/build/' -e ${COVERAGE_CUSTOMEXCLUDE} -o ${_outputname}.xml
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             COMMENT "Running gcovr to produce Cobertura code coverage report."
             )
