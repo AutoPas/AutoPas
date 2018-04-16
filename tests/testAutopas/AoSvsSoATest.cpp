@@ -59,9 +59,9 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
     cell.addParticle(p);
   }
 
-  ljFunctor.SoALoader(cell, &cell._molsSoABuffer);
+  ljFunctor.SoALoader(cell, &cell._particleSoABuffer);
   start = std::chrono::high_resolution_clock::now();
-  ljFunctor.SoAFunctor(cell._molsSoABuffer, cell._molsSoABuffer);
+  ljFunctor.SoAFunctor(cell._particleSoABuffer, cell._particleSoABuffer);
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start)
                  .count();
@@ -71,7 +71,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   // copy back to particle array
   particlesSoA.clear();
 
-  ljFunctor.SoAExtractor(&cell, &cell._molsSoABuffer);
+  ljFunctor.SoAExtractor(&cell, &cell._particleSoABuffer);
 
   //  ASSERT_EQ(particlesAoS.size(), particlesSoA.size());
   ASSERT_EQ(particlesAoS.size(), cell.numParticles());

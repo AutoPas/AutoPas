@@ -25,7 +25,7 @@ class FullParticleCell
           FullParticleCell<Particle>> {
  public:
   FullParticleCell() {
-    _molsSoABuffer.initArrays({
+    _particleSoABuffer.initArrays({
         Particle::AttributeNames::id, Particle::AttributeNames::posX,
         Particle::AttributeNames::posY, Particle::AttributeNames::posZ,
         Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
@@ -58,7 +58,7 @@ class FullParticleCell
   /**
    * the soa buffer of this cell
    */
-  SoA _molsSoABuffer;
+  SoA _particleSoABuffer;
 
   /**
    * iterator to iterate through ParticleCell

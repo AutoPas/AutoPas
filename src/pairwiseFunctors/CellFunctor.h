@@ -101,21 +101,21 @@ class CellFunctor {
   }
 
   void processCellPairSoA(ParticleCell &cell1, ParticleCell &cell2) {
-    _functor->SoALoader(cell1, &cell1._molsSoABuffer);
-    _functor->SoALoader(cell2, &cell2._molsSoABuffer);
+    _functor->SoALoader(cell1, &cell1._particleSoABuffer);
+    _functor->SoALoader(cell2, &cell2._particleSoABuffer);
 
-    _functor->SoAFunctor(cell1._molsSoABuffer, cell2._molsSoABuffer);
+    _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer);
 
-    _functor->SoAExtractor(&cell1, &cell1._molsSoABuffer);
-    _functor->SoAExtractor(&cell2, &cell2._molsSoABuffer);
+    _functor->SoAExtractor(&cell1, &cell1._particleSoABuffer);
+    _functor->SoAExtractor(&cell2, &cell2._particleSoABuffer);
   }
 
   void processCellSoA(ParticleCell &cell) {
-    _functor->SoALoader(cell, &cell._molsSoABuffer);
+    _functor->SoALoader(cell, &cell._particleSoABuffer);
 
-    _functor->SoAFunctor(cell._molsSoABuffer);
+    _functor->SoAFunctor(cell._particleSoABuffer);
 
-    _functor->SoAExtractor(&cell, &cell._molsSoABuffer);
+    _functor->SoAExtractor(&cell, &cell._particleSoABuffer);
   }
 
  private:
