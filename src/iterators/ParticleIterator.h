@@ -76,7 +76,6 @@ class ParticleIterator {
 
   /**
    * Deletes the current particle
-   * @todo implement deletion
    */
   void deleteCurrentParticle() {
     if (_iteratorWithinOneCell.isValid()) {

@@ -45,7 +45,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      // todo
+      /// @todo what should happen if a particle should be added, but is not in the boundingbox?
     }
   }
 
@@ -55,7 +55,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
       cell.addParticle(haloParticle);
     } else {
-      // todo
+      /// @todo what should happen if a particle is not in the halo?
     }
   }
 
