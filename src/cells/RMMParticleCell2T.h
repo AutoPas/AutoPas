@@ -30,41 +30,41 @@ class RMMParticleCell2T
    * Constructor of RMMParticleCell
    */
   RMMParticleCell2T() {
-    _molsSoABuffer.initArrays(
+    _particleSoABuffer.initArrays(
         {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
          Particle::AttributeNames::posZ, Particle::AttributeNames::forceX,
          Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ});
   }
 
   void addParticle(Particle &m) override {
-    _molsSoABuffer.push(Particle::AttributeNames::posX, m.getR()[0]);
-    _molsSoABuffer.push(Particle::AttributeNames::posY, m.getR()[1]);
-    _molsSoABuffer.push(Particle::AttributeNames::posZ, m.getR()[2]);
-    _molsSoABuffer.push(Particle::AttributeNames::forceX, m.getF()[0]);
-    _molsSoABuffer.push(Particle::AttributeNames::forceY, m.getF()[1]);
-    _molsSoABuffer.push(Particle::AttributeNames::forceZ, m.getF()[2]);
+    _particleSoABuffer.push(Particle::AttributeNames::posX, m.getR()[0]);
+    _particleSoABuffer.push(Particle::AttributeNames::posY, m.getR()[1]);
+    _particleSoABuffer.push(Particle::AttributeNames::posZ, m.getR()[2]);
+    _particleSoABuffer.push(Particle::AttributeNames::forceX, m.getF()[0]);
+    _particleSoABuffer.push(Particle::AttributeNames::forceY, m.getF()[1]);
+    _particleSoABuffer.push(Particle::AttributeNames::forceZ, m.getF()[2]);
   }
 
   unsigned long numParticles() const override {
-    return _molsSoABuffer.getNumParticles();
+    return _particleSoABuffer.getNumParticles();
   }
   bool isNotEmpty() const override { return numParticles() > 0; }
 
-  void clear() override { _molsSoABuffer.clear(); }
+  void clear() override { _particleSoABuffer.clear(); }
 
   void deleteByIndex(int index) override {
     assert(index >= 0 and index < numParticles());
     assert(numParticles() > 0);
     if (index < numParticles() - 1) {
-      _molsSoABuffer.swap(index, numParticles() - 1);
+      _particleSoABuffer.swap(index, numParticles() - 1);
     }
-    _molsSoABuffer.pop_back();
+    _particleSoABuffer.pop_back();
   }
 
   /**
    * the soa buffer of the particle, all information is stored here.
    */
-  SoA _molsSoABuffer;
+  SoA _particleSoABuffer;
 
   /**
    * iterator to iterate through ParticleCell
@@ -74,15 +74,26 @@ class RMMParticleCell2T
   typedef Iterator iterator;
 
  private:
-  void buildMoleculeFromSoA(unsigned int i, Particle *&rmm_or_not_pointer) {
-    rmm_or_not_pointer->setR(_molsSoABuffer.read<3>(
+  void buildParticleFromSoA(size_t i, Particle *&rmm_or_not_pointer) {
+    rmm_or_not_pointer->setR(_particleSoABuffer.read<3>(
         {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
          Particle::AttributeNames::posZ},
         i));
-    rmm_or_not_pointer->setF(_molsSoABuffer.read<3>(
+    rmm_or_not_pointer->setF(_particleSoABuffer.read<3>(
         {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
          Particle::AttributeNames::forceZ},
         i));
+  }
+
+  void writeParticleToSoA(size_t index, Particle &particle) {
+    _particleSoABuffer.write<3>(
+        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+         Particle::AttributeNames::posZ},
+        index, particle.getR());
+    _particleSoABuffer.write<3>(
+        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+         Particle::AttributeNames::forceZ},
+        index, particle.getF());
   }
 
   template <class ParticleType>
@@ -90,7 +101,7 @@ class RMMParticleCell2T
 };
 
 /**
- * specialization of the  class for the RMMParticleCell
+ * SingleCellIterator for the RMMParticleCell
  * @tparam Particle
  */
 template <class Particle>
@@ -126,7 +137,7 @@ class RMMParticleCellIterator {
     // Particle * ptr = nullptr;
     // ptr = const_cast<Particle *>(& _AoSReservoir);
     Particle *ptr = &_AoSReservoir;
-    _cell->buildMoleculeFromSoA(_index, ptr);
+    _cell->buildParticleFromSoA(_index, ptr);
     //_cell->particleAt(_index, ptr);
     return *ptr;
   }
@@ -144,7 +155,10 @@ class RMMParticleCellIterator {
    * @return the next particle, usually ignored
    */
   RMMParticleCellIterator &operator++() {
-    if (not _deleted) ++_index;
+    if (not _deleted) {
+      _cell->writeParticleToSoA(_index, _AoSReservoir);
+      ++_index;
+    }
     _deleted = false;
     return *this;
   }

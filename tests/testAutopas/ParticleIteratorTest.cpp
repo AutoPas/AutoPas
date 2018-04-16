@@ -69,13 +69,50 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
   for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
     fillWithParticles(&data.at(i));
   }
-
-  ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
-  int i = 0;
-  for (; iter.isValid(); ++iter, ++i) {
-    iter.deleteCurrentParticle();
+  {
+    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+    int i = 0;
+    for (; iter.isValid(); ++iter, ++i) {
+      iter.deleteCurrentParticle();
+    }
+    ASSERT_EQ(i, 20);
   }
-  ASSERT_EQ(i, 20);
+
+  {
+    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+    int i = 0;
+    for (; iter.isValid(); ++iter) {
+      ++i;
+    }
+    ASSERT_EQ(i, 0);
+  }
+}
+
+TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
+  // Full Empty Full Empty Empty Full Full Empty Full Empty
+  std::vector<FullParticleCell<MoleculeLJ>> data(10);
+
+  for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
+    fillWithParticles(&data.at(i));
+  }
+  {
+    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+    double i = 0.;
+    for (; iter.isValid(); ++iter, ++i) {
+      iter->setV({i, i, i});
+    }
+  }
+
+  {
+    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+    double i = 0.;
+    for (; iter.isValid(); ++iter, ++i) {
+      auto vel = iter->getV();
+      ASSERT_EQ(vel[0], i);
+      ASSERT_EQ(vel[1], i);
+      ASSERT_EQ(vel[2], i);
+    }
+  }
 }
 
 TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
@@ -121,11 +158,47 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
   for (auto i : {0u, 2u, 5u, 6u, 8u}) {
     fillWithParticles(&data.at(i));
   }
-
-  ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
-  int i = 0;
-  for (; iter.isValid(); ++iter, ++i) {
-    iter.deleteCurrentParticle();
+  {
+    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+    int i = 0;
+    for (; iter.isValid(); ++iter, ++i) {
+      iter.deleteCurrentParticle();
+    }
+    ASSERT_EQ(i, 20);
   }
-  ASSERT_EQ(i, 20);
+  {
+    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+    int i = 0;
+    for (; iter.isValid(); ++iter) {
+      ++i;
+    }
+    ASSERT_EQ(i, 0);
+  }
+}
+
+TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
+  // Full Empty Full Empty Empty Full Full Empty Full Empty
+  std::vector<RMMParticleCell<MoleculeLJ>> data(10);
+
+  for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
+    fillWithParticles(&data.at(i));
+  }
+  {
+    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+    double i = 0.;
+    for (; iter.isValid(); ++iter, ++i) {
+      iter->setF({i, i, i});
+    }
+  }
+
+  {
+    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+    double i = 0.;
+    for (; iter.isValid(); ++iter, ++i) {
+      auto force = iter->getF();
+      ASSERT_EQ(force[0], i);
+      ASSERT_EQ(force[1], i);
+      ASSERT_EQ(force[2], i);
+    }
+  }
 }
