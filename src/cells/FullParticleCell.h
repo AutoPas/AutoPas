@@ -33,27 +33,27 @@ class FullParticleCell
     });
   }
 
-  void addParticle(Particle &m) override { _mols.push_back(m); }
+  void addParticle(Particle &m) override { _particles.push_back(m); }
 
-  unsigned long numParticles() const override { return _mols.size(); }
+  unsigned long numParticles() const override { return _particles.size(); }
 
   bool isNotEmpty() const override { return numParticles() > 0; }
 
-  void clear() override { _mols.clear(); }
+  void clear() override { _particles.clear(); }
 
   void deleteByIndex(int index) override {
     assert(index >= 0 and index < numParticles());
 
     if (index < numParticles() - 1) {
-      std::swap(_mols[index], _mols[numParticles() - 1]);
+      std::swap(_particles[index], _particles[numParticles() - 1]);
     }
-    _mols.pop_back();
+    _particles.pop_back();
   }
 
   /**
    * storage of the molecules of the cell
    */
-  std::vector<Particle> _mols;
+  std::vector<Particle> _particles;
 
   /**
    * the soa buffer of this cell
