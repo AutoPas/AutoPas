@@ -112,6 +112,14 @@ class Logger {
   // don't allow assignment
   Logger &operator=(const Logger &) = delete;
 
+
+  /**
+   * enable or disable the logger.
+   * @param enabled
+   */
+  void setEnabled(bool enabled) { _enabled = enabled; }
+
+
   /**
    * General output template for variables, strings, etc.
    * @tparam T

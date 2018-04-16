@@ -10,9 +10,10 @@
 
 using namespace autopas::log;
 
-int testLevel(logLevel level) {
+int testLevel(logLevel level, bool enabled=true) {
   std::stringstream stream;
   Logger log(level, &stream);
+  log.setEnabled(enabled);
 
   log.debug() << "debug" << std::endl;
   log.info() << "info" << std::endl;
@@ -35,6 +36,16 @@ TEST(LoggerTest, LogLevelTest) {
   EXPECT_EQ(testLevel(logLevel::Error), 2);
   EXPECT_EQ(testLevel(logLevel::Fatal), 1);
   EXPECT_EQ(testLevel(logLevel::None), 0);
+}
+
+TEST(LoggerTest, LogLevelTestDisabled) {
+  EXPECT_EQ(testLevel(logLevel::All, false), 0);
+  EXPECT_EQ(testLevel(logLevel::Debug, false), 0);
+  EXPECT_EQ(testLevel(logLevel::Info, false), 0);
+  EXPECT_EQ(testLevel(logLevel::Warning, false), 0);
+  EXPECT_EQ(testLevel(logLevel::Error, false), 0);
+  EXPECT_EQ(testLevel(logLevel::Fatal, false), 0);
+  EXPECT_EQ(testLevel(logLevel::None, false), 0);
 }
 
 TEST(LoggerTest, defaultConstructorTest) {
