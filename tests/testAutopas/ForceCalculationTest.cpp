@@ -92,3 +92,73 @@ TEST_F(ForceCalculationTest, testLJwithU0SoA) {
     ASSERT_NEAR(expectedForces[id][2], p->getF()[2], tolerance);
   }
 }
+
+TEST_F(ForceCalculationTest, testLJwithF0AoS) {
+  AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
+      autoPas;
+
+  double cutoff = 1.3;
+  double epsilon = 1.;
+  double sigma = 1.;
+  array<double, 3> boxMin = {0., 0., 0.};
+  array<double, 3> boxMax = {3., 3., 3.};
+
+  double expectedForces[4][3] = {
+      {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+  double tolerance = 1e-13;
+
+  autoPas.init(boxMin, boxMax, cutoff, linkedCells);
+
+  fillWithParticles(autoPas, {2, 2, 1}, std::pow(2, 1.0/6));
+
+  autopas::MoleculeLJ::setEpsilon(epsilon);
+  autopas::MoleculeLJ::setSigma(sigma);
+
+  LJFunctor<MoleculeLJ, FullParticleCell<MoleculeLJ>>::setGlobals(
+      cutoff, epsilon, sigma, 0.0);
+  LJFunctor<MoleculeLJ, FullParticleCell<MoleculeLJ>> functor;
+
+  autoPas.iteratePairwise(&functor, autopas::aos);
+
+  for (auto p = autoPas.begin(); p.isValid(); ++p) {
+    auto id = p->getID();
+    ASSERT_NEAR(expectedForces[id][0], p->getF()[0], tolerance);
+    ASSERT_NEAR(expectedForces[id][1], p->getF()[1], tolerance);
+    ASSERT_NEAR(expectedForces[id][2], p->getF()[2], tolerance);
+  }
+}
+
+TEST_F(ForceCalculationTest, testLJwithF0SoA) {
+  AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
+      autoPas;
+
+  double cutoff = 1.3;
+  double epsilon = 1.;
+  double sigma = 1.;
+  array<double, 3> boxMin = {0., 0., 0.};
+  array<double, 3> boxMax = {3., 3., 3.};
+
+  double expectedForces[4][3] = {
+      {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+  double tolerance = 1e-13;
+
+  autoPas.init(boxMin, boxMax, cutoff, linkedCells);
+
+  fillWithParticles(autoPas, {2, 2, 1}, std::pow(2, 1.0/6));
+
+  autopas::MoleculeLJ::setEpsilon(epsilon);
+  autopas::MoleculeLJ::setSigma(sigma);
+
+  LJFunctor<MoleculeLJ, FullParticleCell<MoleculeLJ>>::setGlobals(
+      cutoff, epsilon, sigma, 0.0);
+  LJFunctor<MoleculeLJ, FullParticleCell<MoleculeLJ>> functor;
+
+  autoPas.iteratePairwise(&functor, autopas::soa);
+
+  for (auto p = autoPas.begin(); p.isValid(); ++p) {
+    auto id = p->getID();
+    ASSERT_NEAR(expectedForces[id][0], p->getF()[0], tolerance);
+    ASSERT_NEAR(expectedForces[id][1], p->getF()[1], tolerance);
+    ASSERT_NEAR(expectedForces[id][2], p->getF()[2], tolerance);
+  }
+}
