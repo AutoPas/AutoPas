@@ -14,12 +14,20 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 
 namespace autopas {
 /* we use a separate namespace because we have some global definitions for
  * the log level */
+namespace log {
+class Logger;
+}
+/**
+ * the global logger instance of autopas
+ */
+extern std::unique_ptr<log::Logger> logger;
 namespace log {
 
 /**
@@ -59,12 +67,13 @@ class Logger {
    * this e.g. to mark mpi ranks
    */
   Logger(logLevel level = logLevel::Error, std::ostream *os = &(std::cout),
-         std::string identifier = "0")
+         std::ostream *es = &(std::cerr), std::string identifier = "0")
       : _log_level(level),
         _msg_log_level(logLevel::Error),
         _enabled(true),
         _filename(""),
         _log_stream(os),
+        _error_stream(es),
         logLevelNames(),
         _starttime(),
         _identifier(identifier) {
@@ -97,13 +106,18 @@ class Logger {
     filenamestream << ".log";
     _filename = filenamestream.str();
     _log_stream = new std::ofstream(_filename.c_str());
+    _error_stream = _log_stream;
   }
   /**
    * Destructor, flushes stream
    */
   ~Logger() {
     *_log_stream << std::flush;
-    if (_filename != "") (static_cast<std::ofstream *>(_log_stream))->close();
+    *_error_stream << std::flush;
+    if (_filename != "") {
+      (static_cast<std::ofstream *>(_log_stream))->close();
+      // don't close the error_stream as it is the same as the log stream!
+    }
   }
 
   // don't allow copy-construction
@@ -126,7 +140,7 @@ class Logger {
    */
   template <typename T>
   Logger &operator<<(T const &t) {
-    if (_msg_log_level <= _log_level && _enabled) *_log_stream << t;
+    if (_msg_log_level <= _log_level && _enabled) *_current_stream << t;
     return *this;
   }
 
@@ -137,7 +151,7 @@ class Logger {
    * @return
    */
   Logger &operator<<(std::ostream &(*f)(std::ostream &)) {
-    if (_msg_log_level <= _log_level && _enabled) *_log_stream << f;
+    if (_msg_log_level <= _log_level && _enabled) *_current_stream << f;
     return *this;
   }
 
@@ -148,7 +162,7 @@ class Logger {
    * @return
    */
   Logger &operator<<(std::ios_base &(*f)(std::ios_base &)) {
-    if (_msg_log_level <= _log_level && _enabled) f(*_log_stream);
+    if (_msg_log_level <= _log_level && _enabled) f(*_current_stream);
     return *this;
   }
   /**
@@ -160,7 +174,7 @@ class Logger {
    */
   template <class Ch, class Tr>
   Logger &operator<<(std::basic_ios<Ch, Tr> &(*f)(std::basic_ios<Ch, Tr> &)) {
-    if (_msg_log_level <= _log_level && _enabled) f(*_log_stream);
+    if (_msg_log_level <= _log_level && _enabled) f(*_current_stream);
     return *this;
   }
 
@@ -173,6 +187,11 @@ class Logger {
   Logger &msg_level(logLevel level) {
     _msg_log_level = level;
     if (_msg_log_level <= _log_level && _enabled) {
+      if (_msg_log_level > 4) {
+        _current_stream = _log_stream;
+      } else {
+        _current_stream = _error_stream;
+      }
       // Include timestamp
       auto t_sys = std::chrono::system_clock::now();
       std::time_t t_t = std::chrono::system_clock::to_time_t(t_sys);
@@ -184,17 +203,17 @@ class Logger {
                       << (1 + lt->tm_mon) << std::setw(2) << lt->tm_mday << "T"
                       << std::setw(2) << lt->tm_hour << std::setw(2)
                       << lt->tm_min << std::setw(2) << lt->tm_sec;
-      *_log_stream << logLevelNames[level] << ":\t" << timestampstream.str()
-                   << " ";
+      *_current_stream << logLevelNames[level] << ":\t" << timestampstream.str()
+                  << " ";
       auto t_hi_res = std::chrono::high_resolution_clock::now();
-      *_log_stream << std::fixed << std::setw(8)
-                   << std::chrono::duration_cast<std::chrono::microseconds>(
-                          t_hi_res - _starttime)
-                              .count() /
-                          1.E6
-                   << "\t";
+      *_current_stream << std::fixed << std::setw(8)
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         t_hi_res - _starttime)
+                             .count() /
+                         1.E6
+                  << "\t";
 
-      *_log_stream << "[" << _identifier << "]\t";
+      *_current_stream << "[" << _identifier << "]\t";
     }
     return *this;
   }
@@ -239,6 +258,8 @@ class Logger {
   bool _enabled;
   std::string _filename;
   std::ostream *_log_stream;
+  std::ostream *_error_stream;
+  std::ostream *_current_stream;
   std::map<logLevel, std::string> logLevelNames;
   std::chrono::time_point<std::chrono::high_resolution_clock> _starttime;
 
