@@ -30,9 +30,10 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j,
   // const PS::F64 v_sig = ep_i[i].snds + ep_j[j].snds - 3.0 * w_ij;
 
   i.checkAndSetVSigMax(v_sig);
-  j.checkAndSetVSigMax(v_sig);  // Newton 3
-  // v_sig_max = std::max(v_sig_max, v_sig);
-
+  if (newton3) {
+    j.checkAndSetVSigMax(v_sig);  // Newton 3
+    // v_sig_max = std::max(v_sig_max, v_sig);
+  }
   const double AV =
       -0.5 * v_sig * w_ij / (0.5 * (i.getDensity() + j.getDensity()));
   // const PS::F64 AV = - 0.5 * v_sig * w_ij / (0.5 * (ep_i[i].dens +
@@ -51,10 +52,10 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j,
   // hydro[i].acc     -= ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
   // ep_i[i].dens) + ep_j[j].pres / (ep_j[j].dens * ep_j[j].dens) + AV) *
   // gradW_ij;
-
-  j.addAcceleration(arrayMath::mulScalar(gradW_ij, scale * i.getMass()));
-  // Newton3, gradW_ij = -gradW_ji
-
+  if (newton3) {
+    j.addAcceleration(arrayMath::mulScalar(gradW_ij, scale * i.getMass()));
+    // Newton3, gradW_ij = -gradW_ji
+  }
   double scale2i =
       j.getMass() *
       (i.getPressure() / (i.getDensity() * i.getDensity()) + 0.5 * AV);
@@ -62,11 +63,13 @@ void SPHCalcHydroForceFunctor::AoSFunctor(SPHParticle &i, SPHParticle &j,
   // hydro[i].eng_dot += ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
   // ep_i[i].dens) + 0.5 * AV) * dv * gradW_ij;
 
-  double scale2j =
-      i.getMass() *
-      (j.getPressure() / (j.getDensity() * j.getDensity()) + 0.5 * AV);
-  j.addEngDot(arrayMath::dot(gradW_ij, dv) * scale2j);
-  // Newton 3
+  if (newton3) {
+    double scale2j =
+        i.getMass() *
+        (j.getPressure() / (j.getDensity() * j.getDensity()) + 0.5 * AV);
+    j.addEngDot(arrayMath::dot(gradW_ij, dv) * scale2j);
+    // Newton 3
+  }
 }
 
 unsigned long SPHCalcHydroForceFunctor::getNumFlopsPerKernelCall() {

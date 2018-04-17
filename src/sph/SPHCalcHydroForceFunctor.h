@@ -1,9 +1,7 @@
 //
 // Created by seckler on 22.01.18.
 //
-
-#ifndef AUTOPAS_SPHCALCHYDROFORCEFUNCTOR_H
-#define AUTOPAS_SPHCALCHYDROFORCEFUNCTOR_H
+#pragma once
 
 #include "SPHParticle.h"
 #include "autopasIncludes.h"
@@ -37,4 +35,4 @@ class SPHCalcHydroForceFunctor
 };
 }  // namespace sph
 }  // namespace autopas
-#endif  // AUTOPAS_SPHCALCHYDROFORCEFUNCTOR_H
+
