@@ -62,7 +62,8 @@ class Logger {
    * Constructor of the Logger class.
    * It provides different levels of output, which are defined using a logLevel.
    * @param level the level of the output
-   * @param os a stringstream
+   * @param os the normal output stream, default is std::cout
+   * @param es error stream, default is std::cerr
    * @param identifier you can mark this stream with a special identifier, use
    * this e.g. to mark mpi ranks
    */
