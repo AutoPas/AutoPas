@@ -107,7 +107,7 @@ void measureContainer(Container *cont, int numParticles, int numIterations) {
       autopas::FullParticleCell<autopas::sph::SPHParticle>>
       flopFunctor(cont->getCutoff());
 
-  utils::Timer t;
+  autopas::utils::Timer t;
 
   cont->iteratePairwiseAoS2(&flopFunctor);
   double flopsPerIteration =

@@ -9,7 +9,7 @@
 #define TIMER_H_
 
 #include <ctime>
-
+namespace autopas {
 namespace utils {
 
 /**
@@ -36,5 +36,6 @@ class Timer {
  private:
   struct timespec _startTime;
 };
-}
+}  // namespace utils
+}  // namespace autopas
 #endif /* TIMER_H_ */

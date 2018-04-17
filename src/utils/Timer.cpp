@@ -10,22 +10,22 @@
 
 using namespace std;
 
-utils::Timer::Timer() : _startTime{} {
+autopas::utils::Timer::Timer() : _startTime{} {
   struct timespec info {};
   if (clock_getres(CLOCK_REALTIME, &info)) {
     std::cout << "Could not retrieve time resolution!" << endl;
   }
 }
 
-utils::Timer::~Timer() = default;
+autopas::utils::Timer::~Timer() = default;
 
-void utils::Timer::start() {
+void autopas::utils::Timer::start() {
   if (clock_gettime(CLOCK_REALTIME, &_startTime)) {
     std::cout << "Could not retrieve time!" << endl;
   }
 }
 
-double utils::Timer::stop() {
+double autopas::utils::Timer::stop() {
   struct timespec time {};
   if (clock_gettime(CLOCK_REALTIME, &time)) {
     std::cout << "Could not retrieve time!" << endl;
