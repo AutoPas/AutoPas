@@ -12,7 +12,7 @@ using namespace autopas::log;
 
 int testLevel(logLevel level, bool enabled = true) {
   std::stringstream stream;
-  Logger log(level, &stream);
+  Logger log(level, &stream, &stream);
   log.setEnabled(enabled);
 
   log.debug() << "debug" << std::endl;
@@ -49,9 +49,11 @@ TEST(LoggerTest, LogLevelTestDisabled) {
 }
 
 TEST(LoggerTest, defaultConstructorTest) {
-  std::stringstream stream;
+  std::stringstream stream_out;
+  std::stringstream stream_err;
   {
-    ScopedRedirect redirect(std::cout, stream);
+    ScopedRedirect redirect(std::cout, stream_out);
+    ScopedRedirect redirect2(std::cerr, stream_err);
     Logger log;
     log.fatal() << "test" << std::endl;
     log.error() << "test" << std::endl;
@@ -59,6 +61,8 @@ TEST(LoggerTest, defaultConstructorTest) {
   }
   int lineCount = 0;
   std::string str;
-  while (getline(stream, str)) ++lineCount;
+  while (getline(stream_out, str)) ++lineCount;
+  EXPECT_EQ(lineCount, 0);
+  while (getline(stream_err, str)) ++lineCount;
   EXPECT_EQ(lineCount, 2);
 }
