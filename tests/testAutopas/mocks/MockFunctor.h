@@ -26,11 +26,11 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD3_T(AoSFunctor, void(Particle &i, Particle &j, bool newton3));
 
   // virtual void SoAFunctor(SoA &soa, bool newton3 = true) {}
-  MOCK_METHOD1(SoAFunctor, void(autopas::SoA &soa));
+  //MOCK_METHOD1(SoAFunctor, void(autopas::SoA &soa));
   MOCK_METHOD2(SoAFunctor, void(autopas::SoA &soa, bool newton3));
 
   // virtual void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) {}
-  MOCK_METHOD2(SoAFunctor, void(autopas::SoA &soa, autopas::SoA &soa2));
+  //MOCK_METHOD2(SoAFunctor, void(autopas::SoA &soa, autopas::SoA &soa2));
   MOCK_METHOD3(SoAFunctor,
                void(autopas::SoA &soa, autopas::SoA &soa2, bool newton3));
 
