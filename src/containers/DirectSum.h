@@ -115,13 +115,14 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
-    if(useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
+    if (useNewton3) {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>
+          cellFunctor(f);
       cellFunctor.processCell(*getCell());
       cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    }
-    else{
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
+    } else {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>
+          cellFunctor(f);
       cellFunctor.processCell(*getCell());
       cellFunctor.processCellPair(*getCell(), *getHaloCell());
     }

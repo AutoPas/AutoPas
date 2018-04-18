@@ -115,18 +115,20 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
     if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>
+          cellFunctor(f);
       //		cellFunctor.processCellAoSN3(this->_data[13]);
-      SlicedTraversal<ParticleCell,
-                      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>>
+      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+                                                ParticleFunctor, true, true>>
           traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                     &cellFunctor);
       traversal.traverseCellPairs();
-    }else{
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
+    } else {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>
+          cellFunctor(f);
       //		cellFunctor.processCellAoSN3(this->_data[13]);
-      SlicedTraversal<ParticleCell,
-                      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>>
+      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+                                                ParticleFunctor, true, false>>
           traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                     &cellFunctor);
       traversal.traverseCellPairs();

@@ -170,19 +170,21 @@ class CellFunctor {
     _functor->SoALoader(cell1, &cell1._particleSoABuffer);
     _functor->SoALoader(cell2, &cell2._particleSoABuffer);
 
-    _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
+    _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer,
+                         true);
 
     _functor->SoAExtractor(&cell1, &cell1._particleSoABuffer);
     _functor->SoAExtractor(&cell2, &cell2._particleSoABuffer);
   }
 
-
   void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
     _functor->SoALoader(cell1, &cell1._particleSoABuffer);
     _functor->SoALoader(cell2, &cell2._particleSoABuffer);
 
-    _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
-    _functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+    _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer,
+                         false);
+    _functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer,
+                         false);
 
     _functor->SoAExtractor(&cell1, &cell1._particleSoABuffer);
     _functor->SoAExtractor(&cell2, &cell2._particleSoABuffer);
@@ -199,7 +201,8 @@ class CellFunctor {
   void processCellSoANoN3(ParticleCell &cell) {
     _functor->SoALoader(cell, &cell._particleSoABuffer);
 
-    _functor->SoAFunctor(cell._particleSoABuffer, false);  // the functor has to enable this...
+    _functor->SoAFunctor(cell._particleSoABuffer,
+                         false);  // the functor has to enable this...
 
     _functor->SoAExtractor(&cell, &cell._particleSoABuffer);
   }
