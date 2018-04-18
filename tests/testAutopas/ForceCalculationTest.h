@@ -4,6 +4,7 @@
 #include <AutoPas.h>
 #include <gtest/gtest.h>
 #include <vector>
+#include <algorithm>
 
 class ForceCalculationTest : public ::testing::Test {
  public:
