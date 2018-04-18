@@ -62,8 +62,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) override {
-    iteratePairwiseAoS2(f);
+  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f,
+                          bool useNewton3 = true) override {
+    iteratePairwiseAoS2(f, useNewton3);
   }
 
   /**
@@ -73,17 +74,29 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    * @param f
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS2(ParticleFunctor *f) {
-    CellFunctor<Particle, ParticleCell, ParticleFunctor, false> cellFunctor(f);
+  void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
+    if (useNewton3) {
+    CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
     //		cellFunctor.processCellAoSN3(this->_data[13]);
     SlicedTraversal<ParticleCell,
-                    CellFunctor<Particle, ParticleCell, ParticleFunctor, false>>
+                    CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>>
         traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                   &cellFunctor);
-    traversal.traverseCellPairs();
+
+      traversal.traverseCellPairs();
+    } else {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
+      //		cellFunctor.processCellAoSN3(this->_data[13]);
+      SlicedTraversal<ParticleCell,
+                      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
+          traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
+                    &cellFunctor);
+
+      traversal.traverseCellPairs();
+    }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) override {
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
     /// @todo iteratePairwiseSoA
     iteratePairwiseSoA2(f);
   }

@@ -68,11 +68,21 @@ class SingleCellIterator {
     _deleted = false;
   }
 
+  bool operator==(const SingleCellIterator &rhs) const {
+    return (not rhs.isValid() and not this->isValid()) or
+           (_cell == rhs._cell && _index == rhs._index);
+  }
+
+  bool operator!=(const SingleCellIterator &rhs) const {
+    return !(rhs == *this);
+  }
   /**
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() { return _cell != nullptr and _index < _cell->numParticles(); }
+  bool isValid() const {
+    return _cell != nullptr and _index < _cell->numParticles();
+  }
 
   /**
    * Get the index of the particle in the cell
