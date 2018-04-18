@@ -28,7 +28,7 @@ void AoSvsSoATest::generateParticles(
  * same set of particles.
  */
 TEST_F(AoSvsSoATest, testAoSvsSoA) {
-  auto particlesAoS = *(new std::vector<autopas::Particle>);
+  auto particlesAoS = std::vector<autopas::Particle>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
 
