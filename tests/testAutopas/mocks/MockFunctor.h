@@ -6,8 +6,17 @@
 
 #pragma once
 
+
+#include <gmock/gmock.h>
 #include "autopasIncludes.h"
-#include "gmock/gmock.h"
+
+
+// gmock does not write overrides, so we suppress that warning here!
+#if __GNUC__ >= 5
+// Disable GCC 5's -Wsuggest-override warnings in gtest
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wsuggest-override"
+#endif
 
 template <class Particle, class ParticleCell>
 class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
@@ -37,3 +46,7 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   // virtual bool allowsNonNewton3() { return false; }
   MOCK_METHOD0(allowsNonNewton3, bool());
 };
+
+#if __GNUC__ >= 5
+# pragma GCC diagnostic pop
+#endif
