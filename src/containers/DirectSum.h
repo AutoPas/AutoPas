@@ -103,7 +103,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f,
                           bool useNewton3 = true) override {
-    iteratePairwiseSoA2(f);
+    iteratePairwiseSoA2(f, useNewton3);
   }
 
   /**
@@ -113,10 +113,17 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param f
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA2(ParticleFunctor *f) {
-    CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);
-    cellFunctor.processCell(*getCell());
-    cellFunctor.processCellPair(*getCell(), *getHaloCell());
+  void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
+    if(useNewton3) {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
+      cellFunctor.processCell(*getCell());
+      cellFunctor.processCellPair(*getCell(), *getHaloCell());
+    }
+    else{
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
+      cellFunctor.processCell(*getCell());
+      cellFunctor.processCellPair(*getCell(), *getHaloCell());
+    }
   }
 
   void updateContainer() override {

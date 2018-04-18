@@ -21,6 +21,7 @@ namespace autopas {
  * @tparam ParticleCell
  * @tparam ParticleFunctor the functor which
  * @tparam useSoA
+ * @tparam useNewton3
  */
 template <class Particle, class ParticleCell, class ParticleFunctor,
           bool useSoA, bool useNewton3 = true>
@@ -39,7 +40,11 @@ class CellFunctor {
    */
   void processCell(ParticleCell &cell) {
     if (useSoA) {
-      processCellSoA(cell);
+      if (useNewton3) {
+        processCellSoAN3(cell);
+      } else {
+        processCellSoANoN3(cell);
+      }
     } else {
       if (useNewton3) {
         processCellAoSN3(cell);
@@ -57,7 +62,11 @@ class CellFunctor {
    */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2) {
     if (useSoA) {
-      processCellPairSoA(cell1, cell2);
+      if (useNewton3) {
+        processCellPairSoAN3(cell1, cell2);
+      } else {
+        processCellPairSoANoN3(cell1, cell2);
+      }
     } else {
       if (useNewton3) {
         processCellPairAoSN3(cell1, cell2);
@@ -157,20 +166,40 @@ class CellFunctor {
     }
   }
 
-  void processCellPairSoA(ParticleCell &cell1, ParticleCell &cell2) {
+  void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2) {
     _functor->SoALoader(cell1, &cell1._particleSoABuffer);
     _functor->SoALoader(cell2, &cell2._particleSoABuffer);
 
-    _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer);
+    _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
 
     _functor->SoAExtractor(&cell1, &cell1._particleSoABuffer);
     _functor->SoAExtractor(&cell2, &cell2._particleSoABuffer);
   }
 
-  void processCellSoA(ParticleCell &cell) {
+
+  void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
+    _functor->SoALoader(cell1, &cell1._particleSoABuffer);
+    _functor->SoALoader(cell2, &cell2._particleSoABuffer);
+
+    _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
+    _functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+
+    _functor->SoAExtractor(&cell1, &cell1._particleSoABuffer);
+    _functor->SoAExtractor(&cell2, &cell2._particleSoABuffer);
+  }
+
+  void processCellSoAN3(ParticleCell &cell) {
     _functor->SoALoader(cell, &cell._particleSoABuffer);
 
-    _functor->SoAFunctor(cell._particleSoABuffer);
+    _functor->SoAFunctor(cell._particleSoABuffer, true);
+
+    _functor->SoAExtractor(&cell, &cell._particleSoABuffer);
+  }
+
+  void processCellSoANoN3(ParticleCell &cell) {
+    _functor->SoALoader(cell, &cell._particleSoABuffer);
+
+    _functor->SoAFunctor(cell._particleSoABuffer, false);  // the functor has to enable this...
 
     _functor->SoAExtractor(&cell, &cell._particleSoABuffer);
   }
