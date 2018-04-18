@@ -100,7 +100,7 @@ class CellFunctor {
   }
 
   /**
-   * Applies the functor to all particle pairs exploiting newtons third law of
+   * Applies the functor to all particle pairs without exploiting newtons third law of
    * motion
    * @param cell
    */
@@ -149,7 +149,7 @@ class CellFunctor {
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
-   * exploiting newtons third law of motion
+   * without exploiting newtons third law of motion
    * @param cell1
    * @param cell2
    */
