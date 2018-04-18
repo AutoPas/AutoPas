@@ -1,8 +1,0 @@
-option(ENABLE_ADDRESS_SANITIZER "Adds clang's address sanitizer to the build options" OFF)
-if (ENABLE_ADDRESS_SANITIZER)
-    message(STATUS "ADDRESS SANITIZER ENABLED!!!")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
-    set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
-else()
-    message(STATUS "ADDRESS SANITIZER DISABLED")
-endif()

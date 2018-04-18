@@ -23,7 +23,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
 include(other-compileroptions)
 include(vectorization)
-include(address-sanitizer)
+include(clang-sanitizers)
 include(version.cmake)
 include(clang-tidy)
 include(clang-format)
