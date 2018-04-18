@@ -80,15 +80,19 @@ class ParticleContainer {
    * function to iterate over all pairs of particles in an array of structures
    * setting. This function only handles short-range interactions.
    * @param f functor that describes the pair-potential
+   * @param useNewton3 defines whether newton3 should be used
    */
-  virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) = 0;
+  virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f,
+                                  bool useNewton3 = true) = 0;
 
   /**
    * function to iterate over all pairs of particles in a structure of array
    * setting. This function is often better vectorizable.
-   * @param f
+   * @param f functor that describes the pair-potential
+   * @param useNewton3 defines whether newton3 should be used
    */
-  virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) = 0;
+  virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f,
+                                  bool useNewton3 = true) = 0;
 
   /**
    * iterate over all particles using

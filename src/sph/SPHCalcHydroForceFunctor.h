@@ -35,4 +35,3 @@ class SPHCalcHydroForceFunctor
 };
 }  // namespace sph
 }  // namespace autopas
-

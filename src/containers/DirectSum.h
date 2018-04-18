@@ -58,11 +58,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { getHaloCell()->clear(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f) override {
+  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f,
+                          bool useNewton3 = true) override {
     //		CellFunctor<Particle, ParticleCell,LJFunctor<Particle>>
     // cellFunctor(f);
     //		cellFunctor.processCellAoSN3(*getCell());
-    iteratePairwiseAoS2(f);
+    iteratePairwiseAoS2(f, useNewton3);
 #if 0
 		for (auto outer = getIt(); outer.isValid(); ++outer) {
 			Particle & p1 = *outer;
@@ -83,16 +84,26 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * known and thus the compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
+   * @param useNewton3 defines whether newton3 should be used
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS2(ParticleFunctor *f) {
-    CellFunctor<Particle, ParticleCell, ParticleFunctor, false> cellFunctor(f);
-    cellFunctor.processCell(*getCell());
-    cellFunctor.processCellPair(*getCell(), *getHaloCell());
+  void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
+    if (useNewton3) {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>
+          cellFunctor(f);
+      cellFunctor.processCell(*getCell());
+      cellFunctor.processCellPair(*getCell(), *getHaloCell());
+    } else {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>
+          cellFunctor(f);
+      cellFunctor.processCell(*getCell());
+      cellFunctor.processCellPair(*getCell(), *getHaloCell());
+    }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f) override {
-    iteratePairwiseSoA2(f);
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f,
+                          bool useNewton3 = true) override {
+    iteratePairwiseSoA2(f, useNewton3);
   }
 
   /**
@@ -100,12 +111,21 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * known and thus the compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
+   * @param useNewton3
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA2(ParticleFunctor *f) {
-    CellFunctor<Particle, ParticleCell, ParticleFunctor, true> cellFunctor(f);
-    cellFunctor.processCell(*getCell());
-    cellFunctor.processCellPair(*getCell(), *getHaloCell());
+  void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
+    if (useNewton3) {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>
+          cellFunctor(f);
+      cellFunctor.processCell(*getCell());
+      cellFunctor.processCellPair(*getCell(), *getHaloCell());
+    } else {
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>
+          cellFunctor(f);
+      cellFunctor.processCell(*getCell());
+      cellFunctor.processCellPair(*getCell(), *getHaloCell());
+    }
   }
 
   void updateContainer() override {

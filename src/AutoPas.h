@@ -7,9 +7,15 @@
 
 namespace autopas {
 /**
- * Possible Choices for the particle container type.
+ * Possible choices for the particle container type.
  */
 enum ContainerOption { directSum, linkedCells };
+
+/**
+ * Provides a way to iterate over the possible choices of ContainerOption.
+ */
+static std::array<ContainerOption, 2> possibleContainerOptions = {
+    ContainerOption::directSum, ContainerOption::linkedCells};
 
 /**
  * Possible Choices for the particle data layout.
@@ -97,13 +103,23 @@ class AutoPas {
    */
   void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f,
                        autopas::DataLayoutOption dataLayoutOption) {
+    bool newton3Allowed = f->allowsNewton3();
+    bool nonNewton3Allowed = f->allowsNonNewton3();
+    bool useNewton3;
+    if (newton3Allowed and nonNewton3Allowed) {
+      /// @todo auto-tune (far off future
+    } else if (not newton3Allowed and not nonNewton3Allowed) {
+      /// @todo throw exception
+    } else {
+      useNewton3 = newton3Allowed;
+    }
     switch (dataLayoutOption) {
       case autopas::aos: {
-        container->iteratePairwiseAoS(f);
+        container->iteratePairwiseAoS(f, useNewton3);
         break;
       }
       case autopas::soa: {
-        container->iteratePairwiseSoA(f);
+        container->iteratePairwiseSoA(f, useNewton3);
       }
     }
   }

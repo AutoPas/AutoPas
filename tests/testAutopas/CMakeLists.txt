@@ -3,7 +3,6 @@ file(GLOB_RECURSE MY_SRC
         "*.h"
         )
 
-
 ADD_EXECUTABLE(runTests
         ${MY_SRC}
         )
@@ -11,6 +10,7 @@ ADD_EXECUTABLE(runTests
 TARGET_LINK_LIBRARIES(runTests
         autopas
         libgtest
+        libgmock
         )
 
 include(FindGTest)
