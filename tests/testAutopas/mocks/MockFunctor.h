@@ -36,7 +36,7 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD2_T(SoALoader, void(ParticleCell &cell, autopas::SoA *soa));
 
   // virtual void SoAExtractor(ParticleCell *cell, autopas::SoA *soa) {}
-  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell &cell, autopas::SoA *soa));
+  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell *cell, autopas::SoA *soa));
 
   // virtual bool allowsNewton3() { return true; }
   MOCK_METHOD0(allowsNewton3, bool());
