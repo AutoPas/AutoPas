@@ -7,9 +7,14 @@
 
 namespace autopas {
 /**
- * Possible Choices for the particle container type.
+ * Possible choices for the particle container type.
  */
 enum ContainerOption { directSum, linkedCells };
+
+/**
+ * Provides a way to iterate over the possible choices of ContainerOption.
+ */
+std::array<ContainerOption, 2> possibleContainerOptions = {ContainerOption::directSum, ContainerOption::linkedCells};
 
 /**
  * Possible Choices for the particle data layout.
