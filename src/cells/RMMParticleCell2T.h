@@ -150,10 +150,23 @@ class RMMParticleCellIterator {
    */
   Particle *operator->() { return &(this->operator*()); }
 
+  /**
+   * equality operator.
+   * if both iterators are invalid or if they point to the same particle, this returns true
+   * @param rhs
+   * @return
+   */
   bool operator==(const RMMParticleCellIterator &rhs) const {
     return (not this->isValid() and not rhs.isValid()) or (_cell == rhs._cell &&
         _index == rhs._index );
   }
+
+  /**
+   * inequality operator
+   * descrition see operator==
+   * @param rhs
+   * @return
+   */
   bool operator!=(const RMMParticleCellIterator &rhs) const {
     return !(rhs == *this);
   }

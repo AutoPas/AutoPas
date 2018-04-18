@@ -83,6 +83,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * known and thus the compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
+   * @param useNewton3 defines whether newton3 should be used
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {

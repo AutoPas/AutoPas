@@ -68,11 +68,24 @@ class SingleCellIterator {
     _deleted = false;
   }
 
+
+  /**
+   * equality operator.
+   * if both iterators are invalid or if they point to the same particle, this returns true
+   * @param rhs
+   * @return
+   */
   bool operator==(const SingleCellIterator &rhs) const {
     return (not rhs.isValid() and not this->isValid()) or
            (_cell == rhs._cell && _index == rhs._index);
   }
 
+  /**
+   * inequality operator
+   * descrition see operator==
+   * @param rhs
+   * @return
+   */
   bool operator!=(const SingleCellIterator &rhs) const {
     return !(rhs == *this);
   }
