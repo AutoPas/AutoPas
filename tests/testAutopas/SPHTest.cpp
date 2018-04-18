@@ -145,20 +145,20 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   autopas::sph::SPHParticle sphParticle3 = sphParticle1;
   autopas::sph::SPHParticle sphParticle4 = sphParticle2;
 
-
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
   // using newton 3
   hydroForceFunctor.AoSFunctor(sphParticle1, sphParticle2);
   // without newton 3
 
-
   // particle 3:
   hydroForceFunctor.AoSFunctor(sphParticle3, sphParticle4, false);
 
-
-  EXPECT_NEAR(sphParticle3.getAcceleration().at(0), sphParticle1.getAcceleration().at(0), 1e-10);
-  EXPECT_NEAR(sphParticle3.getAcceleration().at(1), sphParticle1.getAcceleration().at(1), 1e-10);
-  EXPECT_NEAR(sphParticle3.getAcceleration().at(2), sphParticle1.getAcceleration().at(2), 1e-10);
+  EXPECT_NEAR(sphParticle3.getAcceleration().at(0),
+              sphParticle1.getAcceleration().at(0), 1e-10);
+  EXPECT_NEAR(sphParticle3.getAcceleration().at(1),
+              sphParticle1.getAcceleration().at(1), 1e-10);
+  EXPECT_NEAR(sphParticle3.getAcceleration().at(2),
+              sphParticle1.getAcceleration().at(2), 1e-10);
   EXPECT_NEAR(sphParticle3.getEngDot(), sphParticle1.getEngDot(), 1e-10);
   sphParticle1.calcDt();
   sphParticle3.calcDt();
@@ -173,10 +173,12 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   // particle 4:
   hydroForceFunctor.AoSFunctor(sphParticle4, sphParticle3, false);
 
-
-  EXPECT_NEAR(sphParticle4.getAcceleration().at(0), sphParticle2.getAcceleration().at(0), 1e-10);
-  EXPECT_NEAR(sphParticle4.getAcceleration().at(1), sphParticle2.getAcceleration().at(1), 1e-10);
-  EXPECT_NEAR(sphParticle4.getAcceleration().at(2), sphParticle2.getAcceleration().at(2), 1e-10);
+  EXPECT_NEAR(sphParticle4.getAcceleration().at(0),
+              sphParticle2.getAcceleration().at(0), 1e-10);
+  EXPECT_NEAR(sphParticle4.getAcceleration().at(1),
+              sphParticle2.getAcceleration().at(1), 1e-10);
+  EXPECT_NEAR(sphParticle4.getAcceleration().at(2),
+              sphParticle2.getAcceleration().at(2), 1e-10);
   EXPECT_NEAR(sphParticle4.getEngDot(), sphParticle2.getEngDot(), 1e-10);
 
   sphParticle2.calcDt();

@@ -68,10 +68,10 @@ class SingleCellIterator {
     _deleted = false;
   }
 
-
   /**
    * equality operator.
-   * if both iterators are invalid or if they point to the same particle, this returns true
+   * if both iterators are invalid or if they point to the same particle, this
+   * returns true
    * @param rhs
    * @return
    */

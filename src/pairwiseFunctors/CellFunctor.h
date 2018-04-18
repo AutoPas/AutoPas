@@ -64,7 +64,6 @@ class CellFunctor {
       } else {
         processCellPairAoSNoN3(cell1, cell2);
       }
-
     }
   }
 

@@ -106,11 +106,11 @@ class AutoPas {
     bool newton3Allowed = f->allowsNewton3();
     bool nonNewton3Allowed = f->allowsNonNewton3();
     bool useNewton3;
-    if(newton3Allowed and nonNewton3Allowed){
+    if (newton3Allowed and nonNewton3Allowed) {
       /// @todo auto-tune (far off future
-    } else if (not newton3Allowed and not nonNewton3Allowed){
+    } else if (not newton3Allowed and not nonNewton3Allowed) {
       /// @todo throw exception
-    } else{
+    } else {
       useNewton3 = newton3Allowed;
     }
     switch (dataLayoutOption) {

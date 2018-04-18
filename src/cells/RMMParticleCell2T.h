@@ -152,13 +152,14 @@ class RMMParticleCellIterator {
 
   /**
    * equality operator.
-   * if both iterators are invalid or if they point to the same particle, this returns true
+   * if both iterators are invalid or if they point to the same particle, this
+   * returns true
    * @param rhs
    * @return
    */
   bool operator==(const RMMParticleCellIterator &rhs) const {
-    return (not this->isValid() and not rhs.isValid()) or (_cell == rhs._cell &&
-        _index == rhs._index );
+    return (not this->isValid() and not rhs.isValid()) or
+           (_cell == rhs._cell && _index == rhs._index);
   }
 
   /**
@@ -188,7 +189,9 @@ class RMMParticleCellIterator {
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() const { return _cell != nullptr and _index < _cell->numParticles(); }
+  bool isValid() const {
+    return _cell != nullptr and _index < _cell->numParticles();
+  }
 
   /**
    * Get the index of the particle in the cell
