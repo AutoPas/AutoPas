@@ -71,7 +71,49 @@ TEST_F(Newton3OnOffTest, testAoS) {
 TEST_F(Newton3OnOffTest, testSoA) {
   for (auto containerOption : autopas::possibleContainerOptions) {
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), containerOption);
-    /// @todo write test for SoA
-    // autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
+    fillContainerWithMolecules(100, autoPas);
+
+    // loader and extractor will be called, we don't care how often.
+    EXPECT_CALL(mockFunctor, SoALoader(_, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
+
+    // with newton 3:
+    int callsNewton3SC = 0;  // same cell
+    int callsNewton3Pair = 0;  // pair of cells
+    EXPECT_CALL(mockFunctor, allowsNewton3()).WillOnce(Return(true));
+    EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillOnce(Return(false));
+
+    // single cell
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, true))
+        .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3SC++; }));
+
+    // pair of cells
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true))
+        .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3Pair++; }));
+
+    autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
+
+    // without newton 3:
+    int callsNonNewton3SC = 0;
+    int callsNonNewton3Pair = 0;
+    EXPECT_CALL(mockFunctor, allowsNewton3()).WillOnce(Return(false));
+    EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillOnce(Return(true));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true))
+        .Times(0);  // disables newton3 variant
+
+    // single cell
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, false))
+        .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3SC++; }));
+
+    // pair of cells
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false))
+        .WillRepeatedly(
+            testing::InvokeWithoutArgs([&]() { callsNonNewton3Pair++; }));
+    autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
+
+    EXPECT_EQ(callsNewton3SC,
+              callsNonNewton3SC);  // should be called exactly two times
+    EXPECT_EQ(callsNewton3Pair * 2,
+              callsNonNewton3Pair);  // should be called exactly two times
   }
 }
