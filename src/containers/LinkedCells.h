@@ -110,6 +110,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    * known and thus the compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
+   * @param useNewton3
    */
   template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
