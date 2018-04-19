@@ -68,8 +68,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   /**
-   * same as iteratePairwiseAoS, but faster, as the class of the functor is
-   * known and thus the compiler can do some better optimizations.
+   * same as iteratePairwiseAoS, but potentially faster (if called with the
+   * derived functor), as the class of the functor is known and thus the
+   * compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
    * @param useNewton3 defines whether newton3 should be used
@@ -164,7 +165,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     //    }
   }
 
- private:
+ protected:
   CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };
