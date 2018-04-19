@@ -17,32 +17,35 @@ void ForceCalculationTest::fillWithParticles(
   }
 }
 
-TEST_F(ForceCalculationTest, testLJwithU0AoS) {
+void ForceCalculationTest::testLJ(
+    double particleSpacing, double cutoff,
+    autopas::DataLayoutOption dataLayoutOption,
+    std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
   AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
       autoPas;
 
-  double cutoff = 1.1;
   double epsilon = 1.;
   double sigma = 1.;
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {3., 3., 3.};
 
-  double expectedForces[4][3] = {
-      {-24, -24, 0}, {24, -24, 0}, {-24, 24, 0}, {24, 24, 0}};
-  double tolerance = 1e-13;
-
   autoPas.init(boxMin, boxMax, cutoff, autopas::linkedCells);
 
-  fillWithParticles(autoPas, {2, 2, 1}, 1);
+  fillWithParticles(autoPas, {2, 2, 1}, particleSpacing);
 
   autopas::MoleculeLJ::setEpsilon(epsilon);
   autopas::MoleculeLJ::setSigma(sigma);
 
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(
-      cutoff, epsilon, sigma, 0.0);
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor;
+  autopas::LJFunctor<
+      autopas::MoleculeLJ,
+      autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(cutoff,
+                                                                  epsilon,
+                                                                  sigma, 0.0);
+  autopas::LJFunctor<autopas::MoleculeLJ,
+                     autopas::FullParticleCell<autopas::MoleculeLJ>>
+      functor;
 
-  autoPas.iteratePairwise(&functor, autopas::aos);
+  autoPas.iteratePairwise(&functor, dataLayoutOption);
 
   for (auto p = autoPas.begin(); p.isValid(); ++p) {
     auto id = p->getID();
@@ -50,109 +53,48 @@ TEST_F(ForceCalculationTest, testLJwithU0AoS) {
     ASSERT_NEAR(expectedForces[id][1], p->getF()[1], tolerance);
     ASSERT_NEAR(expectedForces[id][2], p->getF()[2], tolerance);
   }
+}
+
+TEST_F(ForceCalculationTest, testLJwithU0AoS) {
+  double spacing = 1;
+  double cutoff = 1.1;
+
+  std::array<std::array<double, 3>, 4> expectedForces = {
+      {{-24, -24, 0}, {24, -24, 0}, {-24, 24, 0}, {24, 24, 0}}};
+  double tolerance = 1e-13;
+
+  testLJ(spacing, cutoff, autopas::aos, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithU0SoA) {
-  AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
-      autoPas;
-
+  double spacing = 1;
   double cutoff = 1.1;
-  double epsilon = 1.;
-  double sigma = 1.;
-  std::array<double, 3> boxMin = {0., 0., 0.};
-  std::array<double, 3> boxMax = {3., 3., 3.};
 
-  double expectedForces[4][3] = {
-      {-24, -24, 0}, {24, -24, 0}, {-24, 24, 0}, {24, 24, 0}};
+  std::array<std::array<double, 3>, 4> expectedForces = {
+      {{-24, -24, 0}, {24, -24, 0}, {-24, 24, 0}, {24, 24, 0}}};
   double tolerance = 1e-13;
 
-  autoPas.init(boxMin, boxMax, cutoff, autopas::linkedCells);
-
-  fillWithParticles(autoPas, {2, 2, 1}, 1);
-
-  autopas::MoleculeLJ::setEpsilon(epsilon);
-  autopas::MoleculeLJ::setSigma(sigma);
-
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(
-      cutoff, epsilon, sigma, 0.0);
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor;
-
-  autoPas.iteratePairwise(&functor, autopas::soa);
-
-  for (auto p = autoPas.begin(); p.isValid(); ++p) {
-    auto id = p->getID();
-    ASSERT_NEAR(expectedForces[id][0], p->getF()[0], tolerance);
-    ASSERT_NEAR(expectedForces[id][1], p->getF()[1], tolerance);
-    ASSERT_NEAR(expectedForces[id][2], p->getF()[2], tolerance);
-  }
+  testLJ(spacing, cutoff, autopas::soa, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithF0AoS) {
-  AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
-      autoPas;
-
+  double spacing = std::pow(2, 1.0 / 6);
   double cutoff = 1.3;
-  double epsilon = 1.;
-  double sigma = 1.;
-  std::array<double, 3> boxMin = {0., 0., 0.};
-  std::array<double, 3> boxMax = {3., 3., 3.};
 
-  double expectedForces[4][3] = {
-      {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+  std::array<std::array<double, 3>, 4> expectedForces = {
+      {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
   double tolerance = 1e-13;
 
-  autoPas.init(boxMin, boxMax, cutoff, autopas::linkedCells);
-
-  fillWithParticles(autoPas, {2, 2, 1}, std::pow(2, 1.0/6));
-
-  autopas::MoleculeLJ::setEpsilon(epsilon);
-  autopas::MoleculeLJ::setSigma(sigma);
-
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(
-      cutoff, epsilon, sigma, 0.0);
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor;
-
-  autoPas.iteratePairwise(&functor, autopas::aos);
-
-  for (auto p = autoPas.begin(); p.isValid(); ++p) {
-    auto id = p->getID();
-    ASSERT_NEAR(expectedForces[id][0], p->getF()[0], tolerance);
-    ASSERT_NEAR(expectedForces[id][1], p->getF()[1], tolerance);
-    ASSERT_NEAR(expectedForces[id][2], p->getF()[2], tolerance);
-  }
+  testLJ(spacing, cutoff, autopas::aos, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithF0SoA) {
-  AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
-      autoPas;
-
+  double spacing = std::pow(2, 1.0 / 6);
   double cutoff = 1.3;
-  double epsilon = 1.;
-  double sigma = 1.;
-  std::array<double, 3> boxMin = {0., 0., 0.};
-  std::array<double, 3> boxMax = {3., 3., 3.};
 
-  double expectedForces[4][3] = {
-      {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+  std::array<std::array<double, 3>, 4> expectedForces = {
+      {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
   double tolerance = 1e-13;
 
-  autoPas.init(boxMin, boxMax, cutoff, autopas::linkedCells);
-
-  fillWithParticles(autoPas, {2, 2, 1}, std::pow(2, 1.0/6));
-
-  autopas::MoleculeLJ::setEpsilon(epsilon);
-  autopas::MoleculeLJ::setSigma(sigma);
-
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(
-      cutoff, epsilon, sigma, 0.0);
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor;
-
-  autoPas.iteratePairwise(&functor, autopas::soa);
-
-  for (auto p = autoPas.begin(); p.isValid(); ++p) {
-    auto id = p->getID();
-    ASSERT_NEAR(expectedForces[id][0], p->getF()[0], tolerance);
-    ASSERT_NEAR(expectedForces[id][1], p->getF()[1], tolerance);
-    ASSERT_NEAR(expectedForces[id][2], p->getF()[2], tolerance);
-  }
+  testLJ(spacing, cutoff, autopas::soa, expectedForces, tolerance);
 }
