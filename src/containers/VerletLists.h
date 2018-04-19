@@ -20,7 +20,9 @@ template <class Particle, class ParticleCell>
 class VerletLists : public LinkedCells<Particle, ParticleCell> {
   typedef std::vector<std::vector<size_t>> verletlist_storage_type;
   typedef std::map<decltype(Particle().getID()), size_t>
-      particleid_to_verletlist_index_map_type;
+      particleid_to_verletlistindex_container_type;
+  typedef std::vector<decltype(Particle().getID())>
+      verletlistindex_to_particleid_container_type;
 
  public:
   /**
@@ -50,12 +52,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
-    if (useNewton3) {
-      this->updateVerletListsN3();
-
-    } else {
-      /// @todo verlet list non-newton3
-    }
+    this->updateVerletLists(useNewton3);
+    this->iterateVerletListsAoS(f, useNewton3);
   }
 
   /**
@@ -70,7 +68,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    public:
     VerletListGeneratorFunctor(
         verletlist_storage_type& verletLists,
-        particleid_to_verletlist_index_map_type& particleIDtoVerletListIndexMap,
+        particleid_to_verletlistindex_container_type& particleIDtoVerletListIndexMap,
         double cutoffskinsquared)
         : _verletLists(verletLists),
           _particleIDtoVerletListIndexMap(particleIDtoVerletListIndexMap),
@@ -87,27 +85,35 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
    private:
     verletlist_storage_type& _verletLists;
-    particleid_to_verletlist_index_map_type& _particleIDtoVerletListIndexMap;
+    particleid_to_verletlistindex_container_type& _particleIDtoVerletListIndexMap;
     double _cutoffskinsquared;
   };
 
-  void updateVerletListsN3() {
+  void updateVerletLists(bool useNewton3) {
     size_t particleNumber = updateIdMap();
     _verletLists.clear();
     _verletLists.resize(particleNumber);
-    VerletListGeneratorFunctor f(_verletLists, _particleIDtoVerletListIndexMap,
+    VerletListGeneratorFunctor f(_verletLists, _particleIDtoVerletListIndexContainer,
                                  (this->getCutoff() * this->getCutoff()));
 
-    LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, true);
+    LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
+  }
+
+  template <class ParticleFunctor>
+  void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
+    for(auto& list : _verletLists){
+
+    }
   }
 
   size_t updateIdMap() {
-    _particleIDtoVerletListIndexMap.clear();  // this is not necessary, but it
+    _particleIDtoVerletListIndexContainer.clear();  // this is not necessary, but it
                                               // does not hurt too much,
                                               // probably...
     size_t i = 0;
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
-      _particleIDtoVerletListIndexMap[iter->getID()] = i;
+      _particleIDtoVerletListIndexContainer[iter->getID()] = i;
+      _verletListIndextoParticleIDContainer.push_back(iter->getID());
     }
 
     return i;
@@ -118,7 +124,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   /// This is needed, as the particles don't have a local id.
   /// @todo remove this and add local id to the particles (this saves a
   /// relatively costly lookup)
-  particleid_to_verletlist_index_map_type _particleIDtoVerletListIndexMap;
+  particleid_to_verletlistindex_container_type _particleIDtoVerletListIndexContainer;
+
+  verletlistindex_to_particleid_container_type _verletListIndextoParticleIDContainer;
 
   /// verlet lists.
   verletlist_storage_type _verletLists;
