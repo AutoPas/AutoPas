@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
   cout << "sigma  : " << PrintableMolecule::getSigma() << endl;
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(
-      10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
+      cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
 
   startApply = std::chrono::high_resolution_clock::now();
@@ -110,6 +110,8 @@ int main(int argc, char **argv) {
   }
   stopApply = std::chrono::high_resolution_clock::now();
   stopTotal = std::chrono::high_resolution_clock::now();
+
+  //  printMolecules(autopas);
 
   // Statistics
   auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(

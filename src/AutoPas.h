@@ -126,7 +126,7 @@ class AutoPas {
 
   /**
    * iterate over all particles by using
-   * for(auto iter = container.begin(); iter.isValid(); ++iter)
+   * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @return iterator to the first particle
    */
   autopas::ParticleIterator<Particle, ParticleCell> begin() {
