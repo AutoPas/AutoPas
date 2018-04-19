@@ -52,27 +52,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
     if (useNewton3) {
       this->updateVerletListsN3();
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>
-          cellFunctor(f);
-      //		cellFunctor.processCellAoSN3(this->_data[13]);
-      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
-                                                ParticleFunctor, false, true>>
-          traversal(this->_data,
-                    this->_cellBlock.getCellsPerDimensionWithHalo(),
-                    &cellFunctor);
 
-      traversal.traverseCellPairs();
     } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>
-          cellFunctor(f);
-      //		cellFunctor.processCellAoSN3(this->_data[13]);
-      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
-                                                ParticleFunctor, false, false>>
-          traversal(this->_data,
-                    this->_cellBlock.getCellsPerDimensionWithHalo(),
-                    &cellFunctor);
-
-      traversal.traverseCellPairs();
+      /// @todo verlet list non-newton3
     }
   }
 
@@ -80,9 +62,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * get the actual neighbour list
    * @return the neighbour list
    */
-  verletlist_storage_type& getVerletLists(){
-    return _verletLists;
-  }
+  verletlist_storage_type& getVerletLists() { return _verletLists; }
 
  private:
   class VerletListGeneratorFunctor
@@ -118,7 +98,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     VerletListGeneratorFunctor f(_verletLists, _particleIDtoVerletListIndexMap,
                                  (this->getCutoff() * this->getCutoff()));
 
-    LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f,true);
+    LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, true);
   }
 
   size_t updateIdMap() {
@@ -144,7 +124,6 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   verletlist_storage_type _verletLists;
 
   double _skin;
-
 };
 
 } /* namespace autopas */
