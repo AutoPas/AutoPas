@@ -166,6 +166,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
  protected:
+  /**
+   * object to manage the block of cells
+   */
   CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };

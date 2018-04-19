@@ -76,6 +76,10 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     }
   }
 
+  /**
+   * get the actual neighbour list
+   * @return the neighbour list
+   */
   verletlist_storage_type& getVerletLists(){
     return _verletLists;
   }
