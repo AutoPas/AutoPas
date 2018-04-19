@@ -96,7 +96,7 @@ class Logger {
         _msg_log_level(logLevel::Error),
         _enabled(true),
         _filename(""),
-        _log_stream(0),
+        _log_stream(nullptr),
         logLevelNames(),
         _starttime(),
         _identifier(identifier) {
@@ -205,14 +205,14 @@ class Logger {
                       << std::setw(2) << lt->tm_hour << std::setw(2)
                       << lt->tm_min << std::setw(2) << lt->tm_sec;
       *_current_stream << logLevelNames[level] << ":\t" << timestampstream.str()
-                  << " ";
+                       << " ";
       auto t_hi_res = std::chrono::high_resolution_clock::now();
       *_current_stream << std::fixed << std::setw(8)
-                  << std::chrono::duration_cast<std::chrono::microseconds>(
-                         t_hi_res - _starttime)
-                             .count() /
-                         1.E6
-                  << "\t";
+                       << std::chrono::duration_cast<std::chrono::microseconds>(
+                              t_hi_res - _starttime)
+                                  .count() /
+                              1.E6
+                       << "\t";
 
       *_current_stream << "[" << _identifier << "]\t";
     }

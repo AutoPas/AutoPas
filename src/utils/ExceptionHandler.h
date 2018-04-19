@@ -55,12 +55,12 @@ class ExceptionHandler {
       case throwException:
         throw e;
       case printAbort:
-        autopas::logger->fatal() << e.what() << std::endl;
-        autopas::logger->fatal() << "aborting" << std::endl;
+        autopas::logger->fatal() << e.what() << std::endl
+                                 << "aborting" << std::endl;
         abort();
       case printCustomAbortFunction:
-        autopas::logger->fatal() << e.what() << std::endl;
-        autopas::logger->fatal() << "using custom abort function" << std::endl;
+        autopas::logger->fatal() << e.what() << std::endl
+                                 << "using custom abort function" << std::endl;
         _customAbortFunction();
         break;
       default:
@@ -81,7 +81,7 @@ class ExceptionHandler {
    * Set a custom abort function
    * @param function the custom abort function
    */
-  void setCustomAbortFunction(std::function<void()> function){
+  void setCustomAbortFunction(std::function<void()> function) {
     _customAbortFunction = function;
   }
 
