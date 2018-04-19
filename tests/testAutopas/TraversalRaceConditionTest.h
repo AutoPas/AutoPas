@@ -24,7 +24,7 @@ class TraversalRaceConditionTest : public ::testing::Test {
   class SimpleFunctor
       : public autopas::Functor<PrintableMolecule,
                                 autopas::FullParticleCell<PrintableMolecule>> {
-    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j) override {
+    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j, bool newton3 = true) override {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
 
