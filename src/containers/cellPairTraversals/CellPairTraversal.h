@@ -32,7 +32,7 @@ class CellPairTraversals {
   CellPairTraversals(std::vector<ParticleCell> &cells,
                      const std::array<unsigned long, 3> &dims,
                      CellFunctor *cellFunctor)
-      : _cells(&cells), _dims(dims), _cellFunctor(cellFunctor) {}
+      : _cells(&cells), _cellsPerDimension(dims), _cellFunctor(cellFunctor) {}
 
   /**
    * destructor of CellPairTraversals
@@ -47,7 +47,7 @@ class CellPairTraversals {
   virtual void rebuild(std::vector<ParticleCell> &cells,
                        const std::array<unsigned long, 3> &dims) {
     _cells = &cells;
-    _dims = dims;
+    _cellsPerDimension = dims;
   };
 
   /**
@@ -67,7 +67,7 @@ class CellPairTraversals {
    * the dimensions of the cellblock.
    * the dimensions are the number of cells in x, y and z direction.
    */
-  std::array<unsigned long, 3> _dims;
+  std::array<unsigned long, 3> _cellsPerDimension;
 
   /**
    * The cell functor which defines the interaction of the particles between two
