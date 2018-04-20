@@ -13,12 +13,17 @@ namespace autopas {
 /**
  * Verlet Lists container.
  * This class builds neighbour lists for the particle interactions.
+ * This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @tparam ParticleCell
  */
 template <class Particle, class ParticleCell>
 class VerletLists : public LinkedCells<Particle, ParticleCell> {
-  typedef std::vector<std::vector<size_t>> verletlist_storage_type;
+  // AOS
+  typedef std::map<Particle*, std::vector<Particle*>>
+      AoS_verletlist_storage_type;
+
+  // SOA
   typedef std::map<decltype(Particle().getID()), size_t>
       particleid_to_verletlistindex_container_type;
   typedef std::vector<decltype(Particle().getID())>
@@ -52,7 +57,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
-    this->updateVerletLists(useNewton3);
+    this->updateVerletListsAoS(useNewton3);
     this->iterateVerletListsAoS(f, useNewton3);
   }
 
@@ -60,40 +65,45 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * get the actual neighbour list
    * @return the neighbour list
    */
-  verletlist_storage_type& getVerletLists() { return _verletLists; }
+  AoS_verletlist_storage_type& getVerletListsAoS() { return _verletListsAoS; }
 
  private:
   class VerletListGeneratorFunctor
       : public autopas::Functor<Particle, ParticleCell> {
    public:
-    VerletListGeneratorFunctor(
-        verletlist_storage_type& verletLists,
-        particleid_to_verletlistindex_container_type& particleIDtoVerletListIndexMap,
-        double cutoffskinsquared)
-        : _verletLists(verletLists),
+    VerletListGeneratorFunctor(AoS_verletlist_storage_type& verletListsAoS,
+                               particleid_to_verletlistindex_container_type&
+                                   particleIDtoVerletListIndexMap,
+                               double cutoffskinsquared)
+        : _verletListsAoS(verletListsAoS),
           _particleIDtoVerletListIndexMap(particleIDtoVerletListIndexMap),
           _cutoffskinsquared(cutoffskinsquared) {}
 
     void AoSFunctor(Particle& i, Particle& j, bool newton3 = true) override {
       auto dist = arrayMath::sub(i.getR(), j.getR());
       double distsquare = arrayMath::dot(dist, dist);
-
       if (distsquare < _cutoffskinsquared)
-        _verletLists[_particleIDtoVerletListIndexMap[i.getID()]].push_back(
-            _particleIDtoVerletListIndexMap[j.getID()]);
+        // this is thread safe, only if particle i is accessed by only one
+        // thread at a time. which is ensured, as particle i resides in a
+        // specific cell and each cell is only accessed by one thread at a time
+        // (ensured by traversals)
+        // also the list is not allowed to be resized!
+
+        _verletListsAoS[&i].push_back(&j);
     }
 
    private:
-    verletlist_storage_type& _verletLists;
-    particleid_to_verletlistindex_container_type& _particleIDtoVerletListIndexMap;
+    AoS_verletlist_storage_type& _verletListsAoS;
+    particleid_to_verletlistindex_container_type&
+        _particleIDtoVerletListIndexMap;
     double _cutoffskinsquared;
   };
 
-  void updateVerletLists(bool useNewton3) {
-    size_t particleNumber = updateIdMap();
-    _verletLists.clear();
-    _verletLists.resize(particleNumber);
-    VerletListGeneratorFunctor f(_verletLists, _particleIDtoVerletListIndexContainer,
+  void updateVerletListsAoS(bool useNewton3) {
+    _verletListsAoS.clear();
+    size_t particleNumber = updateIdMapAoS();
+    VerletListGeneratorFunctor f(_verletListsAoS,
+                                 _particleIDtoVerletListIndexContainer,
                                  (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
@@ -101,19 +111,26 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
   template <class ParticleFunctor>
   void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
-    for(auto& list : _verletLists){
+    /// @todo optimize iterateVerletListsAoS, e.g. by using traversals with
+    /// different
 
+    // don't parallelize this with a simple openmp, unless useNewton3=false
+    for (auto& list : _verletListsAoS) {
+      Particle& i = *list.first;
+      for (auto j_ptr : list.second) {
+        Particle& j = *j_ptr;
+        f->AoSFunctor(i, j, useNewton3);
+      }
     }
   }
 
-  size_t updateIdMap() {
-    _particleIDtoVerletListIndexContainer.clear();  // this is not necessary, but it
-                                              // does not hurt too much,
-                                              // probably...
+  size_t updateIdMapAoS() {
     size_t i = 0;
+
+    // DON'T simply parallelize this loop!!! this needs modifications if you
+    // want to parallelize it!
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
-      _particleIDtoVerletListIndexContainer[iter->getID()] = i;
-      _verletListIndextoParticleIDContainer.push_back(iter->getID());
+      _verletListsAoS[&(*iter)];
     }
 
     return i;
@@ -124,12 +141,14 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   /// This is needed, as the particles don't have a local id.
   /// @todo remove this and add local id to the particles (this saves a
   /// relatively costly lookup)
-  particleid_to_verletlistindex_container_type _particleIDtoVerletListIndexContainer;
+  particleid_to_verletlistindex_container_type
+      _particleIDtoVerletListIndexContainer;
 
-  verletlistindex_to_particleid_container_type _verletListIndextoParticleIDContainer;
+  verletlistindex_to_particleid_container_type
+      _verletListIndextoParticleIDContainer;
 
   /// verlet lists.
-  verletlist_storage_type _verletLists;
+  AoS_verletlist_storage_type _verletListsAoS;
 
   double _skin;
 };
