@@ -10,7 +10,9 @@
 
 #pragma once
 
-// this is thread safe
+/**
+ * this gives you the logger for autopas. call this once the logger has been initialized.
+ */
 #define AutoPasLogger spdlog::get("AutoPasLog")
 
 namespace autopas {
@@ -19,6 +21,10 @@ namespace logger {
 
 static bool created = false;
 
+/**
+ * create a logger writing to the file system
+ * @param filename
+ */
 static void create(std::string& filename) {
   if (created) {
     return;
@@ -27,6 +33,11 @@ static void create(std::string& filename) {
   created = true;
 }
 
+/**
+ * create a logger with an arbitrary ostream.
+ * default is std::cout
+ * @param oss
+ */
 static void create(std::ostream& oss = std::cout) {
   if (created) {
     return;
