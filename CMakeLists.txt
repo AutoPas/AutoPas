@@ -21,6 +21,7 @@ ENABLE_TESTING()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
+include(OpenMP)
 include(other-compileroptions)
 include(vectorization)
 include(clang-sanitizers)
