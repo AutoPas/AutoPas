@@ -44,7 +44,7 @@ ctest --verbose
 * to run specific tests:
 use the --gtest_filter variable:
 ```
-./tests/testAutoPas/runTests --gtest_filter=ArrayMathTest.testAdd*
+./tests/testAutopas/runTests --gtest_filter=ArrayMathTest.testAdd*
 ```
 or use the GTEST_FILTER environment variable:
 ```
@@ -70,7 +70,7 @@ in `src/particles/` that you can use either directly
 or you can write your own Particle class by inheriting from
 one of the provided classes.
 ```
-class SPHParticle : public AutoPas::Particle {
+class SPHParticle : public autopas::Particle {
 
 }
 ```
@@ -108,7 +108,7 @@ If you moved particles by more than one interaction length.
 If you are planning to move particles by a long distance,
 e.g. because of boundary conditions please delete the particles and add them again:
 ```
-std::vector<AutoPas::sph::SPHParticle> invalidParticles;
+std::vector<autopas::sph::SPHParticle> invalidParticles;
 for (auto part = sphSystem.begin(); part.isValid(); ++part) {
   if( /*check*/){
     invalidParticles.push_back(*part);
