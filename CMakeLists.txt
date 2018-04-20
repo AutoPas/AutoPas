@@ -31,6 +31,9 @@ include(doxygen)
 
 include(CodeCoverageAutopas)
 
+#libraries
+ADD_SUBDIRECTORY(libs)
+
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(examples)
