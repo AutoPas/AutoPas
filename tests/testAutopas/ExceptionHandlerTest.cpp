@@ -24,8 +24,8 @@ TEST(ExceptionHandlerTest, TestThrow) {
 }
 
 TEST(ExceptionHandlerTest, TestAbort) {
-  autopas::logger =
-      std::unique_ptr<autopas::log::Logger>(new autopas::log::Logger());
+//  autopas::logger =
+//      std::unique_ptr<autopas::log::Logger>(new autopas::log::Logger());
   ExceptionHandler exceptionHandler(
       ExceptionHandler::ExceptionBehavior::printAbort);
 
@@ -35,11 +35,11 @@ TEST(ExceptionHandlerTest, TestAbort) {
 }
 
 TEST(ExceptionHandlerTest, TestAbortCustom) {
-  autopas::logger =
-      std::unique_ptr<autopas::log::Logger>(new autopas::log::Logger());
+//  autopas::logger =
+//      std::unique_ptr<autopas::log::Logger>(new autopas::log::Logger());
 
   auto abortFunction = []() -> void {
-    autopas::logger->fatal() << "TESTABORTCUSTOMCALL123";
+    AutoPasLogger->error("TESTABORTCUSTOMCALL123");
     abort();
   };
   ExceptionHandler exceptionHandler(

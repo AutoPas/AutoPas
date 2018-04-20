@@ -6,7 +6,18 @@
 
 #pragma once
 
+#include <gtest/gtest.h>
+#include <spdlog/common.h>
 #include <ostream>
+
+class LoggerTest : public testing::Test {
+ public:
+  LoggerTest();
+  int testLevel(spdlog::level::level_enum level, bool enabled);
+
+ private:
+  std::stringstream stream;
+};
 
 // Helper:
 
