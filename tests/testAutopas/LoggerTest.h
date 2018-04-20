@@ -12,7 +12,8 @@
 
 class LoggerTest : public testing::Test {
  public:
-  LoggerTest();
+  void SetUp() override;
+  void TearDown() override;
   int testLevel(spdlog::level::level_enum level, bool enabled);
 
  private:

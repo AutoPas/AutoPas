@@ -11,7 +11,8 @@
 #pragma once
 
 /**
- * this gives you the logger for autopas. call this once the logger has been initialized.
+ * this gives you the logger for autopas. call this once the logger has been
+ * initialized.
  */
 #define AutoPasLogger spdlog::get("AutoPasLog")
 
@@ -19,18 +20,12 @@ namespace autopas {
 
 namespace logger {
 
-static bool created = false;
-
 /**
  * create a logger writing to the file system
  * @param filename
  */
 static void create(std::string& filename) {
-  if (created) {
-    return;
-  }
   spdlog::basic_logger_mt("AutoPasLog", filename);
-  created = true;
 }
 
 /**
@@ -39,16 +34,18 @@ static void create(std::string& filename) {
  * @param oss
  */
 static void create(std::ostream& oss = std::cout) {
-  if (created) {
-    return;
-  }
-
   auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
   auto logger = std::make_shared<spdlog::logger>("AutoPasLog", ostream_sink);
   spdlog::register_logger(logger);
-  created = true;
 }
 
+/**
+ * removes the logger. This should only be done at teardown of the simulation or
+ * for tests.
+ * logging after the logger has been removed and no new logger has been defined
+ * will lead to undefined behavior!!!
+ */
+static void unregister() { spdlog::drop("AutoPasLog"); }
 /**
  * disable the logger
  */

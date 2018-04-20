@@ -8,7 +8,9 @@
 #include "autopasIncludes.h"
 #include "gtest/gtest.h"
 
-LoggerTest::LoggerTest() : stream() { autopas::logger::create(stream); }
+void LoggerTest::SetUp() { autopas::logger::create(stream); }
+
+void LoggerTest::TearDown() { autopas::logger::unregister(); }
 
 int LoggerTest::testLevel(spdlog::level::level_enum level,
                           bool enabled = true) {
