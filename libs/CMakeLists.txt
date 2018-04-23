@@ -1,6 +1,6 @@
 
 #spdlog
-#find_package(spdlog)
+find_package(spdlog)
 if (spdlog_FOUND)
     message(STATUS "spdlog found - using system version")
 else()
