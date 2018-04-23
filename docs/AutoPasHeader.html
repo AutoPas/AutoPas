@@ -38,15 +38,7 @@
             var indexBase = "../index.php";
 
             url_content(indexBase).success(function(data){
-                doc_txt=data.toString();
-
-
-                var doc_txt = "<html>\n" +
-                    "AutoPas releases:<br>\n" +
-                    "<table>\n" +
-                    "\t<tr><a href='./master'>master</a></tr>\n" +
-                    "\t<tr><a href='./1.1.0'>1.1.0</a></tr>\n" +
-                    "</table></html>";
+                doc_txt = data.toString();
 
                 var htmlObject = document.createElement('div');
                 htmlObject.innerHTML = doc_txt;
@@ -61,11 +53,6 @@
                     }
                     version_selector.appendChild(option);
                 }
-
-
-
-
-
             });
         }
 
@@ -73,7 +60,7 @@
             var version_selector = document.getElementById("autopas_version_selector");
             var selected = version_selector.options[version_selector.selectedIndex].value;
             var oldurl = window.location.href;
-            var newurl = oldurl.replace(previous, "selected");
+            var newurl = oldurl.replace(previous, selected);
             window.location.href = newurl;
             alert(newurl);
         }
