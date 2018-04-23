@@ -12,10 +12,13 @@ namespace autopas {
 
 /**
  * Verlet Lists container.
- * The VerletLists class uses neighborhood lists to calculate pairwise interactions of particles.
- * It is optimized for a constant, i.e. particle independent, cutoff radius of the interaction.
+ * The VerletLists class uses neighborhood lists to calculate pairwise
+ * interactions of particles.
+ * It is optimized for a constant, i.e. particle independent, cutoff radius of
+ * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
- * @todo This class does not yet provide the ability to reuse computet verlet lists.
+ * @todo This class does not yet provide the ability to reuse computet verlet
+ * lists.
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @tparam ParticleCell
