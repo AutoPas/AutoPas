@@ -12,22 +12,21 @@
 <script type="text/javascript" src="$relpath^jquery.js"></script>
 <script type="text/javascript" src="$relpath^dynsections.js"></script>
     <script type="text/javascript">
-
+        var previous;
         function url_content(url){
-            return $.get(url, function(data, status){
-                alert("Data: " + data + "\nStatus: " + status);
-            });
+            return $.get(url);
         }
 
-        function autoPasVersionChecker(){
+        function autoPasVersionChecker() {
 
             var version_selector = document.getElementById("autopas_version_selector");
 
             var url = window.location.href;
 
 
-            var option = document.createElement("option");
-            if(!url.toLowerCase().includes("file")){
+
+            if (url.toLowerCase().includes("file")) {
+                var option = document.createElement("option");
                 option.text = "local";
                 option.value = "local";
                 version_selector.appendChild(option);
@@ -38,17 +37,47 @@
             //var base = url.replace("/doc_doxygen/master/index.html","");
             var indexBase = "../index.php";
 
-
             url_content(indexBase).success(function(data){
-                alert(data.toString());
+                doc_txt=data.toString();
+
+
+                var doc_txt = "<html>\n" +
+                    "AutoPas releases:<br>\n" +
+                    "<table>\n" +
+                    "\t<tr><a href='./master'>master</a></tr>\n" +
+                    "\t<tr><a href='./1.1.0'>1.1.0</a></tr>\n" +
+                    "</table></html>";
+
+                var htmlObject = document.createElement('div');
+                htmlObject.innerHTML = doc_txt;
+                var links = htmlObject.getElementsByTagName("a");
+                for (var i = 0; i < links.length; i++) {
+                    var option = document.createElement("option");
+                    option.text = links[i].text;
+                    option.value = links[i].text;
+                    if(url.includes(links[i].text)){
+                        option.selected = "selected";
+                        previous = links[i].text;
+                    }
+                    version_selector.appendChild(option);
+                }
+
+
+
+
+
             });
-
-            option.text = "git-master";
-            option.value = "master";
-            version_selector.appendChild(option);
-
-
         }
+
+        function autopasVersionChange(){
+            var version_selector = document.getElementById("autopas_version_selector");
+            var selected = version_selector.options[version_selector.selectedIndex].value;
+            var oldurl = window.location.href;
+            var newurl = oldurl.replace(previous, "selected");
+            window.location.href = newurl;
+            alert(newurl);
+        }
+
     </script>
 $treeview
 $search
@@ -64,7 +93,7 @@ $extrastylesheet
 			<tr style="height: 20px;">
 				<td>Version:</td>
 				<td>&#160;
-					<select id="autopas_version_selector">
+					<select id="autopas_version_selector" onchange="autopasVersionChange()">
 					</select>
 				</td>
 			</tr>
