@@ -30,7 +30,7 @@ cmake_dependent_option(SPDLOG_BUILD_TESTING
     "BUILD_TESTING" OFF
 )
 
-find_package(Threads)
+
 target_link_libraries(spdlog INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 target_include_directories(

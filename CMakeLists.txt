@@ -19,6 +19,7 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebIn
 
 ENABLE_TESTING()
 
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
 include(other-compileroptions)
@@ -34,7 +35,7 @@ include(CodeCoverageAutopas)
 #libraries
 ADD_SUBDIRECTORY(libs)
 
-
+#autopas
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
