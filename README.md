@@ -4,7 +4,7 @@ in the context of the **TaLPas** project. [![Build Status](https://www5.in.tum.d
 
 ## Documentation
 The documentation can be found at our website:
- https://www5.in.tum.de/AutoPas/doxygen_doc/html/
+ https://www5.in.tum.de/AutoPas/doxygen_doc/master/
 
 Alternatively you can build the documentation on your own:
 * requirements:
