@@ -12,8 +12,11 @@ namespace autopas {
 
 /**
  * Verlet Lists container.
- * This class builds neighbour lists for the particle interactions.
- * This class does NOT work with RMM cells and is not intended to!
+ * The VerletLists class uses neighborhood lists to calculate pairwise interactions of particles.
+ * It is optimized for a constant, i.e. particle independent, cutoff radius of the interaction.
+ * Cells are created using a cell size of at least cutoff + skin radius.
+ * @todo This class does not yet provide the ability to reuse computet verlet lists.
+ * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @tparam ParticleCell
  */
@@ -31,11 +34,13 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
  public:
   /**
-   * Constructor of the VerletLists class
-   * @param boxMin
-   * @param boxMax
-   * @param cutoff
-   * @param skin
+   * Constructor of the VerletLists class.
+   * Each cell of the verlet lists class, is at least of size cutoff + skin.
+   *
+   * @param boxMin the lower corner of the domain
+   * @param boxMax the upper corner of the domain
+   * @param cutoff the cutoff radius of the interaction
+   * @param skin the skin radius
    */
   VerletLists(const std::array<double, 3> boxMin,
               const std::array<double, 3> boxMax, double cutoff, double skin)
@@ -101,7 +106,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
   void updateVerletListsAoS(bool useNewton3) {
     _verletListsAoS.clear();
-    size_t particleNumber = updateIdMapAoS();
+    updateIdMapAoS();
     VerletListGeneratorFunctor f(_verletListsAoS,
                                  _particleIDtoVerletListIndexContainer,
                                  (this->getCutoff() * this->getCutoff()));
