@@ -6,8 +6,9 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <functional>
-#include "utils/Logger.h"
+#include "Logger.h"
 
 namespace autopas {
 namespace utils {
@@ -35,7 +36,7 @@ class ExceptionHandler {
    * @param behavior the behavior the handler should use
    */
   explicit ExceptionHandler(ExceptionBehavior behavior)
-      : _behavior(behavior), _customAbortFunction(abort) {}
+      : _behavior(behavior), _customAbortFunction(std::abort) {}
 
   /**
    * Set the behavior of the handler
@@ -55,12 +56,13 @@ class ExceptionHandler {
       case throwException:
         throw e;
       case printAbort:
-        autopas::logger->fatal() << e.what() << std::endl
-                                 << "aborting" << std::endl;
-        abort();
+        AutoPasLogger->error("{}\naborting", e.what());
+        AutoPasLogger->flush();
+        std::abort();
       case printCustomAbortFunction:
-        autopas::logger->fatal() << e.what() << std::endl
-                                 << "using custom abort function" << std::endl;
+        spdlog::get("AutoPasLog");
+        AutoPasLogger->error("{}\nusing custom abort function", e.what());
+        AutoPasLogger->flush();
         _customAbortFunction();
         break;
       default:
