@@ -32,10 +32,13 @@ include(doxygen)
 
 include(CodeCoverageAutopas)
 
-#libraries
-ADD_SUBDIRECTORY(libs)
 
 #autopas
 ADD_SUBDIRECTORY(src)
+
+#libraries
+ADD_SUBDIRECTORY(libs)
+
+#tests and examples
 ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
