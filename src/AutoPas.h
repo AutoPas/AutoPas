@@ -34,6 +34,17 @@ enum DataLayoutOption { aos, soa };
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
+
+  AutoPas(){
+    // initialize the logger
+    autopas::logger::create();
+  }
+
+  ~AutoPas(){
+    // remove the logger from the registry
+    autopas::logger::unregister();
+  }
+
   /**
    * Initialize the particle container.
    *
@@ -46,6 +57,7 @@ class AutoPas {
    */
   void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax,
             double cutoff, autopas::ContainerOption containerOption) {
+
     switch (containerOption) {
       case autopas::directSum: {
         container = std::unique_ptr<ContainerType>(
