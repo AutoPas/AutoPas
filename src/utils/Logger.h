@@ -25,6 +25,8 @@ namespace logger {
  * @param filename
  */
 static void create(std::string& filename) {
+  // drop an already registered logger if it exists
+  if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
   spdlog::basic_logger_mt("AutoPasLog", filename);
 }
 
@@ -34,6 +36,8 @@ static void create(std::string& filename) {
  * @param oss
  */
 static void create(std::ostream& oss = std::cout) {
+  // drop an already registered logger if it exists
+  if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
   auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
   auto logger = std::make_shared<spdlog::logger>("AutoPasLog", ostream_sink);
   spdlog::register_logger(logger);
