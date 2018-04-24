@@ -13,42 +13,40 @@
 namespace autopas {
 namespace utils {
 /**
+   * enum that defines the behavior of the expectionhandling
+   * please check the enum values for a more detailed description
+   */
+enum ExceptionBehavior {
+  ignore,                    /// ignore all exceptions, t
+  throwException,            /// throw the exception
+  printAbort,                /// print the exception and
+  printCustomAbortFunction,  /// print the exception and call a custom abort
+  /// function
+};
+
+/**
  * Defines and handles the throwing and printing of exceptions.
  * This class defines what should happen if an error occurs within AutoPas.
  * For a detailed list please check the enum ExceptionBehavior
  */
 class ExceptionHandler {
  public:
-  /**
-   * enum that defines the behavior of the expectionhandling
-   * please check the enum values for a more detailed description
-   */
-  enum ExceptionBehavior {
-    ignore,                    /// ignore all exceptions, t
-    throwException,            /// throw the exception
-    printAbort,                /// print the exception and
-    printCustomAbortFunction,  /// print the exception and call a custom abort
-                               /// function
-  };
-
-  /**
-   * Constructor of the ExceptionHandler class
-   * @param behavior the behavior the handler should use
-   */
-  explicit ExceptionHandler(ExceptionBehavior behavior)
-      : _behavior(behavior), _customAbortFunction(std::abort) {}
 
   /**
    * Set the behavior of the handler
    * @param behavior the behavior
    */
-  void setBehavior(ExceptionBehavior behavior) { _behavior = behavior; }
+  static void setBehavior(ExceptionBehavior behavior) {
+    std::lock_guard<std::mutex> guard(exceptionMutex);
+    _behavior = behavior;
+  }
 
   /**
    * Handle an exception derived by std::exception
    * @param e the exception to be handled
    */
-  void exception(const std::exception& e) {
+  static void exception(const std::exception& e) {
+    std::lock_guard<std::mutex> guard(exceptionMutex);
     switch (_behavior) {
       case ignore:
         // do nothing
@@ -74,7 +72,8 @@ class ExceptionHandler {
    * Handles an exception that is defined using the input string
    * @param exceptionString the string to describe the exception
    */
-  void exception(const std::string& exceptionString) {
+  static void exception(const std::string& exceptionString) {
+    // no lock here, as a different public function is called!!!
     AutoPasException autoPasException(exceptionString);
     exception(autoPasException);
   }
@@ -83,13 +82,15 @@ class ExceptionHandler {
    * Set a custom abort function
    * @param function the custom abort function
    */
-  void setCustomAbortFunction(std::function<void()> function) {
+  static void setCustomAbortFunction(std::function<void()> function) {
+    std::lock_guard<std::mutex> guard(exceptionMutex);
     _customAbortFunction = function;
   }
 
  private:
-  ExceptionBehavior _behavior;
-  std::function<void()> _customAbortFunction;
+  static std::mutex exceptionMutex;
+  static ExceptionBehavior _behavior;
+  static std::function<void()> _customAbortFunction;
 
   class AutoPasException : public std::exception {
    public:
