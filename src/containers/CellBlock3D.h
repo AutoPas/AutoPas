@@ -11,6 +11,7 @@
 #include <array>
 #include <cmath>
 #include <vector>
+#include "utils/ExceptionHandler.h"
 #include "utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -37,6 +38,15 @@ class CellBlock3D {
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin,
               const std::array<double, 3> bMax, double interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength);
+    for (int i = 0; i < 3; ++i) {
+      if (bMax[i] < bMin[i] + interactionLength) {
+        AutoPasLogger->error(
+            "CellBlock3D: interaction length too large is {}, bmin {}, bmax {}",
+            interactionLength, bMin[i], bMax[i]);
+        utils::ExceptionHandler::exception(
+            "Error in CellBlock3D: interaction Length too large!");
+      }
+    }
   }
 
   /**
