@@ -4,18 +4,36 @@ pipeline{
         stage('setup'){
             steps{
                 echo 'Starting AutoPas Pipeline'
+                githubNotify context: 'build', description: 'build pending...',  status: 'PENDING'
+                githubNotify context: 'test', description: 'test pending...',  status: 'PENDING'
             }
         }
         stage("build") {
             steps{
+                githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING'
                 dir("build"){
                     sh "cmake .."
                     sh "make"
                 }
             }
+            post{
+                success{
+                    githubNotify context: 'build', description: 'build successful! (${currentBuild.durationString})',  status: 'SUCCESS'
+                }
+                failure{
+                    githubNotify context: 'build', description: 'build failed: ${currentBuild.description}',  status: 'FAILURE'
+                }
+                unstable{
+                    githubNotify context: 'build', description: 'build unstable: ${currentBuild.description}',  status: 'FAILURE'
+                }
+                aborted{
+                    githubNotify context: 'build', description: 'build aborted',  status: 'ERROR'
+                }
+            }
         }
         stage("test") {
             steps{
+                githubNotify context: 'test', description: 'test in progress...',  status: 'PENDING'
                 dir("build"){
                     //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ctest'
@@ -29,6 +47,20 @@ pipeline{
                     sh "cmake -DCodeCoverage=OFF -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
                     sh "make -j 4"
                     sh "make test"
+                }
+            }
+            post{
+                success{
+                    githubNotify context: 'test', description: 'test successful! (${currentBuild.durationString})',  status: 'SUCCESS'
+                }
+                failure{
+                    githubNotify context: 'test', description: 'test failed: ${currentBuild.description}',  status: 'FAILURE'
+                }
+                unstable{
+                    githubNotify context: 'test', description: 'test unstable: ${currentBuild.description}',  status: 'FAILURE'
+                }
+                aborted{
+                    githubNotify context: 'test', description: 'build aborted',  status: 'ERROR'
                 }
             }
         }
