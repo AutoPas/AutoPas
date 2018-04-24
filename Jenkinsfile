@@ -32,14 +32,23 @@ pipeline{
                 }
             }
         }
-        stage("documentation and coverage"){
+        stage("build documentation"){
+            steps{
+                dir("build") { sh 'make doc_doxygen 2>DoxygenWarningLog.txt' }
+            }
+        }
+        stage("update documentation"){
+            when{ branch 'master' }
             steps{
                 dir("build"){
-                    sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
                     sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
                 }
+            }
+        }
+        stage("generate coverage report"){
+            steps{
                 junit 'build/test.xml'
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
