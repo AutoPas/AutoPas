@@ -5,9 +5,9 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <vector>
-#include "AutoPasTest.h"
+#include "AutoPasTestBase.h"
 
-class ForceCalculationTest : public AutoPasTest {
+class ForceCalculationTest : public AutoPasTestBase {
  public:
   ForceCalculationTest() = default;
 

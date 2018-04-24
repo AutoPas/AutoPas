@@ -8,6 +8,6 @@
 
 #include <gtest/gtest.h>
 #include "autopasIncludes.h"
-#include "AutoPasTest.h"
+#include "AutoPasTestBase.h"
 
-class VerletListsTest : public AutoPasTest {};
+class VerletListsTest : public AutoPasTestBase {};

@@ -9,13 +9,13 @@
 
 #pragma once
 
-class AutoPasTest : public testing::Test {
+class AutoPasTestBase : public testing::Test {
  public:
-  AutoPasTest(){
+  AutoPasTestBase(){
     autopas::logger::create();
   }
 
-  virtual ~AutoPasTest(){
+  virtual ~AutoPasTestBase(){
     autopas::logger::unregister();
   }
 };

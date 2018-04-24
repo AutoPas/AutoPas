@@ -8,8 +8,8 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "AutoPasTest.h"
+#include "AutoPasTestBase.h"
 
-class ExceptionHandlerTest : public AutoPasTest {
+class ExceptionHandlerTest : public AutoPasTestBase {
 
 };

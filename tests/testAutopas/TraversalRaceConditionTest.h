@@ -5,10 +5,10 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include "../../examples/md/mdutils.h"
-#include "AutoPasTest.h"
+#include "AutoPasTestBase.h"
 #include "containers/cellPairTraversals/SlicedTraversal.h"
 
-class TraversalRaceConditionTest : public AutoPasTest {
+class TraversalRaceConditionTest : public AutoPasTestBase {
  public:
   TraversalRaceConditionTest() = default;
 

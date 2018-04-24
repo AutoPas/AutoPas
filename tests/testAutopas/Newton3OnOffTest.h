@@ -10,11 +10,11 @@
 #include "AutoPas.h"
 #include "mocks/MockFunctor.h"
 #include "sph/autopassph.h"
-#include "AutoPasTest.h"
+#include "AutoPasTestBase.h"
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */
-class Newton3OnOffTest : public AutoPasTest {
+class Newton3OnOffTest : public AutoPasTestBase {
  public:
   Newton3OnOffTest() : mockFunctor(), autoPas() {}
 

@@ -6,9 +6,9 @@
 #define AUTOPAS_SPHTEST_H
 
 #include <gtest/gtest.h>
-#include "AutoPasTest.h"
+#include "AutoPasTestBase.h"
 
-class SPHTest : public AutoPasTest {
+class SPHTest : public AutoPasTestBase {
   void SetUp() override{};
 
   void TearDown() override{};

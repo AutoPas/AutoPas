@@ -7,9 +7,9 @@
 
 #include <autopasIncludes.h>
 #include <gtest/gtest.h>
-#include "AutoPasTest.h"
+#include "AutoPasTestBase.h"
 
-class AoSvsSoATest : public AutoPasTest {
+class AoSvsSoATest : public AutoPasTestBase {
  public:
 
   void generateParticles(std::vector<autopas::Particle> *particles);
