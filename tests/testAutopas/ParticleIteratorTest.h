@@ -10,8 +10,9 @@
 
 #include "autopasIncludes.h"
 #include "gtest/gtest.h"
+#include "AutoPasTest.h"
 
-class ParticleIteratorTest : public testing::Test {
+class ParticleIteratorTest : public AutoPasTest {
  public:
   ParticleIteratorTest() : _currentIndex(0ul) {}
 

@@ -9,8 +9,9 @@
 #include <gtest/gtest.h>
 #include <spdlog/common.h>
 #include <ostream>
+#include "AutoPasTest.h"
 
-class LoggerTest : public testing::Test {
+class LoggerTest : public AutoPasTest {
  public:
   void SetUp() override;
   void TearDown() override;

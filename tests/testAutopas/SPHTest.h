@@ -6,8 +6,9 @@
 #define AUTOPAS_SPHTEST_H
 
 #include <gtest/gtest.h>
+#include "AutoPasTest.h"
 
-class SPHTest : public ::testing::Test {
+class SPHTest : public AutoPasTest {
   void SetUp() override{};
 
   void TearDown() override{};

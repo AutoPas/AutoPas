@@ -10,8 +10,9 @@
 
 #include "autopasIncludes.h"
 #include "gtest/gtest.h"
+#include "AutoPasTest.h"
 
-class SingleCellIteratorTest : public ::testing::Test {
+class SingleCellIteratorTest : public AutoPasTest {
  public:
   SingleCellIteratorTest() = default;
 

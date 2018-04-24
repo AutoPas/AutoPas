@@ -7,12 +7,10 @@
 
 #include <autopasIncludes.h>
 #include <gtest/gtest.h>
+#include "AutoPasTest.h"
 
-class AoSvsSoATest : public ::testing::Test {
+class AoSvsSoATest : public AutoPasTest {
  public:
-  AoSvsSoATest() = default;
-
-  ~AoSvsSoATest() override = default;
 
   void generateParticles(std::vector<autopas::Particle> *particles);
 };

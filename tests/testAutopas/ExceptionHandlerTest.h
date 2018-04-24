@@ -8,10 +8,8 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include "AutoPasTest.h"
 
-class ExceptionHandlerTest : public testing::Test {
+class ExceptionHandlerTest : public AutoPasTest {
 
- public:
-  void SetUp() override;
-  void TearDown() override;
 };

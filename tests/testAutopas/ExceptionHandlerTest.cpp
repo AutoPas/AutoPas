@@ -11,8 +11,6 @@
 
 using autopas::utils::ExceptionHandler;
 
-void ExceptionHandlerTest::SetUp() { autopas::logger::create(); }
-void ExceptionHandlerTest::TearDown() { autopas::logger::unregister(); }
 
 TEST_F(ExceptionHandlerTest, TestIgnore) {
   ExceptionHandler exceptionHandler(
