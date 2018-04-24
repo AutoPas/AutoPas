@@ -4,13 +4,13 @@ pipeline{
         stage('setup'){
             steps{
                 echo 'Starting AutoPas Pipeline'
-                githubNotify context: 'build', description: 'build pending...',  status: 'PENDING'
-                githubNotify context: 'test', description: 'test pending...',  status: 'PENDING'
+                githubNotify context: 'build', description: 'build pending...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
+                githubNotify context: 'test', description: 'test pending...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
             }
         }
         stage("build") {
             steps{
-                githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING'
+                githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                 dir("build"){
                     sh "cmake .."
                     sh "make"
@@ -18,22 +18,22 @@ pipeline{
             }
             post{
                 success{
-                    githubNotify context: 'build', description: 'build successful! (${currentBuild.durationString})',  status: 'SUCCESS'
+                    githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
                 }
                 failure{
-                    githubNotify context: 'build', description: 'build failed: ${currentBuild.description}',  status: 'FAILURE'
+                    githubNotify context: 'build', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
                 }
                 unstable{
-                    githubNotify context: 'build', description: 'build unstable: ${currentBuild.description}',  status: 'FAILURE'
+                    githubNotify context: 'build', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
                 }
                 aborted{
-                    githubNotify context: 'build', description: 'build aborted',  status: 'ERROR'
+                    githubNotify context: 'build', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
                 }
             }
         }
         stage("test") {
             steps{
-                githubNotify context: 'test', description: 'test in progress...',  status: 'PENDING'
+                githubNotify context: 'test', description: 'test in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                 dir("build"){
                     //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ctest'
@@ -51,16 +51,16 @@ pipeline{
             }
             post{
                 success{
-                    githubNotify context: 'test', description: 'test successful! (${currentBuild.durationString})',  status: 'SUCCESS'
+                    githubNotify context: 'test', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
                 }
                 failure{
-                    githubNotify context: 'test', description: 'test failed: ${currentBuild.description}',  status: 'FAILURE'
+                    githubNotify context: 'test', description: currentBuild.description,  status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
                 }
                 unstable{
-                    githubNotify context: 'test', description: 'test unstable: ${currentBuild.description}',  status: 'FAILURE'
+                    githubNotify context: 'test', description: currentBuild.description,  status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
                 }
                 aborted{
-                    githubNotify context: 'test', description: 'build aborted',  status: 'ERROR'
+                    githubNotify context: 'test', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
                 }
             }
         }
