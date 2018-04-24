@@ -17,7 +17,7 @@ namespace utils {
    * please check the enum values for a more detailed description
    */
 enum ExceptionBehavior {
-  ignore,                    /// ignore all exceptions, t
+  ignore,                    /// ignore all exceptions
   throwException,            /// throw the exception
   printAbort,                /// print the exception and
   printCustomAbortFunction,  /// print the exception and call a custom abort

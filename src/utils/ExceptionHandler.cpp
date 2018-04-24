@@ -7,5 +7,6 @@
 #include "ExceptionHandler.h"
 
 std::mutex autopas::utils::ExceptionHandler::exceptionMutex;
-autopas::utils::ExceptionBehavior autopas::utils::ExceptionHandler::_behavior;
-std::function<void()> autopas::utils::ExceptionHandler::_customAbortFunction;
+autopas::utils::ExceptionBehavior autopas::utils::ExceptionHandler::_behavior =
+    ExceptionBehavior::throwException;
+std::function<void()> autopas::utils::ExceptionHandler::_customAbortFunction = abort;

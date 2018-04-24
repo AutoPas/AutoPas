@@ -17,7 +17,24 @@ void ExceptionHandlerTest::SetUp() {
   //::testing::FLAGS_gtest_death_test_style = "threadsafe";
   autopas::logger::create();
 }
-void ExceptionHandlerTest::TearDown() { autopas::logger::unregister(); }
+
+void ExceptionHandlerTest::TearDown() {
+  autopas::logger::unregister();
+  // reset to default values
+  ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
+  ExceptionHandler::setCustomAbortFunction(abort);
+}
+
+
+
+TEST_F(ExceptionHandlerTest, TestDefault) {
+  EXPECT_ANY_THROW(ExceptionHandler::exception("testignore"));
+  EXPECT_ANY_THROW(ExceptionHandler::exception(std::exception()));
+  ExceptionHandler::setBehavior(ExceptionBehavior::printCustomAbortFunction);
+  EXPECT_DEATH(ExceptionHandler::exception("testignore"), "");
+  EXPECT_DEATH(ExceptionHandler::exception(std::exception()), "");
+}
+
 
 TEST_F(ExceptionHandlerTest, TestIgnore) {
   ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
