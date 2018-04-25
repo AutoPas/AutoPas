@@ -14,7 +14,6 @@ using autopas::utils::ExceptionHandler;
 using autopas::utils::ExceptionBehavior;
 
 void ExceptionHandlerTest::SetUp() {
-  //::testing::FLAGS_gtest_death_test_style = "threadsafe";
   autopas::logger::create();
 }
 
@@ -53,8 +52,6 @@ TEST_F(ExceptionHandlerTest, TestThrow) {
 }
 
 TEST_F(ExceptionHandlerTest, TestAbort) {
-  //  autopas::logger =
-  //      std::unique_ptr<autopas::log::Logger>(new autopas::log::Logger());
   ExceptionHandler::setBehavior(ExceptionBehavior::printAbort);
 
   EXPECT_DEATH(ExceptionHandler::exception("testignore"), "");
@@ -63,8 +60,6 @@ TEST_F(ExceptionHandlerTest, TestAbort) {
 }
 
 TEST_F(ExceptionHandlerTest, TestAbortCustom) {
-  //  autopas::logger =
-  //      std::unique_ptr<autopas::log::Logger>(new autopas::log::Logger());
 
   auto abortFunction = []() -> void {
     AutoPasLogger->error("TESTABORTCUSTOMCALL123");
@@ -77,6 +72,14 @@ TEST_F(ExceptionHandlerTest, TestAbortCustom) {
   EXPECT_DEATH(ExceptionHandler::exception("testignore"), "");
 
   EXPECT_DEATH(ExceptionHandler::exception(std::exception()), "");
+}
+
+TEST_F(ExceptionHandlerTest, TestTryRethrow) {
+  try{
+    throw std::runtime_error("me throwing things");
+  } catch(std::exception& e){
+    EXPECT_THROW(ExceptionHandler::exception(e), std::runtime_error);
+  }
 }
 
 #ifdef _OPENMP
