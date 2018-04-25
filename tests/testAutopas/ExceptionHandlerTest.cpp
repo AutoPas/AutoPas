@@ -13,10 +13,25 @@
 using autopas::utils::ExceptionHandler;
 using autopas::utils::ExceptionBehavior;
 
+void ExceptionHandlerTest::SetUp() {
+  //autopas::logger::create();
+}
+
+void ExceptionHandlerTest::TearDown() {
+  //autopas::logger::unregister();
+  // reset to default values
+  ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
+  ExceptionHandler::setCustomAbortFunction(abort);
+}
+
+
+TEST_F(ExceptionHandlerTest, TestThrowCustom) {
+  EXPECT_THROW(ExceptionHandler::exception(std::runtime_error("runtimeerror")), std::runtime_error);
+}
 
 TEST_F(ExceptionHandlerTest, TestDefault) {
-  EXPECT_ANY_THROW(ExceptionHandler::exception("testignore"));
-  EXPECT_ANY_THROW(ExceptionHandler::exception(std::exception()));
+  EXPECT_THROW(ExceptionHandler::exception("testthrow"), ExceptionHandler::AutoPasException);
+  EXPECT_THROW(ExceptionHandler::exception(std::exception()), std::exception);
   ExceptionHandler::setBehavior(ExceptionBehavior::printCustomAbortFunction);
   EXPECT_DEATH(ExceptionHandler::exception("testignore"), "");
   EXPECT_DEATH(ExceptionHandler::exception(std::exception()), "");
@@ -30,14 +45,13 @@ TEST_F(ExceptionHandlerTest, TestIgnore) {
 
 TEST_F(ExceptionHandlerTest, TestThrow) {
   ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
-  EXPECT_ANY_THROW(ExceptionHandler::exception("testignore"));
 
-  EXPECT_ANY_THROW(ExceptionHandler::exception(std::exception()));
+  EXPECT_THROW(ExceptionHandler::exception("testignore"), ExceptionHandler::AutoPasException);
+
+  EXPECT_THROW(ExceptionHandler::exception(std::exception()), std::exception);
 }
 
 TEST_F(ExceptionHandlerTest, TestAbort) {
-  //  autopas::logger =
-  //      std::unique_ptr<autopas::log::Logger>(new autopas::log::Logger());
   ExceptionHandler::setBehavior(ExceptionBehavior::printAbort);
 
   EXPECT_DEATH(ExceptionHandler::exception("testignore"), "");
@@ -46,8 +60,6 @@ TEST_F(ExceptionHandlerTest, TestAbort) {
 }
 
 TEST_F(ExceptionHandlerTest, TestAbortCustom) {
-  //  autopas::logger =
-  //      std::unique_ptr<autopas::log::Logger>(new autopas::log::Logger());
 
   auto abortFunction = []() -> void {
     AutoPasLogger->error("TESTABORTCUSTOMCALL123");
@@ -60,6 +72,14 @@ TEST_F(ExceptionHandlerTest, TestAbortCustom) {
   EXPECT_DEATH(ExceptionHandler::exception("testignore"), "");
 
   EXPECT_DEATH(ExceptionHandler::exception(std::exception()), "");
+}
+
+TEST_F(ExceptionHandlerTest, TestTryRethrow) {
+  try{
+    throw std::runtime_error("me throwing things");
+  } catch(std::exception& e){
+    EXPECT_THROW(ExceptionHandler::rethrow(), std::runtime_error);
+  }
 }
 
 #ifdef _OPENMP

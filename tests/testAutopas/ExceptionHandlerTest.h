@@ -11,5 +11,7 @@
 #include "AutoPasTestBase.h"
 
 class ExceptionHandlerTest : public AutoPasTestBase {
+  void SetUp() override;
 
+  void TearDown() override;
 };

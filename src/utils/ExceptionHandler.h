@@ -31,7 +31,6 @@ enum ExceptionBehavior {
  */
 class ExceptionHandler {
  public:
-
   /**
    * Set the behavior of the handler
    * @param behavior the behavior
@@ -42,41 +41,33 @@ class ExceptionHandler {
   }
 
   /**
-   * Handle an exception derived by std::exception
+   * Handle an exception derived by std::exception.
+   * If the behavior is set to throw and this function is called in a catch
+   * clause, instead of using the passed exception the underlying error is
+   * rethrown.
    * @param e the exception to be handled
+   * @tparam Exception the type of the exception, needed as throw only uses the
+   * static type of e
    */
-  static void exception(const std::exception& e) {
+  template <class Exception>
+  static void exception(const Exception e) {
     std::lock_guard<std::mutex> guard(exceptionMutex);
+    std::exception_ptr p;
     switch (_behavior) {
-      case ignore:
-        // do nothing
-        break;
       case throwException:
         throw e;
-      case printAbort:
-        AutoPasLogger->error("{}\naborting", e.what());
-        AutoPasLogger->flush();
-        std::abort();
-      case printCustomAbortFunction:
-        spdlog::get("AutoPasLog");
-        AutoPasLogger->error("{}\nusing custom abort function", e.what());
-        AutoPasLogger->flush();
-        _customAbortFunction();
-        break;
       default:
-        break;
+        nonThrowException(e);
     }
   }
 
   /**
-   * Handles an exception that is defined using the input string
-   * @param exceptionString the string to describe the exception
+   * Rethrows the current exception or prints it.
+   * Depending on the set behavior the currently active exception is either
+   * rethrown, printed or otherwise handled.
+   * @note Use this only inside a catch clause.
    */
-  static void exception(const std::string& exceptionString) {
-    // no lock here, as a different public function is called!!!
-    AutoPasException autoPasException(exceptionString);
-    exception(autoPasException);
-  }
+  static void rethrow();
 
   /**
    * Set a custom abort function
@@ -92,11 +83,44 @@ class ExceptionHandler {
   static ExceptionBehavior _behavior;
   static std::function<void()> _customAbortFunction;
 
+  static void nonThrowException(const std::exception& e) {
+    switch (_behavior) {
+      case ignore:
+        // do nothing
+        break;
+      case printAbort:
+        AutoPasLogger->error("{}\naborting", e.what());
+        AutoPasLogger->flush();
+        std::abort();
+      case printCustomAbortFunction:
+        spdlog::get("AutoPasLog");
+        AutoPasLogger->error("{}\nusing custom abort function", e.what());
+        AutoPasLogger->flush();
+        _customAbortFunction();
+        break;
+      default:
+        break;
+    }
+  }
+
+ public:
+  /**
+   * Default exception class for autopas exceptions.
+   * @note normally generated using ExceptionHandler::exception("some string")
+   */
   class AutoPasException : public std::exception {
    public:
+    /**
+     * constructor
+     * @param description a descriptive string
+     */
     explicit AutoPasException(const std::string& description)
         : _description(description){};
 
+    /**
+     * returns the description
+     * @return
+     */
     virtual const char* what() const throw() override {
       return _description.c_str();
     }
@@ -105,5 +129,19 @@ class ExceptionHandler {
     std::string _description;
   };
 };
+
+/**
+ * Handles an exception that is defined using the input string
+ * @param exceptionString the string to describe the exception
+ */
+template <>
+void ExceptionHandler::exception(const std::string exceptionString);
+
+/**
+ * Handles an exception that is defined using the input string
+ * @param exceptionString the string to describe the exception
+ */
+template <>
+void ExceptionHandler::exception(const char* const exceptionString);
 }
 }
