@@ -25,3 +25,21 @@ void autopas::utils::ExceptionHandler::exception(
     const char* const exceptionString) {
   exception(std::string(exceptionString));
 }
+
+void autopas::utils::ExceptionHandler::rethrow() {
+  std::lock_guard<std::mutex> guard(exceptionMutex);
+  std::exception_ptr p = std::current_exception();
+  if (p == std::exception_ptr()) {
+    exception("ExceptionHandler::rethrow() called outside of a catch block");
+  }
+  switch (_behavior) {
+    case throwException:
+      std::rethrow_exception(p);
+    default:
+      try {
+        std::rethrow_exception(p);
+      } catch (std::exception& e) {
+        nonThrowException(e);
+      }
+  }
+}

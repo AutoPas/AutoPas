@@ -78,7 +78,7 @@ TEST_F(ExceptionHandlerTest, TestTryRethrow) {
   try{
     throw std::runtime_error("me throwing things");
   } catch(std::exception& e){
-    EXPECT_THROW(ExceptionHandler::exception(e), std::runtime_error);
+    EXPECT_THROW(ExceptionHandler::rethrow(), std::runtime_error);
   }
 }
 

@@ -54,9 +54,6 @@ class ExceptionHandler {
     std::lock_guard<std::mutex> guard(exceptionMutex);
     std::exception_ptr p;
     switch (_behavior) {
-      case ignore:
-        // do nothing
-        break;
       case throwException:
         p = std::current_exception();
         if (p == std::exception_ptr()) {
@@ -64,6 +61,38 @@ class ExceptionHandler {
         } else {
           std::rethrow_exception(p);
         }
+      default:
+        nonThrowException(e);
+    }
+  }
+
+  /**
+   * Rethrows the current exception or prints it.
+   * Depending on the set behavior the currently active exception is either rethrown, printed or otherwise handled.
+   * @note Use this only inside a catch clause.
+   */
+  static void rethrow();
+
+  /**
+   * Set a custom abort function
+   * @param function the custom abort function
+   */
+  static void setCustomAbortFunction(std::function<void()> function) {
+    std::lock_guard<std::mutex> guard(exceptionMutex);
+    _customAbortFunction = function;
+  }
+
+ private:
+  static std::mutex exceptionMutex;
+  static ExceptionBehavior _behavior;
+  static std::function<void()> _customAbortFunction;
+
+
+  static void nonThrowException(const std::exception& e) {
+    switch (_behavior) {
+      case ignore:
+        // do nothing
+        break;
       case printAbort:
         AutoPasLogger->error("{}\naborting", e.what());
         AutoPasLogger->flush();
@@ -79,19 +108,6 @@ class ExceptionHandler {
     }
   }
 
-  /**
-   * Set a custom abort function
-   * @param function the custom abort function
-   */
-  static void setCustomAbortFunction(std::function<void()> function) {
-    std::lock_guard<std::mutex> guard(exceptionMutex);
-    _customAbortFunction = function;
-  }
-
- private:
-  static std::mutex exceptionMutex;
-  static ExceptionBehavior _behavior;
-  static std::function<void()> _customAbortFunction;
 
  public:
   class AutoPasException : public std::exception {
