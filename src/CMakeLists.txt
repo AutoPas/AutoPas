@@ -12,7 +12,7 @@ find_package(Threads REQUIRED)
 target_link_libraries(autopas
         PUBLIC
         rt # required for Time.h
-        ${CMAKE_THREAD_LIBS_INIT} # required for Logger
+        ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         )
 
 TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC .)
