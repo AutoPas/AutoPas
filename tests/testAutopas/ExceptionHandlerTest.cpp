@@ -13,19 +13,6 @@
 using autopas::utils::ExceptionHandler;
 using autopas::utils::ExceptionBehavior;
 
-void ExceptionHandlerTest::SetUp() {
-  //::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  autopas::logger::create();
-}
-
-void ExceptionHandlerTest::TearDown() {
-  autopas::logger::unregister();
-  // reset to default values
-  ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
-  ExceptionHandler::setCustomAbortFunction(abort);
-}
-
-
 
 TEST_F(ExceptionHandlerTest, TestDefault) {
   EXPECT_ANY_THROW(ExceptionHandler::exception("testignore"));
