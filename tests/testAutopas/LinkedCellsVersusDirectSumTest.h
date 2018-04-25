@@ -10,8 +10,9 @@
 
 #include "autopasIncludes.h"
 #include "gtest/gtest.h"
+#include "AutoPasTestBase.h"
 
-class LinkedCellsVersusDirectSumTest : public ::testing::Test {
+class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
  public:
   LinkedCellsVersusDirectSumTest();
 

@@ -10,8 +10,9 @@
 
 #include "autopasIncludes.h"
 #include "gtest/gtest.h"
+#include "AutoPasTestBase.h"
 
-class CellBlock3DTest : public ::testing::Test {
+class CellBlock3DTest : public AutoPasTestBase {
  public:
   CellBlock3DTest()
       : _cells_1x1x1(_vec1, std::array<double, 3>({0.0, 0.0, 0.0}),

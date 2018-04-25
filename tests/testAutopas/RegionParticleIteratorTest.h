@@ -8,6 +8,7 @@
 
 #include "autopasIncludes.h"
 #include "gtest/gtest.h"
+#include "AutoPasTestBase.h"
 
 class TouchableParticle : public autopas::Particle {
  public:
@@ -20,7 +21,7 @@ class TouchableParticle : public autopas::Particle {
   unsigned int _numTouched;
 };
 
-class RegionParticleIteratorTest : public testing::Test {
+class RegionParticleIteratorTest : public AutoPasTestBase {
  public:
   RegionParticleIteratorTest()
       : _boxMin{0., 0., 0.},
