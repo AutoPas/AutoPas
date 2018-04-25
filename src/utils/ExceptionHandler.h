@@ -110,11 +110,23 @@ class ExceptionHandler {
 
 
  public:
+  /**
+   * Default exception class for autopas exceptions.
+   * @note normally generated using ExceptionHandler::exception("some string")
+   */
   class AutoPasException : public std::exception {
    public:
+    /**
+     * constructor
+     * @param description a descriptive string
+     */
     explicit AutoPasException(const std::string& description)
         : _description(description){};
 
+    /**
+     * returns the description
+     * @return
+     */
     virtual const char* what() const throw() override {
       return _description.c_str();
     }
