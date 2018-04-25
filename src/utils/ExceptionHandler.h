@@ -41,7 +41,10 @@ class ExceptionHandler {
   }
 
   /**
-   * Handle an exception derived by std::exception
+   * Handle an exception derived by std::exception.
+   * If the behavior is set to throw and this function is called in a catch
+   * clause, instead of using the passed exception the underlying error is
+   * rethrown.
    * @param e the exception to be handled
    * @tparam Exception the type of the exception, needed as throw only uses the
    * static type of e
@@ -49,12 +52,18 @@ class ExceptionHandler {
   template <class Exception>
   static void exception(const Exception e) {
     std::lock_guard<std::mutex> guard(exceptionMutex);
+    std::exception_ptr p;
     switch (_behavior) {
       case ignore:
         // do nothing
         break;
       case throwException:
-        throw e;
+        p = std::current_exception();
+        if (p == std::exception_ptr()) {
+          throw e;
+        } else {
+          std::rethrow_exception(p);
+        }
       case printAbort:
         AutoPasLogger->error("{}\naborting", e.what());
         AutoPasLogger->flush();
@@ -83,6 +92,7 @@ class ExceptionHandler {
   static std::mutex exceptionMutex;
   static ExceptionBehavior _behavior;
   static std::function<void()> _customAbortFunction;
+
  public:
   class AutoPasException : public std::exception {
    public:
