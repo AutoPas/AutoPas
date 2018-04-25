@@ -353,6 +353,7 @@ void printConservativeVariables(Container& sphSystem) {
 }
 
 int main() {
+  autopas::logger::create();
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 1.;
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
