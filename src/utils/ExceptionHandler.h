@@ -55,12 +55,7 @@ class ExceptionHandler {
     std::exception_ptr p;
     switch (_behavior) {
       case throwException:
-        p = std::current_exception();
-        if (p == std::exception_ptr()) {
-          throw e;
-        } else {
-          std::rethrow_exception(p);
-        }
+        throw e;
       default:
         nonThrowException(e);
     }
@@ -68,7 +63,8 @@ class ExceptionHandler {
 
   /**
    * Rethrows the current exception or prints it.
-   * Depending on the set behavior the currently active exception is either rethrown, printed or otherwise handled.
+   * Depending on the set behavior the currently active exception is either
+   * rethrown, printed or otherwise handled.
    * @note Use this only inside a catch clause.
    */
   static void rethrow();
@@ -86,7 +82,6 @@ class ExceptionHandler {
   static std::mutex exceptionMutex;
   static ExceptionBehavior _behavior;
   static std::function<void()> _customAbortFunction;
-
 
   static void nonThrowException(const std::exception& e) {
     switch (_behavior) {
@@ -107,7 +102,6 @@ class ExceptionHandler {
         break;
     }
   }
-
 
  public:
   /**
