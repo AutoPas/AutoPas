@@ -26,10 +26,13 @@ void ExceptionHandlerTest::TearDown() {
 }
 
 
+TEST_F(ExceptionHandlerTest, TestThrowCustom) {
+  EXPECT_THROW(ExceptionHandler::exception(std::runtime_error("runtimeerror")), std::runtime_error);
+}
 
 TEST_F(ExceptionHandlerTest, TestDefault) {
-  EXPECT_ANY_THROW(ExceptionHandler::exception("testignore"));
-  EXPECT_ANY_THROW(ExceptionHandler::exception(std::exception()));
+  EXPECT_THROW(ExceptionHandler::exception("testthrow"), ExceptionHandler::AutoPasException);
+  EXPECT_THROW(ExceptionHandler::exception(std::exception()), std::exception);
   ExceptionHandler::setBehavior(ExceptionBehavior::printCustomAbortFunction);
   EXPECT_DEATH(ExceptionHandler::exception("testignore"), "");
   EXPECT_DEATH(ExceptionHandler::exception(std::exception()), "");
@@ -43,9 +46,10 @@ TEST_F(ExceptionHandlerTest, TestIgnore) {
 
 TEST_F(ExceptionHandlerTest, TestThrow) {
   ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
-  EXPECT_ANY_THROW(ExceptionHandler::exception("testignore"));
 
-  EXPECT_ANY_THROW(ExceptionHandler::exception(std::exception()));
+  EXPECT_THROW(ExceptionHandler::exception("testignore"), ExceptionHandler::AutoPasException);
+
+  EXPECT_THROW(ExceptionHandler::exception(std::exception()), std::exception);
 }
 
 TEST_F(ExceptionHandlerTest, TestAbort) {

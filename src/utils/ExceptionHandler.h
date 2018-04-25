@@ -31,7 +31,6 @@ enum ExceptionBehavior {
  */
 class ExceptionHandler {
  public:
-
   /**
    * Set the behavior of the handler
    * @param behavior the behavior
@@ -44,8 +43,11 @@ class ExceptionHandler {
   /**
    * Handle an exception derived by std::exception
    * @param e the exception to be handled
+   * @tparam Exception the type of the exception, needed as throw only uses the
+   * static type of e
    */
-  static void exception(const std::exception& e) {
+  template <class Exception>
+  static void exception(const Exception e) {
     std::lock_guard<std::mutex> guard(exceptionMutex);
     switch (_behavior) {
       case ignore:
@@ -69,16 +71,6 @@ class ExceptionHandler {
   }
 
   /**
-   * Handles an exception that is defined using the input string
-   * @param exceptionString the string to describe the exception
-   */
-  static void exception(const std::string& exceptionString) {
-    // no lock here, as a different public function is called!!!
-    AutoPasException autoPasException(exceptionString);
-    exception(autoPasException);
-  }
-
-  /**
    * Set a custom abort function
    * @param function the custom abort function
    */
@@ -91,7 +83,7 @@ class ExceptionHandler {
   static std::mutex exceptionMutex;
   static ExceptionBehavior _behavior;
   static std::function<void()> _customAbortFunction;
-
+ public:
   class AutoPasException : public std::exception {
    public:
     explicit AutoPasException(const std::string& description)
@@ -105,5 +97,19 @@ class ExceptionHandler {
     std::string _description;
   };
 };
+
+/**
+ * Handles an exception that is defined using the input string
+ * @param exceptionString the string to describe the exception
+ */
+template <>
+void ExceptionHandler::exception(const std::string exceptionString);
+
+/**
+ * Handles an exception that is defined using the input string
+ * @param exceptionString the string to describe the exception
+ */
+template <>
+void ExceptionHandler::exception(const char* const exceptionString);
 }
 }
