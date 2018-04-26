@@ -4,11 +4,10 @@
  * @date 17.04.18
  */
 
-
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "utils/Timer.h"
 
-TEST(TimerTest, testTimer){
+TEST(TimerTest, testTimer) {
   autopas::utils::Timer timer;
   timer.start();
   auto time = timer.stop();
@@ -20,5 +19,4 @@ TEST(TimerTest, testTimer){
   time = timer.stop();
   // time should be close to 10ms
   ASSERT_NEAR(time, 10e-3, 1e-3);
-
 }

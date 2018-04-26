@@ -11,14 +11,7 @@
 
 class AutoPasTestBase : public testing::Test {
  public:
-  AutoPasTestBase(){
-    autopas::logger::create();
-  }
+  AutoPasTestBase() { autopas::logger::create(); }
 
-  virtual ~AutoPasTestBase(){
-    autopas::logger::unregister();
-  }
+  virtual ~AutoPasTestBase() { autopas::logger::unregister(); }
 };
-
-
-

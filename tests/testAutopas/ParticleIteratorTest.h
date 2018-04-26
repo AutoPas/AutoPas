@@ -8,9 +8,9 @@
 #ifndef TESTS_TESTAUTOPAS_PARTICLEITERATORTEST_H_
 #define TESTS_TESTAUTOPAS_PARTICLEITERATORTEST_H_
 
-#include "autopasIncludes.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
+#include "autopasIncludes.h"
 
 class ParticleIteratorTest : public AutoPasTestBase {
  public:

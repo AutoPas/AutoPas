@@ -64,9 +64,9 @@ TEST_F(VerletListsTest, testVerletList) {
   autopas::Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-
-  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockFunctor;
-  using ::testing::_;       // anything is ok
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
+      mockFunctor;
+  using ::testing::_;  // anything is ok
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
   verletLists.iteratePairwiseAoS2(&mockFunctor, true);
@@ -97,9 +97,9 @@ TEST_F(VerletListsTest, testVerletListInSkin) {
   autopas::Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-
-  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockFunctor;
-  using ::testing::_;       // anything is ok
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
+      mockFunctor;
+  using ::testing::_;  // anything is ok
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
   verletLists.iteratePairwiseAoS2(&mockFunctor, true);
@@ -113,7 +113,6 @@ TEST_F(VerletListsTest, testVerletListInSkin) {
   }
   EXPECT_EQ(partners, 1);
 }
-
 
 TEST_F(VerletListsTest, testVerletListBuildTwice) {
   std::array<double, 3> min = {1, 1, 1};

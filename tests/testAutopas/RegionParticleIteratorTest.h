@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "autopasIncludes.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
+#include "autopasIncludes.h"
 
 class TouchableParticle : public autopas::Particle {
  public:

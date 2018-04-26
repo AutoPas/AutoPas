@@ -4,7 +4,6 @@
  * @date 20.04.18
  */
 
-
 #pragma once
 
 #include <gtest/gtest.h>

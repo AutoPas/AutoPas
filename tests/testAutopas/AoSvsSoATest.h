@@ -11,7 +11,6 @@
 
 class AoSvsSoATest : public AutoPasTestBase {
  public:
-
   void generateParticles(std::vector<autopas::Particle> *particles);
 };
 

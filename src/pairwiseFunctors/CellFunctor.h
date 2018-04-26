@@ -100,8 +100,8 @@ class CellFunctor {
   }
 
   /**
-   * Applies the functor to all particle pairs without exploiting newtons third law of
-   * motion
+   * Applies the functor to all particle pairs without exploiting newtons third
+   * law of motion
    * @param cell
    */
   void processCellAoSNoN3(ParticleCell &cell) {

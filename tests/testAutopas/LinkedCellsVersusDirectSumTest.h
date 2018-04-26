@@ -8,9 +8,9 @@
 #ifndef TESTS_TESTAUTOPAS_LINKEDCELLSVERSUSDIRECTSUMTEST_H_
 #define TESTS_TESTAUTOPAS_LINKEDCELLSVERSUSDIRECTSUMTEST_H_
 
-#include "autopasIncludes.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
+#include "autopasIncludes.h"
 
 class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
  public:

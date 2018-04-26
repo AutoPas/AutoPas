@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 #include "AutoPas.h"
+#include "AutoPasTestBase.h"
 #include "mocks/MockFunctor.h"
 #include "sph/autopassph.h"
-#include "AutoPasTestBase.h"
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */

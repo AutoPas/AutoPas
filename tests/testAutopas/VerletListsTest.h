@@ -7,7 +7,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "autopasIncludes.h"
 #include "AutoPasTestBase.h"
+#include "autopasIncludes.h"
 
 class VerletListsTest : public AutoPasTestBase {};

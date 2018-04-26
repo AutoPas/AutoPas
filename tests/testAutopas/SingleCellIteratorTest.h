@@ -8,9 +8,9 @@
 #ifndef TESTS_TESTAUTOPAS_SINGLECELLITERATORTEST_H_
 #define TESTS_TESTAUTOPAS_SINGLECELLITERATORTEST_H_
 
-#include "autopasIncludes.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
+#include "autopasIncludes.h"
 
 class SingleCellIteratorTest : public AutoPasTestBase {
  public:
