@@ -9,6 +9,7 @@
 
 #include <utils/WrapOpenMP.h>
 #include <algorithm>
+#include <iomanip>
 #include "CellPairTraversal.h"
 #include "utils/ThreeDimensionalMapping.h"
 
@@ -125,22 +126,26 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
 
 template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
-  //  using std::array;
-  //  array<unsigned long, 3> endid;
-  //  for (int d = 0; d < 3; ++d) {
-  //    endid[d] = this->_cellsPerDimension[d] - 1;
-  //  }
-  //
-  //  for (unsigned long z = 0; z < endid[2]; ++z) {
-  //    for (unsigned long y = 0; y < endid[1]; ++y) {
-  //      for (unsigned long x = 0; x < endid[0]; ++x) {
-  //        unsigned long ind =
-  //            ThreeDimensionalMapping::threeToOneD(x, y, z,
-  //            this->_cellsPerDimension);
-  //        processBaseCell(ind);
+  using std::array;
+  array<unsigned long, 3> endid;
+  for (int d = 0; d < 3; ++d) {
+    endid[d] = this->_cellsPerDimension[d] - 1;
+  }
+
+  //    for (unsigned long z = 0; z < endid[2]; ++z) {
+  //      for (unsigned long y = 0; y < endid[1]; ++y) {
+  //        for (unsigned long x = 0; x < endid[0]; ++x) {
+  //          unsigned long ind =
+  //              ThreeDimensionalMapping::threeToOneD(x, y, z,
+  //              this->_cellsPerDimension);
+  //          std::cout << "processing: " << ind << std::endl;
+  //          processBaseCell(ind);
+  //        }
+  //        std::cout << "loop 2 " << std::endl;
   //      }
+  //        std::cout << "loop 3 " << std::endl;
   //    }
-  //  }
+  //    return;
 
   // 0) TODO: check if applicable
 
@@ -161,16 +166,17 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
         return a.second > b.second;
       });
 
-  auto numSlices = autopas_get_num_threads();
+  auto numSlices = autopas_get_max_threads();
 
   unsigned long sliceThickness = mapDimLength[0].second / numSlices;
 
   unsigned long cellsPerSlice = mapDimLength[1].second * mapDimLength[2].second;
 
   std::vector<autopas_lock_t *> locks;
-  locks.reserve(numSlices);
+  locks.resize(numSlices);
 
   for (auto i = 0; i < numSlices - 1; ++i) {
+    locks[i] = new autopas_lock_t;
     autopas_init_lock(locks[i]);
   }
 
@@ -178,23 +184,58 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
 #pragma omp parallel for schedule(static, 1)
 #endif
   for (auto slice = 0; slice < numSlices; ++slice) {
+
+    std::vector<int> myIds;
+
+    int mySliceThickness = sliceThickness;
+    // last slice must compensate for rounding
+    if (slice == numSlices -1)
+      mySliceThickness += mapDimLength[0].second - sliceThickness * numSlices - 1;
+
     // lock the starting layer
     if (slice > 0) autopas_set_lock(locks[slice - 1]);
-    for (auto dimSlice = 0; dimSlice < sliceThickness; ++dimSlice) {
+    for (auto dimSlice = 0; dimSlice < mySliceThickness; ++dimSlice) {
       // at the last layer request next lock the last layer has no next
-      if (slice != numSlices - 1 && dimSlice == sliceThickness - 1) autopas_set_lock(locks[slice]);
-      for (auto dimMedium = 0; dimMedium < mapDimLength[1].second;
+      if (slice != numSlices - 1 && dimSlice == mySliceThickness - 1)
+        autopas_set_lock(locks[slice]);
+      for (auto dimMedium = 0; dimMedium < mapDimLength[1].second - 1;
            ++dimMedium) {
-        for (auto dimShort = 0; dimShort < mapDimLength[2].second; ++dimShort) {
-          processBaseCell(slice * sliceThickness + dimMedium * mapDimLength[2].second + dimShort);
+        for (auto dimShort = 0; dimShort < mapDimLength[2].second - 1;
+             ++dimShort) {
+          auto id = (slice * sliceThickness + dimSlice) * mapDimLength[1].second * mapDimLength[2].second +
+              dimMedium * mapDimLength[2].second + dimShort;
+          processBaseCell(id);
+          myIds.push_back(id);
         }
       }
       // at the end of the first layer release the lock
       if (slice > 0 && dimSlice == 0)
         autopas_unset_lock(locks[slice - 1]);
-      else if (slice != numSlices - 1 &&dimSlice == sliceThickness - 1)
+      else if (slice != numSlices - 1 && dimSlice == mySliceThickness - 1)
         autopas_unset_lock(locks[slice]);
     }
+
+#pragma omp critical
+    {
+      int dims[3];
+
+      dims[mapDimLength[0].first] = mySliceThickness;
+      dims[mapDimLength[1].first] = mapDimLength[1].second;
+      dims[mapDimLength[2].first] = mapDimLength[2].second;
+
+    std::cout << "Thread: " << autopas_get_thread_num() << " processed slice " << slice
+              << " with " << std::setw(3) << myIds.size() << " base cells. "
+              << "(" << dims[0] << " x " << dims[1] << " x " << dims[2] << ")" << std::endl;
+//      for (auto i : myIds) {
+//        std::cout << std::setw(2) << i << " ";
+//      }
+//      std::cout << std::endl;
+    }
+  }
+
+  for (auto i = 0; i < numSlices - 1; ++i) {
+    autopas_destroy_lock(locks[i]);
+    delete locks[i];
   }
 }
 
