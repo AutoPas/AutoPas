@@ -105,6 +105,15 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     LinkedCells<Particle, ParticleCell>::addHaloParticle(haloParticle);
   }
 
+  /**
+   * @copydoc LinkedCells::updateContainer()
+   * @note this function invalidates the neighbor lists
+   */
+  void updateContainer() override{
+    _neighborListIsValid = false;
+    LinkedCells<Particle, ParticleCell>::updateContainer();
+  }
+
  private:
   class VerletListGeneratorFunctor
       : public autopas::Functor<Particle, ParticleCell> {
