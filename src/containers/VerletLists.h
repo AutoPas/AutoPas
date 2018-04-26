@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "utils/arrayMath.h"
 #include "LinkedCells.h"
 
 namespace autopas {
@@ -17,8 +18,6 @@ namespace autopas {
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
- * @todo This class does not yet provide the ability to reuse computed verlet
- * lists.
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @tparam ParticleCell
@@ -39,16 +38,22 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   /**
    * Constructor of the VerletLists class.
    * Each cell of the verlet lists class, is at least of size cutoff + skin.
-   *
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
+   * @param rebuildFrequency specifies after how many pair-wise traversals the
+   * neighbor lists are to be rebuild. A frequency of 1 means that they are
+   * always rebuild, 10 means they are rebuild after 10 traversals.
    */
   VerletLists(const std::array<double, 3> boxMin,
-              const std::array<double, 3> boxMax, double cutoff, double skin)
+              const std::array<double, 3> boxMax, double cutoff, double skin,
+              unsigned int rebuildFrequency = 1)
       : LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
-        _skin(skin) {}
+        _skin(skin),
+        _traversalsSinceLastRebuild(UINT_MAX),
+        _rebuildFrequency(rebuildFrequency),
+        _neighborListIsValid(false) {}
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell>* f,
                           bool useNewton3 = true) override {
@@ -59,6 +64,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * same as iteratePairwiseAoS, but potentially faster (if called with the
    * derived functor), as the class of the functor is known and thus the
    * compiler can do some better optimizations.
+   *
    * @tparam ParticleFunctor
    * @param f
    * @param useNewton3 defines whether newton3 should be used
@@ -74,6 +80,24 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @return the neighbour list
    */
   AoS_verletlist_storage_type& getVerletListsAoS() { return _verletListsAoS; }
+
+  /**
+   * @copydoc LinkedCells::addParticle()
+   * @note this function invalidates the neighbor lists
+   */
+  void addParticle(Particle& p) override {
+    _neighborListIsValid = false;
+    LinkedCells<Particle, ParticleCell>::addParticle(p);
+  }
+
+  /**
+   * @copydoc LinkedCells::addHaloParticle()
+   * @note this function invalidates the neighbor lists
+   */
+  void addHaloParticle(Particle& haloParticle) override {
+    _neighborListIsValid = false;
+    LinkedCells<Particle, ParticleCell>::addHaloParticle(haloParticle);
+  }
 
  private:
   class VerletListGeneratorFunctor
@@ -115,6 +139,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
                                  (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
+
+    // the neighbor list is now valid
+    _neighborListIsValid = true;
   }
 
   template <class ParticleFunctor>
@@ -159,6 +186,16 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   AoS_verletlist_storage_type _verletListsAoS;
 
   double _skin;
+
+  /// how many pairwise traversals have been done since the last traversal
+  unsigned int _traversalsSinceLastRebuild;
+
+  /// specifies after how many pairwise traversals the neighbor list is to be
+  /// rebuild
+  unsigned int _rebuildFrequency;
+
+  // specifies if the neighbor list is currently valid
+  bool _neighborListIsValid;
 };
 
 } /* namespace autopas */
