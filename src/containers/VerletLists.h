@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "utils/arrayMath.h"
 #include "LinkedCells.h"
+#include "utils/arrayMath.h"
 
 namespace autopas {
 
@@ -21,6 +21,8 @@ namespace autopas {
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @tparam ParticleCell
+ * @todo deleting particles should also invalidate the verlet lists - should be
+ * implemented somehow
  */
 template <class Particle, class ParticleCell>
 class VerletLists : public LinkedCells<Particle, ParticleCell> {
@@ -71,8 +73,12 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
-    this->updateVerletListsAoS(useNewton3);
+    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild it!
+      this->updateVerletListsAoS(useNewton3);
+    }
     this->iterateVerletListsAoS(f, useNewton3);
+    // we iterated, so increase traversal counter
+    _traversalsSinceLastRebuild++;
   }
 
   /**
@@ -130,6 +136,13 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         _particleIDtoVerletListIndexMap;
     double _cutoffskinsquared;
   };
+
+  bool needsRebuild() {
+    return (not _neighborListIsValid)  // if the neighborlist is NOT valid a
+                                       // rebuild is needed
+           or (_traversalsSinceLastRebuild >=
+               _rebuildFrequency);  // rebuild with frequency
+  }
 
   void updateVerletListsAoS(bool useNewton3) {
     _verletListsAoS.clear();
