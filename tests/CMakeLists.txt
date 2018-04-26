@@ -17,6 +17,8 @@ ExternalProject_Add(
         URL #https://github.com/google/googletest/archive/master.zip
             ${CMAKE_SOURCE_DIR}/libs/googletest-master.zip
         URL_HASH MD5=4560d4993f33dd5b072ae7849e578229
+        BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/gtest/src/gtest-build/googlemock/gtest/libgtest.a
+        BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/gtest/src/gtest-build/googlemock/libgmock.a
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest
         # Disable install step
         INSTALL_COMMAND ""
