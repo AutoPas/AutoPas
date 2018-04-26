@@ -9,6 +9,7 @@
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_
 
 #include <vector>
+#include <utils/ExceptionHandler.h>
 #include "SingleCellIterator.h"
 
 namespace autopas {
@@ -81,7 +82,7 @@ class ParticleIterator {
     if (_iteratorWithinOneCell.isValid()) {
       _iteratorWithinOneCell.deleteCurrentParticle();
     } else {
-      // error
+      utils::ExceptionHandler::exception("ParticleIterator: deleting invalid particle");
     }
   }
 
