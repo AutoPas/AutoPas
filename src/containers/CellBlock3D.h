@@ -203,8 +203,7 @@ CellBlock3D<ParticleCell>::get3DIndexOfPosition(
                                       _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
     /// @todo this is a sanity check to prevent doubling of particles, but
-    /// should
-    /// be done better!
+    /// should be done better!
     if (pos[dim] >= _boxMax[dim]) {
       cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - 1;
     } else if (pos[dim] < _boxMin[dim]) {
