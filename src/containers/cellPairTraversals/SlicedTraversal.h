@@ -127,46 +127,42 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
 template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   using std::array;
-  array<unsigned long, 3> endid;
-  for (int d = 0; d < 3; ++d) {
-    endid[d] = this->_cellsPerDimension[d] - 1;
-  }
-
-  //    for (unsigned long z = 0; z < endid[2]; ++z) {
-  //      for (unsigned long y = 0; y < endid[1]; ++y) {
-  //        for (unsigned long x = 0; x < endid[0]; ++x) {
-  //          unsigned long ind =
-  //              ThreeDimensionalMapping::threeToOneD(x, y, z,
-  //              this->_cellsPerDimension);
-  //          std::cout << "processing: " << ind << std::endl;
-  //          processBaseCell(ind);
-  //        }
-  //        std::cout << "loop 2 " << std::endl;
-  //      }
-  //        std::cout << "loop 3 " << std::endl;
-  //    }
-  //    return;
 
   // 0) TODO: check if applicable
 
+  // use fallback version if not applicable
   //FIXME: Remove this as soon as other traversals are available
   auto numSlices = autopas_get_max_threads();
   if(this->_cellsPerDimension[0] / numSlices  < 2 ||
      this->_cellsPerDimension[1] / numSlices  < 2 ||
      this->_cellsPerDimension[2] / numSlices  < 2 ) {
-    omp_set_num_threads(1);
-    numSlices = 1;
+
+    array<unsigned long, 3> endid;
+    for (int d = 0; d < 3; ++d) {
+    endid[d] = this->_cellsPerDimension[d] - 1;
+    }
+     for (unsigned long z = 0; z < endid[2]; ++z) {
+       for (unsigned long y = 0; y < endid[1]; ++y) {
+         for (unsigned long x = 0; x < endid[0]; ++x) {
+           unsigned long ind =
+               ThreeDimensionalMapping::threeToOneD(x, y, z,
+               this->_cellsPerDimension);
+           processBaseCell(ind);
+         }
+       }
+     }
+     return;
   }
 
   // 1) split domain across its longest dimension
 
   // find dimension with most cells
 
-  std::vector<std::pair<int, unsigned long>> mapDimLength{
+  std::array<std::pair<int, unsigned long>, 3> mapDimLength{{
       {0, this->_cellsPerDimension[0]},
       {1, this->_cellsPerDimension[1]},
       {2, this->_cellsPerDimension[2]},
-  };
+  }};
 
   // sorts longest dimension to index 0
   std::sort(
@@ -176,20 +172,12 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
       });
 
 
-  // unsigned long sliceThickness = mapDimLength[0].second / numSlices;
   std::vector<unsigned long> sliceThickness(numSlices, mapDimLength[0].second / numSlices);
-  // for(int i = mapDimLength[0].second - sliceThickness[0] - 1 * numSlices; i >= 0; --i)
-  std::cout << "Overhead: " << mapDimLength[0].second - sliceThickness[0] * numSlices << std::endl;
-  // auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices - 1;
   auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices;
   for(int i = 0; i < rest; ++i)
       ++sliceThickness[i];
   // decreases last sliceThickness by one to account for the way we handle base cells
   --*--sliceThickness.end();
-
-  std::cout << mapDimLength[0].second << std::endl;
-  for(auto s : sliceThickness)
-      std::cout << s << std::endl;
 
   unsigned long cellsPerSlice = mapDimLength[1].second * mapDimLength[2].second;
 
@@ -239,23 +227,6 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
         autopas_unset_lock(locks[slice - 1]);
       else if (slice != numSlices - 1 && dimSlice == sliceThickness[slice] - 1)
         autopas_unset_lock(locks[slice]);
-    }
-
-#pragma omp critical
-    {
-      int dims[3];
-
-      dims[mapDimLength[0].first] = sliceThickness[slice];
-      dims[mapDimLength[1].first] = mapDimLength[1].second;
-      dims[mapDimLength[2].first] = mapDimLength[2].second;
-
-    std::cout << "Thread: " << autopas_get_thread_num() << " processed slice " << slice
-              << " with " << std::setw(3) << myIds.size() << " base cells. "
-              << "(" << dims[0] << " x " << dims[1] << " x " << dims[2] << ")" << std::endl;
-//      for (auto i : myIds) {
-//        std::cout << std::setw(2) << i << " ";
-//      }
-//      std::cout << std::endl;
     }
   }
 
