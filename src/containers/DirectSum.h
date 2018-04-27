@@ -132,13 +132,13 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     /// @todo might need to do sth. if particles move outside of the box?
   }
 
-  bool checkValid() override {
+  bool checkUpdateContainerNeeded() override {
     for (auto iter = this->begin(); iter.isValid(); ++iter) {
       if (not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
-        return false;
+        return true;
       }
     }
-    return true;
+    return false;
   }
 
  private:

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "LinkedCells.h"
+#include "VerletListHelpers.h"
 #include "utils/arrayMath.h"
 
 namespace autopas {
@@ -26,20 +27,14 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class VerletLists : public LinkedCells<Particle, ParticleCell> {
-  // AOS
-  typedef std::map<Particle*, std::vector<Particle*>>
-      AoS_verletlist_storage_type;
-
-  // SOA
-  typedef std::map<decltype(Particle().getID()), size_t>
-      particleid_to_verletlistindex_container_type;
-  typedef std::vector<decltype(Particle().getID())>
-      verletlistindex_to_particleid_container_type;
+  typedef VerletListHelpers<Particle, ParticleCell> verlet_internal;
 
  public:
   /**
    * Constructor of the VerletLists class.
-   * Each cell of the verlet lists class, is at least of size cutoff + skin.
+   * The neighbor lists are build using a search radius of cutoff + skin.
+   * The rebuildFrequency should be chosen, s.t. the particles do not move more
+   * than a distance of skin/2 between two rebuilds of the lists.
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
@@ -89,7 +84,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * get the actual neighbour list
    * @return the neighbour list
    */
-  AoS_verletlist_storage_type& getVerletListsAoS() { return _verletListsAoS; }
+  typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() {
+    return _verletListsAoS;
+  }
 
   /**
    * @copydoc LinkedCells::addParticle()
@@ -118,49 +115,38 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     LinkedCells<Particle, ParticleCell>::updateContainer();
   }
 
- protected:
   /**
-   * This functor can generate verlet lists using the typical pairwise
-   * traversal.
-   * @todo: SoA?
+   * Checks whether the neighbor lists are valid.
+   * A neighbor list is valid if all pairs of particles whose interaction should
+   * be calculated are represented in the neighbor lists.
+   * @return whether the list is valid
+   * @note this check involves pair-wise interaction checks and is thus
+   * relatively costly.
    */
-  class VerletListGeneratorFunctor
-      : public autopas::Functor<Particle, ParticleCell> {
-   public:
-    /**
-     * Constructor
-     * @param verletListsAoS
-     * @param particleIDtoVerletListIndexMap
-     * @param cutoffskinsquared
-     */
-    VerletListGeneratorFunctor(AoS_verletlist_storage_type& verletListsAoS,
-                               particleid_to_verletlistindex_container_type&
-                                   particleIDtoVerletListIndexMap,
-                               double cutoffskinsquared)
-        : _verletListsAoS(verletListsAoS),
-          _particleIDtoVerletListIndexMap(particleIDtoVerletListIndexMap),
-          _cutoffskinsquared(cutoffskinsquared) {}
-
-    void AoSFunctor(Particle& i, Particle& j, bool newton3 = true) override {
-      auto dist = arrayMath::sub(i.getR(), j.getR());
-      double distsquare = arrayMath::dot(dist, dist);
-      if (distsquare < _cutoffskinsquared)
-        // this is thread safe, only if particle i is accessed by only one
-        // thread at a time. which is ensured, as particle i resides in a
-        // specific cell and each cell is only accessed by one thread at a time
-        // (ensured by traversals)
-        // also the list is not allowed to be resized!
-
-        _verletListsAoS[&i].push_back(&j);
+  bool checkNeighborListsAreValid(bool useNewton3 = true) {
+    // if a particle was added or deleted, ... the list is definitely invalid
+    if (not _neighborListIsValid) {
+      return false;
+    }
+    // if a particle moved more than skin/2 outside of its cell the list is
+    // invalid
+    if(this->checkUpdateContainerNeeded()){
+      return false;
     }
 
-   private:
-    AoS_verletlist_storage_type& _verletListsAoS;
-    particleid_to_verletlistindex_container_type&
-        _particleIDtoVerletListIndexMap;
-    double _cutoffskinsquared;
-  };
+    // particles can also simply be very close already:
+    typename verlet_internal::VerletListValidityCheckerFunctor
+        validityCheckerFunctor(
+            _verletListsAoS, _particleIDtoVerletListIndexContainer,
+            ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
+    LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(
+        &validityCheckerFunctor, useNewton3);
+
+    return validityCheckerFunctor.neighborlistsAreValid();
+  }
+
+ protected:
   /**
    * specifies whether the neighbor lists need to be rebuild
    * @return true if the neighbor lists need to be rebuild, false otherwise
@@ -179,9 +165,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   virtual void updateVerletListsAoS(bool useNewton3) {
     _verletListsAoS.clear();
     updateIdMapAoS();
-    VerletListGeneratorFunctor f(_verletListsAoS,
-                                 _particleIDtoVerletListIndexContainer,
-                                 (this->getCutoff() * this->getCutoff()));
+    typename verlet_internal::VerletListGeneratorFunctor f(
+        _verletListsAoS, _particleIDtoVerletListIndexContainer,
+        (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
   }
@@ -230,14 +216,14 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   /// This is needed, as the particles don't have a local id.
   /// @todo remove this and add local id to the particles (this saves a
   /// relatively costly lookup)
-  particleid_to_verletlistindex_container_type
+  typename verlet_internal::particleid_to_verletlistindex_container_type
       _particleIDtoVerletListIndexContainer;
 
-  verletlistindex_to_particleid_container_type
+  typename verlet_internal::verletlistindex_to_particleid_container_type
       _verletListIndextoParticleIDContainer;
 
   /// verlet lists.
-  AoS_verletlist_storage_type _verletListsAoS;
+  typename verlet_internal::AoS_verletlist_storage_type _verletListsAoS;
 
   double _skin;
 

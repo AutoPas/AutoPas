@@ -158,7 +158,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  bool checkValid() override {
+  bool checkUpdateContainerNeeded() override {
     //    for (auto &cell : this->_data) {
     //      for (auto iter = cell.begin(); iter.isValid(); ++iter) {
     //
@@ -167,6 +167,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     //        }
     //      }
     //    }
+    ///@todo implement this properly
+    return false;
   }
 
  protected:
