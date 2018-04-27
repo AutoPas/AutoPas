@@ -43,7 +43,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (inBox) {
       getCell()->addParticle(p);
     } else {
-      /// @todo
+      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box");
     }
   }
 
@@ -52,7 +52,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (not inBox) {
       getHaloCell()->addParticle(p);
     } else {  // particle is not outside of own box
-      /// @todo
+      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not OUTSIDE of the bounding box");
     }
   }
 

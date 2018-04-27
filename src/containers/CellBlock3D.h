@@ -13,6 +13,7 @@
 #include <vector>
 #include "utils/ExceptionHandler.h"
 #include "utils/ThreeDimensionalMapping.h"
+#include "utils/inBox.h"
 
 namespace autopas {
 /**
