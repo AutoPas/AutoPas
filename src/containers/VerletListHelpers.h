@@ -9,15 +9,22 @@
 #include <atomic>
 namespace autopas {
 template <class Particle, class ParticleCell>
+/**
+ * class of helpers for verlet lists
+ * @tparam Particle
+ * @tparam ParticleCell
+ */
 class VerletListHelpers {
  public:
-  // AOS
+  /// AOS verlet list storage
   typedef std::map<Particle *, std::vector<Particle *>>
       AoS_verletlist_storage_type;
 
-  // SOA
+  /// (SoA) map from particle id to index in verlet list container
   typedef std::map<decltype(Particle().getID()), size_t>
       particleid_to_verletlistindex_container_type;
+
+  /// (SOA) map from verlet list index to particle id
   typedef std::vector<decltype(Particle().getID())>
       verletlistindex_to_particleid_container_type;
 

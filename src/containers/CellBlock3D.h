@@ -98,7 +98,7 @@ class CellBlock3D {
    * @param boxmin the lower corner (out)
    * @param boxmax the upper corner (out)
    */
-  void getCellBoundingBox(const std::array<index_t, 3> index1d,
+  void getCellBoundingBox(const std::array<index_t, 3> index3d,
                           std::array<double, 3> &boxmin,
                           std::array<double, 3> &boxmax);
 
