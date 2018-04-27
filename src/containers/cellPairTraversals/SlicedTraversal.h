@@ -149,6 +149,15 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
 
   // 0) TODO: check if applicable
 
+  //FIXME: Remove this as soon as other traversals are available
+  auto numSlices = autopas_get_max_threads();
+  if(this->_cellsPerDimension[0] / numSlices  < 2 ||
+     this->_cellsPerDimension[1] / numSlices  < 2 ||
+     this->_cellsPerDimension[2] / numSlices  < 2 ) {
+    omp_set_num_threads(1);
+    numSlices = 1;
+  }
+
   // 1) split domain across its longest dimension
 
   // find dimension with most cells
@@ -166,9 +175,21 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
         return a.second > b.second;
       });
 
-  auto numSlices = autopas_get_max_threads();
 
-  unsigned long sliceThickness = mapDimLength[0].second / numSlices;
+  // unsigned long sliceThickness = mapDimLength[0].second / numSlices;
+  std::vector<unsigned long> sliceThickness(numSlices, mapDimLength[0].second / numSlices);
+  // for(int i = mapDimLength[0].second - sliceThickness[0] - 1 * numSlices; i >= 0; --i)
+  std::cout << "Overhead: " << mapDimLength[0].second - sliceThickness[0] * numSlices << std::endl;
+  // auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices - 1;
+  auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices;
+  for(int i = 0; i < rest; ++i)
+      ++sliceThickness[i];
+  // decreases last sliceThickness by one to account for the way we handle base cells
+  --*--sliceThickness.end();
+
+  std::cout << mapDimLength[0].second << std::endl;
+  for(auto s : sliceThickness)
+      std::cout << s << std::endl;
 
   unsigned long cellsPerSlice = mapDimLength[1].second * mapDimLength[2].second;
 
@@ -180,6 +201,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
     autopas_init_lock(locks[i]);
   }
 
+
 #if defined(_OPENMP)
 #pragma omp parallel for schedule(static, 1)
 #endif
@@ -187,22 +209,26 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
 
     std::vector<int> myIds;
 
-    int mySliceThickness = sliceThickness;
+    // int mySliceThickness = sliceThickness;
     // last slice must compensate for rounding
-    if (slice == numSlices -1)
-      mySliceThickness += mapDimLength[0].second - sliceThickness * numSlices - 1;
+    // if (slice == numSlices -1)
+      // mySliceThickness += mapDimLength[0].second - sliceThickness * numSlices - 1;
+      //
+    auto myOffset = 0;
+    for(auto s = 0; s < slice; ++s)
+        myOffset += sliceThickness[s];
 
     // lock the starting layer
     if (slice > 0) autopas_set_lock(locks[slice - 1]);
-    for (auto dimSlice = 0; dimSlice < mySliceThickness; ++dimSlice) {
+    for (auto dimSlice = 0; dimSlice < sliceThickness[slice]; ++dimSlice) {
       // at the last layer request next lock the last layer has no next
-      if (slice != numSlices - 1 && dimSlice == mySliceThickness - 1)
+      if (slice != numSlices - 1 && dimSlice == sliceThickness[slice] - 1)
         autopas_set_lock(locks[slice]);
       for (auto dimMedium = 0; dimMedium < mapDimLength[1].second - 1;
            ++dimMedium) {
         for (auto dimShort = 0; dimShort < mapDimLength[2].second - 1;
              ++dimShort) {
-          auto id = (slice * sliceThickness + dimSlice) * mapDimLength[1].second * mapDimLength[2].second +
+          auto id = (myOffset + dimSlice) * mapDimLength[1].second * mapDimLength[2].second +
               dimMedium * mapDimLength[2].second + dimShort;
           processBaseCell(id);
           myIds.push_back(id);
@@ -211,7 +237,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
       // at the end of the first layer release the lock
       if (slice > 0 && dimSlice == 0)
         autopas_unset_lock(locks[slice - 1]);
-      else if (slice != numSlices - 1 && dimSlice == mySliceThickness - 1)
+      else if (slice != numSlices - 1 && dimSlice == sliceThickness[slice] - 1)
         autopas_unset_lock(locks[slice]);
     }
 
@@ -219,7 +245,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
     {
       int dims[3];
 
-      dims[mapDimLength[0].first] = mySliceThickness;
+      dims[mapDimLength[0].first] = sliceThickness[slice];
       dims[mapDimLength[1].first] = mapDimLength[1].second;
       dims[mapDimLength[2].first] = mapDimLength[2].second;
 
