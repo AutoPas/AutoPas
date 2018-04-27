@@ -130,7 +130,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     }
     // if a particle moved more than skin/2 outside of its cell the list is
     // invalid
-    if(this->checkUpdateContainerNeeded()){
+    if (this->checkUpdateContainerNeeded()) {
       return false;
     }
 
@@ -144,6 +144,23 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         &validityCheckerFunctor, useNewton3);
 
     return validityCheckerFunctor.neighborlistsAreValid();
+  }
+
+  bool checkUpdateContainerNeeded() override {
+    for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+      std::array<double, 3> boxmin;
+      std::array<double, 3> boxmax;
+      this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
+      boxmin = arrayMath::addScalar(boxmin, -_skin / 2.);
+      boxmax = arrayMath::addScalar(boxmax, +_skin / 2.);
+      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid();
+           ++iter) {
+        if (not iter->inBox(boxmin, boxmax)) {
+          return true;  // we need an update
+        }
+      }
+    }
+    return false;
   }
 
  protected:

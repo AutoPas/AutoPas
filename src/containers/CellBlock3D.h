@@ -84,6 +84,25 @@ class CellBlock3D {
   ParticleCell &getContainingCell(const std::array<double, 3> &pos) const;
 
   /**
+   * Get the lower and upper corner of the cell at the 1d index index1d
+   * @param index1d the 1d index
+   * @param boxmin the lower corner (out)
+   * @param boxmax the upper corner (out)
+   */
+  void getCellBoundingBox(const index_t index1d, std::array<double, 3> &boxmin,
+                          std::array<double, 3> &boxmax);
+
+  /**
+   * Get the lower and upper corner of the cell at the 3d index index3d
+   * @param index3d the 3d index
+   * @param boxmin the lower corner (out)
+   * @param boxmax the upper corner (out)
+   */
+  void getCellBoundingBox(const std::array<index_t, 3> index1d,
+                          std::array<double, 3> &boxmin,
+                          std::array<double, 3> &boxmax);
+
+  /**
    * get the 3d index of the cellblock for a given position
    * @param pos the position
    * @return the 3d index
@@ -193,18 +212,17 @@ CellBlock3D<ParticleCell>::get3DIndexOfPosition(
     const std::array<double, 3> &pos) const {
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
-  std::array<double, 3> localPoint = pos;
   for (int dim = 0; dim < 3; dim++) {
     long int value =
-        (static_cast<long int>(floor((localPoint[dim] - _boxMin[dim]) *
-                                     _cellLengthReciprocal[dim]))) +
+        (static_cast<long int>(
+            floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
         1l;
     long int nonnegativeValue = std::max(value, 0l);
     index_t nonLargerValue = std::min(static_cast<index_t>(nonnegativeValue),
                                       _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
     /// @todo this is a sanity check to prevent doubling of particles, but
-    /// should be done better!
+    /// could be done better!
     if (pos[dim] >= _boxMax[dim]) {
       cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - 1;
     } else if (pos[dim] < _boxMin[dim]) {
@@ -215,13 +233,6 @@ CellBlock3D<ParticleCell>::get3DIndexOfPosition(
   return cellIndex;
   // in very rare cases rounding is stupid, thus we need a check...
   /// @todo when the border and flag manager is there
-}
-
-template <class ParticleCell>
-inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(
-    const std::array<double, 3> &pos) const {
-  auto ind = get1DIndexOfPosition(pos);
-  return getCell(ind);
 }
 
 template <class ParticleCell>
@@ -239,7 +250,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec,
   for (int d = 0; d < 3; ++d) {
     double diff = _boxMax[d] - _boxMin[d];
     auto cellsPerDim =
-        static_cast<index_t>(std::floor((diff) / _interactionLength));
+        static_cast<index_t>(std::floor(diff / _interactionLength));
     // at least one central cell
     cellsPerDim = std::max(cellsPerDim, 1ul);
 
@@ -262,6 +273,47 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec,
   //		_haloBoxMin, _haloBoxMax,
   //		_boxMin, _boxMax,
   //		_cellLength);
+}
+
+template <class ParticleCell>
+inline void CellBlock3D<ParticleCell>::getCellBoundingBox(
+    const index_t index1d, std::array<double, 3> &boxmin,
+    std::array<double, 3> &boxmax) {
+  this->getCellBoundingBox(this->index3D(index1d), boxmin, boxmax);
+}
+
+template <class ParticleCell>
+inline void CellBlock3D<ParticleCell>::getCellBoundingBox(
+    const std::array<index_t, 3> index3d, std::array<double, 3> &boxmin,
+    std::array<double, 3> &boxmax) {
+  for (int d = 0; d < 3; d++) {
+    // defaults
+    boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
+    boxmax[d] = (index3d[d] + 1) * this->_cellLength[d] + _haloBoxMin[d];
+
+    // stupid rounding errors (makes sure that the lower corner is set
+    // correctly!
+    if (index3d[d] == 0) {
+      boxmin[d] = _haloBoxMin[d];
+      boxmax[d] = _boxMin[d];
+    } else if (index3d[d] == 1) {
+      boxmin[d] = _boxMin[d];
+    }
+    // no else!, as this might ALSO be 1
+    if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - 2) {
+      boxmax[d] = _boxMax[d];
+    } else if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - 1) {
+      boxmin[d] = _boxMax[d];
+      boxmax[d] = _haloBoxMax[d];
+    }
+  }
+}
+
+template <class ParticleCell>
+inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(
+    const std::array<double, 3> &pos) const {
+  auto ind = get1DIndexOfPosition(pos);
+  return getCell(ind);
 }
 
 template <class ParticleCell>

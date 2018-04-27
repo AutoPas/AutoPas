@@ -416,7 +416,7 @@ TEST_F(VerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
       // this sets the particle more than skin/2 outside of cell (xmax_cell=2.3)
-      iter->setR({2.5, 1.1, 1.1});
+      iter->setR({2.7, 1.1, 1.1});
     }
   }
 
