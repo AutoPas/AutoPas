@@ -11,6 +11,7 @@
 #include "ParticleContainer.h"
 #include "pairwiseFunctors/CellFunctor.h"
 #include "pairwiseFunctors/LJFunctor.h"
+#include "utils/ExceptionHandler.h"
 #include "utils/inBox.h"
 
 namespace autopas {
