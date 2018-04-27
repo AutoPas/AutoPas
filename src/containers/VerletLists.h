@@ -73,8 +73,12 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
-    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild it!
+    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
+                           // it!
       this->updateVerletListsAoS(useNewton3);
+      // the neighbor list is now valid
+      _neighborListIsValid = true;
+      _traversalsSinceLastRebuild = 0;
     }
     this->iterateVerletListsAoS(f, useNewton3);
     // we iterated, so increase traversal counter
@@ -109,15 +113,26 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @copydoc LinkedCells::updateContainer()
    * @note this function invalidates the neighbor lists
    */
-  void updateContainer() override{
+  void updateContainer() override {
     _neighborListIsValid = false;
     LinkedCells<Particle, ParticleCell>::updateContainer();
   }
 
- private:
+ protected:
+  /**
+   * This functor can generate verlet lists using the typical pairwise
+   * traversal.
+   * @todo: SoA?
+   */
   class VerletListGeneratorFunctor
       : public autopas::Functor<Particle, ParticleCell> {
    public:
+    /**
+     * Constructor
+     * @param verletListsAoS
+     * @param particleIDtoVerletListIndexMap
+     * @param cutoffskinsquared
+     */
     VerletListGeneratorFunctor(AoS_verletlist_storage_type& verletListsAoS,
                                particleid_to_verletlistindex_container_type&
                                    particleIDtoVerletListIndexMap,
@@ -146,6 +161,10 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     double _cutoffskinsquared;
   };
 
+  /**
+   * specifies whether the neighbor lists need to be rebuild
+   * @return true if the neighbor lists need to be rebuild, false otherwise
+   */
   bool needsRebuild() {
     return (not _neighborListIsValid)  // if the neighborlist is NOT valid a
                                        // rebuild is needed
@@ -153,7 +172,11 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
                _rebuildFrequency);  // rebuild with frequency
   }
 
-  void updateVerletListsAoS(bool useNewton3) {
+  /**
+   * update the verlet lists for AoS usage
+   * @param useNewton3
+   */
+  virtual void updateVerletListsAoS(bool useNewton3) {
     _verletListsAoS.clear();
     updateIdMapAoS();
     VerletListGeneratorFunctor f(_verletListsAoS,
@@ -161,11 +184,14 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
                                  (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
-
-    // the neighbor list is now valid
-    _neighborListIsValid = true;
   }
 
+  /**
+   * iterate over the verlet lists using the AoS traversal
+   * @tparam ParticleFunctor
+   * @param f
+   * @param useNewton3
+   */
   template <class ParticleFunctor>
   void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
     /// @todo optimize iterateVerletListsAoS, e.g. by using traversals with
@@ -181,6 +207,11 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     }
   }
 
+  /**
+   * update the AoS id maps.
+   * The Id Map is used to map the id of a particle to the actual particle
+   * @return
+   */
   size_t updateIdMapAoS() {
     size_t i = 0;
 
@@ -193,6 +224,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     return i;
   }
 
+ private:
   /// map that converts the id type of the particle to the actual position in
   /// the verlet list.
   /// This is needed, as the particles don't have a local id.
