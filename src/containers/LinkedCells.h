@@ -11,6 +11,7 @@
 #include "CellBlock3D.h"
 #include "ParticleContainer.h"
 #include "containers/cellPairTraversals/SlicedTraversal.h"
+#include "pairwiseFunctors/CellFunctor.h"
 #include "utils/inBox.h"
 
 namespace autopas {
@@ -45,8 +46,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      /// @todo what should happen if a particle should be added, but is not in
-      /// the boundingbox?
+      utils::ExceptionHandler::exception(
+          "LinkedCells: trying to add particle that is not inside the bounding "
+          "box");
     }
   }
 
@@ -56,7 +58,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
       cell.addParticle(haloParticle);
     } else {
-      /// @todo what should happen if a particle is not in the halo?
+      utils::ExceptionHandler::exception(
+          "LinkedCells: trying to add halo particle that is not in the halo "
+          "box");
     }
   }
 
