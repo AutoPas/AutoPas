@@ -302,9 +302,9 @@ TEST_F(VerletListsTest, testForceRebuild) {
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
 
-  autopas::Particle p2({1.1, 1.2, 1.1}, {0., 0., 0.}, 2);
+  autopas::Particle p2({-0.1, 1.2, 1.1}, {0., 0., 0.}, 2);
   EXPECT_CALL(mockVerletLists,addHaloParticle(_));
   mockVerletLists.addHaloParticle(p2);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // 3
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
 }
