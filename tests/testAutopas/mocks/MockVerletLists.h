@@ -28,14 +28,27 @@ class MockVerletLists : public autopas::VerletLists<Particle, ParticleCell> {
   // allowed to mock this! We also don't want to! as this is exactly the
   // function we want to test
   MOCK_METHOD1_T(addParticle, void(Particle& p));
+
   MOCK_METHOD1_T(addHaloParticle, void(Particle& haloParticle));
+
   MOCK_METHOD0(updateContainer, void());
 
  protected:
   MOCK_METHOD1(updateVerletListsAoS, void(bool));
 
+  void addParticleVerletLists(Particle& p) {
+    autopas::VerletLists<Particle, ParticleCell>::addParticle(p);
+  }
+  void addHaloParticleVerletLists(Particle& p) {
+    autopas::VerletLists<Particle, ParticleCell>::addHaloParticle(p);
+  }
+  void updateContainerVerletLists() {
+    autopas::VerletLists<Particle, ParticleCell>::updateContainer();
+  }
+
   friend class VerletListsTest_testRebuildFrequencyAlways_Test;
   friend class VerletListsTest_testRebuildFrequencyEvery3_Test;
+  friend class VerletListsTest_testForceRebuild_Test;
 };
 
 #if __GNUC__ >= 5

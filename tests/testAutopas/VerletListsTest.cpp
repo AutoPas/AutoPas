@@ -242,13 +242,69 @@ TEST_F(VerletListsTest, testRebuildFrequencyEvery3) {
                    autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true); // 1
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // 1
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true); // 2
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // 2
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true); // 3
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // 3
+}
+
+TEST_F(VerletListsTest, testForceRebuild) {
+  using ::testing::_;
+  using ::testing::Invoke;
+
+  MockVerletLists<autopas::Particle,
+                  autopas::FullParticleCell<autopas::Particle>>
+      mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
+
+  ON_CALL(mockVerletLists, addParticle(_))
+      .WillByDefault(Invoke(&mockVerletLists, &MockVerletLists<autopas::Particle,
+                                                               autopas::FullParticleCell<autopas::Particle>>::addParticleVerletLists));
+  ON_CALL(mockVerletLists, addHaloParticle(_))
+      .WillByDefault(Invoke(&mockVerletLists, &MockVerletLists<autopas::Particle,
+                                                               autopas::FullParticleCell<autopas::Particle>>::addHaloParticleVerletLists));
+
+  ON_CALL(mockVerletLists, updateContainer())
+      .WillByDefault(Invoke(&mockVerletLists, &MockVerletLists<autopas::Particle,
+                                                               autopas::FullParticleCell<autopas::Particle>>::updateContainerVerletLists));
+
+
+  autopas::Functor<autopas::Particle,
+                   autopas::FullParticleCell<autopas::Particle>>
+      emptyFunctor;
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
+
+  EXPECT_CALL(mockVerletLists,updateContainer());
+  mockVerletLists.updateContainer();
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
+
+  autopas::Particle p({1.1, 1.1, 1.1}, {0., 0., 0.}, 1);
+  EXPECT_CALL(mockVerletLists,addParticle(_));
+  mockVerletLists.addParticle(p);
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
+
+  autopas::Particle p2({1.1, 1.2, 1.1}, {0., 0., 0.}, 2);
+  EXPECT_CALL(mockVerletLists,addHaloParticle(_));
+  mockVerletLists.addHaloParticle(p2);
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // 3
 }
