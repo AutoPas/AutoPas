@@ -21,5 +21,5 @@ GTEST_ADD_TESTS(runTests
         ${MY_SRC}
         )
 
-ADD_TEST(NAME testAutopas
-        COMMAND runTests)
+#ADD_TEST(NAME testAutopas
+#        COMMAND runTests)
