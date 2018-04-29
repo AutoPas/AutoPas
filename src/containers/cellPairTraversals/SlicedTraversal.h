@@ -39,17 +39,18 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
       : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims,
                                                       cellfunctor) {
 
-    rebuild();
+    rebuild(cells, dims);
     computeOffsets();
 }
   // documentation in base class
   void traverseCellPairs() override;
   bool isApplicable() override;
+  void rebuild(std::vector<ParticleCell> &cells,
+               const std::array<unsigned long, 3> &dims) override;
 
  private:
   void processBaseCell(unsigned long baseIndex) const;
   void computeOffsets();
-  void rebuild();
   //FIXME: Remove this as soon as other traversals are available
   void traverseCellPairsFallback();
 
@@ -144,7 +145,9 @@ inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
 
 
 template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild() {
+inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(
+        std::vector<ParticleCell> &cells,
+        const std::array<unsigned long, 3> &dims) {
   mapDimLength[0] = this->_cellsPerDimension[0];
   mapDimLength[1] = this->_cellsPerDimension[1];
   mapDimLength[2] = this->_cellsPerDimension[2];
