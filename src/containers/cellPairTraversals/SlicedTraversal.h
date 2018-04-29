@@ -55,9 +55,10 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
 
   std::array<std::pair<unsigned long, unsigned long>, 14> _cellPairOffsets;
   std::array<unsigned long, 8> _cellOffsets;
-  std::array<std::pair<int, unsigned long>, 3> mapDimLength;
+  std::array<unsigned long, 3> mapDimLength;
   std::vector<unsigned long> sliceThickness;
   std::vector<autopas_lock_t *> locks;
+
 };
 
 template <class ParticleCell, class CellFunctor>
@@ -135,7 +136,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
 
 template <class ParticleCell, class CellFunctor>
 inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
-  if(this->mapDimLength[0].second / this->sliceThickness.size() >= 2) {
+  if(this->mapDimLength[0] / this->sliceThickness.size() >= 2) {
     return true;
   }
   return false;
@@ -144,14 +145,14 @@ inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
 
 template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild() {
-  mapDimLength[0] = {0, this->_cellsPerDimension[0]};
-  mapDimLength[1] = {1, this->_cellsPerDimension[1]};
-  mapDimLength[2] = {2, this->_cellsPerDimension[2]};
+  mapDimLength[0] = this->_cellsPerDimension[0];
+  mapDimLength[1] = this->_cellsPerDimension[1];
+  mapDimLength[2] = this->_cellsPerDimension[2];
 
   std::sort(
           mapDimLength.begin(), mapDimLength.end(),
-          [](std::pair<int, unsigned long> a, std::pair<int, unsigned long> b) {
-          return a.second > b.second;
+          [](unsigned long a, unsigned long b) {
+          return a > b;
           });
 
   // split domain across its longest dimension
@@ -159,8 +160,8 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild() {
   auto numSlices = autopas_get_max_threads();
   // find dimension with most cells
   sliceThickness.clear();
-  sliceThickness.insert(sliceThickness.begin(), numSlices, mapDimLength[0].second / numSlices);
-  auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices;
+  sliceThickness.insert(sliceThickness.begin(), numSlices, mapDimLength[0]/ numSlices);
+  auto rest = mapDimLength[0]- sliceThickness[0] * numSlices;
   for(int i = 0; i < rest; ++i)
       ++sliceThickness[i];
   // decreases last sliceThickness by one to account for the way we handle base cells
@@ -216,11 +217,6 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
 
     std::vector<int> myIds;
 
-    // int mySliceThickness = sliceThickness;
-    // last slice must compensate for rounding
-    // if (slice == numSlices -1)
-      // mySliceThickness += mapDimLength[0].second - sliceThickness * numSlices - 1;
-      //
     auto myOffset = 0;
     for(auto s = 0; s < slice; ++s)
         myOffset += sliceThickness[s];
@@ -231,12 +227,12 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
       // at the last layer request next lock the last layer has no next
       if (slice != numSlices - 1 && dimSlice == sliceThickness[slice] - 1)
         autopas_set_lock(locks[slice]);
-      for (auto dimMedium = 0; dimMedium < mapDimLength[1].second - 1;
+      for (auto dimMedium = 0; dimMedium < mapDimLength[1]- 1;
            ++dimMedium) {
-        for (auto dimShort = 0; dimShort < mapDimLength[2].second - 1;
+        for (auto dimShort = 0; dimShort < mapDimLength[2]- 1;
              ++dimShort) {
-          auto id = (myOffset + dimSlice) * mapDimLength[1].second * mapDimLength[2].second +
-              dimMedium * mapDimLength[2].second + dimShort;
+          auto id = (myOffset + dimSlice) * mapDimLength[1] * mapDimLength[2] +
+              dimMedium * mapDimLength[2] + dimShort;
           processBaseCell(id);
           myIds.push_back(id);
         }
