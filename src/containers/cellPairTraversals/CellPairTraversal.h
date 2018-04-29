@@ -40,6 +40,15 @@ class CellPairTraversals {
   virtual ~CellPairTraversals() = default;
 
   /**
+   * checks if the traversal is applicable to the current state of the domain.
+   * @return true iff the traversal can be applied.
+   */
+  virtual bool isApplicable() {
+      // return false by default to force thinking about this
+      return false;
+  }
+
+  /**
    * resets the cell structure of the traversal
    * @param cells
    * @param dims

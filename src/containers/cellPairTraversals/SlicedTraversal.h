@@ -38,40 +38,18 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
                            CellFunctor *cellfunctor)
       : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims,
                                                       cellfunctor) {
-    // this should probably go to rebuild()
-    mapDimLength[0] = {0, this->_cellsPerDimension[0]};
-    mapDimLength[1] = {1, this->_cellsPerDimension[1]};
-    mapDimLength[2] = {2, this->_cellsPerDimension[2]};
 
-    std::sort(
-      mapDimLength.begin(), mapDimLength.end(),
-      [](std::pair<int, unsigned long> a, std::pair<int, unsigned long> b) {
-        return a.second > b.second;
-    });
-
-
-    // 1) split domain across its longest dimension
-
-    auto numSlices = autopas_get_max_threads();
-    // find dimension with most cells
-    sliceThickness.clear();
-    sliceThickness.insert(sliceThickness.begin(), numSlices, mapDimLength[0].second / numSlices);
-    auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices;
-    for(int i = 0; i < rest; ++i)
-      ++sliceThickness[i];
-    // decreases last sliceThickness by one to account for the way we handle base cells
-    --*--sliceThickness.end();
-
-    locks.resize(numSlices);
-
+    rebuild();
     computeOffsets();
 }
   // documentation in base class
   void traverseCellPairs() override;
+  bool isApplicable() override;
 
  private:
   void processBaseCell(unsigned long baseIndex) const;
   void computeOffsets();
+  void rebuild();
   //FIXME: Remove this as soon as other traversals are available
   void traverseCellPairsFallback();
 
@@ -80,7 +58,6 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
   std::array<std::pair<int, unsigned long>, 3> mapDimLength;
   std::vector<unsigned long> sliceThickness;
   std::vector<autopas_lock_t *> locks;
-
 };
 
 template <class ParticleCell, class CellFunctor>
@@ -156,10 +133,41 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
   _cellOffsets[i++] = xyz;
 }
 
-// template <class ParticleCell, class CellFunctor>
-// bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
+template <class ParticleCell, class CellFunctor>
+inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
+  if(this->mapDimLength[0].second / this->sliceThickness.size() >= 2) {
+    return true;
+  }
+  return false;
+}
 
-// }
+
+template <class ParticleCell, class CellFunctor>
+inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild() {
+  mapDimLength[0] = {0, this->_cellsPerDimension[0]};
+  mapDimLength[1] = {1, this->_cellsPerDimension[1]};
+  mapDimLength[2] = {2, this->_cellsPerDimension[2]};
+
+  std::sort(
+          mapDimLength.begin(), mapDimLength.end(),
+          [](std::pair<int, unsigned long> a, std::pair<int, unsigned long> b) {
+          return a.second > b.second;
+          });
+
+  // split domain across its longest dimension
+
+  auto numSlices = autopas_get_max_threads();
+  // find dimension with most cells
+  sliceThickness.clear();
+  sliceThickness.insert(sliceThickness.begin(), numSlices, mapDimLength[0].second / numSlices);
+  auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices;
+  for(int i = 0; i < rest; ++i)
+      ++sliceThickness[i];
+  // decreases last sliceThickness by one to account for the way we handle base cells
+  --*--sliceThickness.end();
+
+  locks.resize(numSlices);
+}
 
 //FIXME: Remove this as soon as other traversals are available
 template <class ParticleCell, class CellFunctor>
@@ -184,14 +192,12 @@ template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   using std::array;
 
+  auto numSlices = sliceThickness.size();
   // 0) check if applicable
 
   // use fallback version if not applicable
   //FIXME: Remove this as soon as other traversals are available
-  auto numSlices = sliceThickness.size();
-  if(this->_cellsPerDimension[0] / numSlices  < 2 ||
-     this->_cellsPerDimension[1] / numSlices  < 2 ||
-     this->_cellsPerDimension[2] / numSlices  < 2 ) {
+  if (not isApplicable()) {
     traverseCellPairsFallback();
     return;
   }
