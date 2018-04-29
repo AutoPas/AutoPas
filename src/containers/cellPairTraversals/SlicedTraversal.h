@@ -38,8 +38,34 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
                            CellFunctor *cellfunctor)
       : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims,
                                                       cellfunctor) {
+    // this should probably go to rebuild()
+    mapDimLength[0] = {0, this->_cellsPerDimension[0]};
+    mapDimLength[1] = {1, this->_cellsPerDimension[1]};
+    mapDimLength[2] = {2, this->_cellsPerDimension[2]};
+
+    std::sort(
+      mapDimLength.begin(), mapDimLength.end(),
+      [](std::pair<int, unsigned long> a, std::pair<int, unsigned long> b) {
+        return a.second > b.second;
+    });
+
+
+    // 1) split domain across its longest dimension
+
+    auto numSlices = autopas_get_max_threads();
+    // find dimension with most cells
+    sliceThickness.clear();
+    sliceThickness.insert(sliceThickness.begin(), numSlices, mapDimLength[0].second / numSlices);
+    auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices;
+    for(int i = 0; i < rest; ++i)
+      ++sliceThickness[i];
+    // decreases last sliceThickness by one to account for the way we handle base cells
+    --*--sliceThickness.end();
+
+    locks.resize(numSlices);
+
     computeOffsets();
-  }
+}
   // documentation in base class
   void traverseCellPairs() override;
 
@@ -49,6 +75,10 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
 
   std::array<std::pair<unsigned long, unsigned long>, 14> _cellPairOffsets;
   std::array<unsigned long, 8> _cellOffsets;
+  std::array<std::pair<int, unsigned long>, 3> mapDimLength;
+  std::vector<unsigned long> sliceThickness;
+  std::vector<autopas_lock_t *> locks;
+
 };
 
 template <class ParticleCell, class CellFunctor>
@@ -124,15 +154,19 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
   _cellOffsets[i++] = xyz;
 }
 
+// template <class ParticleCell, class CellFunctor>
+// bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
+
+// }
 template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   using std::array;
 
-  // 0) TODO: check if applicable
+  // 0) check if applicable
 
   // use fallback version if not applicable
   //FIXME: Remove this as soon as other traversals are available
-  auto numSlices = autopas_get_max_threads();
+  auto numSlices = sliceThickness.size();
   if(this->_cellsPerDimension[0] / numSlices  < 2 ||
      this->_cellsPerDimension[1] / numSlices  < 2 ||
      this->_cellsPerDimension[2] / numSlices  < 2 ) {
@@ -154,35 +188,6 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
      return;
   }
 
-  // 1) split domain across its longest dimension
-
-  // find dimension with most cells
-
-  std::array<std::pair<int, unsigned long>, 3> mapDimLength{{
-      {0, this->_cellsPerDimension[0]},
-      {1, this->_cellsPerDimension[1]},
-      {2, this->_cellsPerDimension[2]},
-  }};
-
-  // sorts longest dimension to index 0
-  std::sort(
-      mapDimLength.begin(), mapDimLength.end(),
-      [](std::pair<int, unsigned long> a, std::pair<int, unsigned long> b) {
-        return a.second > b.second;
-      });
-
-
-  std::vector<unsigned long> sliceThickness(numSlices, mapDimLength[0].second / numSlices);
-  auto rest = mapDimLength[0].second - sliceThickness[0] * numSlices;
-  for(int i = 0; i < rest; ++i)
-      ++sliceThickness[i];
-  // decreases last sliceThickness by one to account for the way we handle base cells
-  --*--sliceThickness.end();
-
-  unsigned long cellsPerSlice = mapDimLength[1].second * mapDimLength[2].second;
-
-  std::vector<autopas_lock_t *> locks;
-  locks.resize(numSlices);
 
   for (auto i = 0; i < numSlices - 1; ++i) {
     locks[i] = new autopas_lock_t;
