@@ -72,6 +72,8 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
  private:
   void processBaseCell(unsigned long baseIndex) const;
   void computeOffsets();
+  //FIXME: Remove this as soon as other traversals are available
+  void traverseCellPairsFallback();
 
   std::array<std::pair<unsigned long, unsigned long>, 14> _cellPairOffsets;
   std::array<unsigned long, 8> _cellOffsets;
@@ -158,6 +160,26 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
 // bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
 
 // }
+
+//FIXME: Remove this as soon as other traversals are available
+template <class ParticleCell, class CellFunctor>
+inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallback() {
+  std::array<unsigned long, 3> endid;
+  for (int d = 0; d < 3; ++d) {
+    endid[d] = this->_cellsPerDimension[d] - 1;
+  }
+  for (unsigned long z = 0; z < endid[2]; ++z) {
+    for (unsigned long y = 0; y < endid[1]; ++y) {
+      for (unsigned long x = 0; x < endid[0]; ++x) {
+         unsigned long ind =
+             ThreeDimensionalMapping::threeToOneD(x, y, z,
+                     this->_cellsPerDimension);
+         processBaseCell(ind);
+      }
+    }
+  }
+}
+
 template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   using std::array;
@@ -170,22 +192,8 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   if(this->_cellsPerDimension[0] / numSlices  < 2 ||
      this->_cellsPerDimension[1] / numSlices  < 2 ||
      this->_cellsPerDimension[2] / numSlices  < 2 ) {
-
-    array<unsigned long, 3> endid;
-    for (int d = 0; d < 3; ++d) {
-    endid[d] = this->_cellsPerDimension[d] - 1;
-    }
-     for (unsigned long z = 0; z < endid[2]; ++z) {
-       for (unsigned long y = 0; y < endid[1]; ++y) {
-         for (unsigned long x = 0; x < endid[0]; ++x) {
-           unsigned long ind =
-               ThreeDimensionalMapping::threeToOneD(x, y, z,
-               this->_cellsPerDimension);
-           processBaseCell(ind);
-         }
-       }
-     }
-     return;
+    traverseCellPairsFallback();
+    return;
   }
 
 
