@@ -148,6 +148,9 @@ template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(
         std::vector<ParticleCell> &cells,
         const std::array<unsigned long, 3> &dims) {
+  CellPairTraversals<ParticleCell, CellFunctor>::rebuild(cells, dims);
+
+  // find longest dimension
   mapDimLength[0] = this->_cellsPerDimension[0];
   mapDimLength[1] = this->_cellsPerDimension[1];
   mapDimLength[2] = this->_cellsPerDimension[2];
