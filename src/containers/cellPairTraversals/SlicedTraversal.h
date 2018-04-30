@@ -56,7 +56,13 @@ class SlicedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
 
   std::array<std::pair<unsigned long, unsigned long>, 14> _cellPairOffsets;
   std::array<unsigned long, 8> _cellOffsets;
+  /**
+   * ordered _cellsPerDimension
+   */
   std::array<unsigned long, 3> mapDimLength;
+  /**
+   * the number of cells per slice in the dimension that was slicedFjjkj
+   */
   std::vector<unsigned long> sliceThickness;
   std::vector<autopas_lock_t *> locks;
 
@@ -217,12 +223,10 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
 
 
 #if defined(_OPENMP)
+// although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
 #pragma omp parallel for schedule(static, 1)
 #endif
   for (auto slice = 0; slice < numSlices; ++slice) {
-
-    std::vector<int> myIds;
-
     auto myOffset = 0;
     for(auto s = 0; s < slice; ++s)
         myOffset += sliceThickness[s];
@@ -240,7 +244,6 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
           auto id = (myOffset + dimSlice) * mapDimLength[1] * mapDimLength[2] +
               dimMedium * mapDimLength[2] + dimShort;
           processBaseCell(id);
-          myIds.push_back(id);
         }
       }
       // at the end of the first layer release the lock
