@@ -8,18 +8,24 @@
 #include "autopasIncludes.h"
 #include "gtest/gtest.h"
 
-using namespace autopas::log;
+void LoggerTest::SetUp() { autopas::logger::create(stream); }
 
-int testLevel(logLevel level, bool enabled = true) {
-  std::stringstream stream;
-  Logger log(level, &stream, &stream);
-  log.setEnabled(enabled);
+void LoggerTest::TearDown() { autopas::logger::unregister(); }
 
-  log.debug() << "debug" << std::endl;
-  log.info() << "info" << std::endl;
-  log.warning() << "warning" << std::endl;
-  log.error() << "error" << std::endl;
-  log.fatal() << "fatal" << std::endl;
+int LoggerTest::testLevel(spdlog::level::level_enum level,
+                          bool enabled = true) {
+  AutoPasLogger->set_level(level);
+  if (not enabled) AutoPasLogger->set_level(spdlog::level::off);
+
+  stream.flush();
+  stream.clear();
+
+  AutoPasLogger->trace("trace");
+  AutoPasLogger->debug("debug");
+  AutoPasLogger->info("info");
+  AutoPasLogger->warn("warn");
+  AutoPasLogger->error("error");
+  AutoPasLogger->critical("critical");
 
   int lineCount = 0;
   std::string str;
@@ -28,41 +34,22 @@ int testLevel(logLevel level, bool enabled = true) {
   return lineCount;
 }
 
-TEST(LoggerTest, LogLevelTest) {
-  EXPECT_EQ(testLevel(logLevel::All), 5);
-  EXPECT_EQ(testLevel(logLevel::Debug), 5);
-  EXPECT_EQ(testLevel(logLevel::Info), 4);
-  EXPECT_EQ(testLevel(logLevel::Warning), 3);
-  EXPECT_EQ(testLevel(logLevel::Error), 2);
-  EXPECT_EQ(testLevel(logLevel::Fatal), 1);
-  EXPECT_EQ(testLevel(logLevel::None), 0);
+TEST_F(LoggerTest, LogLevelTest) {
+  EXPECT_EQ(testLevel(spdlog::level::trace), 6);
+  EXPECT_EQ(testLevel(spdlog::level::debug), 5);
+  EXPECT_EQ(testLevel(spdlog::level::info), 4);
+  EXPECT_EQ(testLevel(spdlog::level::warn), 3);
+  EXPECT_EQ(testLevel(spdlog::level::err), 2);
+  EXPECT_EQ(testLevel(spdlog::level::critical), 1);
+  EXPECT_EQ(testLevel(spdlog::level::off), 0);
 }
 
-TEST(LoggerTest, LogLevelTestDisabled) {
-  EXPECT_EQ(testLevel(logLevel::All, false), 0);
-  EXPECT_EQ(testLevel(logLevel::Debug, false), 0);
-  EXPECT_EQ(testLevel(logLevel::Info, false), 0);
-  EXPECT_EQ(testLevel(logLevel::Warning, false), 0);
-  EXPECT_EQ(testLevel(logLevel::Error, false), 0);
-  EXPECT_EQ(testLevel(logLevel::Fatal, false), 0);
-  EXPECT_EQ(testLevel(logLevel::None, false), 0);
-}
-
-TEST(LoggerTest, defaultConstructorTest) {
-  std::stringstream stream_out;
-  std::stringstream stream_err;
-  {
-    ScopedRedirect redirect(std::cout, stream_out);
-    ScopedRedirect redirect2(std::cerr, stream_err);
-    Logger log;
-    log.fatal() << "test" << std::endl;
-    log.error() << "test" << std::endl;
-    log.warning() << "test" << std::endl;
-  }
-  int lineCount = 0;
-  std::string str;
-  while (getline(stream_out, str)) ++lineCount;
-  EXPECT_EQ(lineCount, 0);
-  while (getline(stream_err, str)) ++lineCount;
-  EXPECT_EQ(lineCount, 2);
+TEST_F(LoggerTest, LogLevelTestDisabled) {
+  EXPECT_EQ(testLevel(spdlog::level::trace, false), 0);
+  EXPECT_EQ(testLevel(spdlog::level::debug, false), 0);
+  EXPECT_EQ(testLevel(spdlog::level::info, false), 0);
+  EXPECT_EQ(testLevel(spdlog::level::warn, false), 0);
+  EXPECT_EQ(testLevel(spdlog::level::err, false), 0);
+  EXPECT_EQ(testLevel(spdlog::level::critical, false), 0);
+  EXPECT_EQ(testLevel(spdlog::level::off, false), 0);
 }

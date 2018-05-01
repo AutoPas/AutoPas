@@ -1,4 +1,4 @@
-file(GLOB_RECURSE MY_SRC
+FILE(GLOB_RECURSE MY_SRC
         "*.cpp"
         "*.h"
         )
@@ -13,13 +13,21 @@ TARGET_LINK_LIBRARIES(runTests
         libgmock
         )
 
-include(FindGTest)
+include(GoogleTest)
 
-
-GTEST_ADD_TESTS(runTests
+# nice cmake integration:
+if(CMAKE_VERSION VERSION_LESS "3.10")
+    # uses regexp expressions (not very robust)
+    GTEST_ADD_TESTS(runTests
         ""
         ${MY_SRC}
         )
+else()
+    # more robust, queries the compiled executable
+    GTEST_DISCOVER_TESTS(runTests)
+endif()
 
+# this test is needed for a proper generation of xml files of the test
+# it runs ALL tests
 ADD_TEST(NAME testAutopas
         COMMAND runTests)

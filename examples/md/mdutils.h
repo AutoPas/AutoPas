@@ -9,8 +9,8 @@
 #define EXAMPLES_MD_MDUTILS_H_
 
 #include <cstdlib>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include "autopasIncludes.h"
 
 using namespace std;
@@ -25,7 +25,7 @@ class PrintableMolecule : public MoleculeLJ {
   void print() {
     cout << "Molecule with position: ";
     for (auto &r : getR()) {
-      cout << setw(10) <<  r << ", ";
+      cout << setw(10) << r << ", ";
     }
     cout << "and force: ";
 

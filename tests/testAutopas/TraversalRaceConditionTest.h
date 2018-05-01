@@ -5,9 +5,10 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include "../../examples/md/mdutils.h"
+#include "AutoPasTestBase.h"
 #include "containers/cellPairTraversals/SlicedTraversal.h"
 
-class TraversalRaceConditionTest : public ::testing::Test {
+class TraversalRaceConditionTest : public AutoPasTestBase {
  public:
   TraversalRaceConditionTest() = default;
 
@@ -19,12 +20,14 @@ class TraversalRaceConditionTest : public ::testing::Test {
       std::array<size_t, 3> particlesPerDim);
 
   /*
-   * Simple AoS only functor which repulses paritcles from each other with a constant force of 1.
+   * Simple AoS only functor which repulses paritcles from each other with a
+   * constant force of 1.
    */
   class SimpleFunctor
       : public autopas::Functor<PrintableMolecule,
                                 autopas::FullParticleCell<PrintableMolecule>> {
-    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j, bool newton3 = true) override {
+    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j,
+                    bool newton3 = true) override {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
 
@@ -48,8 +51,10 @@ class TraversalRaceConditionTest : public ::testing::Test {
       i.addF(f);
       j.subF(f);
     }
+
    private:
-    // in a grid with separation 1 this includes all neighbors with a Chebyshev distance of 1
+    // in a grid with separation 1 this includes all neighbors with a Chebyshev
+    // distance of 1
     constexpr static double CUTOFFSQUARE = 2;
   };
 };

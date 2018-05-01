@@ -7,6 +7,12 @@ ADD_LIBRARY(autopas STATIC
         ${MY_SRC}
         )
 
-target_link_libraries(autopas rt) # required for Time.h
+find_package(Threads REQUIRED)
 
-TARGET_INCLUDE_DIRECTORIES(autopas INTERFACE .)
+target_link_libraries(autopas
+        PUBLIC
+        rt # required for Time.h
+        ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
+        )
+
+TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC .)

@@ -5,8 +5,9 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <vector>
+#include "AutoPasTestBase.h"
 
-class ForceCalculationTest : public ::testing::Test {
+class ForceCalculationTest : public AutoPasTestBase {
  public:
   ForceCalculationTest() = default;
 

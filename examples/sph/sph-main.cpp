@@ -9,7 +9,12 @@
 #include "autopasIncludes.h"
 #include "sph/autopassph.h"
 
-typedef autopas::LinkedCells<
+// typedef autopas::LinkedCells<
+//    autopas::sph::SPHParticle,
+//    autopas::FullParticleCell<autopas::sph::SPHParticle>>
+//    Container;
+
+typedef autopas::VerletLists<
     autopas::sph::SPHParticle,
     autopas::FullParticleCell<autopas::sph::SPHParticle>>
     Container;
@@ -348,12 +353,14 @@ void printConservativeVariables(Container& sphSystem) {
 }
 
 int main() {
+  autopas::logger::create();
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 1.;
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
   double cutoff = 0.03;  // 0.012*2.5=0.03; where 2.5 = kernel support radius
 
-  Container sphSystem(boxMin, boxMax, cutoff);
+  //  Container sphSystem(boxMin, boxMax, cutoff, 0. /*skin*/);
+  Container sphSystem(boxMin, boxMax, cutoff, 0.1 * cutoff /*skin*/);
   double dt;
   double t_end;
   SetupIC(sphSystem, &t_end, boxMax);

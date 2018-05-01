@@ -8,10 +8,11 @@
 #ifndef TESTS_TESTAUTOPAS_LINKEDCELLSVERSUSDIRECTSUMTEST_H_
 #define TESTS_TESTAUTOPAS_LINKEDCELLSVERSUSDIRECTSUMTEST_H_
 
+#include <gtest/gtest.h>
+#include "AutoPasTestBase.h"
 #include "autopasIncludes.h"
-#include "gtest/gtest.h"
 
-class LinkedCellsVersusDirectSumTest : public ::testing::Test {
+class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
  public:
   LinkedCellsVersusDirectSumTest();
 

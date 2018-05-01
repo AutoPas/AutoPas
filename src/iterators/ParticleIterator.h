@@ -8,6 +8,7 @@
 #ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_
 #define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_
 
+#include <utils/ExceptionHandler.h>
 #include <vector>
 #include "SingleCellIterator.h"
 
@@ -81,7 +82,8 @@ class ParticleIterator {
     if (_iteratorWithinOneCell.isValid()) {
       _iteratorWithinOneCell.deleteCurrentParticle();
     } else {
-      // error
+      utils::ExceptionHandler::exception(
+          "ParticleIterator: deleting invalid particle");
     }
   }
 

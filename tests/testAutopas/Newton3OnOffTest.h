@@ -8,12 +8,13 @@
 
 #include <gtest/gtest.h>
 #include "AutoPas.h"
+#include "AutoPasTestBase.h"
 #include "mocks/MockFunctor.h"
 #include "sph/autopassph.h"
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */
-class Newton3OnOffTest : public ::testing::Test {
+class Newton3OnOffTest : public AutoPasTestBase {
  public:
   Newton3OnOffTest() : mockFunctor(), autoPas() {}
 

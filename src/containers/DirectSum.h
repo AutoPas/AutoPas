@@ -11,6 +11,7 @@
 #include "ParticleContainer.h"
 #include "pairwiseFunctors/CellFunctor.h"
 #include "pairwiseFunctors/LJFunctor.h"
+#include "utils/ExceptionHandler.h"
 #include "utils/inBox.h"
 
 namespace autopas {
@@ -43,7 +44,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (inBox) {
       getCell()->addParticle(p);
     } else {
-      /// @todo
+      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box");
     }
   }
 
@@ -52,7 +53,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (not inBox) {
       getHaloCell()->addParticle(p);
     } else {  // particle is not outside of own box
-      /// @todo
+      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not OUTSIDE of the bounding box");
     }
   }
 
@@ -132,13 +133,13 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     /// @todo might need to do sth. if particles move outside of the box?
   }
 
-  bool checkValid() override {
+  bool isContainerUpdateNeeded() override {
     for (auto iter = this->begin(); iter.isValid(); ++iter) {
       if (not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
-        return false;
+        return true;
       }
     }
-    return true;
+    return false;
   }
 
  private:

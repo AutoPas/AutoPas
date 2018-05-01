@@ -8,10 +8,11 @@
 #ifndef TESTS_TESTAUTOPAS_SINGLECELLITERATORTEST_H_
 #define TESTS_TESTAUTOPAS_SINGLECELLITERATORTEST_H_
 
+#include <gtest/gtest.h>
+#include "AutoPasTestBase.h"
 #include "autopasIncludes.h"
-#include "gtest/gtest.h"
 
-class SingleCellIteratorTest : public ::testing::Test {
+class SingleCellIteratorTest : public AutoPasTestBase {
  public:
   SingleCellIteratorTest() = default;
 

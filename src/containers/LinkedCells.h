@@ -11,6 +11,7 @@
 #include "CellBlock3D.h"
 #include "ParticleContainer.h"
 #include "containers/cellPairTraversals/SlicedTraversal.h"
+#include "pairwiseFunctors/CellFunctor.h"
 #include "utils/inBox.h"
 
 namespace autopas {
@@ -45,8 +46,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      /// @todo what should happen if a particle should be added, but is not in
-      /// the boundingbox?
+      utils::ExceptionHandler::exception(
+          "LinkedCells: trying to add particle that is not inside the bounding "
+          "box");
     }
   }
 
@@ -56,7 +58,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
       cell.addParticle(haloParticle);
     } else {
-      /// @todo what should happen if a particle is not in the halo?
+      utils::ExceptionHandler::exception(
+          "LinkedCells: trying to add halo particle that is not in the halo "
+          "box");
     }
   }
 
@@ -68,8 +72,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   /**
-   * same as iteratePairwiseAoS, but faster, as the class of the functor is
-   * known and thus the compiler can do some better optimizations.
+   * same as iteratePairwiseAoS, but potentially faster (if called with the
+   * derived functor), as the class of the functor is known and thus the
+   * compiler can do some better optimizations.
    * @tparam ParticleFunctor
    * @param f
    * @param useNewton3 defines whether newton3 should be used
@@ -153,18 +158,24 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  bool checkValid() override {
-    //    for (auto &cell : this->_data) {
-    //      for (auto iter = cell.begin(); iter.isValid(); ++iter) {
-    //
-    //        if(not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
-    //          return false;
-    //        }
-    //      }
-    //    }
+  bool isContainerUpdateNeeded() override {
+    for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+      std::array<double, 3> boxmin;
+      std::array<double, 3> boxmax;
+      _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
+      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
+        if (not inBox(iter->getR(),boxmin, boxmax)) {
+          return true;  // we need an update
+        }
+      }
+    }
+    return false;
   }
 
- private:
+ protected:
+  /**
+   * object to manage the block of cells
+   */
   CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };

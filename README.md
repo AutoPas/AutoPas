@@ -1,10 +1,10 @@
 # AutoPas
 AutoPas is a node-level auto-tuned particle simulation library developed
-in the context of the **TaLPas** project. [![Build Status](https://www5.in.tum.de/jenkins/mardyn/buildStatus/icon?job=AutoPas)](https://www5.in.tum.de/jenkins/mardyn/job/AutoPas)
+in the context of the **TaLPas** project. [![Build Status](https://www5.in.tum.de/jenkins/mardyn/buildStatus/icon?job=AutoPas-Multibranch/master)](https://www5.in.tum.de/jenkins/mardyn/job/AutoPas-Multibranch/job/master/)
 
 ## Documentation
 The documentation can be found at our website:
- https://www5.in.tum.de/AutoPas/doxygen_doc/html/
+ https://www5.in.tum.de/AutoPas/doxygen_doc/master/
 
 Alternatively you can build the documentation on your own:
 * requirements:
