@@ -7,6 +7,8 @@
 #pragma once
 
 #include "LinkedCells.h"
+#include "VerletListHelpers.h"
+#include "utils/arrayMath.h"
 
 namespace autopas {
 
@@ -17,38 +19,38 @@ namespace autopas {
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
- * @todo This class does not yet provide the ability to reuse computed verlet
- * lists.
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @tparam ParticleCell
+ * @todo deleting particles should also invalidate the verlet lists - should be
+ * implemented somehow
  */
 template <class Particle, class ParticleCell>
 class VerletLists : public LinkedCells<Particle, ParticleCell> {
-  // AOS
-  typedef std::map<Particle*, std::vector<Particle*>>
-      AoS_verletlist_storage_type;
-
-  // SOA
-  typedef std::map<decltype(Particle().getID()), size_t>
-      particleid_to_verletlistindex_container_type;
-  typedef std::vector<decltype(Particle().getID())>
-      verletlistindex_to_particleid_container_type;
+  typedef VerletListHelpers<Particle, ParticleCell> verlet_internal;
 
  public:
   /**
    * Constructor of the VerletLists class.
-   * Each cell of the verlet lists class, is at least of size cutoff + skin.
-   *
+   * The neighbor lists are build using a search radius of cutoff + skin.
+   * The rebuildFrequency should be chosen, s.t. the particles do not move more
+   * than a distance of skin/2 between two rebuilds of the lists.
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
+   * @param rebuildFrequency specifies after how many pair-wise traversals the
+   * neighbor lists are to be rebuild. A frequency of 1 means that they are
+   * always rebuild, 10 means they are rebuild after 10 traversals.
    */
   VerletLists(const std::array<double, 3> boxMin,
-              const std::array<double, 3> boxMax, double cutoff, double skin)
+              const std::array<double, 3> boxMax, double cutoff, double skin,
+              unsigned int rebuildFrequency = 1)
       : LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
-        _skin(skin) {}
+        _skin(skin),
+        _traversalsSinceLastRebuild(UINT_MAX),
+        _rebuildFrequency(rebuildFrequency),
+        _neighborListIsValid(false) {}
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell>* f,
                           bool useNewton3 = true) override {
@@ -59,64 +61,140 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * same as iteratePairwiseAoS, but potentially faster (if called with the
    * derived functor), as the class of the functor is known and thus the
    * compiler can do some better optimizations.
+   *
    * @tparam ParticleFunctor
    * @param f
    * @param useNewton3 defines whether newton3 should be used
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
-    this->updateVerletListsAoS(useNewton3);
+    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
+                           // it!
+      this->updateVerletListsAoS(useNewton3);
+      // the neighbor list is now valid
+      _neighborListIsValid = true;
+      _traversalsSinceLastRebuild = 0;
+    }
     this->iterateVerletListsAoS(f, useNewton3);
+    // we iterated, so increase traversal counter
+    _traversalsSinceLastRebuild++;
   }
 
   /**
    * get the actual neighbour list
    * @return the neighbour list
    */
-  AoS_verletlist_storage_type& getVerletListsAoS() { return _verletListsAoS; }
+  typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() {
+    return _verletListsAoS;
+  }
 
- private:
-  class VerletListGeneratorFunctor
-      : public autopas::Functor<Particle, ParticleCell> {
-   public:
-    VerletListGeneratorFunctor(AoS_verletlist_storage_type& verletListsAoS,
-                               particleid_to_verletlistindex_container_type&
-                                   particleIDtoVerletListIndexMap,
-                               double cutoffskinsquared)
-        : _verletListsAoS(verletListsAoS),
-          _particleIDtoVerletListIndexMap(particleIDtoVerletListIndexMap),
-          _cutoffskinsquared(cutoffskinsquared) {}
+  /**
+   * @copydoc LinkedCells::addParticle()
+   * @note this function invalidates the neighbor lists
+   */
+  void addParticle(Particle& p) override {
+    _neighborListIsValid = false;
+    LinkedCells<Particle, ParticleCell>::addParticle(p);
+  }
 
-    void AoSFunctor(Particle& i, Particle& j, bool newton3 = true) override {
-      auto dist = arrayMath::sub(i.getR(), j.getR());
-      double distsquare = arrayMath::dot(dist, dist);
-      if (distsquare < _cutoffskinsquared)
-        // this is thread safe, only if particle i is accessed by only one
-        // thread at a time. which is ensured, as particle i resides in a
-        // specific cell and each cell is only accessed by one thread at a time
-        // (ensured by traversals)
-        // also the list is not allowed to be resized!
+  /**
+   * @copydoc LinkedCells::addHaloParticle()
+   * @note this function invalidates the neighbor lists
+   */
+  void addHaloParticle(Particle& haloParticle) override {
+    _neighborListIsValid = false;
+    LinkedCells<Particle, ParticleCell>::addHaloParticle(haloParticle);
+  }
 
-        _verletListsAoS[&i].push_back(&j);
+  /**
+   * @copydoc LinkedCells::updateContainer()
+   * @note this function invalidates the neighbor lists
+   */
+  void updateContainer() override {
+    _neighborListIsValid = false;
+    LinkedCells<Particle, ParticleCell>::updateContainer();
+  }
+
+  /**
+   * Checks whether the neighbor lists are valid.
+   * A neighbor list is valid if all pairs of particles whose interaction should
+   * be calculated are represented in the neighbor lists.
+   * @return whether the list is valid
+   * @note this check involves pair-wise interaction checks and is thus
+   * relatively costly.
+   */
+  bool checkNeighborListsAreValid(bool useNewton3 = true) {
+    // if a particle was added or deleted, ... the list is definitely invalid
+    if (not _neighborListIsValid) {
+      return false;
+    }
+    // if a particle moved more than skin/2 outside of its cell the list is
+    // invalid
+    if (this->isContainerUpdateNeeded()) {
+      return false;
     }
 
-   private:
-    AoS_verletlist_storage_type& _verletListsAoS;
-    particleid_to_verletlistindex_container_type&
-        _particleIDtoVerletListIndexMap;
-    double _cutoffskinsquared;
-  };
+    // particles can also simply be very close already:
+    typename verlet_internal::VerletListValidityCheckerFunctor
+        validityCheckerFunctor(
+            _verletListsAoS, _particleIDtoVerletListIndexContainer,
+            ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
-  void updateVerletListsAoS(bool useNewton3) {
+    LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(
+        &validityCheckerFunctor, useNewton3);
+
+    return validityCheckerFunctor.neighborlistsAreValid();
+  }
+
+  bool isContainerUpdateNeeded() override {
+    for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+      std::array<double, 3> boxmin;
+      std::array<double, 3> boxmax;
+      this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
+      boxmin = arrayMath::addScalar(boxmin, -_skin / 2.);
+      boxmax = arrayMath::addScalar(boxmax, +_skin / 2.);
+      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid();
+           ++iter) {
+        if (not iter->inBox(boxmin, boxmax)) {
+          return true;  // we need an update
+        }
+      }
+    }
+    return false;
+  }
+
+ protected:
+  /**
+   * specifies whether the neighbor lists need to be rebuild
+   * @return true if the neighbor lists need to be rebuild, false otherwise
+   */
+  bool needsRebuild() {
+    return (not _neighborListIsValid)  // if the neighborlist is NOT valid a
+                                       // rebuild is needed
+           or (_traversalsSinceLastRebuild >=
+               _rebuildFrequency);  // rebuild with frequency
+  }
+
+  /**
+   * update the verlet lists for AoS usage
+   * @param useNewton3
+   */
+  virtual void updateVerletListsAoS(bool useNewton3) {
     _verletListsAoS.clear();
     updateIdMapAoS();
-    VerletListGeneratorFunctor f(_verletListsAoS,
-                                 _particleIDtoVerletListIndexContainer,
-                                 (this->getCutoff() * this->getCutoff()));
+    typename verlet_internal::VerletListGeneratorFunctor f(
+        _verletListsAoS, _particleIDtoVerletListIndexContainer,
+        (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
   }
 
+  /**
+   * iterate over the verlet lists using the AoS traversal
+   * @tparam ParticleFunctor
+   * @param f
+   * @param useNewton3
+   */
   template <class ParticleFunctor>
   void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
     /// @todo optimize iterateVerletListsAoS, e.g. by using traversals with
@@ -132,6 +210,11 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     }
   }
 
+  /**
+   * update the AoS id maps.
+   * The Id Map is used to map the id of a particle to the actual particle
+   * @return
+   */
   size_t updateIdMapAoS() {
     size_t i = 0;
 
@@ -144,21 +227,32 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     return i;
   }
 
+ private:
   /// map that converts the id type of the particle to the actual position in
   /// the verlet list.
   /// This is needed, as the particles don't have a local id.
   /// @todo remove this and add local id to the particles (this saves a
   /// relatively costly lookup)
-  particleid_to_verletlistindex_container_type
+  typename verlet_internal::particleid_to_verletlistindex_container_type
       _particleIDtoVerletListIndexContainer;
 
-  verletlistindex_to_particleid_container_type
+  typename verlet_internal::verletlistindex_to_particleid_container_type
       _verletListIndextoParticleIDContainer;
 
   /// verlet lists.
-  AoS_verletlist_storage_type _verletListsAoS;
+  typename verlet_internal::AoS_verletlist_storage_type _verletListsAoS;
 
   double _skin;
+
+  /// how many pairwise traversals have been done since the last traversal
+  unsigned int _traversalsSinceLastRebuild;
+
+  /// specifies after how many pairwise traversals the neighbor list is to be
+  /// rebuild
+  unsigned int _rebuildFrequency;
+
+  // specifies if the neighbor list is currently valid
+  bool _neighborListIsValid;
 };
 
 } /* namespace autopas */

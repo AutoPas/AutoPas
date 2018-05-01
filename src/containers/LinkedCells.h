@@ -158,15 +158,18 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  bool checkValid() override {
-    //    for (auto &cell : this->_data) {
-    //      for (auto iter = cell.begin(); iter.isValid(); ++iter) {
-    //
-    //        if(not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
-    //          return false;
-    //        }
-    //      }
-    //    }
+  bool isContainerUpdateNeeded() override {
+    for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+      std::array<double, 3> boxmin;
+      std::array<double, 3> boxmax;
+      _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
+      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
+        if (not inBox(iter->getR(),boxmin, boxmax)) {
+          return true;  // we need an update
+        }
+      }
+    }
+    return false;
   }
 
  protected:

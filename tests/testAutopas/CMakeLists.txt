@@ -16,10 +16,12 @@ TARGET_LINK_LIBRARIES(runTests
 include(FindGTest)
 
 
+#these tests produce nice output for ctest and make test
 GTEST_ADD_TESTS(runTests
         ""
         ${MY_SRC}
         )
 
+#this test is needed for a proper generation of xml files of the test
 ADD_TEST(NAME testAutopas
         COMMAND runTests)
