@@ -8,17 +8,13 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <autopasIncludes.h>
+#include <AutoPas.h>
 #include <mocks/MockFunctor.h>
-//#include "../../examples/md/mdutils.h"
 
-class MyParticle : public autopas::Particle {
- public:
-  MyParticle(std::array<double, 3> pos, unsigned long id)
-      : autopas::Particle(pos, {0, 0, 0}, id){};
-
- private:
-};
+typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;
+typedef autopas::CellFunctor<autopas::Particle,
+                             autopas::FullParticleCell<autopas::Particle>, MFunctor, false, true> MCellFunctor;
+typedef autopas::FullParticleCell<autopas::Particle> FPCell;
 
 class SlicedTraversalTest : public testing::Test {
  public:
@@ -26,4 +22,6 @@ class SlicedTraversalTest : public testing::Test {
 
   ~SlicedTraversalTest() override = default;
 
+  void fillWithParticles(std::vector<FPCell> &cells,
+  std::array<size_t, 3> particlesPerDim);
 };
