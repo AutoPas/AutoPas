@@ -142,10 +142,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
 
 template <class ParticleCell, class CellFunctor>
 inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
-  if(this->mapDimLength[0] / this->sliceThickness.size() >= 2) {
-    return true;
-  }
-  return false;
+  return this->mapDimLength[0] / this->sliceThickness.size() >= 2;
 }
 
 
