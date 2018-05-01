@@ -158,7 +158,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  bool checkUpdateContainerNeeded() override {
+  bool isContainerUpdateNeeded() override {
     for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
       std::array<double, 3> boxmin;
       std::array<double, 3> boxmax;

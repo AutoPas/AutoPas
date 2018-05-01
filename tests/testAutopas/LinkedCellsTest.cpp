@@ -61,7 +61,7 @@ TEST_F(LinkedCellsTest, testCheckUpdateContainerNeededNoMove) {
           } else {
             linkedCells.addParticle(p);
           }
-          EXPECT_FALSE(linkedCells.checkUpdateContainerNeeded());
+          EXPECT_FALSE(linkedCells.isContainerUpdateNeeded());
         }
       }
     }
@@ -86,7 +86,7 @@ TEST_F(LinkedCellsTest, testCheckUpdateContainerNeededNoMove) {
           } else {
             linkedCells.addParticle(p);
           }
-          EXPECT_FALSE(linkedCells.checkUpdateContainerNeeded());
+          EXPECT_FALSE(linkedCells.isContainerUpdateNeeded());
         }
       }
     }
