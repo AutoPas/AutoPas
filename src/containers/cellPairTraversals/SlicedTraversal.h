@@ -1,15 +1,14 @@
 /*
  * SlicedTraversal.h
  *
- *  Created on: 22 Jan 2018
- *      Author: tchipevn
+ *  Created on: 20 Apr 2018
+ *      Author: gratl
  */
 
 #pragma once
 
 #include <utils/WrapOpenMP.h>
 #include <algorithm>
-#include <iomanip>
 #include "CellPairTraversal.h"
 #include "utils/ThreeDimensionalMapping.h"
 
