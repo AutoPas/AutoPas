@@ -87,8 +87,8 @@ pipeline{
         stage("generate coverage report"){
             steps{
                 junit 'build/test.xml'
-                junit 'build/test-address.xml'
-                junit 'build/test-thread.xml'
+                junit 'build-addresssanitizer/test-address.xml'
+                junit 'build-threadsanitizer/test-thread.xml'
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
                 dir("coverage"){
