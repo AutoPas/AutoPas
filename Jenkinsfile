@@ -47,10 +47,10 @@ pipeline{
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                 }
                 dir("build-addresssanitizer"){
-                    sh "env GTEST_OUTPUT="xml:$(pwd)/test-address.xml" ./tests/testAutopas/runTests"
+                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-address.xml" ./tests/testAutopas/runTests'
                 }
                 dir("build-threadsanitizer"){
-                    sh "env GTEST_OUTPUT="xml:$(pwd)/test-thread.xml" ./tests/testAutopas/runTests"
+                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-thread.xml" ./tests/testAutopas/runTests'
                 }
             }
             post{
