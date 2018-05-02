@@ -115,9 +115,5 @@ pipeline{
         aborted {
             echo "aborted"
         }
-        cleanup {
-            when { environment ignoreCase: true, name: 'currentBuild.result', value: 'SUCCESS' }
-            githubNotify context: 'continuous-integration/jenkins/branch', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
-        }
     }
 }
