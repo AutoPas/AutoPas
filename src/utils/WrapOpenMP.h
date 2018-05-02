@@ -8,7 +8,7 @@
 
 /**
  * Provide non-OpenMP versions of the most common OpenMP function calls,
- * so that they don't have to be wrapped in #ifdef-s every time.
+ * so that they don't have to be wrapped in ifdef-s every time.
  *
  * Proper wrapper and renaming necessary, because of -fopenmp-simd handling of
  * gcc.
