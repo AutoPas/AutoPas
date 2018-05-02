@@ -29,7 +29,7 @@ include(version.cmake)
 include(clang-tidy)
 include(clang-format)
 include(doxygen)
-include(openmp)
+include(OpenMP)
 include(CodeCoverageAutopas)
 
 
