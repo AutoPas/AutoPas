@@ -15,6 +15,14 @@ pipeline{
                     sh "cmake .."
                     sh "make"
                 }
+                dir("build-addresssanitizer"){
+                    sh "cmake -DCodeCoverage=OFF -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                    sh "make -j 4"
+                }
+                dir("build-threadsanitizer"){
+                    sh "cmake -DCodeCoverage=OFF -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON -DOPENMP=ON .."
+                    sh "make -j 4"
+                }
             }
             post{
                 success{
@@ -36,17 +44,13 @@ pipeline{
                 githubNotify context: 'test', description: 'test in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                 dir("build"){
                     //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
-                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ctest'
+                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                 }
                 dir("build-addresssanitizer"){
-                    sh "cmake -DCodeCoverage=OFF -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "make -j 4"
-                    sh "make test"
+                    sh "env GTEST_OUTPUT="xml:$(pwd)/test-address.xml" ./tests/testAutopas/runTests"
                 }
                 dir("build-threadsanitizer"){
-                    sh "cmake -DCodeCoverage=OFF -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
-                    sh "make -j 4"
-                    sh "make test"
+                    sh "env GTEST_OUTPUT="xml:$(pwd)/test-thread.xml" ./tests/testAutopas/runTests"
                 }
             }
             post{
@@ -82,6 +86,8 @@ pipeline{
         stage("generate coverage report"){
             steps{
                 junit 'build/test.xml'
+                junit 'build/test-address.xml'
+                junit 'build/test-thread.xml'
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
                 dir("coverage"){
