@@ -1,4 +1,4 @@
-option(ENABLE_OPENMP "Activates OpenMP shared memory parallelization." OFF)
+option(OPENMP "Activates OpenMP shared memory parallelization." OFF)
 
 if (OPENMP)
     message(STATUS "OpenMP enabled.")
