@@ -20,7 +20,7 @@ pipeline{
                     sh "make -j 4"
                 }
                 dir("build-threadsanitizer"){
-                    # this is for simple testing of our threading libraries.
+                    // this is for simple testing of our threading libraries.
                     sh "cmake -DCodeCoverage=OFF -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
                     sh "make -j 4"
                 }
