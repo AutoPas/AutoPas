@@ -4,7 +4,7 @@ pipeline{
         stage('setup'){
             steps{
                 echo 'Starting AutoPas Pipeline'
-                echo 'bar'
+                echo 'foo'
                 githubNotify context: 'build', description: 'build pending...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                 githubNotify context: 'test', description: 'test pending...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
             }
