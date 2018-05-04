@@ -1,6 +1,6 @@
 
 #spdlog
-find_package(spdlog CONFIG)
+find_package(spdlog CONFIG QUIET)
 if (spdlog_FOUND)
     message(STATUS "spdlog found - using system version")
 else()
