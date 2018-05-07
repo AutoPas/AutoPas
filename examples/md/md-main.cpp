@@ -18,23 +18,24 @@ using namespace autopas;
 void testForceLJ();
 
 void measure(int which, int numMolecules, int numIterations,
-             int rebuildFrequency, double skinRadiusToCutoffRatio);
+             int rebuildFrequency, double skinRadiusToCutoffRatio, double cutoff);
 
 template <class Container>
 void measureContainer(Container *cont, int numMolecules, int numIterations);
 
 int main(int argc, char *argv[]) {
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
-  double cutoff = 1.0;
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
+
+  double cutoff = 1.;
 
 //  cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
 //  cout << "sigma: " << PrintableMolecule::getSigma() << endl;
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(
-      10.0, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
+      cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
   PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
   PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
@@ -62,6 +63,7 @@ int main(int argc, char *argv[]) {
     numMols = atoi(argv[2]);
     numIts = atoi(argv[3]);
     rebuildFrequency = atoi(argv[4]);
+    skinRadius = atof(argv[5]);
   } else {
     cout << endl
          << "NEEDS THREE OR FIVE ARGUMENTS: <which> <numMolecules> "
@@ -70,16 +72,16 @@ int main(int argc, char *argv[]) {
     cout << "running: 0(linked cells), 100, 100, 1, 0." << endl << endl;
   }
 
-  measure(which, numMols, numIts, rebuildFrequency, skinRadius);
+  measure(which, numMols, numIts, rebuildFrequency, skinRadius, cutoff);
 
   return EXIT_SUCCESS;
 }
 
 template <class Container>
-void measureContainer(Container *cont, int numMolecules, int numIterations) {
+void measureContainer(Container *cont, int numMolecules, int numIterations, double cutoff) {
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
   FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-      flopFunctor(cont->getCutoff());
+      flopFunctor(cutoff);
 
   utils::Timer t;
 
@@ -108,10 +110,9 @@ void measureContainer(Container *cont, int numMolecules, int numIterations) {
 }
 
 void measure(int which, int numMolecules, int numIterations,
-             int rebuildFrequency, double skinRadiusToCutoffRatio) {
+             int rebuildFrequency, double skinRadiusToCutoffRatio, double cutoff) {
 //  cout << "measuring" << endl;
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({5., 5., 5.});
-  double cutoff = 1.0;
 
   LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lcCont(
       boxMin, boxMax, cutoff);
@@ -129,15 +130,15 @@ void measure(int which, int numMolecules, int numIterations,
 
   if (which == 0) {
 //    cout << "LINKED CELLS ************************" << endl;
-    measureContainer(&lcCont, numMolecules, numIterations);
+    measureContainer(&lcCont, numMolecules, numIterations, cutoff);
 //    cout << "LINKED CELLS DONE *******************" << endl;
   } else if (which == 1) {
 //    cout << "DIRECT SUM **************************" << endl;
-    measureContainer(&dirCont, numMolecules, numIterations);
+    measureContainer(&dirCont, numMolecules, numIterations, cutoff);
 //    cout << "DIRECT SUM DONE *********************" << endl;
   } else if (which == 2) {
 //    cout << "VERLET LISTS **************************" << endl;
-    measureContainer(&verletListsCont, numMolecules, numIterations);
+    measureContainer(&verletListsCont, numMolecules, numIterations, cutoff);
 //    cout << "VERLET LISTS DONE *********************" << endl;
   }
 }
