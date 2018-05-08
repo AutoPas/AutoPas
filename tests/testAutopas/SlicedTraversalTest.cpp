@@ -26,7 +26,7 @@ void SlicedTraversalTest::fillWithParticles(
   }
 }
 
-TEST_F(SlicedTraversalTest, testTraversal) {
+TEST_F(SlicedTraversalTest, testTraversalCube) {
 
   // TODO: more propper way to do this would be through a mock of the cellFunctor
   size_t edgeLength = 10;
@@ -45,6 +45,31 @@ TEST_F(SlicedTraversalTest, testTraversal) {
 
   // every particle interacts with 13 others. Last layer of each dim is covered by previous interactions
   EXPECT_CALL(functor, AoSFunctor(_, _)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1)  * 13);
+  slicedTraversal.traverseCellPairs();
+#ifdef _OPENMP
+  omp_set_num_threads(numThreadsBefore);
+#endif
+}
+
+TEST_F(SlicedTraversalTest, testTraversalCuboid) {
+
+  // TODO: more propper way to do this would be through a mock of the cellFunctor
+  std::array<size_t, 3> edgeLength = {5,7,10};
+
+  MFunctor functor;
+  MCellFunctor cellFunctor(&functor);
+  std::vector<FPCell> cells;
+  cells.resize(edgeLength[0]*edgeLength[1]*edgeLength[2]);
+
+  fillWithParticles(cells, {edgeLength[0],edgeLength[1],edgeLength[2]});
+#ifdef _OPENMP
+  int numThreadsBefore = omp_get_max_threads();
+  omp_set_num_threads(4);
+#endif
+  autopas::SlicedTraversal<FPCell, MCellFunctor> slicedTraversal(cells, {edgeLength[0],edgeLength[1],edgeLength[2]}, &cellFunctor);
+
+  // every particle interacts with 13 others. Last layer of each dim is covered by previous interactions
+  EXPECT_CALL(functor, AoSFunctor(_, _)).Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1)  * 13);
   slicedTraversal.traverseCellPairs();
 #ifdef _OPENMP
   omp_set_num_threads(numThreadsBefore);
