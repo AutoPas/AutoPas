@@ -82,12 +82,12 @@ pipeline{
                     /*dir("build-memorysanitizer"){
                         sh './tests/testAutopas/runTests'
                     }*/
-                    clang-ninja-addresssanitizer: {
+                    clangninjaaddresssanitizer: {
                         dir("build-clang-ninja-addresssanitizer-debug"){
                             sh './tests/testAutopas/runTests'
                         }
                     },
-                    clang-ninja-addresssanitizer-release: {
+                    clangninjaaddresssanitizerrelease: {
                         dir("build-clang-ninja-addresssanitizer-release"){
                             sh './tests/testAutopas/runTests'
                         }
