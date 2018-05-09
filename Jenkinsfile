@@ -69,7 +69,7 @@ pipeline{
                             sh './tests/testAutopas/runTests'
                         }
                     },
-                    addresssanitizer-release: {
+                    addresssanitizerrelease: {
                         dir("build-addresssanitizer-release"){
                             sh './tests/testAutopas/runTests'
                         }
@@ -82,7 +82,7 @@ pipeline{
                     /*dir("build-memorysanitizer"){
                         sh './tests/testAutopas/runTests'
                     }*/
-                    clang-ninja-addressanitizer: {
+                    clang-ninja-addresssanitizer: {
                         dir("build-clang-ninja-addresssanitizer-debug"){
                             sh './tests/testAutopas/runTests'
                         }
