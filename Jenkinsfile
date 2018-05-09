@@ -68,17 +68,17 @@ pipeline{
                         dir("build-addresssanitizer"){
                             sh './tests/testAutopas/runTests'
                         }
-                    }
+                    },
                     addresssanitizer-release: {
                         dir("build-addresssanitizer-release"){
                             sh './tests/testAutopas/runTests'
                         }
-                    }
+                    },
                     threadsanitizer: {
                         dir("build-threadsanitizer"){
                             sh './tests/testAutopas/runTests'
                         }
-                    }
+                    },
                     /*dir("build-memorysanitizer"){
                         sh './tests/testAutopas/runTests'
                     }*/
@@ -86,7 +86,7 @@ pipeline{
                         dir("build-clang-ninja-addresssanitizer-debug"){
                             sh './tests/testAutopas/runTests'
                         }
-                    }
+                    },
                     clang-ninja-addresssanitizer-release: {
                         dir("build-clang-ninja-addresssanitizer-release"){
                             sh './tests/testAutopas/runTests'
