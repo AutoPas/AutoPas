@@ -64,22 +64,22 @@ pipeline{
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                 }
                 dir("build-addresssanitizer"){
-                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-address.xml" ./tests/testAutopas/runTests'
+                    sh './tests/testAutopas/runTests'
                 }
                 dir("build-addresssanitizer-release"){
-                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-address-release.xml" ./tests/testAutopas/runTests'
+                    sh './tests/testAutopas/runTests'
                 }
                 dir("build-threadsanitizer"){
-                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-thread.xml" ./tests/testAutopas/runTests'
+                    sh './tests/testAutopas/runTests'
                 }
                 /*dir("build-memorysanitizer"){
-                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-memory.xml" ./tests/testAutopas/runTests'
+                    sh './tests/testAutopas/runTests'
                 }*/
                 dir("build-clang-ninja-addresssanitizer-debug"){
-                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-clang-ninja-addresssanitizer.xml" ./tests/testAutopas/runTests'
+                    sh './tests/testAutopas/runTests'
                 }
                 dir("build-clang-ninja-addresssanitizer-release"){
-                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-clang-ninja-addresssanitizer.xml" ./tests/testAutopas/runTests'
+                    sh './tests/testAutopas/runTests'
                 }
             }
             post{
@@ -115,12 +115,6 @@ pipeline{
         stage("generate coverage report"){
             steps{
                 junit 'build/test.xml'
-                /*junit 'build-addresssanitizer/test-address.xml'
-                junit 'build-addresssanitizer-release/test-address-release.xml'
-                junit 'build-threadsanitizer/test-thread.xml'
-                junit 'build-memorysanitizer/test-memory.xml'
-                junit 'build-clang-ninja-addresssanitizer-debug/test-clang-ninja-addresssanitizer.xml'
-                junit 'build-clang-ninja-addresssanitizer-release/test-clang-ninja-addresssanitizer.xml'*/
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
                 dir("coverage"){
