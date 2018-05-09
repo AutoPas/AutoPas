@@ -16,13 +16,29 @@ pipeline{
                     sh "make"
                 }
                 dir("build-addresssanitizer"){
-                    sh "cmake -DCodeCoverage=OFF -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                    sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                    sh "make -j 4"
+                }
+                dir("build-addresssanitizer-release"){
+                    sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
                     sh "make -j 4"
                 }
                 dir("build-threadsanitizer"){
                     // this is for simple testing of our threading libraries.
-                    sh "cmake -DCodeCoverage=OFF -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
+                    sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
                     sh "make -j 4"
+                }
+                dir("build-memorysanitizer"){
+                    sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_MEMORY_SANITIZER=ON .."
+                    sh "make -j 4"
+                }
+                dir("build-clang-ninja-addresssanitizer-debug"){
+                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                    sh "ninja"
+                }
+                dir("build-clang-ninja-addresssanitizer-release"){
+                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                    sh "ninja"
                 }
             }
             post{
@@ -50,8 +66,20 @@ pipeline{
                 dir("build-addresssanitizer"){
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test-address.xml" ./tests/testAutopas/runTests'
                 }
+                dir("build-addresssanitizer-release"){
+                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-address-release.xml" ./tests/testAutopas/runTests'
+                }
                 dir("build-threadsanitizer"){
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test-thread.xml" ./tests/testAutopas/runTests'
+                }
+                dir("build-memorysanitizer"){
+                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-memory.xml" ./tests/testAutopas/runTests'
+                }
+                dir("build-clang-ninja-addresssanitizer-debug"){
+                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-clang-ninja-addresssanitizer.xml" ./tests/testAutopas/runTests'
+                }
+                dir("build-clang-ninja-addresssanitizer-release"){
+                    sh 'env GTEST_OUTPUT="xml:$(pwd)/test-clang-ninja-addresssanitizer.xml" ./tests/testAutopas/runTests'
                 }
             }
             post{
@@ -88,7 +116,11 @@ pipeline{
             steps{
                 junit 'build/test.xml'
                 junit 'build-addresssanitizer/test-address.xml'
+                junit 'build-addresssanitizer-release/test-address-release.xml'
                 junit 'build-threadsanitizer/test-thread.xml'
+                junit 'build-memorysanitizer/test-memory.xml'
+                junit 'build-clang-ninja-addresssanitizer-debug/test-clang-ninja-addresssanitizer.xml'
+                junit 'build-clang-ninja-addresssanitizer-release/test-clang-ninja-addresssanitizer.xml'
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
                 dir("coverage"){
