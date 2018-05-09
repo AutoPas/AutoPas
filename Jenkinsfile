@@ -28,10 +28,10 @@ pipeline{
                     sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
                     sh "make -j 4"
                 }
-                dir("build-memorysanitizer"){
+                /*dir("build-memorysanitizer"){
                     sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
                     sh "make -j 4"
-                }
+                }*/
                 dir("build-clang-ninja-addresssanitizer-debug"){
                     sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
                     sh "ninja"
@@ -72,9 +72,9 @@ pipeline{
                 dir("build-threadsanitizer"){
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test-thread.xml" ./tests/testAutopas/runTests'
                 }
-                dir("build-memorysanitizer"){
+                /*dir("build-memorysanitizer"){
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test-memory.xml" ./tests/testAutopas/runTests'
-                }
+                }*/
                 dir("build-clang-ninja-addresssanitizer-debug"){
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test-clang-ninja-addresssanitizer.xml" ./tests/testAutopas/runTests'
                 }
@@ -118,7 +118,7 @@ pipeline{
                 junit 'build-addresssanitizer/test-address.xml'
                 junit 'build-addresssanitizer-release/test-address-release.xml'
                 junit 'build-threadsanitizer/test-thread.xml'
-                junit 'build-memorysanitizer/test-memory.xml'
+                //junit 'build-memorysanitizer/test-memory.xml'
                 junit 'build-clang-ninja-addresssanitizer-debug/test-clang-ninja-addresssanitizer.xml'
                 junit 'build-clang-ninja-addresssanitizer-release/test-clang-ninja-addresssanitizer.xml'
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
