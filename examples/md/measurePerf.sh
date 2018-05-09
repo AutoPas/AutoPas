@@ -11,6 +11,13 @@ do
 	echo -e "Number of Molecules\tNumber of Force updates\tElapsed time\tMFUPS\tFLOPs\thit rate\tGFLOP/sec" > output-${iCont}.txt
 	for i in {0..8}; do ./md-main ${iCont} ${Mols[$i]} ${Reps[$i]}; done >> output-${iCont}.txt
 done
+
+echo "Container 0 soa:"
+iCont=0
+    echo -e "Number of Molecules\tNumber of Force updates\tElapsed time\tMFUPS\tFLOPs\thit rate\tGFLOP/sec" > output-${iCont}-soa.txt
+    for i in {0..8}; do ./md-main ${iCont} ${Mols[$i]} ${Reps[$i]} soa; done >> output-${iCont}-soa.txt
+
+
 # verlet
 iCont=2;
 	echo Container ${iCont}:
