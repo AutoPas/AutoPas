@@ -29,7 +29,7 @@ pipeline{
                     sh "make -j 4"
                 }
                 dir("build-memorysanitizer"){
-                    sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_MEMORY_SANITIZER=ON .."
+                    sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_MEMORY_SANITIZER=ON .."
                     sh "make -j 4"
                 }
                 dir("build-clang-ninja-addresssanitizer-debug"){
