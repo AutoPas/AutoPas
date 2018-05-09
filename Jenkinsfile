@@ -115,12 +115,12 @@ pipeline{
         stage("generate coverage report"){
             steps{
                 junit 'build/test.xml'
-                junit 'build-addresssanitizer/test-address.xml'
+                /*junit 'build-addresssanitizer/test-address.xml'
                 junit 'build-addresssanitizer-release/test-address-release.xml'
                 junit 'build-threadsanitizer/test-thread.xml'
-                //junit 'build-memorysanitizer/test-memory.xml'
+                junit 'build-memorysanitizer/test-memory.xml'
                 junit 'build-clang-ninja-addresssanitizer-debug/test-clang-ninja-addresssanitizer.xml'
-                junit 'build-clang-ninja-addresssanitizer-release/test-clang-ninja-addresssanitizer.xml'
+                junit 'build-clang-ninja-addresssanitizer-release/test-clang-ninja-addresssanitizer.xml'*/
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
                 dir("coverage"){
