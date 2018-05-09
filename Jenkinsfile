@@ -63,7 +63,7 @@ pipeline{
                     //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
                     sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                 }
-                parallel: {
+                parallel(
                     addresssanitizer: {
                         dir("build-addresssanitizer"){
                             sh './tests/testAutopas/runTests'
@@ -92,7 +92,7 @@ pipeline{
                             sh './tests/testAutopas/runTests'
                         }
                     }
-                }
+                )
             }
             post{
                 success{
