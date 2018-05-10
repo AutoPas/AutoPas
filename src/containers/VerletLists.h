@@ -169,6 +169,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild() {
+    AutoPasLogger->debug("VerletLists: neighborlist is valid: {}",_neighborListIsValid);
     return (not _neighborListIsValid)  // if the neighborlist is NOT valid a
                                        // rebuild is needed
            or (_traversalsSinceLastRebuild >=
