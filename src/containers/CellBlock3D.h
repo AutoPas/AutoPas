@@ -213,12 +213,12 @@ CellBlock3D<ParticleCell>::get3DIndexOfPosition(
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (int dim = 0; dim < 3; dim++) {
-    long int value =
+    const long int value =
         (static_cast<long int>(
             floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
         1l;
-    long int nonnegativeValue = std::max(value, 0l);
-    index_t nonLargerValue = std::min(static_cast<index_t>(nonnegativeValue),
+    const index_t nonnegativeValue = std::max(value, 0l);
+    const index_t nonLargerValue = std::min(nonnegativeValue,
                                       _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
     /// @todo this is a sanity check to prevent doubling of particles, but
