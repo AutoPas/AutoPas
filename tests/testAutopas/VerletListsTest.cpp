@@ -259,23 +259,25 @@ TEST_F(VerletListsTest, testForceRebuild) {
   using ::testing::_;
   using ::testing::Invoke;
 
+  // generate Velet list with rebuild frequency of 3
   MockVerletLists<autopas::Particle,
                   autopas::FullParticleCell<autopas::Particle>>
       mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
-
+  // delegating to parent
   ON_CALL(mockVerletLists, addParticle(_))
       .WillByDefault(Invoke(
           &mockVerletLists,
           &MockVerletLists<autopas::Particle,
                            autopas::FullParticleCell<autopas::Particle>>::
               addParticleVerletLists));
+  // delegating to parent
   ON_CALL(mockVerletLists, addHaloParticle(_))
       .WillByDefault(Invoke(
           &mockVerletLists,
           &MockVerletLists<autopas::Particle,
                            autopas::FullParticleCell<autopas::Particle>>::
               addHaloParticleVerletLists));
-
+  // delegating to parent
   ON_CALL(mockVerletLists, updateContainer())
       .WillByDefault(Invoke(
           &mockVerletLists,
@@ -286,35 +288,60 @@ TEST_F(VerletListsTest, testForceRebuild) {
   autopas::Functor<autopas::Particle,
                    autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
+
+  // check that the second call does not need a rebuild
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
 
+  // check that updateContainer() requires a rebuild
   EXPECT_CALL(mockVerletLists, updateContainer());
   mockVerletLists.updateContainer();
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
 
+  // check that adding particles requires a rebuild
   autopas::Particle p({1.1, 1.1, 1.1}, {0., 0., 0.}, 1);
   EXPECT_CALL(mockVerletLists, addParticle(_));
   mockVerletLists.addParticle(p);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
 
+  // check that adding halo particles requires a rebuild
   autopas::Particle p2({-0.1, 1.2, 1.1}, {0., 0., 0.}, 2);
   EXPECT_CALL(mockVerletLists, addHaloParticle(_));
   mockVerletLists.addHaloParticle(p2);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
+
+  // check that deleting particles requires a rebuild
+  {
+    auto iterator = mockVerletLists.begin();
+    iterator.deleteCurrentParticle();
+  }
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
+
+  // check that deleting halo particles requires a rebuild
+  mockVerletLists.deleteHaloParticles();
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
 }
 
 TEST_F(VerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
