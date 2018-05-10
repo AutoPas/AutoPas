@@ -15,6 +15,8 @@ namespace autopas {
  * The class handles to storage particles and provides an interface to add the
  * particles
  * @tparam Particle the type of particles to be stored in the cells
+ * @tparam Iterator the type of the iterator iterate through the particles in this cell
+ * @tparam Derived the type of the derived class
  */
 template <class Particle, class Iterator, class Derived>
 class ParticleCell {
