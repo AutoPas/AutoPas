@@ -107,6 +107,15 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
   /**
+   * @copydoc LinkedCells::deleteHaloParticles
+   * @note this function invalidates the neighbor lists
+   */
+  void deleteHaloParticles() override {
+    _neighborListIsValid = false;
+    LinkedCells<Particle, ParticleCell>::deleteHaloParticles();
+  }
+
+  /**
    * @copydoc LinkedCells::updateContainer()
    * @note this function invalidates the neighbor lists
    */
