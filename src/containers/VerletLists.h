@@ -165,26 +165,33 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
       for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid();
            ++iter) {
         if (not iter->inBox(boxmin, boxmax)) {
+          AutoPasLogger->debug(
+              "VerletLists: containerUpdate needed! Particles are fast. You "
+              "might want to increase you skin radius.");
           return true;  // we need an update
         }
       }
     }
+    AutoPasLogger->debug(
+        "VerletLists: containerUpdate not yet needed. Particles are slow "
+        "enough.");
     return false;
   }
 
- protected:
   /**
    * specifies whether the neighbor lists need to be rebuild
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild() {
-    AutoPasLogger->debug("VerletLists: neighborlist is valid: {}",_neighborListIsValid);
+    AutoPasLogger->debug("VerletLists: neighborlist is valid: {}",
+                         _neighborListIsValid);
     return (not _neighborListIsValid)  // if the neighborlist is NOT valid a
                                        // rebuild is needed
            or (_traversalsSinceLastRebuild >=
                _rebuildFrequency);  // rebuild with frequency
   }
 
+ protected:
   /**
    * update the verlet lists for AoS usage
    * @param useNewton3

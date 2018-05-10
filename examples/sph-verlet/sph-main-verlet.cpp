@@ -166,6 +166,7 @@ void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
 #if 0
         pos = boxMin[dim];
 #else
+        // next smaller double before pos/boxMax
         pos = nextafter(pos, 0.);
 #endif
         modified = true;
@@ -175,7 +176,7 @@ void periodicBoundaryUpdate(Container& sphSystem, std::array<double, 3> boxMin,
       part->setR(posVec);
       invalidParticles.push_back(*part);
       part.deleteCurrentParticle();
-      // we have moved particles quite very far, so we have to delete them at
+      // we have moved particles very far, so we have to delete them at
       // this position and store them again!
       // we can not add particles while an iterator is active, so we have to do
       // that later.
@@ -224,9 +225,10 @@ void getRequiredHalo(double boxMin, double boxMax, int diff, double& reqMin,
 void updateHaloParticles(Container& sphSystem) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
-  std::array<double, 3> requiredHaloMin, requiredHaloMax;
-  std::array<int, 3> diff;
-  std::array<double, 3> shift;
+  std::array<double, 3> requiredHaloMin{0., 0., 0.},
+      requiredHaloMax{0., 0., 0.};
+  std::array<int, 3> diff{0, 0, 0};
+  std::array<double, 3> shift{0., 0., 0.};
   double cutoff = sphSystem.getCutoff();
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
@@ -354,7 +356,7 @@ void printConservativeVariables(Container& sphSystem) {
 
 int main() {
   autopas::logger::create();
-
+  unsigned int rebuildFrequency = 4;
   AutoPasLogger->set_level(spdlog::level::level_enum::debug);
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 1.;
@@ -362,8 +364,9 @@ int main() {
   double cutoff = 0.03;  // 0.012*2.5=0.03; where 2.5 = kernel support radius
 
   // Container sphSystem(boxMin, boxMax, cutoff);
-  Container sphSystem(boxMin, boxMax, cutoff, 0.1 * cutoff /*skin*/,
-                      4 /*every second time step*//*rebuild frequency*/);
+  Container sphSystem(
+      boxMin, boxMax, cutoff, 0.1 * cutoff /*skin*/,
+      rebuildFrequency /*every second time step*/ /*rebuild frequency*/);
   double dt;
   double t_end;
   SetupIC(sphSystem, &t_end, boxMax);
@@ -389,18 +392,24 @@ int main() {
     leapfrogInitialKick(sphSystem, dt);
     leapfrogFullDrift(sphSystem, dt);
 
-    // 1.2.1 positions have changed, so the container needs to be updated!
-    sphSystem.updateContainer();
+    // for verlet-lists this only needs to be done, if particles moved too far.
+    if (sphSystem.isContainerUpdateNeeded() or sphSystem.needsRebuild()) {
+      // 1.2.1 positions have changed, so the container needs to be updated!
+      sphSystem.updateContainer();
 
-    // 1.2.2 adjust positions based on boundary conditions (here: periodic)
-    periodicBoundaryUpdate(sphSystem, boxMin, boxMax);
+      // 1.2.2 adjust positions based on boundary conditions (here: periodic)
+      periodicBoundaryUpdate(sphSystem, boxMin, boxMax);
+    }
 
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
+
     // 1.4 Calculate density, pressure and hydrodynamic forces
     densityPressureHydroForce(sphSystem);
+
     // 1.5 get time step
     dt = getTimeStepGlobal(sphSystem);
+
     // 1.6 Leap frog: final Kick
     leapfrogFinalKick(sphSystem, dt);
 
