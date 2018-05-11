@@ -529,4 +529,15 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
 
   // test move far, expect throw
   EXPECT_ANY_THROW(moveUpdateAndExpectEqual(verletLists, p, {3, 3, 3}););
+
+  // test particles at intermediate positions (not at corners)
+  autopas::Particle p3({-1., 4., 2.}, {0., 0., 0.}, 3);
+  verletLists.addHaloParticle(p3);
+  EXPECT_NO_THROW(verletLists.updateHaloParticle(p3));
+  autopas::Particle p4({4., 10.2, 2.}, {0., 0., 0.}, 4);
+  verletLists.addHaloParticle(p4);
+  EXPECT_NO_THROW(verletLists.updateHaloParticle(p4));
+  autopas::Particle p5({5., 4., 10.2}, {0., 0., 0.}, 3);
+  verletLists.addHaloParticle(p5);
+  EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
 }
