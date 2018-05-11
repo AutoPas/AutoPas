@@ -221,8 +221,10 @@ void getRequiredHalo(double boxMin, double boxMax, int diff, double& reqMin,
  * this is done by copying the boundary particles to the halo particles plus
  * adding appropriate shifts
  * @param sphSystem
+ * @param addParticles decides whether the particles should be added (true) or
+ * whether the particle should be updated (needed for verlet lists)
  */
-void updateHaloParticles(Container& sphSystem) {
+void updateHaloParticles(Container& sphSystem, bool addParticles) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
   std::array<double, 3> requiredHaloMin{0., 0., 0.},
@@ -249,7 +251,13 @@ void updateHaloParticles(Container& sphSystem) {
              iterator.isValid(); ++iterator) {
           autopas::sph::SPHParticle p = *iterator;
           p.addR(shift);
-          sphSystem.addHaloParticle(p);
+          if (addParticles) {
+            // add the halo particle
+            sphSystem.addHaloParticle(p);
+          } else {
+            // update halo particle
+            sphSystem.updateHaloParticle(p);
+          }
         }
       }
     }
@@ -273,7 +281,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
-  updateHaloParticles(sphSystem);
+  updateHaloParticles(sphSystem, true);
 
   std::cout << "haloparticles... ";
   int haloparts = 0, innerparts = 0;
@@ -298,7 +306,7 @@ void densityPressureHydroForce(Container& sphSystem) {
   sphSystem.iteratePairwiseAoS2(&densityFunctor);
   std::cout << "calculation of density... completed" << std::endl;
   // 1.3 delete halo particles, as their values are no longer valid
-  deleteHaloParticles(sphSystem);
+  // deleteHaloParticles(sphSystem);
 
   // 2. then update pressure
   std::cout << "calculation of pressure... started" << std::endl;
@@ -307,7 +315,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 
   // 0.3 then calculate hydro force
   // 0.3.1 to calculate the density we need the halo particles
-  updateHaloParticles(sphSystem);
+  updateHaloParticles(sphSystem, false);
 
   std::cout << "haloparticles... ";
   haloparts = 0, innerparts = 0;
@@ -394,6 +402,10 @@ int main() {
 
     // for verlet-lists this only needs to be done, if particles moved too far.
     if (sphSystem.isContainerUpdateNeeded() or sphSystem.needsRebuild()) {
+      // ensure that there are no halo particles if we need to update the
+      // container
+      deleteHaloParticles(sphSystem);
+
       // 1.2.1 positions have changed, so the container needs to be updated!
       sphSystem.updateContainer();
 

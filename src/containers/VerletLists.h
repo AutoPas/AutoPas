@@ -191,7 +191,31 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
                _rebuildFrequency);  // rebuild with frequency
   }
 
+  void updateHaloParticle(Particle& particle) {
+    auto index3d = this->_cellBlock.get3DIndexOfPosition(particle.getR());
+    bool updated = checkParticleInCellAndUpdate(this->_cellBlock.getCell(index3d), particle);
+    if(not updated){
+      // search neighboring cells
+    }
+    if(not updated){
+      AutoPasLogger->error("VerletLists: updateHaloParticle was not able to update particle at [{},{},{}]", particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+      utils::ExceptionHandler::exception("VerletLists: updateHaloParticle could not find any particle");
+    }
+  }
+
  protected:
+  bool checkParticleInCellAndUpdate(
+      ParticleCell& cell,
+      Particle& particle) {
+    for(auto iterator = cell.begin(); iterator.isValid(); ++iterator){
+      if(iterator->getID() == particle.getID()){
+        *iterator = particle;
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * update the verlet lists for AoS usage
    * @param useNewton3
