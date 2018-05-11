@@ -460,7 +460,7 @@ TEST_F(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
                    autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
 
-  // addtwo particles in proper distance
+  // add two particles in proper distance
   autopas::Particle p({1.1, 1.1, 1.1}, {0., 0., 0.}, 1);
   verletLists.addParticle(p);
   autopas::Particle p2({7.5, 1.1, 1.1}, {0., 0., 0.}, 2);
@@ -478,4 +478,55 @@ TEST_F(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
 
   // check validity - should return true
   EXPECT_TRUE(verletLists.checkNeighborListsAreValid());
+}
+
+template <class Container, class Particle>
+void moveUpdateAndExpectEqual(Container& container, Particle& particle,
+                              std::array<double, 3> newPosition) {
+  particle.setR(newPosition);
+  container.updateHaloParticle(particle);
+  {
+    auto iter = container.begin();
+    auto r = iter->getR();
+    EXPECT_EQ(r[0], newPosition[0]);
+    EXPECT_EQ(r[1], newPosition[1]);
+    EXPECT_EQ(r[2], newPosition[2]);
+  }
+};
+
+TEST_F(VerletListsTest, testUpdateHaloParticle) {
+  autopas::VerletLists<autopas::Particle,
+                       autopas::FullParticleCell<autopas::Particle>>
+      verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+
+  autopas::Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 1);
+  verletLists.addHaloParticle(p);
+
+  // test same position, change velocity
+  p.setV({.1, .1, .1});
+  verletLists.updateHaloParticle(p);
+  {
+    auto iter = verletLists.begin();
+    auto v = iter->getV();
+    for (int i = 0; i < 3; i++) EXPECT_EQ(v[i], 0.1);
+  }
+
+  // test different position, same cell
+  moveUpdateAndExpectEqual(verletLists, p, {-.05, -.1, -.1});
+
+  // test different position, neighboring cells
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, -.1, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, .05, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, -.1, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, .05, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, -.1, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, .05, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, .05, .05}));
+
+  // check for particle with wrong id
+  autopas::Particle p2({-.1, -.1, -.1}, {0., 0., 0.}, 2);
+  EXPECT_ANY_THROW(verletLists.updateHaloParticle(p2));
+
+  // test move far, expect throw
+  EXPECT_ANY_THROW(moveUpdateAndExpectEqual(verletLists, p, {3, 3, 3}););
 }
