@@ -146,8 +146,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     // particles can also simply be very close already:
     typename verlet_internal::VerletListValidityCheckerFunctor
         validityCheckerFunctor(
-            _verletListsAoS, _particleIDtoVerletListIndexContainer,
-            ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
+            _verletListsAoS, ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(
         &validityCheckerFunctor, useNewton3);
@@ -238,8 +237,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     _verletListsAoS.clear();
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(
-        _verletListsAoS, _particleIDtoVerletListIndexContainer,
-        (this->getCutoff() * this->getCutoff()));
+        _verletListsAoS, (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
   }
@@ -283,16 +281,6 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
  private:
-  /// map that converts the id type of the particle to the actual position in
-  /// the verlet list.
-  /// This is needed, as the particles don't have a local id.
-  /// @todo remove this and add local id to the particles (this saves a
-  /// relatively costly lookup)
-  typename verlet_internal::particleid_to_verletlistindex_container_type
-      _particleIDtoVerletListIndexContainer;
-
-  typename verlet_internal::verletlistindex_to_particleid_container_type
-      _verletListIndextoParticleIDContainer;
 
   /// verlet lists.
   typename verlet_internal::AoS_verletlist_storage_type _verletListsAoS;
