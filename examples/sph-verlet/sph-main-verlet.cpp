@@ -281,7 +281,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
-  updateHaloParticles(sphSystem, true);
+  updateHaloParticles(sphSystem, sphSystem.needsRebuild());
 
   std::cout << "haloparticles... ";
   int haloparts = 0, innerparts = 0;
