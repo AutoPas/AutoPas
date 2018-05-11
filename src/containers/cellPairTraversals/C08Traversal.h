@@ -7,21 +7,86 @@
 #pragma once
 
 #include <utils/WrapOpenMP.h>
-#include "CellPairTraversal.h"
+#include "C08BasedTraversal.h"
 
 namespace autopas {
 
-template <class ParticleCell, class CellFunctor>
-class C08Traversal : public CellPairTraversals<ParticleCell, CellFunctor> {
+template<class ParticleCell, class CellFunctor>
+class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
  public:
+  /**
+   * Constructor of the c08 traversal.
+   * @param cells The cells through which the traversal should traverse.
+   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
+   * y and z direction.
+   * @param cellfunctor The cell functor that defines the interaction of
+   * particles between two different cells.
+   */
   explicit C08Traversal(std::vector<ParticleCell> &cells,
-  const std::array<unsigned long, 3> &dims,
-      CellFunctor *cellfunctor)
-  : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims,
-      cellfunctor) {
+                        const std::array<unsigned long, 3> &dims,
+                        CellFunctor *cellfunctor)
+      : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims,
+                                                     cellfunctor) {
 //    rebuild(cells, dims);
-//    computeOffsets();
   }
+  // documentation in base class
+  void traverseCellPairs() override;
+  bool isApplicable() override;
+  void rebuild(std::vector<ParticleCell> &cells,
+               const std::array<unsigned long, 3> &dims) override;
  private:
+  int _numColors;
 };
+
+template<class ParticleCell, class CellFunctor>
+inline bool C08Traversal<ParticleCell, CellFunctor>::isApplicable() {
+  return true;
+}
+
+template<class ParticleCell, class CellFunctor>
+inline void C08Traversal<ParticleCell, CellFunctor>::rebuild(
+    std::vector<ParticleCell> &cells,
+    const std::array<unsigned long, 3> &dims) {
+}
+
+template<class ParticleCell, class CellFunctor>
+inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
+  using std::array;
+  const array<unsigned long, 3> stride = {2, 2, 2};
+  array<unsigned long, 3> end;
+  for (int d = 0; d < 3; ++d) {
+    end[d] = this->_cellsPerDimension[d] - 1;
+  }
+
+#if defined(_OPENMP)
+#pragma omp parallel
+#endif
+  {
+    for (unsigned long col = 0; col < 8; ++col) {
+      std::array<unsigned long, 3> start = ThreeDimensionalMapping::oneToThreeD(col, stride);
+
+      // intel compiler demands following:
+      const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
+      const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
+      const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+
+#if defined(_OPENMP)
+#pragma omp for schedule(dynamic, 1) collapse(3) nowait
+#endif
+      for (unsigned long z = start_z; z < end_z; z += stride_z) {
+        for (unsigned long y = start_y; y < end_y; y += stride_y) {
+          for (unsigned long x = start_x; x < end_x; x += stride_x) {
+            unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+            this->processBaseCell(baseIndex);
+          }
+        }
+      }
+#if defined(_OPENMP)
+#pragma omp barrier
+#endif
+      // this barrier is needed, since we have a nowait at the inner loops
+    }
+  }
+};
+
 }  // namespace autopas
