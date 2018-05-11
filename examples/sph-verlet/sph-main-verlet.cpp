@@ -366,6 +366,7 @@ int main() {
   autopas::logger::create();
   unsigned int rebuildFrequency = 4;
   AutoPasLogger->set_level(spdlog::level::level_enum::debug);
+  AutoPasLogger->set_pattern("[%n] [%l] %v");
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 1.;
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
