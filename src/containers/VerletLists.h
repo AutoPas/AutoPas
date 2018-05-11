@@ -145,8 +145,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
     // particles can also simply be very close already:
     typename verlet_internal::VerletListValidityCheckerFunctor
-        validityCheckerFunctor(
-            _verletListsAoS, ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
+        validityCheckerFunctor(_verletListsAoS, ((this->getCutoff() - _skin) *
+                                                 (this->getCutoff() - _skin)));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(
         &validityCheckerFunctor, useNewton3);
@@ -156,8 +156,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
   bool isContainerUpdateNeeded() override {
     for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin{0.,0.,0.};
-      std::array<double, 3> boxmax{0.,0.,0.};
+      std::array<double, 3> boxmin{0., 0., 0.};
+      std::array<double, 3> boxmax{0., 0., 0.};
       this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       boxmin = arrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = arrayMath::addScalar(boxmax, +_skin / 2.);
@@ -200,10 +200,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   void updateHaloParticle(Particle& particle) {
     auto cells = this->_cellBlock.getNearbyHaloCells(particle.getR(), _skin);
     bool updated = false;
-    for(auto cellptr : cells){
-      updated |= checkParticleInCellAndUpdate(
-          *cellptr, particle);
-      if(updated){
+    for (auto cellptr : cells) {
+      updated |= checkParticleInCellAndUpdate(*cellptr, particle);
+      if (updated) {
         continue;
       }
     }
@@ -218,12 +217,18 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
  protected:
-  bool checkParticleInCellAndUpdate(
-      ParticleCell& cell,
-      Particle& particle) {
-    for(auto iterator = cell.begin(); iterator.isValid(); ++iterator){
-      if(iterator->getID() == particle.getID()){
-        *iterator = particle;
+  /**
+   * Updates a found particle within cellI to the values of particleI.
+   * Checks whether a particle with the same id as particleI is within the cell
+   * cellI and overwrites the particle with particleI, if it is found.
+   * @param cellI
+   * @param particleI
+   * @return
+   */
+  bool checkParticleInCellAndUpdate(ParticleCell& cellI, Particle& particleI) {
+    for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
+      if (iterator->getID() == particleI.getID()) {
+        *iterator = particleI;
         return true;
       }
     }
@@ -282,7 +287,6 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
  private:
-
   /// verlet lists.
   typename verlet_internal::AoS_verletlist_storage_type _verletListsAoS;
 

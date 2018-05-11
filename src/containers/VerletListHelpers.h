@@ -31,7 +31,6 @@ class VerletListHelpers {
     /**
      * Constructor
      * @param verletListsAoS
-     * @param particleIDtoVerletListIndexMap
      * @param cutoffskinsquared
      */
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS,
@@ -71,7 +70,6 @@ class VerletListHelpers {
     /**
      * Constructor
      * @param verletListsAoS
-     * @param particleIDtoVerletListIndexMap
      * @param cutoffsquared
      */
     VerletListValidityCheckerFunctor(
