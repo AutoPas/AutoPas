@@ -157,8 +157,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
   bool isContainerUpdateNeeded() override {
     for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin;
-      std::array<double, 3> boxmax;
+      std::array<double, 3> boxmin{0.,0.,0.};
+      std::array<double, 3> boxmax{0.,0.,0.};
       this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       boxmin = arrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = arrayMath::addScalar(boxmax, +_skin / 2.);
@@ -167,7 +167,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         if (not iter->inBox(boxmin, boxmax)) {
           AutoPasLogger->debug(
               "VerletLists: containerUpdate needed! Particles are fast. You "
-              "might want to increase you skin radius.");
+              "might want to increase the skin radius or decrease the rebuild "
+              "frequency.");
           return true;  // we need an update
         }
       }
@@ -191,15 +192,28 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
                _rebuildFrequency);  // rebuild with frequency
   }
 
+  /**
+   * Searches the provided halo particle and updates the found particle.
+   * Searches for the provided particle within the halo cells of the container
+   * and overwrites the found particle with the provided particle.
+   * @param particle
+   */
   void updateHaloParticle(Particle& particle) {
     auto index3d = this->_cellBlock.get3DIndexOfPosition(particle.getR());
-    bool updated = checkParticleInCellAndUpdate(this->_cellBlock.getCell(index3d), particle);
-    if(not updated){
+
+    bool updated = checkParticleInCellAndUpdate(
+        this->_cellBlock.getCell(index3d), particle);
+    if (not updated) {
       // search neighboring cells
+      // set updated to true if found
     }
-    if(not updated){
-      AutoPasLogger->error("VerletLists: updateHaloParticle was not able to update particle at [{},{},{}]", particle.getR()[0], particle.getR()[1], particle.getR()[2]);
-      utils::ExceptionHandler::exception("VerletLists: updateHaloParticle could not find any particle");
+    if (not updated) {
+      AutoPasLogger->error(
+          "VerletLists: updateHaloParticle was not able to update particle at "
+          "[{},{},{}]",
+          particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+      utils::ExceptionHandler::exception(
+          "VerletLists: updateHaloParticle could not find any particle");
     }
   }
 
