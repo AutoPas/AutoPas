@@ -198,18 +198,19 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @param particle
    */
   void updateHaloParticle(Particle& particle) {
-    auto index3d = this->_cellBlock.get3DIndexOfPosition(particle.getR());
-
-    bool updated = checkParticleInCellAndUpdate(
-        this->_cellBlock.getCell(index3d), particle);
-    if (not updated) {
-      // search neighboring cells
-      // set updated to true if found
+    auto cells = this->_cellBlock.getNearbyHaloCells(particle.getR(), _skin);
+    bool updated = false;
+    for(auto cellptr : cells){
+      updated |= checkParticleInCellAndUpdate(
+          *cellptr, particle);
+      if(updated){
+        continue;
+      }
     }
     if (not updated) {
       AutoPasLogger->error(
           "VerletLists: updateHaloParticle was not able to update particle at "
-          "[{},{},{}]",
+          "[{}, {}, {}]",
           particle.getR()[0], particle.getR()[1], particle.getR()[2]);
       utils::ExceptionHandler::exception(
           "VerletLists: updateHaloParticle could not find any particle");

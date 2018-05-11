@@ -175,6 +175,59 @@ class CellBlock3D {
     }
   }
 
+  /**
+   * Get the nearby halo cells.
+   * A list of halo cells is returned whose distance to position is at most
+   * allowedDistance. If position is inside a halo cell that cell is also
+   * returned.
+   * @param position the position in whichs vicinity cells are to be returned
+   * @param allowedDistance the maximal distance to the position
+   * @return a container of references to nearby halo cells
+   */
+  std::vector<ParticleCell *> getNearbyHaloCells(std::array<double, 3> position,
+                                                 double allowedDistance) {
+    auto index3d = get3DIndexOfPosition(position);
+    std::array<int, 3> diff = {0, 0, 0};
+    auto currentIndex = index3d;
+    std::vector<ParticleCell *> closeHaloCells;
+    for (diff[0] = -1; diff[0] < 2; diff[0]++) {
+      currentIndex[0] = index3d[0] + diff[0];
+      for (diff[1] = -1; diff[1] < 2; diff[1]++) {
+        currentIndex[1] = index3d[1] + diff[1];
+        for (diff[2] = -1; diff[2] < 2; diff[2]++) {
+          currentIndex[2] = index3d[2] + diff[2];
+          // check if there exists a cell with the specified coordinates
+          bool isHaloCell = true;
+          for (int i = 0; i < 3; i++) {
+            isHaloCell &= currentIndex[i] == 0 ||
+                          currentIndex[i] == _cellsPerDimensionWithHalo[i] - 1;
+          }
+          if (isHaloCell) {
+            std::array<std::array<double, 3>, 2> boxBound;
+            getCellBoundingBox(index3d, boxBound[0], boxBound[1]);
+            bool close = true;
+            for (int i = 0; i < 3; i++) {
+              if (diff[i] < 0) {
+                if (position[i] - boxBound[1][i] > allowedDistance) {
+                  close = false;
+                }
+              } else if (diff[i] > 0) {
+                if (boxBound[0][i] - position[i] > allowedDistance) {
+                  close = false;
+                }
+              }
+            }
+            if (close) {
+              closeHaloCells.push_back(&getCell(currentIndex));
+            }
+          }
+        }
+      }
+    }
+
+    return closeHaloCells;
+  }
+
  private:
   std::array<index_t, 3> index3D(index_t index1d) const;
   index_t index1D(const std::array<index_t, 3> &index3d) const;
@@ -218,8 +271,8 @@ CellBlock3D<ParticleCell>::get3DIndexOfPosition(
             floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
         1l;
     const index_t nonnegativeValue = std::max(value, 0l);
-    const index_t nonLargerValue = std::min(nonnegativeValue,
-                                      _cellsPerDimensionWithHalo[dim] - 1);
+    const index_t nonLargerValue =
+        std::min(nonnegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
     /// @todo this is a sanity check to prevent doubling of particles, but
     /// could be done better!

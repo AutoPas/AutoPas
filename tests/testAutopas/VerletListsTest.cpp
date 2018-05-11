@@ -499,7 +499,7 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
                        autopas::FullParticleCell<autopas::Particle>>
       verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
 
-  autopas::Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 1);
+  autopas::Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
 
   // test same position, change velocity
@@ -512,16 +512,16 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
   }
 
   // test different position, same cell
-  moveUpdateAndExpectEqual(verletLists, p, {-.05, -.1, -.1});
+  moveUpdateAndExpectEqual(verletLists, p, {-.05, 10.1, -.1});
 
   // test different position, neighboring cells
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, -.1, -.1}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, .05, -.1}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, -.1, .05}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, .05, .05}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, -.1, .05}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, .05, -.1}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, .05, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 10.1, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, .05}));
 
   // check for particle with wrong id
   autopas::Particle p2({-.1, -.1, -.1}, {0., 0., 0.}, 2);
