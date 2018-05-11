@@ -198,12 +198,15 @@ class CellBlock3D {
         for (diff[2] = -1; diff[2] < 2; diff[2]++) {
           currentIndex[2] = index3d[2] + diff[2];
           // check if there exists a cell with the specified coordinates
-          bool isHaloCell = true;
+          bool isPossibleHaloCell = false;
+          bool isValidCell = true;
           for (int i = 0; i < 3; i++) {
-            isHaloCell &= currentIndex[i] == 0 ||
-                          currentIndex[i] == _cellsPerDimensionWithHalo[i] - 1;
+            isPossibleHaloCell |=
+                currentIndex[i] == 0 ||
+                currentIndex[i] == _cellsPerDimensionWithHalo[i] - 1;
+            isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] && currentIndex[i] >= 0;
           }
-          if (isHaloCell) {
+          if (isPossibleHaloCell && isValidCell) {
             std::array<std::array<double, 3>, 2> boxBound;
             getCellBoundingBox(index3d, boxBound[0], boxBound[1]);
             bool close = true;
