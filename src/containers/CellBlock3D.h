@@ -11,6 +11,7 @@
 #include <array>
 #include <cmath>
 #include <vector>
+#include "CellBoarderAndFlagManager.h"
 #include "utils/ExceptionHandler.h"
 #include "utils/ThreeDimensionalMapping.h"
 #include "utils/inBox.h"
@@ -23,7 +24,7 @@ namespace autopas {
  * @tparam ParticleCell type of the handled ParticleCells
  */
 template <class ParticleCell>
-class CellBlock3D {
+class CellBlock3D : public CellBoarderAndFlagManager {
  public:
   /**
    * the index type to access the particle cells
@@ -48,6 +49,21 @@ class CellBlock3D {
             "Error in CellBlock3D: interaction Length too large!");
       }
     }
+  }
+
+  bool isHaloCell(index_t index1d) const override {
+    auto index3d = index3D(index1d);
+    bool isHaloCell = false;
+    for (size_t i = 0; i < 3; i++) {
+      if (index3d[i] == 0 or index3d[i] == _cellsPerDimensionWithHalo[i] - 1) {
+        isHaloCell = true;
+      }
+    }
+    return isHaloCell;
+  }
+
+  bool isOwningCell(index_t index1d) const override {
+    return not isHaloCell(index1d);
   }
 
   /**

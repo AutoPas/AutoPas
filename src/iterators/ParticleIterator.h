@@ -19,8 +19,8 @@ namespace autopas {
  */
 enum IteratorBehavior {
   haloOnly,     /// iterate only over halo
-  innerOnly,    /// iterate only over inner cells
-  haloAndInner  /// iterate over both halo and inner cells
+  ownedOnly,    /// iterate only over inner cells
+  haloAndOwned  /// iterate over both halo and inner cells
 };
 
 /**
@@ -39,13 +39,26 @@ class ParticleIterator {
    *
    * @param cont linear data vector of ParticleCells
    */
-  explicit ParticleIterator(std::vector<ParticleCell>* cont)
+  explicit ParticleIterator(std::vector<ParticleCell>* cont,
+                            CellBoarderAndFlagManager* flagManager = nullptr,
+                            IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
-        _iteratorWithinOneCell() {
+        _iteratorWithinOneCell(),
+        _flagManager(flagManager),
+        _behavior(behavior) {
+    if (behavior != haloAndOwned and flagManager == nullptr) {
+      AutoPasLogger->error(
+          "ParticleIterator: behavior is not haloAndOwned, but flagManager is "
+          "nullptr!");
+      utils::ExceptionHandler::exception(
+          "ParticleIterator: behavior is not haloAndOwned, but flagManager is "
+          "nullptr!");
+    }
     if (_iteratorAcrossCells < cont->end()) {
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
-      if (not _iteratorWithinOneCell.isValid()) {
+      if (not isCellTypeBehaviorCorrect() or
+          not _iteratorWithinOneCell.isValid()) {
         next_non_empty_cell();
       }
     }
@@ -116,10 +129,23 @@ class ParticleIterator {
     for (_iteratorAcrossCells += stride;
          _iteratorAcrossCells < _vectorOfCells->end();
          _iteratorAcrossCells += stride) {
-      if (_iteratorAcrossCells->isNotEmpty()) {
+      if (_iteratorAcrossCells->isNotEmpty() and isCellTypeBehaviorCorrect()) {
         _iteratorWithinOneCell = _iteratorAcrossCells->begin();
         break;
       }
+    }
+  }
+
+  bool isCellTypeBehaviorCorrect() {
+    switch (_behavior) {
+      case haloAndOwned:
+        return true;
+      case haloOnly:
+        return _flagManager->isHaloCell(_iteratorAcrossCells -
+                                        _vectorOfCells->begin());
+      case ownedOnly:
+        return _flagManager->isOwningCell(_iteratorAcrossCells -
+                                          _vectorOfCells->begin());
     }
   }
 
@@ -127,6 +153,8 @@ class ParticleIterator {
   std::vector<ParticleCell>* _vectorOfCells;
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
   typename ParticleCell::iterator _iteratorWithinOneCell;
+  CellBoarderAndFlagManager* _flagManager;
+  IteratorBehavior _behavior;
   // SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
 };
 

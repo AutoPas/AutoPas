@@ -8,6 +8,7 @@
 #ifndef SRC_CONTAINERS_DIRECTSUM_H_
 #define SRC_CONTAINERS_DIRECTSUM_H_
 
+#include "CellBoarderAndFlagManager.h"
 #include "ParticleContainer.h"
 #include "pairwiseFunctors/CellFunctor.h"
 #include "pairwiseFunctors/LJFunctor.h"
@@ -44,7 +45,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (inBox) {
       getCell()->addParticle(p);
     } else {
-      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box");
+      utils::ExceptionHandler::exception(
+          "DirectSum: trying to add particle that is not in the bounding box");
     }
   }
 
@@ -53,7 +55,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (not inBox) {
       getHaloCell()->addParticle(p);
     } else {  // particle is not outside of own box
-      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not OUTSIDE of the bounding box");
+      utils::ExceptionHandler::exception(
+          "DirectSum: trying to add particle that is not OUTSIDE of the "
+          "bounding box");
     }
   }
 
@@ -142,11 +146,26 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return false;
   }
 
+  ParticleIterator<Particle, ParticleCell> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIterator<Particle, ParticleCell>(
+        &this->_data, &_cellBoarderFlagManager, behavior);
+  }
+
  private:
-  // for convenience
-  // typedef SingleCellIterator<Particle, ParticleCell> SingIterator;
-  // SingIterator getIt(int index = 0) { return SingIterator(getCell(), index);
-  // }
+  class DirectSumCellBoarderAndFlagManager : public CellBoarderAndFlagManager {
+    /**
+     * the index type to access the particle cells
+     */
+    typedef std::size_t index_t;
+
+   public:
+    bool isHaloCell(index_t index1d) const override { return index1d == 1; }
+
+    bool isOwningCell(index_t index1d) const override {
+      return not isHaloCell(index1d);
+    }
+  } _cellBoarderFlagManager;
 
   ParticleCell *getCell() { return &(this->_data.at(0)); };
 

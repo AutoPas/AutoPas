@@ -163,13 +163,20 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       std::array<double, 3> boxmin;
       std::array<double, 3> boxmax;
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (not inBox(iter->getR(),boxmin, boxmax)) {
+      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid();
+           ++iter) {
+        if (not inBox(iter->getR(), boxmin, boxmax)) {
           return true;  // we need an update
         }
       }
     }
     return false;
+  }
+
+  ParticleIterator<Particle, ParticleCell> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBlock,
+                                                    behavior);
   }
 
  protected:

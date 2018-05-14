@@ -122,7 +122,8 @@ void leapfrogInitialKick(Container& sphSystem, const double dt) {
 
 void leapfrogFullDrift(Container& sphSystem, const double dt) {
   // time becomes t + dt;
-  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly);
+       part.isValid(); ++part) {
     part->addR(autopas::arrayMath::mulScalar(part->getVel_half(), dt));
   }
 }
@@ -358,7 +359,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 void printConservativeVariables(Container& sphSystem) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.0;                       // total energy
-  for (auto it = sphSystem.begin(autopas::IteratorBehavior::innerOnly);
+  for (auto it = sphSystem.begin(autopas::IteratorBehavior::ownedOnly);
        it.isValid(); ++it) {
     momSum = autopas::arrayMath::add(
         momSum, autopas::arrayMath::mulScalar(it->getV(), it->getMass()));
