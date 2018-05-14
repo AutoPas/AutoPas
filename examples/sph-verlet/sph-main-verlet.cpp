@@ -358,8 +358,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 void printConservativeVariables(Container& sphSystem) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.0;                       // total energy
-  for (auto it = sphSystem.begin(
-           autopas::IteratorBehavior::innerOnly);
+  for (auto it = sphSystem.begin(autopas::IteratorBehavior::innerOnly);
        it.isValid(); ++it) {
     momSum = autopas::arrayMath::add(
         momSum, autopas::arrayMath::mulScalar(it->getV(), it->getMass()));

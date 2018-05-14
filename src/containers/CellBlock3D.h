@@ -204,7 +204,8 @@ class CellBlock3D {
             isPossibleHaloCell |=
                 currentIndex[i] == 0 ||
                 currentIndex[i] == _cellsPerDimensionWithHalo[i] - 1;
-            isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] && currentIndex[i] >= 0;
+            isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] &&
+                           currentIndex[i] >= 0;
           }
           if (isPossibleHaloCell && isValidCell) {
             std::array<std::array<double, 3>, 2> boxBound;

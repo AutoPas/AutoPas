@@ -73,8 +73,7 @@ class VerletListHelpers {
      * @param cutoffsquared
      */
     VerletListValidityCheckerFunctor(
-        AoS_verletlist_storage_type &verletListsAoS,
-        double cutoffsquared)
+        AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
         : _verletListsAoS(verletListsAoS),
           _cutoffsquared(cutoffsquared),
           _valid(true) {}

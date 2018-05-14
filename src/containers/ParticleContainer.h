@@ -100,7 +100,8 @@ class ParticleContainer {
    * @return iterator to the first particle
    * @todo implement IteratorBehavior
    */
-  ParticleIterator<Particle, ParticleCell> begin(IteratorBehavior behavior = IteratorBehavior::haloAndInner) {
+  ParticleIterator<Particle, ParticleCell> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndInner) {
     return ParticleIterator<Particle, ParticleCell>(&_data);
   }
 
