@@ -293,19 +293,6 @@ void densityPressureHydroForce(Container& sphSystem) {
   // 1.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, sphSystem.needsRebuild());
 
-  std::cout << "haloparticles... ";
-  int haloparts = 0, innerparts = 0;
-  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
-                           sphSystem.getBoxMax())) {
-      haloparts++;
-    } else {
-      innerparts++;
-    }
-  }
-  std::cout << haloparts << std::endl;
-  std::cout << "particles... " << innerparts << std::endl;
-
   // 1.2 then calculate density
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->setDensity(0.);
@@ -327,18 +314,6 @@ void densityPressureHydroForce(Container& sphSystem) {
   // 0.3.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, false);
 
-  std::cout << "haloparticles... ";
-  haloparts = 0, innerparts = 0;
-  for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(),
-                           sphSystem.getBoxMax())) {
-      haloparts++;
-    } else {
-      innerparts++;
-    }
-  }
-  std::cout << haloparts << std::endl;
-  std::cout << "particles... " << innerparts << std::endl;
 
   // 0.3.2 then calculate hydro force
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
