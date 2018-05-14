@@ -120,6 +120,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @note this function invalidates the neighbor lists
    */
   void updateContainer() override {
+    AutoPasLogger->debug("updating container");
     _neighborListIsValid = false;
     LinkedCells<Particle, ParticleCell>::updateContainer();
   }

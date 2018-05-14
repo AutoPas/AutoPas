@@ -24,6 +24,9 @@ typedef autopas::VerletLists<
 //    autopas::FullParticleCell<autopas::sph::SPHParticle>>
 //    Container;
 
+std::map<std::array<int, 3>, std::vector<autopas::sph::SPHParticle*>>
+    sph_verlet_particle_list;
+
 void SetupIC(Container& sphSystem, double* end_time,
              const std::array<double, 3>& bBoxMax) {
   // Place SPH particles
@@ -246,15 +249,21 @@ void updateHaloParticles(Container& sphSystem, bool addParticles) {
           getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i],
                           requiredHaloMax[i], cutoff, shift[i]);
         }
-        for (auto iterator =
-                 sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax);
-             iterator.isValid(); ++iterator) {
-          autopas::sph::SPHParticle p = *iterator;
-          p.addR(shift);
-          if (addParticles) {
+        if (addParticles) {
+          sph_verlet_particle_list[diff].clear();
+          for (auto iterator = sphSystem.getRegionIterator(requiredHaloMin,
+                                                           requiredHaloMax);
+               iterator.isValid(); ++iterator) {
+            sph_verlet_particle_list[diff].push_back(&*iterator);
+            autopas::sph::SPHParticle p = *iterator;
+            p.addR(shift);
             // add the halo particle
             sphSystem.addHaloParticle(p);
-          } else {
+          }
+        } else {
+          for (auto particleptr : sph_verlet_particle_list.at(diff)) {
+            autopas::sph::SPHParticle p = *particleptr;
+            p.addR(shift);
             // update halo particle
             sphSystem.updateHaloParticle(p);
           }
@@ -343,13 +352,15 @@ void densityPressureHydroForce(Container& sphSystem) {
   sphSystem.iteratePairwiseAoS2(&hydroForceFunctor);
   std::cout << "calculation of hydroforces... completed" << std::endl;
   // 0.3.3 delete halo particles, as their values are no longer valid
-  deleteHaloParticles(sphSystem);
+  // deleteHaloParticles(sphSystem);
 }
 
 void printConservativeVariables(Container& sphSystem) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.0;                       // total enegry
-  for (auto it = sphSystem.begin(); it.isValid(); ++it) {
+  for (auto it = sphSystem.begin(
+           autopas::IteratorBehavior::innerOnly);
+       it.isValid(); ++it) {
     momSum = autopas::arrayMath::add(
         momSum, autopas::arrayMath::mulScalar(it->getV(), it->getMass()));
     energySum += (it->getEnergy() +

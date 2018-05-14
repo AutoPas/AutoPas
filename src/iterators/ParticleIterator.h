@@ -15,6 +15,15 @@
 namespace autopas {
 
 /**
+ * Enum to specify the behavior of an iterator.
+ */
+enum IteratorBehavior {
+  haloOnly,     /// iterate only over halo
+  innerOnly,    /// iterate only over inner cells
+  haloAndInner  /// iterate over both halo and inner cells
+};
+
+/**
  * ParticleIterator class to access particles inside of a container.
  * The particles can be accessed using "iterator->" or "*iterator". The next
  * particle using the ++operator, e.g. "++iterator"
