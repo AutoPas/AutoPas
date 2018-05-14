@@ -7,6 +7,10 @@
 #pragma once
 
 namespace autopas {
+/**
+ * interface class to handle cell boarders and cell types of cells.
+ * @todo: add cell boarder handling
+ */
 class CellBoarderAndFlagManager {
   /**
    * the index type to access the particle cells

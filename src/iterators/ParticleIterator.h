@@ -38,6 +38,10 @@ class ParticleIterator {
    * Constructor of the ParticleIterator class.
    *
    * @param cont linear data vector of ParticleCells
+   * @param flagManager the CellBoarderAndFlagManager that shall be used to
+   * query the cell types. Can be nullptr if the behavior is haloAndOwned
+   * @param behavior the IteratorBehavior that specifies which type of cells
+   * shall be iterated through.
    */
   explicit ParticleIterator(std::vector<ParticleCell>* cont,
                             CellBoarderAndFlagManager* flagManager = nullptr,
@@ -136,6 +140,10 @@ class ParticleIterator {
     }
   }
 
+  /**
+   * checks if a cell has the correct cell type according to the behavior
+   * @return true iff the cell type is proper according to the behavior
+   */
   bool isCellTypeBehaviorCorrect() {
     switch (_behavior) {
       case haloAndOwned:
