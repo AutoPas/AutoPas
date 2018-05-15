@@ -338,6 +338,8 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec,
     _haloBoxMax[d] = _boxMax[d] + _cellLength[d];
 
     _numCells *= _cellsPerDimensionWithHalo[d];
+
+    AutoPasLogger->debug("CellBlock3D: _cellsPerDimensionWithHalo[{}]={}",d,_cellsPerDimensionWithHalo[d]);
   }
 
   _vec1D->resize(_numCells);

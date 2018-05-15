@@ -379,7 +379,9 @@ int main() {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
+  autopas::utils::Timer perlooptimer;
   for (double time = 0.; time < t_end; time += dt, ++step) {
+    perlooptimer.start();
     std::cout << "\n-------------------------\ntime step " << step
               << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift
@@ -415,5 +417,7 @@ int main() {
     //    }
 
     printConservativeVariables(sphSystem);
+    std::cout << "time in iteration " << step << ": " << perlooptimer.stop()
+              << std::endl;
   }
 }

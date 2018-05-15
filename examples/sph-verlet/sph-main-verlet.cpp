@@ -83,7 +83,7 @@ void SetupIC(Container& sphSystem, double* end_time,
   std::cout << "# of particles is... " << i << std::endl;
 
   // Set the end time
-  *end_time = 0.12;
+  *end_time = .12;
   // Fin.
   std::cout << "setup... completed" << std::endl;
 }
@@ -314,7 +314,6 @@ void densityPressureHydroForce(Container& sphSystem) {
   // 0.3.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, false);
 
-
   // 0.3.2 then calculate hydro force
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     // self interaction leeds to:
@@ -350,7 +349,10 @@ void printConservativeVariables(Container& sphSystem) {
 
 int main() {
   autopas::logger::create();
-  unsigned int rebuildFrequency = 4;
+
+  unsigned int rebuildFrequency = 6;
+  double skintocutoff = 0.1;
+
   AutoPasLogger->set_level(spdlog::level::level_enum::debug);
   AutoPasLogger->set_pattern("[%n] [%l] %v");
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
@@ -360,7 +362,7 @@ int main() {
 
   // Container sphSystem(boxMin, boxMax, cutoff);
   Container sphSystem(
-      boxMin, boxMax, cutoff, 0.1 * cutoff /*skin*/,
+      boxMin, boxMax, cutoff, skintocutoff * cutoff /*skin*/,
       rebuildFrequency /*every second time step*/ /*rebuild frequency*/);
   double dt;
   double t_end;
@@ -380,7 +382,9 @@ int main() {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
+  autopas::utils::Timer perlooptimer;
   for (double time = 0.; time < t_end; time += dt, ++step) {
+    perlooptimer.start();
     std::cout << "\n-------------------------\ntime step " << step
               << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift
@@ -388,7 +392,7 @@ int main() {
     leapfrogFullDrift(sphSystem, dt);
 
     // for verlet-lists this only needs to be done, if particles moved too far.
-    if (sphSystem.isContainerUpdateNeeded() or sphSystem.needsRebuild()) {
+    if (sphSystem.needsRebuild() or sphSystem.isContainerUpdateNeeded()) {
       // ensure that there are no halo particles if we need to update the
       // container
       deleteHaloParticles(sphSystem);
@@ -426,5 +430,7 @@ int main() {
     //    }
 
     printConservativeVariables(sphSystem);
+    std::cout << "time in iteration " << step << ": " << perlooptimer.stop()
+              << std::endl;
   }
 }
