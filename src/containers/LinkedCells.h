@@ -159,9 +159,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   bool isContainerUpdateNeeded() override {
-    for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin;
-      std::array<double, 3> boxmax;
+    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+      std::array<double, 3> boxmin {0.,0.,0.};
+      std::array<double, 3> boxmax {0.,0.,0.};
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid();
            ++iter) {
