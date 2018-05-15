@@ -351,7 +351,7 @@ int main() {
   autopas::logger::create();
 
   unsigned int rebuildFrequency = 6;
-  double skintocutoff = 0.1;
+  double skintocutoff = 0.04;
 
   AutoPasLogger->set_level(spdlog::level::level_enum::debug);
   AutoPasLogger->set_pattern("[%n] [%l] %v");
