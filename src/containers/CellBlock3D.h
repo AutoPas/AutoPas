@@ -11,7 +11,7 @@
 #include <array>
 #include <cmath>
 #include <vector>
-#include "CellBoarderAndFlagManager.h"
+#include "CellBorderAndFlagManager.h"
 #include "utils/ExceptionHandler.h"
 #include "utils/ThreeDimensionalMapping.h"
 #include "utils/inBox.h"
@@ -24,7 +24,7 @@ namespace autopas {
  * @tparam ParticleCell type of the handled ParticleCells
  */
 template <class ParticleCell>
-class CellBlock3D : public CellBoarderAndFlagManager {
+class CellBlock3D : public CellBorderAndFlagManager {
  public:
   /**
    * the index type to access the particle cells

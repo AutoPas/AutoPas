@@ -1,5 +1,5 @@
 /**
- * @file CellBoarderAndFlagManager.h
+ * @file CellBorderAndFlagManager.h
  * @author seckler
  * @date 14.05.18
  */
@@ -8,10 +8,10 @@
 
 namespace autopas {
 /**
- * interface class to handle cell boarders and cell types of cells.
- * @todo: add cell boarder handling
+ * interface class to handle cell borders and cell types of cells.
+ * @todo: add cell border handling
  */
-class CellBoarderAndFlagManager {
+class CellBorderAndFlagManager {
   /**
    * the index type to access the particle cells
    */

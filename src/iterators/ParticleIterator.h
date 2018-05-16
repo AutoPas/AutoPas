@@ -38,13 +38,13 @@ class ParticleIterator {
    * Constructor of the ParticleIterator class.
    *
    * @param cont linear data vector of ParticleCells
-   * @param flagManager the CellBoarderAndFlagManager that shall be used to
+   * @param flagManager the CellBorderAndFlagManager that shall be used to
    * query the cell types. Can be nullptr if the behavior is haloAndOwned
    * @param behavior the IteratorBehavior that specifies which type of cells
    * shall be iterated through.
    */
   explicit ParticleIterator(std::vector<ParticleCell>* cont,
-                            CellBoarderAndFlagManager* flagManager = nullptr,
+                            CellBorderAndFlagManager* flagManager = nullptr,
                             IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
@@ -161,7 +161,7 @@ class ParticleIterator {
   std::vector<ParticleCell>* _vectorOfCells;
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
   typename ParticleCell::iterator _iteratorWithinOneCell;
-  CellBoarderAndFlagManager* _flagManager;
+  CellBorderAndFlagManager* _flagManager;
   IteratorBehavior _behavior;
   // SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
 };

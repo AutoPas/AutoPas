@@ -8,7 +8,7 @@
 #ifndef SRC_CONTAINERS_DIRECTSUM_H_
 #define SRC_CONTAINERS_DIRECTSUM_H_
 
-#include "CellBoarderAndFlagManager.h"
+#include "CellBorderAndFlagManager.h"
 #include "ParticleContainer.h"
 #include "pairwiseFunctors/CellFunctor.h"
 #include "pairwiseFunctors/LJFunctor.h"
@@ -149,11 +149,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   ParticleIterator<Particle, ParticleCell> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIterator<Particle, ParticleCell>(
-        &this->_data, &_cellBoarderFlagManager, behavior);
+        &this->_data, &_cellBorderFlagManager, behavior);
   }
 
  private:
-  class DirectSumCellBoarderAndFlagManager : public CellBoarderAndFlagManager {
+  class DirectSumCellBorderAndFlagManager : public CellBorderAndFlagManager {
     /**
      * the index type to access the particle cells
      */
@@ -165,7 +165,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     bool isOwningCell(index_t index1d) const override {
       return not isHaloCell(index1d);
     }
-  } _cellBoarderFlagManager;
+  } _cellBorderFlagManager;
 
   ParticleCell *getCell() { return &(this->_data.at(0)); };
 
