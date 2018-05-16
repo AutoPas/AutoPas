@@ -15,8 +15,8 @@ TEST(TimerTest, testTimer) {
 
   timer.start();
   // sleeping for 100ms
-  usleep(1e5);
+  usleep(5e4);
   time = timer.stop();
   // time should be close to 10ms
-  ASSERT_NEAR(time, 1e-5, 5e-4);
+  ASSERT_NEAR(time, .05, .03);
 }
