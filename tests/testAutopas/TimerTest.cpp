@@ -14,9 +14,9 @@ TEST(TimerTest, testTimer) {
   ASSERT_LE(time, 0.01);
 
   timer.start();
-  // sleeping for 10ms
-  usleep(10e3);
+  // sleeping for 100ms
+  usleep(1e5);
   time = timer.stop();
   // time should be close to 10ms
-  ASSERT_NEAR(time, 10e-3, 5e-3);
+  ASSERT_NEAR(time, 1e-5, 5e-4);
 }
