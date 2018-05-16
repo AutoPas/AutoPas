@@ -20,14 +20,6 @@ class VerletListHelpers {
   typedef std::map<Particle *, std::vector<Particle *>>
       AoS_verletlist_storage_type;
 
-  /// (SoA) map from particle id to index in verlet list container
-  typedef std::map<decltype(Particle().getID()), size_t>
-      particleid_to_verletlistindex_container_type;
-
-  /// (SOA) map from verlet list index to particle id
-  typedef std::vector<decltype(Particle().getID())>
-      verletlistindex_to_particleid_container_type;
-
   /**
    * This functor can generate verlet lists using the typical pairwise
    * traversal.
@@ -39,15 +31,11 @@ class VerletListHelpers {
     /**
      * Constructor
      * @param verletListsAoS
-     * @param particleIDtoVerletListIndexMap
      * @param cutoffskinsquared
      */
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS,
-                               particleid_to_verletlistindex_container_type
-                                   &particleIDtoVerletListIndexMap,
                                double cutoffskinsquared)
         : _verletListsAoS(verletListsAoS),
-          _particleIDtoVerletListIndexMap(particleIDtoVerletListIndexMap),
           _cutoffskinsquared(cutoffskinsquared) {}
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
@@ -65,8 +53,6 @@ class VerletListHelpers {
 
    private:
     AoS_verletlist_storage_type &_verletListsAoS;
-    particleid_to_verletlistindex_container_type
-        &_particleIDtoVerletListIndexMap;
     double _cutoffskinsquared;
   };
 
@@ -84,16 +70,11 @@ class VerletListHelpers {
     /**
      * Constructor
      * @param verletListsAoS
-     * @param particleIDtoVerletListIndexMap
      * @param cutoffsquared
      */
     VerletListValidityCheckerFunctor(
-        AoS_verletlist_storage_type &verletListsAoS,
-        particleid_to_verletlistindex_container_type
-            &particleIDtoVerletListIndexMap,
-        double cutoffsquared)
+        AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
         : _verletListsAoS(verletListsAoS),
-          _particleIDtoVerletListIndexMap(particleIDtoVerletListIndexMap),
           _cutoffsquared(cutoffsquared),
           _valid(true) {}
 
@@ -120,8 +101,6 @@ class VerletListHelpers {
 
    private:
     AoS_verletlist_storage_type &_verletListsAoS;
-    particleid_to_verletlistindex_container_type
-        &_particleIDtoVerletListIndexMap;
     double _cutoffsquared;
 
     // needs to be thread safe

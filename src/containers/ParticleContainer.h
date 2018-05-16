@@ -98,8 +98,10 @@ class ParticleContainer {
    * iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter)
    * @return iterator to the first particle
+   * @todo implement IteratorBehavior
    */
-  ParticleIterator<Particle, ParticleCell> begin() {
+  virtual ParticleIterator<Particle, ParticleCell> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return ParticleIterator<Particle, ParticleCell>(&_data);
   }
 

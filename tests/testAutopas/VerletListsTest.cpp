@@ -259,23 +259,25 @@ TEST_F(VerletListsTest, testForceRebuild) {
   using ::testing::_;
   using ::testing::Invoke;
 
+  // generate Velet list with rebuild frequency of 3
   MockVerletLists<autopas::Particle,
                   autopas::FullParticleCell<autopas::Particle>>
       mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
-
+  // delegating to parent
   ON_CALL(mockVerletLists, addParticle(_))
       .WillByDefault(Invoke(
           &mockVerletLists,
           &MockVerletLists<autopas::Particle,
                            autopas::FullParticleCell<autopas::Particle>>::
               addParticleVerletLists));
+  // delegating to parent
   ON_CALL(mockVerletLists, addHaloParticle(_))
       .WillByDefault(Invoke(
           &mockVerletLists,
           &MockVerletLists<autopas::Particle,
                            autopas::FullParticleCell<autopas::Particle>>::
               addHaloParticleVerletLists));
-
+  // delegating to parent
   ON_CALL(mockVerletLists, updateContainer())
       .WillByDefault(Invoke(
           &mockVerletLists,
@@ -286,35 +288,60 @@ TEST_F(VerletListsTest, testForceRebuild) {
   autopas::Functor<autopas::Particle,
                    autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
+
+  // check that the second call does not need a rebuild
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
 
+  // check that updateContainer() requires a rebuild
   EXPECT_CALL(mockVerletLists, updateContainer());
   mockVerletLists.updateContainer();
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
 
+  // check that adding particles requires a rebuild
   autopas::Particle p({1.1, 1.1, 1.1}, {0., 0., 0.}, 1);
   EXPECT_CALL(mockVerletLists, addParticle(_));
   mockVerletLists.addParticle(p);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
 
+  // check that adding halo particles requires a rebuild
   autopas::Particle p2({-0.1, 1.2, 1.1}, {0., 0., 0.}, 2);
   EXPECT_CALL(mockVerletLists, addHaloParticle(_));
   mockVerletLists.addHaloParticle(p2);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // here
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
+
+  // check that deleting particles requires a rebuild
+  /*{
+    auto iterator = mockVerletLists.begin();
+    iterator.deleteCurrentParticle();
+  }
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
+*/
+  // check that deleting halo particles requires a rebuild
+  mockVerletLists.deleteHaloParticles();
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
+  mockVerletLists.iteratePairwiseAoS(&emptyFunctor,
+                                     true);  // rebuild happens here
 }
 
 TEST_F(VerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
@@ -433,7 +460,7 @@ TEST_F(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
                    autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
 
-  // addtwo particles in proper distance
+  // add two particles in proper distance
   autopas::Particle p({1.1, 1.1, 1.1}, {0., 0., 0.}, 1);
   verletLists.addParticle(p);
   autopas::Particle p2({7.5, 1.1, 1.1}, {0., 0., 0.}, 2);
@@ -451,4 +478,66 @@ TEST_F(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
 
   // check validity - should return true
   EXPECT_TRUE(verletLists.checkNeighborListsAreValid());
+}
+
+template <class Container, class Particle>
+void moveUpdateAndExpectEqual(Container& container, Particle& particle,
+                              std::array<double, 3> newPosition) {
+  particle.setR(newPosition);
+  container.updateHaloParticle(particle);
+  {
+    auto iter = container.begin();
+    auto r = iter->getR();
+    EXPECT_EQ(r[0], newPosition[0]);
+    EXPECT_EQ(r[1], newPosition[1]);
+    EXPECT_EQ(r[2], newPosition[2]);
+  }
+};
+
+TEST_F(VerletListsTest, testUpdateHaloParticle) {
+  autopas::VerletLists<autopas::Particle,
+                       autopas::FullParticleCell<autopas::Particle>>
+      verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+
+  autopas::Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
+  verletLists.addHaloParticle(p);
+
+  // test same position, change velocity
+  p.setV({.1, .1, .1});
+  verletLists.updateHaloParticle(p);
+  {
+    auto iter = verletLists.begin();
+    auto v = iter->getV();
+    for (int i = 0; i < 3; i++) EXPECT_EQ(v[i], 0.1);
+  }
+
+  // test different position, same cell
+  moveUpdateAndExpectEqual(verletLists, p, {-.05, 10.1, -.1});
+
+  // test different position, neighboring cells
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 10.1, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, .05}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, -.1}));
+  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, .05}));
+
+  // check for particle with wrong id
+  autopas::Particle p2({-.1, -.1, -.1}, {0., 0., 0.}, 2);
+  EXPECT_ANY_THROW(verletLists.updateHaloParticle(p2));
+
+  // test move far, expect throw
+  EXPECT_ANY_THROW(moveUpdateAndExpectEqual(verletLists, p, {3, 3, 3}););
+
+  // test particles at intermediate positions (not at corners)
+  autopas::Particle p3({-1., 4., 2.}, {0., 0., 0.}, 3);
+  verletLists.addHaloParticle(p3);
+  EXPECT_NO_THROW(verletLists.updateHaloParticle(p3));
+  autopas::Particle p4({4., 10.2, 2.}, {0., 0., 0.}, 4);
+  verletLists.addHaloParticle(p4);
+  EXPECT_NO_THROW(verletLists.updateHaloParticle(p4));
+  autopas::Particle p5({5., 4., 10.2}, {0., 0., 0.}, 3);
+  verletLists.addHaloParticle(p5);
+  EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
 }
