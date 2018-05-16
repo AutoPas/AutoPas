@@ -156,7 +156,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
   bool isContainerUpdateNeeded() override {
-    for (unsigned long cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);

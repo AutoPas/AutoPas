@@ -197,7 +197,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * A list of halo cells is returned whose distance to position is at most
    * allowedDistance. If position is inside a halo cell that cell is also
    * returned. (1 norm is used, i.e. the distance is computed for each dimension
-   * separately)
+   * separately, Manhattan distance)
    * @param position cells close to this position are to be returned
    * @param allowedDistance the maximal distance to the position
    * @return a container of references to nearby halo cells

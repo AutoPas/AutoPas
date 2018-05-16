@@ -203,6 +203,17 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
   }
 }
 
+/**
+ * Test the iterator behavior for owning and halo molecules.
+ * this function expects that two molecules are already added to container:
+ * mol should be added as normal particle.
+ * haloMol as haloParticle.
+ * @tparam Container
+ * @tparam Molecule
+ * @param container should have already an added mol (as owning molecule) and haloMol (als halo molecule)
+ * @param mol
+ * @param haloMol
+ */
 template <class Container, class Molecule>
 void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule& haloMol){
 
