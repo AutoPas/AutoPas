@@ -16,7 +16,7 @@ pipeline{
         stage("build") {
             steps{
                 githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
-                container('rikorose/gcc-cmake:gcc-7') {
+                container('autopas-gcc7-cmake-make') {
                     dir("build"){
                         sh "cmake .."
                         sh "make"
