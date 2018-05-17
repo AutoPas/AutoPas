@@ -16,9 +16,11 @@ pipeline{
         stage("build") {
             steps{
                 githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
-                dir("build"){
-                    sh "cmake .."
-                    sh "make"
+                container('rikorose/gcc-cmake:gcc-7') {
+                    dir("build"){
+                        sh "cmake .."
+                        sh "make"
+                    }
                 }
                 dir("build-addresssanitizer"){
                     sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
