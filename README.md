@@ -33,11 +33,11 @@ cd build
 CC=clang CXX=clang++ cmake ..
 make
 ```
-if you would like to use ninja instead of clang:
+if you would like to use ninja instead of make:
 ```
 mkdir build
 cd build
-CC=clang CXX=clang++ cmake -G Ninja ..
+cmake -G Ninja ..
 ninja
 ```
 
