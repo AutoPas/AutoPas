@@ -1,5 +1,10 @@
 pipeline{
-    agent { label 'atsccs11' }
+    agent {
+        node {
+            //cloud 'kubernetes'
+            label 'openshift-autoscale'
+        }
+    }
     stages{
         stage('setup'){
             steps{
