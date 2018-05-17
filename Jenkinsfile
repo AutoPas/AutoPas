@@ -13,7 +13,7 @@ pipeline{
                 githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                 dir("build"){
                     sh "cmake .."
-                    sh "make"
+                    sh "make -j 4"
                 }
                 dir("build-addresssanitizer"){
                     sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
