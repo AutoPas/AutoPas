@@ -158,7 +158,7 @@ pipeline{
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
                 dir("coverage"){
-                    container('autopas-gcc7-cmake-make'){
+                    container('autopas-build-code-coverage'){
                         sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
                         sh "make AutoPas_cobertura"
                     }
