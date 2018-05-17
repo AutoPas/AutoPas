@@ -134,13 +134,18 @@ pipeline{
         }
         stage("build documentation"){
             steps{
-                dir("build") { sh 'make doc_doxygen 2>DoxygenWarningLog.txt' }
+                container('autopas-cmake-doxygen-make'){
+                    dir("build-doxygen") {
+                        sh 'cmake ..'
+                        sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
+                    }
+                }
             }
         }
         stage("update documentation"){
             when{ branch 'master' }
             steps{
-                dir("build"){
+                dir("build-doxygen"){
                     sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
@@ -153,8 +158,10 @@ pipeline{
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
                 dir("coverage"){
-                    sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
-                    sh "make AutoPas_cobertura"
+                    container('autopas-gcc7-cmake-make'){
+                        sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
+                        sh "make AutoPas_cobertura"
+                    }
                     cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
                 }
             }
