@@ -70,37 +70,49 @@ pipeline{
                 parallel(
                     normal: {
                         githubNotify context: 'test', description: 'test in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
-                        dir("build"){
-                            //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
-                            sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build"){
+                                //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
+                                sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
+                            }
                         }
                     },
                     addresssanitizer: {
-                        dir("build-addresssanitizer"){
-                            sh './tests/testAutopas/runTests'
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-addresssanitizer"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     },
                     addresssanitizerrelease: {
-                        dir("build-addresssanitizer-release"){
-                            sh './tests/testAutopas/runTests'
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-addresssanitizer-release"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     },
                     threadsanitizer: {
-                        dir("build-threadsanitizer"){
-                            sh './tests/testAutopas/runTests'
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-threadsanitizer"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     },
                     /*dir("build-memorysanitizer"){
                         sh './tests/testAutopas/runTests'
                     }*/
                     clangninjaaddresssanitizer: {
-                        dir("build-clang-ninja-addresssanitizer-debug"){
-                            sh './tests/testAutopas/runTests'
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-addresssanitizer-debug"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     },
                     clangninjaaddresssanitizerrelease: {
-                        dir("build-clang-ninja-addresssanitizer-release"){
-                            sh './tests/testAutopas/runTests'
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-addresssanitizer-release"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     }
                 )
