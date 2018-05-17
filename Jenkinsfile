@@ -19,33 +19,35 @@ pipeline{
                 container('autopas-gcc7-cmake-make') {
                     dir("build"){
                         sh "cmake .."
-                        sh "make"
+                        sh "make -j 4"
                     }
+                    dir("build-addresssanitizer"){
+                        sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                        sh "make -j 4"
+                    }
+                    dir("build-addresssanitizer-release"){
+                        sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                        sh "make -j 4"
+                    }
+                    dir("build-threadsanitizer"){
+                        // this is for simple testing of our threading libraries.
+                        sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
+                        sh "make -j 4"
+                    }
+                    /*dir("build-memorysanitizer"){
+                        sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
+                        sh "make -j 4"
+                    }*/
                 }
-                dir("build-addresssanitizer"){
-                    sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "make -j 4"
-                }
-                dir("build-addresssanitizer-release"){
-                    sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "make -j 4"
-                }
-                dir("build-threadsanitizer"){
-                    // this is for simple testing of our threading libraries.
-                    sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
-                    sh "make -j 4"
-                }
-                /*dir("build-memorysanitizer"){
-                    sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
-                    sh "make -j 4"
-                }*/
-                dir("build-clang-ninja-addresssanitizer-debug"){
-                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "ninja"
-                }
-                dir("build-clang-ninja-addresssanitizer-release"){
-                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "ninja"
+                container('autopas-clang6-cmake-ninja-make'){
+                    dir("build-clang-ninja-addresssanitizer-debug"){
+                        sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                        sh "ninja"
+                    }
+                    dir("build-clang-ninja-addresssanitizer-release"){
+                        sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                        sh "ninja"
+                    }
                 }
             }
             post{
