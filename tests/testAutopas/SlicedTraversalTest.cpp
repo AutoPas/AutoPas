@@ -4,8 +4,9 @@
  *  Created on: 22 Jan 2018
  *      Author: gratl
  */
-
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 #include "SlicedTraversalTest.h"
 
 using ::testing::_;
