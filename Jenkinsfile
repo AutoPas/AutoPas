@@ -33,11 +33,11 @@ pipeline{
                     sh "make -j 4"
                 }*/
                 dir("build-clang-ninja-addresssanitizer-debug"){
-                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
                     sh "ninja"
                 }
                 dir("build-clang-ninja-addresssanitizer-release"){
-                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
                     sh "ninja"
                 }
             }
