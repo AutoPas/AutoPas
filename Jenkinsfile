@@ -166,15 +166,14 @@ pipeline{
             }
         }
         stage("update documentation"){
-            //when{ branch 'master' }
+            when{ branch 'master' }
             agent{ label 'atsccs11' }
             steps{
                 unstash 'doxydocs'
                 dir("build-doxygen"){
-                    /*sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
+                    sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
-                    sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'*/
-                    sh 'find doc_doxygen/html/'
+                    sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
                 }
             }
         }
