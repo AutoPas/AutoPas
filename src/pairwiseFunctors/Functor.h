@@ -8,7 +8,8 @@
 #ifndef SRC_PAIRWISEFUNCTORS_FUNCTOR_H_
 #define SRC_PAIRWISEFUNCTORS_FUNCTOR_H_
 
-#include <utils/SoA.h>
+#include "utils/SoA.h"
+#include "utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -39,7 +40,9 @@ class Functor {
    * @param j Particle j
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) {}
+  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * @brief Functor for structure of arrays (SoA)
@@ -51,7 +54,9 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA &soa, bool newton3 = true) {}
+  virtual void SoAFunctor(SoA &soa, bool newton3 = true) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * @brief Functor for structure of arrays (SoA)
@@ -64,7 +69,9 @@ class Functor {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) {}
+  virtual void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * @brief Copies the AoS data of the given cell in the given soa.
@@ -73,7 +80,9 @@ class Functor {
    * @param soa  Structure of arrays where the data is copied to.
    */
 
-  virtual void SoALoader(ParticleCell &cell, SoA *soa) {}
+  virtual void SoALoader(ParticleCell &cell, SoA *soa) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * @brief Copies the data stored in the soa back into the cell.
@@ -81,7 +90,9 @@ class Functor {
    * @param cell Cell where the data should be stored.
    * @param soa  Structure of arrays from where the data is loaded.
    */
-  virtual void SoAExtractor(ParticleCell *cell, SoA *soa) {}
+  virtual void SoAExtractor(ParticleCell *cell, SoA *soa) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * Specifies whether the functor is capable of Newton3-like functors.
