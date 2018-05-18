@@ -208,7 +208,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double *const __restrict__ fzptr =
         soa->begin(Particle::AttributeNames::forceZ);
 
-    SingleCellIterator<Particle, ParticleCell> cellIter(&cell);
+    auto cellIter = cell.begin();
     // load particles in SoAs
     for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
       idptr[i] = (*cellIter).getID();
@@ -224,7 +224,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   void SoAExtractor(ParticleCell *cell, SoA *soa) override {
     if (soa->getNumParticles() == 0) return;
 
-    SingleCellIterator<Particle, ParticleCell> cellIter(cell);
+    auto cellIter = cell->begin();
 
 #ifndef NDEBUG
     double *const __restrict__ idptr = soa->begin(Particle::AttributeNames::id);
