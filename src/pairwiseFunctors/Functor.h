@@ -8,8 +8,8 @@
 #ifndef SRC_PAIRWISEFUNCTORS_FUNCTOR_H_
 #define SRC_PAIRWISEFUNCTORS_FUNCTOR_H_
 
-#include "utils/SoA.h"
 #include "utils/ExceptionHandler.h"
+#include "utils/SoA.h"
 
 namespace autopas {
 
@@ -55,6 +55,31 @@ class Functor {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctor(SoA &soa, bool newton3 = true) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
+
+  /**
+   * @brief Functor for structure of arrays (SoA) for neighbor lists
+   *
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between the particles in the SoA that are marked by the verlet list
+   * This should include a cutoff check if needed!
+   *
+   * iFrom an iTo define the range inside of the neighborList that should be
+   * iterated over. The starting index is i = iFrom. The iteration will continue
+   * while i < iTo.
+   *
+   * @param soa Structure of arrays
+   * @param neighborList The list of neighbors
+   * @param iFrom the starting index of the vector neighborList that should be
+   * iterated over
+   * @param iTo the first index that should not be iterated over. (Should be at
+   * least iFrom and less than soa.size())
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  virtual void SoAFunctor(SoA &soa,
+                          std::vector<std::vector<size_t>> &neighborList,
+                          size_t iFrom, size_t iTo, bool newton3 = true) {
     utils::ExceptionHandler::exception("not yet implemented");
   }
 
