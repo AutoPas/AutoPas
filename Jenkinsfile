@@ -162,15 +162,19 @@ pipeline{
                         sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
                     }
                 }
+                stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
             }
         }
         stage("update documentation"){
-            when{ branch 'master' }
+            //when{ branch 'master' }
+            agent{ label 'atsccs11' }
             steps{
+                unstash 'doxydocs'
                 dir("build-doxygen"){
-                    sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
+                    /*sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
-                    sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
+                    sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'*/
+                    sh 'find doc_doxygen/html/'
                 }
             }
         }
@@ -178,7 +182,6 @@ pipeline{
             steps{
                 junit 'build/test.xml'
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
-
                 dir("coverage"){
                     container('autopas-build-code-coverage'){
                         sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
