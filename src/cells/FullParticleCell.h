@@ -21,19 +21,26 @@ namespace autopas {
 template <class Particle>
 class FullParticleCell
     : public ParticleCell<
-          Particle, SingleCellIterator<Particle, FullParticleCell<Particle>>,
-          FullParticleCell<Particle>> {
+          Particle, SingleCellIterator<Particle, FullParticleCell<Particle>>> {
  public:
   FullParticleCell() {
     _particleSoABuffer.initArrays({
-        Particle::AttributeNames::id, Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY, Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::id,
+        Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forceX,
+        Particle::AttributeNames::forceY,
         Particle::AttributeNames::forceZ,
     });
   }
 
   void addParticle(Particle &m) override { _particles.push_back(m); }
+
+  virtual SingleCellIterator<Particle, FullParticleCell<Particle>> begin()
+      override {
+    return SingleCellIterator<Particle, FullParticleCell<Particle>>(this);
+  }
 
   unsigned long numParticles() const override { return _particles.size(); }
 

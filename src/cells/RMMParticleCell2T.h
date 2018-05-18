@@ -23,8 +23,7 @@ namespace autopas {
  */
 template <class Particle, class Iterator>
 class RMMParticleCell2T
-    : public ParticleCell<Particle, Iterator,
-                          RMMParticleCell2T<Particle, Iterator>> {
+    : public ParticleCell<Particle, Iterator> {
  public:
   /**
    * Constructor of RMMParticleCell
@@ -44,6 +43,8 @@ class RMMParticleCell2T
     _particleSoABuffer.push(Particle::AttributeNames::forceY, m.getF()[1]);
     _particleSoABuffer.push(Particle::AttributeNames::forceZ, m.getF()[2]);
   }
+
+  virtual Iterator begin() override { return Iterator(this); }
 
   unsigned long numParticles() const override {
     return _particleSoABuffer.getNumParticles();

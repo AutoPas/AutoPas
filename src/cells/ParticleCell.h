@@ -17,9 +17,8 @@ namespace autopas {
  * @tparam Particle the type of particles to be stored in the cells
  * @tparam Iterator the type of the iterator iterate through the particles in
  * this cell
- * @tparam Derived the type of the derived class
  */
-template <class Particle, class Iterator, class Derived>
+template <class Particle, class Iterator>
 class ParticleCell {
  public:
   /**
@@ -39,9 +38,7 @@ class ParticleCell {
    * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
    * @return the iterator
    */
-  virtual Iterator begin() {
-    return Iterator(reinterpret_cast<Derived *>(this));
-  }
+  virtual Iterator begin() = 0;
 
   /**
    * Get the number of particles stored in this cell
