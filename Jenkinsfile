@@ -16,7 +16,7 @@ pipeline{
         stage("build") {
             steps{
                 parallel(
-                    normal: {
+                    "default": {
                         githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                         container('autopas-gcc7-cmake-make') {
                             dir("build"){
@@ -25,7 +25,7 @@ pipeline{
                             }
                         }
                     },
-                    addresssanitizer: {
+                    "address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
                                 sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
@@ -33,7 +33,7 @@ pipeline{
                             }
                         }
                     },
-                    addresssanitizerrelease: {
+                    "address sanitizer release": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release"){
                                 sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
@@ -41,7 +41,7 @@ pipeline{
                             }
                         }
                     },
-                    threadsanitizer: {
+                    "thread sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-threadsanitizer"){
                                 // this is for simple testing of our threading libraries.
@@ -54,7 +54,7 @@ pipeline{
                         sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
                         sh "make -j 4"
                     }*/
-                    clangninjaaddresssanitizer: {
+                    "clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
@@ -62,7 +62,7 @@ pipeline{
                             }
                         }
                     },
-                    clangninjaaddresssanitizerrelease: {
+                    "clang ninja address sanitizer release": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
@@ -90,7 +90,7 @@ pipeline{
         stage("test") {
             steps{
                 parallel(
-                    normal: {
+                    "default": {
                         githubNotify context: 'test', description: 'test in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                         container('autopas-gcc7-cmake-make') {
                             dir("build"){
@@ -99,21 +99,21 @@ pipeline{
                             }
                         }
                     },
-                    addresssanitizer: {
+                    "address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
                                 sh './tests/testAutopas/runTests'
                             }
                         }
                     },
-                    addresssanitizerrelease: {
+                    "address sanitizer release": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release"){
                                 sh './tests/testAutopas/runTests'
                             }
                         }
                     },
-                    threadsanitizer: {
+                    "thread sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-threadsanitizer"){
                                 sh './tests/testAutopas/runTests'
@@ -123,14 +123,14 @@ pipeline{
                     /*dir("build-memorysanitizer"){
                         sh './tests/testAutopas/runTests'
                     }*/
-                    clangninjaaddresssanitizer: {
+                    "clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
                                 sh './tests/testAutopas/runTests'
                             }
                         }
                     },
-                    clangninjaaddresssanitizerrelease: {
+                    "clang ninja address sanitizer release": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
                                 sh './tests/testAutopas/runTests'
