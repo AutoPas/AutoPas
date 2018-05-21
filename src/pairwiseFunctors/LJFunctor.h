@@ -190,7 +190,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA *soa) override {
+  void SoALoader(ParticleCell &cell, SoA *soa, size_t offset=0) override {
     soa->resizeArrays(cell.numParticles());
     if (cell.numParticles() == 0) return;
 
@@ -210,18 +210,18 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
     auto cellIter = cell.begin();
     // load particles in SoAs
-    for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
-      idptr[i] = (*cellIter).getID();
-      xptr[i] = (*cellIter).getR()[0];
-      yptr[i] = (*cellIter).getR()[1];
-      zptr[i] = (*cellIter).getR()[2];
-      fxptr[i] = (*cellIter).getF()[0];
-      fyptr[i] = (*cellIter).getF()[1];
-      fzptr[i] = (*cellIter).getF()[2];
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      idptr[i] = cellIter->getID();
+      xptr[i] = cellIter->getR()[0];
+      yptr[i] = cellIter->getR()[1];
+      zptr[i] = cellIter->getR()[2];
+      fxptr[i] = cellIter->getF()[0];
+      fyptr[i] = cellIter->getF()[1];
+      fzptr[i] = cellIter->getF()[2];
     }
   }
 
-  void SoAExtractor(ParticleCell *cell, SoA *soa) override {
+  void SoAExtractor(ParticleCell *cell, SoA *soa, size_t offset=0) override {
     if (soa->getNumParticles() == 0) return;
 
     auto cellIter = cell->begin();
@@ -237,9 +237,9 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double *const __restrict__ fzptr =
         soa->begin(Particle::AttributeNames::forceZ);
 
-    for (unsigned int i = 0; i < soa->getNumParticles(); ++i, ++cellIter) {
-      assert(idptr[i] == (*cellIter).getID());
-      (*cellIter).setF({fxptr[i], fyptr[i], fzptr[i]});
+    for (unsigned int i = offset; cellIter.isValid(); ++i, ++cellIter) {
+      assert(idptr[i] == cellIter->getID());
+      cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
     }
   }
 

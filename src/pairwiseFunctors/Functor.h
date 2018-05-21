@@ -103,9 +103,11 @@ class Functor {
    *
    * @param cell Cell from where the data is loaded.
    * @param soa  Structure of arrays where the data is copied to.
+   * @param offset Offset within the SoA. The data of the cell should be added
+   * to the SoA with the specified offset.
    */
 
-  virtual void SoALoader(ParticleCell &cell, SoA *soa) {
+  virtual void SoALoader(ParticleCell &cell, SoA *soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("not yet implemented");
   }
 
@@ -114,8 +116,10 @@ class Functor {
    *
    * @param cell Cell where the data should be stored.
    * @param soa  Structure of arrays from where the data is loaded.
+   * @param offset Offset within the SoA. The data of the soa should be
+   * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell *cell, SoA *soa) {
+  virtual void SoAExtractor(ParticleCell *cell, SoA *soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("not yet implemented");
   }
 
