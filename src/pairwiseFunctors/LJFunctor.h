@@ -194,10 +194,72 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
                           std::vector<std::vector<size_t>> &neighborList,
                           size_t iFrom, size_t iTo,
                           bool newton3 = true) override {
-    //utils::ExceptionHandler::exception("not yet implemented");
+    if (soa.getNumParticles() == 0) return;
+
+    double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
+
+    double *const __restrict__ fxptr =
+        soa.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr =
+        soa.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr =
+        soa.begin(Particle::AttributeNames::forceZ);
+
+    for (unsigned int i = iFrom; i < iTo; ++i) {
+      double fxacc = 0;
+      double fyacc = 0;
+      double fzacc = 0;
+      size_t listSizeI = neighborList[i].size();
+// icpc vectorizes this.
+// g++ only with -ffast-math or -funsafe-math-optimizations
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+      for (size_t jNeighIndex = 0; jNeighIndex < listSizeI; ++jNeighIndex) {
+        size_t j = neighborList[i][jNeighIndex];
+        if (i == j) continue;
+
+        const double drx = xptr[i] - xptr[j];
+        const double dry = yptr[i] - yptr[j];
+        const double drz = zptr[i] - zptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 > CUTOFFSQUARE) continue;
+
+        const double invdr2 = 1. / dr2;
+        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj6 = lj2 * lj2 * lj2;
+        const double lj12 = lj6 * lj6;
+        const double lj12m6 = lj12 - lj6;
+        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+
+        const double fx = drx * fac;
+        const double fy = dry * fac;
+        const double fz = drz * fac;
+
+        fxacc += fx;
+        fyacc += fy;
+        fzacc += fz;
+
+        fxptr[j] -= fx;
+        fyptr[j] -= fy;
+        fzptr[j] -= fz;
+      }
+
+      fxptr[i] += fxacc;
+      fyptr[i] += fyacc;
+      fzptr[i] += fzacc;
+    }
   }
 
   void SoALoader(ParticleCell &cell, SoA *soa, size_t offset = 0) override {
+    /// @todo it is probably better to resize the soa only once, before calling
+    /// SoALoader (verlet-list only)
     soa->resizeArrays(offset + cell.numParticles());
     if (cell.numParticles() == 0) return;
 
