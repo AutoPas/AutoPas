@@ -1,5 +1,10 @@
 pipeline{
-    agent { label 'atsccs11' }
+    agent {
+        node {
+            //cloud 'kubernetes'
+            label 'openshift-autoscale'
+        }
+    }
     stages{
         stage('setup'){
             steps{
@@ -10,36 +15,62 @@ pipeline{
         }
         stage("build") {
             steps{
-                githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
-                dir("build"){
-                    sh "cmake .."
-                    sh "make -j 4"
-                }
-                dir("build-addresssanitizer"){
-                    sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "make -j 4"
-                }
-                dir("build-addresssanitizer-release"){
-                    sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "make -j 4"
-                }
-                dir("build-threadsanitizer"){
-                    // this is for simple testing of our threading libraries.
-                    sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
-                    sh "make -j 4"
-                }
-                /*dir("build-memorysanitizer"){
-                    sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
-                    sh "make -j 4"
-                }*/
-                dir("build-clang-ninja-addresssanitizer-debug"){
-                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "ninja"
-                }
-                dir("build-clang-ninja-addresssanitizer-release"){
-                    sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                    sh "ninja"
-                }
+                parallel(
+                    "default": {
+                        githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build"){
+                                sh "cmake .."
+                                sh "make -j 4"
+                            }
+                        }
+                    },
+                    "address sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-addresssanitizer"){
+                                sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "make -j 4"
+                            }
+                        }
+                    },
+                    "address sanitizer release": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-addresssanitizer-release"){
+                                sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "make -j 4"
+                            }
+                        }
+                    },
+                    "thread sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-threadsanitizer"){
+                                // this is for simple testing of our threading libraries.
+                                sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
+                                sh "make -j 4"
+                            }
+                        }
+                    },
+                    /*dir("build-memorysanitizer"){
+                        sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
+                        sh "make -j 4"
+                    }*/
+                    "clang ninja address sanitizer": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-addresssanitizer-debug"){
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "ninja -j 4"
+                            }
+                        }
+                    },
+                    "clang ninja address sanitizer release": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-addresssanitizer-release"){
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "ninja -j 4"
+                            }
+                        }
+                    }
+                )
             }
             post{
                 success{
@@ -59,39 +90,51 @@ pipeline{
         stage("test") {
             steps{
                 parallel(
-                    normal: {
+                    "default": {
                         githubNotify context: 'test', description: 'test in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
-                        dir("build"){
-                            //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
-                            sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build"){
+                                //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
+                                sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
+                            }
                         }
                     },
-                    addresssanitizer: {
-                        dir("build-addresssanitizer"){
-                            sh './tests/testAutopas/runTests'
+                    "address sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-addresssanitizer"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     },
-                    addresssanitizerrelease: {
-                        dir("build-addresssanitizer-release"){
-                            sh './tests/testAutopas/runTests'
+                    "address sanitizer release": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-addresssanitizer-release"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     },
-                    threadsanitizer: {
-                        dir("build-threadsanitizer"){
-                            sh './tests/testAutopas/runTests'
+                    "thread sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-threadsanitizer"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     },
                     /*dir("build-memorysanitizer"){
                         sh './tests/testAutopas/runTests'
                     }*/
-                    clangninjaaddresssanitizer: {
-                        dir("build-clang-ninja-addresssanitizer-debug"){
-                            sh './tests/testAutopas/runTests'
+                    "clang ninja address sanitizer": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-addresssanitizer-debug"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     },
-                    clangninjaaddresssanitizerrelease: {
-                        dir("build-clang-ninja-addresssanitizer-release"){
-                            sh './tests/testAutopas/runTests'
+                    "clang ninja address sanitizer release": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-addresssanitizer-release"){
+                                sh './tests/testAutopas/runTests'
+                            }
                         }
                     }
                 )
@@ -113,13 +156,21 @@ pipeline{
         }
         stage("build documentation"){
             steps{
-                dir("build") { sh 'make doc_doxygen 2>DoxygenWarningLog.txt' }
+                container('autopas-cmake-doxygen-make'){
+                    dir("build-doxygen") {
+                        sh 'cmake ..'
+                        sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
+                    }
+                }
+                stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
             }
         }
         stage("update documentation"){
             when{ branch 'master' }
+            agent{ label 'atsccs11' }
             steps{
-                dir("build"){
+                unstash 'doxydocs'
+                dir("build-doxygen"){
                     sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
@@ -130,10 +181,11 @@ pipeline{
             steps{
                 junit 'build/test.xml'
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
-
                 dir("coverage"){
-                    sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
-                    sh "make AutoPas_cobertura"
+                    container('autopas-build-code-coverage'){
+                        sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
+                        sh "make AutoPas_cobertura -j 4"
+                    }
                     cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
                 }
             }
