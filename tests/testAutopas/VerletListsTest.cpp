@@ -550,9 +550,27 @@ TEST_F(VerletListsTest, LoadExtractSoA){
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       mockFunctor;
 
-  EXPECT_CALL(mockFunctor, SoALoader(_, _, _)).Times(216);
-  EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(216);
-
+  EXPECT_CALL(mockFunctor, SoALoader(_, _, _)).Times(216);  // 6*6*6=216 cells
+  EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(216);  // 6*6*6=216 cells
+  EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _)).Times(0);
+  EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _, _)).Times(1);
   verletLists.iteratePairwiseSoA2(&mockFunctor, true);
+
+}
+
+
+TEST_F(VerletListsTest, LoadExtractSoALJ){
+  autopas::VerletLists<autopas::Particle,
+                       autopas::FullParticleCell<autopas::Particle>>
+      verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+
+
+  autopas::Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
+  verletLists.addHaloParticle(p);
+
+  autopas::LJFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
+      ljFunctor;
+
+  verletLists.iteratePairwiseSoA2(&ljFunctor, true);
 
 }
