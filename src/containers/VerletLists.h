@@ -51,7 +51,17 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false),
-        _soa() {}
+        _soa() {
+    _soa.initArrays({
+        Particle::AttributeNames::id,
+        Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forceX,
+        Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ,
+    });
+  }
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell>* f,
                           bool useNewton3 = true) override {
