@@ -8,12 +8,13 @@
 
 #include <atomic>
 namespace autopas {
-template <class Particle, class ParticleCell>
+
 /**
  * class of helpers for verlet lists
  * @tparam Particle
  * @tparam ParticleCell
  */
+template <class Particle, class ParticleCell>
 class VerletListHelpers {
  public:
   /// AOS verlet list storage

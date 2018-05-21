@@ -50,7 +50,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false) {}
+        _neighborListIsValid(false),
+        _soa() {}
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell>* f,
                           bool useNewton3 = true) override {
@@ -58,13 +59,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
   /**
-   * same as iteratePairwiseAoS, but potentially faster (if called with the
-   * derived functor), as the class of the functor is known and thus the
-   * compiler can do some better optimizations.
-   *
-   * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3 defines whether newton3 should be used
+   * @copydoc LinkedCells::iteratePairwiseAoS2
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
@@ -81,11 +76,26 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
   /**
+   * @copydoc LinkedCells::iteratePairwiseSoA2
+   */
+  template <class ParticleFunctor>
+  void iteratePairwiseSoA2(ParticleFunctor* f, bool useNewton3 = true) {
+    if (needsRebuild()) {
+      this->updateVerletListsAoS(useNewton3);
+      // the neighbor list is now valid
+      _neighborListIsValid = true;
+      _traversalsSinceLastRebuild = 0;
+      generateSoAListFromAoSVerletLists();
+    }
+    iterateVerletListsSoA(f, useNewton3);
+  }
+
+  /**
    * get the actual neighbour list
    * @return the neighbour list
    */
   typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() {
-    return _verletListsAoS;
+    return _aosNeighborLists;
   }
 
   /**
@@ -146,8 +156,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
     // particles can also simply be very close already:
     typename verlet_internal::VerletListValidityCheckerFunctor
-        validityCheckerFunctor(_verletListsAoS, ((this->getCutoff() - _skin) *
-                                                 (this->getCutoff() - _skin)));
+        validityCheckerFunctor(
+            _aosNeighborLists,
+            ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(
         &validityCheckerFunctor, useNewton3);
@@ -156,7 +167,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
   bool isContainerUpdateNeeded() override {
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size();
+         ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
@@ -241,10 +253,10 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @param useNewton3
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
-    _verletListsAoS.clear();
+    _aosNeighborLists.clear();
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(
-        _verletListsAoS, (this->getCutoff() * this->getCutoff()));
+        _aosNeighborLists, (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
   }
@@ -257,17 +269,41 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
-    /// @todo optimize iterateVerletListsAoS, e.g. by using traversals with
-    /// different
+    /// @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
+    /// traversals
 
     // don't parallelize this with a simple openmp, unless useNewton3=false
-    for (auto& list : _verletListsAoS) {
+    for (auto& list : _aosNeighborLists) {
       Particle& i = *list.first;
       for (auto j_ptr : list.second) {
         Particle& j = *j_ptr;
         f->AoSFunctor(i, j, useNewton3);
       }
     }
+  }
+
+  /**
+   * iterate over the verlet lists using the SoA traversal
+   * @tparam ParticleFunctor
+   * @param f
+   * @param useNewton3
+   */
+  template <class ParticleFunctor>
+  void iterateVerletListsSoA(ParticleFunctor* f, const bool useNewton3) {
+    /// @todo optimize iterateVerletListsSoA, e.g. by using traversals with
+    /// different
+
+    // load data from cells into soa
+    loadSoA(f);
+
+    /// @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
+    size_t iFrom = 0;
+    size_t iTo = _soaNeighborLists.size();
+    // iterate over SoA
+    f->SoAFunctor(_soa, _soaNeighborLists, iFrom, iTo, useNewton3);
+
+    // extract SoA
+    extractSoA(f);
   }
 
   /**
@@ -281,16 +317,87 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     // DON'T simply parallelize this loop!!! this needs modifications if you
     // want to parallelize it!
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
-      _verletListsAoS[&(*iter)];
+      // create the verlet list entries for all particles
+      _aosNeighborLists[&(*iter)];
     }
 
     return i;
   }
 
+  /**
+   * Load the particle information from the cell and store it in the global SoA
+   * using functor.SoALoader(...)
+   * @tparam ParticleFunctor the type of the functor
+   * @param functor the SoAExtractor method of this functor is used. use the
+   * actual
+   */
+  template <class ParticleFunctor>
+  void loadSoA(ParticleFunctor* functor) {
+    size_t offset = 0;
+    for (auto& cell : this->_data) {
+      functor->SoALoader(cell, &_soa, offset);
+      offset += cell.numParticles();
+    }
+  }
+
+  /**
+   * Extracts the particle information from the global SoA using
+   * functor.SoAExtractor(...)
+   * @tparam ParticleFunctor the type of the functor
+   * @param functor the SoAExtractor method of this functor is used. use the
+   * actual
+   */
+  template <class ParticleFunctor>
+  void extractSoA(ParticleFunctor* functor) {
+    size_t offset = 0;
+    for (auto& cell : this->_data) {
+      functor->SoAExtractor(&cell, &_soa, offset);
+      offset += cell.numParticles();
+    }
+  }
+
+  /**
+   * Converts the verlet list stored for AoS usage into one for SoA usage
+   */
+  void generateSoAListFromAoSVerletLists() {
+    // resize the list to the size of the aos neighborlist
+    _soaNeighborLists.resize(_aosNeighborLists.size());
+    // clear the aos 2 soa map
+    _aos2soaMap.clear();
+    size_t i = 0;
+    for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
+      // set the map
+      _aos2soaMap[&(*iter)] = i;
+    }
+    i = 0;
+    for (auto& aosList : _aosNeighborLists) {
+      // each soa neighbor list should be of the same size as for aos
+      _soaNeighborLists[i].resize(aosList.second.size());
+      size_t j = 0;
+      for (auto neighbor : aosList.second) {
+        _soaNeighborLists[i][j] = _aos2soaMap.at(neighbor);
+        j++;
+      }
+      i++;
+    }
+  }
+
  private:
   /// verlet lists.
-  typename verlet_internal::AoS_verletlist_storage_type _verletListsAoS;
+  typename verlet_internal::AoS_verletlist_storage_type _aosNeighborLists;
 
+  /// map converting from the aos type index (Particle *) to the soa type index
+  /// (continuous, size_t)
+  std::map<Particle*, size_t> _aos2soaMap;
+
+  /// map converting from the continuous soa type index (size_t) to the aos type
+  /// index (Particle *)
+  std::vector<Particle*> _soa2aosmap;
+
+  /// verlet list for SoA:
+  std::vector<std::vector<size_t>> _soaNeighborLists;
+
+  /// skin radius
   double _skin;
 
   /// how many pairwise traversals have been done since the last traversal
@@ -302,6 +409,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
   // specifies if the neighbor list is currently valid
   bool _neighborListIsValid;
+
+  /// global SoA of verlet lists
+  SoA _soa;
 };
 
 } /* namespace autopas */

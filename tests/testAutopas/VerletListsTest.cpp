@@ -537,3 +537,22 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
   verletLists.addHaloParticle(p5);
   EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
 }
+
+TEST_F(VerletListsTest, LoadExtractSoA){
+  autopas::VerletLists<autopas::Particle,
+                       autopas::FullParticleCell<autopas::Particle>>
+      verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+
+
+  autopas::Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
+  verletLists.addHaloParticle(p);
+
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
+      mockFunctor;
+
+  EXPECT_CALL(mockFunctor, SoALoader(_, _, _)).Times(216);
+  EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(216);
+
+  verletLists.iteratePairwiseSoA2(&mockFunctor, true);
+
+}

@@ -190,7 +190,14 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA *soa, size_t offset=0) override {
+  virtual void SoAFunctor(SoA &soa,
+                          std::vector<std::vector<size_t>> &neighborList,
+                          size_t iFrom, size_t iTo,
+                          bool newton3 = true) override {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
+
+  void SoALoader(ParticleCell &cell, SoA *soa, size_t offset = 0) override {
     soa->resizeArrays(cell.numParticles());
     if (cell.numParticles() == 0) return;
 
@@ -221,7 +228,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAExtractor(ParticleCell *cell, SoA *soa, size_t offset=0) override {
+  void SoAExtractor(ParticleCell *cell, SoA *soa, size_t offset = 0) override {
     if (soa->getNumParticles() == 0) return;
 
     auto cellIter = cell->begin();
