@@ -189,7 +189,14 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       fz1ptr[i] += fzacc;
     }
   }
-
+  // clang-format off
+  /**
+   * @copydoc Functor::SoAFunctor(SoA &soa, std::vector<std::vector<size_t>> &neighborList, size_t iFrom, size_t iTo, bool newton3 = true)
+   *
+   * @note if you want to parallelize this by openmp, please ensure that there
+   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
+   */
+  // clang-format on
   virtual void SoAFunctor(SoA &soa,
                           std::vector<std::vector<size_t>> &neighborList,
                           size_t iFrom, size_t iTo,
