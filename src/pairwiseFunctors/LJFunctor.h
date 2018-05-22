@@ -202,7 +202,8 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
                           size_t iFrom, size_t iTo,
                           bool newton3 = true) override {
     auto numParts = soa.getNumParticles();
-    AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
+    AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}",
+                         soa.getNumParticles());
 
     if (numParts == 0) return;
 
@@ -221,11 +222,71 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
-      size_t listSizeI = neighborList[i].size();
+      const size_t listSizeI = neighborList[i].size();
+      const double xtmp = xptr[i];
+      const double ytmp = yptr[i];
+      const double ztmp = zptr[i];
+      const auto &currentList = neighborList[i];
+
+      const size_t vecsize = 16;
+      size_t joff = 0;
+      if(listSizeI >= vecsize) {
+        for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
+          std::array<double, vecsize> xArr, yArr, zArr, fxArr, fyArr, fzArr;
+          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+            const size_t j = currentList[joff + tmpj];
+            xArr[tmpj] = xptr[j];
+            yArr[tmpj] = yptr[j];
+            zArr[tmpj] = zptr[j];
+          }
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
-      for (size_t jNeighIndex = 0; jNeighIndex < listSizeI; ++jNeighIndex) {
+          for (size_t j = 0; j < vecsize; j++) {
+            //const size_t j = currentList[jNeighIndex];
+
+            const double drx = xtmp - xArr[j];
+            const double dry = ytmp - yArr[j];
+            const double drz = ztmp - zArr[j];
+
+            const double drx2 = drx * drx;
+            const double dry2 = dry * dry;
+            const double drz2 = drz * drz;
+
+            const double dr2 = drx2 + dry2 + drz2;
+
+            bool mask = (dr2 <= CUTOFFSQUARE);
+
+            const double invdr2 = 1. / dr2 * mask;
+            const double lj2 = SIGMASQUARE * invdr2;
+            const double lj6 = lj2 * lj2 * lj2;
+            const double lj12 = lj6 * lj6;
+            const double lj12m6 = lj12 - lj6;
+            const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+
+            const double fx = drx * fac;
+            const double fy = dry * fac;
+            const double fz = drz * fac;
+
+            fxacc += fx;
+            fyacc += fy;
+            fzacc += fz;
+
+            fxArr[j] = fx;
+            fyArr[j] = fy;
+            fzArr[j] = fz;
+          }
+
+          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+            const size_t j = currentList[joff + tmpj];
+            fxptr[j] -= fxArr[tmpj];
+            fyptr[j] -= fyArr[tmpj];
+            fzptr[j] -= fzArr[tmpj];
+          }
+        }
+      }
+      for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
 
@@ -260,6 +321,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
         fyptr[j] -= fy;
         fzptr[j] -= fz;
       }
+
 
       fxptr[i] += fxacc;
       fyptr[i] += fyacc;
