@@ -86,6 +86,11 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     _traversalsSinceLastRebuild++;
   }
 
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell>* f,
+                          bool useNewton3 = true) override {
+    iteratePairwiseSoA2(f, useNewton3);
+  }
+
   /**
    * @copydoc LinkedCells::iteratePairwiseSoA2
    */
