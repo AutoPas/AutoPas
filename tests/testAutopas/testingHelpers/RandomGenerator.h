@@ -18,9 +18,8 @@ class RandomGenerator {
                                        const std::array<double, 3>& boxMax);
  public:
   template <class Container, class Particle>
-  static void fillWithParticles(Container& container, Particle defaultParticle) {
+  static void fillWithParticles(Container& container, Particle defaultParticle, int numParticles = 100) {
     srand(42);  // fixed seedpoint
-    int numParticles = 100;
 
     for (int i = 0; i < numParticles; ++i) {
       auto id = static_cast<unsigned long>(i);
