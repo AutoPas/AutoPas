@@ -51,6 +51,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false),
+        _soaListIsValid(false),
         _soa() {
     _soa.initArrays({
         Particle::AttributeNames::id,
@@ -96,8 +97,11 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
       _neighborListIsValid = true;
       _traversalsSinceLastRebuild = 0;
       generateSoAListFromAoSVerletLists();
+    } else if (not _soaListIsValid){
+      generateSoAListFromAoSVerletLists();
     }
     iterateVerletListsSoA(f, useNewton3);
+    _traversalsSinceLastRebuild++;
   }
 
   /**
@@ -269,6 +273,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         _aosNeighborLists, (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
+    _soaListIsValid = false;
   }
 
   /**
@@ -380,7 +385,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
       _aos2soaMap[&(*iter)] = i;
     }
     i = 0;
+    size_t accumulatedListSize = 0;
     for (auto& aosList : _aosNeighborLists) {
+      accumulatedListSize += aosList.second.size();
       size_t i_id = _aos2soaMap[aosList.first];
       // each soa neighbor list should be of the same size as for aos
       _soaNeighborLists[i_id].resize(aosList.second.size());
@@ -391,6 +398,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
       }
       i++;
     }
+    AutoPasLogger->debug("VerletLists::generateSoAListFromAoSVerletLists: average verlet list size is {}",
+                         static_cast<double>(accumulatedListSize)/_aosNeighborLists.size());
+    _soaListIsValid = true;
   }
 
  private:
@@ -420,6 +430,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
   // specifies if the neighbor list is currently valid
   bool _neighborListIsValid;
+
+  // specifies if the SoA neighbor list is currently valid
+  bool _soaListIsValid;
 
   /// global SoA of verlet lists
   SoA _soa;
