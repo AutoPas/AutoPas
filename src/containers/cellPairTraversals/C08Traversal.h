@@ -27,26 +27,15 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
                         CellFunctor *cellfunctor)
       : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims,
                                                      cellfunctor) {
-//    rebuild(cells, dims);
   }
   // documentation in base class
   void traverseCellPairs() override;
   bool isApplicable() override;
-  void rebuild(std::vector<ParticleCell> &cells,
-               const std::array<unsigned long, 3> &dims) override;
- private:
-  int _numColors;
 };
 
 template<class ParticleCell, class CellFunctor>
 inline bool C08Traversal<ParticleCell, CellFunctor>::isApplicable() {
   return true;
-}
-
-template<class ParticleCell, class CellFunctor>
-inline void C08Traversal<ParticleCell, CellFunctor>::rebuild(
-    std::vector<ParticleCell> &cells,
-    const std::array<unsigned long, 3> &dims) {
 }
 
 template<class ParticleCell, class CellFunctor>
