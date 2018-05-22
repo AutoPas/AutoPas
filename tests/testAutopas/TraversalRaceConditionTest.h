@@ -55,7 +55,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
    private:
     // in a grid with separation 1 this includes all neighbors with a Chebyshev
     // distance of 1
-    constexpr static double CUTOFFSQUARE = 2;
+    constexpr static double CUTOFFSQUARE = 3;
   };
 };
 
