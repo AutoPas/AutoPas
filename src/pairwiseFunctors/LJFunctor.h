@@ -232,7 +232,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       size_t joff = 0;
       if(listSizeI >= vecsize) {
         for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-          std::array<double, vecsize> xArr, yArr, zArr, fxArr, fyArr, fzArr;
+          alignas(64) std::array<double, vecsize> xArr, yArr, zArr, fxArr, fyArr, fzArr;
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             const size_t j = currentList[joff + tmpj];
             xArr[tmpj] = xptr[j];
