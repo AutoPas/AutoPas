@@ -201,7 +201,10 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
                           std::vector<std::vector<size_t>> &neighborList,
                           size_t iFrom, size_t iTo,
                           bool newton3 = true) override {
-    if (soa.getNumParticles() == 0) return;
+    auto numParts = soa.getNumParticles();
+    AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
+
+    if (numParts == 0) return;
 
     double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
     double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
