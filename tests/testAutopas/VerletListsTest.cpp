@@ -581,8 +581,8 @@ TEST_F(VerletListsTest, SoAvsAoSLJ) {
                        autopas::FullParticleCell<autopas::Particle>>
       verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3, 3);
 
-  RandomGenerator::fillWithParticles(verletLists1, autopas::Particle({0.,0.,0.},{0.,0.,0.},0));
-  RandomGenerator::fillWithParticles(verletLists2, autopas::Particle({0.,0.,0.},{0.,0.,0.},0));
+  RandomGenerator::fillWithParticles(verletLists1, autopas::Particle({0.,0.,0.},{0.,0.,0.},0), 100);
+  RandomGenerator::fillWithParticles(verletLists2, autopas::Particle({0.,0.,0.},{0.,0.,0.},0), 100);
 
   autopas::LJFunctor<autopas::Particle,
                      autopas::FullParticleCell<autopas::Particle>>
@@ -596,6 +596,13 @@ TEST_F(VerletListsTest, SoAvsAoSLJ) {
   auto iter2 = verletLists2.begin();
 
   for (; iter1.isValid() && iter2.isValid(); ++iter1, ++iter2) {
+    ASSERT_NEAR(iter1->getR()[0], iter2->getR()[0],
+                fabs(iter1->getR()[0] * 1e-7));
+    ASSERT_NEAR(iter1->getR()[1], iter2->getR()[1],
+                fabs(iter1->getR()[1] * 1e-7));
+    ASSERT_NEAR(iter1->getR()[2], iter2->getR()[2],
+                fabs(iter1->getR()[2] * 1e-7));
+
     EXPECT_NEAR(iter1->getF()[0], iter2->getF()[0],
                 fabs(iter1->getF()[0] * 1e-7));
     EXPECT_NEAR(iter1->getF()[1], iter2->getF()[1],
