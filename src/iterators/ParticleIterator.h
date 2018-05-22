@@ -154,6 +154,8 @@ class ParticleIterator {
       case ownedOnly:
         return _flagManager->isOwningCell(_iteratorAcrossCells -
                                           _vectorOfCells->begin());
+      default:
+        return false;
     }
   }
 
