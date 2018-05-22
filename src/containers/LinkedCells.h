@@ -11,6 +11,7 @@
 #include "CellBlock3D.h"
 #include "ParticleContainer.h"
 #include "containers/cellPairTraversals/SlicedTraversal.h"
+#include "containers/cellPairTraversals/C08Traversal.h"
 #include "pairwiseFunctors/CellFunctor.h"
 #include "utils/inBox.h"
 
@@ -84,9 +85,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>
           cellFunctor(f);
-      //		cellFunctor.processCellAoSN3(this->_data[13]);
-      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
-                                                ParticleFunctor, false, true>>
+//      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+//                                                ParticleFunctor, false, true>>
+      C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>>
           traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                     &cellFunctor);
 
@@ -94,9 +95,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>
           cellFunctor(f);
-      //		cellFunctor.processCellAoSN3(this->_data[13]);
-      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
-                                                ParticleFunctor, false, false>>
+//      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+//                                                ParticleFunctor, false, false>>
+      C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
           traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                     &cellFunctor);
 
