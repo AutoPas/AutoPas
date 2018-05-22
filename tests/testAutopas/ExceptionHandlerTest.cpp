@@ -6,7 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include <omp.h>
 #include "ExceptionHandlerTest.h"
 #include "utils/ExceptionHandler.h"
 
@@ -83,6 +82,9 @@ TEST_F(ExceptionHandlerTest, TestTryRethrow) {
 }
 
 #ifdef _OPENMP
+
+#include <omp.h>
+
 TEST_F(ExceptionHandlerTest, TestThreadSafe) {
   ASSERT_GT(omp_get_max_threads(), 1);
 #pragma omp parallel

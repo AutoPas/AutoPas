@@ -66,6 +66,7 @@ class SingleCellIterator {
   SingleCellIterator &operator++() {
     if (not _deleted) ++_index;
     _deleted = false;
+    return *this;
   }
 
   /**

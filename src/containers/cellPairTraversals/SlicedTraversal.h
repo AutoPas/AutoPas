@@ -103,10 +103,10 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallbac
   for (unsigned long z = 0; z < endid[2]; ++z) {
     for (unsigned long y = 0; y < endid[1]; ++y) {
       for (unsigned long x = 0; x < endid[0]; ++x) {
-        unsigned long ind =
-            ThreeDimensionalMapping::threeToOneD(x, y, z,
-                                                 this->_cellsPerDimension);
-        this->processBaseCell(ind);
+         unsigned long ind =
+             ThreeDimensionalMapping::threeToOneD(x, y, z,
+                     this->_cellsPerDimension);
+         this->processBaseCell(ind);
       }
     }
   }
@@ -131,7 +131,8 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
     autopas_init_lock(locks[i]);
   }
 
-#ifdef _OPENMP
+
+#if defined(_OPENMP)
 // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
 #pragma omp parallel for schedule(static, 1)
 #endif

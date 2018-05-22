@@ -94,7 +94,7 @@ class AutoPas {
    * @todo do we need the whole container functionality available to the outside
    * @return container
    */
-  // or whould wrapper over some container functions be better?
+  // TODO: remove this once we are convinced all necessary container functions are wrapped
   autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const {
     return container.get();
   }
@@ -104,6 +104,22 @@ class AutoPas {
    * @param p Reference to the particle to be added
    */
   void addParticle(Particle &p) { container->addParticle(p); }
+
+  /**
+   * adds a particle to the container that lies in the halo region of the
+   * container
+   * @param haloParticle particle to be added
+   */
+  void addHaloParticle(Particle &haloParticle) {
+    container->addHaloParticle(haloParticle);
+  };
+
+  /**
+   * deletes all halo particles
+   */
+  void deleteHaloParticles() {
+    container->deleteHaloParticles();
+  };
 
   /**
    * Function to iterate over all pairs of particles in the container.

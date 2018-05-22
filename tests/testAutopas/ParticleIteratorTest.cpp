@@ -202,3 +202,93 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
     }
   }
 }
+
+/**
+ * Test the iterator behavior for owning and halo molecules.
+ * this function expects that two molecules are already added to container:
+ * mol should be added as normal particle.
+ * haloMol as haloParticle.
+ * @tparam Container
+ * @tparam Molecule
+ * @param container should have already an added mol (as owning molecule) and haloMol (als halo molecule)
+ * @param mol
+ * @param haloMol
+ */
+template <class Container, class Molecule>
+void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule& haloMol){
+
+  // default
+  int count = 0;
+  for (auto iter = container.begin(); iter.isValid(); ++iter) {
+    count++;
+  }
+  EXPECT_EQ(count, 2);
+
+  // haloAndOwned (same as default)
+  count = 0;
+  for (auto iter = container.begin(IteratorBehavior::haloAndOwned); iter.isValid();
+       ++iter) {
+    count++;
+  }
+  EXPECT_EQ(count, 2);
+
+  // owned only
+  count = 0;
+  for (auto iter = container.begin(IteratorBehavior::ownedOnly); iter.isValid();
+       ++iter) {
+    count++;
+    EXPECT_EQ(iter->getID(), mol.getID());
+  }
+  EXPECT_EQ(count, 1);
+
+  // halo only
+  count = 0;
+  for (auto iter = container.begin(IteratorBehavior::haloOnly); iter.isValid();
+       ++iter) {
+    count++;
+    EXPECT_EQ(iter->getID(), haloMol.getID());
+  }
+  EXPECT_EQ(count, 1);
+}
+
+TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
+  DirectSum<MoleculeLJ, FullParticleCell<MoleculeLJ>> ds({0., 0., 0.},
+                                                         {10., 10., 10.}, 3);
+  MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
+  ds.addParticle(mol);
+  MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
+  ds.addHaloParticle(haloMol);
+
+  testContainerIteratorBehavior(ds, mol, haloMol);
+}
+
+TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
+  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.},
+                                                         {10., 10., 10.}, 3);
+  MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
+  linkedCells.addParticle(mol);
+  MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
+  linkedCells.addHaloParticle(haloMol);
+
+  testContainerIteratorBehavior(linkedCells, mol, haloMol);
+}
+
+TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
+  VerletLists<MoleculeLJ, FullParticleCell<MoleculeLJ>> verletLists({0., 0., 0.},
+                                                                    {10., 10., 10.}, 3, 0., 1);
+  MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
+  verletLists.addParticle(mol);
+  MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
+  verletLists.addHaloParticle(haloMol);
+
+  // test normally
+  testContainerIteratorBehavior(verletLists, mol, haloMol);
+
+  // swap everything around, test if it still valid :)
+  haloMol.setR({1.,1.,1.});
+  mol.setR({-1.,1.,1.});
+  verletLists.begin(IteratorBehavior::ownedOnly)->setR({-1.,1.,1.});
+  verletLists.begin(IteratorBehavior::haloOnly)->setR({1.,1.,1.});
+
+  testContainerIteratorBehavior(verletLists, mol, haloMol);
+}

@@ -14,24 +14,39 @@ Alternatively you can build the documentation on your own:
 
 ## Requirements
 * cmake 3.3 or newer
-* build-essentials (make)
-* a c++11 compiler
+* make (build-essentials) or ninja
+* a c++11 compiler (gcc7 and clang6 are tested)
 
 
 ## Building AutoPas
-build instructions:
+build instructions for make:
 ```
 mkdir build
 cd build
 cmake ..
 make
 ```
-
+if you want to use another compiler, specify it before the first cmake call, e.g.:
+```
+mkdir build
+cd build
+CC=clang CXX=clang++ cmake ..
+make
+```
+if you would like to use ninja instead of make:
+```
+mkdir build
+cd build
+cmake -G Ninja ..
+ninja
+```
 
 ## Testing
 to run tests:
 ```
 make test
+// or
+ninja test
 ```
 or using the ctest environment:
 ```

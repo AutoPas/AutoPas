@@ -107,10 +107,20 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
   /**
+   * @copydoc LinkedCells::deleteHaloParticles
+   * @note this function invalidates the neighbor lists
+   */
+  void deleteHaloParticles() override {
+    _neighborListIsValid = false;
+    LinkedCells<Particle, ParticleCell>::deleteHaloParticles();
+  }
+
+  /**
    * @copydoc LinkedCells::updateContainer()
    * @note this function invalidates the neighbor lists
    */
   void updateContainer() override {
+    AutoPasLogger->debug("updating container");
     _neighborListIsValid = false;
     LinkedCells<Particle, ParticleCell>::updateContainer();
   }
@@ -136,9 +146,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
     // particles can also simply be very close already:
     typename verlet_internal::VerletListValidityCheckerFunctor
-        validityCheckerFunctor(
-            _verletListsAoS, _particleIDtoVerletListIndexContainer,
-            ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
+        validityCheckerFunctor(_verletListsAoS, ((this->getCutoff() - _skin) *
+                                                 (this->getCutoff() - _skin)));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(
         &validityCheckerFunctor, useNewton3);
@@ -147,32 +156,84 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
   bool isContainerUpdateNeeded() override {
-    for (int cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin;
-      std::array<double, 3> boxmax;
+    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+      std::array<double, 3> boxmin{0., 0., 0.};
+      std::array<double, 3> boxmax{0., 0., 0.};
       this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       boxmin = arrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = arrayMath::addScalar(boxmax, +_skin / 2.);
       for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid();
            ++iter) {
         if (not iter->inBox(boxmin, boxmax)) {
+          AutoPasLogger->debug(
+              "VerletLists: containerUpdate needed! Particles are fast. You "
+              "might want to increase the skin radius or decrease the rebuild "
+              "frequency.");
           return true;  // we need an update
         }
       }
     }
+    AutoPasLogger->debug(
+        "VerletLists: containerUpdate not yet needed. Particles are slow "
+        "enough.");
     return false;
   }
 
- protected:
   /**
    * specifies whether the neighbor lists need to be rebuild
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild() {
+    AutoPasLogger->debug("VerletLists: neighborlist is valid: {}",
+                         _neighborListIsValid);
     return (not _neighborListIsValid)  // if the neighborlist is NOT valid a
                                        // rebuild is needed
            or (_traversalsSinceLastRebuild >=
                _rebuildFrequency);  // rebuild with frequency
+  }
+
+  /**
+   * Searches the provided halo particle and updates the found particle.
+   * Searches for the provided particle within the halo cells of the container
+   * and overwrites the found particle with the provided particle.
+   * @param particle
+   */
+  void updateHaloParticle(Particle& particle) {
+    auto cells = this->_cellBlock.getNearbyHaloCells(particle.getR(), _skin);
+    bool updated = false;
+    for (auto cellptr : cells) {
+      updated |= checkParticleInCellAndUpdate(*cellptr, particle);
+      if (updated) {
+        continue;
+      }
+    }
+    if (not updated) {
+      AutoPasLogger->error(
+          "VerletLists: updateHaloParticle was not able to update particle at "
+          "[{}, {}, {}]",
+          particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+      utils::ExceptionHandler::exception(
+          "VerletLists: updateHaloParticle could not find any particle");
+    }
+  }
+
+ protected:
+  /**
+   * Updates a found particle within cellI to the values of particleI.
+   * Checks whether a particle with the same id as particleI is within the cell
+   * cellI and overwrites the particle with particleI, if it is found.
+   * @param cellI
+   * @param particleI
+   * @return
+   */
+  bool checkParticleInCellAndUpdate(ParticleCell& cellI, Particle& particleI) {
+    for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
+      if (iterator->getID() == particleI.getID()) {
+        *iterator = particleI;
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -183,8 +244,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     _verletListsAoS.clear();
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(
-        _verletListsAoS, _particleIDtoVerletListIndexContainer,
-        (this->getCutoff() * this->getCutoff()));
+        _verletListsAoS, (this->getCutoff() * this->getCutoff()));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
   }
@@ -228,17 +288,6 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   }
 
  private:
-  /// map that converts the id type of the particle to the actual position in
-  /// the verlet list.
-  /// This is needed, as the particles don't have a local id.
-  /// @todo remove this and add local id to the particles (this saves a
-  /// relatively costly lookup)
-  typename verlet_internal::particleid_to_verletlistindex_container_type
-      _particleIDtoVerletListIndexContainer;
-
-  typename verlet_internal::verletlistindex_to_particleid_container_type
-      _verletListIndextoParticleIDContainer;
-
   /// verlet lists.
   typename verlet_internal::AoS_verletlist_storage_type _verletListsAoS;
 
