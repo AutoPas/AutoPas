@@ -381,11 +381,12 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     }
     i = 0;
     for (auto& aosList : _aosNeighborLists) {
+      size_t i_id = _aos2soaMap[aosList.first];
       // each soa neighbor list should be of the same size as for aos
-      _soaNeighborLists[i].resize(aosList.second.size());
+      _soaNeighborLists[i_id].resize(aosList.second.size());
       size_t j = 0;
       for (auto neighbor : aosList.second) {
-        _soaNeighborLists[i][j] = _aos2soaMap.at(neighbor);
+        _soaNeighborLists[i_id][j] = _aos2soaMap.at(neighbor);
         j++;
       }
       i++;
