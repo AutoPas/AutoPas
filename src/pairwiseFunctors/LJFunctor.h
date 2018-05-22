@@ -256,7 +256,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
             const double dr2 = drx2 + dry2 + drz2;
 
-            bool mask = (dr2 <= CUTOFFSQUARE);
+            const double mask = (dr2 <= CUTOFFSQUARE)?1.:0.;
 
             const double invdr2 = 1. / dr2 * mask;
             const double lj2 = SIGMASQUARE * invdr2;
