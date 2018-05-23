@@ -329,6 +329,7 @@ TEST_F(VerletListsTest, testForceRebuild) {
                                      true);  // rebuild happens here
 
   // check that deleting particles requires a rebuild
+  /// @todo: reenable once implemented
   /*{
     auto iterator = mockVerletLists.begin();
     iterator.deleteCurrentParticle();
