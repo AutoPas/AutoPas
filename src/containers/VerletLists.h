@@ -421,7 +421,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   std::vector<Particle*> _soa2aosmap;
 
   /// verlet list for SoA:
-  std::vector<std::vector<size_t>> _soaNeighborLists;
+  std::vector<std::vector<size_t, AlignedAllocator<size_t>>> _soaNeighborLists;
 
   /// skin radius
   double _skin;

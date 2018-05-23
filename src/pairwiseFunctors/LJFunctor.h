@@ -11,6 +11,7 @@
 #include <array>
 #include "Functor.h"
 #include "iterators/SingleCellIterator.h"
+#include "utils/AlignedAllocator.h"
 #include "utils/arrayMath.h"
 
 namespace autopas {
@@ -191,16 +192,17 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA &soa, std::vector<std::vector<size_t>> &neighborList, size_t iFrom, size_t iTo, bool newton3 = true)
+   * @copydoc Functor::SoAFunctor(SoA &soa, const std::vector<std::vector<size_t, AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3 = true)
    *
    * @note if you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
    */
   // clang-format on
-  virtual void SoAFunctor(SoA &soa,
-                          std::vector<std::vector<size_t>> &neighborList,
-                          size_t iFrom, size_t iTo,
-                          bool newton3 = true) override {
+  virtual void SoAFunctor(
+      SoA &soa,
+      const std::vector<std::vector<size_t, AlignedAllocator<size_t>>>
+          &neighborList,
+      size_t iFrom, size_t iTo, bool newton3 = true) override {
     auto numParts = soa.getNumParticles();
     AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}",
                          soa.getNumParticles());
@@ -223,32 +225,35 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       double fyacc = 0;
       double fzacc = 0;
       const size_t listSizeI = neighborList[i].size();
-      const double xtmp = xptr[i];
-      const double ytmp = yptr[i];
-      const double ztmp = zptr[i];
-      const auto &currentList = neighborList[i];
+      const size_t *const __restrict__ currentList = neighborList[i].data();
 
-      const size_t vecsize = 16;
+      const size_t vecsize = 12;
       size_t joff = 0;
-      if(listSizeI >= vecsize) {
+      if (listSizeI >= vecsize) {
+        alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr,
+            zArr, fxArr, fyArr, fzArr;
+        for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+          xtmp[tmpj] = xptr[i];
+          ytmp[tmpj] = yptr[i];
+          ztmp[tmpj] = zptr[i];
+        }
         for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-          alignas(64) std::array<double, vecsize> xArr, yArr, zArr, fxArr, fyArr, fzArr;
+#pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-            const size_t j = currentList[joff + tmpj];
-            xArr[tmpj] = xptr[j];
-            yArr[tmpj] = yptr[j];
-            zArr[tmpj] = zptr[j];
+            xArr[tmpj] = xptr[currentList[joff + tmpj]];
+            yArr[tmpj] = yptr[currentList[joff + tmpj]];
+            zArr[tmpj] = zptr[currentList[joff + tmpj]];
           }
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
-            //const size_t j = currentList[jNeighIndex];
+            // const size_t j = currentList[jNeighIndex];
 
-            const double drx = xtmp - xArr[j];
-            const double dry = ytmp - yArr[j];
-            const double drz = ztmp - zArr[j];
+            const double drx = xtmp[j] - xArr[j];
+            const double dry = ytmp[j] - yArr[j];
+            const double drz = ztmp[j] - zArr[j];
 
             const double drx2 = drx * drx;
             const double dry2 = dry * dry;
@@ -256,7 +261,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
             const double dr2 = drx2 + dry2 + drz2;
 
-            const double mask = (dr2 <= CUTOFFSQUARE)?1.:0.;
+            const double mask = (dr2 <= CUTOFFSQUARE) ? 1. : 0.;
 
             const double invdr2 = 1. / dr2 * mask;
             const double lj2 = SIGMASQUARE * invdr2;
@@ -277,7 +282,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
             fyArr[j] = fy;
             fzArr[j] = fz;
           }
-
+#pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             const size_t j = currentList[joff + tmpj];
             fxptr[j] -= fxArr[tmpj];
@@ -321,7 +326,6 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
         fyptr[j] -= fy;
         fzptr[j] -= fz;
       }
-
 
       fxptr[i] += fxacc;
       fyptr[i] += fyacc;
