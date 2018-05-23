@@ -9,8 +9,8 @@
 #include "ExceptionHandlerTest.h"
 #include "utils/ExceptionHandler.h"
 
-using autopas::utils::ExceptionHandler;
 using autopas::utils::ExceptionBehavior;
+using autopas::utils::ExceptionHandler;
 
 void ExceptionHandlerTest::SetUp() {
   // autopas::logger::create();
@@ -86,34 +86,39 @@ TEST_F(ExceptionHandlerTest, TestTryRethrow) {
 #include <omp.h>
 
 TEST_F(ExceptionHandlerTest, TestThreadSafe) {
-  ASSERT_GT(omp_get_max_threads(), 1);
+  if (omp_get_max_threads() > 1) {
 #pragma omp parallel
-  {
-    EXPECT_GT(omp_get_num_threads(), 1);
-    ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
-    ExceptionHandler::exception("testignore");
-    ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
-    ExceptionHandler::exception("testignore2");
-    ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
-    ExceptionHandler::exception("testignore3");
-    ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
-    ExceptionHandler::exception("testignore4");
-    ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
-    ExceptionHandler::exception("testignore5");
-  };
-#pragma omp parallel
-  {
-    ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
-    ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
-    ExceptionHandler::setBehavior(ExceptionBehavior::printCustomAbortFunction);
-    auto abortFunction = []() -> void {
-      AutoPasLogger->error("TESTABORTCUSTOMCALL123");
-      abort();
+    {
+      EXPECT_GT(omp_get_num_threads(), 1);
+      ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
+      ExceptionHandler::exception("testignore");
+      ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
+      ExceptionHandler::exception("testignore2");
+      ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
+      ExceptionHandler::exception("testignore3");
+      ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
+      ExceptionHandler::exception("testignore4");
+      ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
+      ExceptionHandler::exception("testignore5");
     };
-    ExceptionHandler::setCustomAbortFunction(abortFunction);
+#pragma omp parallel
+    {
+      ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
+      ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
+      ExceptionHandler::setBehavior(
+          ExceptionBehavior::printCustomAbortFunction);
+      auto abortFunction = []() -> void {
+        AutoPasLogger->error("TESTABORTCUSTOMCALL123");
+        abort();
+      };
+      ExceptionHandler::setCustomAbortFunction(abortFunction);
+      ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
+      ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
+    };
+    // reset old behavior
     ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
-    ExceptionHandler::setBehavior(ExceptionBehavior::ignore);
-  };
-  ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
+  } else {
+    // mark as skipped, once gtest supports that.
+  }
 }
 #endif
