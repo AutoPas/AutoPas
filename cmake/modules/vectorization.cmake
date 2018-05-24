@@ -10,7 +10,8 @@ if (USE_VECTORIZATION)
     # let ccmake and cmake-gui offer the options
     set_property(CACHE VECTOR_INSTRUCTIONS PROPERTY STRINGS ${VECTOR_INSTRUCTIONS_OPTIONS})
 
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        message(STATUS "vectorization enabled")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp-simd")
 
         if (VECTOR_INSTRUCTIONS MATCHES "^NATIVE$")
@@ -27,8 +28,8 @@ if (USE_VECTORIZATION)
             message(SEND_ERROR "\"${VECTOR_INSTRUCTIONS}\" is an unknown vector instruction set option.\
      Available options: ${VECTOR_INSTRUCTIONS_OPTIONS}")
         endif ()
-
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        message(STATUS "vectorization enabled")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp-simd")
 
         if (VECTOR_INSTRUCTIONS MATCHES "^NATIVE$")
@@ -45,11 +46,16 @@ if (USE_VECTORIZATION)
             message(SEND_ERROR "\"${VECTOR_INSTRUCTIONS}\" is an unknown vector instruction set option.\
      Available options: ${VECTOR_INSTRUCTIONS_OPTIONS}")
         endif ()
+    else()
+        message(WARNING "vectorization not yet supported on this compiler")
+        message(STATUS "you can enable vectorization support by editing cmake/modules/vectorization.cmake")
     endif ()
 elseif ()
 	MESSAGE(STATUS "vectorization disabled")
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-vectorize")
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-vec")
     endif ()
