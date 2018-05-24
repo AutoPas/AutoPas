@@ -102,7 +102,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
       _neighborListIsValid = true;
       _traversalsSinceLastRebuild = 0;
       generateSoAListFromAoSVerletLists();
-    } else if (not _soaListIsValid){
+    } else if (not _soaListIsValid) {
       generateSoAListFromAoSVerletLists();
     }
     iterateVerletListsSoA(f, useNewton3);
@@ -272,7 +272,6 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @param useNewton3
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
-    _aosNeighborLists.clear();
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(
         _aosNeighborLists, (this->getCutoff() * this->getCutoff()));
@@ -333,7 +332,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   size_t updateIdMapAoS() {
     size_t i = 0;
-
+    _aosNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you
     // want to parallelize it!
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
@@ -384,6 +383,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     _soaNeighborLists.resize(_aosNeighborLists.size());
     // clear the aos 2 soa map
     _aos2soaMap.clear();
+    //_aos2soaMap.reserve(_aosNeighborLists.size());
     size_t i = 0;
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
       // set the map
@@ -403,8 +403,10 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
       }
       i++;
     }
-    AutoPasLogger->debug("VerletLists::generateSoAListFromAoSVerletLists: average verlet list size is {}",
-                         static_cast<double>(accumulatedListSize)/_aosNeighborLists.size());
+    AutoPasLogger->debug(
+        "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
+        "size is {}",
+        static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
     _soaListIsValid = true;
   }
 
