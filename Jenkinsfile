@@ -180,7 +180,7 @@ pipeline{
         stage("generate coverage report"){
             steps{
                 junit 'build/test.xml'
-                warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
+                warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build-doxygen/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
                 dir("coverage"){
                     container('autopas-build-code-coverage'){
                         sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
