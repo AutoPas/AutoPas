@@ -11,6 +11,16 @@
 
 namespace autopas {
 
+/**
+ * This class provides base for traversals using the c08 base step.
+ *
+ * The base step processBaseCell() computes one direction
+ * for each spatial direction based on the baseIndex.
+ *
+ * @tparam ParticleCell the type of cells
+ * @tparam CellFunctor the cell functor that defines the interaction of the
+ * particles of two specific cells
+ */
 template<class ParticleCell, class CellFunctor>
 class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
  public:
@@ -38,11 +48,17 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
    */
   void processBaseCell(unsigned long baseIndex) const;
   /**
-   * Computes pairs for the block used in `processBaseCell()`
+   * Computes pairs for the block used in processBaseCell()
    */
   void computeOffsets();
 
+  /**
+   * Pair sets for processBaseCell().
+   */
   std::array<std::pair<unsigned long, unsigned long>, 14> _cellPairOffsets;
+  /**
+   * Offsets for single cells
+   */
   std::array<unsigned long, 8> _cellOffsets;
 };
 

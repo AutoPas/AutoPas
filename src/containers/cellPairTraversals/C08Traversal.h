@@ -13,7 +13,10 @@ namespace autopas {
 
 /**
  * This class provides the c08 traversal.
- * @todo enhance documentation
+ *
+ * The traversal uses the c08 base step performed on every single cell. Since these steps
+ * overlap a domain coloring with eight colors is applied.
+ *
  * @tparam ParticleCell the type of cells
  * @tparam CellFunctor the cell functor that defines the interaction of the
  * particles of two specific cells
