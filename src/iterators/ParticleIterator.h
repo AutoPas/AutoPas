@@ -156,6 +156,7 @@ class ParticleIterator {
                                           _vectorOfCells->begin());
       default:
         utils::ExceptionHandler::exception("unknown iterator behavior");
+        return false;
     }
   }
 
