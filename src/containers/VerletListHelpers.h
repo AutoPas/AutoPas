@@ -18,7 +18,7 @@ template <class Particle, class ParticleCell>
 class VerletListHelpers {
  public:
   /// AOS verlet list storage
-  typedef std::map<Particle *, std::vector<Particle *>>
+  typedef std::unordered_map<Particle *, std::vector<Particle *>>
       AoS_verletlist_storage_type;
 
   /**

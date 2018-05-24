@@ -414,7 +414,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
-  std::map<Particle*, size_t> _aos2soaMap;
+  std::unordered_map<Particle*, size_t> _aos2soaMap;
 
   /// map converting from the continuous soa type index (size_t) to the aos type
   /// index (Particle *)
