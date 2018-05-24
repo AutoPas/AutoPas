@@ -81,7 +81,7 @@ TEST_F(ExceptionHandlerTest, TestTryRethrow) {
   }
 }
 
-#ifdef _OPENMP
+#ifdef AUTOPAS_OPENMP
 
 #include <omp.h>
 
