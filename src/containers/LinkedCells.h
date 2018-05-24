@@ -85,23 +85,36 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>
           cellFunctor(f);
-//      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
-//                                                ParticleFunctor, false, true>>
-      C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>>
-          traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
-                    &cellFunctor);
+      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS IMPLEMENTED
+      if (std::getenv("AUTOPAS_TRAVERSAL") == "C08") {
+        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>>
+            traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
+                      &cellFunctor);
+        traversal.traverseCellPairs();
+      } else {
+        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+                                                  ParticleFunctor, false, true>>
+            traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
+                      &cellFunctor);
+        traversal.traverseCellPairs();
+      }
 
-      traversal.traverseCellPairs();
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>
           cellFunctor(f);
-//      SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
-//                                                ParticleFunctor, false, false>>
-      C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
-          traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
-                    &cellFunctor);
-
-      traversal.traverseCellPairs();
+      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS IMPLEMENTED
+      if (std::getenv("AUTOPAS_TRAVERSAL") == "C08") {
+        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
+            traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
+                      &cellFunctor);
+        traversal.traverseCellPairs();
+      } else {
+        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+                                                  ParticleFunctor, false, false>>
+            traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
+                      &cellFunctor);
+        traversal.traverseCellPairs();
+      }
     }
   }
 
