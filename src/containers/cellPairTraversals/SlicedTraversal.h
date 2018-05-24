@@ -137,7 +137,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   }
 
 
-#if defined(_OPENMP)
+#ifdef AUTOPAS_OPENMP
 // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
 #pragma omp parallel for schedule(static, 1)
 #endif
