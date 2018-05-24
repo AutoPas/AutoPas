@@ -17,6 +17,9 @@ ExternalProject_Add(
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest
         # Disable install step
         INSTALL_COMMAND ""
+	CMAKE_ARGS
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 )
 
 # Get GTest source and binary directories from CMake project
