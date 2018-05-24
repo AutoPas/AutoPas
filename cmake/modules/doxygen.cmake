@@ -8,7 +8,7 @@ endif ()
 
 # check if Doxygen is installed
 find_package(Doxygen
-        REQUIRED dot
+        COMPONENT dot
         OPTIONAL_COMPONENTS mscgen dia)
 if (DOXYGEN_FOUND)
     if (CMAKE_VERSION VERSION_LESS "3.9")
