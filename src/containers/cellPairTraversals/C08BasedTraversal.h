@@ -31,7 +31,15 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
   }
 
  protected:
+  /**
+   * Computes one interaction for each spacial direction based on the lower left
+   * frontal corner (=base index) of a 2x2x2 block of cells.
+   * @param baseIndex Index respective to which box is constructed.
+   */
   void processBaseCell(unsigned long baseIndex) const;
+  /**
+   * Computes pairs for the block used in `processBaseCell()`
+   */
   void computeOffsets();
 
   std::array<std::pair<unsigned long, unsigned long>, 14> _cellPairOffsets;

@@ -16,7 +16,12 @@ namespace autopas {
 
 /**
  * This class provides the sliced traversal.
- * @todo enhance documentation
+ *
+ * The traversal finds the longest dimension of the simulation domain and cuts the domain in
+ * one slice (block) per thread along this dimension. Slices are assigned to the threads in a
+ * round robin fashion. Each thread locks the cells on the boundary wall to the previous slice
+ * with one lock. This lock is lifted as soon the boundary wall is fully processed.
+ *
  * @tparam ParticleCell the type of cells
  * @tparam CellFunctor the cell functor that defines the interaction of the
  * particles of two specific cells

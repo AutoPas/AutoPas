@@ -11,6 +11,13 @@
 
 namespace autopas {
 
+/**
+ * This class provides the c08 traversal.
+ * @todo enhance documentation
+ * @tparam ParticleCell the type of cells
+ * @tparam CellFunctor the cell functor that defines the interaction of the
+ * particles of two specific cells
+ */
 template<class ParticleCell, class CellFunctor>
 class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
  public:
