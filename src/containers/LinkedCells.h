@@ -82,11 +82,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
+    auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>
           cellFunctor(f);
       // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS IMPLEMENTED
-      if (std::getenv("AUTOPAS_TRAVERSAL") == "C08") {
+      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
         C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>>
             traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                       &cellFunctor);
@@ -103,7 +104,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>
           cellFunctor(f);
       // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS IMPLEMENTED
-      if (std::getenv("AUTOPAS_TRAVERSAL") == "C08") {
+      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
         C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
             traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                       &cellFunctor);
