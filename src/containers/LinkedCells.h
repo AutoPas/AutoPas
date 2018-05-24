@@ -117,6 +117,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
         traversal.traverseCellPairs();
       }
     }
+    delete envTraversal;
   }
 
   void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f,

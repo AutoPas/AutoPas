@@ -6,7 +6,7 @@
  */
 
 
-#ifdef _OPENMP
+#ifdef AUTOPAS_OPENMP
 #include <omp.h>
 #endif
 #include "C08TraversalTest.h"
