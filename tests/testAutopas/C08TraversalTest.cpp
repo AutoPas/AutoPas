@@ -6,7 +6,7 @@
  */
 
 
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPASAUTOPAS_OPENMP
 #include <omp.h>
 #endif
 #include "C08TraversalTest.h"
@@ -39,7 +39,7 @@ TEST_F(C08TraversalTest, testTraversalCube) {
   cells.resize(edgeLength*edgeLength*edgeLength);
 
   fillWithParticles(cells, {edgeLength,edgeLength,edgeLength});
-#ifdef _OPENMP
+#ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
@@ -48,7 +48,7 @@ TEST_F(C08TraversalTest, testTraversalCube) {
   // every particle interacts with 13 others. Last layer of each dim is covered by previous interactions
   EXPECT_CALL(functor, AoSFunctor(_, _)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1)  * 13);
   c08Traversal.traverseCellPairs();
-#ifdef _OPENMP
+#ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
 #endif
 }
@@ -63,7 +63,7 @@ TEST_F(C08TraversalTest, testTraversal2x2x2) {
   cells.resize(edgeLength*edgeLength*edgeLength);
 
   fillWithParticles(cells, {edgeLength,edgeLength,edgeLength});
-#ifdef _OPENMP
+#ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
@@ -72,7 +72,7 @@ TEST_F(C08TraversalTest, testTraversal2x2x2) {
   // every particle interacts with 13 others. Last layer of each dim is covered by previous interactions
   EXPECT_CALL(functor, AoSFunctor(_, _)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1)  * 13);
   c08Traversal.traverseCellPairs();
-#ifdef _OPENMP
+#ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
 #endif
 }
@@ -87,7 +87,7 @@ TEST_F(C08TraversalTest, testTraversal2x3x4) {
   cells.resize(edgeLength[0]*edgeLength[1]*edgeLength[2]);
 
   fillWithParticles(cells, {edgeLength[0],edgeLength[1],edgeLength[2]});
-#ifdef _OPENMP
+#ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
@@ -96,7 +96,7 @@ TEST_F(C08TraversalTest, testTraversal2x3x4) {
   // every particle interacts with 13 others. Last layer of each dim is covered by previous interactions
   EXPECT_CALL(functor, AoSFunctor(_, _)).Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1)  * 13);
   c08Traversal.traverseCellPairs();
-#ifdef _OPENMP
+#ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
 #endif
 }
