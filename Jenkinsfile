@@ -69,6 +69,14 @@ pipeline{
                                 sh "ninja -j 4"
                             }
                         }
+                    },
+                    "archer": {
+                        container('autopas-archer'){
+                            dir("build-archer"){
+                                sh "CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DUSE_VECTORIZATION=OFF .."
+                                sh "ninja -j 4"
+                            }
+                        }
                     }
                 )
             }
@@ -133,6 +141,13 @@ pipeline{
                     "clang ninja address sanitizer release": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
+                    "archer": {
+                        container('autopas-archer'){
+                            dir("build-archer"){
                                 sh './tests/testAutopas/runTests'
                             }
                         }
