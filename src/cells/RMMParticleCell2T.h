@@ -5,11 +5,11 @@
  *      Author: tchipevn
  */
 
-#ifndef AUTOPAS_RMMPARTICLECELL_H_
-#define AUTOPAS_RMMPARTICLECELL_H_
+#pragma once
 
-#include <utils/SoA.h>
 #include "ParticleCell.h"
+#include "iterators/ParticleIteratorInterface.h"
+#include "utils/SoA.h"
 
 namespace autopas {
 
@@ -22,8 +22,7 @@ namespace autopas {
  * @tparam Particle type of particle to be stored
  */
 template <class Particle, class Iterator>
-class RMMParticleCell2T
-    : public ParticleCell<Particle, Iterator> {
+class RMMParticleCell2T : public ParticleCell<Particle, Iterator> {
  public:
   /**
    * Constructor of RMMParticleCell
@@ -106,7 +105,7 @@ class RMMParticleCell2T
  * @tparam Particle
  */
 template <class Particle>
-class RMMParticleCellIterator {
+class RMMParticleCellIterator : public ParticleIteratorInterface<Particle> {
  public:
   /**
    * default constructor of SingleCellIterator
@@ -130,11 +129,9 @@ class RMMParticleCellIterator {
   //  }
 
   /**
-   * access the particle using *iterator
-   * this is the indirection operator
-   * @return current particle
+   * @copydoc ParticleIteratorInterface::operator*()
    */
-  Particle &operator*() {
+  inline Particle &operator*() override {
     // Particle * ptr = nullptr;
     // ptr = const_cast<Particle *>(& _AoSReservoir);
     Particle *ptr = &_AoSReservoir;
@@ -142,14 +139,6 @@ class RMMParticleCellIterator {
     //_cell->particleAt(_index, ptr);
     return *ptr;
   }
-
-  /**
-   * access particle using "iterator->"
-   *
-   * this is the member of pointer operator
-   * @return current particle
-   */
-  Particle *operator->() { return &(this->operator*()); }
 
   /**
    * equality operator.
@@ -177,7 +166,7 @@ class RMMParticleCellIterator {
    * increment operator to get the next particle
    * @return the next particle, usually ignored
    */
-  RMMParticleCellIterator &operator++() {
+  inline RMMParticleCellIterator &operator++() override {
     if (not _deleted) {
       _cell->writeParticleToSoA(_index, _AoSReservoir);
       ++_index;
@@ -190,7 +179,7 @@ class RMMParticleCellIterator {
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() const {
+  bool isValid() const override {
     return _cell != nullptr and _index < _cell->numParticles();
   }
 
@@ -203,7 +192,7 @@ class RMMParticleCellIterator {
   /**
    * Deletes the current particle
    */
-  void deleteCurrentParticle() {
+  void deleteCurrentParticle() override {
     _cell->deleteByIndex(_index);
     _deleted = true;
   }
@@ -222,5 +211,3 @@ using RMMParticleCell =
     RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;
 
 } /* namespace autopas */
-
-#endif /* AUTOPAS_RMMPARTICLECELL_H_ */

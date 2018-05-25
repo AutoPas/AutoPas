@@ -44,13 +44,11 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     }
   }
 
-  // Better: implement smart version of next_non_empty_cell.
   /**
-   * Increment operator of the iterator
+   * @copydoc ParticleIteratorInterface::operator++
    * @todo optimize! this version is currently very slow
-   * @return
    */
-  inline RegionParticleIterator<Particle, ParticleCell>& operator++() {
+  inline RegionParticleIterator<Particle, ParticleCell>& operator++() override {
     do {
       ParticleIterator<Particle, ParticleCell>::operator++();
     } while (ParticleIterator<Particle, ParticleCell>::isValid() &&

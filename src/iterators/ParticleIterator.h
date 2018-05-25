@@ -5,11 +5,11 @@
  *      Author: tchipevn
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_
+#pragma once
 
 #include <utils/ExceptionHandler.h>
 #include <vector>
+#include "ParticleIteratorInterface.h"
 #include "SingleCellIterator.h"
 
 namespace autopas {
@@ -32,7 +32,7 @@ enum IteratorBehavior {
  * container
  */
 template <class Particle, class ParticleCell>
-class ParticleIterator {
+class ParticleIterator : public ParticleIteratorInterface<Particle> {
  public:
   /**
    * Constructor of the ParticleIterator class.
@@ -69,11 +69,9 @@ class ParticleIterator {
   }
 
   /**
-   * Increment operator.
-   * Used to jump to the next particle
-   * @return next particle, usually ignored
+   * @copydoc ParticleIteratorInterface::operator++()
    */
-  inline ParticleIterator<Particle, ParticleCell>& operator++() {
+  inline ParticleIterator<Particle, ParticleCell>& operator++() override {
     if (_iteratorWithinOneCell.isValid()) {
       ++_iteratorWithinOneCell;
     }
@@ -87,24 +85,16 @@ class ParticleIterator {
   }
 
   /**
-   * access the particle using *iterator
-   * this is the indirection operator
-   * @return current particle
+   * @copydoc ParticleIteratorInterface::operator*()
    */
-  Particle& operator*() { return _iteratorWithinOneCell.operator*(); }
+  inline Particle& operator*() override {
+    return _iteratorWithinOneCell.operator*();
+  }
 
   /**
-   * access particle using iterator->
-   *
-   * this is the member of pointer operator
-   * @return current particle
+   * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
    */
-  Particle* operator->() { return &(this->operator*()); }  //
-
-  /**
-   * Deletes the current particle
-   */
-  void deleteCurrentParticle() {
+  void deleteCurrentParticle() override {
     if (_iteratorWithinOneCell.isValid()) {
       _iteratorWithinOneCell.deleteCurrentParticle();
     } else {
@@ -117,7 +107,7 @@ class ParticleIterator {
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() {
+  bool isValid() const override {
     return _vectorOfCells != nullptr and
            _iteratorAcrossCells < _vectorOfCells->end() and
            _iteratorWithinOneCell.isValid();
@@ -170,5 +160,3 @@ class ParticleIterator {
 };
 
 } /* namespace autopas */
-
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_ */
