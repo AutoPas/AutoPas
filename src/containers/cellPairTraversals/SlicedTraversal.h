@@ -142,12 +142,21 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
 #pragma omp parallel for schedule(static, 1)
 #endif
   for (auto slice = 0; slice < numSlices; ++slice) {
-    array<unsigned long, 3> myStartArray {0,0,0};
+    array<unsigned long, 3> myStartArray{0, 0, 0};
     for (int i = 0; i < slice; ++i) {
       myStartArray[_dimsPerLength[0]] += _sliceThickness[i];
     }
 
-    for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]]; dimSlice < myStartArray[_dimsPerLength[0]] + _sliceThickness[slice]; ++dimSlice) {
+    // all but the first slice need to lock their starting layer.
+    if (slice > 0) {
+      autopas_set_lock(locks[slice - 1]);
+    }
+    for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]];
+         dimSlice < myStartArray[_dimsPerLength[0]] + _sliceThickness[slice]; ++dimSlice) {
+      // at the last layer request lock for the starting layer of the next slice. Does not apply for the last slice.
+      if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
+        autopas_set_lock(locks[slice]);
+      }
       for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[_dimsPerLength[1]] - 1; ++dimMedium) {
         for (unsigned long dimShort = 0; dimShort < this->_cellsPerDimension[_dimsPerLength[2]] - 1; ++dimShort) {
           array<unsigned long, 3> idArray;
@@ -159,10 +168,11 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
         }
       }
       // at the end of the first layer release the lock
-      if (slice > 0 && dimSlice == 0)
+      if (slice > 0 && dimSlice == myStartArray[_dimsPerLength[0]]) {
         autopas_unset_lock(locks[slice - 1]);
-      else if (slice != numSlices - 1 && dimSlice == _sliceThickness[slice] - 1)
+      } else if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
         autopas_unset_lock(locks[slice]);
+      }
     }
   }
 
