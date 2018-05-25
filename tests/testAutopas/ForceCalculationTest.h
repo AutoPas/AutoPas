@@ -1,28 +1,21 @@
 #ifndef AUTOPAS_LJFORCECALCULATIONTEST_H
 #define AUTOPAS_LJFORCECALCULATIONTEST_H
 
-#include <AutoPas.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <vector>
+#include "AutoPas.h"
+#include "testingHelpers/GridGenerator.h"
 #include "AutoPasTestBase.h"
+
+typedef autopas::MoleculeLJ Molecule;
+typedef autopas::FullParticleCell<autopas::MoleculeLJ> FPCell;
 
 class ForceCalculationTest : public AutoPasTestBase {
  public:
   ForceCalculationTest() = default;
 
   ~ForceCalculationTest() override = default;
-
-  /**
-   * fills a autopas object with a cuboid mesh of particles
-   * @param autoPas
-   * @param particlesPerDim number of particles per dimension
-   * @param spacing distance between two particles along one dimension
-   */
-  void fillWithParticles(
-      AutoPas<autopas::MoleculeLJ,
-              autopas::FullParticleCell<autopas::MoleculeLJ>> &autoPas,
-      std::vector<size_t> particlesPerDim, double spacing);
 
   /**
    * Creates a test with four particles placed on the corners of a square,

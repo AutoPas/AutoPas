@@ -40,9 +40,12 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     auto dr = arrayMath::sub(i.getR(), j.getR());
     double dr2 = arrayMath::dot(dr, dr);
 
+#pragma omp critical
+    {
     ++_distanceCalculations;
 
     if (dr2 <= _cutoffSquare) ++_kernelCalls;
+    };
   }
 
   void SoAFunctor(SoA &soa, bool newton3 = true) override {

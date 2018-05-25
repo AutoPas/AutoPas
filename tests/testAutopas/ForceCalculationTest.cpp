@@ -1,22 +1,5 @@
 #include "ForceCalculationTest.h"
 
-void ForceCalculationTest::fillWithParticles(
-    AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>
-        &autoPas,
-    std::vector<size_t> particlesPerDim, double spacing) {
-  size_t id = 0;
-  for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
-    for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
-      for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        auto p = autopas::MoleculeLJ(
-            {(x + 1) * spacing, (y + 1) * spacing, (z + 1) * spacing},
-            {0, 0, 0}, id++);
-        autoPas.addParticle(p);
-      }
-    }
-  }
-}
-
 void ForceCalculationTest::testLJ(
     double particleSpacing, double cutoff,
     autopas::DataLayoutOption dataLayoutOption,
@@ -31,7 +14,13 @@ void ForceCalculationTest::testLJ(
 
   autoPas.init(boxMin, boxMax, cutoff, autopas::linkedCells);
 
-  fillWithParticles(autoPas, {2, 2, 1}, particleSpacing);
+  autopas::MoleculeLJ defaultParticle;
+
+  GridGenerator::fillWithParticles(autoPas,
+                                   {2, 2, 1},
+                                   defaultParticle,
+                                   {particleSpacing, particleSpacing, particleSpacing}
+  );
 
   autopas::MoleculeLJ::setEpsilon(epsilon);
   autopas::MoleculeLJ::setSigma(sigma);
