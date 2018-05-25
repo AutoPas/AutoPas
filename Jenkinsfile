@@ -25,6 +25,14 @@ pipeline{
                             }
                         }
                     },
+                    "gcc openmp": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp"){
+                                sh "cmake -DOPENMP=ON .."
+                                sh "make -j 4"
+                            }
+                        }
+                    },
                     "address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
@@ -54,6 +62,14 @@ pipeline{
                         sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
                         sh "make -j 4"
                     }*/
+                    "clang openmp": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-openmp"){
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=1 .."
+                                sh "ninja -j 4"
+                            }
+                        }
+                    },
                     "clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
@@ -99,6 +115,13 @@ pipeline{
                             }
                         }
                     },
+                    "gcc openmp": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
                     "address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
@@ -123,6 +146,13 @@ pipeline{
                     /*dir("build-memorysanitizer"){
                         sh './tests/testAutopas/runTests'
                     }*/
+                    "clang openmp": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-openmp"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
                     "clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
