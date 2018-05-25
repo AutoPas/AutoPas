@@ -80,11 +80,10 @@ void GridGenerator::fillWithParticles(AutoPas<Particle, ParticleCell> &autoPas,
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        Particle p;
+        Particle p(defaultParicle);
         p.setR({x * spacing[0] + offset[0],
                 y * spacing[1] + offset[1],
                 z * spacing[2] + offset[2]});
-        p.setF({0, 0, 0});
         p.setID(id++);
         autoPas.addParticle(p);
       }
