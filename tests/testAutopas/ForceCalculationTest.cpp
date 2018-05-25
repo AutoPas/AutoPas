@@ -14,9 +14,9 @@ void ForceCalculationTest::testLJ(
 
   autoPas.init(boxMin, boxMax, cutoff, autopas::linkedCells);
 
-  GridGenerator<Molecule, FPCell>::fillWithParticles(autoPas,
-                                                     {2, 2, 1},
-                                                     {particleSpacing, particleSpacing, particleSpacing});
+  GridGenerator::fillWithParticles(autoPas,
+                                   {2, 2, 1},
+                                   {particleSpacing, particleSpacing, particleSpacing});
 
   autopas::MoleculeLJ::setEpsilon(epsilon);
   autopas::MoleculeLJ::setSigma(sigma);

@@ -20,7 +20,7 @@ TEST_F(C08TraversalTest, testTraversalCube) {
   std::vector<FPCell> cells;
   cells.resize(edgeLength*edgeLength*edgeLength);
 
-  GridGenerator<autopas::Particle, FPCell>::fillWithParticles(cells, {edgeLength,edgeLength,edgeLength});
+  GridGenerator::fillWithParticles<autopas::Particle>(cells, {edgeLength,edgeLength,edgeLength});
 #ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
@@ -44,7 +44,7 @@ TEST_F(C08TraversalTest, testTraversal2x2x2) {
   std::vector<FPCell> cells;
   cells.resize(edgeLength*edgeLength*edgeLength);
 
-  GridGenerator<autopas::Particle, FPCell>::fillWithParticles(cells, {edgeLength,edgeLength,edgeLength});
+  GridGenerator::fillWithParticles<autopas::Particle>(cells, {edgeLength,edgeLength,edgeLength});
 #ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
@@ -68,7 +68,7 @@ TEST_F(C08TraversalTest, testTraversal2x3x4) {
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0]*edgeLength[1]*edgeLength[2]);
 
-  GridGenerator<autopas::Particle, FPCell>::fillWithParticles(cells, {edgeLength[0],edgeLength[1],edgeLength[2]});
+  GridGenerator::fillWithParticles<autopas::Particle>(cells, {edgeLength[0],edgeLength[1],edgeLength[2]});
 #ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);

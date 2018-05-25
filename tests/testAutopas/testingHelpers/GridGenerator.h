@@ -8,16 +8,22 @@
 #pragma once
 #include "AutoPas.h"
 
-template<class Particle, class ParticleCell>
+/**
+ * Generator for grids of particles.
+ */
 class GridGenerator {
  public:
+
 /**
  * fills a cell vector with a cuboid mesh of particles
+ * @tparam Particle Type of particle to be generated
+ * @tparam ParticleCell
  * @param cells
- * @param particlesPerDim number of particles per dimension
- * @param spacing factor for distance between two particles along one dimension (default is 1)
- * @param offset offset to move all particles
+ * @param particlesPerDim Number of particles per dimension
+ * @param spacing Factor for distance between two particles along one dimension (default is 1)
+ * @param offset Offset to move all particles
  */
+  template<class Particle, class ParticleCell>
   static void fillWithParticles(std::vector<ParticleCell> &cells,
                                 std::array<size_t, 3> particlesPerDim,
                                 std::array<double, 3> spacing = std::array<double, 3>{1, 1, 1},
@@ -26,10 +32,11 @@ class GridGenerator {
 /**
  * fills a autopas object with a cuboid mesh of particles
  * @param autoPas
- * @param particlesPerDim number of particles per dimension
- * @param spacing factor for distance between two particles along one dimension (default is 1)
- * @param offset offset to move all particles
+ * @param particlesPerDim Number of particles per dimension.
+ * @param spacing Factor for distance between two particles along one dimension (default is 1).
+ * @param offset Offset to move all particles.
  */
+  template<class Particle, class ParticleCell>
   static void fillWithParticles(AutoPas<Particle, ParticleCell> &autoPas,
                                 std::array<size_t, 3> particlesPerDim,
                                 std::array<double, 3> spacing = std::array<double, 3>{1, 1, 1},
@@ -37,7 +44,7 @@ class GridGenerator {
 };
 
 template<class Particle, class ParticleCell>
-void GridGenerator<Particle, ParticleCell>::fillWithParticles(
+void GridGenerator::fillWithParticles(
     std::vector<ParticleCell> &cells,
     std::array<size_t, 3> particlesPerDim,
     std::array<double, 3> spacing,
@@ -47,11 +54,12 @@ void GridGenerator<Particle, ParticleCell>::fillWithParticles(
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        auto p = autopas::Particle({x * spacing[0] + offset[0],
-                                    y * spacing[1] + offset[1],
-                                    z * spacing[2] + offset[2]},
-                                   {0, 0, 0},
-                                   id++);
+        Particle p;
+        p.setR({x * spacing[0] + offset[0],
+                y * spacing[1] + offset[1],
+                z * spacing[2] + offset[2]});
+        p.setF({0, 0, 0});
+        p.setID(id++);
         cells[cellId++].addParticle(p);
       }
     }
@@ -59,7 +67,7 @@ void GridGenerator<Particle, ParticleCell>::fillWithParticles(
 }
 
 template<class Particle, class ParticleCell>
-void GridGenerator<Particle, ParticleCell>::fillWithParticles(AutoPas<Particle, ParticleCell> &autoPas,
+void GridGenerator::fillWithParticles(AutoPas<Particle, ParticleCell> &autoPas,
                                                               std::array<size_t, 3> particlesPerDim,
                                                               std::array<double, 3> spacing,
                                                               std::array<double, 3> offset) {
@@ -67,10 +75,12 @@ void GridGenerator<Particle, ParticleCell>::fillWithParticles(AutoPas<Particle, 
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        auto p = autopas::MoleculeLJ({x * spacing[0] + offset[0],
-                                      y * spacing[1] + offset[1],
-                                      z * spacing[2] + offset[2]},
-                                     {0, 0, 0}, id++);
+        Particle p;
+        p.setR({x * spacing[0] + offset[0],
+                y * spacing[1] + offset[1],
+                z * spacing[2] + offset[2]});
+        p.setF({0, 0, 0});
+        p.setID(id++);
         autoPas.addParticle(p);
       }
     }
