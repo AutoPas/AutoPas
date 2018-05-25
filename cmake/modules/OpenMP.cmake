@@ -1,5 +1,12 @@
 option(OPENMP "Activates OpenMP shared memory parallelization." OFF)
 
+if (CMAKE_CXX_COMPILER MATCHES "archer")
+    message(STATUS "archer detected, OpenMP enabled by default, so skipping OpenMP package search")
+    add_definitions(-DAUTOPAS_OPENMP)
+    set(OPENMP ON)
+    return()
+endif()
+
 if (OPENMP)
     message(STATUS "OpenMP enabled.")
     find_package(OpenMP)
