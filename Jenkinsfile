@@ -33,6 +33,14 @@ pipeline{
                             }
                         }
                     },
+                    "gcc openmp address-sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp-address-sanitizer"){
+                                sh "cmake -DOPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "make -j 4"
+                            }
+                        }
+                    },
                     "address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
@@ -118,6 +126,13 @@ pipeline{
                     "gcc openmp": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
+                    "gcc openmp address-sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp-address-sanitizer"){
                                 sh './tests/testAutopas/runTests'
                             }
                         }
