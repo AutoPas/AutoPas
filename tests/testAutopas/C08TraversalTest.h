@@ -8,8 +8,13 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <AutoPas.h>
-#include <mocks/MockFunctor.h>
+#include "AutoPas.h"
+#include "mocks/MockFunctor.h"
+#include "testingHelpers/GridGenerator.h"
+
+#ifdef AUTOPAS_OPENMP
+#include <omp.h>
+#endif
 
 typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;
 typedef autopas::CellFunctor<autopas::Particle,
@@ -21,7 +26,4 @@ class C08TraversalTest : public testing::Test {
   C08TraversalTest() = default;
 
   ~C08TraversalTest() = default;
-
-  void fillWithParticles(std::vector<FPCell> &cells,
-                         std::array<size_t, 3> particlesPerDim);
 };
