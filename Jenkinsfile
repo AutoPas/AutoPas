@@ -73,7 +73,7 @@ pipeline{
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer"){
-                                sh "CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug .."
+                                sh "CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DUSE_VECTORIZATION=OFF .."
                                 sh "ninja -j 4"
                             }
                         }
