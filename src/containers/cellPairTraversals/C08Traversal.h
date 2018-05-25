@@ -57,7 +57,7 @@ inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
     end[d] = this->_cellsPerDimension[d] - 1;
   }
 
-#if defined(_OPENMP)
+#if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
   {
@@ -69,8 +69,8 @@ inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
-#if defined(_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3) nowait
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for schedule(dynamic, 1) collapse(3)
 #endif
       for (unsigned long z = start_z; z < end_z; z += stride_z) {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
@@ -80,10 +80,6 @@ inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
           }
         }
       }
-#if defined(_OPENMP)
-#pragma omp barrier
-#endif
-      // this barrier is needed, since we have a nowait at the inner loops
     }
   }
 };
