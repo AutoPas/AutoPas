@@ -65,7 +65,7 @@ pipeline{
                     "clang openmp": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-openmp"){
-                                sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=1 .."
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
                                 sh "ninja -j 4"
                             }
                         }
