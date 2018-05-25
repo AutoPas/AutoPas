@@ -8,8 +8,11 @@
 
 #define N 100
 
+// this test is here just to test if archer is working.
+// and is thus currently disabled.
+// remove the "DISABLED_" part to enable is again.
 #ifdef AUTOPAS_OPENMP
-TEST(ArcherShouldReportThis, test) {
+TEST(DISABLED_ArcherShouldReportThis, test) {
   int a[N];
   for(int i=0;i<N;i++){
     a[i]=i%7;
