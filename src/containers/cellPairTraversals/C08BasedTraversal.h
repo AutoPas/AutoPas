@@ -6,16 +6,18 @@
 
 #pragma once
 
-#include <utils/ThreeDimensionalMapping.h>
+#include "utils/ThreeDimensionalMapping.h"
 #include "CellPairTraversal.h"
 
 namespace autopas {
 
 /**
- * This class provides base for traversals using the c08 base step.
+ * This class provides the base for traversals using the c08 base step.
  *
- * The base step processBaseCell() computes one direction
- * for each spatial direction based on the baseIndex.
+ * The base step processBaseCell() computes one set of pairwise interactions
+ * between two cells for each spatial direction based on the baseIndex.
+ * After executing the base step on all cells all pairwise interactions for
+ * all cells are done.
  *
  * @tparam ParticleCell the type of cells
  * @tparam CellFunctor the cell functor that defines the interaction of the
