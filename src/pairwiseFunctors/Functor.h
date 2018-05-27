@@ -73,7 +73,7 @@ class Functor {
    * @param soa  Structure of arrays where the data is copied to.
    */
 
-  virtual void SoALoader(ParticleCell &cell, SoA *soa) {}
+  virtual void SoALoader(ParticleCell &cell, SoA &soa) {}
 
   /**
    * @brief Copies the data stored in the soa back into the cell.
@@ -81,7 +81,7 @@ class Functor {
    * @param cell Cell where the data should be stored.
    * @param soa  Structure of arrays from where the data is loaded.
    */
-  virtual void SoAExtractor(ParticleCell *cell, SoA *soa) {}
+  virtual void SoAExtractor(ParticleCell &cell, SoA &soa) {}
 
   /**
    * Specifies whether the functor is capable of Newton3-like functors.
