@@ -231,10 +231,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   void fillSoAs(ParticleFunctor &functor) {
 #ifdef AUTOPAS_OPENMP
     //TODO find a condition on when to use omp or when it is just overhead
-#pragma omp parrallel for
+#pragma omp parallel for
 #endif
-    for(auto & cell : this->_data) {
-      functor->SoALoader(cell, cell._particleSoABuffer);
+    for(auto i = 0; i < this->_data.size(); ++i) {
+      functor->SoALoader(this->_data[i], this->_data[i]._particleSoABuffer);
     }
   }
 
@@ -247,10 +247,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   void extractSoAs(ParticleFunctor &functor) {
 #ifdef AUTOPAS_OPENMP
     //TODO find a condition on when to use omp or when it is just overhead
-#pragma omp parrallel for
+#pragma omp parallel for
 #endif
-    for(auto & cell : this->_data) {
-      functor->SoAExtractor(cell, cell._particleSoABuffer);
+    for(auto i = 0; i < this->_data.size(); ++i) {
+      functor->SoAExtractor(this->_data[i], this->_data[i]._particleSoABuffer);
     }
   }
 };
