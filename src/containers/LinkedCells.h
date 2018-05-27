@@ -134,6 +134,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
+
+    fillSoAs(f);
+
     auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>
@@ -169,6 +172,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
         traversal.traverseCellPairs();
       }
     }
+
+    extractSoAs(f);
   }
 
   void updateContainer() override {
@@ -216,6 +221,38 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    */
   CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
+
+  /**
+   * Iterate over all cells and load the data in the SoAs
+   * @tparam ParticleFunctor
+   * @param functor
+   */
+  template <class ParticleFunctor>
+  void fillSoAs(ParticleFunctor &functor) {
+#ifdef AUTOPAS_OPENMP
+    //TODO find a condition on when to use omp or when it is just overhead
+#pragma omp parrallel for
+#endif
+    for(auto & cell : this->_data) {
+      functor->SoALoader(cell, cell._particleSoABuffer);
+    }
+  }
+
+  /**
+   * Iterate over all cells and fetch the data from the SoAs
+   * @tparam ParticleFunctor
+   * @param functor
+   */
+  template <class ParticleFunctor>
+  void extractSoAs(ParticleFunctor &functor) {
+#ifdef AUTOPAS_OPENMP
+    //TODO find a condition on when to use omp or when it is just overhead
+#pragma omp parrallel for
+#endif
+    for(auto & cell : this->_data) {
+      functor->SoAExtractor(cell, cell._particleSoABuffer);
+    }
+  }
 };
 
 } /* namespace autopas */
