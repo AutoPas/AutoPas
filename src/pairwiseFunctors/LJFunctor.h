@@ -190,23 +190,23 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA *soa) override {
-    soa->resizeArrays(cell.numParticles());
+  void SoALoader(ParticleCell &cell, SoA &soa) override {
+    soa.resizeArrays(cell.numParticles());
     if (cell.numParticles() == 0) return;
 
-    double *const __restrict__ idptr = soa->begin(Particle::AttributeNames::id);
+    double *const __restrict__ idptr = soa.begin(Particle::AttributeNames::id);
     double *const __restrict__ xptr =
-        soa->begin(Particle::AttributeNames::posX);
+        soa.begin(Particle::AttributeNames::posX);
     double *const __restrict__ yptr =
-        soa->begin(Particle::AttributeNames::posY);
+        soa.begin(Particle::AttributeNames::posY);
     double *const __restrict__ zptr =
-        soa->begin(Particle::AttributeNames::posZ);
+        soa.begin(Particle::AttributeNames::posZ);
     double *const __restrict__ fxptr =
-        soa->begin(Particle::AttributeNames::forceX);
+        soa.begin(Particle::AttributeNames::forceX);
     double *const __restrict__ fyptr =
-        soa->begin(Particle::AttributeNames::forceY);
+        soa.begin(Particle::AttributeNames::forceY);
     double *const __restrict__ fzptr =
-        soa->begin(Particle::AttributeNames::forceZ);
+        soa.begin(Particle::AttributeNames::forceZ);
 
     SingleCellIterator<Particle, ParticleCell> cellIter(&cell);
     // load particles in SoAs
@@ -221,23 +221,23 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAExtractor(ParticleCell *cell, SoA *soa) override {
-    if (soa->getNumParticles() == 0) return;
+  void SoAExtractor(ParticleCell &cell, SoA &soa) override {
+    if (soa.getNumParticles() == 0) return;
 
-    SingleCellIterator<Particle, ParticleCell> cellIter(cell);
+    SingleCellIterator<Particle, ParticleCell> cellIter(&cell);
 
 #ifndef NDEBUG
-    double *const __restrict__ idptr = soa->begin(Particle::AttributeNames::id);
+    double *const __restrict__ idptr = soa.begin(Particle::AttributeNames::id);
 #endif
 
     double *const __restrict__ fxptr =
-        soa->begin(Particle::AttributeNames::forceX);
+        soa.begin(Particle::AttributeNames::forceX);
     double *const __restrict__ fyptr =
-        soa->begin(Particle::AttributeNames::forceY);
+        soa.begin(Particle::AttributeNames::forceY);
     double *const __restrict__ fzptr =
-        soa->begin(Particle::AttributeNames::forceZ);
+        soa.begin(Particle::AttributeNames::forceZ);
 
-    for (unsigned int i = 0; i < soa->getNumParticles(); ++i, ++cellIter) {
+    for (unsigned int i = 0; i < soa.getNumParticles(); ++i, ++cellIter) {
       assert(idptr[i] == (*cellIter).getID());
       (*cellIter).setF({fxptr[i], fyptr[i], fzptr[i]});
     }
