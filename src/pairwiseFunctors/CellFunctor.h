@@ -86,9 +86,6 @@ class CellFunctor {
     for (auto outer = cell.begin(); outer.isValid(); ++outer) {
       Particle &p1 = *outer;
 
-      int ind = outer.getIndex() + 1;
-
-      // typename ParticleCell::iterator inner(&cell, ind);
       auto inner = outer;
       ++inner;
       for (; inner.isValid(); ++inner) {
@@ -110,7 +107,7 @@ class CellFunctor {
 
       int ind = outer.getIndex() + 1;
 
-      //  loop over everything until outer
+      // loop over everything until outer
       auto inner = cell.begin();
       for (; inner != outer; ++inner) {
         Particle &p2 = *inner;
