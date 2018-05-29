@@ -31,6 +31,10 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
       : _particleIterator(static_cast<ParticleIteratorInterface<Particle>*>(
             particleIteratorInterface)) {}
 
+  /**
+   * copy operator
+   * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
+   */
   ParticleIteratorWrapper(
       const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
     _particleIterator = std::unique_ptr<ParticleIteratorInterface<Particle>>(

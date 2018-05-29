@@ -209,6 +209,9 @@ class RMMParticleCellIterator : public ParticleIteratorInterface<Particle> {
 
 // provide a simpler template for RMMParticleCell, i.e.
 // RMMParticleCell<Particle>
+/**
+ * typedef for simpler access to RMMParticleCell
+ */
 template <class Particle>
 using RMMParticleCell =
     RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;

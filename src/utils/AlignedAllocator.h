@@ -126,12 +126,30 @@ class AlignedAllocator {
   }
 };
 
+/**
+ * equals operator
+ * @tparam T Type of the first allocator
+ * @tparam TAlignment alignment of the first allocator
+ * @tparam U type of the second allocator
+ * @tparam UAlignment alignment of the second allocator
+ * @return true if alignment is equal
+ */
 template <typename T, size_t TAlignment, typename U, size_t UAlignment>
 inline bool operator==(const AlignedAllocator<T, TAlignment> &,
                        const AlignedAllocator<U, UAlignment> &) {
   return TAlignment == UAlignment;
 }
 
+/**
+ * unequals operator
+ * @tparam T Type of the first allocator
+ * @tparam TAlignment alignment of the first allocator
+ * @tparam U type of the second allocator
+ * @tparam UAlignment alignment of the second allocator
+ * @param a first allocator
+ * @param b second allocator
+ * @return true if unequal
+ */
 template <typename T, size_t TAlignment, typename U, size_t UAlignment>
 inline bool operator!=(const AlignedAllocator<T, TAlignment> &a,
                        const AlignedAllocator<U, UAlignment> &b) {

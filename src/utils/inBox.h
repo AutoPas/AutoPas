@@ -13,6 +13,16 @@
 
 namespace autopas {
 
+/**
+ * checks if position is in a box
+ * the box includes the lower boundary, but excludes the upper boundary,
+ * i.e. [low[0], high[0]) x [low[1], high[1]) x [low[2], high[2])
+ * @tparam T floating point type
+ * @param position position to be checked
+ * @param low lower corner of the box
+ * @param high upper corner of the box
+ * @return true if position is inside the box
+ */
 template <typename T>
 bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low,
            const std::array<T, 3> &high) {
@@ -28,6 +38,16 @@ bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low,
   return inBox;
 }
 
+/**
+ * checks if position is NOT in a box
+ * the box includes the lower boundary, but excludes the upper boundary,
+ * i.e. [low[0], high[0]) x [low[1], high[1]) x [low[2], high[2])
+ * @tparam T floating point type
+ * @param position position to be checked
+ * @param low lower corner of the box
+ * @param high upper corner of the box
+ * @return true if position is NOT inside the box
+ */
 template <typename T>
 bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low,
               const std::array<T, 3> &high) {
