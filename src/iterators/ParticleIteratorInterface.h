@@ -32,7 +32,7 @@ class ParticleIteratorInterface {
    * Used to jump to the next particle
    * @return next particle, usually ignored
    */
-  virtual inline ParticleIteratorInterface<Particle>& operator++() = 0;
+  virtual ParticleIteratorInterface<Particle>& operator++() = 0;
 
   virtual ~ParticleIteratorInterface(){};
 
