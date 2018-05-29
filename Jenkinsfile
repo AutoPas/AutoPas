@@ -25,6 +25,22 @@ pipeline{
                             }
                         }
                     },
+                    "gcc openmp": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp"){
+                                sh "cmake -DOPENMP=ON .."
+                                sh "make -j 4"
+                            }
+                        }
+                    },
+                    "gcc openmp address-sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp-address-sanitizer"){
+                                sh "cmake -DOPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "make -j 4"
+                            }
+                        }
+                    },
                     "address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
@@ -54,6 +70,14 @@ pipeline{
                         sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
                         sh "make -j 4"
                     }*/
+                    "clang openmp": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-openmp"){
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
+                                sh "ninja -j 4"
+                            }
+                        }
+                    },
                     "clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
@@ -66,6 +90,14 @@ pipeline{
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "ninja -j 4"
+                            }
+                        }
+                    },
+                    "archer": {
+                        container('autopas-archer'){
+                            dir("build-archer"){
+                                sh "CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DUSE_VECTORIZATION=OFF .."
                                 sh "ninja -j 4"
                             }
                         }
@@ -99,6 +131,20 @@ pipeline{
                             }
                         }
                     },
+                    "gcc openmp": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
+                    "gcc openmp address-sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp-address-sanitizer"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
                     "address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
@@ -123,6 +169,13 @@ pipeline{
                     /*dir("build-memorysanitizer"){
                         sh './tests/testAutopas/runTests'
                     }*/
+                    "clang openmp": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-openmp"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
                     "clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
@@ -133,6 +186,13 @@ pipeline{
                     "clang ninja address sanitizer release": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
+                    "archer": {
+                        container('autopas-archer'){
+                            dir("build-archer"){
                                 sh './tests/testAutopas/runTests'
                             }
                         }
@@ -180,7 +240,7 @@ pipeline{
         stage("generate coverage report"){
             steps{
                 junit 'build/test.xml'
-                warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
+                warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build-doxygen/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
                 dir("coverage"){
                     container('autopas-build-code-coverage'){
                         sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."

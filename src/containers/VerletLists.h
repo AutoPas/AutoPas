@@ -310,7 +310,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void iterateVerletListsSoA(ParticleFunctor* f, const bool useNewton3) {
     /// @todo optimize iterateVerletListsSoA, e.g. by using traversals with
-    /// different
+    /// openmp possibilities
 
     // load data from cells into soa
     loadSoA(f);
@@ -354,7 +354,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   void loadSoA(ParticleFunctor* functor) {
     size_t offset = 0;
     for (auto& cell : this->_data) {
-      functor->SoALoader(cell, &_soa, offset);
+      functor->SoALoader(cell, _soa, offset);
       offset += cell.numParticles();
     }
   }
@@ -370,7 +370,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   void extractSoA(ParticleFunctor* functor) {
     size_t offset = 0;
     for (auto& cell : this->_data) {
-      functor->SoAExtractor(&cell, &_soa, offset);
+      functor->SoAExtractor(cell, _soa, offset);
       offset += cell.numParticles();
     }
   }

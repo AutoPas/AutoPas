@@ -110,7 +110,7 @@ class Functor {
    * to the SoA with the specified offset.
    */
 
-  virtual void SoALoader(ParticleCell &cell, SoA *soa, size_t offset = 0) {
+  virtual void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("not yet implemented");
   }
 
@@ -122,7 +122,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell *cell, SoA *soa, size_t offset = 0) {
+  virtual void SoAExtractor(ParticleCell &cell, SoA &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("not yet implemented");
   }
 

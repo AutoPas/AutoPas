@@ -32,6 +32,7 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD3(SoAFunctor,
                void(autopas::SoA &soa, autopas::SoA &soa2, bool newton3));
 
+
   // virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t,
   // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool
   // newton3 = true{})
@@ -48,17 +49,17 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
                std::vector<size_t, autopas::AlignedAllocator<size_t>>> &,
            size_t, size_t, bool));
 
-  // virtual void SoALoader(ParticleCell &cell, autopas::SoA *soa, size_t
+  // virtual void SoALoader(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoALoader, void(ParticleCell &cell, autopas::SoA *soa));
+  MOCK_METHOD2_T(SoALoader, void(ParticleCell &cell, autopas::SoA &soa));
   MOCK_METHOD3_T(SoALoader,
-                 void(ParticleCell &cell, autopas::SoA *soa, size_t offset));
+                 void(ParticleCell &cell, autopas::SoA &soa, size_t offset));
 
-  // virtual void SoAExtractor(ParticleCell *cell, autopas::SoA *soa, size_t
+  // virtual void SoAExtractor(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell *cell, autopas::SoA *soa));
+  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell &cell, autopas::SoA &soa));
   MOCK_METHOD3_T(SoAExtractor,
-                 void(ParticleCell *cell, autopas::SoA *soa, size_t offset));
+                 void(ParticleCell &cell, autopas::SoA &soa, size_t offset));
 
   // virtual bool allowsNewton3() { return true; }
   MOCK_METHOD0(allowsNewton3, bool());
