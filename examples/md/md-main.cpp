@@ -110,7 +110,7 @@ void measureContainer(Container *cont, int numMolecules, int numIterations,
   double MFUPS = numMolecules * numIterations / elapsedTime * 1e-6;
   cout << /*"Number of Molecules: " <<*/ numMolecules << "\t";       // << endl;
   cout << /*"Number of Force updates: " <<*/ numIterations << "\t";  // << endl;
-  cout << /*"Elapsed time: " <<*/ elapsedTime << " \t";               // << endl;
+  cout << /*"Elapsed time: " <<*/ elapsedTime << "\t";               // << endl;
   cout << /*"MFUPS: " <<*/ MFUPS << "\t";                            // << endl;
   cout << /*"FLOPs: " <<*/ flops << "\t";                            // << endl;
   cout << /*"hit rate: " <<*/ flopFunctor.getHitRate() << "\t";      // << endl;

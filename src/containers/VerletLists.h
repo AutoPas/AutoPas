@@ -313,7 +313,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     /// openmp possibilities
 
     // load data from cells into soa
-    loadSoA(f);
+    loadVerletSoA(f);
 
     /// @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
     size_t iFrom = 0;
@@ -322,7 +322,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     f->SoAFunctor(_soa, _soaNeighborLists, iFrom, iTo, useNewton3);
 
     // extract SoA
-    extractSoA(f);
+    extractVerletSoA(f);
   }
 
   /**
@@ -351,7 +351,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * actual
    */
   template <class ParticleFunctor>
-  void loadSoA(ParticleFunctor* functor) {
+  void loadVerletSoA(ParticleFunctor *functor) {
     size_t offset = 0;
     for (auto& cell : this->_data) {
       functor->SoALoader(cell, _soa, offset);
@@ -367,7 +367,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * actual
    */
   template <class ParticleFunctor>
-  void extractSoA(ParticleFunctor* functor) {
+  void extractVerletSoA(ParticleFunctor *functor) {
     size_t offset = 0;
     for (auto& cell : this->_data) {
       functor->SoAExtractor(cell, _soa, offset);
