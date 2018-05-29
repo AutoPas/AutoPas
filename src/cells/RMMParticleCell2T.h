@@ -197,6 +197,9 @@ class RMMParticleCellIterator : public ParticleIteratorInterface<Particle> {
     _deleted = true;
   }
 
+  ParticleIteratorInterface<Particle>* clone() const override {
+    return new RMMParticleCellIterator<Particle>(*this);
+  }
  private:
   RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *_cell;
   Particle _AoSReservoir;

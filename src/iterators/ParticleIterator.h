@@ -15,15 +15,6 @@
 namespace autopas {
 
 /**
- * Enum to specify the behavior of an iterator.
- */
-enum IteratorBehavior {
-  haloOnly,     /// iterate only over halo
-  ownedOnly,    /// iterate only over inner cells
-  haloAndOwned  /// iterate over both halo and inner cells
-};
-
-/**
  * ParticleIterator class to access particles inside of a container.
  * The particles can be accessed using "iterator->" or "*iterator". The next
  * particle using the ++operator, e.g. "++iterator"
@@ -111,6 +102,10 @@ class ParticleIterator : public ParticleIteratorInterface<Particle> {
     return _vectorOfCells != nullptr and
            _iteratorAcrossCells < _vectorOfCells->end() and
            _iteratorWithinOneCell.isValid();
+  }
+
+  virtual ParticleIteratorInterface<Particle>* clone() const override {
+    return new ParticleIterator<Particle, ParticleCell>(*this);
   }
 
  protected:
