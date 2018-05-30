@@ -193,7 +193,6 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   // clang-format off
   /**
    * @copydoc Functor::SoAFunctor(SoA &soa, const std::vector<std::vector<size_t, AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3 = true)
-   *
    * @note if you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
    */
@@ -227,17 +226,40 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       const size_t listSizeI = neighborList[i].size();
       const size_t *const __restrict__ currentList = neighborList[i].data();
 
+      // this is a magic number, that should correspond to at least
+      // vectorization width*N have testet multiple sizes:
+      // 4: does not give a speedup, slower than original AoSFunctor
+      // 8: small speedup compared to AoS
+      // 12: highest speedup compared to Aos
+      // 16: smaller speedup
+      // in theory this is a variable, we could auto-tune over...
+#ifdef __AVX512F__
+      // use a multiple of 8 for avx
+      const size_t vecsize = 16;
+#else
+      // for everything else 12 is faster
       const size_t vecsize = 12;
+#endif
       size_t joff = 0;
+
+      // if the size of the verlet list is larger than the given size vecsize,
+      // we will use a vectorized version.
       if (listSizeI >= vecsize) {
         alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr,
             zArr, fxArr, fyArr, fzArr;
+        // broadcast of the position of particle i
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
           xtmp[tmpj] = xptr[i];
           ytmp[tmpj] = yptr[i];
           ztmp[tmpj] = zptr[i];
         }
+        // loop over the verlet list from 0 to x*vecsize
         for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
+          // in each iteration we calculate the interactions of particle i with
+          // vecsize particles in the neighborlist of particle i starting at
+          // particle joff
+
+          // gather position of particle j
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             xArr[tmpj] = xptr[currentList[joff + tmpj]];
@@ -245,8 +267,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
             zArr[tmpj] = zptr[currentList[joff + tmpj]];
           }
 
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
+          // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
             // const size_t j = currentList[jNeighIndex];
@@ -282,6 +303,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
             fyArr[j] = fy;
             fzArr[j] = fz;
           }
+          // scatter the forces to where they belong
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             const size_t j = currentList[joff + tmpj];
@@ -291,6 +313,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
           }
         }
       }
+      // this loop goes over the remainder and uses no optimizations
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
@@ -341,12 +364,9 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     if (cell.numParticles() == 0) return;
 
     double *const __restrict__ idptr = soa.begin(Particle::AttributeNames::id);
-    double *const __restrict__ xptr =
-        soa.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ yptr =
-        soa.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ zptr =
-        soa.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
     double *const __restrict__ fxptr =
         soa.begin(Particle::AttributeNames::forceX);
     double *const __restrict__ fyptr =
@@ -386,7 +406,6 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     for (unsigned int i = offset; cellIter.isValid(); ++i, ++cellIter) {
       assert(idptr[i] == cellIter->getID());
       cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
-
     }
   }
 
