@@ -15,6 +15,7 @@
 #include "utils/SoA.h"
 #include "utils/arrayMath.h"
 #include "utils/Timer.h"
+
 // particles
 #include "particles/MoleculeLJ.h"
 #include "particles/Particle.h"

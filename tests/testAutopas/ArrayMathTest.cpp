@@ -5,7 +5,7 @@
  *      Author: tchipevn
  */
 
-#include "autopasIncludes.h"
+#include "utils/arrayMath.h"
 #include "gtest/gtest.h"
 
 using namespace autopas;

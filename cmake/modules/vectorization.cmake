@@ -1,6 +1,7 @@
 ################################### START VECTORIZATION ###################################
 option(USE_VECTORIZATION "Enable generations of SIMD vector instructions through omp-simd" ON)
 if (USE_VECTORIZATION)
+    MESSAGE(STATUS "vectorization enabled")
     # list of available options
     set(VECTOR_INSTRUCTIONS_OPTIONS "NATIVE;SSE;AVX;AVX2;KNL")
     # set instruction set type
@@ -50,6 +51,7 @@ if (USE_VECTORIZATION)
         message(STATUS "you can enable vectorization support by editing cmake/modules/vectorization.cmake")
     endif ()
 elseif ()
+	MESSAGE(STATUS "vectorization disabled")
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
