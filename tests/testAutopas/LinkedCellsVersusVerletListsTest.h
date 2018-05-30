@@ -24,17 +24,6 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
   double getCutoff() const { return 1.0; }
 
  protected:
-  double fRand(double fMin, double fMax) const;
-
-  std::array<double, 3> randomPosition(
-      const std::array<double, 3> &boxMin,
-      const std::array<double, 3> &boxMax) const;
-
-  void fillContainerWithMolecules(
-      unsigned long numMolecules,
-      autopas::ParticleContainer<autopas::MoleculeLJ,
-                                 autopas::FullParticleCell<autopas::MoleculeLJ>>
-          &cont) const;
 
   void test(unsigned long numMolecules, double rel_err_tolerance);
 

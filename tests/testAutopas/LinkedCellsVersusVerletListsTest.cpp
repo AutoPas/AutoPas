@@ -6,10 +6,11 @@
  */
 
 #include "LinkedCellsVersusVerletListsTest.h"
+#include <testingHelpers/RandomGenerator.h>
 #include <cstdlib>
 
 LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest()
-    : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1*getCutoff(), 2),
+    : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),
       _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {
   double eps = 1.0;
   double sig = 1.0;
@@ -23,40 +24,11 @@ LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest()
                                                                   shift);
 }
 
-double LinkedCellsVersusVerletListsTest::fRand(double fMin, double fMax) const {
-  double f = static_cast<double>(rand()) / RAND_MAX;
-  return fMin + f * (fMax - fMin);
-}
-
-std::array<double, 3> LinkedCellsVersusVerletListsTest::randomPosition(
-    const std::array<double, 3> &boxMin,
-    const std::array<double, 3> &boxMax) const {
-  std::array<double, 3> r{};
-  for (int d = 0; d < 3; ++d) {
-    r[d] = fRand(boxMin[d], boxMax[d]);
-  }
-  return r;
-}
-
-void LinkedCellsVersusVerletListsTest::fillContainerWithMolecules(
-    unsigned long numMolecules,
-    autopas::ParticleContainer<autopas::MoleculeLJ,
-                               autopas::FullParticleCell<autopas::MoleculeLJ>>
-        &cont) const {
-  srand(42);  // fixed seedpoint
-
-  std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
-
-  for (int i = 0; i < numMolecules; ++i) {
-    auto id = static_cast<unsigned long>(i);
-    autopas::MoleculeLJ m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
-    cont.addParticle(m);
-  }
-}
-
 void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules,
-                                          double rel_err_tolerance) {
-  fillContainerWithMolecules(numMolecules, _verletLists);
+                                            double rel_err_tolerance) {
+  RandomGenerator::fillWithParticles(
+      _verletLists, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
+      numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
