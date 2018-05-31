@@ -268,6 +268,7 @@ pipeline{
                         } catch (Exception e) {
                             // change detected
                             currentBuild.result = 'UNSTABLE'
+                            currentBuild.description = 'clang format errors detected. please format the code properly.'
                         }
                     }
                 }
