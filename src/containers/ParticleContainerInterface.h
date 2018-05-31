@@ -24,8 +24,7 @@ namespace autopas {
 template <class Particle>
 class ParticleContainerInterface {
  public:
-
-  ParticleContainerInterface(){}
+  ParticleContainerInterface() {}
 
   /**
    * destructor of ParticleContainerInterface
@@ -45,7 +44,8 @@ class ParticleContainerInterface {
    * @param other
    * @return
    */
-  ParticleContainerInterface &operator=(const ParticleContainerInterface &other) = delete;
+  ParticleContainerInterface &operator=(
+      const ParticleContainerInterface &other) = delete;
 
   /**
    * adds a particle to the container
@@ -71,7 +71,8 @@ class ParticleContainerInterface {
    * @return iterator to the first particle
    * @todo implement IteratorBehavior
    */
-  virtual ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+  virtual ParticleIteratorWrapper<Particle> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
   /**
    * iterate over all particles in a specified region
@@ -82,7 +83,8 @@ class ParticleContainerInterface {
    * @return iterator to iterate over all particles in a specific region
    */
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner) = 0;
+      std::array<double, 3> lowerCorner,
+      std::array<double, 3> higherCorner) = 0;
 
   /**
    * get the upper corner of the container
@@ -131,8 +133,6 @@ class ParticleContainerInterface {
    * pair-wise interactions or the RegionParticleIteraor right now.
    */
   virtual bool isContainerUpdateNeeded() = 0;
-
 };
 
 } /* namespace autopas */
-

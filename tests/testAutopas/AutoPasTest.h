@@ -11,9 +11,11 @@
 
 class AutoPasTest : public testing::Test {
  public:
-  AutoPasTest(){
-    autoPas.init({0.,0.,0.}, {10.,10.,10.}, 1., autopas::ContainerOption::linkedCells);
+  AutoPasTest() {
+    autoPas.init({0., 0., 0.}, {10., 10., 10.}, 1.,
+                 autopas::ContainerOption::linkedCells);
   }
 
-  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
+  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
+      autoPas;
 };

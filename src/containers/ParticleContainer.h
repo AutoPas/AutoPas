@@ -69,12 +69,12 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * container
    * @param haloParticle particle to be added
    */
-  virtual void addHaloParticle(Particle &haloParticle) override  = 0;
+  virtual void addHaloParticle(Particle &haloParticle) override = 0;
 
   /**
    * deletes all halo particles
    */
-  virtual void deleteHaloParticles() override  = 0;
+  virtual void deleteHaloParticles() override = 0;
 
   /**
    * function to iterate over all pairs of particles in an array of structures
@@ -114,12 +114,12 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param higherCorner higher corner of the region
    * @return iterator to iterate over all particles in a specific region
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator (
+  ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner,
       std::array<double, 3> higherCorner) override {
-    return ParticleIteratorWrapper<Particle>(new RegionParticleIterator<Particle,
-                                                                ParticleCell>(
-            &_data, lowerCorner, higherCorner));
+    return ParticleIteratorWrapper<Particle>(
+        new RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner,
+                                                           higherCorner));
   }
 
   /**

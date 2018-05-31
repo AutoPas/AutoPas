@@ -10,7 +10,7 @@
 TEST_F(AutoPasTest, getRegionParticleIterator) {
   auto iter = autoPas.getRegionIterator({0., 0., 0.}, {4., 4., 4.});
 
-  for(;iter.isValid(); ++iter){
+  for (; iter.isValid(); ++iter) {
     iter->setR(iter->getR());
   }
 }

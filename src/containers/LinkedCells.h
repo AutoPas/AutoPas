@@ -220,8 +220,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
   ParticleIteratorWrapper<Particle> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<Particle>(new ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBlock,
-                                                    behavior));
+    return ParticleIteratorWrapper<Particle>(
+        new ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBlock,
+                                                     behavior));
   }
 
  protected:
