@@ -1,0 +1,4 @@
+# base is Google style guide
+BasedOnStyle: Google
+# we want more space per line
+ColumnLimit: 120
