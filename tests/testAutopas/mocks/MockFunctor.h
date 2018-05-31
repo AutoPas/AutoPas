@@ -32,7 +32,6 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD3(SoAFunctor,
                void(autopas::SoA &soa, autopas::SoA &soa2, bool newton3));
 
-
   // virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t,
   // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool
   // newton3 = true{})

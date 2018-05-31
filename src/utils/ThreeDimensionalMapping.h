@@ -56,7 +56,7 @@ std::array<T, 3> oneToThreeD(T ind, const std::array<T, 3> dims) {
   return pos;
 }
 
-} /* namespace threeDimensionalMapping */
+}  // namespace ThreeDimensionalMapping
 
 } /* namespace autopas */
 

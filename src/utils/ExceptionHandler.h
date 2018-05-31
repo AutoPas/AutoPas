@@ -13,9 +13,9 @@
 namespace autopas {
 namespace utils {
 /**
-   * enum that defines the behavior of the expectionhandling
-   * please check the enum values for a more detailed description
-   */
+ * enum that defines the behavior of the expectionhandling
+ * please check the enum values for a more detailed description
+ */
 enum ExceptionBehavior {
   ignore,                    /// ignore all exceptions
   throwException,            /// throw the exception
@@ -143,5 +143,5 @@ void ExceptionHandler::exception(const std::string exceptionString);
  */
 template <>
 void ExceptionHandler::exception(const char* const exceptionString);
-}
-}
+}  // namespace utils
+}  // namespace autopas

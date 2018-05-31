@@ -14,14 +14,14 @@ namespace autopas {
 /**
  * This class provides the c08 traversal.
  *
- * The traversal uses the c08 base step performed on every single cell. Since these steps
- * overlap a domain coloring with eight colors is applied.
+ * The traversal uses the c08 base step performed on every single cell. Since
+ * these steps overlap a domain coloring with eight colors is applied.
  *
  * @tparam ParticleCell the type of cells
  * @tparam CellFunctor the cell functor that defines the interaction of the
  * particles of two specific cells
  */
-template<class ParticleCell, class CellFunctor>
+template <class ParticleCell, class CellFunctor>
 class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
  public:
   /**
@@ -35,20 +35,19 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
   explicit C08Traversal(std::vector<ParticleCell> &cells,
                         const std::array<unsigned long, 3> &dims,
                         CellFunctor *cellfunctor)
-      : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims,
-                                                     cellfunctor) {
+      : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {
   }
   // documentation in base class
   void traverseCellPairs() override;
   bool isApplicable() override;
 };
 
-template<class ParticleCell, class CellFunctor>
+template <class ParticleCell, class CellFunctor>
 inline bool C08Traversal<ParticleCell, CellFunctor>::isApplicable() {
   return true;
 }
 
-template<class ParticleCell, class CellFunctor>
+template <class ParticleCell, class CellFunctor>
 inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
@@ -62,12 +61,15 @@ inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
 #endif
   {
     for (unsigned long col = 0; col < 8; ++col) {
-      std::array<unsigned long, 3> start = ThreeDimensionalMapping::oneToThreeD(col, stride);
+      std::array<unsigned long, 3> start =
+          ThreeDimensionalMapping::oneToThreeD(col, stride);
 
       // intel compiler demands following:
-      const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
+      const unsigned long start_x = start[0], start_y = start[1],
+                          start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
-      const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+      const unsigned long stride_x = stride[0], stride_y = stride[1],
+                          stride_z = stride[2];
 
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(3)
@@ -75,7 +77,8 @@ inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
       for (unsigned long z = start_z; z < end_z; z += stride_z) {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
           for (unsigned long x = start_x; x < end_x; x += stride_x) {
-            unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+            unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(
+                x, y, z, this->_cellsPerDimension);
             this->processBaseCell(baseIndex);
           }
         }

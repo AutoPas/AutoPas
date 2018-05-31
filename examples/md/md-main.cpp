@@ -70,10 +70,11 @@ int main(int argc, char *argv[]) {
     rebuildFrequency = atoi(argv[4]);
     skinRadius = atof(argv[5]);
   }
-  if (argc < 4 or argc > 7){
+  if (argc < 4 or argc > 7) {
     cout << endl
          << "NEEDS THREE to SEVEN ARGUMENTS: <which> <numMolecules> "
-            "<numIterations> [<rebuildFrequency> <skinradiusToCutoffRatio>] [soa]"
+            "<numIterations> [<rebuildFrequency> <skinradiusToCutoffRatio>] "
+            "[soa]"
          << endl;
     cout << "running: 0(linked cells), 100, 100, 1, 0." << endl << endl;
   }

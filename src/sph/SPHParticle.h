@@ -35,11 +35,11 @@ class SPHParticle : public autopas::Particle {
         _vel_half{0., 0., 0.},
         _eng_half(0.) {}
   /**
-  * Constructor of the SPHParticle class.
-  * @param r position of the particle
-  * @param v velocity of the particle
-  * @param id id of the particle. This id should be unique
-  */
+   * Constructor of the SPHParticle class.
+   * @param r position of the particle
+   * @param v velocity of the particle
+   * @param id id of the particle. This id should be unique
+   */
   SPHParticle(std::array<double, 3> r, std::array<double, 3> v,
               unsigned long id)
       : autopas::Particle(r, v, id),

@@ -2,9 +2,9 @@
 #include <AutoPas.h>
 #include <chrono>
 #include <iostream>
+#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
-#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 
 using namespace std;
 using namespace autopas;
@@ -45,10 +45,9 @@ void initContainer(
   autopas.init(boxMax, cutoff, containerOption);
 
   PrintableMolecule dummyParticle;
-  GridGenerator::fillWithParticles(autopas,
-                                   {particlesPerDim, particlesPerDim, particlesPerDim},
-                                   dummyParticle,
-                                   {particelSpacing, particelSpacing, particelSpacing});
+  GridGenerator::fillWithParticles(
+      autopas, {particlesPerDim, particlesPerDim, particlesPerDim},
+      dummyParticle, {particelSpacing, particelSpacing, particelSpacing});
 }
 
 int main(int argc, char **argv) {

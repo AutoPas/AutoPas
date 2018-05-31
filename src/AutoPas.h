@@ -94,7 +94,8 @@ class AutoPas {
    * @todo do we need the whole container functionality available to the outside
    * @return container
    */
-  // TODO: remove this once we are convinced all necessary container functions are wrapped
+  // TODO: remove this once we are convinced all necessary container functions
+  // are wrapped
   autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const {
     return container.get();
   }
@@ -117,9 +118,7 @@ class AutoPas {
   /**
    * deletes all halo particles
    */
-  void deleteHaloParticles() {
-    container->deleteHaloParticles();
-  };
+  void deleteHaloParticles() { container->deleteHaloParticles(); };
 
   /**
    * Function to iterate over all pairs of particles in the container.
