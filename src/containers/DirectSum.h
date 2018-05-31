@@ -120,6 +120,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
+    f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
+    f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
+
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>
           cellFunctor(f);
@@ -131,6 +134,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
       cellFunctor.processCell(*getCell());
       cellFunctor.processCellPair(*getCell(), *getHaloCell());
     }
+
+    f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
+    f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
   }
 
   void updateContainer() override {

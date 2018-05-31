@@ -4,32 +4,10 @@
 #include <iostream>
 #include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
+#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 
 using namespace std;
 using namespace autopas;
-
-/**
- * Fills the container of a autopas object with a grid of particles.
- * @param autopas
- * @param particlesPerDim Particles per dimension.
- * @param particelSpacing Space between two particles.
- */
-void fillContainer(
-    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-    size_t particlesPerDim, double particelSpacing) {
-  for (unsigned int i = 0; i < particlesPerDim; ++i) {
-    for (unsigned int j = 0; j < particlesPerDim; ++j) {
-      for (unsigned int k = 0; k < particlesPerDim; ++k) {
-        auto p = PrintableMolecule(
-            {(k + 1) * particelSpacing, (j + 1) * particelSpacing,
-             (i + 1) * particelSpacing},
-            {0, 0, 0},
-            i * particlesPerDim * particlesPerDim + j * particlesPerDim + k);
-        autopas.addParticle(p);
-      }
-    }
-  }
-}
 
 /**
  * Prints position and forces of all particels in the autopas object.
@@ -66,7 +44,11 @@ void initContainer(
 
   autopas.init(boxMax, cutoff, containerOption);
 
-  fillContainer(autopas, particlesPerDim, particelSpacing);
+  PrintableMolecule dummyParticle;
+  GridGenerator::fillWithParticles(autopas,
+                                   {particlesPerDim, particlesPerDim, particlesPerDim},
+                                   dummyParticle,
+                                   {particelSpacing, particelSpacing, particelSpacing});
 }
 
 int main(int argc, char **argv) {
@@ -84,7 +66,7 @@ int main(int argc, char **argv) {
   auto particleSpacing(parser.getParticlesSpacing());
 
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal,
-      startApply, stopApply;
+      startCalc, stopCalc;
 
   startTotal = std::chrono::high_resolution_clock::now();
 
@@ -97,19 +79,21 @@ int main(int argc, char **argv) {
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
-  cout << "sigma  : " << PrintableMolecule::getSigma() << endl;
+  cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(
       cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
 
-  startApply = std::chrono::high_resolution_clock::now();
+  cout << "Starting force calculation... " << flush;
+  startCalc = std::chrono::high_resolution_clock::now();
   // Calculation
   for (unsigned int i = 0; i < numIterations; ++i) {
     autopas.iteratePairwise(&functor, dataLayoutChoice);
   }
-  stopApply = std::chrono::high_resolution_clock::now();
+  stopCalc = std::chrono::high_resolution_clock::now();
   stopTotal = std::chrono::high_resolution_clock::now();
+  cout << "done!" << endl;
 
   //  printMolecules(autopas);
 
@@ -118,7 +102,7 @@ int main(int argc, char **argv) {
                            stopTotal - startTotal)
                            .count();
   auto durationApply = std::chrono::duration_cast<std::chrono::microseconds>(
-                           stopApply - startApply)
+                           stopCalc - startCalc)
                            .count();
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
@@ -134,14 +118,14 @@ int main(int argc, char **argv) {
   // Output
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
-  cout << "Time total: " << durationTotal << " \u03bcs (" << durationTotalSec
+  cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec
        << "s)" << endl;
-  cout << "Time apply: " << durationApply / numIterations << " \u03bcs ("
+  cout << "One iteration: " << durationApply / numIterations << " \u03bcs ("
        << durationApplySec / numIterations << "s)" << endl;
-  cout << "GFLOPs    : " << flops * 1e-9 << endl;
-  cout << "GFLOPs/sec: " << flops * 1e-9 / durationApplySec << endl;
-  cout << "MMUPs/sec : " << mmups << endl;
-  cout << "Hit rate  : " << flopCounterFunctor.getHitRate() << endl;
+  cout << "GFLOPs       : " << flops * 1e-9 << endl;
+  cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
+  cout << "MMUPs/sec    : " << mmups << endl;
+  cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
 
   return EXIT_SUCCESS;
 }

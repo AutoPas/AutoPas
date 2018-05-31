@@ -8,7 +8,9 @@
 #ifndef SRC_PAIRWISEFUNCTORS_FUNCTOR_H_
 #define SRC_PAIRWISEFUNCTORS_FUNCTOR_H_
 
-#include <utils/SoA.h>
+#include "utils/AlignedAllocator.h"
+#include "utils/ExceptionHandler.h"
+#include "utils/SoA.h"
 
 namespace autopas {
 
@@ -39,7 +41,9 @@ class Functor {
    * @param j Particle j
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) {}
+  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * @brief Functor for structure of arrays (SoA)
@@ -51,7 +55,36 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA &soa, bool newton3 = true) {}
+  virtual void SoAFunctor(SoA &soa, bool newton3 = true) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
+
+  /**
+   * @brief Functor for structure of arrays (SoA) for neighbor lists
+   *
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between the particles in the SoA that are marked by the verlet list
+   * This should include a cutoff check if needed!
+   *
+   * iFrom an iTo define the range inside of the neighborList that should be
+   * iterated over. The starting index is i = iFrom. The iteration will continue
+   * while i < iTo.
+   *
+   * @param soa Structure of arrays
+   * @param neighborList The list of neighbors
+   * @param iFrom the starting index of the vector neighborList that should be
+   * iterated over
+   * @param iTo the first index that should not be iterated over. (Should be at
+   * least iFrom and less than soa.size())
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  virtual void SoAFunctor(
+      SoA &soa,
+      const std::vector<std::vector<size_t, AlignedAllocator<size_t>>>
+          &neighborList,
+      size_t iFrom, size_t iTo, bool newton3 = true) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * @brief Functor for structure of arrays (SoA)
@@ -64,24 +97,34 @@ class Functor {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) {}
+  virtual void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * @brief Copies the AoS data of the given cell in the given soa.
    *
    * @param cell Cell from where the data is loaded.
    * @param soa  Structure of arrays where the data is copied to.
+   * @param offset Offset within the SoA. The data of the cell should be added
+   * to the SoA with the specified offset.
    */
 
-  virtual void SoALoader(ParticleCell &cell, SoA *soa) {}
+  virtual void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * @brief Copies the data stored in the soa back into the cell.
    *
    * @param cell Cell where the data should be stored.
    * @param soa  Structure of arrays from where the data is loaded.
+   * @param offset Offset within the SoA. The data of the soa should be
+   * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell *cell, SoA *soa) {}
+  virtual void SoAExtractor(ParticleCell &cell, SoA &soa, size_t offset = 0) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
 
   /**
    * Specifies whether the functor is capable of Newton3-like functors.

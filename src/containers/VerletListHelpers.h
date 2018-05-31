@@ -8,16 +8,17 @@
 
 #include <atomic>
 namespace autopas {
-template <class Particle, class ParticleCell>
+
 /**
  * class of helpers for verlet lists
  * @tparam Particle
  * @tparam ParticleCell
  */
+template <class Particle, class ParticleCell>
 class VerletListHelpers {
  public:
   /// AOS verlet list storage
-  typedef std::map<Particle *, std::vector<Particle *>>
+  typedef std::unordered_map<Particle *, std::vector<Particle *>>
       AoS_verletlist_storage_type;
 
   /**

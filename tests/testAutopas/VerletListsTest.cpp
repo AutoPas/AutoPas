@@ -4,9 +4,14 @@
  * @date 19.04.18
  */
 
+#include "testingHelpers/RandomGenerator.h"
 #include "VerletListsTest.h"
 #include "mocks/MockFunctor.h"
 #include "mocks/MockVerletLists.h"
+
+using ::testing::_;
+using ::testing::AtLeast;
+using ::testing::Invoke;
 
 TEST_F(VerletListsTest, VerletListConstructor) {
   std::array<double, 3> min = {1, 1, 1};
@@ -34,9 +39,9 @@ TEST_F(VerletListsTest, testVerletListBuild) {
   autopas::Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
   verletLists.iteratePairwiseAoS2(&emptyFunctor, true);
 
   auto& list = verletLists.getVerletListsAoS();
@@ -131,9 +136,9 @@ TEST_F(VerletListsTest, testVerletListBuildTwice) {
   autopas::Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
   verletLists.iteratePairwiseAoS2(&emptyFunctor, true);
 
   verletLists.iteratePairwiseAoS2(&emptyFunctor, true);
@@ -169,9 +174,9 @@ TEST_F(VerletListsTest, testVerletListBuildFarAway) {
   autopas::Particle p3(r3, {0., 0., 0.}, 2);
   verletLists.addParticle(p3);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
   verletLists.iteratePairwiseAoS2(&emptyFunctor, true);
 
   auto& list = verletLists.getVerletListsAoS();
@@ -200,9 +205,9 @@ TEST_F(VerletListsTest, testVerletListBuildHalo) {
   autopas::Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
   verletLists.iteratePairwiseAoS2(&emptyFunctor, true);
 
   verletLists.iteratePairwiseAoS2(&emptyFunctor, true);
@@ -223,8 +228,7 @@ TEST_F(VerletListsTest, testRebuildFrequencyAlways) {
                   autopas::FullParticleCell<autopas::Particle>>
       mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 1);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(4);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);
@@ -238,9 +242,9 @@ TEST_F(VerletListsTest, testRebuildFrequencyEvery3) {
                   autopas::FullParticleCell<autopas::Particle>>
       mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
+
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
   mockVerletLists.iteratePairwiseAoS(&emptyFunctor, true);  // 1
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
@@ -256,9 +260,6 @@ TEST_F(VerletListsTest, testRebuildFrequencyEvery3) {
 }
 
 TEST_F(VerletListsTest, testForceRebuild) {
-  using ::testing::_;
-  using ::testing::Invoke;
-
   // generate Velet list with rebuild frequency of 3
   MockVerletLists<autopas::Particle,
                   autopas::FullParticleCell<autopas::Particle>>
@@ -285,8 +286,7 @@ TEST_F(VerletListsTest, testForceRebuild) {
                            autopas::FullParticleCell<autopas::Particle>>::
               updateContainerVerletLists));
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
 
   // check that the second call does not need a rebuild
@@ -329,6 +329,7 @@ TEST_F(VerletListsTest, testForceRebuild) {
                                      true);  // rebuild happens here
 
   // check that deleting particles requires a rebuild
+  /// @todo: reenable once implemented
   /*{
     auto iterator = mockVerletLists.begin();
     iterator.deleteCurrentParticle();
@@ -349,9 +350,9 @@ TEST_F(VerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
                        autopas::FullParticleCell<autopas::Particle>>
       verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   // addtwo particles in proper distance
   autopas::Particle p({1.1, 1.1, 1.1}, {0., 0., 0.}, 1);
@@ -371,8 +372,7 @@ TEST_F(VerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
                        autopas::FullParticleCell<autopas::Particle>>
       verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
 
   // addtwo particles in proper distance
@@ -399,8 +399,7 @@ TEST_F(VerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
                        autopas::FullParticleCell<autopas::Particle>>
       verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
 
   // addtwo particles in proper distance
@@ -427,8 +426,7 @@ TEST_F(VerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
                        autopas::FullParticleCell<autopas::Particle>>
       verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
 
   // addtwo particles in proper distance
@@ -456,8 +454,7 @@ TEST_F(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
                        autopas::FullParticleCell<autopas::Particle>>
       verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
 
-  autopas::Functor<autopas::Particle,
-                   autopas::FullParticleCell<autopas::Particle>>
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
       emptyFunctor;
 
   // add two particles in proper distance
@@ -540,4 +537,80 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
   autopas::Particle p5({5., 4., 10.2}, {0., 0., 0.}, 3);
   verletLists.addHaloParticle(p5);
   EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
+}
+
+TEST_F(VerletListsTest, LoadExtractSoA) {
+  autopas::VerletLists<autopas::Particle,
+                       autopas::FullParticleCell<autopas::Particle>>
+      verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+
+  autopas::Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
+  verletLists.addHaloParticle(p);
+
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
+      mockFunctor;
+
+  EXPECT_CALL(mockFunctor, SoALoader(_, _, _)).Times(216);  // 6*6*6=216 cells
+  EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(216);
+  EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _)).Times(0);
+  EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _, _)).Times(1);
+  verletLists.iteratePairwiseSoA2(&mockFunctor, true);
+}
+
+TEST_F(VerletListsTest, LoadExtractSoALJ) {
+  autopas::VerletLists<autopas::Particle,
+                       autopas::FullParticleCell<autopas::Particle>>
+      verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+
+  autopas::Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
+  verletLists.addHaloParticle(p);
+
+  autopas::LJFunctor<autopas::Particle,
+                     autopas::FullParticleCell<autopas::Particle>>
+      ljFunctor;
+
+  verletLists.iteratePairwiseSoA2(&ljFunctor, true);
+}
+
+TEST_F(VerletListsTest, SoAvsAoSLJ) {
+  double cutoff = 2.;
+  autopas::VerletLists<autopas::Particle,
+                       autopas::FullParticleCell<autopas::Particle>>
+      verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3, 3);
+
+  autopas::VerletLists<autopas::Particle,
+                       autopas::FullParticleCell<autopas::Particle>>
+      verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3, 3);
+
+  RandomGenerator::fillWithParticles(verletLists1, autopas::Particle({0.,0.,0.},{0.,0.,0.},0), 100);
+  RandomGenerator::fillWithParticles(verletLists2, autopas::Particle({0.,0.,0.},{0.,0.,0.},0), 100);
+
+  autopas::LJFunctor<autopas::Particle,
+                     autopas::FullParticleCell<autopas::Particle>>
+      ljFunctor;
+  ljFunctor.setGlobals(cutoff, 1, 1, 0);
+
+  verletLists1.iteratePairwiseAoS2(&ljFunctor);
+  verletLists2.iteratePairwiseSoA2(&ljFunctor);
+
+  auto iter1 = verletLists1.begin();
+  auto iter2 = verletLists2.begin();
+
+  for (; iter1.isValid() && iter2.isValid(); ++iter1, ++iter2) {
+    ASSERT_NEAR(iter1->getR()[0], iter2->getR()[0],
+                fabs(iter1->getR()[0] * 1e-7));
+    ASSERT_NEAR(iter1->getR()[1], iter2->getR()[1],
+                fabs(iter1->getR()[1] * 1e-7));
+    ASSERT_NEAR(iter1->getR()[2], iter2->getR()[2],
+                fabs(iter1->getR()[2] * 1e-7));
+
+    EXPECT_NEAR(iter1->getF()[0], iter2->getF()[0],
+                fabs(iter1->getF()[0] * 1e-7));
+    EXPECT_NEAR(iter1->getF()[1], iter2->getF()[1],
+                fabs(iter1->getF()[1] * 1e-7));
+    EXPECT_NEAR(iter1->getF()[2], iter2->getF()[2],
+                fabs(iter1->getF()[2] * 1e-7));
+  }
+  EXPECT_FALSE(iter1.isValid());
+  EXPECT_FALSE(iter2.isValid());
 }

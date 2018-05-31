@@ -5,11 +5,12 @@
  *      Author: tchipevn
  */
 
-#include "LinkedCellsVersusDirectSumTest.h"
+#include "LinkedCellsVersusVerletListsTest.h"
+#include <testingHelpers/RandomGenerator.h>
 #include <cstdlib>
 
-LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
-    : _directSum(getBoxMin(), getBoxMax(), getCutoff()),
+LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest()
+    : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),
       _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {
   double eps = 1.0;
   double sig = 1.0;
@@ -23,59 +24,30 @@ LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
                                                                   shift);
 }
 
-double LinkedCellsVersusDirectSumTest::fRand(double fMin, double fMax) const {
-  double f = static_cast<double>(rand()) / RAND_MAX;
-  return fMin + f * (fMax - fMin);
-}
-
-std::array<double, 3> LinkedCellsVersusDirectSumTest::randomPosition(
-    const std::array<double, 3> &boxMin,
-    const std::array<double, 3> &boxMax) const {
-  std::array<double, 3> r{};
-  for (int d = 0; d < 3; ++d) {
-    r[d] = fRand(boxMin[d], boxMax[d]);
-  }
-  return r;
-}
-
-void LinkedCellsVersusDirectSumTest::fillContainerWithMolecules(
-    unsigned long numMolecules,
-    autopas::ParticleContainer<autopas::MoleculeLJ,
-                               autopas::FullParticleCell<autopas::MoleculeLJ>>
-        &cont) const {
-  srand(42);  // fixed seedpoint
-
-  std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
-
-  for (int i = 0; i < numMolecules; ++i) {
-    auto id = static_cast<unsigned long>(i);
-    autopas::MoleculeLJ m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
-    cont.addParticle(m);
-  }
-}
-
-void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules,
-                                          double rel_err_tolerance) {
-  fillContainerWithMolecules(numMolecules, _directSum);
+void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules,
+                                            double rel_err_tolerance) {
+  RandomGenerator::fillWithParticles(
+      _verletLists, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
+      numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
-  for (auto it = _directSum.begin(); it.isValid(); ++it) {
+  for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     _linkedCells.addParticle(*it);
   }
 
   autopas::LJFunctor<autopas::MoleculeLJ,
                      autopas::FullParticleCell<autopas::MoleculeLJ>>
       func;
-  _directSum.iteratePairwiseAoS2(&func);
+  _verletLists.iteratePairwiseAoS2(&func);
   _linkedCells.iteratePairwiseAoS2(&func);
 
-  auto itDirect = _directSum.begin();
+  auto itDirect = _verletLists.begin();
   auto itLinked = _linkedCells.begin();
 
   std::vector<std::array<double, 3>> forcesDirect(numMolecules),
       forcesLinked(numMolecules);
   // get and sort by id, the
-  for (auto it = _directSum.begin(); it.isValid(); ++it) {
+  for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
     forcesDirect.at(m.getID()) = m.getF();
   }
@@ -97,16 +69,16 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules,
 
   autopas::FlopCounterFunctor<autopas::MoleculeLJ,
                               autopas::FullParticleCell<autopas::MoleculeLJ>>
-      flopsDirect(getCutoff()), flopsLinked(getCutoff());
-  _directSum.iteratePairwiseAoS2(&flopsDirect);
+      flopsVerlet(getCutoff()), flopsLinked(getCutoff());
+  _verletLists.iteratePairwiseAoS2(&flopsVerlet);
   _linkedCells.iteratePairwiseAoS2(&flopsLinked);
 
-  ASSERT_EQ(flopsLinked.getKernelCalls(), flopsDirect.getKernelCalls());
-  ASSERT_LE(flopsLinked.getDistanceCalculations(),
-            flopsDirect.getDistanceCalculations());
+  ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
+  ASSERT_GE(flopsLinked.getDistanceCalculations(),
+            flopsVerlet.getDistanceCalculations());
 }
 
-TEST_F(LinkedCellsVersusDirectSumTest, test100) {
+TEST_F(LinkedCellsVersusVerletListsTest, test100) {
   unsigned long numMolecules = 100;
 
   // empirically determined and set near the minimal possible value
@@ -117,17 +89,17 @@ TEST_F(LinkedCellsVersusDirectSumTest, test100) {
   test(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(LinkedCellsVersusDirectSumTest, test1000) {
+TEST_F(LinkedCellsVersusVerletListsTest, test1000) {
   unsigned long numMolecules = 1000;
 
   // empirically determined and set near the minimal possible value
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1.5e-12;
+  double rel_err_tolerance = 1e-12;
   test(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(LinkedCellsVersusDirectSumTest, test2000) {
+TEST_F(LinkedCellsVersusVerletListsTest, test2000) {
   unsigned long numMolecules = 2000;
 
   // empirically determined and set near the minimal possible value
