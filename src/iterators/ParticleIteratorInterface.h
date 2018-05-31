@@ -1,7 +1,7 @@
 /**
  * ParticleIterator.h
  *
- *  Created on: 17 Jan 2018
+ *  Created on: 29 May 2018
  *      Author: seckler
  */
 #pragma once
@@ -41,7 +41,7 @@ class ParticleIteratorInterface {
    * this is the indirection operator
    * @return current particle
    */
-  virtual Particle& operator*() = 0;
+  virtual Particle& operator*() const = 0;
 
   /**
    * access particle using iterator->
@@ -49,7 +49,7 @@ class ParticleIteratorInterface {
    * this is the member of pointer operator
    * @return current particle
    */
-  virtual inline Particle* operator->() final { return &(this->operator*()); }
+  virtual inline Particle* operator->() const final { return &(this->operator*()); }
 
   /**
    * Deletes the current particle
@@ -62,11 +62,20 @@ class ParticleIteratorInterface {
    */
   virtual bool isValid() const = 0;
 
+};
+
+namespace internal {
+
+template <class Particle>
+class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle> {
+ public:
   /**
    * Clones the current object, should allocate new object and return it.
    * @return the clone
    */
-  virtual ParticleIteratorInterface<Particle>* clone() const = 0;
+  virtual ParticleIteratorInterfaceImpl<Particle>* clone() const = 0;
 };
+
+}  // namespace internal
 
 } /* namespace autopas */

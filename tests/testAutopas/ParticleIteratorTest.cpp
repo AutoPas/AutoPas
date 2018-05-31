@@ -10,6 +10,7 @@
 #include "gtest/gtest.h"
 
 using namespace autopas;
+using namespace autopas::internal;
 
 void ParticleIteratorTest::SetUp() {
   for (int i = 0; i < 20; ++i) {

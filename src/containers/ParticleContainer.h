@@ -103,7 +103,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
   ParticleIteratorWrapper<Particle> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        new ParticleIterator<Particle, ParticleCell>(&_data));
+        new internal::ParticleIterator<Particle, ParticleCell>(&_data));
   }
 
   /**
@@ -118,7 +118,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
       std::array<double, 3> lowerCorner,
       std::array<double, 3> higherCorner) override {
     return ParticleIteratorWrapper<Particle>(
-        new RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner,
+        new internal::RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner,
                                                            higherCorner));
   }
 

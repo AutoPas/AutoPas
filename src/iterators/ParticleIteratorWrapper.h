@@ -1,12 +1,11 @@
 /**
- * ParticleIterator.h
+ * ParticleIteratorWrapper.h
  *
- *  Created on: 17 Jan 2018
+ *  Created on: 29 May 2018
  *      Author: seckler
  */
 #pragma once
 
-#include <utils/ExceptionHandler.h>
 #include "ParticleIteratorInterface.h"
 
 namespace autopas {
@@ -28,25 +27,28 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    */
   template <class InterfacePtrType>
   ParticleIteratorWrapper(InterfacePtrType* particleIteratorInterface)
-      : _particleIterator(static_cast<ParticleIteratorInterface<Particle>*>(
-            particleIteratorInterface)) {}
+      : _particleIterator(
+            static_cast<internal::ParticleIteratorInterfaceImpl<Particle>*>(
+                particleIteratorInterface)) {}
 
   /**
    * copy operator
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
   ParticleIteratorWrapper(
-      const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
-    _particleIterator = std::unique_ptr<ParticleIteratorInterface<Particle>>(
-        otherParticleIteratorWrapper._particleIterator->clone());
-  }
+      const ParticleIteratorWrapper& otherParticleIteratorWrapper)
+      : _particleIterator(
+            static_cast<internal::ParticleIteratorInterfaceImpl<Particle>*>(
+                otherParticleIteratorWrapper._particleIterator->clone())) {}
 
   inline ParticleIteratorWrapper<Particle>& operator++() override {
     _particleIterator->operator++();
     return *this;
   }
 
-  Particle& operator*() override { return _particleIterator->operator*(); }
+  Particle& operator*() const override {
+    return _particleIterator->operator*();
+  }
 
   void deleteCurrentParticle() override {
     _particleIterator->deleteCurrentParticle();
@@ -54,14 +56,9 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
 
   bool isValid() const override { return _particleIterator->isValid(); }
 
-  ParticleIteratorInterface<Particle>* clone() const override {
-    autopas::utils::ExceptionHandler::exception(
-        "ParticleIteratorWrapper::clone() should never be called");
-    return nullptr;
-  }
-
  private:
-  std::unique_ptr<ParticleIteratorInterface<Particle>> _particleIterator;
+  std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>
+      _particleIterator;
 };
 
 } /* namespace autopas */

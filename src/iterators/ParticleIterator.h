@@ -13,7 +13,7 @@
 #include "SingleCellIterator.h"
 
 namespace autopas {
-
+namespace internal {
 /**
  * ParticleIterator class to access particles inside of a container.
  * The particles can be accessed using "iterator->" or "*iterator". The next
@@ -23,7 +23,7 @@ namespace autopas {
  * container
  */
 template <class Particle, class ParticleCell>
-class ParticleIterator : public ParticleIteratorInterface<Particle> {
+ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
  public:
   /**
    * Constructor of the ParticleIterator class.
@@ -39,7 +39,7 @@ class ParticleIterator : public ParticleIteratorInterface<Particle> {
                             IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
-        _iteratorWithinOneCell(),
+        _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
         _behavior(behavior) {
     if (behavior != haloAndOwned and flagManager == nullptr) {
@@ -78,7 +78,7 @@ class ParticleIterator : public ParticleIteratorInterface<Particle> {
   /**
    * @copydoc ParticleIteratorInterface::operator*()
    */
-  inline Particle& operator*() override {
+  inline Particle& operator*() const override {
     return _iteratorWithinOneCell.operator*();
   }
 
@@ -104,7 +104,7 @@ class ParticleIterator : public ParticleIteratorInterface<Particle> {
            _iteratorWithinOneCell.isValid();
   }
 
-  virtual ParticleIteratorInterface<Particle>* clone() const override {
+  ParticleIteratorInterfaceImpl<Particle>* clone() const override {
     return new ParticleIterator<Particle, ParticleCell>(*this);
   }
 
@@ -148,10 +148,10 @@ class ParticleIterator : public ParticleIteratorInterface<Particle> {
  private:
   std::vector<ParticleCell>* _vectorOfCells;
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
-  typename ParticleCell::iterator _iteratorWithinOneCell;
+  SingleCellIteratorWrapper<Particle> _iteratorWithinOneCell;
   CellBorderAndFlagManager* _flagManager;
   IteratorBehavior _behavior;
   // SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
 };
-
-} /* namespace autopas */
+}  // namespace internal
+}  // namespace autopas
