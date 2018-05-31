@@ -262,13 +262,13 @@ pipeline{
                         sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
                         sh "ninja clangformat"
                     }
-                    try {
-                        // return 2 if modified has been found, 0 otherwise
-                        sh "git status | grep -q modified && exit 2 || exit 0"
-                    } catch (Exception e) {
-                        // change detected
-                        currentBuild.result = 'UNSTABLE'
-                    }
+                    // return 2 if modified has been found, 0 otherwise
+                    sh "git status | grep -q modified && exit 2 || exit 0"
+                }
+            }
+            post {
+                failure {
+                    currentBuild.result = 'UNSTABLE'
                 }
             }
         }
