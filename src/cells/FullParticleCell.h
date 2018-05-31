@@ -38,8 +38,7 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
     return SingleCellIteratorWrapper<Particle>(
-        new internal::SingleCellIterator<Particle, FullParticleCell<Particle>>(
-            this));
+        new internal::SingleCellIterator<Particle, FullParticleCell<Particle>>(this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }

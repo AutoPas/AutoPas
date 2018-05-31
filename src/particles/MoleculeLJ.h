@@ -25,9 +25,7 @@ class MoleculeLJ : public Particle {
    * @param v velocity of the molecule
    * @param id id of the molecule
    */
-  explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v,
-                      unsigned long id)
-      : Particle(r, v, id) {}
+  explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
 
   virtual ~MoleculeLJ() = default;
 

@@ -14,9 +14,8 @@ double Newton3OnOffTest::fRand(double fMin, double fMax) const {
   return fMin + f * (fMax - fMin);
 }
 
-std::array<double, 3> Newton3OnOffTest::randomPosition(
-    const std::array<double, 3> &boxMin,
-    const std::array<double, 3> &boxMax) const {
+std::array<double, 3> Newton3OnOffTest::randomPosition(const std::array<double, 3> &boxMin,
+                                                       const std::array<double, 3> &boxMax) const {
   std::array<double, 3> r{};
   for (int d = 0; d < 3; ++d) {
     r[d] = fRand(boxMin[d], boxMax[d]);
@@ -26,8 +25,7 @@ std::array<double, 3> Newton3OnOffTest::randomPosition(
 
 void Newton3OnOffTest::fillContainerWithMolecules(
     unsigned long numMolecules,
-    AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
-        &autoPas) const {
+    AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> &autoPas) const {
   srand(42);  // fixed seedpoint
 
   std::array<double, 3> boxMin(getBoxMin()), boxMax(getBoxMax());
@@ -48,19 +46,19 @@ TEST_F(Newton3OnOffTest, testAoS) {
     int callsNewton3 = 0;
     EXPECT_CALL(mockFunctor, allowsNewton3()).WillOnce(Return(true));
     EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillOnce(Return(false));
-    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true))
-        .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3++; }));
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+      callsNewton3++;
+    }));
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
     // without newton 3:
     int callsNonNewton3 = 0;
     EXPECT_CALL(mockFunctor, allowsNewton3()).WillOnce(Return(false));
     EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillOnce(Return(true));
-    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true))
-        .Times(0);  // disables newton3 variant
-    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false))
-        .WillRepeatedly(
-            testing::InvokeWithoutArgs([&]() { callsNonNewton3++; }));
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(0);  // disables newton3 variant
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+      callsNonNewton3++;
+    }));
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
     EXPECT_EQ(callsNewton3 * 2,
@@ -84,14 +82,14 @@ TEST_F(Newton3OnOffTest, testSoA) {
     EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillOnce(Return(false));
 
     // single cell
-    EXPECT_CALL(mockFunctor, SoAFunctor(_, true))
-        .WillRepeatedly(
-            testing::InvokeWithoutArgs([&]() { callsNewton3SC++; }));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+      callsNewton3SC++;
+    }));
 
     // pair of cells
-    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true))
-        .WillRepeatedly(
-            testing::InvokeWithoutArgs([&]() { callsNewton3Pair++; }));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+      callsNewton3Pair++;
+    }));
 
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
 
@@ -100,18 +98,17 @@ TEST_F(Newton3OnOffTest, testSoA) {
     int callsNonNewton3Pair = 0;
     EXPECT_CALL(mockFunctor, allowsNewton3()).WillOnce(Return(false));
     EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillOnce(Return(true));
-    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true))
-        .Times(0);  // disables newton3 variant
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).Times(0);  // disables newton3 variant
 
     // single cell
-    EXPECT_CALL(mockFunctor, SoAFunctor(_, false))
-        .WillRepeatedly(
-            testing::InvokeWithoutArgs([&]() { callsNonNewton3SC++; }));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+      callsNonNewton3SC++;
+    }));
 
     // pair of cells
-    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false))
-        .WillRepeatedly(
-            testing::InvokeWithoutArgs([&]() { callsNonNewton3Pair++; }));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+      callsNonNewton3Pair++;
+    }));
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
 
     EXPECT_EQ(callsNewton3SC,

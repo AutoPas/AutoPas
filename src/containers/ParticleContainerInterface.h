@@ -44,8 +44,7 @@ class ParticleContainerInterface {
    * @param other
    * @return
    */
-  ParticleContainerInterface &operator=(
-      const ParticleContainerInterface &other) = delete;
+  ParticleContainerInterface &operator=(const ParticleContainerInterface &other) = delete;
 
   /**
    * adds a particle to the container
@@ -71,8 +70,7 @@ class ParticleContainerInterface {
    * @return iterator to the first particle
    * @todo implement IteratorBehavior
    */
-  virtual ParticleIteratorWrapper<Particle> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+  virtual ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
   /**
    * iterate over all particles in a specified region
@@ -82,9 +80,8 @@ class ParticleContainerInterface {
    * @param higherCorner higher corner of the region
    * @return iterator to iterate over all particles in a specific region
    */
-  virtual ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner,
-      std::array<double, 3> higherCorner) = 0;
+  virtual ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                              std::array<double, 3> higherCorner) = 0;
 
   /**
    * get the upper corner of the container

@@ -83,9 +83,8 @@ TEST_F(CellBlock3DTest, testBoundaries) {
   }
 }
 
-std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(
-    std::array<double, 3> start, std::array<double, 3> dr,
-    std::array<int, 3> numParts) const {
+std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3> start, std::array<double, 3> dr,
+                                                            std::array<int, 3> numParts) const {
   std::vector<std::array<double, 3>> ret;
 
   for (int z = 0; z < numParts[2]; ++z) {

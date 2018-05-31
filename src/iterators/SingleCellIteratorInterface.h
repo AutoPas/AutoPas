@@ -54,8 +54,7 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
 
 namespace internal {
 template <class Particle>
-class SingleCellIteratorInterfaceImpl
-    : public SingleCellIteratorInterface<Particle> {
+class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Particle> {
  public:
   /**
    * Clones the current object, should allocate new object and return it.

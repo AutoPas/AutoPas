@@ -38,8 +38,7 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
    * @param cellfunctor The cell functor that defines the interaction of
    * particles between two different cells.
    */
-  explicit SlicedTraversal(std::vector<ParticleCell> &cells,
-                           const std::array<unsigned long, 3> &dims,
+  explicit SlicedTraversal(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
                            CellFunctor *cellfunctor)
       : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {
     rebuild(cells, dims);
@@ -47,8 +46,7 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
   // documentation in base class
   void traverseCellPairs() override;
   bool isApplicable() override;
-  void rebuild(std::vector<ParticleCell> &cells,
-               const std::array<unsigned long, 3> &dims) override;
+  void rebuild(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims) override;
 
  private:
   // FIXME: Remove this as soon as other traversals are available
@@ -68,24 +66,18 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
 
 template <class ParticleCell, class CellFunctor>
 inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
-  return this->_cellsPerDimension[_dimsPerLength[0]] /
-             this->_sliceThickness.size() >=
-         2;
+  return this->_cellsPerDimension[_dimsPerLength[0]] / this->_sliceThickness.size() >= 2;
 }
 
 template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(
-    std::vector<ParticleCell> &cells,
-    const std::array<unsigned long, 3> &dims) {
+inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(std::vector<ParticleCell> &cells,
+                                                                const std::array<unsigned long, 3> &dims) {
   CellPairTraversals<ParticleCell, CellFunctor>::rebuild(cells, dims);
 
   // find longest dimension
-  auto minMaxElem = std::minmax_element(this->_cellsPerDimension.begin(),
-                                        this->_cellsPerDimension.end());
-  _dimsPerLength[0] =
-      (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.second);
-  _dimsPerLength[2] =
-      (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.first);
+  auto minMaxElem = std::minmax_element(this->_cellsPerDimension.begin(), this->_cellsPerDimension.end());
+  _dimsPerLength[0] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.second);
+  _dimsPerLength[2] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.first);
   _dimsPerLength[1] = 3 - (_dimsPerLength[0] + _dimsPerLength[2]);
 
   // split domain across its longest dimension
@@ -93,11 +85,8 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(
   auto numSlices = autopas_get_max_threads();
   // find dimension with most cells
   _sliceThickness.clear();
-  _sliceThickness.insert(
-      _sliceThickness.begin(), numSlices,
-      this->_cellsPerDimension[_dimsPerLength[0]] / numSlices);
-  auto rest = this->_cellsPerDimension[_dimsPerLength[0]] -
-              _sliceThickness[0] * numSlices;
+  _sliceThickness.insert(_sliceThickness.begin(), numSlices, this->_cellsPerDimension[_dimsPerLength[0]] / numSlices);
+  auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
   for (int i = 0; i < rest; ++i) ++_sliceThickness[i];
   // decreases last _sliceThickness by one to account for the way we handle base
   // cells
@@ -108,8 +97,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(
 
 // FIXME: Remove this as soon as other traversals are available
 template <class ParticleCell, class CellFunctor>
-inline void
-SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallback() {
+inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallback() {
   std::array<unsigned long, 3> endid;
   for (int d = 0; d < 3; ++d) {
     endid[d] = this->_cellsPerDimension[d] - 1;
@@ -117,8 +105,7 @@ SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallback() {
   for (unsigned long z = 0; z < endid[2]; ++z) {
     for (unsigned long y = 0; y < endid[1]; ++y) {
       for (unsigned long x = 0; x < endid[0]; ++x) {
-        unsigned long ind = ThreeDimensionalMapping::threeToOneD(
-            x, y, z, this->_cellsPerDimension);
+        unsigned long ind = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
         this->processBaseCell(ind);
       }
     }
@@ -160,36 +147,26 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
       autopas_set_lock(locks[slice - 1]);
     }
     for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]];
-         dimSlice < myStartArray[_dimsPerLength[0]] + _sliceThickness[slice];
-         ++dimSlice) {
+         dimSlice < myStartArray[_dimsPerLength[0]] + _sliceThickness[slice]; ++dimSlice) {
       // at the last layer request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
-      if (slice != numSlices - 1 &&
-          dimSlice ==
-              myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
+      if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
         autopas_set_lock(locks[slice]);
       }
-      for (unsigned long dimMedium = 0;
-           dimMedium < this->_cellsPerDimension[_dimsPerLength[1]] - 1;
-           ++dimMedium) {
-        for (unsigned long dimShort = 0;
-             dimShort < this->_cellsPerDimension[_dimsPerLength[2]] - 1;
-             ++dimShort) {
+      for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[_dimsPerLength[1]] - 1; ++dimMedium) {
+        for (unsigned long dimShort = 0; dimShort < this->_cellsPerDimension[_dimsPerLength[2]] - 1; ++dimShort) {
           array<unsigned long, 3> idArray;
           idArray[_dimsPerLength[0]] = dimSlice;
           idArray[_dimsPerLength[1]] = dimMedium;
           idArray[_dimsPerLength[2]] = dimShort;
-          auto id = ThreeDimensionalMapping::threeToOneD(
-              idArray, this->_cellsPerDimension);
+          auto id = ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
           this->processBaseCell(id);
         }
       }
       // at the end of the first layer release the lock
       if (slice > 0 && dimSlice == myStartArray[_dimsPerLength[0]]) {
         autopas_unset_lock(locks[slice - 1]);
-      } else if (slice != numSlices - 1 &&
-                 dimSlice == myStartArray[_dimsPerLength[0]] +
-                                 _sliceThickness[slice] - 1) {
+      } else if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
         autopas_unset_lock(locks[slice]);
       }
     }

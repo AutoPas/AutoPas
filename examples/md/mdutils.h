@@ -19,9 +19,7 @@ using namespace autopas;
 class PrintableMolecule : public MoleculeLJ {
  public:
   PrintableMolecule() : MoleculeLJ() {}
-  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v,
-                    unsigned long i)
-      : MoleculeLJ(r, v, i) {}
+  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : MoleculeLJ(r, v, i) {}
   void print() {
     cout << "Molecule with position: ";
     for (auto &r : getR()) {
@@ -42,8 +40,7 @@ double fRand(double fMin, double fMax) {
   return fMin + f * (fMax - fMin);
 }
 
-std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin,
-                                     const std::array<double, 3> &boxMax) {
+std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
   std::array<double, 3> r{};
   for (int d = 0; d < 3; ++d) {
     r[d] = fRand(boxMin[d], boxMax[d]);
@@ -52,8 +49,7 @@ std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin,
 }
 
 template <class Molecule, class MoleculeCell>
-void fillContainerWithMolecules(
-    int numMolecules, ParticleContainer<Molecule, MoleculeCell> *cont) {
+void fillContainerWithMolecules(int numMolecules, ParticleContainer<Molecule, MoleculeCell> *cont) {
   srand(42);  // fixed seedpoint
 
   std::array<double, 3> boxMin(cont->getBoxMin()), boxMax(cont->getBoxMax());

@@ -29,29 +29,24 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
   template <class InterfacePtrType>
   SingleCellIteratorWrapper(InterfacePtrType* particleIteratorInterface)
       : _particleIterator(
-            static_cast<internal::SingleCellIteratorInterfaceImpl<Particle>*>(
-                particleIteratorInterface)) {}
+            static_cast<internal::SingleCellIteratorInterfaceImpl<Particle>*>(particleIteratorInterface)) {}
 
   /**
    * copy constructor
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
-  SingleCellIteratorWrapper(
-      const SingleCellIteratorWrapper& otherParticleIteratorWrapper) {
-    _particleIterator =
-        std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>>(
-            otherParticleIteratorWrapper._particleIterator->clone());
+  SingleCellIteratorWrapper(const SingleCellIteratorWrapper& otherParticleIteratorWrapper) {
+    _particleIterator = std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>>(
+        otherParticleIteratorWrapper._particleIterator->clone());
   }
 
   /**
    * copy constructor
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
-  SingleCellIteratorWrapper& operator=(
-      const SingleCellIteratorWrapper& otherParticleIteratorWrapper) {
-    _particleIterator =
-        std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>>(
-            otherParticleIteratorWrapper._particleIterator->clone());
+  SingleCellIteratorWrapper& operator=(const SingleCellIteratorWrapper& otherParticleIteratorWrapper) {
+    _particleIterator = std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>>(
+        otherParticleIteratorWrapper._particleIterator->clone());
     return *this;
   }
 
@@ -60,31 +55,24 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
     return *this;
   }
 
-  Particle& operator*() const override {
-    return _particleIterator->operator*();
-  }
+  Particle& operator*() const override { return _particleIterator->operator*(); }
 
-  void deleteCurrentParticle() override {
-    _particleIterator->deleteCurrentParticle();
-  }
+  void deleteCurrentParticle() override { _particleIterator->deleteCurrentParticle(); }
 
   bool isValid() const override { return _particleIterator->isValid(); }
 
-  bool operator==(
-      const SingleCellIteratorInterface<Particle>& rhs) const override {
+  bool operator==(const SingleCellIteratorInterface<Particle>& rhs) const override {
     return _particleIterator->operator==(rhs);
   }
 
-  bool operator!=(
-      const SingleCellIteratorInterface<Particle>& rhs) const override {
+  bool operator!=(const SingleCellIteratorInterface<Particle>& rhs) const override {
     return _particleIterator->operator!=(rhs);
   }
 
   int getIndex() const override { return _particleIterator->getIndex(); }
 
  private:
-  std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>>
-      _particleIterator;
+  std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>> _particleIterator;
 };
 
 } /* namespace autopas */

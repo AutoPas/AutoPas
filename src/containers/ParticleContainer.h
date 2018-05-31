@@ -32,8 +32,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param boxMax
    * @param cutoff
    */
-  ParticleContainer(const std::array<double, 3> boxMin,
-                    const std::array<double, 3> boxMax, double cutoff)
+  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
       : _data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
 
   /**
@@ -82,8 +81,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param f functor that describes the pair-potential
    * @param useNewton3 defines whether newton3 should be used
    */
-  virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f,
-                                  bool useNewton3 = true) = 0;
+  virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) = 0;
 
   /**
    * function to iterate over all pairs of particles in a structure of array
@@ -91,8 +89,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param f functor that describes the pair-potential
    * @param useNewton3 defines whether newton3 should be used
    */
-  virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f,
-                                  bool useNewton3 = true) = 0;
+  virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) = 0;
 
   /**
    * iterate over all particles using
@@ -100,10 +97,8 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @return iterator to the first particle
    * @todo implement IteratorBehavior
    */
-  ParticleIteratorWrapper<Particle> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, ParticleCell>(&_data));
+  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle>(new internal::ParticleIterator<Particle, ParticleCell>(&_data));
   }
 
   /**
@@ -114,45 +109,35 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param higherCorner higher corner of the region
    * @return iterator to iterate over all particles in a specific region
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner,
-      std::array<double, 3> higherCorner) override {
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                      std::array<double, 3> higherCorner) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::RegionParticleIterator<Particle, ParticleCell>(
-            &_data, lowerCorner, higherCorner));
+        new internal::RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner, higherCorner));
   }
 
   /**
    * get the upper corner of the container
    * @return upper corner of the container
    */
-  const std::array<double, 3> &getBoxMax() const override final {
-    return _boxMax;
-  }
+  const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
 
   /**
    * set the upper corner of the container
    * @param boxMax upper corner to be set
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) override final {
-    _boxMax = boxMax;
-  }
+  void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
 
   /**
    * get the lower corner of the container
    * @return lower corner of the container
    */
-  const std::array<double, 3> &getBoxMin() const override final {
-    return _boxMin;
-  }
+  const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
 
   /**
    * set the lower corner of the container
    * @param boxMin lower corner to be set
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) override final {
-    _boxMin = boxMin;
-  }
+  void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
   /**
    * return the cutoff of the container

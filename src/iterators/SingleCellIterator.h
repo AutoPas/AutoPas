@@ -30,8 +30,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  explicit SingleCellIterator(ParticleCell *cell_arg, int ind = 0)
-      : _cell(cell_arg), _index(ind), _deleted(false) {}
+  explicit SingleCellIterator(ParticleCell *cell_arg, int ind = 0) : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   /**
    * destructor of SingleCellIterator
@@ -68,13 +67,9 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @return true if the iterators point to the same particle (in the same
    * cell), false otherwise
    */
-  bool operator==(
-      const SingleCellIteratorInterface<Particle> &rhs) const override {
-    if (auto other =
-            dynamic_cast<const SingleCellIterator<Particle, ParticleCell> *>(
-                &rhs)) {
-      return (not rhs.isValid() and not this->isValid()) or
-             (_cell == other->_cell && _index == other->_index);
+  bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const override {
+    if (auto other = dynamic_cast<const SingleCellIterator<Particle, ParticleCell> *>(&rhs)) {
+      return (not rhs.isValid() and not this->isValid()) or (_cell == other->_cell && _index == other->_index);
     } else {
       return false;
     }
@@ -86,17 +81,12 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @param rhs
    * @return
    */
-  bool operator!=(
-      const SingleCellIteratorInterface<Particle> &rhs) const override {
-    return !(rhs == *this);
-  }
+  bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const override { return !(rhs == *this); }
   /**
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() const override {
-    return _cell != nullptr and _index < _cell->numParticles();
-  }
+  bool isValid() const override { return _cell != nullptr and _index < _cell->numParticles(); }
 
   /**
    * Get the index of the particle in the cell

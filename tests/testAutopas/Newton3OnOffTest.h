@@ -27,18 +27,12 @@ class Newton3OnOffTest : public AutoPasTestBase {
  protected:
   double fRand(double fMin, double fMax) const;
 
-  std::array<double, 3> randomPosition(
-      const std::array<double, 3> &boxMin,
-      const std::array<double, 3> &boxMax) const;
+  std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) const;
 
-  void fillContainerWithMolecules(
-      unsigned long numMolecules,
-      AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
-          &cont) const;
+  void fillContainerWithMolecules(unsigned long numMolecules,
+                                  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> &cont) const;
 
  public:
-  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
-      mockFunctor;
-  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
-      autoPas;
+  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockFunctor;
+  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
 };

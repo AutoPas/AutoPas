@@ -27,24 +27,18 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    */
   template <class InterfacePtrType>
   ParticleIteratorWrapper(InterfacePtrType* particleIteratorInterface)
-      : _particleIterator(
-            static_cast<internal::ParticleIteratorInterfaceImpl<Particle>*>(
-                particleIteratorInterface)) {}
+      : _particleIterator(static_cast<internal::ParticleIteratorInterfaceImpl<Particle>*>(particleIteratorInterface)) {}
 
   /**
    * copy operator
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
-  ParticleIteratorWrapper(
-      const ParticleIteratorWrapper& otherParticleIteratorWrapper)
-      : _particleIterator(
-            otherParticleIteratorWrapper._particleIterator->clone()) {}
+  ParticleIteratorWrapper(const ParticleIteratorWrapper& otherParticleIteratorWrapper)
+      : _particleIterator(otherParticleIteratorWrapper._particleIterator->clone()) {}
 
-  ParticleIteratorWrapper& operator=(
-      const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
-    _particleIterator =
-        std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>(
-            otherParticleIteratorWrapper._particleIterator->clone());
+  ParticleIteratorWrapper& operator=(const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
+    _particleIterator = std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>(
+        otherParticleIteratorWrapper._particleIterator->clone());
     return *this;
   }
 
@@ -53,19 +47,14 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
     return *this;
   }
 
-  Particle& operator*() const override {
-    return _particleIterator->operator*();
-  }
+  Particle& operator*() const override { return _particleIterator->operator*(); }
 
-  void deleteCurrentParticle() override {
-    _particleIterator->deleteCurrentParticle();
-  }
+  void deleteCurrentParticle() override { _particleIterator->deleteCurrentParticle(); }
 
   bool isValid() const override { return _particleIterator->isValid(); }
 
  private:
-  std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>
-      _particleIterator;
+  std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>> _particleIterator;
 };
 
 } /* namespace autopas */

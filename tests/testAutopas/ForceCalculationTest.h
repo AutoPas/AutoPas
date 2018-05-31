@@ -28,10 +28,8 @@ class ForceCalculationTest : public AutoPasTestBase {
    * each molecule in the end
    * @param tolerance error tolerance
    */
-  void testLJ(double particleSpacing, double cutoff,
-              autopas::DataLayoutOption dataLayoutOption,
-              std::array<std::array<double, 3>, 4> expectedForces,
-              double tolerance);
+  void testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
+              std::array<std::array<double, 3>, 4> expectedForces, double tolerance);
 };
 
 #endif  // AUTOPAS_LJFORCECALCULATIONTEST_H

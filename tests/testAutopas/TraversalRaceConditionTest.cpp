@@ -1,8 +1,7 @@
 #include "TraversalRaceConditionTest.h"
 
 void TraversalRaceConditionTest::fillWithParticles(
-    AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>
-        &autoPas,
+    AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autoPas,
     std::array<size_t, 3> particlesPerDim) {
   size_t id = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
@@ -32,12 +31,10 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   double cellLength = 1;
   std::array<size_t, 3> particlesPerDimension = {30, 30, 30};
   std::array<double, 3> boxMin = {0., 0., 0.};
-  std::array<double, 3> boxMax = {(double)particlesPerDimension[0],
-                                  (double)particlesPerDimension[1],
+  std::array<double, 3> boxMax = {(double)particlesPerDimension[0], (double)particlesPerDimension[1],
                                   (double)particlesPerDimension[2]};
 
-  AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>
-      autoPas;
+  AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
 
   // generates one cell per particle + 1 halo layer
   autoPas.init(boxMin, boxMax, cellLength, autopas::linkedCells);
@@ -49,14 +46,10 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   // TODO: test all traversals -> no autotuning
   autoPas.iteratePairwise(&functor, autopas::aos);
 
-  for (auto particleIterator = autoPas.begin(); particleIterator.isValid();
-       ++particleIterator) {
-    if (particleIterator->getR()[0] == .5 ||
-        particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||
-        particleIterator->getR()[1] == .5 ||
-        particleIterator->getR()[1] == particlesPerDimension[1] - .5 ||
-        particleIterator->getR()[2] == .5 ||
-        particleIterator->getR()[2] == particlesPerDimension[2] - .5)
+  for (auto particleIterator = autoPas.begin(); particleIterator.isValid(); ++particleIterator) {
+    if (particleIterator->getR()[0] == .5 || particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||
+        particleIterator->getR()[1] == .5 || particleIterator->getR()[1] == particlesPerDimension[1] - .5 ||
+        particleIterator->getR()[2] == .5 || particleIterator->getR()[2] == particlesPerDimension[2] - .5)
       continue;
     // for debugging:
     //    particleIterator->print();

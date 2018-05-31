@@ -37,16 +37,14 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param bMax higher corner of the cellblock
    * @param interactionLength minimal size of each cell
    */
-  CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin,
-              const std::array<double, 3> bMax, double interactionLength) {
+  CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
+              double interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength);
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
-        AutoPasLogger->error(
-            "CellBlock3D: interaction length too large is {}, bmin {}, bmax {}",
-            interactionLength, bMin[i], bMax[i]);
-        utils::ExceptionHandler::exception(
-            "Error in CellBlock3D: interaction Length too large!");
+        AutoPasLogger->error("CellBlock3D: interaction length too large is {}, bmin {}, bmax {}", interactionLength,
+                             bMin[i], bMax[i]);
+        utils::ExceptionHandler::exception("Error in CellBlock3D: interaction Length too large!");
       }
     }
   }
@@ -62,9 +60,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return isHaloCell;
   }
 
-  bool isOwningCell(index_t index1d) const override {
-    return not isHaloCell(index1d);
-  }
+  bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
 
   /**
    * get the ParticleCell of a specified 1d index
@@ -88,9 +84,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param bMax new higher corner of the cellblock
    * @param interactionLength new minimal size of each cell
    */
-  void rebuild(std::vector<ParticleCell> &vec,
-               const std::array<double, 3> &bMin,
-               const std::array<double, 3> &bMax, double interactionLength);
+  void rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
+               double interactionLength);
 
   // this class doesn't actually know about particles
   /**
@@ -106,8 +101,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param boxmin the lower corner (out)
    * @param boxmax the upper corner (out)
    */
-  void getCellBoundingBox(index_t index1d, std::array<double, 3> &boxmin,
-                          std::array<double, 3> &boxmax);
+  void getCellBoundingBox(index_t index1d, std::array<double, 3> &boxmin, std::array<double, 3> &boxmax);
 
   /**
    * Get the lower and upper corner of the cell at the 3d index index3d
@@ -115,8 +109,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param boxmin the lower corner (out)
    * @param boxmax the upper corner (out)
    */
-  void getCellBoundingBox(const std::array<index_t, 3> &index3d,
-                          std::array<double, 3> &boxmin,
+  void getCellBoundingBox(const std::array<index_t, 3> &index3d, std::array<double, 3> &boxmin,
                           std::array<double, 3> &boxmax);
 
   /**
@@ -124,8 +117,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param pos the position
    * @return the 3d index
    */
-  std::array<index_t, 3> get3DIndexOfPosition(
-      const std::array<double, 3> &pos) const;
+  std::array<index_t, 3> get3DIndexOfPosition(const std::array<double, 3> &pos) const;
 
   /**
    * get the 1d index of the cellblock for a given position
@@ -138,9 +130,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * get the dimension of the cellblock including the haloboxes
    * @return the dimensions of the cellblock
    */
-  const std::array<index_t, 3> &getCellsPerDimensionWithHalo() const {
-    return _cellsPerDimensionWithHalo;
-  }
+  const std::array<index_t, 3> &getCellsPerDimensionWithHalo() const { return _cellsPerDimensionWithHalo; }
 
   /**
    * checks whether a given position is inside the halo region of the managed
@@ -155,9 +145,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   void clearHaloCells() {
     // x: min and max of x
-    for (index_t i :
-         {static_cast<index_t>(0),
-          static_cast<index_t>(_cellsPerDimensionWithHalo[0] - 1)}) {
+    for (index_t i : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[0] - 1)}) {
       for (index_t j = 0; j < _cellsPerDimensionWithHalo[1]; j++) {
         for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
           index_t index = index1D({i, j, k});
@@ -166,11 +154,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
       }
     }
     // y: min and max of y
-    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1;
-         i++) {  // 0 and cells-1 already done in previous loop
-      for (index_t j :
-           {static_cast<index_t>(0),
-            static_cast<index_t>(_cellsPerDimensionWithHalo[1] - 1)}) {
+    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {  // 0 and cells-1 already done in previous loop
+      for (index_t j : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[1] - 1)}) {
         for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
           index_t index = index1D({i, j, k});
           (*_vec1D)[index].clear();
@@ -178,13 +163,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
       }
     }
     // z: min and max of z
-    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1;
-         i++) {  // 0 and cells-1 already done in previous loop
-      for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1;
-           j++) {  // 0 and cells-1 already done in previous loop
-        for (index_t k :
-             {static_cast<index_t>(0),
-              static_cast<index_t>(_cellsPerDimensionWithHalo[2] - 1)}) {
+    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {    // 0 and cells-1 already done in previous loop
+      for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1; j++) {  // 0 and cells-1 already done in previous loop
+        for (index_t k : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[2] - 1)}) {
           index_t index = index1D({i, j, k});
           (*_vec1D)[index].clear();
         }
@@ -202,8 +183,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param allowedDistance the maximal distance to the position
    * @return a container of references to nearby halo cells
    */
-  std::vector<ParticleCell *> getNearbyHaloCells(std::array<double, 3> position,
-                                                 double allowedDistance) {
+  std::vector<ParticleCell *> getNearbyHaloCells(std::array<double, 3> position, double allowedDistance) {
     auto index3d = get3DIndexOfPosition(position);
     std::array<int, 3> diff = {0, 0, 0};
     auto currentIndex = index3d;
@@ -218,11 +198,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
           bool isPossibleHaloCell = false;
           bool isValidCell = true;
           for (int i = 0; i < 3; i++) {
-            isPossibleHaloCell |=
-                currentIndex[i] == 0 ||
-                currentIndex[i] == _cellsPerDimensionWithHalo[i] - 1;
-            isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] &&
-                           currentIndex[i] >= 0;
+            isPossibleHaloCell |= currentIndex[i] == 0 || currentIndex[i] == _cellsPerDimensionWithHalo[i] - 1;
+            isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] && currentIndex[i] >= 0;
           }
           if (isPossibleHaloCell && isValidCell) {
             std::array<std::array<double, 3>, 2> boxBound{};
@@ -275,26 +252,20 @@ class CellBlock3D : public CellBorderAndFlagManager {
 };
 
 template <class ParticleCell>
-inline typename CellBlock3D<ParticleCell>::index_t
-CellBlock3D<ParticleCell>::get1DIndexOfPosition(
+inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::get1DIndexOfPosition(
     const std::array<double, 3> &pos) const {
   return index1D(get3DIndexOfPosition(pos));
 }
 
 template <class ParticleCell>
-inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3>
-CellBlock3D<ParticleCell>::get3DIndexOfPosition(
+inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::get3DIndexOfPosition(
     const std::array<double, 3> &pos) const {
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (int dim = 0; dim < 3; dim++) {
-    const long int value =
-        (static_cast<long int>(
-            floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
-        1l;
+    const long int value = (static_cast<long int>(floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) + 1l;
     const index_t nonnegativeValue = static_cast<index_t>(std::max(value, 0l));
-    const index_t nonLargerValue =
-        std::min(nonnegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
+    const index_t nonLargerValue = std::min(nonnegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
     /// @todo this is a sanity check to prevent doubling of particles, but
     /// could be done better!
@@ -311,9 +282,8 @@ CellBlock3D<ParticleCell>::get3DIndexOfPosition(
 }
 
 template <class ParticleCell>
-inline void CellBlock3D<ParticleCell>::rebuild(
-    std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
-    const std::array<double, 3> &bMax, double interactionLength) {
+inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
+                                               const std::array<double, 3> &bMax, double interactionLength) {
   _vec1D = &vec;
   _boxMin = bMin;
   _boxMax = bMax;
@@ -323,24 +293,21 @@ inline void CellBlock3D<ParticleCell>::rebuild(
   _numCells = 1;
   for (int d = 0; d < 3; ++d) {
     double diff = _boxMax[d] - _boxMin[d];
-    auto cellsPerDim =
-        static_cast<index_t>(std::floor(diff / _interactionLength));
+    auto cellsPerDim = static_cast<index_t>(std::floor(diff / _interactionLength));
     // at least one central cell
     cellsPerDim = std::max(cellsPerDim, 1ul);
 
     _cellsPerDimensionWithHalo[d] = cellsPerDim + 2;
 
     _cellLength[d] = diff / cellsPerDim;
-    _cellLengthReciprocal[d] =
-        cellsPerDim / diff;  // compute with least rounding possible
+    _cellLengthReciprocal[d] = cellsPerDim / diff;  // compute with least rounding possible
 
     _haloBoxMin[d] = _boxMin[d] - _cellLength[d];
     _haloBoxMax[d] = _boxMax[d] + _cellLength[d];
 
     _numCells *= _cellsPerDimensionWithHalo[d];
 
-    AutoPasLogger->debug("CellBlock3D: _cellsPerDimensionWithHalo[{}]={}", d,
-                         _cellsPerDimensionWithHalo[d]);
+    AutoPasLogger->debug("CellBlock3D: _cellsPerDimensionWithHalo[{}]={}", d, _cellsPerDimensionWithHalo[d]);
   }
 
   _vec1D->resize(_numCells);
@@ -353,16 +320,15 @@ inline void CellBlock3D<ParticleCell>::rebuild(
 }
 
 template <class ParticleCell>
-inline void CellBlock3D<ParticleCell>::getCellBoundingBox(
-    const index_t index1d, std::array<double, 3> &boxmin,
-    std::array<double, 3> &boxmax) {
+inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const index_t index1d, std::array<double, 3> &boxmin,
+                                                          std::array<double, 3> &boxmax) {
   this->getCellBoundingBox(this->index3D(index1d), boxmin, boxmax);
 }
 
 template <class ParticleCell>
-inline void CellBlock3D<ParticleCell>::getCellBoundingBox(
-    const std::array<index_t, 3> &index3d, std::array<double, 3> &boxmin,
-    std::array<double, 3> &boxmax) {
+inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const std::array<index_t, 3> &index3d,
+                                                          std::array<double, 3> &boxmin,
+                                                          std::array<double, 3> &boxmax) {
   for (int d = 0; d < 3; d++) {
     // defaults
     boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
@@ -387,8 +353,7 @@ inline void CellBlock3D<ParticleCell>::getCellBoundingBox(
 }
 
 template <class ParticleCell>
-inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(
-    const std::array<double, 3> &pos) const {
+inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::array<double, 3> &pos) const {
   auto ind = get1DIndexOfPosition(pos);
   return getCell(ind);
 }
@@ -399,31 +364,25 @@ inline ParticleCell &CellBlock3D<ParticleCell>::getCell(index_t index1d) const {
 }
 
 template <class ParticleCell>
-inline ParticleCell &CellBlock3D<ParticleCell>::getCell(
-    const std::array<index_t, 3> &index3d) const {
+inline ParticleCell &CellBlock3D<ParticleCell>::getCell(const std::array<index_t, 3> &index3d) const {
   return _vec1D->at(index1D(index3d));
 }
 
 template <class ParticleCell>
-inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3>
-CellBlock3D<ParticleCell>::index3D(index_t index1d) const {
-  return ThreeDimensionalMapping::oneToThreeD(index1d,
-                                              _cellsPerDimensionWithHalo);
+inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::index3D(
+    index_t index1d) const {
+  return ThreeDimensionalMapping::oneToThreeD(index1d, _cellsPerDimensionWithHalo);
 }
 
 template <class ParticleCell>
-inline typename CellBlock3D<ParticleCell>::index_t
-CellBlock3D<ParticleCell>::index1D(
+inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::index1D(
     const std::array<index_t, 3> &index3d) const {
-  return ThreeDimensionalMapping::threeToOneD(index3d,
-                                              _cellsPerDimensionWithHalo);
+  return ThreeDimensionalMapping::threeToOneD(index3d, _cellsPerDimensionWithHalo);
 }
 
 template <class ParticleCell>
-bool CellBlock3D<ParticleCell>::checkInHalo(
-    std::array<double, 3> position) const {
-  return autopas::inBox(position, _haloBoxMin, _haloBoxMax) &&
-         autopas::notInBox(position, _boxMin, _boxMax);
+bool CellBlock3D<ParticleCell>::checkInHalo(std::array<double, 3> position) const {
+  return autopas::inBox(position, _haloBoxMin, _haloBoxMax) && autopas::notInBox(position, _boxMin, _boxMax);
 }
 } /* namespace autopas */
 

@@ -14,20 +14,15 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
   ~TraversalRaceConditionTest() override = default;
 
-  void fillWithParticles(
-      AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>
-          &autoPas,
-      std::array<size_t, 3> particlesPerDim);
+  void fillWithParticles(AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autoPas,
+                         std::array<size_t, 3> particlesPerDim);
 
   /*
    * Simple AoS only functor which repulses paritcles from each other with a
    * constant force of 1.
    */
-  class SimpleFunctor
-      : public autopas::Functor<PrintableMolecule,
-                                autopas::FullParticleCell<PrintableMolecule>> {
-    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j,
-                    bool newton3 = true) override {
+  class SimpleFunctor : public autopas::Functor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> {
+    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j, bool newton3 = true) override {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
 

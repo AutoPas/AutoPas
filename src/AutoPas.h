@@ -14,8 +14,8 @@ enum ContainerOption { directSum, linkedCells };
 /**
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
-static std::array<ContainerOption, 2> possibleContainerOptions = {
-    ContainerOption::directSum, ContainerOption::linkedCells};
+static std::array<ContainerOption, 2> possibleContainerOptions = {ContainerOption::directSum,
+                                                                  ContainerOption::linkedCells};
 
 /**
  * Possible Choices for the particle data layout.
@@ -54,24 +54,21 @@ class AutoPas {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param containerOption Type of the container.
    */
-  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax,
-            double cutoff, autopas::ContainerOption containerOption) {
+  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
+            autopas::ContainerOption containerOption) {
     switch (containerOption) {
       case autopas::directSum: {
-        container = std::unique_ptr<ContainerType>(
-            new autopas::DirectSum<Particle, ParticleCell>(boxMin, boxMax,
-                                                           cutoff));
+        container =
+            std::unique_ptr<ContainerType>(new autopas::DirectSum<Particle, ParticleCell>(boxMin, boxMax, cutoff));
         break;
       }
       case autopas::linkedCells: {
-        container = std::unique_ptr<ContainerType>(
-            new autopas::LinkedCells<Particle, ParticleCell>(boxMin, boxMax,
-                                                             cutoff));
+        container =
+            std::unique_ptr<ContainerType>(new autopas::LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff));
         break;
       }
       default: {
-        std::cerr << "AutoPas.init(): Unknown container Option! "
-                  << containerOption << std::endl;
+        std::cerr << "AutoPas.init(): Unknown container Option! " << containerOption << std::endl;
         exit(1);
       }
     }
@@ -84,8 +81,7 @@ class AutoPas {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param containerOption Type of the container.
    */
-  void init(std::array<double, 3> boxSize, double cutoff,
-            autopas::ContainerOption containerOption) {
+  void init(std::array<double, 3> boxSize, double cutoff, autopas::ContainerOption containerOption) {
     init({0, 0, 0}, boxSize, cutoff, containerOption);
   }
 
@@ -96,9 +92,7 @@ class AutoPas {
    */
   // TODO: remove this once we are convinced all necessary container functions
   // are wrapped
-  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const {
-    return container.get();
-  }
+  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return container.get(); }
 
   /**
    * Adds a particle to the container.
@@ -111,9 +105,7 @@ class AutoPas {
    * container
    * @param haloParticle particle to be added
    */
-  void addHaloParticle(Particle &haloParticle) {
-    container->addHaloParticle(haloParticle);
-  };
+  void addHaloParticle(Particle &haloParticle) { container->addHaloParticle(haloParticle); };
 
   /**
    * deletes all halo particles
@@ -126,8 +118,7 @@ class AutoPas {
    * @param f Functor that describes the pair-potential
    * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
    */
-  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f,
-                       autopas::DataLayoutOption dataLayoutOption) {
+  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f, autopas::DataLayoutOption dataLayoutOption) {
     bool newton3Allowed = f->allowsNewton3();
     bool nonNewton3Allowed = f->allowsNonNewton3();
     bool useNewton3;
@@ -154,9 +145,7 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @return iterator to the first particle
    */
-  autopas::ParticleIteratorWrapper<Particle> begin() {
-    return container->begin();
-  }
+  autopas::ParticleIteratorWrapper<Particle> begin() { return container->begin(); }
 
   /**
    * iterate over all particles in a specified region
@@ -166,8 +155,8 @@ class AutoPas {
    * @param higherCorner higher corner of the region
    * @return iterator to iterate over all particles in a specific region
    */
-  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner) {
+  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                               std::array<double, 3> higherCorner) {
     return container->getRegionIterator(lowerCorner, higherCorner);
   }
 

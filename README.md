@@ -141,7 +141,7 @@ as long as particles move not more than a skin radius.
 
 
 ## Developing AutoPas
-* We use google code style.
+* We use the google code style with minor modifications (see .clang-format)
 * code style can be build with `make clangformat`
 * requirements:
 	clang-format

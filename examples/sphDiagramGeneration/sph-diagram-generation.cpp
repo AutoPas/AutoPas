@@ -16,8 +16,7 @@ double fRand(double fMin, double fMax) {
   return fMin + f * (fMax - fMin);
 }
 
-std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin,
-                                     const std::array<double, 3> &boxMax) {
+std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
   std::array<double, 3> r{0, 0, 0};
   for (int d = 0; d < 3; ++d) {
     r[d] = fRand(boxMin[d], boxMax[d]);
@@ -26,21 +25,17 @@ std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin,
 }
 
 void addParticles(
-    autopas::LinkedCells<autopas::sph::SPHParticle,
-                         autopas::FullParticleCell<autopas::sph::SPHParticle>>
-        &sph_system,
+    autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
     int numParticles) {
   // Place SPH particles
 
   srand(42);  // fixed seedpoint
 
-  std::array<double, 3> boxMin(sph_system.getBoxMin()),
-      boxMax(sph_system.getBoxMax());
+  std::array<double, 3> boxMin(sph_system.getBoxMin()), boxMax(sph_system.getBoxMax());
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::sph::SPHParticle particle(randomPosition(boxMin, boxMax),
-                                       {0., 0., 0.}, id, 0.75, 0.012, 0.);
+    autopas::sph::SPHParticle particle(randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012, 0.);
     // autopas::sph::SPHParticle ith(randomPosition(boxMin, boxMax), {0, 0, 0},
     // i++, 0.75, 0.012, 0. );
     sph_system.addParticle(particle);
@@ -51,8 +46,7 @@ void addParticles(
   //	}
 
   for (auto part = sph_system.begin(); part.isValid(); ++part) {
-    part->setMass(part->getMass() * boxMax[0] * boxMax[1] * boxMax[2] /
-                  (double)(numParticles));
+    part->setMass(part->getMass() * boxMax[0] * boxMax[1] * boxMax[2] / (double)(numParticles));
   }
   // std::cout << "# of ptcls is... " << numParticles << std::endl;
 
@@ -65,13 +59,11 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::LinkedCells<autopas::sph::SPHParticle,
-                       autopas::FullParticleCell<autopas::sph::SPHParticle>>
-      lcCont(boxMin, boxMax, cutoff);
+  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
+      boxMin, boxMax, cutoff);
 
-  autopas::DirectSum<autopas::sph::SPHParticle,
-                     autopas::FullParticleCell<autopas::sph::SPHParticle>>
-      dirCont(boxMin, boxMax, cutoff);
+  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
+      boxMin, boxMax, cutoff);
 
   int numParticles = 16;
   int numIterations = 100000;
@@ -102,16 +94,13 @@ int main(int argc, char *argv[]) {
 template <class Container>
 void measureContainer(Container *cont, int numParticles, int numIterations) {
   autopas::sph::SPHCalcDensityFunctor func;
-  autopas::FlopCounterFunctor<
-      autopas::sph::SPHParticle,
-      autopas::FullParticleCell<autopas::sph::SPHParticle>>
+  autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
       flopFunctor(cont->getCutoff());
 
   autopas::utils::Timer t;
 
   cont->iteratePairwiseAoS2(&flopFunctor);
-  double flopsPerIteration =
-      flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
+  double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
@@ -123,8 +112,7 @@ void measureContainer(Container *cont, int numParticles, int numIterations) {
 
   double MFUPS = numParticles * numIterations / elapsedTime * 1e-6;
 
-  std::cout << numParticles << "\t" << numIterations << "\t"
-            << elapsedTime / numIterations << "\t" << MFUPS;
+  std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime / numIterations << "\t" << MFUPS;
   std::cout << "\t" << flops;
   std::cout << "\t" << flopFunctor.getHitRate();
   std::cout << "\t" << flops / elapsedTime * 1e-9 << std::endl;

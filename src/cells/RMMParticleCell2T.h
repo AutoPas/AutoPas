@@ -28,10 +28,9 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
    * Constructor of RMMParticleCell
    */
   RMMParticleCell2T() {
-    _particleSoABuffer.initArrays(
-        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-         Particle::AttributeNames::posZ, Particle::AttributeNames::forceX,
-         Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ});
+    _particleSoABuffer.initArrays({Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+                                   Particle::AttributeNames::posZ, Particle::AttributeNames::forceX,
+                                   Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ});
   }
 
   void addParticle(Particle &m) override {
@@ -47,9 +46,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle>(new Iterator(this));
   }
 
-  unsigned long numParticles() const override {
-    return _particleSoABuffer.getNumParticles();
-  }
+  unsigned long numParticles() const override { return _particleSoABuffer.getNumParticles(); }
   bool isNotEmpty() const override { return numParticles() > 0; }
 
   void clear() override { _particleSoABuffer.clear(); }
@@ -71,24 +68,18 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
  private:
   void buildParticleFromSoA(size_t i, Particle *&rmm_or_not_pointer) {
     rmm_or_not_pointer->setR(_particleSoABuffer.read<3>(
-        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-         Particle::AttributeNames::posZ},
-        i));
+        {Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ}, i));
     rmm_or_not_pointer->setF(_particleSoABuffer.read<3>(
-        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-         Particle::AttributeNames::forceZ},
-        i));
+        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ}, i));
   }
 
   void writeParticleToSoA(size_t index, Particle &particle) {
     _particleSoABuffer.write<3>(
-        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-         Particle::AttributeNames::posZ},
-        index, particle.getR());
+        {Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ}, index,
+        particle.getR());
     _particleSoABuffer.write<3>(
-        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-         Particle::AttributeNames::forceZ},
-        index, particle.getF());
+        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ}, index,
+        particle.getF());
   }
 
   template <class ParticleType>
@@ -100,8 +91,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
  * @tparam Particle
  */
 template <class Particle>
-class RMMParticleCellIterator
-    : public internal::SingleCellIteratorInterfaceImpl<Particle> {
+class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl<Particle> {
  public:
   /**
    * default constructor of SingleCellIterator
@@ -113,9 +103,7 @@ class RMMParticleCellIterator
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  RMMParticleCellIterator(
-      RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg,
-      int ind = 0)
+  RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg, int ind = 0)
       : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   //  SingleCellIterator(const SingleCellIterator &cellIterator) {
@@ -143,11 +131,9 @@ class RMMParticleCellIterator
    * @param rhs
    * @return
    */
-  bool operator==(
-      const SingleCellIteratorInterface<Particle> &rhs) const override {
+  bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const override {
     if (auto other = dynamic_cast<const RMMParticleCellIterator *>(&rhs)) {
-      return (not this->isValid() and not rhs.isValid()) or
-             (_cell == other->_cell && _index == other->_index);
+      return (not this->isValid() and not rhs.isValid()) or (_cell == other->_cell && _index == other->_index);
     } else {
       return false;
     }
@@ -159,10 +145,7 @@ class RMMParticleCellIterator
    * @param rhs
    * @return
    */
-  bool operator!=(
-      const SingleCellIteratorInterface<Particle> &rhs) const override {
-    return !(rhs == *this);
-  }
+  bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const override { return !(rhs == *this); }
 
   /**
    * increment operator to get the next particle
@@ -181,9 +164,7 @@ class RMMParticleCellIterator
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() const override {
-    return _cell != nullptr and _index < _cell->numParticles();
-  }
+  bool isValid() const override { return _cell != nullptr and _index < _cell->numParticles(); }
 
   /**
    * Get the index of the particle in the cell
@@ -216,7 +197,6 @@ class RMMParticleCellIterator
  * typedef for simpler access to RMMParticleCell
  */
 template <class Particle>
-using RMMParticleCell =
-    RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;
+using RMMParticleCell = RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;
 
 } /* namespace autopas */

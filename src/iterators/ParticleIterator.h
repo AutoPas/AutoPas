@@ -34,8 +34,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * @param behavior the IteratorBehavior that specifies which type of cells
    * shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell>* cont,
-                            CellBorderAndFlagManager* flagManager = nullptr,
+  explicit ParticleIterator(std::vector<ParticleCell>* cont, CellBorderAndFlagManager* flagManager = nullptr,
                             IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
@@ -52,8 +51,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
     }
     if (_iteratorAcrossCells < cont->end()) {
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
-      if (not isCellTypeBehaviorCorrect() or
-          not _iteratorWithinOneCell.isValid()) {
+      if (not isCellTypeBehaviorCorrect() or not _iteratorWithinOneCell.isValid()) {
         next_non_empty_cell();
       }
     }
@@ -78,9 +76,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * @copydoc ParticleIteratorInterface::operator*()
    */
-  inline Particle& operator*() const override {
-    return _iteratorWithinOneCell.operator*();
-  }
+  inline Particle& operator*() const override { return _iteratorWithinOneCell.operator*(); }
 
   /**
    * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
@@ -89,8 +85,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
     if (_iteratorWithinOneCell.isValid()) {
       _iteratorWithinOneCell.deleteCurrentParticle();
     } else {
-      utils::ExceptionHandler::exception(
-          "ParticleIterator: deleting invalid particle");
+      utils::ExceptionHandler::exception("ParticleIterator: deleting invalid particle");
     }
   }
 
@@ -99,8 +94,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * @return returns whether the iterator is valid
    */
   bool isValid() const override {
-    return _vectorOfCells != nullptr and
-           _iteratorAcrossCells < _vectorOfCells->end() and
+    return _vectorOfCells != nullptr and _iteratorAcrossCells < _vectorOfCells->end() and
            _iteratorWithinOneCell.isValid();
   }
 
@@ -115,9 +109,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   void next_non_empty_cell() {
     // find the next non-empty cell
     const int stride = 1;  // num threads
-    for (_iteratorAcrossCells += stride;
-         _iteratorAcrossCells < _vectorOfCells->end();
-         _iteratorAcrossCells += stride) {
+    for (_iteratorAcrossCells += stride; _iteratorAcrossCells < _vectorOfCells->end(); _iteratorAcrossCells += stride) {
       if (_iteratorAcrossCells->isNotEmpty() and isCellTypeBehaviorCorrect()) {
         _iteratorWithinOneCell = _iteratorAcrossCells->begin();
         break;
@@ -134,11 +126,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
       case haloAndOwned:
         return true;
       case haloOnly:
-        return _flagManager->isHaloCell(_iteratorAcrossCells -
-                                        _vectorOfCells->begin());
+        return _flagManager->isHaloCell(_iteratorAcrossCells - _vectorOfCells->begin());
       case ownedOnly:
-        return _flagManager->isOwningCell(_iteratorAcrossCells -
-                                          _vectorOfCells->begin());
+        return _flagManager->isOwningCell(_iteratorAcrossCells - _vectorOfCells->begin());
       default:
         utils::ExceptionHandler::exception("unknown iterator behavior");
         return false;

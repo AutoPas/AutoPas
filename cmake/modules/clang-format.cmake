@@ -32,7 +32,7 @@ if(CLANG_FORMAT)
         add_custom_command(
             OUTPUT ${file_cf}
             COMMAND ${CLANG_FORMAT}
-                -style=Google
+                -style=file
                 -i
                 ${_file}
             DEPENDS ${_file}
