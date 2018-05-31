@@ -65,6 +65,11 @@ class ParticleIteratorInterface {
 
 namespace internal {
 
+/**
+ * All implementations of the interface should inherit from this class. It extends the interface just by the clone
+ * method, which is needed by the Wrapper.
+ * @tparam Particle
+ */
 template <class Particle>
 class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle> {
  public:

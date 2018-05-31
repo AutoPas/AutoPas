@@ -36,6 +36,11 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
   ParticleIteratorWrapper(const ParticleIteratorWrapper& otherParticleIteratorWrapper)
       : _particleIterator(otherParticleIteratorWrapper._particleIterator->clone()) {}
 
+  /**
+   * copy assignment operator to assign contents of otherParticleIteratorWrapper to this ParticleIteratorWrapper
+   * @param otherParticleIteratorWrapper the other IteratorWrapper
+   * @return *this
+   */
   ParticleIteratorWrapper& operator=(const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
     _particleIterator = std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>(
         otherParticleIteratorWrapper._particleIterator->clone());

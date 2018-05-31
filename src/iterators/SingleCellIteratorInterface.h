@@ -35,7 +35,7 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
    * @param rhs
    * @return
    */
-  virtual bool operator==(const SingleCellIteratorInterface &rhs) const = 0;
+  virtual bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const = 0;
 
   /**
    * inequality operator
@@ -43,7 +43,7 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
    * @param rhs
    * @return
    */
-  virtual bool operator!=(const SingleCellIteratorInterface &rhs) const = 0;
+  virtual bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const = 0;
 
   /**
    * Get the index of the particle in the cell
@@ -53,6 +53,12 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
 };
 
 namespace internal {
+
+/**
+ * All implementations of the interface should inherit from this class. It extends the interface just by the clone
+ * method, which is needed by the Wrapper.
+ * @tparam Particle
+ */
 template <class Particle>
 class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Particle> {
  public:
