@@ -5,7 +5,7 @@
  *      Author: tchipevn
  */
 
- #pragma once
+#pragma once
 
 #include "iterators/SingleCellIteratorWrapper.h"
 
@@ -66,4 +66,3 @@ class ParticleCell {
 };
 
 } /* namespace autopas */
-

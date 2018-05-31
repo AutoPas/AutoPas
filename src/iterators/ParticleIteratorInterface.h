@@ -49,7 +49,9 @@ class ParticleIteratorInterface {
    * this is the member of pointer operator
    * @return current particle
    */
-  virtual inline Particle* operator->() const final { return &(this->operator*()); }
+  virtual inline Particle* operator->() const final {
+    return &(this->operator*());
+  }
 
   /**
    * Deletes the current particle
@@ -61,13 +63,13 @@ class ParticleIteratorInterface {
    * @return returns whether the iterator is valid
    */
   virtual bool isValid() const = 0;
-
 };
 
 namespace internal {
 
 template <class Particle>
-class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle> {
+class ParticleIteratorInterfaceImpl
+    : public ParticleIteratorInterface<Particle> {
  public:
   /**
    * Clones the current object, should allocate new object and return it.

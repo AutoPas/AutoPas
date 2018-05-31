@@ -8,10 +8,10 @@
 #ifndef AUTOPAS_SRC_FULLPARTICLECELL_H_
 #define AUTOPAS_SRC_FULLPARTICLECELL_H_
 
-#include "utils/SoA.h"
-#include "iterators/SingleCellIterator.h"
 #include <vector>
 #include "ParticleCell.h"
+#include "iterators/SingleCellIterator.h"
+#include "utils/SoA.h"
 
 namespace autopas {
 
@@ -38,7 +38,8 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
     return SingleCellIteratorWrapper<Particle>(
-        new internal::SingleCellIterator<Particle, FullParticleCell<Particle>>(this));
+        new internal::SingleCellIterator<Particle, FullParticleCell<Particle>>(
+            this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }

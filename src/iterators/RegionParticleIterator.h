@@ -18,7 +18,7 @@ namespace internal {
  * @tparam Particle Particle type over which the iterator iterates
  * @tparam ParticleCell Cell type over which the iterator iterates
  */
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
  public:
   /**
@@ -53,12 +53,12 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     do {
       ParticleIterator<Particle, ParticleCell>::operator++();
     } while (ParticleIterator<Particle, ParticleCell>::isValid() &&
-        !(this->operator*()).inBox(_startRegion, _endRegion));
+             !(this->operator*()).inBox(_startRegion, _endRegion));
     return *this;
   }
 
   // todo add test of clone
-  inline ParticleIteratorInterfaceImpl<Particle>* clone() const override {
+  inline ParticleIteratorInterfaceImpl<Particle> *clone() const override {
     return new RegionParticleIterator<Particle, ParticleCell>(*this);
   }
 

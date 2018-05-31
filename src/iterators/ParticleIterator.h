@@ -23,7 +23,7 @@ namespace internal {
  * container
  */
 template <class Particle, class ParticleCell>
- class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
+class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
  public:
   /**
    * Constructor of the ParticleIterator class.

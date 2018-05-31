@@ -118,8 +118,8 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
       std::array<double, 3> lowerCorner,
       std::array<double, 3> higherCorner) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner,
-                                                           higherCorner));
+        new internal::RegionParticleIterator<Particle, ParticleCell>(
+            &_data, lowerCorner, higherCorner));
   }
 
   /**

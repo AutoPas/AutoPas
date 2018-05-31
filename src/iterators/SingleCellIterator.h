@@ -18,7 +18,7 @@ namespace internal {
  * @tparam ParticleCell type of the ParticleCell
  */
 template <class Particle, class ParticleCell>
- class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
+class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
  public:
   /**
    * default constructor of SingleCellIterator
