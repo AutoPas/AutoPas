@@ -38,8 +38,15 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
   ParticleIteratorWrapper(
       const ParticleIteratorWrapper& otherParticleIteratorWrapper)
       : _particleIterator(
-            static_cast<internal::ParticleIteratorInterfaceImpl<Particle>*>(
-                otherParticleIteratorWrapper._particleIterator->clone())) {}
+            otherParticleIteratorWrapper._particleIterator->clone()) {}
+
+  ParticleIteratorWrapper& operator=(
+      const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
+    _particleIterator =
+        std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>(
+            otherParticleIteratorWrapper._particleIterator->clone());
+    return *this;
+  }
 
   inline ParticleIteratorWrapper<Particle>& operator++() override {
     _particleIterator->operator++();
