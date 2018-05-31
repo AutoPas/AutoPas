@@ -27,25 +27,26 @@ if(CLANG_FORMAT)
     set(dummyfiles)
     foreach(_file ${ALL_SOURCE_FILES})
         string(REPLACE "." "_" file_cf ${_file})
-        set(file_cf "${file_cf}_cf")
+        string(REPLACE ".." "." file_cf ${file_cf})
+        set(file_cf ".dummy/cf/${file_cf}_cf")
         add_custom_command(
-                OUTPUT ${file_cf}
-                COMMAND ${CLANG_FORMAT}
-                    -style=Google
-                    -i
-                    ${_file}
-                DEPENDS ${_file}
+            OUTPUT ${file_cf}
+            COMMAND ${CLANG_FORMAT}
+                -style=Google
+                -i
+                ${_file}
+            DEPENDS ${_file}
         )
         list(APPEND dummyfiles ${file_cf})
     endforeach()
     add_custom_command(
-            OUTPUT _clang_dummy
-            COMMAND true
-            DEPENDS ${dummyfiles}
+        OUTPUT .dummy/cf/clang_dummy
+        COMMAND true
+        DEPENDS ${dummyfiles}
     )
     add_custom_target(
-            clangformat
-            DEPENDS _clang_dummy
+        clangformat
+        DEPENDS .dummy/cf/clang_dummy
     )
 else()
     message(STATUS "clang format not found, not adding clang format target")
