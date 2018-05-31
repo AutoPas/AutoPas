@@ -227,7 +227,7 @@ pipeline{
         }
         stage("update documentation"){
             when{ branch 'master' }
-            agent{ label 'atsccs11' }
+            agent{ label 'atsccs11_prio' }
             steps{
                 unstash 'doxydocs'
                 dir("build-doxygen"){
