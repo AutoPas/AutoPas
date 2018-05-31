@@ -43,8 +43,7 @@ class SoA {
     for (int a : attributes) {
       // assert that every attribute does not already exist
       assert(arrays.find(a) == arrays.end());
-      arrays.insert(make_pair(
-          a, new std::vector<double, AlignedAllocator<double>>(length)));
+      arrays.insert(make_pair(a, new std::vector<double, AlignedAllocator<double>>(length)));
     }
   }
 
@@ -63,9 +62,7 @@ class SoA {
    * @param attribute Index of array to push to.
    * @param value Value to push.
    */
-  void push(const int attribute, const double value) {
-    arrays[attribute]->push_back(value);
-  }
+  void push(const int attribute, const double value) { arrays[attribute]->push_back(value); }
 
   /**
    * @brief Reads from all given attribute arrays at position `particleId`.
@@ -76,8 +73,7 @@ class SoA {
    * @return Array of attributes ordered by given attribute order.
    */
   template <std::size_t numAttributes>
-  std::array<double, numAttributes> read(
-      std::array<int, numAttributes> attributes, unsigned int particleId) {
+  std::array<double, numAttributes> read(std::array<int, numAttributes> attributes, unsigned int particleId) {
     std::array<double, numAttributes> retArray;
     int i = 0;
     if (particleId >= getNumParticles()) {
@@ -95,9 +91,7 @@ class SoA {
    * @param particleId Position to read from.
    * @return Attribute value.
    */
-  double read(int attribute, unsigned int particleId) {
-    return arrays[attribute]->at(particleId);
-  }
+  double read(int attribute, unsigned int particleId) { return arrays[attribute]->at(particleId); }
 
   /**
    * Returns a pointer to the given attribute vector.

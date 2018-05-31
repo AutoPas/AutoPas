@@ -31,8 +31,7 @@ class SingleCellIterator {
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  explicit SingleCellIterator(ParticleCell *cell_arg, int ind = 0)
-      : _cell(cell_arg), _index(ind), _deleted(false) {}
+  explicit SingleCellIterator(ParticleCell *cell_arg, int ind = 0) : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   /**
    * destructor of SingleCellIterator
@@ -77,8 +76,7 @@ class SingleCellIterator {
    * @return
    */
   bool operator==(const SingleCellIterator &rhs) const {
-    return (not rhs.isValid() and not this->isValid()) or
-           (_cell == rhs._cell && _index == rhs._index);
+    return (not rhs.isValid() and not this->isValid()) or (_cell == rhs._cell && _index == rhs._index);
   }
 
   /**
@@ -87,16 +85,12 @@ class SingleCellIterator {
    * @param rhs
    * @return
    */
-  bool operator!=(const SingleCellIterator &rhs) const {
-    return !(rhs == *this);
-  }
+  bool operator!=(const SingleCellIterator &rhs) const { return !(rhs == *this); }
   /**
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() const {
-    return _cell != nullptr and _index < _cell->numParticles();
-  }
+  bool isValid() const { return _cell != nullptr and _index < _cell->numParticles(); }
 
   /**
    * Get the index of the particle in the cell

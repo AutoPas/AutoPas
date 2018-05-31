@@ -34,11 +34,9 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
    * @param cellfunctor The cell functor that defines the interaction of
    * particles between two different cells.
    */
-  explicit C08BasedTraversal(std::vector<ParticleCell> &cells,
-                             const std::array<unsigned long, 3> &dims,
+  explicit C08BasedTraversal(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
                              CellFunctor *cellfunctor)
-      : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims,
-                                                      cellfunctor) {
+      : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {
     computeOffsets();
   }
 
@@ -65,8 +63,7 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
 };
 
 template <class ParticleCell, class CellFunctor>
-inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(
-    unsigned long baseIndex) const {
+inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(unsigned long baseIndex) const {
   using std::pair;
 
   const int num_pairs = _cellPairOffsets.size();
@@ -95,12 +92,9 @@ inline void C08BasedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
   using std::make_pair;
   using ThreeDimensionalMapping::threeToOneD;
 
-  unsigned long o =
-      threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);  // origin
-  unsigned long x = threeToOneD(
-      1ul, 0ul, 0ul, this->_cellsPerDimension);  // displacement to the right
-  unsigned long y =
-      threeToOneD(0ul, 1ul, 0ul, this->_cellsPerDimension);  // displacement ...
+  unsigned long o = threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);  // origin
+  unsigned long x = threeToOneD(1ul, 0ul, 0ul, this->_cellsPerDimension);  // displacement to the right
+  unsigned long y = threeToOneD(0ul, 1ul, 0ul, this->_cellsPerDimension);  // displacement ...
   unsigned long z = threeToOneD(0ul, 0ul, 1ul, this->_cellsPerDimension);
   unsigned long xy = threeToOneD(1ul, 1ul, 0ul, this->_cellsPerDimension);
   unsigned long yz = threeToOneD(0ul, 1ul, 1ul, this->_cellsPerDimension);

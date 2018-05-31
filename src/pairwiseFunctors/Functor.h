@@ -55,9 +55,7 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA &soa, bool newton3 = true) {
-    utils::ExceptionHandler::exception("not yet implemented");
-  }
+  virtual void SoAFunctor(SoA &soa, bool newton3 = true) { utils::ExceptionHandler::exception("not yet implemented"); }
 
   /**
    * @brief Functor for structure of arrays (SoA) for neighbor lists
@@ -78,11 +76,8 @@ class Functor {
    * least iFrom and less than soa.size())
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(
-      SoA &soa,
-      const std::vector<std::vector<size_t, AlignedAllocator<size_t>>>
-          &neighborList,
-      size_t iFrom, size_t iTo, bool newton3 = true) {
+  virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t, AlignedAllocator<size_t>>> &neighborList,
+                          size_t iFrom, size_t iTo, bool newton3 = true) {
     utils::ExceptionHandler::exception("not yet implemented");
   }
 

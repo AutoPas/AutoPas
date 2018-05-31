@@ -18,26 +18,22 @@ template <class Particle, class ParticleCell>
 class VerletListHelpers {
  public:
   /// AOS verlet list storage
-  typedef std::unordered_map<Particle *, std::vector<Particle *>>
-      AoS_verletlist_storage_type;
+  typedef std::unordered_map<Particle *, std::vector<Particle *>> AoS_verletlist_storage_type;
 
   /**
    * This functor can generate verlet lists using the typical pairwise
    * traversal.
    * @todo: SoA?
    */
-  class VerletListGeneratorFunctor
-      : public autopas::Functor<Particle, ParticleCell> {
+  class VerletListGeneratorFunctor : public autopas::Functor<Particle, ParticleCell> {
    public:
     /**
      * Constructor
      * @param verletListsAoS
      * @param cutoffskinsquared
      */
-    VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS,
-                               double cutoffskinsquared)
-        : _verletListsAoS(verletListsAoS),
-          _cutoffskinsquared(cutoffskinsquared) {}
+    VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskinsquared)
+        : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskinsquared) {}
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
       auto dist = arrayMath::sub(i.getR(), j.getR());
@@ -65,27 +61,22 @@ class VerletListHelpers {
    * and neighborlistsAreValid()  will return false.
    * @todo: SoA?
    */
-  class VerletListValidityCheckerFunctor
-      : public autopas::Functor<Particle, ParticleCell> {
+  class VerletListValidityCheckerFunctor : public autopas::Functor<Particle, ParticleCell> {
    public:
     /**
      * Constructor
      * @param verletListsAoS
      * @param cutoffsquared
      */
-    VerletListValidityCheckerFunctor(
-        AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
-        : _verletListsAoS(verletListsAoS),
-          _cutoffsquared(cutoffsquared),
-          _valid(true) {}
+    VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
+        : _verletListsAoS(verletListsAoS), _cutoffsquared(cutoffsquared), _valid(true) {}
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
       auto dist = arrayMath::sub(i.getR(), j.getR());
       double distsquare = arrayMath::dot(dist, dist);
       if (distsquare < _cutoffsquared) {
         // this is thread safe, we have variables on the stack
-        auto found = std::find(_verletListsAoS[&i].begin(),
-                               _verletListsAoS[&i].end(), &j);
+        auto found = std::find(_verletListsAoS[&i].begin(), _verletListsAoS[&i].end(), &j);
         if (found == _verletListsAoS[&i].end()) {
           // this is thread safe, as _valid is atomic
           _valid = false;

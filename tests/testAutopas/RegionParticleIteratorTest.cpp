@@ -10,16 +10,13 @@
 using namespace autopas;
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>>
-      lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(lcContainer,
-                                     TouchableParticle({0., 0., 0.}, 0));
+  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));
 
   // touch them using the regionIterator
-  for (auto iterator = lcContainer.getRegionIterator(_regionMin, _regionMax);
-       iterator.isValid(); ++iterator) {
+  for (auto iterator = lcContainer.getRegionIterator(_regionMin, _regionMax); iterator.isValid(); ++iterator) {
     iterator->touch();
   }
 
@@ -30,21 +27,18 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(_regionMin, _regionMax) ? 1 : 0,
-              iterator->getNumTouched());
+    ASSERT_EQ(iterator->inBox(_regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
   }
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>>
-      lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add no particles
 
   int i = 0;
   // touch them using the regionIterator
-  for (auto iterator = lcContainer.getRegionIterator(_regionMin, _regionMax);
-       iterator.isValid(); ++iterator) {
+  for (auto iterator = lcContainer.getRegionIterator(_regionMin, _regionMax); iterator.isValid(); ++iterator) {
     iterator->touch();
     i++;
   }
@@ -56,8 +50,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(_regionMin, _regionMax) ? 1 : 0,
-              iterator->getNumTouched());
+    ASSERT_EQ(iterator->inBox(_regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
     i++;
   }
   ASSERT_EQ(i, 0);

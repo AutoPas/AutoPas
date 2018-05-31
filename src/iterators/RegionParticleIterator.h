@@ -27,12 +27,9 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
    * @param startRegion lower corner of the region to iterate over
    * @param endRegion top corner of the region to iterate over
    */
-  explicit RegionParticleIterator(std::vector<ParticleCell>* cont,
-                                  std::array<double, 3> startRegion,
+  explicit RegionParticleIterator(std::vector<ParticleCell>* cont, std::array<double, 3> startRegion,
                                   std::array<double, 3> endRegion)
-      : ParticleIterator<Particle, ParticleCell>(cont),
-        _startRegion(startRegion),
-        _endRegion(endRegion) {
+      : ParticleIterator<Particle, ParticleCell>(cont), _startRegion(startRegion), _endRegion(endRegion) {
     // ParticleIterator's constructor will initialize the Iterator, such that it
     // points to the first particle if one is found, otherwise the pointer is
     // not valid

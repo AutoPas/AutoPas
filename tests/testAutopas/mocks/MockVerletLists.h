@@ -19,11 +19,9 @@
 template <typename Particle, typename ParticleCell>
 class MockVerletLists : public autopas::VerletLists<Particle, ParticleCell> {
  public:
-  MockVerletLists(const std::array<double, 3> boxMin,
-                  const std::array<double, 3> boxMax, double cutoff,
-                  double skin, unsigned int rebuildFrequency = 1)
-      : autopas::VerletLists<Particle, ParticleCell>(boxMin, boxMax, cutoff,
-                                                     skin, rebuildFrequency) {}
+  MockVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
+                  unsigned int rebuildFrequency = 1)
+      : autopas::VerletLists<Particle, ParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency) {}
   // MOCK_METHOD2_T(iteratePairwiseAoS, void(Functor, bool));  // we are not
   // allowed to mock this! We also don't want to! as this is exactly the
   // function we want to test
@@ -36,15 +34,9 @@ class MockVerletLists : public autopas::VerletLists<Particle, ParticleCell> {
  protected:
   MOCK_METHOD1(updateVerletListsAoS, void(bool));
 
-  void addParticleVerletLists(Particle& p) {
-    autopas::VerletLists<Particle, ParticleCell>::addParticle(p);
-  }
-  void addHaloParticleVerletLists(Particle& p) {
-    autopas::VerletLists<Particle, ParticleCell>::addHaloParticle(p);
-  }
-  void updateContainerVerletLists() {
-    autopas::VerletLists<Particle, ParticleCell>::updateContainer();
-  }
+  void addParticleVerletLists(Particle& p) { autopas::VerletLists<Particle, ParticleCell>::addParticle(p); }
+  void addHaloParticleVerletLists(Particle& p) { autopas::VerletLists<Particle, ParticleCell>::addHaloParticle(p); }
+  void updateContainerVerletLists() { autopas::VerletLists<Particle, ParticleCell>::updateContainer(); }
 
   friend class VerletListsTest_testRebuildFrequencyAlways_Test;
   friend class VerletListsTest_testRebuildFrequencyEvery3_Test;

@@ -15,8 +15,7 @@ class MyMolecule : public Particle {
  public:
   MyMolecule() : Particle(), _myvar(0) {}
 
-  MyMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i,
-             int myvar)
+  MyMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i, int myvar)
       : Particle(r, v, i), _myvar(myvar) {}
 
   void print() {
@@ -51,8 +50,7 @@ void addAFewParticles(ParticleCell &pc) {
   static int i = 0;
   int iEnd = i + 4;
   for (; i < iEnd; ++i) {
-    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i),
-                               static_cast<double>(i)});
+    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
     MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
     pc.addParticle(m);
   }
@@ -65,11 +63,9 @@ int main() {
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
   double cutoff = 1.0;
 
-  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax,
-                                                           cutoff);
+  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
   //	VerletLists<MyMolecule, FullParticleCell<MyMolecule>> vl;
-  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax,
-                                                          cutoff);
+  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
 
   cout << "Hodor" << endl;
   return EXIT_SUCCESS;
@@ -80,21 +76,18 @@ void testParticleContainerFull() {
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
   double cutoff = 1.0;
 
-  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> pc(boxMin, boxMax,
-                                                           cutoff);
+  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> pc(boxMin, boxMax, cutoff);
   // pc.init();  // empty full empty full empty
 
   // add a few particles to the second cell
   for (int i = 0; i < 4; ++i) {
-    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i),
-                               static_cast<double>(i)});
+    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
     MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
     pc.addParticle(m);
   }
   // add a few particles to the fourth cell
   for (int i = 4; i < 8; ++i) {
-    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i),
-                               static_cast<double>(i)});
+    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
     MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
     pc.addParticle(m);
   }
@@ -103,29 +96,25 @@ void testParticleContainerFull() {
     pi->print();
   }
 
-  cout << " =========== done testing ParticleContainerFull ============"
-       << endl;
+  cout << " =========== done testing ParticleContainerFull ============" << endl;
 }
 
 void testParticleContainerRMM() {
   cout << " =========== testing ParticleContainerRMM ============" << endl;
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
   double cutoff = 1.0;
-  LinkedCells<MyMolecule, RMMParticleCell<MyMolecule>> pc(boxMin, boxMax,
-                                                          cutoff);
+  LinkedCells<MyMolecule, RMMParticleCell<MyMolecule>> pc(boxMin, boxMax, cutoff);
   // pc.init();  // empty full empty full empty
 
   // add a few particles to the second cell
   for (int i = 0; i < 4; ++i) {
-    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i),
-                               static_cast<double>(i)});
+    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
     MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
     pc.addParticle(m);
   }
   // add a few particles to the fourth cell
   for (int i = 4; i < 8; ++i) {
-    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i),
-                               static_cast<double>(i)});
+    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
     MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
     pc.addParticle(m);
   }

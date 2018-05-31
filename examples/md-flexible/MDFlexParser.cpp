@@ -15,8 +15,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   int numOptions = sizeof(long_options) / sizeof(long_options[0]) * 2 + 1;
   if (argc == numOptions) {
     string strArg;
-    while ((option = getopt_long(argc, argv, "", long_options,
-                                 &option_index)) != -1) {
+    while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
       strArg = optarg;
       transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
       switch (option) {
@@ -60,14 +59,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           break;
         }
         case 'f': {
-          if (strArg.find("lj") != string::npos ||
-              strArg.find("lennard-jones") != string::npos) {
+          if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
             cout << "Using Lennard-Jones (12-6) Functor" << endl;
             functorOption = lj12_6;
           } else {
             cerr << "Unknown functor : " << strArg << endl;
-            cerr << "Please use 'Lennard-Jones', you have no options here :P"
-                 << endl;
+            cerr << "Please use 'Lennard-Jones', you have no options here :P" << endl;
             displayHelp = true;
           }
           break;
@@ -87,13 +84,11 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           try {
             particlesPerDim = stoul(strArg);
           } catch (const exception &) {
-            cerr << "Error parsing number of particles per dimension: "
-                 << optarg << endl;
+            cerr << "Error parsing number of particles per dimension: " << optarg << endl;
             displayHelp = true;
             break;
           }
-          cout << "Simulating " << particlesPerDim
-               << " particles per dimension." << endl;
+          cout << "Simulating " << particlesPerDim << " particles per dimension." << endl;
           break;
         }
         case 's': {
@@ -104,8 +99,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
             break;
           }
-          cout << "Particles are separated by " << particleSpacing << " [?]"
-               << endl;
+          cout << "Particles are separated by " << particleSpacing << " [?]" << endl;
           break;
         }
         default: {
@@ -131,16 +125,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
-autopas::ContainerOption MDFlexParser::getContainerOption() const {
-  return containerOption;
-}
+autopas::ContainerOption MDFlexParser::getContainerOption() const { return containerOption; }
 double MDFlexParser::getCutoff() const { return cutoff; }
-autopas::DataLayoutOption MDFlexParser::getDataLayoutOption() const {
-  return dataLayoutOption;
-}
-MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const {
-  return functorOption;
-}
+autopas::DataLayoutOption MDFlexParser::getDataLayoutOption() const { return dataLayoutOption; }
+MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const { return functorOption; }
 
 size_t MDFlexParser::getIterations() const { return iterations; }
 

@@ -34,8 +34,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param boxMax
    * @param cutoff
    */
-  DirectSum(const std::array<double, 3> boxMin,
-            const std::array<double, 3> boxMax, double cutoff)
+  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff) {
     this->_data.resize(2);
   }
@@ -45,8 +44,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (inBox) {
       getCell()->addParticle(p);
     } else {
-      utils::ExceptionHandler::exception(
-          "DirectSum: trying to add particle that is not in the bounding box");
+      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box");
     }
   }
 
@@ -63,8 +61,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { getHaloCell()->clear(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f,
-                          bool useNewton3 = true) override {
+  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
     //		CellFunctor<Particle, ParticleCell,LJFunctor<Particle>>
     // cellFunctor(f);
     //		cellFunctor.processCellAoSN3(*getCell());
@@ -94,20 +91,17 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
     if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>
-          cellFunctor(f);
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
       cellFunctor.processCell(*getCell());
       cellFunctor.processCellPair(*getCell(), *getHaloCell());
     } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>
-          cellFunctor(f);
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
       cellFunctor.processCell(*getCell());
       cellFunctor.processCellPair(*getCell(), *getHaloCell());
     }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f,
-                          bool useNewton3 = true) override {
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
     iteratePairwiseSoA2(f, useNewton3);
   }
 
@@ -124,13 +118,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 
     if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>
-          cellFunctor(f);
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
       cellFunctor.processCell(*getCell());
       cellFunctor.processCellPair(*getCell(), *getHaloCell());
     } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>
-          cellFunctor(f);
+      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
       cellFunctor.processCell(*getCell());
       cellFunctor.processCellPair(*getCell(), *getHaloCell());
     }
@@ -152,10 +144,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return false;
   }
 
-  ParticleIterator<Particle, ParticleCell> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIterator<Particle, ParticleCell>(
-        &this->_data, &_cellBorderFlagManager, behavior);
+  ParticleIterator<Particle, ParticleCell> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBorderFlagManager, behavior);
   }
 
  private:
@@ -168,9 +158,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    public:
     bool isHaloCell(index_t index1d) const override { return index1d == 1; }
 
-    bool isOwningCell(index_t index1d) const override {
-      return not isHaloCell(index1d);
-    }
+    bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
   } _cellBorderFlagManager;
 
   ParticleCell *getCell() { return &(this->_data.at(0)); };

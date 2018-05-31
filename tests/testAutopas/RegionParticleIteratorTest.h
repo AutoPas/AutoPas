@@ -24,11 +24,7 @@ class TouchableParticle : public autopas::Particle {
 class RegionParticleIteratorTest : public AutoPasTestBase {
  public:
   RegionParticleIteratorTest()
-      : _boxMin{0., 0., 0.},
-        _boxMax{5., 5., 5.},
-        _regionMin{1., 1., 1.},
-        _regionMax{3., 3., 3.},
-        _cutoff{.9} {}
+      : _boxMin{0., 0., 0.}, _boxMax{5., 5., 5.}, _regionMin{1., 1., 1.}, _regionMax{3., 3., 3.}, _cutoff{.9} {}
 
   void SetUp() override{};
 

@@ -51,12 +51,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   void SoAFunctor(SoA &soa, bool newton3 = true) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr =
-        soa.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y1ptr =
-        soa.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z1ptr =
-        soa.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x1ptr = soa.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y1ptr = soa.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z1ptr = soa.begin(Particle::AttributeNames::posZ);
 
     double *const __restrict__ id1ptr = soa.begin(Particle::AttributeNames::id);
 
@@ -139,10 +136,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
    * of kernel calls compared to the number of distance calculations
    * @return the hit rate
    */
-  double getHitRate() {
-    return static_cast<double>(_kernelCalls) /
-           static_cast<double>(_distanceCalculations);
-  }
+  double getHitRate() { return static_cast<double>(_kernelCalls) / static_cast<double>(_distanceCalculations); }
 
   /**
    * get the total number of flops
@@ -152,10 +146,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   double getFlops(unsigned long numFlopsPerKernelCall) const {
     // 3 sub + 3 square + 2 add
     const double numFlopsPerDistanceCalculation = 8;
-    const double distFlops = numFlopsPerDistanceCalculation *
-                             static_cast<double>(_distanceCalculations);
-    const double kernFlops =
-        numFlopsPerKernelCall * static_cast<double>(_kernelCalls);
+    const double distFlops = numFlopsPerDistanceCalculation * static_cast<double>(_distanceCalculations);
+    const double kernFlops = numFlopsPerKernelCall * static_cast<double>(_kernelCalls);
     return distFlops + kernFlops;
   }
 
@@ -163,9 +155,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
    * get the number of calculated distance operations
    * @return
    */
-  unsigned long getDistanceCalculations() const {
-    return _distanceCalculations;
-  }
+  unsigned long getDistanceCalculations() const { return _distanceCalculations; }
 
   /**
    * get the number of kernel calls, i.e. the number of pairs of particles with

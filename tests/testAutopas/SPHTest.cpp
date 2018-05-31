@@ -17,8 +17,7 @@ TEST_F(SPHTest, testW) {
 }
 
 TEST_F(SPHTest, testGradW) {
-  std::array<double, 3> value =
-      autopas::sph::SPHKernels::gradW({1., 1., 1.}, 1.);
+  std::array<double, 3> value = autopas::sph::SPHKernels::gradW({1., 1., 1.}, 1.);
   std::array<double, 3> should_be_value = {-0.0213086, -0.0213086, -0.0213086};
   for (int i = 0; i < 3; i++) {
     EXPECT_NEAR(value[i], should_be_value[i], 1e-7);
@@ -32,10 +31,8 @@ TEST_F(SPHTest, testGradW) {
 }
 
 TEST_F(SPHTest, testSPHCalcDensityFunctor) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
-                                         0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5,
-                                         1.3, 0.8);
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   densityFunctor.AoSFunctor(sphParticle1, sphParticle2);
@@ -46,10 +43,8 @@ TEST_F(SPHTest, testSPHCalcDensityFunctor) {
 }
 
 TEST_F(SPHTest, testSPHCalcPressure) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
-                                         0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5,
-                                         1.3, 0.8);
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   // simulate density functor call:
   sphParticle1.addDensity(0.559026);
@@ -68,10 +63,8 @@ TEST_F(SPHTest, testSPHCalcPressure) {
 }
 
 TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
-                                         0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5,
-                                         1.3, 0.8);
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   // simulate density functor call:
   sphParticle1.addDensity(0.559026);
@@ -105,10 +98,8 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
 }
 
 TEST_F(SPHTest, testSPHCalcDensityFunctorNewton3OnOff) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
-                                         0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5,
-                                         1.3, 0.8);
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   densityFunctor.AoSFunctor(sphParticle1, sphParticle2);
@@ -124,10 +115,8 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorNewton3OnOff) {
 }
 
 TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
-                                         0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5,
-                                         1.3, 0.8);
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   // simulate density functor call:
   sphParticle1.addDensity(0.559026);
@@ -153,12 +142,9 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   // particle 3:
   hydroForceFunctor.AoSFunctor(sphParticle3, sphParticle4, false);
 
-  EXPECT_NEAR(sphParticle3.getAcceleration().at(0),
-              sphParticle1.getAcceleration().at(0), 1e-10);
-  EXPECT_NEAR(sphParticle3.getAcceleration().at(1),
-              sphParticle1.getAcceleration().at(1), 1e-10);
-  EXPECT_NEAR(sphParticle3.getAcceleration().at(2),
-              sphParticle1.getAcceleration().at(2), 1e-10);
+  EXPECT_NEAR(sphParticle3.getAcceleration().at(0), sphParticle1.getAcceleration().at(0), 1e-10);
+  EXPECT_NEAR(sphParticle3.getAcceleration().at(1), sphParticle1.getAcceleration().at(1), 1e-10);
+  EXPECT_NEAR(sphParticle3.getAcceleration().at(2), sphParticle1.getAcceleration().at(2), 1e-10);
   EXPECT_NEAR(sphParticle3.getEngDot(), sphParticle1.getEngDot(), 1e-10);
   sphParticle1.calcDt();
   sphParticle3.calcDt();
@@ -173,12 +159,9 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   // particle 4:
   hydroForceFunctor.AoSFunctor(sphParticle4, sphParticle3, false);
 
-  EXPECT_NEAR(sphParticle4.getAcceleration().at(0),
-              sphParticle2.getAcceleration().at(0), 1e-10);
-  EXPECT_NEAR(sphParticle4.getAcceleration().at(1),
-              sphParticle2.getAcceleration().at(1), 1e-10);
-  EXPECT_NEAR(sphParticle4.getAcceleration().at(2),
-              sphParticle2.getAcceleration().at(2), 1e-10);
+  EXPECT_NEAR(sphParticle4.getAcceleration().at(0), sphParticle2.getAcceleration().at(0), 1e-10);
+  EXPECT_NEAR(sphParticle4.getAcceleration().at(1), sphParticle2.getAcceleration().at(1), 1e-10);
+  EXPECT_NEAR(sphParticle4.getAcceleration().at(2), sphParticle2.getAcceleration().at(2), 1e-10);
   EXPECT_NEAR(sphParticle4.getEngDot(), sphParticle2.getEngDot(), 1e-10);
 
   sphParticle2.calcDt();

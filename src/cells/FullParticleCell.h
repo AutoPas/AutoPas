@@ -19,9 +19,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class FullParticleCell
-    : public ParticleCell<
-          Particle, SingleCellIterator<Particle, FullParticleCell<Particle>>> {
+class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Particle, FullParticleCell<Particle>>> {
  public:
   FullParticleCell() {
     _particleSoABuffer.initArrays({
@@ -37,8 +35,7 @@ class FullParticleCell
 
   void addParticle(Particle &m) override { _particles.push_back(m); }
 
-  virtual SingleCellIterator<Particle, FullParticleCell<Particle>> begin()
-      override {
+  virtual SingleCellIterator<Particle, FullParticleCell<Particle>> begin() override {
     return SingleCellIterator<Particle, FullParticleCell<Particle>>(this);
   }
 

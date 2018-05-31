@@ -7,13 +7,9 @@
 
 using namespace autopas::sph;
 
-void SPHParticle::addAcceleration(const std::array<double, 3> &acc) {
-  _acc = arrayMath::add(_acc, acc);
-}
+void SPHParticle::addAcceleration(const std::array<double, 3> &acc) { _acc = arrayMath::add(_acc, acc); }
 
-void SPHParticle::subAcceleration(const std::array<double, 3> &acc) {
-  _acc = arrayMath::sub(_acc, acc);
-}
+void SPHParticle::subAcceleration(const std::array<double, 3> &acc) { _acc = arrayMath::sub(_acc, acc); }
 
 void SPHParticle::calcPressure() {
   const double hcr = 1.4;

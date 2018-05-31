@@ -40,8 +40,7 @@ class SPHParticle : public autopas::Particle {
    * @param v velocity of the particle
    * @param id id of the particle. This id should be unique
    */
-  SPHParticle(std::array<double, 3> r, std::array<double, 3> v,
-              unsigned long id)
+  SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
       : autopas::Particle(r, v, id),
         _density(0.),
         _pressure(0.),
@@ -66,8 +65,7 @@ class SPHParticle : public autopas::Particle {
    * @param smth smoothing length of the particle
    * @param snds speed of sound (SouND Speed)
    */
-  SPHParticle(std::array<double, 3> r, std::array<double, 3> v,
-              unsigned long id, double mass, double smth, double snds)
+  SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id, double mass, double smth, double snds)
       : autopas::Particle(r, v, id),
         _density(0.),
         _pressure(0.),
@@ -171,9 +169,7 @@ class SPHParticle : public autopas::Particle {
    * and updates the local one if it is.
    * @param v_sig given signal velocity
    */
-  void checkAndSetVSigMax(double v_sig) {
-    _v_sig_max = std::max(v_sig, _v_sig_max);
-  }
+  void checkAndSetVSigMax(double v_sig) { _v_sig_max = std::max(v_sig, _v_sig_max); }
 
   /**
    * Setter for the maximally allowed signal velocity
@@ -275,9 +271,7 @@ class SPHParticle : public autopas::Particle {
    * Setter for velocity at half-time step (leapfrog)
    * @param vel_half
    */
-  void setVel_half(std::array<double, 3> vel_half) {
-    SPHParticle::_vel_half = vel_half;
-  }
+  void setVel_half(std::array<double, 3> vel_half) { SPHParticle::_vel_half = vel_half; }
 
   /**
    * Getter for energy at half-time step (leapfrog)
@@ -336,11 +330,9 @@ class SPHParticle : public autopas::Particle {
    * @return
    */
   static SPHParticle deserialize(double *stream, size_t &index) {
-    std::array<double, 3> r = {stream[index], stream[index + 1],
-                               stream[index + 2]};
+    std::array<double, 3> r = {stream[index], stream[index + 1], stream[index + 2]};
     index += 3;
-    std::array<double, 3> v = {stream[index], stream[index + 1],
-                               stream[index + 2]};
+    std::array<double, 3> v = {stream[index], stream[index + 1], stream[index + 2]};
     index += 3;
     // std::array<double,3> F = {stream[index], stream[index+1],
     // stream[index+2]};  // not needed
@@ -354,14 +346,12 @@ class SPHParticle : public autopas::Particle {
     double smth = stream[index++];
     double snds = stream[index++];
 
-    std::array<double, 3> ac = {stream[index], stream[index + 1],
-                                stream[index + 2]};
+    std::array<double, 3> ac = {stream[index], stream[index + 1], stream[index + 2]};
     index += 3;
     double energy_dot = stream[index++];
     double energy = stream[index++];
     // double dt = stream[index++];  // not needed
-    std::array<double, 3> vel_half = {stream[index], stream[index + 1],
-                                      stream[index + 2]};
+    std::array<double, 3> vel_half = {stream[index], stream[index + 1], stream[index + 2]};
     index += 3;
     double eng_half = stream[index++];
 

@@ -26,10 +26,6 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
  protected:
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  autopas::VerletLists<autopas::MoleculeLJ,
-                       autopas::FullParticleCell<autopas::MoleculeLJ>>
-      _verletLists;
-  autopas::LinkedCells<autopas::MoleculeLJ,
-                       autopas::FullParticleCell<autopas::MoleculeLJ>>
-      _linkedCells;
+  autopas::VerletLists<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _verletLists;
+  autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
 };

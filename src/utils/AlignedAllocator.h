@@ -70,9 +70,7 @@ class AlignedAllocator {
    * \brief Returns maximum possible value of n, with which we can call
    * allocate(n)
    */
-  size_t max_size() const noexcept {
-    return (std::numeric_limits<size_t>::max() - size_t(Alignment)) / sizeof(T);
-  }
+  size_t max_size() const noexcept { return (std::numeric_limits<size_t>::max() - size_t(Alignment)) / sizeof(T); }
 
   /**
    * \brief Allocate aligned memory for n objects of type T
@@ -127,14 +125,12 @@ class AlignedAllocator {
 };
 
 template <typename T, size_t TAlignment, typename U, size_t UAlignment>
-inline bool operator==(const AlignedAllocator<T, TAlignment> &,
-                       const AlignedAllocator<U, UAlignment> &) {
+inline bool operator==(const AlignedAllocator<T, TAlignment> &, const AlignedAllocator<U, UAlignment> &) {
   return TAlignment == UAlignment;
 }
 
 template <typename T, size_t TAlignment, typename U, size_t UAlignment>
-inline bool operator!=(const AlignedAllocator<T, TAlignment> &a,
-                       const AlignedAllocator<U, UAlignment> &b) {
+inline bool operator!=(const AlignedAllocator<T, TAlignment> &a, const AlignedAllocator<U, UAlignment> &b) {
   return !(a == b);
 }
 

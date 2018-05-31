@@ -25,8 +25,7 @@ class LoggerTest : public AutoPasTestBase {
 
 class ScopedRedirect {
  public:
-  ScopedRedirect(std::ostream& inOriginal, std::ostream& inRedirect)
-      : mOriginal(inOriginal), mRedirect(inRedirect) {
+  ScopedRedirect(std::ostream& inOriginal, std::ostream& inRedirect) : mOriginal(inOriginal), mRedirect(inRedirect) {
     mOriginal.rdbuf(mRedirect.rdbuf(mOriginal.rdbuf()));
   }
 

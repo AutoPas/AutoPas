@@ -52,12 +52,9 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
     double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
 
-    double *const __restrict__ fxptr =
-        soa.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fyptr =
-        soa.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fzptr =
-        soa.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fxptr = soa.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr = soa.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr = soa.begin(Particle::AttributeNames::forceZ);
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       double fxacc = 0;
@@ -111,36 +108,22 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr =
-        soa1.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y1ptr =
-        soa1.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z1ptr =
-        soa1.begin(Particle::AttributeNames::posZ);
-    double *const __restrict__ x2ptr =
-        soa2.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y2ptr =
-        soa2.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z2ptr =
-        soa2.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x1ptr = soa1.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y1ptr = soa1.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z1ptr = soa1.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x2ptr = soa2.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y2ptr = soa2.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z2ptr = soa2.begin(Particle::AttributeNames::posZ);
 
-    double *const __restrict__ fx1ptr =
-        soa1.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fy1ptr =
-        soa1.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fz1ptr =
-        soa1.begin(Particle::AttributeNames::forceZ);
-    double *const __restrict__ fx2ptr =
-        soa2.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fy2ptr =
-        soa2.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fz2ptr =
-        soa2.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fx1ptr = soa1.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fy1ptr = soa1.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fz1ptr = soa1.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fx2ptr = soa2.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fy2ptr = soa2.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fz2ptr = soa2.begin(Particle::AttributeNames::forceZ);
 
-    double *const __restrict__ id1ptr =
-        soa1.begin(Particle::AttributeNames::id);
-    double *const __restrict__ id2ptr =
-        soa2.begin(Particle::AttributeNames::id);
+    double *const __restrict__ id1ptr = soa1.begin(Particle::AttributeNames::id);
+    double *const __restrict__ id2ptr = soa2.begin(Particle::AttributeNames::id);
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
@@ -197,14 +180,10 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
    */
   // clang-format on
-  virtual void SoAFunctor(
-      SoA &soa,
-      const std::vector<std::vector<size_t, AlignedAllocator<size_t>>>
-          &neighborList,
-      size_t iFrom, size_t iTo, bool newton3 = true) override {
+  virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t, AlignedAllocator<size_t>>> &neighborList,
+                          size_t iFrom, size_t iTo, bool newton3 = true) override {
     auto numParts = soa.getNumParticles();
-    AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}",
-                         soa.getNumParticles());
+    AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
 
     if (numParts == 0) return;
 
@@ -212,12 +191,9 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
     double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
 
-    double *const __restrict__ fxptr =
-        soa.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fyptr =
-        soa.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fzptr =
-        soa.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fxptr = soa.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr = soa.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr = soa.begin(Particle::AttributeNames::forceZ);
 
     for (unsigned int i = iFrom; i < iTo; ++i) {
       double fxacc = 0;
@@ -245,8 +221,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
       // if the size of the verlet list is larger than the given size vecsize,
       // we will use a vectorized version.
       if (listSizeI >= vecsize) {
-        alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr,
-            zArr, fxArr, fyArr, fzArr;
+        alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
         // broadcast of the position of particle i
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
           xtmp[tmpj] = xptr[i];
@@ -367,12 +342,9 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
     double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
     double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
-    double *const __restrict__ fxptr =
-        soa.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fyptr =
-        soa.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fzptr =
-        soa.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fxptr = soa.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr = soa.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr = soa.begin(Particle::AttributeNames::forceZ);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
@@ -396,12 +368,9 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double *const __restrict__ idptr = soa.begin(Particle::AttributeNames::id);
 #endif
 
-    double *const __restrict__ fxptr =
-        soa.begin(Particle::AttributeNames::forceX);
-    double *const __restrict__ fyptr =
-        soa.begin(Particle::AttributeNames::forceY);
-    double *const __restrict__ fzptr =
-        soa.begin(Particle::AttributeNames::forceZ);
+    double *const __restrict__ fxptr = soa.begin(Particle::AttributeNames::forceX);
+    double *const __restrict__ fyptr = soa.begin(Particle::AttributeNames::forceY);
+    double *const __restrict__ fzptr = soa.begin(Particle::AttributeNames::forceZ);
 
     for (unsigned int i = offset; cellIter.isValid(); ++i, ++cellIter) {
       assert(idptr[i] == cellIter->getID());
@@ -416,8 +385,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
    * @param sigma
    * @param shift
    */
-  static void setGlobals(double cutoff, double epsilon, double sigma,
-                         double shift) {
+  static void setGlobals(double cutoff, double epsilon, double sigma, double shift) {
     CUTOFFSQUARE = cutoff * cutoff;
     EPSILON24 = epsilon * 24.0;
     SIGMASQUARE = sigma * sigma;

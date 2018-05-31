@@ -9,18 +9,14 @@
 #include <cstdlib>
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
-    : _directSum(getBoxMin(), getBoxMax(), getCutoff()),
-      _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {
+    : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {
   double eps = 1.0;
   double sig = 1.0;
   double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<
-      autopas::MoleculeLJ,
-      autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(getCutoff(),
-                                                                  eps, sig,
-                                                                  shift);
+  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(getCutoff(), eps,
+                                                                                                      sig, shift);
 }
 
 double LinkedCellsVersusDirectSumTest::fRand(double fMin, double fMax) const {
@@ -28,9 +24,8 @@ double LinkedCellsVersusDirectSumTest::fRand(double fMin, double fMax) const {
   return fMin + f * (fMax - fMin);
 }
 
-std::array<double, 3> LinkedCellsVersusDirectSumTest::randomPosition(
-    const std::array<double, 3> &boxMin,
-    const std::array<double, 3> &boxMax) const {
+std::array<double, 3> LinkedCellsVersusDirectSumTest::randomPosition(const std::array<double, 3> &boxMin,
+                                                                     const std::array<double, 3> &boxMax) const {
   std::array<double, 3> r{};
   for (int d = 0; d < 3; ++d) {
     r[d] = fRand(boxMin[d], boxMax[d]);
@@ -40,9 +35,7 @@ std::array<double, 3> LinkedCellsVersusDirectSumTest::randomPosition(
 
 void LinkedCellsVersusDirectSumTest::fillContainerWithMolecules(
     unsigned long numMolecules,
-    autopas::ParticleContainer<autopas::MoleculeLJ,
-                               autopas::FullParticleCell<autopas::MoleculeLJ>>
-        &cont) const {
+    autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
   srand(42);  // fixed seedpoint
 
   std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
@@ -54,8 +47,7 @@ void LinkedCellsVersusDirectSumTest::fillContainerWithMolecules(
   }
 }
 
-void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules,
-                                          double rel_err_tolerance) {
+void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   fillContainerWithMolecules(numMolecules, _directSum);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
@@ -63,17 +55,14 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules,
     _linkedCells.addParticle(*it);
   }
 
-  autopas::LJFunctor<autopas::MoleculeLJ,
-                     autopas::FullParticleCell<autopas::MoleculeLJ>>
-      func;
+  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func;
   _directSum.iteratePairwiseAoS2(&func);
   _linkedCells.iteratePairwiseAoS2(&func);
 
   auto itDirect = _directSum.begin();
   auto itLinked = _linkedCells.begin();
 
-  std::vector<std::array<double, 3>> forcesDirect(numMolecules),
-      forcesLinked(numMolecules);
+  std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, the
   for (auto it = _directSum.begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
@@ -95,15 +84,14 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules,
     }
   }
 
-  autopas::FlopCounterFunctor<autopas::MoleculeLJ,
-                              autopas::FullParticleCell<autopas::MoleculeLJ>>
-      flopsDirect(getCutoff()), flopsLinked(getCutoff());
+  autopas::FlopCounterFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> flopsDirect(
+      getCutoff()),
+      flopsLinked(getCutoff());
   _directSum.iteratePairwiseAoS2(&flopsDirect);
   _linkedCells.iteratePairwiseAoS2(&flopsLinked);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsDirect.getKernelCalls());
-  ASSERT_LE(flopsLinked.getDistanceCalculations(),
-            flopsDirect.getDistanceCalculations());
+  ASSERT_LE(flopsLinked.getDistanceCalculations(), flopsDirect.getDistanceCalculations());
 }
 
 TEST_F(LinkedCellsVersusDirectSumTest, test100) {

@@ -28,10 +28,9 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator> {
    * Constructor of RMMParticleCell
    */
   RMMParticleCell2T() {
-    _particleSoABuffer.initArrays(
-        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-         Particle::AttributeNames::posZ, Particle::AttributeNames::forceX,
-         Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ});
+    _particleSoABuffer.initArrays({Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+                                   Particle::AttributeNames::posZ, Particle::AttributeNames::forceX,
+                                   Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ});
   }
 
   void addParticle(Particle &m) override {
@@ -45,9 +44,7 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator> {
 
   virtual Iterator begin() override { return Iterator(this); }
 
-  unsigned long numParticles() const override {
-    return _particleSoABuffer.getNumParticles();
-  }
+  unsigned long numParticles() const override { return _particleSoABuffer.getNumParticles(); }
   bool isNotEmpty() const override { return numParticles() > 0; }
 
   void clear() override { _particleSoABuffer.clear(); }
@@ -76,24 +73,18 @@ class RMMParticleCell2T : public ParticleCell<Particle, Iterator> {
  private:
   void buildParticleFromSoA(size_t i, Particle *&rmm_or_not_pointer) {
     rmm_or_not_pointer->setR(_particleSoABuffer.read<3>(
-        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-         Particle::AttributeNames::posZ},
-        i));
+        {Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ}, i));
     rmm_or_not_pointer->setF(_particleSoABuffer.read<3>(
-        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-         Particle::AttributeNames::forceZ},
-        i));
+        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ}, i));
   }
 
   void writeParticleToSoA(size_t index, Particle &particle) {
     _particleSoABuffer.write<3>(
-        {Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-         Particle::AttributeNames::posZ},
-        index, particle.getR());
+        {Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ}, index,
+        particle.getR());
     _particleSoABuffer.write<3>(
-        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-         Particle::AttributeNames::forceZ},
-        index, particle.getF());
+        {Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ}, index,
+        particle.getF());
   }
 
   template <class ParticleType>
@@ -117,9 +108,7 @@ class RMMParticleCellIterator {
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  RMMParticleCellIterator(
-      RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg,
-      int ind = 0)
+  RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg, int ind = 0)
       : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   //  SingleCellIterator(const SingleCellIterator &cellIterator) {
@@ -158,8 +147,7 @@ class RMMParticleCellIterator {
    * @return
    */
   bool operator==(const RMMParticleCellIterator &rhs) const {
-    return (not this->isValid() and not rhs.isValid()) or
-           (_cell == rhs._cell && _index == rhs._index);
+    return (not this->isValid() and not rhs.isValid()) or (_cell == rhs._cell && _index == rhs._index);
   }
 
   /**
@@ -168,9 +156,7 @@ class RMMParticleCellIterator {
    * @param rhs
    * @return
    */
-  bool operator!=(const RMMParticleCellIterator &rhs) const {
-    return !(rhs == *this);
-  }
+  bool operator!=(const RMMParticleCellIterator &rhs) const { return !(rhs == *this); }
 
   /**
    * increment operator to get the next particle
@@ -189,9 +175,7 @@ class RMMParticleCellIterator {
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() const {
-    return _cell != nullptr and _index < _cell->numParticles();
-  }
+  bool isValid() const { return _cell != nullptr and _index < _cell->numParticles(); }
 
   /**
    * Get the index of the particle in the cell
@@ -217,8 +201,7 @@ class RMMParticleCellIterator {
 // provide a simpler template for RMMParticleCell, i.e.
 // RMMParticleCell<Particle>
 template <class Particle>
-using RMMParticleCell =
-    RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;
+using RMMParticleCell = RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;
 
 } /* namespace autopas */
 

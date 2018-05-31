@@ -12,8 +12,7 @@ void LoggerTest::SetUp() { autopas::logger::create(stream); }
 
 void LoggerTest::TearDown() { autopas::logger::unregister(); }
 
-int LoggerTest::testLevel(spdlog::level::level_enum level,
-                          bool enabled = true) {
+int LoggerTest::testLevel(spdlog::level::level_enum level, bool enabled = true) {
   AutoPasLogger->set_level(level);
   if (not enabled) AutoPasLogger->set_level(spdlog::level::off);
 

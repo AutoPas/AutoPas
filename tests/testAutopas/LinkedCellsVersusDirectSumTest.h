@@ -27,24 +27,16 @@ class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
  protected:
   double fRand(double fMin, double fMax) const;
 
-  std::array<double, 3> randomPosition(
-      const std::array<double, 3> &boxMin,
-      const std::array<double, 3> &boxMax) const;
+  std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) const;
 
   void fillContainerWithMolecules(
       unsigned long numMolecules,
-      autopas::ParticleContainer<autopas::MoleculeLJ,
-                                 autopas::FullParticleCell<autopas::MoleculeLJ>>
-          &cont) const;
+      autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
 
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  autopas::DirectSum<autopas::MoleculeLJ,
-                     autopas::FullParticleCell<autopas::MoleculeLJ>>
-      _directSum;
-  autopas::LinkedCells<autopas::MoleculeLJ,
-                       autopas::FullParticleCell<autopas::MoleculeLJ>>
-      _linkedCells;
+  autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
+  autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
 };
 
 #endif /* TESTS_TESTAUTOPAS_LINKEDCELLSVERSUSDIRECTSUMTEST_H_ */

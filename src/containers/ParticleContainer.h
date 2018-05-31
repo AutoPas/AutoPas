@@ -32,8 +32,7 @@ class ParticleContainer {
    * @param boxMax
    * @param cutoff
    */
-  ParticleContainer(const std::array<double, 3> boxMin,
-                    const std::array<double, 3> boxMax, double cutoff)
+  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
       : _data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
 
   /**
@@ -82,8 +81,7 @@ class ParticleContainer {
    * @param f functor that describes the pair-potential
    * @param useNewton3 defines whether newton3 should be used
    */
-  virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f,
-                                  bool useNewton3 = true) = 0;
+  virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) = 0;
 
   /**
    * function to iterate over all pairs of particles in a structure of array
@@ -91,8 +89,7 @@ class ParticleContainer {
    * @param f functor that describes the pair-potential
    * @param useNewton3 defines whether newton3 should be used
    */
-  virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f,
-                                  bool useNewton3 = true) = 0;
+  virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) = 0;
 
   /**
    * iterate over all particles using
@@ -100,8 +97,7 @@ class ParticleContainer {
    * @return iterator to the first particle
    * @todo implement IteratorBehavior
    */
-  virtual ParticleIterator<Particle, ParticleCell> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  virtual ParticleIterator<Particle, ParticleCell> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return ParticleIterator<Particle, ParticleCell>(&_data);
   }
 
@@ -113,10 +109,9 @@ class ParticleContainer {
    * @param higherCorner higher corner of the region
    * @return iterator to iterate over all particles in a specific region
    */
-  RegionParticleIterator<Particle, ParticleCell> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner) {
-    return RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner,
-                                                          higherCorner);
+  RegionParticleIterator<Particle, ParticleCell> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                                   std::array<double, 3> higherCorner) {
+    return RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner, higherCorner);
   }
 
   /**

@@ -17,35 +17,26 @@ LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest()
   double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<
-      autopas::MoleculeLJ,
-      autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(getCutoff(),
-                                                                  eps, sig,
-                                                                  shift);
+  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(getCutoff(), eps,
+                                                                                                      sig, shift);
 }
 
-void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules,
-                                            double rel_err_tolerance) {
-  RandomGenerator::fillWithParticles(
-      _verletLists, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
-      numMolecules);
+void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
+  RandomGenerator::fillWithParticles(_verletLists, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     _linkedCells.addParticle(*it);
   }
 
-  autopas::LJFunctor<autopas::MoleculeLJ,
-                     autopas::FullParticleCell<autopas::MoleculeLJ>>
-      func;
+  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func;
   _verletLists.iteratePairwiseAoS2(&func);
   _linkedCells.iteratePairwiseAoS2(&func);
 
   auto itDirect = _verletLists.begin();
   auto itLinked = _linkedCells.begin();
 
-  std::vector<std::array<double, 3>> forcesDirect(numMolecules),
-      forcesLinked(numMolecules);
+  std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, the
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
@@ -67,15 +58,14 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules,
     }
   }
 
-  autopas::FlopCounterFunctor<autopas::MoleculeLJ,
-                              autopas::FullParticleCell<autopas::MoleculeLJ>>
-      flopsVerlet(getCutoff()), flopsLinked(getCutoff());
+  autopas::FlopCounterFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> flopsVerlet(
+      getCutoff()),
+      flopsLinked(getCutoff());
   _verletLists.iteratePairwiseAoS2(&flopsVerlet);
   _linkedCells.iteratePairwiseAoS2(&flopsLinked);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
-  ASSERT_GE(flopsLinked.getDistanceCalculations(),
-            flopsVerlet.getDistanceCalculations());
+  ASSERT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());
 }
 
 TEST_F(LinkedCellsVersusVerletListsTest, test100) {
