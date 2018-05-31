@@ -264,6 +264,7 @@ pipeline{
                     }
                     script{
                         // return 2 if modified has been found, 0 otherwise
+                        try{
                         sh "git status | grep -q modified && exit 2 || exit 0"
                         } catch (Exception e) {
                             // change detected
