@@ -25,12 +25,13 @@ class SPHCalcHydroForceFunctor
    * @param j second particle of the interaction
    * @param newton3 defines whether or whether not to use newton 3
    */
-  void AoSFunctor(SPHParticle &i, SPHParticle &j, bool newton3 = true) override{
+  void AoSFunctor(SPHParticle &i, SPHParticle &j,
+                  bool newton3 = true) override {
     const std::array<double, 3> dr = arrayMath::sub(i.getR(), j.getR());
     // const PS::F64vec dr = ep_i[i].pos - ep_j[j].pos;
 
     double cutoff = i.getSmoothingLength() *
-        autopas::sph::SPHKernels::getKernelSupportRadius();
+                    autopas::sph::SPHKernels::getKernelSupportRadius();
 
     if (autopas::arrayMath::dot(dr, dr) >= cutoff * cutoff) {
       return;
@@ -64,7 +65,7 @@ class SPHCalcHydroForceFunctor
     // ep_j[j].smth));
 
     double scale = i.getPressure() / (i.getDensity() * i.getDensity()) +
-        j.getPressure() / (j.getDensity() * j.getDensity()) + AV;
+                   j.getPressure() / (j.getDensity() * j.getDensity()) + AV;
     i.subAcceleration(arrayMath::mulScalar(gradW_ij, scale * j.getMass()));
     // hydro[i].acc     -= ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
     // ep_i[i].dens) + ep_j[j].pres / (ep_j[j].dens * ep_j[j].dens) + AV) *
@@ -75,7 +76,7 @@ class SPHCalcHydroForceFunctor
     }
     double scale2i =
         j.getMass() *
-            (i.getPressure() / (i.getDensity() * i.getDensity()) + 0.5 * AV);
+        (i.getPressure() / (i.getDensity() * i.getDensity()) + 0.5 * AV);
     i.addEngDot(arrayMath::dot(gradW_ij, dv) * scale2i);
     // hydro[i].eng_dot += ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
     // ep_i[i].dens) + 0.5 * AV) * dv * gradW_ij;
@@ -83,7 +84,7 @@ class SPHCalcHydroForceFunctor
     if (newton3) {
       double scale2j =
           i.getMass() *
-              (j.getPressure() / (j.getDensity() * j.getDensity()) + 0.5 * AV);
+          (j.getPressure() / (j.getDensity() * j.getDensity()) + 0.5 * AV);
       j.addEngDot(arrayMath::dot(gradW_ij, dv) * scale2j);
       // Newton 3
     }
@@ -93,7 +94,7 @@ class SPHCalcHydroForceFunctor
    * Get the number of floating point operations used in one full kernel call
    * @return the number of floating point operations
    */
-  static unsigned long getNumFlopsPerKernelCall(){
+  static unsigned long getNumFlopsPerKernelCall() {
     ///@todo return correct flopcount
     return 1ul;
   }

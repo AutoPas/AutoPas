@@ -4,10 +4,10 @@
  * @date 19.04.18
  */
 
-#include "testingHelpers/RandomGenerator.h"
 #include "VerletListsTest.h"
 #include "mocks/MockFunctor.h"
 #include "mocks/MockVerletLists.h"
+#include "testingHelpers/RandomGenerator.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -582,8 +582,10 @@ TEST_F(VerletListsTest, SoAvsAoSLJ) {
                        autopas::FullParticleCell<autopas::Particle>>
       verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3, 3);
 
-  RandomGenerator::fillWithParticles(verletLists1, autopas::Particle({0.,0.,0.},{0.,0.,0.},0), 100);
-  RandomGenerator::fillWithParticles(verletLists2, autopas::Particle({0.,0.,0.},{0.,0.,0.},0), 100);
+  RandomGenerator::fillWithParticles(
+      verletLists1, autopas::Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
+  RandomGenerator::fillWithParticles(
+      verletLists2, autopas::Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
 
   autopas::LJFunctor<autopas::Particle,
                      autopas::FullParticleCell<autopas::Particle>>

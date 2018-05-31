@@ -42,9 +42,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
 #pragma omp critical
     {
-    ++_distanceCalculations;
+      ++_distanceCalculations;
 
-    if (dr2 <= _cutoffSquare) ++_kernelCalls;
+      if (dr2 <= _cutoffSquare) ++_kernelCalls;
     };
   }
 

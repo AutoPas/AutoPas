@@ -225,7 +225,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
                            currentIndex[i] >= 0;
           }
           if (isPossibleHaloCell && isValidCell) {
-            std::array<std::array<double, 3>, 2> boxBound {};
+            std::array<std::array<double, 3>, 2> boxBound{};
             getCellBoundingBox(index3d, boxBound[0], boxBound[1]);
             bool close = true;
             for (int i = 0; i < 3; i++) {

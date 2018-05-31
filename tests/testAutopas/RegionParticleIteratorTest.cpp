@@ -4,8 +4,8 @@
  * @date 03.04.18
  */
 
-#include "testingHelpers/RandomGenerator.h"
 #include "RegionParticleIteratorTest.h"
+#include "testingHelpers/RandomGenerator.h"
 
 using namespace autopas;
 
@@ -14,7 +14,8 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
       lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0.,0.,0.},0));
+  RandomGenerator::fillWithParticles(lcContainer,
+                                     TouchableParticle({0., 0., 0.}, 0));
 
   // touch them using the regionIterator
   for (auto iterator = lcContainer.getRegionIterator(_regionMin, _regionMax);

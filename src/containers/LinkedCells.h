@@ -10,8 +10,8 @@
 
 #include "CellBlock3D.h"
 #include "ParticleContainer.h"
-#include "containers/cellPairTraversals/SlicedTraversal.h"
 #include "containers/cellPairTraversals/C08Traversal.h"
+#include "containers/cellPairTraversals/SlicedTraversal.h"
 #include "pairwiseFunctors/CellFunctor.h"
 #include "utils/inBox.h"
 
@@ -86,9 +86,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>
           cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS IMPLEMENTED
+      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
+      // IMPLEMENTED
       if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>>
+        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+                                               ParticleFunctor, false, true>>
             traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                       &cellFunctor);
         traversal.traverseCellPairs();
@@ -103,15 +105,18 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>
           cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS IMPLEMENTED
+      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
+      // IMPLEMENTED
       if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
+        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+                                               ParticleFunctor, false, false>>
             traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                       &cellFunctor);
         traversal.traverseCellPairs();
       } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell,
-                                                  ParticleFunctor, false, false>>
+        SlicedTraversal<
+            ParticleCell,
+            CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
             traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                       &cellFunctor);
         traversal.traverseCellPairs();
@@ -134,16 +139,17 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
-
     loadSoAs(f);
 
     auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>
           cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS IMPLEMENTED
+      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
+      // IMPLEMENTED
       if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>>
+        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+                                               ParticleFunctor, true, true>>
             traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                       &cellFunctor);
         traversal.traverseCellPairs();
@@ -158,9 +164,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>
           cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS IMPLEMENTED
+      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
+      // IMPLEMENTED
       if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>>
+        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell,
+                                               ParticleFunctor, true, false>>
             traversal(this->_data, _cellBlock.getCellsPerDimensionWithHalo(),
                       &cellFunctor);
         traversal.traverseCellPairs();
@@ -195,9 +203,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   bool isContainerUpdateNeeded() override {
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin {0.,0.,0.};
-      std::array<double, 3> boxmax {0.,0.,0.};
+    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size();
+         ++cellIndex1d) {
+      std::array<double, 3> boxmin{0., 0., 0.};
+      std::array<double, 3> boxmax{0., 0., 0.};
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid();
            ++iter) {
@@ -230,10 +239,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void loadSoAs(ParticleFunctor *functor) {
 #ifdef AUTOPAS_OPENMP
-    //TODO find a condition on when to use omp or when it is just overhead
+    // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for(auto i = 0; i < this->_data.size(); ++i) {
+    for (auto i = 0; i < this->_data.size(); ++i) {
       functor->SoALoader(this->_data[i], this->_data[i]._particleSoABuffer);
     }
   }
@@ -246,10 +255,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void extractSoAs(ParticleFunctor *functor) {
 #ifdef AUTOPAS_OPENMP
-    //TODO find a condition on when to use omp or when it is just overhead
+    // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for(auto i = 0; i < this->_data.size(); ++i) {
+    for (auto i = 0; i < this->_data.size(); ++i) {
       functor->SoAExtractor(this->_data[i], this->_data[i]._particleSoABuffer);
     }
   }

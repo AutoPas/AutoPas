@@ -5,8 +5,8 @@
  *      Author: tchipevn
  */
 
-#include "utils/arrayMath.h"
 #include "gtest/gtest.h"
+#include "utils/arrayMath.h"
 
 using namespace autopas;
 

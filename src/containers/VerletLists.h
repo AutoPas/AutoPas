@@ -351,7 +351,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * actual
    */
   template <class ParticleFunctor>
-  void loadVerletSoA(ParticleFunctor *functor) {
+  void loadVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
     for (auto& cell : this->_data) {
       functor->SoALoader(cell, _soa, offset);
@@ -367,7 +367,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * actual
    */
   template <class ParticleFunctor>
-  void extractVerletSoA(ParticleFunctor *functor) {
+  void extractVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
     for (auto& cell : this->_data) {
       functor->SoAExtractor(cell, _soa, offset);

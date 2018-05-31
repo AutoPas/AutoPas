@@ -14,7 +14,7 @@ using namespace autopas;
 void ParticleIteratorTest::SetUp() {
   for (int i = 0; i < 20; ++i) {
     std::array<double, 3> arr{};
-    for (auto &a : arr) {
+    for (auto& a : arr) {
       a = static_cast<double>(i);
     }
     MoleculeLJ m(arr, {0., 0., 0.}, static_cast<unsigned long>(i));
@@ -210,13 +210,14 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
  * haloMol as haloParticle.
  * @tparam Container
  * @tparam Molecule
- * @param container should have already an added mol (as owning molecule) and haloMol (als halo molecule)
+ * @param container should have already an added mol (as owning molecule) and
+ * haloMol (als halo molecule)
  * @param mol
  * @param haloMol
  */
 template <class Container, class Molecule>
-void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule& haloMol){
-
+void testContainerIteratorBehavior(Container& container, Molecule& mol,
+                                   Molecule& haloMol) {
   // default
   int count = 0;
   for (auto iter = container.begin(); iter.isValid(); ++iter) {
@@ -226,8 +227,8 @@ void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule
 
   // haloAndOwned (same as default)
   count = 0;
-  for (auto iter = container.begin(IteratorBehavior::haloAndOwned); iter.isValid();
-       ++iter) {
+  for (auto iter = container.begin(IteratorBehavior::haloAndOwned);
+       iter.isValid(); ++iter) {
     count++;
   }
   EXPECT_EQ(count, 2);
@@ -263,8 +264,8 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
-  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.},
-                                                         {10., 10., 10.}, 3);
+  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells(
+      {0., 0., 0.}, {10., 10., 10.}, 3);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   linkedCells.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
@@ -274,8 +275,8 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
-  VerletLists<MoleculeLJ, FullParticleCell<MoleculeLJ>> verletLists({0., 0., 0.},
-                                                                    {10., 10., 10.}, 3, 0., 1);
+  VerletLists<MoleculeLJ, FullParticleCell<MoleculeLJ>> verletLists(
+      {0., 0., 0.}, {10., 10., 10.}, 3, 0., 1);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   verletLists.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
@@ -285,10 +286,10 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
   testContainerIteratorBehavior(verletLists, mol, haloMol);
 
   // swap everything around, test if it still valid :)
-  haloMol.setR({1.,1.,1.});
-  mol.setR({-1.,1.,1.});
-  verletLists.begin(IteratorBehavior::ownedOnly)->setR({-1.,1.,1.});
-  verletLists.begin(IteratorBehavior::haloOnly)->setR({1.,1.,1.});
+  haloMol.setR({1., 1., 1.});
+  mol.setR({-1., 1., 1.});
+  verletLists.begin(IteratorBehavior::ownedOnly)->setR({-1., 1., 1.});
+  verletLists.begin(IteratorBehavior::haloOnly)->setR({1., 1., 1.});
 
   testContainerIteratorBehavior(verletLists, mol, haloMol);
 }

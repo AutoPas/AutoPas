@@ -9,12 +9,12 @@
 #include "autopasIncludes.h"
 #include "sph/autopassph.h"
 
- typedef autopas::LinkedCells<
+typedef autopas::LinkedCells<
     autopas::sph::SPHParticle,
     autopas::FullParticleCell<autopas::sph::SPHParticle>>
     Container;
 
-//typedef autopas::VerletLists<
+// typedef autopas::VerletLists<
 //    autopas::sph::SPHParticle,
 //    autopas::FullParticleCell<autopas::sph::SPHParticle>>
 //    Container;
@@ -360,7 +360,7 @@ int main() {
   double cutoff = 0.03;  // 0.012*2.5=0.03; where 2.5 = kernel support radius
 
   Container sphSystem(boxMin, boxMax, cutoff);
-  //Container sphSystem(boxMin, boxMax, cutoff, 0.1 * cutoff /*skin*/);
+  // Container sphSystem(boxMin, boxMax, cutoff, 0.1 * cutoff /*skin*/);
   double dt;
   double t_end;
   SetupIC(sphSystem, &t_end, boxMax);

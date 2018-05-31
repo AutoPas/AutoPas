@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <vector>
 #include "AutoPas.h"
-#include "testingHelpers/GridGenerator.h"
 #include "AutoPasTestBase.h"
+#include "testingHelpers/GridGenerator.h"
 
 typedef autopas::MoleculeLJ Molecule;
 typedef autopas::FullParticleCell<autopas::MoleculeLJ> FPCell;

@@ -24,11 +24,10 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
   double getCutoff() const { return 1.0; }
 
  protected:
-
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
   autopas::VerletLists<autopas::MoleculeLJ,
-                     autopas::FullParticleCell<autopas::MoleculeLJ>>
+                       autopas::FullParticleCell<autopas::MoleculeLJ>>
       _verletLists;
   autopas::LinkedCells<autopas::MoleculeLJ,
                        autopas::FullParticleCell<autopas::MoleculeLJ>>

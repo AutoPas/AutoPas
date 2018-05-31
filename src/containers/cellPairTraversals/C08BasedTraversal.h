@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "utils/ThreeDimensionalMapping.h"
 #include "CellPairTraversal.h"
+#include "utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
 
@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam CellFunctor the cell functor that defines the interaction of the
  * particles of two specific cells
  */
-template<class ParticleCell, class CellFunctor>
+template <class ParticleCell, class CellFunctor>
 class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
  public:
   /**
@@ -35,8 +35,8 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
    * particles between two different cells.
    */
   explicit C08BasedTraversal(std::vector<ParticleCell> &cells,
-                        const std::array<unsigned long, 3> &dims,
-                        CellFunctor *cellfunctor)
+                             const std::array<unsigned long, 3> &dims,
+                             CellFunctor *cellfunctor)
       : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims,
                                                       cellfunctor) {
     computeOffsets();
@@ -92,8 +92,8 @@ inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(
 
 template <class ParticleCell, class CellFunctor>
 inline void C08BasedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
-  using ThreeDimensionalMapping::threeToOneD;
   using std::make_pair;
+  using ThreeDimensionalMapping::threeToOneD;
 
   unsigned long o =
       threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);  // origin

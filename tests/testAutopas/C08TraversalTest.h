@@ -16,9 +16,13 @@
 #include <omp.h>
 #endif
 
-typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;
+typedef MockFunctor<autopas::Particle,
+                    autopas::FullParticleCell<autopas::Particle>>
+    MFunctor;
 typedef autopas::CellFunctor<autopas::Particle,
-                             autopas::FullParticleCell<autopas::Particle>, MFunctor, false, true> MCellFunctor;
+                             autopas::FullParticleCell<autopas::Particle>,
+                             MFunctor, false, true>
+    MCellFunctor;
 typedef autopas::FullParticleCell<autopas::Particle> FPCell;
 
 class C08TraversalTest : public testing::Test {

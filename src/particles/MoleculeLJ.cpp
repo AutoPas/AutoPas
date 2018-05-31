@@ -10,4 +10,4 @@ namespace autopas {
 
 double MoleculeLJ::EPSILON;
 double MoleculeLJ::SIGMA;
-}
+}  // namespace autopas

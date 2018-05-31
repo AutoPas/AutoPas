@@ -48,7 +48,7 @@ class SPHCalcDensityFunctor
    * Get the number of floating point operations used in one full kernel call
    * @return the number of floating point operations
    */
-  static unsigned long getNumFlopsPerKernelCall(){
+  static unsigned long getNumFlopsPerKernelCall() {
     unsigned long flops = 0;
     flops += 3;                            // calculating dr
     flops += 2 * SPHKernels::getFlopsW();  // flops for calling W

@@ -22,8 +22,7 @@ namespace autopas {
  * @tparam Particle type of particle to be stored
  */
 template <class Particle, class Iterator>
-class RMMParticleCell2T
-    : public ParticleCell<Particle, Iterator> {
+class RMMParticleCell2T : public ParticleCell<Particle, Iterator> {
  public:
   /**
    * Constructor of RMMParticleCell
