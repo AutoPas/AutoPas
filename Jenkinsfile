@@ -262,14 +262,15 @@ pipeline{
                         sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
                         sh "ninja clangformat"
                     }
-                    sh "git status | grep -q modified && exit 2 || exit 0"
-                }
-            }
-            post{
-                failure {
                     script{
-                        currentBuild.result = 'UNSTABLE'
-                        currentBuild.description = 'clang format errors detected. please format the code properly.'
+                        // return 2 if modified has been found, 0 otherwise
+                        try{
+                        sh "git status | grep -q modified && exit 2 || exit 0"
+                        } catch (Exception e) {
+                            // change detected
+                            currentBuild.result = 'UNSTABLE'
+                            currentBuild.description = 'clang format errors detected. please format the code properly.'
+                        }
                     }
                 }
             }
