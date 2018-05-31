@@ -267,9 +267,9 @@ pipeline{
             }
             post{
                 failure {
+                    echo "clang format failed"
                     script{
                         currentBuild.result = 'UNSTABLE'
-                        currentBuild.description = 'clang format errors detected. please format the code properly.'
                     }
                 }
             }
