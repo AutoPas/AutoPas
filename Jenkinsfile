@@ -237,16 +237,32 @@ pipeline{
                 }
             }
         }
-        stage("generate coverage report"){
+        stage("generate reports"){
             steps{
+                // get test results -- mainly to get number of tests
                 junit 'build/test.xml'
+
+                // get doxygen warnings
                 warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build-doxygen/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
+
+                // generate coverage
                 dir("coverage"){
                     container('autopas-build-code-coverage'){
                         sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
                         sh "make AutoPas_cobertura -j 4"
                     }
                     cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                }
+            }
+        }
+        stage("clang format"){
+            steps{
+                dir("clang-format"){
+                    container('autopas-clang6-cmake-ninja-make'){
+                        sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
+                        sh "ninja clangformat"
+                    }
+                    sh "git status | grep -q modified && exit 2 || exit 0"
                 }
             }
         }
