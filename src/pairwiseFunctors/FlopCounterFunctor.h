@@ -87,15 +87,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) override {
-    double *const __restrict__ x1ptr = soa1.begin(posX);
-    double *const __restrict__ y1ptr = soa1.begin(posY);
-    double *const __restrict__ z1ptr = soa1.begin(posZ);
-    double *const __restrict__ x2ptr = soa2.begin(posX);
-    double *const __restrict__ y2ptr = soa2.begin(posY);
-    double *const __restrict__ z2ptr = soa2.begin(posZ);
+    double *const __restrict__ x1ptr = soa1.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y1ptr = soa1.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z1ptr = soa1.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x2ptr = soa2.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y2ptr = soa2.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z2ptr = soa2.begin(Particle::AttributeNames::posZ);
 
-    double *const __restrict__ id1ptr = soa1.begin(id);
-    double *const __restrict__ id2ptr = soa2.begin(id);
+    double *const __restrict__ id1ptr = soa1.begin(Particle::AttributeNames::id);
+    double *const __restrict__ id2ptr = soa2.begin(Particle::AttributeNames::id);
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -130,7 +130,25 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) override {}
+  void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) override {
+    soa.resizeArrays(offset + cell.numParticles());
+
+    if (cell.numParticles() == 0) return;
+
+    double *const __restrict__ idptr = soa.begin(Particle::AttributeNames::id);
+    double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
+
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      idptr[i] = cellIter->getID();
+      xptr[i] = cellIter->getR()[0];
+      yptr[i] = cellIter->getR()[1];
+      zptr[i] = cellIter->getR()[2];
+    }
+  }
 
   void SoAExtractor(ParticleCell &cell, SoA &soa, size_t offset = 0) override {}
   /**
@@ -165,7 +183,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   unsigned long getKernelCalls() const { return _kernelCalls; }
 
  private:
-  enum SoAAttributes { id, posX, posY, posZ };
 
   double _cutoffSquare;
   unsigned long _distanceCalculations, _kernelCalls;
