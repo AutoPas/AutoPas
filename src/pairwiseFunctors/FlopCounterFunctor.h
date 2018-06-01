@@ -5,8 +5,7 @@
  *      Author: tchipevn
  */
 
-#ifndef SRC_PAIRWISEFUNCTORS_FLOPCOUNTERFUNCTOR_H_
-#define SRC_PAIRWISEFUNCTORS_FLOPCOUNTERFUNCTOR_H_
+#pragma once
 
 #include "Functor.h"
 #include "utils/arrayMath.h"
@@ -131,6 +130,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
+  void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) override {}
+
+  void SoAExtractor(ParticleCell &cell, SoA &soa, size_t offset = 0) override {}
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
    * of kernel calls compared to the number of distance calculations
@@ -172,5 +174,3 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 };
 
 } /* namespace autopas */
-
-#endif /* SRC_PAIRWISEFUNCTORS_FLOPCOUNTERFUNCTOR_H_ */
