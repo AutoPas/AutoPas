@@ -42,7 +42,7 @@ class Functor {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) {
-    utils::ExceptionHandler::exception("not yet implemented");
+    utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
   }
 
   /**
@@ -55,7 +55,9 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA &soa, bool newton3 = true) { utils::ExceptionHandler::exception("not yet implemented"); }
+  virtual void SoAFunctor(SoA &soa, bool newton3 = true) {
+    utils::ExceptionHandler::exception("Functor::SoAFunctor(one soa): not yet implemented");
+  }
 
   /**
    * @brief Functor for structure of arrays (SoA) for neighbor lists
@@ -78,7 +80,7 @@ class Functor {
    */
   virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t, AlignedAllocator<size_t>>> &neighborList,
                           size_t iFrom, size_t iTo, bool newton3 = true) {
-    utils::ExceptionHandler::exception("not yet implemented");
+    utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
 
   /**
@@ -93,7 +95,7 @@ class Functor {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) {
-    utils::ExceptionHandler::exception("not yet implemented");
+    utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 
   /**
@@ -106,7 +108,7 @@ class Functor {
    */
 
   virtual void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) {
-    utils::ExceptionHandler::exception("not yet implemented");
+    utils::ExceptionHandler::exception("Functor::SoALoader: not yet implemented");
   }
 
   /**
@@ -118,7 +120,7 @@ class Functor {
    * extracted starting at offset.
    */
   virtual void SoAExtractor(ParticleCell &cell, SoA &soa, size_t offset = 0) {
-    utils::ExceptionHandler::exception("not yet implemented");
+    utils::ExceptionHandler::exception("Functor::SoAExtractor: not yet implemented");
   }
 
   /**
