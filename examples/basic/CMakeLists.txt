@@ -14,7 +14,7 @@ TARGET_LINK_LIBRARIES(basic
 #-----------------test-----------------
 # add check for current target
 add_test(
-        NAME basic_test
+        NAME basic.test
         COMMAND basic
         CONFIGURATIONS checkExamples
 )

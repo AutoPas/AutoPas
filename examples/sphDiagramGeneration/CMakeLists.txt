@@ -14,12 +14,12 @@ TARGET_LINK_LIBRARIES(sph-diagram-generation
 #-----------------test-----------------
 # add check for current target
 add_test(
-        NAME sph-diagram-generation_test_direct_sum
+        NAME sph-diagram-generation.test_direct_sum
         COMMAND sph-diagram-generation 1000 2 1 0
         CONFIGURATIONS checkExamples checkExamplesSPHDia
 )
 add_test(
-        NAME sph-diagram-generation_test_linked_cells
+        NAME sph-diagram-generation.test_linked_cells
         COMMAND sph-diagram-generation 1000 2 0 0
         CONFIGURATIONS checkExamples checkExamplesSPHDia
 )
