@@ -15,8 +15,7 @@
 
 namespace autopas {
 
-// consider multiple inheritance or delegation vor avoidane of virtual call to
-// Functor
+// consider multiple inheritance or delegation to avoid virtual call to Functor
 /**
  * The ParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
@@ -61,19 +60,19 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * adds a particle to the container
    * @param p the particle to be added
    */
-  virtual void addParticle(Particle &p) override = 0;
+  void addParticle(Particle &p) override = 0;
 
   /**
    * adds a particle to the container that lies in the halo region of the
    * container
    * @param haloParticle particle to be added
    */
-  virtual void addHaloParticle(Particle &haloParticle) override = 0;
+  void addHaloParticle(Particle &haloParticle) override = 0;
 
   /**
    * deletes all halo particles
    */
-  virtual void deleteHaloParticles() override = 0;
+  void deleteHaloParticles() override = 0;
 
   /**
    * function to iterate over all pairs of particles in an array of structures
@@ -119,49 +118,49 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * get the upper corner of the container
    * @return upper corner of the container
    */
-  const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
+  const std::array<double, 3> &getBoxMax() const final { return _boxMax; }
 
   /**
    * set the upper corner of the container
    * @param boxMax upper corner to be set
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) final { _boxMax = boxMax; }
 
   /**
    * get the lower corner of the container
    * @return lower corner of the container
    */
-  const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
+  const std::array<double, 3> &getBoxMin() const final { return _boxMin; }
 
   /**
    * set the lower corner of the container
    * @param boxMin lower corner to be set
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) final { _boxMin = boxMin; }
 
   /**
    * return the cutoff of the container
    * @return
    */
-  double getCutoff() const override final { return _cutoff; }
+  double getCutoff() const final { return _cutoff; }
 
   /**
    * set the cutoff of the container
    * @param cutoff
    */
-  void setCutoff(double cutoff) override final { _cutoff = cutoff; }
+  void setCutoff(double cutoff) final { _cutoff = cutoff; }
 
   /**
    * updates the container.
    * this resorts particles into appropriate cells, if necessary
    */
-  virtual void updateContainer() override = 0;
+  void updateContainer() override = 0;
 
   /**
    * check whether a container is valid, i.e. whether it is safe to use
    * pair-wise interactions or the RegionParticleIteraor right now.
    */
-  virtual bool isContainerUpdateNeeded() override = 0;
+  bool isContainerUpdateNeeded() override = 0;
 
  protected:
   /**
