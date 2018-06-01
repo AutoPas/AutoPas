@@ -5,19 +5,21 @@
  *     Aauthor: F. Gratl
  */
 
-#include <AutoPas.h>
 #include "FlopCounterTest.h"
 
-TEST(FlopCounterTest, testFlopCounter4Mol) {
-
+/**
+ * Generates a square of four particles, iterates over it with the FlopCounter and checks its values
+ * @param dataLayoutOption
+ */
+void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   AutoPas<Particle, FPCell> autoPas;
 
   autoPas.init({0, 0, 0}, {3, 3, 3}, 1, autopas::directSum);
 
   std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0),
-                               Particle({1, 1, 2}, {0, 0, 0}, 0),
-                               Particle({1, 2, 1}, {0, 0, 0}, 0),
-                               Particle({1, 2, 2}, {0, 0, 0}, 0)};
+                               Particle({1, 1, 2}, {0, 0, 0}, 1),
+                               Particle({1, 2, 1}, {0, 0, 0}, 2),
+                               Particle({1, 2, 2}, {0, 0, 0}, 3)};
 
   for (auto &m : molVec) {
     autoPas.addParticle(m);
@@ -25,7 +27,7 @@ TEST(FlopCounterTest, testFlopCounter4Mol) {
 
   autopas::FlopCounterFunctor<Particle, FPCell> flopCounterFunctor(autoPas.getContainer()->getCutoff());
 
-  autoPas.iteratePairwise(&flopCounterFunctor, autopas::aos);
+  autoPas.iteratePairwise(&flopCounterFunctor, dataLayoutOption);
 
   // every particle checks the distance to all others. Only half of the calculations are made due to Newton 3.
   auto expectedDistanceCalculations = molVec.size() * (molVec.size() - 1) / 2;
@@ -42,4 +44,12 @@ TEST(FlopCounterTest, testFlopCounter4Mol) {
   // two out of three particles are in range
   auto expectedHitRate = 2. / 3.;
   ASSERT_NEAR(expectedHitRate, flopCounterFunctor.getHitRate(), 1e-14);
+}
+
+TEST_F(FlopCounterTest, testFlopCounterAoS4Mol) {
+  test(autopas::DataLayoutOption::aos);
+}
+
+TEST_F(FlopCounterTest, testFlopCounterSoA4Mol) {
+  test(autopas::DataLayoutOption::soa);
 }
