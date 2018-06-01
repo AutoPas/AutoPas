@@ -485,6 +485,7 @@ MPI_Comm getDecomposition(const std::array<double, 3> globalMin, const std::arra
 
 int main(int argc, char* argv[]) {
   MPI_Init(&argc, &argv);
+  autopas::logger::create();
 
   std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
   globalBoxMax[0] = 1.;
