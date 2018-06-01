@@ -38,8 +38,8 @@ endif()
 # add check for current target
 add_test(
         NAME sph-main-mpi.test
-        COMMAND mpirun -n 4 sph-main-mpi | grep "time step" | grep -v "the time step" | tail -1 | grep -q "time step 50"
-        CONFIGURATIONS checkExamples
+        COMMAND mpirun -n 4 --oversubscribe sph-main-mpi | grep "time step" | grep -v "the time step" | tail -1 | grep -q "time step 50"
+        CONFIGURATIONS checkExamples checkExamplesMPI
 )
 
 # add the executable to checkExamples as dependency
