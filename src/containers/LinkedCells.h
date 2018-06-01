@@ -144,7 +144,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
+      // TODO: REMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
       // IMPLEMENTED
       if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
         C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>> traversal(
