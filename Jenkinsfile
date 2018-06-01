@@ -199,8 +199,8 @@ pipeline{
                     },
                     "checkExamples": {
                         container('autopas-gcc7-cmake-make') {
-                            dir("build"){
-                                sh 'make checkExamples'
+                            dir("build/examples") {
+                                sh 'ctest -C checkExamples -j8'
                             }
                         }
                     }
