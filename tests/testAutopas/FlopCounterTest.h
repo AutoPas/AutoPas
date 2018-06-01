@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "AutoPasTestBase.h"
 #include <AutoPas.h>
+#include "AutoPasTestBase.h"
 
 typedef autopas::Particle Particle;
 typedef autopas::FullParticleCell<autopas::Particle> FPCell;
@@ -21,6 +21,3 @@ class FlopCounterTest : public AutoPasTestBase {
 
   void test(autopas::DataLayoutOption dataLayoutOption);
 };
-
-
-

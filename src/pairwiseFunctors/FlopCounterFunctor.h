@@ -183,11 +183,10 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   unsigned long getKernelCalls() const { return _kernelCalls; }
 
  private:
-
   double _cutoffSquare;
   unsigned long _distanceCalculations, _kernelCalls;
   // 3 sub + 3 square + 2 add
-  static constexpr double  numFlopsPerDistanceCalculation = 8.0;
+  static constexpr double numFlopsPerDistanceCalculation = 8.0;
 };
 
 } /* namespace autopas */

@@ -16,10 +16,8 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
 
   autoPas.init({0, 0, 0}, {3, 3, 3}, 1, autopas::directSum);
 
-  std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0),
-                               Particle({1, 1, 2}, {0, 0, 0}, 1),
-                               Particle({1, 2, 1}, {0, 0, 0}, 2),
-                               Particle({1, 2, 2}, {0, 0, 0}, 3)};
+  std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0), Particle({1, 1, 2}, {0, 0, 0}, 1),
+                               Particle({1, 2, 1}, {0, 0, 0}, 2), Particle({1, 2, 2}, {0, 0, 0}, 3)};
 
   for (auto &m : molVec) {
     autoPas.addParticle(m);
@@ -46,10 +44,6 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   ASSERT_NEAR(expectedHitRate, flopCounterFunctor.getHitRate(), 1e-14);
 }
 
-TEST_F(FlopCounterTest, testFlopCounterAoS4Mol) {
-  test(autopas::DataLayoutOption::aos);
-}
+TEST_F(FlopCounterTest, testFlopCounterAoS4Mol) { test(autopas::DataLayoutOption::aos); }
 
-TEST_F(FlopCounterTest, testFlopCounterSoA4Mol) {
-  test(autopas::DataLayoutOption::soa);
-}
+TEST_F(FlopCounterTest, testFlopCounterSoA4Mol) { test(autopas::DataLayoutOption::soa); }

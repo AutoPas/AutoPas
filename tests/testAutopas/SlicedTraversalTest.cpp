@@ -9,8 +9,8 @@
 #endif
 #include "SlicedTraversalTest.h"
 
-using ::testing::_;
 using ::testing::AtLeast;
+using ::testing::_;
 
 void SlicedTraversalTest::fillWithParticles(std::vector<FPCell> &cells, std::array<size_t, 3> particlesPerDim) {
   size_t id = 0;

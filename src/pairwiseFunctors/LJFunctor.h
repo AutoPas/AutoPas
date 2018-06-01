@@ -230,11 +230,11 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
         }
         // loop over the verlet list from 0 to x*vecsize
         for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-          // in each iteration we calculate the interactions of particle i with
-          // vecsize particles in the neighborlist of particle i starting at
-          // particle joff
+        // in each iteration we calculate the interactions of particle i with
+        // vecsize particles in the neighborlist of particle i starting at
+        // particle joff
 
-          // gather position of particle j
+        // gather position of particle j
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             xArr[tmpj] = xptr[currentList[joff + tmpj]];
@@ -242,7 +242,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
             zArr[tmpj] = zptr[currentList[joff + tmpj]];
           }
 
-          // do omp simd with reduction of the interaction
+            // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
             // const size_t j = currentList[jNeighIndex];
@@ -278,7 +278,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
             fyArr[j] = fy;
             fzArr[j] = fz;
           }
-          // scatter the forces to where they belong
+            // scatter the forces to where they belong
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             const size_t j = currentList[joff + tmpj];
