@@ -196,6 +196,13 @@ pipeline{
                                 sh './tests/testAutopas/runTests'
                             }
                         }
+                    },
+                    "checkExamples": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build"){
+                                sh 'make checkExamples'
+                            }
+                        }
                     }
                 )
             }
