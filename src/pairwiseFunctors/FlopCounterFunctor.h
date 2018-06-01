@@ -27,11 +27,11 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
  public:
   /**
    * constructor of FlopCounterFunctor
-   * @param c the cutoff radius
+   * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(double c)
+  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
       : autopas::Functor<Particle, ParticleCell>(),
-        _cutoffSquare(c * c),
+        _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
@@ -146,8 +146,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
    * @return
    */
   double getFlops(unsigned long numFlopsPerKernelCall) const {
-    // 3 sub + 3 square + 2 add
-    const double numFlopsPerDistanceCalculation = 8;
     const double distFlops = numFlopsPerDistanceCalculation * static_cast<double>(_distanceCalculations);
     const double kernFlops = numFlopsPerKernelCall * static_cast<double>(_kernelCalls);
     return distFlops + kernFlops;
@@ -171,6 +169,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
   double _cutoffSquare;
   unsigned long _distanceCalculations, _kernelCalls;
+  // 3 sub + 3 square + 2 add
+  static constexpr double  numFlopsPerDistanceCalculation = 8.0;
 };
 
 } /* namespace autopas */
