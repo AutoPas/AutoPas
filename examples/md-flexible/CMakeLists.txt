@@ -18,3 +18,17 @@ ADD_EXECUTABLE(md-flexible
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopt-report-phase=vec")
 TARGET_LINK_LIBRARIES(md-flexible
         autopas)
+
+#-----------------test-----------------
+# add check for current target
+add_custom_target(
+        md-flexible_test
+        COMMAND md-flexible --container linked --cutoff 1. --data-layout soa --functor lj --iterations 10 --particles-per-dimension 10
+            --particle-spacing 0.4 > /dev/null
+)
+
+# make the test depend on current target, to ensure that the target is build
+add_dependencies(md-flexible_test md-flexible)
+
+# add the test to checkExamples
+add_dependencies(checkExamples md-flexible_test)
