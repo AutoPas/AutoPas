@@ -1,4 +1,5 @@
-ADD_CUSTOM_TARGET(checkExamples)
+ADD_CUSTOM_TARGET(checkExamples
+        COMMAND ctest -C checkExamples -j 4)
 
 ADD_SUBDIRECTORY(basic)
 ADD_SUBDIRECTORY(md-flexible)

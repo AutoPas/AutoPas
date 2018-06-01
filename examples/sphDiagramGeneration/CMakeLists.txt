@@ -13,15 +13,18 @@ TARGET_LINK_LIBRARIES(sph-diagram-generation
 
 #-----------------test-----------------
 # add check for current target
-add_custom_target(
-        sph-diagram-generation_test
-        COMMAND sph-diagram-generation 1000 2 0 0 > /dev/null
-        COMMAND sph-diagram-generation 1000 2 1 0 > /dev/null
+add_test(
+        NAME sph-diagram-generation_test_direct_sum
+        COMMAND sph-diagram-generation 1000 2 1 0
+        CONFIGURATIONS checkExamples checkExamplesSPHDia
 )
-# make the test depend on current target, to ensure that the target is build
-add_dependencies(sph-diagram-generation_test sph-diagram-generation)
+add_test(
+        NAME sph-diagram-generation_test_linked_cells
+        COMMAND sph-diagram-generation 1000 2 0 0
+        CONFIGURATIONS checkExamples checkExamplesSPHDia
+)
 
-# add the test to checkExamples
-add_dependencies(checkExamples sph-diagram-generation_test)
+# add the executable to checkExamples as dependency
+add_dependencies(checkExamples sph-diagram-generation)
 
 #sph-diagram-generation ${Mols[$i]} ${Reps[$i]} ${iCont} 0

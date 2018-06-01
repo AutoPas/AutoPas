@@ -21,14 +21,12 @@ TARGET_LINK_LIBRARIES(md-flexible
 
 #-----------------test-----------------
 # add check for current target
-add_custom_target(
-        md-flexible_test
-        COMMAND md-flexible --container linked --cutoff 1. --data-layout soa --functor lj --iterations 10 --particles-per-dimension 10
-            --particle-spacing 0.4 > /dev/null
+add_test(
+        NAME md-flexible_test
+        COMMAND md-flexible --container linked --cutoff 1. --data-layout soa --functor lj --iterations 10
+            --particles-per-dimension 10 --particle-spacing 0.4
+        CONFIGURATIONS checkExamples
 )
 
-# make the test depend on current target, to ensure that the target is build
-add_dependencies(md-flexible_test md-flexible)
-
-# add the test to checkExamples
-add_dependencies(checkExamples md-flexible_test)
+# add the executable to checkExamples as dependency
+add_dependencies(checkExamples md-flexible)

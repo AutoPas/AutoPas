@@ -13,12 +13,11 @@ TARGET_LINK_LIBRARIES(basic
 
 #-----------------test-----------------
 # add check for current target
-add_custom_target(
-        basic_test
-        COMMAND basic > /dev/null
+add_test(
+        NAME basic_test
+        COMMAND basic
+        CONFIGURATIONS checkExamples
 )
-# make the test depend on current target, to ensure that the target is build
-add_dependencies(basic_test basic)
 
 # add the test to checkExamples
-add_dependencies(checkExamples basic_test)
+add_dependencies(checkExamples basic)

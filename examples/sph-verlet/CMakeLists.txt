@@ -12,12 +12,11 @@ TARGET_LINK_LIBRARIES(sph-main-verlet
 
 #-----------------test-----------------
 # add check for current target
-add_custom_target(
-        sph-main-verlet_test
+add_test(
+        NAME sph-main-verlet_test
         COMMAND sph-main-verlet | grep "time step" | tail -2 | head -1 | grep -q "time step 50"
+        CONFIGURATIONS checkExamples
 )
-# make the test depend on current target, to ensure that the target is build
-add_dependencies(sph-main-verlet_test sph-main-verlet)
 
-# add the test to checkExamples
-add_dependencies(checkExamples sph-main-verlet_test)
+# add the executable to checkExamples as dependency
+add_dependencies(checkExamples sph-main-verlet)
