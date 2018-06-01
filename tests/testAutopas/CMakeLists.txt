@@ -26,8 +26,3 @@ else()
     # more robust, queries the compiled executable
     GTEST_DISCOVER_TESTS(runTests)
 endif()
-
-# this test is needed for a proper generation of xml files of the test
-# it runs ALL tests
-ADD_TEST(NAME testAutopas
-        COMMAND runTests)
