@@ -6,8 +6,8 @@
 
 #include "Newton3OnOffTest.h"
 
-using ::testing::Return;  // anything is ok
 using ::testing::_;       // anything is ok
+using ::testing::Return;  // anything is ok
 
 double Newton3OnOffTest::fRand(double fMin, double fMax) const {
   double f = static_cast<double>(rand()) / RAND_MAX;

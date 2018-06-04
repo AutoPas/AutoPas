@@ -89,8 +89,8 @@ inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(unsign
 
 template <class ParticleCell, class CellFunctor>
 inline void C08BasedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
-  using ThreeDimensionalMapping::threeToOneD;
   using std::make_pair;
+  using ThreeDimensionalMapping::threeToOneD;
 
   unsigned long o = threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);  // origin
   unsigned long x = threeToOneD(1ul, 0ul, 0ul, this->_cellsPerDimension);  // displacement to the right

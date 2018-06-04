@@ -7,8 +7,8 @@
 
 #include "C08TraversalTest.h"
 
-using ::testing::AtLeast;
 using ::testing::_;
+using ::testing::AtLeast;
 
 TEST_F(C08TraversalTest, testTraversalCube) {
   size_t edgeLength = 10;
