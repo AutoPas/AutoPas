@@ -144,7 +144,8 @@ as long as particles move not more than a skin radius.
 * We use the google code style with minor modifications (see .clang-format)
 * code style can be build with `make clangformat`
 * requirements:
-	clang-format
+	clang-format-6.0 
+	(Version is important since formatting is not consistent)
 
 ## Acknowledgements
 * TaLPas BMBF
