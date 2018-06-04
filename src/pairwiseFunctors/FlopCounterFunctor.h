@@ -5,8 +5,7 @@
  *      Author: tchipevn
  */
 
-#ifndef SRC_PAIRWISEFUNCTORS_FLOPCOUNTERFUNCTOR_H_
-#define SRC_PAIRWISEFUNCTORS_FLOPCOUNTERFUNCTOR_H_
+#pragma once
 
 #include "Functor.h"
 #include "utils/arrayMath.h"
@@ -28,11 +27,11 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
  public:
   /**
    * constructor of FlopCounterFunctor
-   * @param c the cutoff radius
+   * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(double c)
+  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
       : autopas::Functor<Particle, ParticleCell>(),
-        _cutoffSquare(c * c),
+        _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
@@ -88,15 +87,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) override {
-    double *const __restrict__ x1ptr = soa1.begin(posX);
-    double *const __restrict__ y1ptr = soa1.begin(posY);
-    double *const __restrict__ z1ptr = soa1.begin(posZ);
-    double *const __restrict__ x2ptr = soa2.begin(posX);
-    double *const __restrict__ y2ptr = soa2.begin(posY);
-    double *const __restrict__ z2ptr = soa2.begin(posZ);
+    double *const __restrict__ x1ptr = soa1.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y1ptr = soa1.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z1ptr = soa1.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x2ptr = soa2.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ y2ptr = soa2.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ z2ptr = soa2.begin(Particle::AttributeNames::posZ);
 
-    double *const __restrict__ id1ptr = soa1.begin(id);
-    double *const __restrict__ id2ptr = soa2.begin(id);
+    double *const __restrict__ id1ptr = soa1.begin(Particle::AttributeNames::id);
+    double *const __restrict__ id2ptr = soa2.begin(Particle::AttributeNames::id);
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -131,6 +130,27 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
+  void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) override {
+    soa.resizeArrays(offset + cell.numParticles());
+
+    if (cell.numParticles() == 0) return;
+
+    double *const __restrict__ idptr = soa.begin(Particle::AttributeNames::id);
+    double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
+    double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
+    double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
+
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      idptr[i] = cellIter->getID();
+      xptr[i] = cellIter->getR()[0];
+      yptr[i] = cellIter->getR()[1];
+      zptr[i] = cellIter->getR()[2];
+    }
+  }
+
+  void SoAExtractor(ParticleCell &cell, SoA &soa, size_t offset = 0) override {}
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
    * of kernel calls compared to the number of distance calculations
@@ -144,8 +164,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
    * @return
    */
   double getFlops(unsigned long numFlopsPerKernelCall) const {
-    // 3 sub + 3 square + 2 add
-    const double numFlopsPerDistanceCalculation = 8;
     const double distFlops = numFlopsPerDistanceCalculation * static_cast<double>(_distanceCalculations);
     const double kernFlops = numFlopsPerKernelCall * static_cast<double>(_kernelCalls);
     return distFlops + kernFlops;
@@ -165,12 +183,10 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   unsigned long getKernelCalls() const { return _kernelCalls; }
 
  private:
-  enum SoAAttributes { id, posX, posY, posZ };
-
   double _cutoffSquare;
   unsigned long _distanceCalculations, _kernelCalls;
+  // 3 sub + 3 square + 2 add
+  static constexpr double numFlopsPerDistanceCalculation = 8.0;
 };
 
 } /* namespace autopas */
-
-#endif /* SRC_PAIRWISEFUNCTORS_FLOPCOUNTERFUNCTOR_H_ */
