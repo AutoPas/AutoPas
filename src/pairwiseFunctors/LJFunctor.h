@@ -180,7 +180,8 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
    */
   // clang-format on
-  virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t, AlignedAllocator<size_t>>> &neighborList,
+  virtual void SoAFunctor(SoA &soa,
+                          const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                           size_t iFrom, size_t iTo, bool newton3 = true) override {
     auto numParts = soa.getNumParticles();
     AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
