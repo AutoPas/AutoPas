@@ -11,15 +11,15 @@ autopas::utils::ExceptionBehavior autopas::utils::ExceptionHandler::_behavior = 
 std::function<void()> autopas::utils::ExceptionHandler::_customAbortFunction = abort;
 
 template <>
-void autopas::utils::ExceptionHandler::exception(const std::string exceptionString) {
+void autopas::utils::ExceptionHandler::exception(const std::string e) {
   // no lock here, as a different public function is called!!!
-  AutoPasException autoPasException(exceptionString);
+  AutoPasException autoPasException(e);
   exception(autoPasException);
 }
 
 template <>
-void autopas::utils::ExceptionHandler::exception(const char* const exceptionString) {
-  exception(std::string(exceptionString));
+void autopas::utils::ExceptionHandler::exception(const char* const e) {
+  exception(std::string(e));
 }
 
 void autopas::utils::ExceptionHandler::rethrow() {
