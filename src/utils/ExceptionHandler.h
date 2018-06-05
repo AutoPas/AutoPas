@@ -55,7 +55,7 @@ class ExceptionHandler {
     std::exception_ptr p;
     switch (_behavior) {
       case throwException:
-        throw e;
+        throw e;  // NOLINT
       default:
         nonThrowException(e);
     }
@@ -75,7 +75,7 @@ class ExceptionHandler {
    */
   static void setCustomAbortFunction(std::function<void()> function) {
     std::lock_guard<std::mutex> guard(exceptionMutex);
-    _customAbortFunction = function;
+    _customAbortFunction = std::move(function);
   }
 
  private:
@@ -120,7 +120,7 @@ class ExceptionHandler {
      * returns the description
      * @return
      */
-    virtual const char* what() const throw() override { return _description.c_str(); }
+    const char* what() const noexcept override { return _description.c_str(); }
 
    private:
     std::string _description;
@@ -132,13 +132,13 @@ class ExceptionHandler {
  * @param exceptionString the string to describe the exception
  */
 template <>
-void ExceptionHandler::exception(const std::string exceptionString);
+void ExceptionHandler::exception(const std::string e);  // NOLINT
 
 /**
  * Handles an exception that is defined using the input string
  * @param exceptionString the string to describe the exception
  */
 template <>
-void ExceptionHandler::exception(const char* const exceptionString);
+void ExceptionHandler::exception(const char* const e);  // NOLINT
 }  // namespace utils
 }  // namespace autopas
