@@ -31,6 +31,14 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
  public:
   /**
+   * Enum that specifies how the verlet lists should be build
+   */
+  enum BuildVerletListType {
+    VerletAoS,  /// build it using AoS
+    VerletSoA   /// build it using SoA
+  };
+
+  /**
    * Constructor of the VerletLists class.
    * The neighbor lists are build using a search radius of cutoff + skin.
    * The rebuildFrequency should be chosen, s.t. the particles do not move more
@@ -44,14 +52,16 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * always rebuild, 10 means they are rebuild after 10 traversals.
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
-              unsigned int rebuildFrequency = 1)
+              unsigned int rebuildFrequency = 1,
+              BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
       : LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false),
         _soaListIsValid(false),
-        _soa() {
+        _soa(),
+        _buildVerletListType(buildVerletListType) {
     _soa.initArrays({
         Particle::AttributeNames::id,
         Particle::AttributeNames::posX,
@@ -262,8 +272,17 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, (this->getCutoff() * this->getCutoff()));
 
-    //LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
-    LinkedCells<Particle, ParticleCell>::iteratePairwiseSoA2(&f, useNewton3);
+    switch (_buildVerletListType) {
+      case BuildVerletListType::VerletAoS:
+        LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
+        break;
+      case BuildVerletListType::VerletSoA:
+        LinkedCells<Particle, ParticleCell>::iteratePairwiseSoA2(&f, useNewton3);
+        break;
+      default:
+        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType");
+        break;
+    }
     _soaListIsValid = false;
   }
 
@@ -431,6 +450,9 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
   /// global SoA of verlet lists
   SoA _soa;
+
+  /// specifies how the verlet lists are build
+  BuildVerletListType _buildVerletListType;
 };
 
 } /* namespace autopas */
