@@ -78,7 +78,8 @@ class Functor {
    * least iFrom and less than soa.size())
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t, AlignedAllocator<size_t>>> &neighborList,
+  virtual void SoAFunctor(SoA &soa,
+                          const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                           size_t iFrom, size_t iTo, bool newton3 = true) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
