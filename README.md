@@ -26,7 +26,7 @@ cd build
 cmake ..
 make
 ```
-if you want to use another compiler, specify it before the first cmake call, e.g.:
+if you want to use another compiler, specify it at the first cmake call, e.g.:
 ```
 mkdir build
 cd build
@@ -40,6 +40,19 @@ cd build
 cmake -G Ninja ..
 ninja
 ```
+
+#### Building AutoPas on a Cluster
+HPC clusters often use module systems. CMake is sometimes not able to
+correctly detect the compiler you wished to use. If a wrong compiler is
+found please specify the compiler explicitly, e.g. for gcc:
+```
+mkdir build
+cd build
+CC=`which gcc` CXX=`which g++` cmake ..
+make
+```
+
+
 
 ## Testing
 to run tests:
@@ -84,7 +97,7 @@ For that we provide some basic Particle classes defined
 in `src/particles/` that you can use either directly
 or you can write your own Particle class by inheriting from
 one of the provided classes.
-```
+```C++
 class SPHParticle : public autopas::Particle {
 
 }
@@ -99,7 +112,7 @@ Once you have defined your particle you can start with functors;
 ### Iterating Through Particles
 Iterators to iterate over particle are provided.
 The particle can be accesses using `iter->` (`*iter` is also possible), e.g.
-```
+```C++
 for(auto iter = container.begin(), iter.isValid(); ++iter){
     // user code
     auto position = iter->getR();
@@ -109,7 +122,7 @@ for(auto iter = container.begin(), iter.isValid(); ++iter){
 ### Updating the Container
 #### How
 You can update the container using
-```
+```C++
 ParticleContainer::updateContainer()
 ```
 #### When it is necessary
@@ -122,7 +135,7 @@ You have to update the container when the two conditions are fullfilled:
 If you moved particles by more than one interaction length.
 If you are planning to move particles by a long distance,
 e.g. because of boundary conditions please delete the particles and add them again:
-```
+```C++
 std::vector<autopas::sph::SPHParticle> invalidParticles;
 for (auto part = sphSystem.begin(); part.isValid(); ++part) {
   if( /*check*/){
