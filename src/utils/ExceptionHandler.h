@@ -129,14 +129,14 @@ class ExceptionHandler {
 
 /**
  * Handles an exception that is defined using the input string
- * @param exceptionString the string to describe the exception
+ * @param e the string to describe the exception
  */
 template <>
 void ExceptionHandler::exception(const std::string e);  // NOLINT
 
 /**
  * Handles an exception that is defined using the input string
- * @param exceptionString the string to describe the exception
+ * @param e the string to describe the exception
  */
 template <>
 void ExceptionHandler::exception(const char* const e);  // NOLINT
