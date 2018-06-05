@@ -45,7 +45,98 @@ class VerletListHelpers {
         // (ensured by traversals)
         // also the list is not allowed to be resized!
 
-        _verletListsAoS[&i].push_back(&j);
+        _verletListsAoS.at(&i).push_back(&j);
+    }
+
+    virtual void SoAFunctor(SoA &soa, bool /*newton3*/ = true) override {
+      if (soa.getNumParticles() == 0) return;
+
+      Particle **const __restrict__ idptr = reinterpret_cast<Particle * *const>(soa.begin(Particle::AttributeNames::id));
+      double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
+      double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
+      double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
+
+      for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+        auto &currentList = _verletListsAoS.at(idptr[i]);
+
+        for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
+          if (i == j) continue;
+
+          const double drx = xptr[i] - xptr[j];
+          const double dry = yptr[i] - yptr[j];
+          const double drz = zptr[i] - zptr[j];
+
+          const double drx2 = drx * drx;
+          const double dry2 = dry * dry;
+          const double drz2 = drz * drz;
+
+          const double dr2 = drx2 + dry2 + drz2;
+
+          if (dr2 < _cutoffskinsquared) {
+            currentList.push_back(idptr[j]);
+          }
+        }
+      }
+    }
+
+    virtual void SoAFunctor(SoA &soa1, SoA &soa2, bool /*newton3*/ = true) override {
+      if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+
+      Particle **const __restrict__ id1ptr = reinterpret_cast<Particle * *const>(soa1.begin(Particle::AttributeNames::id));
+      double *const __restrict__ x1ptr = soa1.begin(Particle::AttributeNames::posX);
+      double *const __restrict__ y1ptr = soa1.begin(Particle::AttributeNames::posY);
+      double *const __restrict__ z1ptr = soa1.begin(Particle::AttributeNames::posZ);
+
+      Particle **const __restrict__ id2ptr = reinterpret_cast<Particle * *const>(soa2.begin(Particle::AttributeNames::id));
+      double *const __restrict__ x2ptr = soa2.begin(Particle::AttributeNames::posX);
+      double *const __restrict__ y2ptr = soa2.begin(Particle::AttributeNames::posY);
+      double *const __restrict__ z2ptr = soa2.begin(Particle::AttributeNames::posZ);
+
+      for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
+        auto &currentList = _verletListsAoS.at(id1ptr[i]);
+
+        for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+          const double drx = x1ptr[i] - x2ptr[j];
+          const double dry = y1ptr[i] - y2ptr[j];
+          const double drz = z1ptr[i] - z2ptr[j];
+
+          const double drx2 = drx * drx;
+          const double dry2 = dry * dry;
+          const double drz2 = drz * drz;
+
+          const double dr2 = drx2 + dry2 + drz2;
+
+          if (dr2 < _cutoffskinsquared) {
+            currentList.push_back(id2ptr[j]);
+          }
+        }
+      }
+    }
+
+    virtual void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) override {
+      assert(offset == 0);
+      soa.resizeArrays(cell.numParticles());
+
+      if (cell.numParticles() == 0) return;
+
+      double *const __restrict__ idptr = soa.begin(Particle::AttributeNames::id);
+      double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
+      double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
+      double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
+
+      auto cellIter = cell.begin();
+      // load particles in SoAs
+      for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
+        Particle* pptr = &(*cellIter);
+        idptr[i] = reinterpret_cast<double&>(pptr);
+        xptr[i] = cellIter->getR()[0];
+        yptr[i] = cellIter->getR()[1];
+        zptr[i] = cellIter->getR()[2];
+      }
+    }
+
+    virtual void SoAExtractor(ParticleCell &cell, SoA &soa, size_t offset = 0) override {
+      // nothing yet...
     }
 
    private:
@@ -99,5 +190,5 @@ class VerletListHelpers {
     std::atomic<bool> _valid;
   };
 
-};  // class verlet_internal
+};  // class VerletListHelpers
 }  // namespace autopas

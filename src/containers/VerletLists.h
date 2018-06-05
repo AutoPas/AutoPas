@@ -262,7 +262,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, (this->getCutoff() * this->getCutoff()));
 
-    LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
+    //LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
+    LinkedCells<Particle, ParticleCell>::iteratePairwiseSoA2(&f, useNewton3);
     _soaListIsValid = false;
   }
 
@@ -369,7 +370,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     _soaNeighborLists.resize(_aosNeighborLists.size());
     // clear the aos 2 soa map
     _aos2soaMap.clear();
-    //_aos2soaMap.reserve(_aosNeighborLists.size());
+
+    _aos2soaMap.reserve(_aosNeighborLists.size());
     size_t i = 0;
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
       // set the map
