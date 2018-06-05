@@ -50,6 +50,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @param rebuildFrequency specifies after how many pair-wise traversals the
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals.
+   * @param buildVerletListType specifies how the verlet list should be build, see BuildVerletListType
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
               unsigned int rebuildFrequency = 1,
