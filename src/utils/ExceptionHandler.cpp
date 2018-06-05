@@ -8,10 +8,10 @@
 
 std::mutex autopas::utils::ExceptionHandler::exceptionMutex;
 autopas::utils::ExceptionBehavior autopas::utils::ExceptionHandler::_behavior = ExceptionBehavior::throwException;
-std::function<void()> autopas::utils::ExceptionHandler::_customAbortFunction = abort;
+std::function<void()> autopas::utils::ExceptionHandler::_customAbortFunction = abort;  // NOLINT
 
 template <>
-void autopas::utils::ExceptionHandler::exception(const std::string e) {
+void autopas::utils::ExceptionHandler::exception(const std::string e) {  // NOLINT
   // no lock here, as a different public function is called!!!
   AutoPasException autoPasException(e);
   exception(autoPasException);
