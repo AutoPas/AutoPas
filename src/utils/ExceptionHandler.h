@@ -55,10 +55,31 @@ class ExceptionHandler {
     std::exception_ptr p;
     switch (_behavior) {
       case throwException:
-        throw e;
+        throw e;  // NOLINT
       default:
         nonThrowException(e);
     }
+  }
+
+  /**
+   * Handles an exception that is defined using exceptionString as well as multiple arguments.
+   * It uses the same fmt library that is also used in spdlog and AutoPasLogger. Call it using e.g.:
+   * exception("failure, because {} is not less than {}", 4, 3);
+   *
+   * @tparam First the template type of the first argument
+   * @tparam Args types of multiple
+   * @param exceptionString the basic exception string
+   * @param first the first argument
+   * @param args more arguments
+   * @note First is needed to differentiate this from the template with exception(const Exception e)
+   * @note this is a variadic function, and can thus incorporate an arbitrary amount of arguments
+   */
+  template <typename First, typename... Args>
+  static void exception(std::string exceptionString, First first, Args... args)  // recursive variadic function
+  {
+    std::string s = fmt::format(exceptionString, first, args...);
+
+    exception(s);
   }
 
   /**
@@ -75,7 +96,7 @@ class ExceptionHandler {
    */
   static void setCustomAbortFunction(std::function<void()> function) {
     std::lock_guard<std::mutex> guard(exceptionMutex);
-    _customAbortFunction = function;
+    _customAbortFunction = std::move(function);
   }
 
  private:
@@ -114,13 +135,13 @@ class ExceptionHandler {
      * constructor
      * @param description a descriptive string
      */
-    explicit AutoPasException(const std::string& description) : _description(description){};
+    explicit AutoPasException(std::string description) : _description(std::move(description)){};
 
     /**
      * returns the description
      * @return
      */
-    virtual const char* what() const throw() override { return _description.c_str(); }
+    const char* what() const noexcept override { return _description.c_str(); }
 
    private:
     std::string _description;
@@ -129,16 +150,16 @@ class ExceptionHandler {
 
 /**
  * Handles an exception that is defined using the input string
- * @param exceptionString the string to describe the exception
+ * @param e the string to describe the exception
  */
 template <>
-void ExceptionHandler::exception(const std::string exceptionString);
+void ExceptionHandler::exception(const std::string e);  // NOLINT
 
 /**
  * Handles an exception that is defined using the input string
- * @param exceptionString the string to describe the exception
+ * @param e the string to describe the exception
  */
 template <>
-void ExceptionHandler::exception(const char* const exceptionString);
+void ExceptionHandler::exception(const char* const e);  // NOLINT
 }  // namespace utils
 }  // namespace autopas

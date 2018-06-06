@@ -10,3 +10,14 @@ ADD_EXECUTABLE(basic
 
 TARGET_LINK_LIBRARIES(basic
         autopas)
+
+#-----------------test-----------------
+# add check for current target
+add_test(
+        NAME basic.test
+        COMMAND basic
+        CONFIGURATIONS checkExamples
+)
+
+# add the test to checkExamples
+add_dependencies(checkExamples basic)

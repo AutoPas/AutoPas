@@ -485,6 +485,7 @@ MPI_Comm getDecomposition(const std::array<double, 3> globalMin, const std::arra
 
 int main(int argc, char* argv[]) {
   MPI_Init(&argc, &argv);
+  autopas::logger::create();
 
   std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
   globalBoxMax[0] = 1.;
@@ -519,8 +520,12 @@ int main(int argc, char* argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
+  int rank;
+  MPI_Comm_rank(comm, &rank);
   for (double time = 0.; time < t_end && step < 55; time += dt, ++step) {
-    std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
+    if (rank == 0) {
+      std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
+    }
     // 1.1 Leap frog: Initial Kick & Full Drift
     leapfrogInitialKick(sphSystem, dt);
     leapfrogFullDrift(sphSystem, dt);  // changes position

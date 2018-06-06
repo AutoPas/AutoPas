@@ -1,6 +1,7 @@
 #ifndef AUTOPAS_SOA_H
 #define AUTOPAS_SOA_H
 
+#include <algorithm>
 #include <cassert>
 #include <map>
 #include <vector>
