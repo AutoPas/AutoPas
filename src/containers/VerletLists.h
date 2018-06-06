@@ -281,7 +281,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         LinkedCells<Particle, ParticleCell>::iteratePairwiseSoA2(&f, useNewton3);
         break;
       default:
-        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType");
+        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+                                           _buildVerletListType);
         break;
     }
     _soaListIsValid = false;
