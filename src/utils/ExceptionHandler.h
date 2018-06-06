@@ -62,6 +62,27 @@ class ExceptionHandler {
   }
 
   /**
+   * Handles an exception that is defined using exceptionString as well as multiple arguments.
+   * It uses the same fmt library that is also used in spdlog and AutoPasLogger. Call it using e.g.:
+   * exception("failure, because {} is not less than {}", 4, 3);
+   *
+   * @tparam First the template type of the first argument
+   * @tparam Args types of multiple
+   * @param exceptionString the basic exception string
+   * @param first the first argument
+   * @param args more arguments
+   * @note First is needed to differentiate this from the template with exception(const Exception e)
+   * @note this is a variadic function, and can thus incorporate an arbitrary amount of arguments
+   */
+  template <typename First, typename... Args>
+  static void exception(std::string exceptionString, First first, Args... args)  // recursive variadic function
+  {
+    std::string s = fmt::format(exceptionString, first, args...);
+
+    exception(s);
+  }
+
+  /**
    * Rethrows the current exception or prints it.
    * Depending on the set behavior the currently active exception is either
    * rethrown, printed or otherwise handled.
