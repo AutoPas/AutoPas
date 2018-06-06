@@ -68,7 +68,6 @@ TEST_F(ExceptionHandlerTest, TestVariadicExceptionMessages) {
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
   }
-
 }
 
 TEST_F(ExceptionHandlerTest, TestAbort) {
