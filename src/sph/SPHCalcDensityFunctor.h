@@ -26,7 +26,7 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
    * @param newton3 defines whether or whether not to use newton 3
    */
   inline void AoSFunctor(SPHParticle &i, SPHParticle &j, bool newton3 = true) override {
-    const std::array<double, 3> dr = arrayMath::sub(j.getR(), i.getR());  // ep_j[j].pos - ep_i[i].pos;
+    const std::array<double, 3> dr = ArrayMath::sub(j.getR(), i.getR());  // ep_j[j].pos - ep_i[i].pos;
     const double density =
         j.getMass() * SPHKernels::W(dr, i.getSmoothingLength());  // ep_j[j].mass * W(dr, ep_i[i].smth)
     i.addDensity(density);

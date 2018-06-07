@@ -26,8 +26,8 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
 
-      std::array<double, 3> dr = arrayMath::sub(coordsI, coordsJ);
-      double dr2 = arrayMath::dot(dr, dr);
+      std::array<double, 3> dr = ArrayMath::sub(coordsI, coordsJ);
+      double dr2 = ArrayMath::dot(dr, dr);
 
       if (dr2 > CUTOFFSQUARE) return;
 

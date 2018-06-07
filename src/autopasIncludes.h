@@ -11,10 +11,10 @@
 /// @todo separate autopas.h and autopasmd.h
 
 // utils
+#include "utils/ArrayMath.h"
 #include "utils/Logger.h"
 #include "utils/SoA.h"
 #include "utils/Timer.h"
-#include "utils/arrayMath.h"
 
 // particles
 #include "particles/MoleculeLJ.h"

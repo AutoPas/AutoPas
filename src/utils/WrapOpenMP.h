@@ -19,6 +19,11 @@
 #include <cassert>
 #if defined(AUTOPAS_OPENMP)
 #include <omp.h>
+#endif
+
+namespace autopas {
+
+#if defined(AUTOPAS_OPENMP)
 
 /**
  * Wrapper for omp_get_thread_num().
@@ -47,25 +52,25 @@ typedef omp_lock_t autopas_lock_t;
  * Wrapper for omp_set_lock().
  * @param l Pointer to lock to be set.
  */
-inline void autopas_set_lock(autopas_lock_t* l) { omp_set_lock(l); }
+inline void autopas_set_lock(autopas_lock_t *l) { omp_set_lock(l); }
 
 /**
  * Wrapper for omp_init_lock().
  * @param l Pointer to lock to be initialized.
  */
-inline void autopas_init_lock(autopas_lock_t* l) { omp_init_lock(l); }
+inline void autopas_init_lock(autopas_lock_t *l) { omp_init_lock(l); }
 
 /**
  * Wrapper for omp_unset_lock().
  * @param l Pointer to lock to be unset.
  */
-inline void autopas_unset_lock(autopas_lock_t* l) { omp_unset_lock(l); }
+inline void autopas_unset_lock(autopas_lock_t *l) { omp_unset_lock(l); }
 
 /**
  * Wrapper for omp_destroy_lock().
  * @param l Pointer to lock to be destroyed.
  */
-inline void autopas_destroy_lock(autopas_lock_t* l) { omp_destroy_lock(l); }
+inline void autopas_destroy_lock(autopas_lock_t *l) { omp_destroy_lock(l); }
 
 #else
 
@@ -125,4 +130,7 @@ inline void autopas_unset_lock(autopas_lock_t *l) {
 inline void autopas_destroy_lock(autopas_lock_t *l) {
   assert(l != nullptr);  // TODO: customize asserts
 }
+
 #endif
+
+}  // namespace autopas

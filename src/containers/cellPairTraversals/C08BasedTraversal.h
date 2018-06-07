@@ -90,16 +90,16 @@ inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(unsign
 template <class ParticleCell, class CellFunctor>
 inline void C08BasedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
   using std::make_pair;
-  using ThreeDimensionalMapping::threeToOneD;
+  typedef ThreeDimensionalMapping TDM;
 
-  unsigned long o = threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);  // origin
-  unsigned long x = threeToOneD(1ul, 0ul, 0ul, this->_cellsPerDimension);  // displacement to the right
-  unsigned long y = threeToOneD(0ul, 1ul, 0ul, this->_cellsPerDimension);  // displacement ...
-  unsigned long z = threeToOneD(0ul, 0ul, 1ul, this->_cellsPerDimension);
-  unsigned long xy = threeToOneD(1ul, 1ul, 0ul, this->_cellsPerDimension);
-  unsigned long yz = threeToOneD(0ul, 1ul, 1ul, this->_cellsPerDimension);
-  unsigned long xz = threeToOneD(1ul, 0ul, 1ul, this->_cellsPerDimension);
-  unsigned long xyz = threeToOneD(1ul, 1ul, 1ul, this->_cellsPerDimension);
+  unsigned long o = TDM::threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);  // origin
+  unsigned long x = TDM::threeToOneD(1ul, 0ul, 0ul, this->_cellsPerDimension);  // displacement to the right
+  unsigned long y = TDM::threeToOneD(0ul, 1ul, 0ul, this->_cellsPerDimension);  // displacement ...
+  unsigned long z = TDM::threeToOneD(0ul, 0ul, 1ul, this->_cellsPerDimension);
+  unsigned long xy = TDM::threeToOneD(1ul, 1ul, 0ul, this->_cellsPerDimension);
+  unsigned long yz = TDM::threeToOneD(0ul, 1ul, 1ul, this->_cellsPerDimension);
+  unsigned long xz = TDM::threeToOneD(1ul, 0ul, 1ul, this->_cellsPerDimension);
+  unsigned long xyz = TDM::threeToOneD(1ul, 1ul, 1ul, this->_cellsPerDimension);
 
   int i = 0;
   // if incrementing along X, the following order will be more cache-efficient:

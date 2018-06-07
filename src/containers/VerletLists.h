@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "../utils/ArrayMath.h"
 #include "LinkedCells.h"
 #include "VerletListHelpers.h"
-#include "utils/arrayMath.h"
 
 namespace autopas {
 
@@ -193,8 +193,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      boxmin = arrayMath::addScalar(boxmin, -_skin / 2.);
-      boxmax = arrayMath::addScalar(boxmax, +_skin / 2.);
+      boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
+      boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
       for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not iter->inBox(boxmin, boxmax)) {
           AutoPasLogger->debug(

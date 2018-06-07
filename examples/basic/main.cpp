@@ -57,7 +57,7 @@ void addAFewParticles(ParticleCell &pc) {
 }
 
 int main() {
-  autopas::logger::create();
+  autopas::Logger::create();
   testParticleContainerFull();
   testParticleContainerRMM();
 

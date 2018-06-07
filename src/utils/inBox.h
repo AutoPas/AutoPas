@@ -53,6 +53,6 @@ bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, con
   return not(inBox(position, low, high));
 }
 
-} /* namespace autopas */
+}  // namespace autopas
 
 #endif /* SRC_UTILS_INBOX_H_ */

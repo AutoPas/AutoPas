@@ -5,7 +5,7 @@
 #ifndef AUTOPAS_SPHKERNELS_H
 #define AUTOPAS_SPHKERNELS_H
 
-#include "utils/arrayMath.h"
+#include "utils/ArrayMath.h"
 
 #include <algorithm>
 #include <array>
@@ -36,7 +36,7 @@ class SPHKernels {
    */
   static inline double W(const std::array<double, 3> dr, const double h) {
     const double H = kernelSupportRadius * h;
-    const double dr2 = autopas::arrayMath::dot(dr, dr);
+    const double dr2 = autopas::ArrayMath::dot(dr, dr);
     if (dr2 < H * H) {
       const double s = sqrt(dr2) / H;  // sqrt(dr * dr) / H;
       const double s1 = 1.0 - s;       // (1.0 - s < 0) ? 0 : 1.0 - s;
@@ -64,7 +64,7 @@ class SPHKernels {
    */
   static inline std::array<double, 3> gradW(const std::array<double, 3> dr, const double h) {
     const double H = kernelSupportRadius * h;
-    const double drabs = sqrt(autopas::arrayMath::dot(dr, dr));
+    const double drabs = sqrt(autopas::ArrayMath::dot(dr, dr));
     const double s = drabs / H;  // sqrt(dr * dr) / H;
     const double s1 = (1.0 - s < 0) ? 0 : 1.0 - s;
     const double s2 = (0.5 - s < 0) ? 0 : 0.5 - s;
@@ -72,7 +72,7 @@ class SPHKernels {
     // if # of dimension == 3
     r_value *= 16.0 / pi / (H * H * H);
     const double scale = r_value / (drabs * H + 1.0e-6 * h);
-    return autopas::arrayMath::mulScalar(dr, scale);  // dr * r_value / (sqrt(dr * dr) * H + 1.0e-6 * h);
+    return autopas::ArrayMath::mulScalar(dr, scale);  // dr * r_value / (sqrt(dr * dr) * H + 1.0e-6 * h);
   }
 };
 }  // namespace sph

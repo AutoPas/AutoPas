@@ -35,13 +35,13 @@ template <class Particle, class ParticleCell>
 class AutoPas {
  public:
   AutoPas() {
-    // initialize the logger
-    autopas::logger::create();
+    // initialize the Logger
+    autopas::Logger::create();
   }
 
   ~AutoPas() {
-    // remove the logger from the registry
-    autopas::logger::unregister();
+    // remove the Logger from the registry
+    autopas::Logger::unregister();
   }
 
   /**

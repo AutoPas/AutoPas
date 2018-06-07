@@ -37,11 +37,11 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
 
-  TouchableParticle part(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   lcContainer.addHaloParticle(part);
 
   // touch them using the regionIterator
-  for (auto iterator = lcContainer.getRegionIterator(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+  for (auto iterator = lcContainer.getRegionIterator(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
                                                      autopas::IteratorBehavior::ownedOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
@@ -64,11 +64,11 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
 
-  TouchableParticle part(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   lcContainer.addHaloParticle(part);
 
   // touch them using the regionIterator
-  for (auto iterator = lcContainer.getRegionIterator(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+  for (auto iterator = lcContainer.getRegionIterator(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
                                                      autopas::IteratorBehavior::haloOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
@@ -81,7 +81,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
+    ASSERT_EQ(iterator->inBox(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
                   ? (iterator->inBox(_boxMin, _regionMax) ? 0 : 1)
                   : 0,
               iterator->getNumTouched());

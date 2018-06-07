@@ -17,15 +17,18 @@
 #define AutoPasLogger spdlog::get("AutoPasLog")
 
 namespace autopas {
-
-class logger {
+/**
+ * Logger class to provide interface to basic functions of the logger.
+ * You can create the spdlog's logger or delete it using the provided functions.
+ */
+class Logger {
  public:
   /**
    * create a logger writing to the file system
    * @param filename
    */
   static void create(std::string& filename) {
-    // drop an already registered logger if it exists
+    // drop an already registered Logger if it exists
     if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
     spdlog::basic_logger_mt("AutoPasLog", filename);
   }
@@ -36,7 +39,7 @@ class logger {
    * @param oss
    */
   static void create(std::ostream& oss = std::cout) {
-    // drop an already registered logger if it exists
+    // drop an already registered Logger if it exists
     if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
     auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
     auto logger = std::make_shared<spdlog::logger>("AutoPasLog", ostream_sink);
@@ -55,5 +58,5 @@ class logger {
    * disable the logger
    */
   static void disable() { spdlog::set_level(spdlog::level::off); }
-};  // class logger
+};  // class Logger
 }  // namespace autopas

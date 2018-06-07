@@ -152,6 +152,6 @@ inline bool operator!=(const AlignedAllocator<T, TAlignment> &a, const AlignedAl
   return !(a == b);
 }
 
-} /* namespace autopas */
+}  // namespace autopas
 
 #endif  // SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
