@@ -29,13 +29,15 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
    * @param endRegion top corner of the region to iterate over
    */
   explicit RegionParticleIterator(std::vector<ParticleCell> *cont, std::array<double, 3> startRegion,
-                                  std::array<double, 3> endRegion)
-      : ParticleIterator<Particle, ParticleCell>(cont), _startRegion(startRegion), _endRegion(endRegion) {
+                                  std::array<double, 3> endRegion, CellBorderAndFlagManager *flagManager = nullptr,
+                                  IteratorBehavior behavior = haloAndOwned)
+      : ParticleIterator<Particle, ParticleCell>(cont, flagManager, behavior),
+        _startRegion(startRegion),
+        _endRegion(endRegion) {
     // ParticleIterator's constructor will initialize the Iterator, such that it
     // points to the first particle if one is found, otherwise the pointer is
     // not valid
-    if (this->isValid()) {  // if there is NO particle, we can not dereference
-      // it, so we need a check.
+    if (this->isValid()) {  // if there is NO particle, we can not dereference it, so we need a check.
       if (not(this->operator*()).inBox(_startRegion, _endRegion)) {
         operator++();
       }

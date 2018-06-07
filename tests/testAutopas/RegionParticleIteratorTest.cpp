@@ -31,6 +31,63 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
   }
 }
 
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned) {
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+
+  // add a number of particles
+  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
+
+  TouchableParticle part(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  lcContainer.addHaloParticle(part);
+
+  // touch them using the regionIterator
+  for (auto iterator = lcContainer.getRegionIterator(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+                                                     autopas::IteratorBehavior::ownedOnly);
+       iterator.isValid(); ++iterator) {
+    iterator->touch();
+  }
+
+  // check the touch using the normal iterator
+  for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
+    //  std::cout << "id: " << iterator->getID() << " at [" <<
+    //  iterator->getR()[0]
+    //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
+    //              << "] touched:" << iterator->getNumTouched() << std::endl;
+
+    ASSERT_EQ(iterator->inBox(_boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+  }
+}
+
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo) {
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+
+  // add a number of particles
+  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
+
+  TouchableParticle part(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  lcContainer.addHaloParticle(part);
+
+  // touch them using the regionIterator
+  for (auto iterator = lcContainer.getRegionIterator(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+                                                     autopas::IteratorBehavior::haloOnly);
+       iterator.isValid(); ++iterator) {
+    iterator->touch();
+  }
+
+  // check the touch using the normal iterator
+  for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
+    //  std::cout << "id: " << iterator->getID() << " at [" <<
+    //  iterator->getR()[0]
+    //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
+    //              << "] touched:" << iterator->getNumTouched() << std::endl;
+
+    ASSERT_EQ(iterator->inBox(arrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
+                  ? (iterator->inBox(_boxMin, _regionMax) ? 0 : 1)
+                  : 0,
+              iterator->getNumTouched());
+  }
+}
+
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
   LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
