@@ -18,7 +18,6 @@ class CellBorderAndFlagManager {
   typedef std::size_t index_t;
 
  public:
-
   /**
    * destructor
    */
