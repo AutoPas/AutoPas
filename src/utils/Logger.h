@@ -18,42 +18,42 @@
 
 namespace autopas {
 
-namespace logger {
+class logger {
+ public:
+  /**
+   * create a logger writing to the file system
+   * @param filename
+   */
+  static void create(std::string& filename) {
+    // drop an already registered logger if it exists
+    if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
+    spdlog::basic_logger_mt("AutoPasLog", filename);
+  }
 
-/**
- * create a logger writing to the file system
- * @param filename
- */
-static void create(std::string& filename) {
-  // drop an already registered logger if it exists
-  if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
-  spdlog::basic_logger_mt("AutoPasLog", filename);
-}
+  /**
+   * create a logger with an arbitrary ostream.
+   * default is std::cout
+   * @param oss
+   */
+  static void create(std::ostream& oss = std::cout) {
+    // drop an already registered logger if it exists
+    if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
+    auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+    auto logger = std::make_shared<spdlog::logger>("AutoPasLog", ostream_sink);
+    spdlog::register_logger(logger);
+  }
 
-/**
- * create a logger with an arbitrary ostream.
- * default is std::cout
- * @param oss
- */
-static void create(std::ostream& oss = std::cout) {
-  // drop an already registered logger if it exists
-  if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
-  auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
-  auto logger = std::make_shared<spdlog::logger>("AutoPasLog", ostream_sink);
-  spdlog::register_logger(logger);
-}
+  /**
+   * removes the logger. This should only be done at teardown of the simulation or
+   * for tests.
+   * logging after the logger has been removed and no new logger has been defined
+   * will lead to undefined behavior!!!
+   */
+  static void unregister() { spdlog::drop("AutoPasLog"); }
 
-/**
- * removes the logger. This should only be done at teardown of the simulation or
- * for tests.
- * logging after the logger has been removed and no new logger has been defined
- * will lead to undefined behavior!!!
- */
-static void unregister() { spdlog::drop("AutoPasLog"); }
-
-/**
- * disable the logger
- */
-static void disable() { spdlog::set_level(spdlog::level::off); }
-}  // namespace logger
+  /**
+   * disable the logger
+   */
+  static void disable() { spdlog::set_level(spdlog::level::off); }
+};  // class logger
 }  // namespace autopas
