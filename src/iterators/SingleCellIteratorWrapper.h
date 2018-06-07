@@ -53,26 +53,26 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
     return *this;
   }
 
-  inline SingleCellIteratorWrapper<Particle>& operator++() override {
+  inline SingleCellIteratorWrapper<Particle>& operator++() override final {
     _particleIterator->operator++();
     return *this;
   }
 
-  Particle& operator*() const override { return _particleIterator->operator*(); }
+  Particle& operator*() const override final { return _particleIterator->operator*(); }
 
-  void deleteCurrentParticle() override { _particleIterator->deleteCurrentParticle(); }
+  void deleteCurrentParticle() override final { _particleIterator->deleteCurrentParticle(); }
 
-  bool isValid() const override { return _particleIterator->isValid(); }
+  bool isValid() const override final { return _particleIterator->isValid(); }
 
-  bool operator==(const SingleCellIteratorInterface<Particle>& rhs) const override {
+  bool operator==(const SingleCellIteratorInterface<Particle>& rhs) const override final {
     return _particleIterator->operator==(rhs);
   }
 
-  bool operator!=(const SingleCellIteratorInterface<Particle>& rhs) const override {
+  bool operator!=(const SingleCellIteratorInterface<Particle>& rhs) const override final {
     return _particleIterator->operator!=(rhs);
   }
 
-  int getIndex() const override { return _particleIterator->getIndex(); }
+  int getIndex() const override final { return _particleIterator->getIndex(); }
 
  private:
   std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>> _particleIterator;

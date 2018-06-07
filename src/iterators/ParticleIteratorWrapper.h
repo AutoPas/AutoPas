@@ -50,16 +50,16 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
     return *this;
   }
 
-  inline ParticleIteratorWrapper<Particle>& operator++() final {
+  inline ParticleIteratorWrapper<Particle>& operator++() override final {
     _particleIterator->operator++();
     return *this;
   }
 
-  inline Particle& operator*() const final { return _particleIterator->operator*(); }
+  inline Particle& operator*() const override final { return _particleIterator->operator*(); }
 
-  inline void deleteCurrentParticle() final { _particleIterator->deleteCurrentParticle(); }
+  inline void deleteCurrentParticle() override final { _particleIterator->deleteCurrentParticle(); }
 
-  inline bool isValid() const final { return _particleIterator->isValid(); }
+  inline bool isValid() const override final { return _particleIterator->isValid(); }
 
  private:
   std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle>> _particleIterator;

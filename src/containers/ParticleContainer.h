@@ -74,37 +74,37 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * get the upper corner of the container
    * @return upper corner of the container
    */
-  const std::array<double, 3> &getBoxMax() const final { return _boxMax; }
+  const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
 
   /**
    * set the upper corner of the container
    * @param boxMax upper corner to be set
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) final { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
 
   /**
    * get the lower corner of the container
    * @return lower corner of the container
    */
-  const std::array<double, 3> &getBoxMin() const final { return _boxMin; }
+  const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
 
   /**
    * set the lower corner of the container
    * @param boxMin lower corner to be set
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) final { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
   /**
    * return the cutoff of the container
    * @return
    */
-  double getCutoff() const final { return _cutoff; }
+  double getCutoff() const override final { return _cutoff; }
 
   /**
    * set the cutoff of the container
    * @param cutoff
    */
-  void setCutoff(double cutoff) final { _cutoff = cutoff; }
+  void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
  protected:
   /**
