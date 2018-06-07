@@ -80,8 +80,9 @@ class ParticleContainerInterface {
    * @param higherCorner higher corner of the region
    * @return iterator to iterate over all particles in a specific region
    */
-  virtual ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                              std::array<double, 3> higherCorner) = 0;
+  virtual ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
   /**
    * get the upper corner of the container

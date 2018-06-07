@@ -146,8 +146,14 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        (ParticleIteratorInterface<Particle> *)new internal::ParticleIterator<Particle, ParticleCell>(
-            &this->_data, &_cellBorderFlagManager, behavior));
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBorderFlagManager, behavior));
+  }
+
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
+        &this->_data, lowerCorner, higherCorner, &_cellBorderFlagManager, behavior));
   }
 
  private:

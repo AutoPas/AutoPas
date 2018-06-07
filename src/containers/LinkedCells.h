@@ -197,6 +197,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBlock, behavior));
   }
 
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
+        &this->_data, lowerCorner, higherCorner, &_cellBlock, behavior));
+  }
+
  protected:
   /**
    * object to manage the block of cells.

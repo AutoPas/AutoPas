@@ -54,26 +54,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    */
   ParticleContainer &operator=(const ParticleContainer &other) = delete;
 
-  // virtual void init() {}
-
-  /**
-   * adds a particle to the container
-   * @param p the particle to be added
-   */
-  void addParticle(Particle &p) override = 0;
-
-  /**
-   * adds a particle to the container that lies in the halo region of the
-   * container
-   * @param haloParticle particle to be added
-   */
-  void addHaloParticle(Particle &haloParticle) override = 0;
-
-  /**
-   * deletes all halo particles
-   */
-  void deleteHaloParticles() override = 0;
-
   /**
    * function to iterate over all pairs of particles in an array of structures
    * setting. This function only handles short-range interactions.
@@ -89,30 +69,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param useNewton3 defines whether newton3 should be used
    */
   virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) = 0;
-
-  /**
-   * iterate over all particles using
-   * for(auto iter = container.begin(); iter.isValid(); ++iter)
-   * @return iterator to the first particle
-   * @todo implement IteratorBehavior
-   */
-  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<Particle>(new internal::ParticleIterator<Particle, ParticleCell>(&_data));
-  }
-
-  /**
-   * iterate over all particles in a specified region
-   * for(auto iter = container.getRegionIterator(lowCorner,
-   * highCorner);iter.isValid();++iter)
-   * @param lowerCorner lower corner of the region
-   * @param higherCorner higher corner of the region
-   * @return iterator to iterate over all particles in a specific region
-   */
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner) override {
-    return ParticleIteratorWrapper<Particle>(
-        new internal::RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner, higherCorner));
-  }
 
   /**
    * get the upper corner of the container
@@ -149,18 +105,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param cutoff
    */
   void setCutoff(double cutoff) final { _cutoff = cutoff; }
-
-  /**
-   * updates the container.
-   * this resorts particles into appropriate cells, if necessary
-   */
-  void updateContainer() override = 0;
-
-  /**
-   * check whether a container is valid, i.e. whether it is safe to use
-   * pair-wise interactions or the RegionParticleIteraor right now.
-   */
-  bool isContainerUpdateNeeded() override = 0;
 
  protected:
   /**
