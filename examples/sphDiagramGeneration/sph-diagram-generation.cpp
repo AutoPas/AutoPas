@@ -69,12 +69,12 @@ int main(int argc, char *argv[]) {
   int numParticles = 16;
   int numIterations = 100000;
   int whichContainer = 0;
-  int whichFunctor = 0;
-  if (argc == 5) {
+  //int whichFunctor = 0;
+  if (argc == 5 or argc == 4) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
     whichContainer = atoi(argv[3]);
-    whichFunctor = atoi(argv[4]);
+  //  whichFunctor = atoi(argv[4]);
   } else {
     exit(1);
   }
