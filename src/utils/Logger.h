@@ -50,6 +50,7 @@ static void create(std::ostream& oss = std::cout) {
  * will lead to undefined behavior!!!
  */
 static void unregister() { spdlog::drop("AutoPasLog"); }
+
 /**
  * disable the logger
  */

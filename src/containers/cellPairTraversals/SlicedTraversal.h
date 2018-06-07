@@ -87,7 +87,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(std::vector<Part
   _sliceThickness.clear();
   _sliceThickness.insert(_sliceThickness.begin(), numSlices, this->_cellsPerDimension[_dimsPerLength[0]] / numSlices);
   auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
-  for (int i = 0; i < rest; ++i) ++_sliceThickness[i];
+  for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
   // decreases last _sliceThickness by one to account for the way we handle base
   // cells
   --*--_sliceThickness.end();
@@ -126,7 +126,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
     return;
   }
 
-  for (auto i = 0; i < numSlices - 1; ++i) {
+  for (size_t i = 0; i < numSlices - 1; ++i) {
     locks[i] = new autopas_lock_t;
     autopas_init_lock(locks[i]);
   }
@@ -136,9 +136,9 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
 // a normal parallel region
 #pragma omp parallel for schedule(static, 1)
 #endif
-  for (auto slice = 0; slice < numSlices; ++slice) {
+  for (size_t slice = 0; slice < numSlices; ++slice) {
     array<unsigned long, 3> myStartArray{0, 0, 0};
-    for (int i = 0; i < slice; ++i) {
+    for (size_t i = 0; i < slice; ++i) {
       myStartArray[_dimsPerLength[0]] += _sliceThickness[i];
     }
 
@@ -172,7 +172,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
     }
   }
 
-  for (auto i = 0; i < numSlices - 1; ++i) {
+  for (size_t i = 0; i < numSlices - 1; ++i) {
     autopas_destroy_lock(locks[i]);
     delete locks[i];
   }

@@ -62,7 +62,7 @@ class ParticleCell {
    * Deletes the index-th particle
    * @param index the index of the particle that shall be deleted
    */
-  virtual void deleteByIndex(int index) = 0;
+  virtual void deleteByIndex(size_t index) = 0;
 };
 
 } /* namespace autopas */

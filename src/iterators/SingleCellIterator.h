@@ -30,7 +30,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  explicit SingleCellIterator(ParticleCell *cell_arg, int ind = 0) : _cell(cell_arg), _index(ind), _deleted(false) {}
+  explicit SingleCellIterator(ParticleCell *cell_arg, size_t ind = 0) : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   /**
    * destructor of SingleCellIterator
@@ -108,7 +108,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
 
  private:
   ParticleCell *_cell;
-  int _index;
+  size_t _index;
   bool _deleted;
 };
 

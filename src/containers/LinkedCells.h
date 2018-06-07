@@ -222,7 +222,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (auto i = 0; i < this->_data.size(); ++i) {
+    for (size_t i = 0; i < this->_data.size(); ++i) {
       functor->SoALoader(this->_data[i], this->_data[i]._particleSoABuffer);
     }
   }
@@ -238,7 +238,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (auto i = 0; i < this->_data.size(); ++i) {
+    for (size_t i = 0; i < this->_data.size(); ++i) {
       functor->SoAExtractor(this->_data[i], this->_data[i]._particleSoABuffer);
     }
   }

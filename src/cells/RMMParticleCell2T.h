@@ -51,7 +51,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
 
   void clear() override { _particleSoABuffer.clear(); }
 
-  void deleteByIndex(int index) override {
+  void deleteByIndex(size_t index) override {
     assert(index >= 0 and index < numParticles());
     assert(numParticles() > 0);
     if (index < numParticles() - 1) {
@@ -103,7 +103,7 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg, int ind = 0)
+  RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg, size_t ind = 0)
       : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   //  SingleCellIterator(const SingleCellIterator &cellIterator) {
@@ -187,7 +187,7 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
  private:
   RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *_cell;
   mutable Particle _AoSReservoir;
-  int _index;
+  size_t _index;
   bool _deleted;
 };
 

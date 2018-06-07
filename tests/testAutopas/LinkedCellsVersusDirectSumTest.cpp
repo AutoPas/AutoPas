@@ -40,7 +40,7 @@ void LinkedCellsVersusDirectSumTest::fillContainerWithMolecules(
 
   std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
 
-  for (int i = 0; i < numMolecules; ++i) {
+  for (unsigned long i = 0; i < numMolecules; ++i) {
     auto id = static_cast<unsigned long>(i);
     autopas::MoleculeLJ m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
     cont.addParticle(m);
@@ -74,7 +74,7 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
     forcesLinked.at(m.getID()) = m.getF();
   }
 
-  for (int i = 0; i < numMolecules; ++i) {
+  for (size_t i = 0; i < numMolecules; ++i) {
     for (int d = 0; d < 3; ++d) {
       double f1 = forcesDirect[i][d];
       double f2 = forcesLinked[i][d];

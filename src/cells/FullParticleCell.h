@@ -47,8 +47,8 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void clear() override { _particles.clear(); }
 
-  void deleteByIndex(int index) override {
-    assert(index >= 0 and index < numParticles());
+  void deleteByIndex(size_t index) override {
+    assert(index < numParticles());
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);

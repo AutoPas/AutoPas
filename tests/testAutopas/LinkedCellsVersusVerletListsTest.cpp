@@ -48,7 +48,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
     forcesLinked.at(m.getID()) = m.getF();
   }
 
-  for (int i = 0; i < numMolecules; ++i) {
+  for (unsigned long i = 0; i < numMolecules; ++i) {
     for (int d = 0; d < 3; ++d) {
       double f1 = forcesDirect[i][d];
       double f2 = forcesLinked[i][d];

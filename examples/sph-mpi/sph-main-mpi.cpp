@@ -182,7 +182,7 @@ void receive(std::vector<autopas::sph::SPHParticle>& receiveParticles, const std
   std::vector<double> recvBuffer(length);
   MPI_Recv(recvBuffer.data(), length, MPI_DOUBLE, neighbor, 3, comm, MPI_STATUS_IGNORE);
 
-  for (size_t i = 0; i < length;) {
+  for (size_t i = 0; i < (size_t)length;) {
     auto p = autopas::sph::SPHParticle::deserialize(recvBuffer.data(), i);
     receiveParticles.push_back(p);
   }
