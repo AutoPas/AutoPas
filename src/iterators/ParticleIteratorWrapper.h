@@ -11,10 +11,13 @@
 namespace autopas {
 
 /**
- * ParticleIteratorInterface class to iterate over particles.
- * This class provides a basic interface for all iterators within AutoPas.
- * The particles can be accessed using "iterator->" or "*iterator". The next
- * particle using the ++operator, e.g. "++iterator"
+ * ParticleIteratorWrapper class is the main class visible to the user to iterate over particles of the AutoPas class.
+ * The particles can be accessed using "iterator->" or "*iterator". The next particle using the ++operator, e.g.
+ * "++iteratorWrapper".
+ * @note The wrapper class provides an easy way to access the function of the ParticleIterators, e.g. allowing
+ * "iteratorWrapper->getR()" or "++iteratorWrapper"
+ * Without the wrapper class and using the ParticleIteratorInterface, the calls would look like:
+ * (*iteratorInterface)->getR() or "++(*iteratorWrapper)"
  * @tparam Particle type of the particle that is accessed
  */
 template <class Particle>
@@ -26,7 +29,7 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    * @tparam InterfacePtrType type of the interface ptr
    */
   template <class InterfacePtrType>
-  ParticleIteratorWrapper(InterfacePtrType* particleIteratorInterface)
+  explicit ParticleIteratorWrapper(InterfacePtrType* particleIteratorInterface)
       : _particleIterator(static_cast<internal::ParticleIteratorInterfaceImpl<Particle>*>(particleIteratorInterface)) {}
 
   /**
@@ -41,25 +44,25 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    * @param otherParticleIteratorWrapper the other IteratorWrapper
    * @return *this
    */
-  ParticleIteratorWrapper& operator=(const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
+  inline ParticleIteratorWrapper& operator=(const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
     _particleIterator = std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>(
         otherParticleIteratorWrapper._particleIterator->clone());
     return *this;
   }
 
-  inline ParticleIteratorWrapper<Particle>& operator++() override {
+  inline ParticleIteratorWrapper<Particle>& operator++() final {
     _particleIterator->operator++();
     return *this;
   }
 
-  Particle& operator*() const override { return _particleIterator->operator*(); }
+  inline Particle& operator*() const final { return _particleIterator->operator*(); }
 
-  void deleteCurrentParticle() override { _particleIterator->deleteCurrentParticle(); }
+  inline void deleteCurrentParticle() final { _particleIterator->deleteCurrentParticle(); }
 
-  bool isValid() const override { return _particleIterator->isValid(); }
+  inline bool isValid() const final { return _particleIterator->isValid(); }
 
  private:
-  std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>> _particleIterator;
+  std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle>> _particleIterator;
 };
 
 } /* namespace autopas */
