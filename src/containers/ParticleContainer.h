@@ -37,7 +37,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
   /**
    * destructor of ParticleContainer
    */
-  virtual ~ParticleContainer() = default;
+  ~ParticleContainer() override = default;
 
   /**
    * delete the copy constructor to prevent unwanted copies.
