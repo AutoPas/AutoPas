@@ -78,6 +78,7 @@ class ParticleContainerInterface {
    * highCorner);iter.isValid();++iter)
    * @param lowerCorner lower corner of the region
    * @param higherCorner higher corner of the region
+   * @param behavior the behavior of the iterator (shall it iterate over halo particles as well?
    * @return iterator to iterate over all particles in a specific region
    */
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(
