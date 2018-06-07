@@ -15,8 +15,8 @@ namespace autopas {
  * The particles can be accessed using "iterator->" or "*iterator". The next particle using the ++operator, e.g.
  * "++iteratorWrapper".
  * @note The wrapper class provides an easy way to access the function of the ParticleIterators, e.g. allowing
- * "iteratorWrapper->getR()" or "++iteratorWrapper"
- * Without the wrapper class and using the ParticleIteratorInterface, the calls would look like:
+ * "iteratorWrapper->getR()" or "++iteratorWrapper".
+ * Without the wrapper class and using the ParticleIteratorInterface the calls would look like:
  * (*iteratorInterface)->getR() or "++(*iteratorWrapper)"
  * @tparam Particle type of the particle that is accessed
  */

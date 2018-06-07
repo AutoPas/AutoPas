@@ -12,10 +12,13 @@
 namespace autopas {
 
 /**
- * ParticleIteratorInterface class to iterate over particles.
- * This class provides a basic interface for all iterators within AutoPas.
- * The particles can be accessed using "iterator->" or "*iterator". The next
- * particle using the ++operator, e.g. "++iterator"
+ * SingleCellIteratorWrapper class is the main class visible to the user to iterate over particles in one cell.
+ * The particles can be accessed using "iterator->" or "*iterator". The next particle using the ++operator, e.g.
+ * "++iteratorWrapper".
+ * @note The wrapper class provides an easy way to access the functions of the SingleCellIteratorInterface, e.g.
+ * allowing "iteratorWrapper->getR()" or "++iteratorWrapper". Without the wrapper class and using the
+ * ParticleIteratorInterface the calls would require de-referencing like:
+ * (*iteratorInterface)->getR() or "++(*iteratorWrapper)"
  * @tparam Particle type of the particle that is accessed
  */
 template <class Particle>
@@ -27,7 +30,7 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
    * @tparam InterfacePtrType type of the interface ptr
    */
   template <class InterfacePtrType>
-  SingleCellIteratorWrapper(InterfacePtrType* particleIteratorInterface)
+  explicit SingleCellIteratorWrapper(InterfacePtrType* particleIteratorInterface)
       : _particleIterator(
             static_cast<internal::SingleCellIteratorInterfaceImpl<Particle>*>(particleIteratorInterface)) {}
 
@@ -41,7 +44,7 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
   }
 
   /**
-   * copy constructor
+   * copy assignment constructor
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
   SingleCellIteratorWrapper& operator=(const SingleCellIteratorWrapper& otherParticleIteratorWrapper) {
