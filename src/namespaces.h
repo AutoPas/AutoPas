@@ -28,8 +28,8 @@ namespace sph {}  // namespace sph
 
 /**
  * @brief In this namespace some helper classes and functions can be found used inside of AutoPas.
- * @details These classes reside mostly in the utils directory. However, most commonly used function inside the utils directory
- * might not be in the utils namespace.
+ * @details These classes reside mostly in the utils directory. However, most commonly used function inside the utils
+ * directory might not be in the utils namespace.
  */
 namespace utils {}  // namespace utils
 
