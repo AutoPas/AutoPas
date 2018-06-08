@@ -270,7 +270,7 @@ pipeline{
                         sh "ninja clangformat"
                     }
                     script{
-                        // return 2 if modified has been found, 0 otherwise
+                        // return 2 if files have been modified by clang-format, 0 otherwise
                         try{
                             // if files were modified, return 2
                             sh "git status | grep -q modified && exit 2 || exit 0"
@@ -288,15 +288,26 @@ pipeline{
             steps{
                 dir("src"){
                     script{
-                        // return 2 if modified has been found, 0 otherwise
+                        // check if all header files have a #pragma once
                         try{
                             // if header files do not contain #pragma once, make build unstable
-                            sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 0 || exit 2'
+                            sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 2 || exit 0'
                         } catch (Exception e) {
                             // change detected
                             currentBuild.result = 'UNSTABLE'
                             echo 'all header include guards should be implemented using "#pragma once". Affected files:'
                             sh 'grep -L "#pragma once" -r . | grep "\\.h"'
+                        }
+
+                        // check if all header files are documented
+                        try{
+                            // if .cpp or .h files do not contain a file comment, return 2
+                            sh "grep '\\\\file\\|\\@file' -Lr . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
+                        } catch (Exception e) {
+                            // change detected
+                            currentBuild.result = 'UNSTABLE'
+                            echo 'all .h and .cpp files should be documented with doxygen comments (@file)". Affected files:'
+                            sh "grep '\\\\file\\|\\@file' -Lr . | grep '\\.cpp\\|\\.h'"
                         }
                     }
                 }
