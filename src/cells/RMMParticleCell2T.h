@@ -1,8 +1,8 @@
-/*
- * RMMParticleCell2T.h
+/**
+ * @file RMMParticleCell2T.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17.01.2018
+ * @author tchipevn
  */
 
 #pragma once
@@ -199,4 +199,4 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
 template <class Particle>
 using RMMParticleCell = RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;
 
-} /* namespace autopas */
+}  // namespace autopas

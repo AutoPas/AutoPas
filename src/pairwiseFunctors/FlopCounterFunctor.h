@@ -1,8 +1,8 @@
-/*
- * FlopCounterFunctor.h
+/**
+ * @file FlopCounterFunctor.h
  *
- *  Created on: 22 Jan 2018
- *      Author: tchipevn
+ * @date 22 Jan 2018
+ * @author tchipevn
  */
 
 #pragma once

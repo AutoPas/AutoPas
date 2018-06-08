@@ -1,3 +1,10 @@
+/**
+ * @file AlignedAllocator.h
+ * @author tchipev
+ * @date 07.02.2018
+ */
+
+
 #ifndef SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
 #define SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
 

@@ -1,8 +1,8 @@
-/*
- * SingleCellIteratorInterface.h
+/**
+ * @file SingleCellIteratorInterface.h
  *
- *  Created on: 31 May 2018
- *      Author: seckler
+ * @date 31 May 2018
+ * @author seckler
  */
 
 #pragma once

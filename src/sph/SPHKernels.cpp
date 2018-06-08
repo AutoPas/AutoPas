@@ -1,6 +1,8 @@
-//
-// Created by seckler on 22.01.18.
-//
+/**
+ * @file SPHKernels.cpp
+ * @author seckler
+ * @date 22.01.18
+ */
 #include "SPHKernels.h"
 
 #include <algorithm>

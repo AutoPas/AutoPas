@@ -1,8 +1,8 @@
-/*
- * ThreeDimensionalMapping.h
+/**
+ * @file ThreeDimensionalMapping.h
  *
- *  Created on: 15 May 2017
- *      Author: tchipevn
+ * @date 15 May 2017
+ * @author tchipevn
  */
 
 #pragma once

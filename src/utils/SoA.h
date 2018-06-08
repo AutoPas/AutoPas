@@ -1,3 +1,9 @@
+/**
+ * @file SoA.h
+ * @authors tchipevn, seckler
+ * @date 18.01.2018
+ */
+
 #ifndef AUTOPAS_SOA_H
 #define AUTOPAS_SOA_H
 

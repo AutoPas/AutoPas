@@ -1,6 +1,10 @@
-//
-// Created by seckler on 22.01.18.
-//
+/**
+ * @file autopassph.h
+ * main include file for all sph functionality
+ *
+ * @author seckler
+ * @date 22.01.2018
+ */
 
 #pragma once
 

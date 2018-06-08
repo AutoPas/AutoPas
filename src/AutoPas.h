@@ -1,5 +1,10 @@
-#ifndef AUTOPAS_AUTOPAS_H
-#define AUTOPAS_AUTOPAS_H
+/**
+ * @file AutoPas.h
+ * Main include file for the AutoPas library.
+ *
+ */
+
+#pragma once
 
 #include <iostream>
 #include <memory>
@@ -164,5 +169,3 @@ class AutoPas {
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
   std::unique_ptr<ContainerType> container;
 };
-
-#endif  // AUTOPAS_AUTOPAS_H

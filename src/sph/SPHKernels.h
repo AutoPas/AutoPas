@@ -1,6 +1,8 @@
-//
-// Created by seckler on 22.01.18.
-//
+/**
+ * @file SPHKernels.h
+ * @author seckler
+ * @date 22.01.18
+ */
 
 #ifndef AUTOPAS_SPHKERNELS_H
 #define AUTOPAS_SPHKERNELS_H

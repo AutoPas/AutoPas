@@ -1,8 +1,8 @@
-/*
- * CellBlock3D.h
+/**
+ * @file CellBlock3D.h
  *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+ * @date 19 Jan 2018
+ * @author tchipevn
  */
 
 #ifndef SRC_CONTAINERS_CELLBLOCK3D_H_

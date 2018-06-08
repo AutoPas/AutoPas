@@ -1,8 +1,8 @@
-/*
- * SlicedTraversal.h
+/**
+ * @file SlicedTraversal.h
  *
- *  Created on: 20 Apr 2018
- *      Author: gratl
+ * @date 20 Apr 2018
+ * @author gratl
  */
 
 #pragma once
@@ -178,4 +178,4 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   }
 }
 
-} /* namespace autopas */
+}  // namespace autopas

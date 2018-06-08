@@ -1,8 +1,8 @@
-/*
- * CellFunctor.h
+/**
+ * @file CellFunctor.h
  *
- *  Created on: 22 Jan 2018
- *      Author: tchipevn
+ * @date 22 Jan 2018
+ * @author tchipevn
  */
 
 #ifndef SRC_PAIRWISEFUNCTORS_CELLFUNCTOR_H_

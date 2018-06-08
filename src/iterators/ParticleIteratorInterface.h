@@ -1,8 +1,8 @@
 /**
- * ParticleIterator.h
+ * @file ParticleIteratorInterface.h
  *
- *  Created on: 29 May 2018
- *      Author: seckler
+ * @date 29 May 2018
+ * @author seckler
  */
 #pragma once
 

@@ -1,8 +1,8 @@
-/*
- * Timer.h
+/**
+ * @file Timer.h
  *
- * @Date: 11.01.2011
- * @Author: eckhardw
+ * @date 11.01.2011
+ * @author eckhardw
  */
 
 #ifndef TIMER_H_

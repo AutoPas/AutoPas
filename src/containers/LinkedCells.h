@@ -1,12 +1,11 @@
-/*
- * LinkedCells.h
+/**
+ * @file LinkedCells.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @author tchipevn
+ * @date 17.02.2018
  */
 
-#ifndef AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_
-#define AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_
+#pragma once
 
 #include "CellBlock3D.h"
 #include "ParticleContainer.h"
@@ -244,6 +243,4 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 };
 
-} /* namespace autopas */
-
-#endif /* AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_ */
+}  // namespace autopas

@@ -1,8 +1,8 @@
-/*
- * ParticleContainer.h
+/**
+ * @file ParticleContainerInterface.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 
 #pragma once

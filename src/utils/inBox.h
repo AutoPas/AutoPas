@@ -1,8 +1,8 @@
-/*
- * inBox.h
+/**
+ * @file inBox.h
  *
- *  Created on: 22 Jan 2018
- *      Author: tchipevn
+ * @date 22 Jan 2018
+ * @author tchipevn
  */
 
 #ifndef SRC_UTILS_INBOX_H_

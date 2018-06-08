@@ -1,8 +1,8 @@
-/*
- * Timer.cpp
+/**
+ * @file Timer.cpp
  *
- * @Date: 11.01.2011
- * @Author: eckhardw
+ * @date 11.01.2011
+ * @author eckhardw
  */
 
 #include "utils/Timer.h"

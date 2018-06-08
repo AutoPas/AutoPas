@@ -1,8 +1,8 @@
-/*
- * Particle.h
+/**
+ * @file Particle.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 
 #ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_

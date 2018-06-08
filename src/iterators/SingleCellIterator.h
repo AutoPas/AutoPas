@@ -1,8 +1,8 @@
-/*
- * SingleCellIterator.h
+/**
+ * @file SingleCellIterator.h
  *
- *  Created on: 31 May 2018
- *      Author: tchipevn
+ * @date 31 May 2018
+ * @author tchipevn
  */
 
 #pragma once

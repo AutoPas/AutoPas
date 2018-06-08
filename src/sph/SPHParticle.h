@@ -1,6 +1,8 @@
-//
-// Created by seckler on 19.01.18.
-//
+/**
+ * @file SPHParticle.h
+ * @author seckler
+ * @date 19.01.18
+ */
 
 #ifndef AUTOPAS_SPHPARTICLE_H
 #define AUTOPAS_SPHPARTICLE_H

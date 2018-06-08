@@ -1,6 +1,8 @@
-//
-// Created by seckler on 19.01.18.
-//
+/**
+ * @file SPHParticle.cpp
+ * @author seckler
+ * @date 19.01.18
+ */
 
 #include "SPHParticle.h"
 #include "autopasIncludes.h"

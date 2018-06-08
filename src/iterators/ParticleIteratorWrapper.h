@@ -1,8 +1,8 @@
 /**
- * ParticleIteratorWrapper.h
- *
- *  Created on: 29 May 2018
- *      Author: seckler
+ * @file ParticleIteratorWrapper.h
+ * Contains ParticleIteratorWrapper class.
+ * @author seckler
+ * @date 29.05.2018
  */
 #pragma once
 

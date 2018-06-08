@@ -1,8 +1,8 @@
-/*
- * ArrayMath.h
+/**
+ * @file ArrayMath.h
  *
- *  Created on: 18 Jan 2018
- *      Author: tchipevn
+ * @date 18 Jan 2018
+ * @author tchipevn
  */
 
 #pragma once

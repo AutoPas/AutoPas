@@ -1,12 +1,13 @@
-/*
- * autopas.h
- *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+/**
+ * @file autopasIncludes.h
+ * File to handle the includes of autopas. This file should not be included from the outside unless you want to use
+ * the lower level routines directly, without the use of the main AutoPas class.
+ * In the normal case, please include AutoPas.h.
+ * @author tchipevn
+ * @date 17.01.2018
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_
+#pragma once
 
 /// @todo separate autopas.h and autopasmd.h
 
@@ -41,5 +42,3 @@
 #include "pairwiseFunctors/FlopCounterFunctor.h"
 #include "pairwiseFunctors/Functor.h"
 #include "pairwiseFunctors/LJFunctor.h"
-
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_AUTOPAS_H_ */

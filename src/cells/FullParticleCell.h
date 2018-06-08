@@ -1,12 +1,11 @@
-/*
- * FullParticleCell.h
+/**
+ * @file FullParticleCell.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17.01.2018
+ * @author tchipevn
  */
 
-#ifndef AUTOPAS_SRC_FULLPARTICLECELL_H_
-#define AUTOPAS_SRC_FULLPARTICLECELL_H_
+#pragma once
 
 #include <vector>
 #include "ParticleCell.h"
@@ -70,6 +69,4 @@ class FullParticleCell : public ParticleCell<Particle> {
   friend class SingleCellIterator;
 };
 
-} /* namespace autopas */
-
-#endif /* AUTOPAS_SRC_FULLPARTICLECELL_H_ */
+}  // namespace autopas

@@ -1,6 +1,8 @@
-//
-// Created by seckler on 19.01.18.
-//
+/**
+ * @file SPHCalcDensityFunctor.h
+ * @author seckler
+ * @date 19.01.18
+ */
 
 #ifndef AUTOPAS_SPHCALCDENSITYFUNCTOR_H
 #define AUTOPAS_SPHCALCDENSITYFUNCTOR_H

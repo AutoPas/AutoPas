@@ -1,8 +1,8 @@
-/*
- * ParticleIterator.h
+/**
+ * @file ParticleIterator.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @authors tchievn, seckler
+ * @date 17.01.2018
  */
 
 #pragma once
