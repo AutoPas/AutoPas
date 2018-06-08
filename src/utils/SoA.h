@@ -4,9 +4,7 @@
  * @date 18.01.2018
  */
 
-#ifndef AUTOPAS_SOA_H
-#define AUTOPAS_SOA_H
-
+#pragma once
 #include <algorithm>
 #include <cassert>
 #include <map>
@@ -177,4 +175,3 @@ class SoA {
   std::map<int, std::vector<double, AlignedAllocator<double>> *> arrays;
 };
 }  // namespace autopas
-#endif  // AUTOPAS_SOA_H

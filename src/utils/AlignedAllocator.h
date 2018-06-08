@@ -4,8 +4,7 @@
  * @date 07.02.2018
  */
 
-#ifndef SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
-#define SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
+#pragma once
 
 #ifdef __SSE3__
 #include <xmmintrin.h>
@@ -165,5 +164,3 @@ inline bool operator!=(const AlignedAllocator<T, TAlignment> &a, const AlignedAl
 }
 
 }  // namespace autopas
-
-#endif  // SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H

@@ -4,9 +4,7 @@
  * @date 19.01.18
  */
 
-#ifndef AUTOPAS_SPHPARTICLE_H
-#define AUTOPAS_SPHPARTICLE_H
-
+#pragma once
 #include <vector>
 #include "particles/Particle.h"
 
@@ -390,4 +388,3 @@ class SPHParticle : public autopas::Particle {
 };
 }  // namespace sph
 }  // namespace autopas
-#endif  // AUTOPAS_SPHPARTICLE_H

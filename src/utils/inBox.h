@@ -5,9 +5,7 @@
  * @author tchipevn
  */
 
-#ifndef SRC_UTILS_INBOX_H_
-#define SRC_UTILS_INBOX_H_
-
+#pragma once
 #include <array>
 #include <type_traits>
 
@@ -54,5 +52,3 @@ bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, con
 }
 
 }  // namespace autopas
-
-#endif /* SRC_UTILS_INBOX_H_ */

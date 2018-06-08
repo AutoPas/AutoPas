@@ -4,9 +4,7 @@
  * @date 22.01.18
  */
 
-#ifndef AUTOPAS_SPHKERNELS_H
-#define AUTOPAS_SPHKERNELS_H
-
+#pragma once
 #include "utils/ArrayMath.h"
 
 #include <algorithm>
@@ -79,4 +77,3 @@ class SPHKernels {
 };
 }  // namespace sph
 }  // namespace autopas
-#endif  // AUTOPAS_SPHKERNELS_H

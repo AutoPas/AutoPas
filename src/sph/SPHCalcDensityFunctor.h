@@ -4,8 +4,7 @@
  * @date 19.01.18
  */
 
-#ifndef AUTOPAS_SPHCALCDENSITYFUNCTOR_H
-#define AUTOPAS_SPHCALCDENSITYFUNCTOR_H
+#pragma once
 
 #include "SPHKernels.h"
 #include "SPHParticle.h"
@@ -55,5 +54,3 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
 };
 }  // namespace sph
 }  // namespace autopas
-
-#endif  // AUTOPAS_SPHCALCDENSITYFUNCTOR_H

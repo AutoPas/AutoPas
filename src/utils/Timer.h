@@ -5,8 +5,7 @@
  * @author eckhardw
  */
 
-#ifndef TIMER_H_
-#define TIMER_H_
+#pragma once
 
 #include <ctime>
 namespace autopas {
@@ -38,4 +37,3 @@ class Timer {
 };
 }  // namespace utils
 }  // namespace autopas
-#endif /* TIMER_H_ */
