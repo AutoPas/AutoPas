@@ -1,18 +1,17 @@
-/*
- * LJFunctor.h
+/**
+ * @file LJFunctor.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 
-#ifndef SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_
-#define SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_
+#pragma once
 
 #include <array>
+#include "../utils/ArrayMath.h"
 #include "Functor.h"
 #include "iterators/SingleCellIterator.h"
 #include "utils/AlignedAllocator.h"
-#include "utils/arrayMath.h"
 
 namespace autopas {
 
@@ -29,8 +28,8 @@ template <class Particle, class ParticleCell>
 class LJFunctor : public Functor<Particle, ParticleCell> {
  public:
   void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
-    auto dr = arrayMath::sub(i.getR(), j.getR());
-    double dr2 = arrayMath::dot(dr, dr);
+    auto dr = ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = ArrayMath::dot(dr, dr);
 
     if (dr2 > CUTOFFSQUARE) return;
 
@@ -40,7 +39,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
-    auto f = arrayMath::mulScalar(dr, fac);
+    auto f = ArrayMath::mulScalar(dr, fac);
     i.addF(f);
     j.subF(f);
   }
@@ -422,6 +421,4 @@ double LJFunctor<T, U>::SIGMASQUARE;
 template <class T, class U>
 double LJFunctor<T, U>::SHIFT6;
 
-} /* namespace autopas */
-
-#endif /* SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_ */
+}  // namespace autopas

@@ -1,8 +1,8 @@
-/*
- * MoleculeLJ.cpp
+/**
+ * @file MoleculeLJ.cpp
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 #include "MoleculeLJ.h"
 

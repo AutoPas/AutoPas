@@ -1,16 +1,16 @@
-/*
- * FullParticleCell.h
+/**
+ * @file FullParticleCell.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17.01.2018
+ * @author tchipevn
  */
 
-#ifndef AUTOPAS_SRC_FULLPARTICLECELL_H_
-#define AUTOPAS_SRC_FULLPARTICLECELL_H_
+#pragma once
 
-#include <iterators/SingleCellIterator.h>
 #include <vector>
 #include "ParticleCell.h"
+#include "iterators/SingleCellIterator.h"
+#include "utils/SoA.h"
 
 namespace autopas {
 
@@ -19,7 +19,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Particle, FullParticleCell<Particle>>> {
+class FullParticleCell : public ParticleCell<Particle> {
  public:
   FullParticleCell() {
     _particleSoABuffer.initArrays({
@@ -35,8 +35,9 @@ class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Partic
 
   void addParticle(Particle &m) override { _particles.push_back(m); }
 
-  virtual SingleCellIterator<Particle, FullParticleCell<Particle>> begin() override {
-    return SingleCellIterator<Particle, FullParticleCell<Particle>>(this);
+  virtual SingleCellIteratorWrapper<Particle> begin() override {
+    return SingleCellIteratorWrapper<Particle>(
+        new internal::SingleCellIterator<Particle, FullParticleCell<Particle>>(this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }
@@ -45,8 +46,8 @@ class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Partic
 
   void clear() override { _particles.clear(); }
 
-  void deleteByIndex(int index) override {
-    assert(index >= 0 and index < numParticles());
+  void deleteByIndex(size_t index) override {
+    assert(index < numParticles());
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
@@ -65,16 +66,12 @@ class FullParticleCell : public ParticleCell<Particle, SingleCellIterator<Partic
   SoA _particleSoABuffer;
 
   /**
-   * iterator to iterate through ParticleCell
-   * If you need to explicitly store this iterator use
-   * typename FullParticleCell<ParticleType>::iterator iter;
+   * friend class iterator
+   * @tparam ParticleType
+   * @tparam ParticleCellType
    */
-  typedef SingleCellIterator<Particle, FullParticleCell<Particle>> iterator;
-
   template <class ParticleType, class ParticleCellType>
   friend class SingleCellIterator;
 };
 
-} /* namespace autopas */
-
-#endif /* AUTOPAS_SRC_FULLPARTICLECELL_H_ */
+}  // namespace autopas

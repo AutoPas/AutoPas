@@ -1,13 +1,11 @@
-/*
- * Direct.h
+/**
+ * @file DirectSum.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 
-#ifndef SRC_CONTAINERS_DIRECTSUM_H_
-#define SRC_CONTAINERS_DIRECTSUM_H_
-
+#pragma once
 #include "CellBorderAndFlagManager.h"
 #include "ParticleContainer.h"
 #include "pairwiseFunctors/CellFunctor.h"
@@ -35,7 +33,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff) {
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff), _cellBorderFlagManager() {
     this->_data.resize(2);
   }
 
@@ -144,8 +142,16 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return false;
   }
 
-  ParticleIterator<Particle, ParticleCell> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBorderFlagManager, behavior);
+  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle>(
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBorderFlagManager, behavior));
+  }
+
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
+        &this->_data, lowerCorner, higherCorner, &_cellBorderFlagManager, behavior));
   }
 
  private:
@@ -166,6 +172,4 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   ParticleCell *getHaloCell() { return &(this->_data.at(1)); };
 };
 
-} /* namespace autopas */
-
-#endif /* SRC_CONTAINERS_DIRECTSUM_H_ */
+}  // namespace autopas

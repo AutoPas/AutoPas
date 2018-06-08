@@ -1,12 +1,11 @@
-/*
- * Timer.h
+/**
+ * @file Timer.h
  *
- * @Date: 11.01.2011
- * @Author: eckhardw
+ * @date 11.01.2011
+ * @author eckhardw
  */
 
-#ifndef TIMER_H_
-#define TIMER_H_
+#pragma once
 
 #include <ctime>
 namespace autopas {
@@ -38,4 +37,3 @@ class Timer {
 };
 }  // namespace utils
 }  // namespace autopas
-#endif /* TIMER_H_ */

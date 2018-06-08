@@ -1,15 +1,13 @@
-/*
- * Particle.h
+/**
+ * @file Particle.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_
-
+#pragma once
 #include <array>
-#include "utils/arrayMath.h"
+#include "utils/ArrayMath.h"
 
 namespace autopas {
 
@@ -49,13 +47,13 @@ class Particle {
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
-  void addF(const std::array<double, 3> &f) { _f = arrayMath::add(_f, f); }
+  void addF(const std::array<double, 3> &f) { _f = ArrayMath::add(_f, f); }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
-  void subF(const std::array<double, 3> &f) { _f = arrayMath::sub(_f, f); }
+  void subF(const std::array<double, 3> &f) { _f = ArrayMath::sub(_f, f); }
 
   /**
    * Get the id of the particle
@@ -85,7 +83,7 @@ class Particle {
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
-  void addR(const std::array<double, 3> &r) { _r = arrayMath::add(_r, r); }
+  void addR(const std::array<double, 3> &r) { _r = ArrayMath::add(_r, r); }
 
   /**
    * Checks whether the particle is within a cuboidal box specified by rmin and
@@ -118,7 +116,7 @@ class Particle {
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
-  void addV(const std::array<double, 3> &v) { _v = arrayMath::add(_v, v); }
+  void addV(const std::array<double, 3> &v) { _v = ArrayMath::add(_v, v); }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -132,6 +130,4 @@ class Particle {
   unsigned long _id;
 };
 
-} /* namespace autopas */
-
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_ */
+}  // namespace autopas

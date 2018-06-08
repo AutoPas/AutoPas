@@ -1,5 +1,10 @@
-#ifndef AUTOPAS_AUTOPAS_H
-#define AUTOPAS_AUTOPAS_H
+/**
+ * @file AutoPas.h
+ * Main include file for the AutoPas library.
+ *
+ */
+
+#pragma once
 
 #include <iostream>
 #include <memory>
@@ -35,13 +40,13 @@ template <class Particle, class ParticleCell>
 class AutoPas {
  public:
   AutoPas() {
-    // initialize the logger
-    autopas::logger::create();
+    // initialize the Logger
+    autopas::Logger::create();
   }
 
   ~AutoPas() {
-    // remove the logger from the registry
-    autopas::logger::unregister();
+    // remove the Logger from the registry
+    autopas::Logger::unregister();
   }
 
   /**
@@ -145,7 +150,7 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @return iterator to the first particle
    */
-  autopas::ParticleIterator<Particle, ParticleCell> begin() { return container->begin(); }
+  autopas::ParticleIteratorWrapper<Particle> begin() { return container->begin(); }
 
   /**
    * iterate over all particles in a specified region
@@ -155,8 +160,8 @@ class AutoPas {
    * @param higherCorner higher corner of the region
    * @return iterator to iterate over all particles in a specific region
    */
-  autopas::RegionParticleIterator<Particle, ParticleCell> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                                            std::array<double, 3> higherCorner) {
+  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                               std::array<double, 3> higherCorner) {
     return container->getRegionIterator(lowerCorner, higherCorner);
   }
 
@@ -164,5 +169,3 @@ class AutoPas {
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
   std::unique_ptr<ContainerType> container;
 };
-
-#endif  // AUTOPAS_AUTOPAS_H

@@ -19,6 +19,11 @@ class CellBorderAndFlagManager {
 
  public:
   /**
+   * destructor
+   */
+  virtual ~CellBorderAndFlagManager() = default;
+
+  /**
    * checks if the cell with the one-dimensional index index1d is a halocell.
    * @param index1d the one-dimensional index of the cell that should be checked
    * @return true if the cell is a halo cell

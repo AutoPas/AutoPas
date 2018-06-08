@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "../utils/ArrayMath.h"
 #include "LinkedCells.h"
 #include "VerletListHelpers.h"
-#include "utils/arrayMath.h"
 
 namespace autopas {
 
@@ -164,6 +164,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * Checks whether the neighbor lists are valid.
    * A neighbor list is valid if all pairs of particles whose interaction should
    * be calculated are represented in the neighbor lists.
+   * @param useNewton3 specified whether newton 3 should be used
    * @return whether the list is valid
    * @note this check involves pair-wise interaction checks and is thus
    * relatively costly.
@@ -193,8 +194,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      boxmin = arrayMath::addScalar(boxmin, -_skin / 2.);
-      boxmax = arrayMath::addScalar(boxmax, +_skin / 2.);
+      boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
+      boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
       for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not iter->inBox(boxmin, boxmax)) {
           AutoPasLogger->debug(
@@ -457,4 +458,4 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   BuildVerletListType _buildVerletListType;
 };
 
-} /* namespace autopas */
+}  // namespace autopas

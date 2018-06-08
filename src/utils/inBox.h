@@ -1,13 +1,11 @@
-/*
- * inBox.h
+/**
+ * @file inBox.h
  *
- *  Created on: 22 Jan 2018
- *      Author: tchipevn
+ * @date 22 Jan 2018
+ * @author tchipevn
  */
 
-#ifndef SRC_UTILS_INBOX_H_
-#define SRC_UTILS_INBOX_H_
-
+#pragma once
 #include <array>
 #include <type_traits>
 
@@ -15,7 +13,8 @@ namespace autopas {
 
 /**
  * Checks if position is inside of a box defined by low and high.
- * The lower corner is include, the upper is exclusive to the box.
+ * The lower corner is included in, the upper is excluded from the box.
+ * i.e. [low[0], high[0]) x [low[1], high[1]) x [low[2], high[2])
  *
  * @tparam T the type of floating point check
  * @param position the position that should be checked
@@ -38,7 +37,8 @@ bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const 
 
 /**
  * Checks if position is not inside of a box defined by low and high.
- * The lower corner is include, the upper is exclusive to the box.
+ * The lower corner is included in, the upper is excluded from the box.
+ * i.e. [low[0], high[0]) x [low[1], high[1]) x [low[2], high[2])
  *
  * @tparam T the type of floating point check
  * @param position the position that should be checked
@@ -51,6 +51,4 @@ bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, con
   return not(inBox(position, low, high));
 }
 
-} /* namespace autopas */
-
-#endif /* SRC_UTILS_INBOX_H_ */
+}  // namespace autopas

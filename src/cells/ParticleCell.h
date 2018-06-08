@@ -1,12 +1,13 @@
-/*
- * ParticleCell.h
+/**
+ * @file ParticleCell.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17.01.2018
+ * @author tchipevn
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECELL_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECELL_H_
+#pragma once
+
+#include "iterators/SingleCellIteratorWrapper.h"
 
 namespace autopas {
 
@@ -18,7 +19,7 @@ namespace autopas {
  * @tparam Iterator the type of the iterator iterate through the particles in
  * this cell
  */
-template <class Particle, class Iterator>
+template <class Particle>
 class ParticleCell {
  public:
   /**
@@ -38,7 +39,7 @@ class ParticleCell {
    * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
    * @return the iterator
    */
-  virtual Iterator begin() = 0;
+  virtual SingleCellIteratorWrapper<Particle> begin() = 0;
 
   /**
    * Get the number of particles stored in this cell
@@ -61,9 +62,7 @@ class ParticleCell {
    * Deletes the index-th particle
    * @param index the index of the particle that shall be deleted
    */
-  virtual void deleteByIndex(int index) = 0;
+  virtual void deleteByIndex(size_t index) = 0;
 };
 
-} /* namespace autopas */
-
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECELL_H_ */
+}  // namespace autopas

@@ -1,12 +1,11 @@
-/*
- * CellPairTraversal.h
+/**
+ * @file CellPairTraversal.h
  *
- *  Created on: 22 Jan 2018
- *      Author: tchipevn
+ * @date 22 Jan 2018
+ * @author tchipevn
  */
 
-#ifndef SRC_CONTAINERS_CELLPAIRTRAVERSALS_CELLPAIRTRAVERSAL_H_
-#define SRC_CONTAINERS_CELLPAIRTRAVERSALS_CELLPAIRTRAVERSAL_H_
+#pragma once
 
 #include <array>
 #include <vector>
@@ -80,6 +79,4 @@ class CellPairTraversals {
   CellFunctor *_cellFunctor;
 };
 
-} /* namespace autopas */
-
-#endif /* SRC_CONTAINERS_CELLPAIRTRAVERSALS_CELLPAIRTRAVERSAL_H_ */
+}  // namespace autopas

@@ -1,28 +1,19 @@
-/*
- * ParticleIterator.h
+/**
+ * @file ParticleIterator.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @authors tchievn, seckler
+ * @date 17.01.2018
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_
+#pragma once
 
 #include <utils/ExceptionHandler.h>
 #include <vector>
+#include "ParticleIteratorInterface.h"
 #include "SingleCellIterator.h"
 
 namespace autopas {
-
-/**
- * Enum to specify the behavior of an iterator.
- */
-enum IteratorBehavior {
-  haloOnly,     /// iterate only over halo
-  ownedOnly,    /// iterate only over inner cells
-  haloAndOwned  /// iterate over both halo and inner cells
-};
-
+namespace internal {
 /**
  * ParticleIterator class to access particles inside of a container.
  * The particles can be accessed using "iterator->" or "*iterator". The next
@@ -32,7 +23,7 @@ enum IteratorBehavior {
  * container
  */
 template <class Particle, class ParticleCell>
-class ParticleIterator {
+class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
  public:
   /**
    * Constructor of the ParticleIterator class.
@@ -47,7 +38,7 @@ class ParticleIterator {
                             IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
-        _iteratorWithinOneCell(),
+        _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
         _behavior(behavior) {
     if (behavior != haloAndOwned and flagManager == nullptr) {
@@ -67,11 +58,9 @@ class ParticleIterator {
   }
 
   /**
-   * Increment operator.
-   * Used to jump to the next particle
-   * @return next particle, usually ignored
+   * @copydoc ParticleIteratorInterface::operator++()
    */
-  inline ParticleIterator<Particle, ParticleCell>& operator++() {
+  inline ParticleIterator<Particle, ParticleCell>& operator++() override {
     if (_iteratorWithinOneCell.isValid()) {
       ++_iteratorWithinOneCell;
     }
@@ -85,24 +74,14 @@ class ParticleIterator {
   }
 
   /**
-   * access the particle using *iterator
-   * this is the indirection operator
-   * @return current particle
+   * @copydoc ParticleIteratorInterface::operator*()
    */
-  Particle& operator*() { return _iteratorWithinOneCell.operator*(); }
+  inline Particle& operator*() const override { return _iteratorWithinOneCell.operator*(); }
 
   /**
-   * access particle using iterator->
-   *
-   * this is the member of pointer operator
-   * @return current particle
+   * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
    */
-  Particle* operator->() { return &(this->operator*()); }  //
-
-  /**
-   * Deletes the current particle
-   */
-  void deleteCurrentParticle() {
+  void deleteCurrentParticle() override {
     if (_iteratorWithinOneCell.isValid()) {
       _iteratorWithinOneCell.deleteCurrentParticle();
     } else {
@@ -114,9 +93,13 @@ class ParticleIterator {
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() {
+  bool isValid() const override {
     return _vectorOfCells != nullptr and _iteratorAcrossCells < _vectorOfCells->end() and
            _iteratorWithinOneCell.isValid();
+  }
+
+  ParticleIteratorInterfaceImpl<Particle>* clone() const override {
+    return new ParticleIterator<Particle, ParticleCell>(*this);
   }
 
  protected:
@@ -155,12 +138,10 @@ class ParticleIterator {
  private:
   std::vector<ParticleCell>* _vectorOfCells;
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
-  typename ParticleCell::iterator _iteratorWithinOneCell;
+  SingleCellIteratorWrapper<Particle> _iteratorWithinOneCell;
   CellBorderAndFlagManager* _flagManager;
   IteratorBehavior _behavior;
   // SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
 };
-
-} /* namespace autopas */
-
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLEITERATOR_H_ */
+}  // namespace internal
+}  // namespace autopas

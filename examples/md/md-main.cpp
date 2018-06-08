@@ -24,7 +24,7 @@ template <class Container>
 void measureContainer(Container *cont, int numMolecules, int numIterations, bool soa);
 
 int main(int argc, char *argv[]) {
-  autopas::logger::create();
+  autopas::Logger::create();
   AutoPasLogger->set_level(spdlog::level::info);
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
 

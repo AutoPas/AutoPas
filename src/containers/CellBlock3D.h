@@ -1,12 +1,11 @@
-/*
- * CellBlock3D.h
+/**
+ * @file CellBlock3D.h
  *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+ * @date 19 Jan 2018
+ * @author tchipevn
  */
 
-#ifndef SRC_CONTAINERS_CELLBLOCK3D_H_
-#define SRC_CONTAINERS_CELLBLOCK3D_H_
+#pragma once
 
 #include <array>
 #include <cmath>
@@ -48,6 +47,17 @@ class CellBlock3D : public CellBorderAndFlagManager {
       }
     }
   }
+
+  /**
+   * deleted copy constructor
+   */
+  CellBlock3D(const CellBlock3D &) = delete;
+
+  /**
+   * delete assignment operator
+   * @return deleted
+   */
+  CellBlock3D &operator=(const CellBlock3D) = delete;
 
   bool isHaloCell(index_t index1d) const override {
     auto index3d = index3D(index1d);
@@ -384,6 +394,4 @@ template <class ParticleCell>
 bool CellBlock3D<ParticleCell>::checkInHalo(std::array<double, 3> position) const {
   return autopas::inBox(position, _haloBoxMin, _haloBoxMax) && autopas::notInBox(position, _boxMin, _boxMax);
 }
-} /* namespace autopas */
-
-#endif /* SRC_CONTAINERS_CELLBLOCK3D_H_ */
+}  // namespace autopas

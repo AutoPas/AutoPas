@@ -1,14 +1,14 @@
-/*
- * FlopCounterFunctor.h
+/**
+ * @file FlopCounterFunctor.h
  *
- *  Created on: 22 Jan 2018
- *      Author: tchipevn
+ * @date 22 Jan 2018
+ * @author tchipevn
  */
 
 #pragma once
 
+#include "../utils/ArrayMath.h"
 #include "Functor.h"
-#include "utils/arrayMath.h"
 
 namespace autopas {
 /**
@@ -36,8 +36,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
         _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
-    auto dr = arrayMath::sub(i.getR(), j.getR());
-    double dr2 = arrayMath::dot(dr, dr);
+    auto dr = ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = ArrayMath::dot(dr, dr);
 
 #pragma omp critical
     {
@@ -189,4 +189,4 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   static constexpr double numFlopsPerDistanceCalculation = 8.0;
 };
 
-} /* namespace autopas */
+}  // namespace autopas

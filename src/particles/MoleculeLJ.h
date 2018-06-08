@@ -1,12 +1,11 @@
-/*
- * MoleculeLJ.h
+/**
+ * @file MoleculeLJ.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 
-#ifndef SRC_PARTICLES_MOLECULELJ_H_
-#define SRC_PARTICLES_MOLECULELJ_H_
+#pragma once
 
 #include "Particle.h"
 
@@ -57,6 +56,4 @@ class MoleculeLJ : public Particle {
   static double EPSILON, SIGMA;
 };
 
-} /* namespace autopas */
-
-#endif /* SRC_PARTICLES_MOLECULELJ_H_ */
+}  // namespace autopas

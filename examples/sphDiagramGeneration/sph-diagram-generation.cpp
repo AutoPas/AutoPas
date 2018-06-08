@@ -54,7 +54,7 @@ void addParticles(
 }
 
 int main(int argc, char *argv[]) {
-  autopas::logger::create();
+  autopas::Logger::create();
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 0.15;
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
@@ -69,12 +69,12 @@ int main(int argc, char *argv[]) {
   int numParticles = 16;
   int numIterations = 100000;
   int whichContainer = 0;
-  int whichFunctor = 0;
-  if (argc == 5) {
+  // int whichFunctor = 0;
+  if (argc == 5 or argc == 4) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
     whichContainer = atoi(argv[3]);
-    whichFunctor = atoi(argv[4]);
+    //  whichFunctor = atoi(argv[4]);
   } else {
     exit(1);
   }

@@ -13,11 +13,11 @@ using autopas::utils::ExceptionBehavior;
 using autopas::utils::ExceptionHandler;
 
 void ExceptionHandlerTest::SetUp() {
-  // autopas::logger::create();
+  // autopas::Logger::create();
 }
 
 void ExceptionHandlerTest::TearDown() {
-  // autopas::logger::unregister();
+  // autopas::Logger::unregister();
   // reset to default values
   ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
   ExceptionHandler::setCustomAbortFunction(abort);

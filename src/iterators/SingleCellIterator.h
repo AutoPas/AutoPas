@@ -1,17 +1,16 @@
-/*
- * SingleCellIterator.h
+/**
+ * @file SingleCellIterator.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 31 May 2018
+ * @author tchipevn
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_SINGLECELLITERATOR_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_SINGLECELLITERATOR_H_
+#pragma once
 
-#include "cells/RMMParticleCell2T.h"
+#include "iterators/SingleCellIteratorInterface.h"
 
 namespace autopas {
-
+namespace internal {
 /**
  * SingleCellIterator class to loop over particles of a single cell.
  *
@@ -19,7 +18,7 @@ namespace autopas {
  * @tparam ParticleCell type of the ParticleCell
  */
 template <class Particle, class ParticleCell>
-class SingleCellIterator {
+class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
  public:
   /**
    * default constructor of SingleCellIterator
@@ -31,7 +30,7 @@ class SingleCellIterator {
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  explicit SingleCellIterator(ParticleCell *cell_arg, int ind = 0) : _cell(cell_arg), _index(ind), _deleted(false) {}
+  explicit SingleCellIterator(ParticleCell *cell_arg, size_t ind = 0) : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   /**
    * destructor of SingleCellIterator
@@ -43,7 +42,7 @@ class SingleCellIterator {
    * this is the indirection operator
    * @return current particle
    */
-  Particle &operator*() const {
+  Particle &operator*() const override {
     Particle *ptr = nullptr;
     //_cell->particleAt(_index, ptr);
     ptr = &(_cell->_particles.at(_index));
@@ -51,18 +50,10 @@ class SingleCellIterator {
   }
 
   /**
-   * access particle using "iterator->"
-   *
-   * this is the member of pointer operator
-   * @return current particle
-   */
-  Particle *operator->() const { return &(this->operator*()); }
-
-  /**
    * increment operator to get the next particle
    * @return the next particle, usually ignored
    */
-  SingleCellIterator &operator++() {
+  SingleCellIterator &operator++() override {
     if (not _deleted) ++_index;
     _deleted = false;
     return *this;
@@ -73,10 +64,15 @@ class SingleCellIterator {
    * if both iterators are invalid or if they point to the same particle, this
    * returns true
    * @param rhs
-   * @return
+   * @return true if the iterators point to the same particle (in the same
+   * cell), false otherwise
    */
-  bool operator==(const SingleCellIterator &rhs) const {
-    return (not rhs.isValid() and not this->isValid()) or (_cell == rhs._cell && _index == rhs._index);
+  bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const override {
+    if (auto other = dynamic_cast<const SingleCellIterator<Particle, ParticleCell> *>(&rhs)) {
+      return (not rhs.isValid() and not this->isValid()) or (_cell == other->_cell && _index == other->_index);
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -85,33 +81,36 @@ class SingleCellIterator {
    * @param rhs
    * @return
    */
-  bool operator!=(const SingleCellIterator &rhs) const { return !(rhs == *this); }
+  bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const override { return !(rhs == *this); }
   /**
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() const { return _cell != nullptr and _index < _cell->numParticles(); }
+  bool isValid() const override { return _cell != nullptr and _index < _cell->numParticles(); }
 
   /**
    * Get the index of the particle in the cell
    * @return index of the current particle
    */
-  int getIndex() const { return _index; }
+  int getIndex() const override { return _index; }
 
   /**
    * Deletes the current particle
    */
-  void deleteCurrentParticle() {
+  void deleteCurrentParticle() override {
     _cell->deleteByIndex(_index);
     _deleted = true;
   }
 
+  SingleCellIteratorInterfaceImpl<Particle> *clone() const override {
+    return new SingleCellIterator<Particle, ParticleCell>(*this);
+  }
+
  private:
   ParticleCell *_cell;
-  int _index;
+  size_t _index;
   bool _deleted;
 };
 
-} /* namespace autopas */
-
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_SINGLECELLITERATOR_H_ */
+}  // namespace internal
+}  // namespace autopas

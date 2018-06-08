@@ -1,5 +1,10 @@
-#ifndef SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
-#define SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
+/**
+ * @file AlignedAllocator.h
+ * @author tchipev
+ * @date 07.02.2018
+ */
+
+#pragma once
 
 #ifdef __SSE3__
 #include <xmmintrin.h>
@@ -69,11 +74,13 @@ class AlignedAllocator {
   /**
    * \brief Returns maximum possible value of n, with which we can call
    * allocate(n)
+   * \return maximum size possible to allocate
    */
   size_t max_size() const noexcept { return (std::numeric_limits<size_t>::max() - size_t(Alignment)) / sizeof(T); }
 
   /**
    * \brief Allocate aligned memory for n objects of type T
+   * \param n size to allocate
    * \return Pointer to the allocated memory
    */
   T *allocate(std::size_t n) {
@@ -97,6 +104,7 @@ class AlignedAllocator {
 
   /**
    * \brief Deallocate memory pointed to by ptr
+   * \param ptr pointer to deallocate
    */
   void deallocate(T *ptr, std::size_t /*n*/) {
 #if defined(__SSE3__) && !defined(__PGI)
@@ -109,6 +117,8 @@ class AlignedAllocator {
   /**
    * \brief Construct object of type U at already allocated memory, pointed to
    * by p
+   * \param p pointer to the object
+   * \param args arguments for the construction
    */
   template <class U, class... Args>
   void construct(U *p, Args &&... args) {
@@ -117,6 +127,7 @@ class AlignedAllocator {
 
   /**
    * \brief Destroy object pointed to by p, but does not deallocate the memory
+   * \param p pointer to the object that should be destroyed
    */
   template <class U>
   void destroy(U *p) {
@@ -124,16 +135,32 @@ class AlignedAllocator {
   }
 };
 
+/**
+ * equals operator
+ * @tparam T Type of the first allocator
+ * @tparam TAlignment alignment of the first allocator
+ * @tparam U type of the second allocator
+ * @tparam UAlignment alignment of the second allocator
+ * @return true if alignment is equal
+ */
 template <typename T, size_t TAlignment, typename U, size_t UAlignment>
 inline bool operator==(const AlignedAllocator<T, TAlignment> &, const AlignedAllocator<U, UAlignment> &) {
   return TAlignment == UAlignment;
 }
 
+/**
+ * unequals operator
+ * @tparam T Type of the first allocator
+ * @tparam TAlignment alignment of the first allocator
+ * @tparam U type of the second allocator
+ * @tparam UAlignment alignment of the second allocator
+ * @param a first allocator
+ * @param b second allocator
+ * @return true if unequal
+ */
 template <typename T, size_t TAlignment, typename U, size_t UAlignment>
 inline bool operator!=(const AlignedAllocator<T, TAlignment> &a, const AlignedAllocator<U, UAlignment> &b) {
   return !(a == b);
 }
 
-} /* namespace autopas */
-
-#endif  // SRC_UTILS_AUTOPAS_ALIGNEDALLOCATOR_H
+}  // namespace autopas

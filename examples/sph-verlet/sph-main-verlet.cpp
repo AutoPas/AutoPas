@@ -104,7 +104,7 @@ double getTimeStepGlobal(Container& sphSystem) {
 void leapfrogInitialKick(Container& sphSystem, const double dt) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->setVel_half(
-        autopas::arrayMath::add(part->getV(), autopas::arrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+        autopas::ArrayMath::add(part->getV(), autopas::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
     part->setEng_half(part->getEnergy() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -112,13 +112,13 @@ void leapfrogInitialKick(Container& sphSystem, const double dt) {
 void leapfrogFullDrift(Container& sphSystem, const double dt) {
   // time becomes t + dt;
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->addR(autopas::arrayMath::mulScalar(part->getVel_half(), dt));
+    part->addR(autopas::ArrayMath::mulScalar(part->getVel_half(), dt));
   }
 }
 
 void leapfrogPredict(Container& sphSystem, const double dt) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    part->addV(autopas::arrayMath::mulScalar(part->getAcceleration(), dt));
+    part->addV(autopas::ArrayMath::mulScalar(part->getAcceleration(), dt));
     part->addEnergy(part->getEngDot() * dt);
   }
 }
@@ -126,7 +126,7 @@ void leapfrogPredict(Container& sphSystem, const double dt) {
 void leapfrogFinalKick(Container& sphSystem, const double dt) {
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
     part->setV(
-        autopas::arrayMath::add(part->getVel_half(), autopas::arrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+        autopas::ArrayMath::add(part->getVel_half(), autopas::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
     part->setEnergy(part->getEng_half() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -314,8 +314,8 @@ void printConservativeVariables(Container& sphSystem) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.0;                       // total energy
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
-    momSum = autopas::arrayMath::add(momSum, autopas::arrayMath::mulScalar(it->getV(), it->getMass()));
-    energySum += (it->getEnergy() + 0.5 * autopas::arrayMath::dot(it->getV(), it->getV())) * it->getMass();
+    momSum = autopas::ArrayMath::add(momSum, autopas::ArrayMath::mulScalar(it->getV(), it->getMass()));
+    energySum += (it->getEnergy() + 0.5 * autopas::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
   printf("%.16e\n", energySum);
   printf("%.16e\n", momSum[0]);
@@ -324,7 +324,7 @@ void printConservativeVariables(Container& sphSystem) {
 }
 
 int main() {
-  autopas::logger::create();
+  autopas::Logger::create();
 
   unsigned int rebuildFrequency = 6;
   double skintocutoff = 0.04;

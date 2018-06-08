@@ -30,7 +30,7 @@ void Newton3OnOffTest::fillContainerWithMolecules(
 
   std::array<double, 3> boxMin(getBoxMin()), boxMax(getBoxMax());
 
-  for (int i = 0; i < numMolecules; ++i) {
+  for (size_t i = 0; i < numMolecules; ++i) {
     auto id = static_cast<unsigned long>(i);
     autopas::Particle m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
     autoPas.addParticle(m);

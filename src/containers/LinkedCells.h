@@ -1,12 +1,11 @@
-/*
- * LinkedCells.h
+/**
+ * @file LinkedCells.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @author tchipevn
+ * @date 17.02.2018
  */
 
-#ifndef AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_
-#define AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_
+#pragma once
 
 #include "CellBlock3D.h"
 #include "ParticleContainer.h"
@@ -192,8 +191,16 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     return false;
   }
 
-  ParticleIterator<Particle, ParticleCell> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBlock, behavior);
+  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle>(
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBlock, behavior));
+  }
+
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
+        &this->_data, lowerCorner, higherCorner, &_cellBlock, behavior));
   }
 
  protected:
@@ -214,7 +221,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (auto i = 0; i < this->_data.size(); ++i) {
+    for (size_t i = 0; i < this->_data.size(); ++i) {
       functor->SoALoader(this->_data[i], this->_data[i]._particleSoABuffer);
     }
   }
@@ -230,12 +237,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (auto i = 0; i < this->_data.size(); ++i) {
+    for (size_t i = 0; i < this->_data.size(); ++i) {
       functor->SoAExtractor(this->_data[i], this->_data[i]._particleSoABuffer);
     }
   }
 };
 
-} /* namespace autopas */
-
-#endif /* AUTOPAS_SRC_CONTAINERS_LINKEDCELLS_H_ */
+}  // namespace autopas

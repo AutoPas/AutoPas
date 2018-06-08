@@ -1,22 +1,21 @@
-/*
- * ParticleContainer.h
+/**
+ * @file ParticleContainer.h
  *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECONTAINER_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECONTAINER_H_
+#pragma once
 
 #include <array>
+#include "ParticleContainerInterface.h"
 #include "iterators/ParticleIterator.h"
 #include "iterators/RegionParticleIterator.h"
 #include "pairwiseFunctors/Functor.h"
 
 namespace autopas {
 
-// consider multiple inheritance or delegation vor avoidane of virtual call to
-// Functor
+// consider multiple inheritance or delegation to avoid virtual call to Functor
 /**
  * The ParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
@@ -24,7 +23,7 @@ namespace autopas {
  * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle, class ParticleCell>
-class ParticleContainer {
+class ParticleContainer : public ParticleContainerInterface<Particle> {
  public:
   /**
    * Constructor of ParticleContainer
@@ -38,7 +37,7 @@ class ParticleContainer {
   /**
    * destructor of ParticleContainer
    */
-  virtual ~ParticleContainer() = default;
+  ~ParticleContainer() override = default;
 
   /**
    * delete the copy constructor to prevent unwanted copies.
@@ -54,26 +53,6 @@ class ParticleContainer {
    * @return
    */
   ParticleContainer &operator=(const ParticleContainer &other) = delete;
-
-  // virtual void init() {}
-
-  /**
-   * adds a particle to the container
-   * @param p the particle to be added
-   */
-  virtual void addParticle(Particle &p) = 0;
-
-  /**
-   * adds a particle to the container that lies in the halo region of the
-   * container
-   * @param haloParticle particle to be added
-   */
-  virtual void addHaloParticle(Particle &haloParticle) = 0;
-
-  /**
-   * deletes all halo particles
-   */
-  virtual void deleteHaloParticles() = 0;
 
   /**
    * function to iterate over all pairs of particles in an array of structures
@@ -92,75 +71,40 @@ class ParticleContainer {
   virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) = 0;
 
   /**
-   * iterate over all particles using
-   * for(auto iter = container.begin(); iter.isValid(); ++iter)
-   * @return iterator to the first particle
-   * @todo implement IteratorBehavior
-   */
-  virtual ParticleIterator<Particle, ParticleCell> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return ParticleIterator<Particle, ParticleCell>(&_data);
-  }
-
-  /**
-   * iterate over all particles in a specified region
-   * for(auto iter = container.getRegionIterator(lowCorner,
-   * highCorner);iter.isValid();++iter)
-   * @param lowerCorner lower corner of the region
-   * @param higherCorner higher corner of the region
-   * @return iterator to iterate over all particles in a specific region
-   */
-  RegionParticleIterator<Particle, ParticleCell> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                                   std::array<double, 3> higherCorner) {
-    return RegionParticleIterator<Particle, ParticleCell>(&_data, lowerCorner, higherCorner);
-  }
-
-  /**
    * get the upper corner of the container
    * @return upper corner of the container
    */
-  const std::array<double, 3> &getBoxMax() const { return _boxMax; }
+  const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
 
   /**
    * set the upper corner of the container
    * @param boxMax upper corner to be set
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
 
   /**
    * get the lower corner of the container
    * @return lower corner of the container
    */
-  const std::array<double, 3> &getBoxMin() const { return _boxMin; }
+  const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
 
   /**
    * set the lower corner of the container
    * @param boxMin lower corner to be set
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
   /**
    * return the cutoff of the container
    * @return
    */
-  double getCutoff() const { return _cutoff; }
+  double getCutoff() const override final { return _cutoff; }
 
   /**
    * set the cutoff of the container
    * @param cutoff
    */
-  void setCutoff(double cutoff) { _cutoff = cutoff; }
-
-  /**
-   * updates the container.
-   * this resorts particles into appropriate cells, if necessary
-   */
-  virtual void updateContainer() = 0;
-
-  /**
-   * check whether a container is valid, i.e. whether it is safe to use
-   * pair-wise interactions or the RegionParticleIteraor right now.
-   */
-  virtual bool isContainerUpdateNeeded() = 0;
+  void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
  protected:
   /**
@@ -176,6 +120,4 @@ class ParticleContainer {
   double _cutoff;
 };
 
-} /* namespace autopas */
-
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLECONTAINER_H_ */
+}  // namespace autopas
