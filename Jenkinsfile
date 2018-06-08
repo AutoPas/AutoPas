@@ -272,7 +272,7 @@ pipeline{
                     script{
                         // return 2 if modified has been found, 0 otherwise
                         try{
-                            # if files were modified, return 2
+                            // if files were modified, return 2
                             sh "git status | grep -q modified && exit 2 || exit 0"
                         } catch (Exception e) {
                             // change detected
@@ -290,7 +290,7 @@ pipeline{
                     script{
                         // return 2 if modified has been found, 0 otherwise
                         try{
-                            # if header files do not contain #pragma once, make build unstable
+                            // if header files do not contain #pragma once, make build unstable
                             sh "grep -L "#pragma once" -r . | grep -q "\.h" && exit 2 || exit 0"
                         } catch (Exception e) {
                             // change detected
