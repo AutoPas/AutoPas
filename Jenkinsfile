@@ -276,7 +276,8 @@ pipeline{
                         } catch (Exception e) {
                             // change detected
                             currentBuild.result = 'UNSTABLE'
-                            echo 'clang format errors detected. please format the code properly.'
+                            echo 'clang format errors detected. please format the code properly:'
+                            sh "git status | grep modified"
                         }
                     }
                 }
