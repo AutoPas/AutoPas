@@ -291,12 +291,12 @@ pipeline{
                         // return 2 if modified has been found, 0 otherwise
                         try{
                             // if header files do not contain #pragma once, make build unstable
-                            sh 'grep -L "#pragma once" -r . | grep -q "\.h" && exit 2 || exit 0'
+                            sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 2 || exit 0'
                         } catch (Exception e) {
                             // change detected
                             currentBuild.result = 'UNSTABLE'
                             echo 'all header include guards should be implemented using "#pragma once". Affected files:'
-                            sh 'grep -L "#pragma once" -r . | grep "\.h"'
+                            sh 'grep -L "#pragma once" -r . | grep "\\.h"'
                         }
                     }
                 }
