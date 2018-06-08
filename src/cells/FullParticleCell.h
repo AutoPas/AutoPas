@@ -65,6 +65,11 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   SoA _particleSoABuffer;
 
+  /**
+   * friend class iterator
+   * @tparam ParticleType
+   * @tparam ParticleCellType
+   */
   template <class ParticleType, class ParticleCellType>
   friend class SingleCellIterator;
 };

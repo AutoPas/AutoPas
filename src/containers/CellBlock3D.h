@@ -49,9 +49,15 @@ class CellBlock3D : public CellBorderAndFlagManager {
     }
   }
 
-  // delete copy constructor
+  /**
+   * deleted copy constructor
+   */
   CellBlock3D(const CellBlock3D &) = delete;
-  // delete assignment operator
+
+  /**
+   * delete assignment operator
+   * @return deleted
+   */
   CellBlock3D &operator=(const CellBlock3D) = delete;
 
   bool isHaloCell(index_t index1d) const override {

@@ -82,6 +82,10 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
         particle.getF());
   }
 
+  /**
+   * iterator friend class
+   * @tparam ParticleType
+   */
   template <class ParticleType>
   friend class RMMParticleCellIterator;
 };

@@ -67,6 +67,7 @@ class ParticleContainerInterface {
   /**
    * iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter)
+   * @param behavior behavior of the iterator, see IteratorBehavior
    * @return iterator to the first particle
    * @todo implement IteratorBehavior
    */
@@ -130,6 +131,7 @@ class ParticleContainerInterface {
   /**
    * check whether a container is valid, i.e. whether it is safe to use
    * pair-wise interactions or the RegionParticleIteraor right now.
+   * @return true if an update is needed, false otherwise
    */
   virtual bool isContainerUpdateNeeded() = 0;
 };
