@@ -82,4 +82,4 @@ class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle>
 
 }  // namespace internal
 
-} /* namespace autopas */
+}  // namespace autopas

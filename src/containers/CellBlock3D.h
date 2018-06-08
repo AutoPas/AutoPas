@@ -5,8 +5,7 @@
  * @author tchipevn
  */
 
-#ifndef SRC_CONTAINERS_CELLBLOCK3D_H_
-#define SRC_CONTAINERS_CELLBLOCK3D_H_
+#pragma once
 
 #include <array>
 #include <cmath>
@@ -395,6 +394,4 @@ template <class ParticleCell>
 bool CellBlock3D<ParticleCell>::checkInHalo(std::array<double, 3> position) const {
   return autopas::inBox(position, _haloBoxMin, _haloBoxMax) && autopas::notInBox(position, _boxMin, _boxMax);
 }
-} /* namespace autopas */
-
-#endif /* SRC_CONTAINERS_CELLBLOCK3D_H_ */
+}  // namespace autopas

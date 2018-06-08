@@ -5,8 +5,7 @@
  * @author tchipevn
  */
 
-#ifndef SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_
-#define SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_
+#pragma once
 
 #include <array>
 #include "../utils/ArrayMath.h"
@@ -422,6 +421,4 @@ double LJFunctor<T, U>::SIGMASQUARE;
 template <class T, class U>
 double LJFunctor<T, U>::SHIFT6;
 
-} /* namespace autopas */
-
-#endif /* SRC_PAIRWISEFUNCTORS_LJFUNCTOR_H_ */
+}  // namespace autopas

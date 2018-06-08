@@ -136,4 +136,4 @@ class ParticleContainerInterface {
   virtual bool isContainerUpdateNeeded() = 0;
 };
 
-} /* namespace autopas */
+}  // namespace autopas

@@ -189,4 +189,4 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   static constexpr double numFlopsPerDistanceCalculation = 8.0;
 };
 
-} /* namespace autopas */
+}  // namespace autopas

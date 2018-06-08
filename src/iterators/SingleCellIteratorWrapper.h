@@ -79,4 +79,4 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
   std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>> _particleIterator;
 };
 
-} /* namespace autopas */
+}  // namespace autopas

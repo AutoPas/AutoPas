@@ -5,9 +5,7 @@
  * @author tchipevn
  */
 
-#ifndef SRC_CONTAINERS_DIRECTSUM_H_
-#define SRC_CONTAINERS_DIRECTSUM_H_
-
+#pragma once
 #include "CellBorderAndFlagManager.h"
 #include "ParticleContainer.h"
 #include "pairwiseFunctors/CellFunctor.h"
@@ -174,6 +172,4 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   ParticleCell *getHaloCell() { return &(this->_data.at(1)); };
 };
 
-} /* namespace autopas */
-
-#endif /* SRC_CONTAINERS_DIRECTSUM_H_ */
+}  // namespace autopas

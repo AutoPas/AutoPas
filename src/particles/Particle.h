@@ -5,9 +5,7 @@
  * @author tchipevn
  */
 
-#ifndef DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_
-#define DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_
-
+#pragma once
 #include <array>
 #include "utils/ArrayMath.h"
 
@@ -132,6 +130,4 @@ class Particle {
   unsigned long _id;
 };
 
-} /* namespace autopas */
-
-#endif /* DEPENDENCIES_EXTERNAL_AUTOPAS_SRC_PARTICLE_H_ */
+}  // namespace autopas

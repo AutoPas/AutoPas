@@ -120,4 +120,4 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
   double _cutoff;
 };
 
-} /* namespace autopas */
+}  // namespace autopas

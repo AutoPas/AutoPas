@@ -5,8 +5,7 @@
  * @author tchipevn
  */
 
-#ifndef SRC_PAIRWISEFUNCTORS_CELLFUNCTOR_H_
-#define SRC_PAIRWISEFUNCTORS_CELLFUNCTOR_H_
+#pragma once
 
 #include "iterators/SingleCellIterator.h"
 
@@ -180,6 +179,4 @@ class CellFunctor {
   ParticleFunctor *_functor;
 };
 
-} /* namespace autopas */
-
-#endif /* SRC_PAIRWISEFUNCTORS_CELLFUNCTOR_H_ */
+}  // namespace autopas

@@ -458,4 +458,4 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   BuildVerletListType _buildVerletListType;
 };
 
-} /* namespace autopas */
+}  // namespace autopas

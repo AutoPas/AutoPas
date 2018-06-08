@@ -65,4 +65,4 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
   std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle>> _particleIterator;
 };
 
-} /* namespace autopas */
+}  // namespace autopas
