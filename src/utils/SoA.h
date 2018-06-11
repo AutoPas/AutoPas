@@ -49,7 +49,7 @@ class SoA {
 
   /**
    * @brief Pushes a given value to the desired attribute array.
-   * @param attribute Index of array to push to.
+   * @tparam attribute Index of array to push to.
    * @param value Value to push.
    */
   template <std::size_t attribute>
@@ -58,55 +58,20 @@ class SoA {
   }
 
   /**
-   * @brief Reads from all given attribute arrays at position `particleId`.
-   * @tparam ArrayLength length of the returned array. Should be equal
-   * attributes.size().
-   * @param attributes Attributes to read from.
-   * @param particleId Position to read from.
-   * @return Array of attributes ordered by given attribute order.
-   */
-  template <int... attributes>
-  std::array<double, sizeof...(attributes)> read(unsigned int particleId) {
-    std::array<double, sizeof...(attributes)> retArray;
-    int i = 0;
-    if (particleId >= getNumParticles()) {
-      autopas::utils::ExceptionHandler::exception(
-          "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId,
-          getNumParticles());
-      return retArray;
-    }
-    read<attributes...>(particleId, retArray);
-    return retArray;
-  }
-
-  template <int attribute, int... attributes, class ValueArrayType>
-  void read(unsigned int particleId, ValueArrayType &values, int _current = 0) {
-    values[_current] = soaStorage.template get<attribute>().at(particleId);
-    read<attributes...>(particleId, values, _current + 1);
-  }
-
-  template <class ValueArrayType>
-  void read(unsigned int particleId, ValueArrayType &values, int _current = 0) {}
-
-  /**
    * @brief Writes / updates values of attributes for a specific particle.
-   * @tparam ArrayLength length of the attributes and value array.
-   * @param attributes Array of attributes to update.
+   * @tparam attributes Array of attributes to update.
+   * @tparam ValueArrayType type of the array
    * @param particleId Particle to update.
    * @param values New value.
    */
-  template <int attribute, int... attributes, class ValueArrayType>
-  void write(unsigned int particleId, const ValueArrayType &values, int _current = 0) {
-    soaStorage.template get<attribute>().at(particleId) = values[_current];
-    write<attributes...>(particleId, values, _current + 1);
+  template <int... attributes, class ValueArrayType>
+  void write(unsigned int particleId, const ValueArrayType &values) {
+    write_impl<attributes...>(particleId, values);
   }
-
-  template <class ValueArrayType>
-  void write(unsigned int particleId, const ValueArrayType &values, int _current = 0) {}
 
   /**
    * @brief Reads the value of a given attribute of a given particle.
-   * @param attribute Attribute to read from.
+   * @tparam attribute Attribute to read from.
    * @param particleId Position to read from.
    * @return Attribute value.
    */
@@ -117,7 +82,7 @@ class SoA {
 
   /**
    * Returns a pointer to the given attribute vector.
-   * @param attribute ID of the desired attribute.
+   * @tparam attribute ID of the desired attribute.
    * @return Pointer to the beginning of the attribute vector
    */
   template <std::size_t attribute>
@@ -159,13 +124,30 @@ class SoA {
   }
 
  private:
-  /**
-   * Map containing all aligned vectors (aka. arrays) which are mapped to int
-   * ids.
-   * @todo variable precision (two maps?, user defined via initArrays?)
-   * @todo maybe fix number of attributes via template?
-   */
-  // std::map<int, std::vector<double, AlignedAllocator<double>> *> arrays;
+  // storage container for the SoA's
   utils::SoAStorage<typename Particle::SoAArraysType> soaStorage;
+
+  // actual implementation of read
+  template <int attribute, int... attributes, class ValueArrayType>
+  void read_impl(unsigned int particleId, ValueArrayType &values, int _current = 0) {
+    values[_current] = soaStorage.template get<attribute>().at(particleId);
+    read_impl<attributes...>(particleId, values, _current + 1);
+  }
+
+  // stop of recursive read call
+  template <class ValueArrayType>
+  void read_impl(unsigned int particleId, ValueArrayType &values, int _current = 0) {}
+
+  // actual implementation of the write function.
+  // uses a recursive call.
+  template <int attribute, int... attributes, class ValueArrayType>
+  void write_impl(unsigned int particleId, const ValueArrayType &values, int _current = 0) {
+    soaStorage.template get<attribute>().at(particleId) = values[_current];
+    write_impl<attributes...>(particleId, values, _current + 1);
+  }
+
+  // Stop of the recursive write_impl call
+  template <class ValueArrayType>
+  void write_impl(unsigned int particleId, const ValueArrayType &values, int _current = 0) {}
 };
 }  // namespace autopas

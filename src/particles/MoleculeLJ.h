@@ -53,6 +53,9 @@ class MoleculeLJ : public Particle {
    */
   static void setSigma(double sigma) { SIGMA = sigma; }
 
+  /**
+   * the type for the soa storage
+   */
   typedef std::tuple<std::vector<size_t>, std::vector<double>, std::vector<double>, std::vector<double>,
                      std::vector<double>, std::vector<double>, std::vector<double>>
       SoAArraysType;

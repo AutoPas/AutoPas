@@ -124,6 +124,9 @@ class Particle {
    */
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
 
+  /**
+   * the type for the soa storage
+   */
   typedef std::tuple<std::vector<size_t>, std::vector<double>, std::vector<double>, std::vector<double>,
                      std::vector<double>, std::vector<double>, std::vector<double>>
       SoAArraysType;
