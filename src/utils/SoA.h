@@ -70,6 +70,28 @@ class SoA {
   }
 
   /**
+   * @brief Reads from all given attribute arrays at position `particleId`.
+   * @tparam ArrayLength length of the returned array. Should be equal
+   * attributes.size().
+   * @tparam attributes Attributes to read from.
+   * @param particleId Position to read from.
+   * @return Array of attributes ordered by given attribute order.
+   */
+  template <int... attributes>
+  std::array<double, sizeof...(attributes)> read(unsigned int particleId) {
+    std::array<double, sizeof...(attributes)> retArray;
+    int i = 0;
+    if (particleId >= getNumParticles()) {
+      autopas::utils::ExceptionHandler::exception(
+          "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId,
+          getNumParticles());
+      return retArray;
+    }
+    read_impl<attributes...>(particleId, retArray);
+    return retArray;
+  }
+
+  /**
    * @brief Reads the value of a given attribute of a given particle.
    * @tparam attribute Attribute to read from.
    * @param particleId Position to read from.
