@@ -7,6 +7,7 @@
 
 #pragma once
 #include <array>
+#include <tuple>
 #include "utils/ArrayMath.h"
 
 namespace autopas {
@@ -122,6 +123,10 @@ class Particle {
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
+
+  typedef std::tuple<std::vector<size_t>, std::vector<double>, std::vector<double>, std::vector<double>,
+                     std::vector<double>, std::vector<double>, std::vector<double>>
+      SoAArraysType;
 
  private:
   std::array<double, 3> _r;

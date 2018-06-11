@@ -47,14 +47,14 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     };
   }
 
-  void SoAFunctor(SoA &soa, bool newton3 = true) override {
+  void SoAFunctor(SoA<Particle> &soa, bool newton3 = true) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr = soa.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y1ptr = soa.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z1ptr = soa.begin(Particle::AttributeNames::posZ);
+    double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y1ptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ id1ptr = soa.begin(Particle::AttributeNames::id);
+    unsigned long *const __restrict__ id1ptr = soa.template begin<Particle::AttributeNames::id>();
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -86,16 +86,16 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) override {
-    double *const __restrict__ x1ptr = soa1.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y1ptr = soa1.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z1ptr = soa1.begin(Particle::AttributeNames::posZ);
-    double *const __restrict__ x2ptr = soa2.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ y2ptr = soa2.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ z2ptr = soa2.begin(Particle::AttributeNames::posZ);
+  void SoAFunctor(SoA<Particle> &soa1, SoA<Particle> &soa2, bool newton3 = true) override {
+    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ id1ptr = soa1.begin(Particle::AttributeNames::id);
-    double *const __restrict__ id2ptr = soa2.begin(Particle::AttributeNames::id);
+    unsigned long *const __restrict__ id1ptr = soa1.template begin<Particle::AttributeNames::id>();
+    unsigned long *const __restrict__ id2ptr = soa2.template begin<Particle::AttributeNames::id>();
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -130,15 +130,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA &soa, size_t offset = 0) override {
+  void SoALoader(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {
     soa.resizeArrays(offset + cell.numParticles());
 
     if (cell.numParticles() == 0) return;
 
-    double *const __restrict__ idptr = soa.begin(Particle::AttributeNames::id);
-    double *const __restrict__ xptr = soa.begin(Particle::AttributeNames::posX);
-    double *const __restrict__ yptr = soa.begin(Particle::AttributeNames::posY);
-    double *const __restrict__ zptr = soa.begin(Particle::AttributeNames::posZ);
+    unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     auto cellIter = cell.begin();
     // load particles in SoAs
@@ -150,7 +150,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAExtractor(ParticleCell &cell, SoA &soa, size_t offset = 0) override {}
+  void SoAExtractor(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {}
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
    * of kernel calls compared to the number of distance calculations

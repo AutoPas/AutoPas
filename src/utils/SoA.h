@@ -8,14 +8,19 @@
 #include <algorithm>
 #include <cassert>
 #include <map>
+#include <tuple>
 #include <vector>
 #include "AlignedAllocator.h"
+#include "ExceptionHandler.h"
+#include "SoAStorage.h"
 
 namespace autopas {
 
 /**
  * structur of array class
+ * @tparam Particle The particle type for which the SoA should be generated
  */
+template <class Particle>
 class SoA {
  public:
   /**
@@ -32,34 +37,14 @@ class SoA {
   /**
    * @brief Destructor.
    */
-  ~SoA() {
-    for (auto &p : arrays) {
-      delete p.second;
-    }
-  }
-
-  /**
-   * @brief Creates an aligned vector for every given attribute.
-   * @param attributes Vector of Attributes that shall be stored.
-   * @param length length of the attribute vector
-   */
-  void initArrays(const std::vector<int> attributes, size_t length = 0) {
-    arrays.clear();
-    for (int a : attributes) {
-      // assert that every attribute does not already exist
-      assert(arrays.find(a) == arrays.end());
-      arrays.insert(make_pair(a, new std::vector<double, AlignedAllocator<double>>(length)));
-    }
-  }
+  ~SoA() {}
 
   /**
    * @brief Resizes all Vectors to the given length.
    * @param length new length.
    */
   void resizeArrays(size_t length) {
-    for (auto &&a : arrays) {
-      a.second->resize(length);
-    }
+    soaStorage.apply([=](auto &list) { list.resize(length); });
   }
 
   /**
@@ -67,7 +52,10 @@ class SoA {
    * @param attribute Index of array to push to.
    * @param value Value to push.
    */
-  void push(const int attribute, const double value) { arrays[attribute]->push_back(value); }
+  template <std::size_t attribute>
+  void push(const double value) {
+    soaStorage.template get<attribute>().push_back(value);
+  }
 
   /**
    * @brief Reads from all given attribute arrays at position `particleId`.
@@ -77,18 +65,44 @@ class SoA {
    * @param particleId Position to read from.
    * @return Array of attributes ordered by given attribute order.
    */
-  template <std::size_t numAttributes>
-  std::array<double, numAttributes> read(std::array<int, numAttributes> attributes, unsigned int particleId) {
-    std::array<double, numAttributes> retArray;
+  template <int... attributes>
+  std::array<double, sizeof...(attributes)> read(unsigned int particleId) {
+    std::array<double, sizeof...(attributes)> retArray;
     int i = 0;
     if (particleId >= getNumParticles()) {
+      autopas::utils::ExceptionHandler::exception(
+          "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId,
+          getNumParticles());
       return retArray;
     }
-    for (auto &&a : attributes) {
-      retArray[i++] = arrays[a]->at(particleId);
-    }
+    read<attributes...>(particleId, retArray);
     return retArray;
   }
+
+  template <int attribute, int... attributes, class ValueArrayType>
+  void read(unsigned int particleId, ValueArrayType &values, int _current = 0) {
+    values[_current] = soaStorage.template get<attribute>().at(particleId);
+    read<attributes...>(particleId, values, _current + 1);
+  }
+
+  template <class ValueArrayType>
+  void read(unsigned int particleId, ValueArrayType &values, int _current = 0) {}
+
+  /**
+   * @brief Writes / updates values of attributes for a specific particle.
+   * @tparam ArrayLength length of the attributes and value array.
+   * @param attributes Array of attributes to update.
+   * @param particleId Particle to update.
+   * @param values New value.
+   */
+  template <int attribute, int... attributes, class ValueArrayType>
+  void write(unsigned int particleId, const ValueArrayType &values, int _current = 0) {
+    soaStorage.template get<attribute>().at(particleId) = values[_current];
+    write<attributes...>(particleId, values, _current + 1);
+  }
+
+  template <class ValueArrayType>
+  void write(unsigned int particleId, const ValueArrayType &values, int _current = 0) {}
 
   /**
    * @brief Reads the value of a given attribute of a given particle.
@@ -96,29 +110,19 @@ class SoA {
    * @param particleId Position to read from.
    * @return Attribute value.
    */
-  double read(int attribute, unsigned int particleId) { return arrays[attribute]->at(particleId); }
+  template <std::size_t attribute>
+  auto read(unsigned int particleId) {
+    return soaStorage.template get<attribute>().at(particleId);
+  }
 
   /**
    * Returns a pointer to the given attribute vector.
    * @param attribute ID of the desired attribute.
    * @return Pointer to the beginning of the attribute vector
    */
-  double *begin(int attribute) { return &(arrays[attribute]->front()); }
-
-  /**
-   * @brief Writes / updates values of attributes for a specific particle.
-   * @tparam ArrayLength length of the attributes and value array.
-   * @param attributes Array of attributes to update.
-   * @param particleId Particle to update.
-   * @param value New value.
-   */
-  template <int numAttributes>
-  void write(std::array<int, numAttributes> attributes, unsigned int particleId,
-             std::array<double, numAttributes> value) {
-    int i = 0;
-    for (auto &&a : attributes) {
-      arrays[a]->at(particleId) = value[i++];
-    }
+  template <std::size_t attribute>
+  auto begin() {
+    return soaStorage.template get<attribute>().data();
   }
 
   /**
@@ -129,20 +133,13 @@ class SoA {
    *
    * @return Number of particles.
    */
-  size_t getNumParticles() const {
-    if (arrays.empty()) {
-      return 0;
-    }
-    return arrays.begin()->second->size();
-  }
+  size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
 
   /**
    * delete all particles in the soa
    */
   void clear() {
-    for (auto &vec : arrays) {
-      vec.second->clear();
-    }
+    soaStorage.apply([](auto &list) { list.clear(); });
   }
 
   /**
@@ -150,19 +147,15 @@ class SoA {
    * @param a position of the first particle
    * @param b position of the second particle
    */
-  void swap(size_t a, size_t b) {
-    for (auto &vec : arrays) {
-      std::swap((*(vec.second))[a], (*(vec.second))[b]);
-    }
+  void swap(std::size_t a, std::size_t b) {
+    soaStorage.apply([=](auto &list) { std::swap(list[a], list[b]); });
   }
 
-  /**
+  /**primary
    * delete the last particle in the soa
    */
   void pop_back() {
-    for (auto &vec : arrays) {
-      vec.second->pop_back();
-    }
+    soaStorage.apply([](auto &list) { list.pop_back(); });
   }
 
  private:
@@ -172,6 +165,7 @@ class SoA {
    * @todo variable precision (two maps?, user defined via initArrays?)
    * @todo maybe fix number of attributes via template?
    */
-  std::map<int, std::vector<double, AlignedAllocator<double>> *> arrays;
+  // std::map<int, std::vector<double, AlignedAllocator<double>> *> arrays;
+  utils::SoAStorage<typename Particle::SoAArraysType> soaStorage;
 };
 }  // namespace autopas

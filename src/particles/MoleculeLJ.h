@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <vector>
 #include "Particle.h"
 
 namespace autopas {
@@ -51,6 +52,10 @@ class MoleculeLJ : public Particle {
    * @param sigma
    */
   static void setSigma(double sigma) { SIGMA = sigma; }
+
+  typedef std::tuple<std::vector<size_t>, std::vector<double>, std::vector<double>, std::vector<double>,
+                     std::vector<double>, std::vector<double>, std::vector<double>>
+      SoAArraysType;
 
  private:
   static double EPSILON, SIGMA;
