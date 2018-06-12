@@ -66,19 +66,18 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
  private:
   void buildParticleFromSoA(size_t i, Particle *&rmm_or_not_pointer) {
     rmm_or_not_pointer->setR(
-        _particleSoABuffer.template read<Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-                                         Particle::AttributeNames::posZ>(i));
+        _particleSoABuffer.template readMultiple<Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+                                                 Particle::AttributeNames::posZ>(i));
     rmm_or_not_pointer->setF(
-        _particleSoABuffer.template read<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-                                         Particle::AttributeNames::forceZ>(i));
+        _particleSoABuffer.template readMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+                                                 Particle::AttributeNames::forceZ>(i));
   }
 
   void writeParticleToSoA(size_t index, Particle &particle) {
-    _particleSoABuffer
-        .template write<Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ>(
-            index, particle.getR());
-    _particleSoABuffer.template write<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-                                      Particle::AttributeNames::forceZ>(index, particle.getF());
+    _particleSoABuffer.template writeMultiple<Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+                                              Particle::AttributeNames::posZ>(index, particle.getR());
+    _particleSoABuffer.template writeMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+                                              Particle::AttributeNames::forceZ>(index, particle.getF());
   }
 
   /**

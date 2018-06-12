@@ -7,6 +7,7 @@
 #pragma once
 #include <algorithm>
 #include <cassert>
+#include <initializer_list>
 #include <map>
 #include <tuple>
 #include <vector>
@@ -65,7 +66,12 @@ class SoA {
    * @param values New value.
    */
   template <int... attributes, class ValueArrayType>
-  void write(unsigned int particleId, const ValueArrayType &values) {
+  void writeMultiple(unsigned int particleId, const ValueArrayType &values) {
+    write_impl<attributes...>(particleId, values);
+  }
+
+  template <int... attributes, size_t N = sizeof...(attributes)>
+  inline void writeMultiple(unsigned int particleId, std::array<double, N> values) {
     write_impl<attributes...>(particleId, values);
   }
 
@@ -78,7 +84,7 @@ class SoA {
    * @return Array of attributes ordered by given attribute order.
    */
   template <int... attributes>
-  std::array<double, sizeof...(attributes)> read(unsigned int particleId) {
+  std::array<double, sizeof...(attributes)> readMultiple(unsigned int particleId) {
     std::array<double, sizeof...(attributes)> retArray;
     int i = 0;
     if (particleId >= getNumParticles()) {
