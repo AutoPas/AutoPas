@@ -18,7 +18,7 @@ namespace autopas {
  * This class handles the storage of particles in their full form.
  * @tparam Particle
  */
-template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
+template <class Particle>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
   FullParticleCell() {}
@@ -27,7 +27,7 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
     return SingleCellIteratorWrapper<Particle>(
-        new internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>>(this));
+        new internal::SingleCellIterator<Particle, FullParticleCell<Particle>>(this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }
@@ -53,7 +53,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * the soa buffer of this cell
    */
-  SoA<SoAArraysType> _particleSoABuffer;
+  SoA<Particle> _particleSoABuffer;
 
   /**
    * friend class iterator

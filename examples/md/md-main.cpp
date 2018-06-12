@@ -122,7 +122,7 @@ void measure(int which, int numMolecules, int numIterations, int rebuildFrequenc
 
   LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lcCont(boxMin, boxMax, cutoff);
   DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dirCont(boxMin, boxMax, cutoff);
-  VerletLists<PrintableMolecule> verletListsCont(
+  VerletLists<PrintableMolecule, FullParticleCell<PrintableMolecule>> verletListsCont(
       boxMin, boxMax, cutoff, cutoff * skinRadiusToCutoffRatio, rebuildFrequency);
 
   fillContainerWithMolecules(numMolecules, &lcCont);

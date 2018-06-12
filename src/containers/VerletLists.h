@@ -25,9 +25,9 @@ namespace autopas {
  * @todo deleting particles should also invalidate the verlet lists - should be
  * implemented somehow
  */
-template <class Particle, class ParticleCell = FullParticleCell<Particle, typename VerletListHelpers<Particle>::SoAArraysType>>
+template <class Particle, class ParticleCell>
 class VerletLists : public LinkedCells<Particle, ParticleCell> {
-  typedef VerletListHelpers<Particle> verlet_internal;
+  typedef VerletListHelpers<Particle, ParticleCell> verlet_internal;
 
  public:
   /**
@@ -64,8 +64,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         _soa(),
         _buildVerletListType(buildVerletListType) {}
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell, typename Particle::SoAArraysType>* f,
-                          bool useNewton3 = true) override {
+  void iteratePairwiseAoS(Functor<Particle, ParticleCell>* f, bool useNewton3 = true) override {
     iteratePairwiseAoS2(f, useNewton3);
   }
 
@@ -86,8 +85,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     _traversalsSinceLastRebuild++;
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell, typename Particle::SoAArraysType>* f,
-                          bool useNewton3 = true) override {
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell>* f, bool useNewton3 = true) override {
     iteratePairwiseSoA2(f, useNewton3);
   }
 
@@ -173,7 +171,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     }
 
     // particles can also simply be very close already:
-    typename verlet_internal::template VerletListValidityCheckerFunctor<ParticleCell> validityCheckerFunctor(
+    typename verlet_internal::VerletListValidityCheckerFunctor validityCheckerFunctor(
         _aosNeighborLists, ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
     LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&validityCheckerFunctor, useNewton3);
@@ -264,7 +262,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
-    typename verlet_internal::template VerletListGeneratorFunctor<ParticleCell> f(_aosNeighborLists, (this->getCutoff() * this->getCutoff()));
+    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, (this->getCutoff() * this->getCutoff()));
 
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS:
@@ -444,7 +442,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   bool _soaListIsValid;
 
   /// global SoA of verlet lists
-  SoA<typename Particle::SoAArraysType> _soa;
+  SoA<Particle> _soa;
 
   /// specifies how the verlet lists are build
   BuildVerletListType _buildVerletListType;

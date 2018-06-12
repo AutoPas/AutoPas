@@ -59,8 +59,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { getHaloCell()->clear(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell, typename Particle::SoAArraysType> *f,
-                          bool useNewton3 = true) override {
+  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
     //		CellFunctor<Particle, ParticleCell,LJFunctor<Particle>>
     // cellFunctor(f);
     //		cellFunctor.processCellAoSN3(*getCell());
@@ -100,8 +99,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell, typename Particle::SoAArraysType> *f,
-                          bool useNewton3 = true) override {
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
     iteratePairwiseSoA2(f, useNewton3);
   }
 

@@ -61,7 +61,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
   /**
    * the soa buffer of the particle, all information is stored here.
    */
-  SoA<typename Particle::SoAArraysType> _particleSoABuffer;
+  SoA<Particle> _particleSoABuffer;
 
  private:
   void buildParticleFromSoA(size_t i, Particle *&rmm_or_not_pointer) {

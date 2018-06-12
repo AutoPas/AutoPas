@@ -65,7 +65,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell, typename Particle::SoAArraysType> *f, bool useNewton3 = true) override {
+  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
     iteratePairwiseAoS2(f, useNewton3);
   }
 
@@ -110,7 +110,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell, typename Particle::SoAArraysType> *f, bool useNewton3 = true) override {
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
     /// @todo iteratePairwiseSoA
     iteratePairwiseSoA2(f, useNewton3);
   }
