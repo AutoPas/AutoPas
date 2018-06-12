@@ -60,8 +60,8 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff);
+  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
+      lcCont(boxMin, boxMax, cutoff, 0, std::vector<autopas::TraversalOptions>());
 
   autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
       boxMin, boxMax, cutoff);
