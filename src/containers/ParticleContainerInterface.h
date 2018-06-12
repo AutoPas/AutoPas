@@ -13,8 +13,8 @@
 
 namespace autopas {
 
-// consider multiple inheritance or delegation vor avoidane of virtual call to
-// Functor
+// consider multiple inheritance or delegation to avoid virtual call to Functor
+//FIXME: WRONG DOCUMENTATION
 /**
  * The ParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
