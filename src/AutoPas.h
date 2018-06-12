@@ -8,20 +8,12 @@
 
 #include <iostream>
 #include <memory>
+#include <selectors/AutoTuner.h>
 #include "autopasIncludes.h"
 
 namespace autopas {
-/**
- * Possible choices for the particle container type.
- */
-enum ContainerOption { directSum, linkedCells };
 
-/**
- * Provides a way to iterate over the possible choices of ContainerOption.
- */
-static std::array<ContainerOption, 2> possibleContainerOptions = {ContainerOption::directSum,
-                                                                  ContainerOption::linkedCells};
-
+//TODO: Move this to a selector
 /**
  * Possible Choices for the particle data layout.
  */
@@ -60,23 +52,16 @@ class AutoPas {
    * @param containerOption Type of the container.
    */
   void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
-            autopas::ContainerOption containerOption) {
-    switch (containerOption) {
-      case autopas::directSum: {
-        container =
-            std::unique_ptr<ContainerType>(new autopas::DirectSum<Particle, ParticleCell>(boxMin, boxMax, cutoff));
-        break;
-      }
-      case autopas::linkedCells: {
-        container =
-            std::unique_ptr<ContainerType>(new autopas::LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff));
-        break;
-      }
-      default: {
-        std::cerr << "AutoPas.init(): Unknown container Option! " << containerOption << std::endl;
-        exit(1);
-      }
-    }
+            autopas::ContainerOptions containerOption) {
+
+    autoTuner = new autopas::AutoTuner<Particle, ParticleCell>(boxMin,
+                                                               boxMax,
+                                                               cutoff,
+                                                               100,
+                                                               {autopas::ContainerOptions::linkedCells},
+                                                               {autopas::TraversalOptions::c08});
+
+    container = autoTuner->getContainer();
   }
 
   /**
@@ -86,7 +71,7 @@ class AutoPas {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param containerOption Type of the container.
    */
-  void init(std::array<double, 3> boxSize, double cutoff, autopas::ContainerOption containerOption) {
+  void init(std::array<double, 3> boxSize, double cutoff, autopas::ContainerOptions containerOption) {
     init({0, 0, 0}, boxSize, cutoff, containerOption);
   }
 
@@ -168,4 +153,5 @@ class AutoPas {
  private:
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
   std::unique_ptr<ContainerType> container;
+  autopas::AutoTuner<Particle, ParticleCell> *autoTuner;
 };
