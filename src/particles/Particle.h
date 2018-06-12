@@ -8,9 +8,9 @@
 #pragma once
 #include <array>
 #include <tuple>
-#include "utils/SoAType.h"
 #include "utils/ArrayMath.h"
 #include "utils/SoAStorage.h"
+#include "utils/SoAType.h"
 
 namespace autopas {
 
