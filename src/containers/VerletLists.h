@@ -55,7 +55,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
               unsigned int rebuildFrequency = 1,
               BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
-      : LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
+      : LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin, 0, {}),  // no TraversalSelector for LC needed
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
