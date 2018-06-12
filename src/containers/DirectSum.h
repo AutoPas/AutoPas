@@ -6,6 +6,8 @@
  */
 
 #pragma once
+#include <iterators/ParticleIterator.h>
+#include <iterators/RegionParticleIterator.h>
 #include "CellBorderAndFlagManager.h"
 #include "ParticleContainer.h"
 #include "pairwiseFunctors/CellFunctor.h"
