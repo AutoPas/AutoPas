@@ -29,17 +29,11 @@ class AutoTuner {
                          allowedTraversalOptions) {
   }
 
-//  void iteratePairwise(Functor<Particle, ParticleCell> *functor);
-
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getContainer() {
-    _containerSelector.getOptimalContainer();
+    return std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>(_containerSelector.getOptimalContainer());
   };
 
  private:
   ContainerSelector<Particle, ParticleCell> _containerSelector;
-
-//  std::vector<ContainerOptions> _allowedContainerOptions;
-//  std::vector<TraversalOptions> _allowedTraversalOptions;
-
 };
 }
