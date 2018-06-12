@@ -34,6 +34,7 @@ class TraversalSelector {
                     const std::vector<TraversalOptions> &allowedTraversalOptions
   ) : _dims(dims),
       _retuneInterval(retuneInterval),
+      _retuneCounter(0),
       _allowedTraversalOptions(allowedTraversalOptions) {
   }
 
@@ -50,9 +51,9 @@ class TraversalSelector {
   template<class CellFunctor>
   CellPairTraversal<ParticleCell, CellFunctor> *chooseOptimalTraversal(std::vector<CellPairTraversal<ParticleCell, CellFunctor>> traversals);
 
-  unsigned int _retuneInterval, _retuneCounter;
 //  std::unique_ptr<CellPairTraversal<ParticleCell, CellFunctor>> _optimalTraversal;
   const std::array<unsigned long, 3> &_dims;
+  unsigned int _retuneInterval, _retuneCounter;
   const std::vector<TraversalOptions> &_allowedTraversalOptions;
 };
 

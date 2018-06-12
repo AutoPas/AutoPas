@@ -39,12 +39,13 @@ class ContainerSelector {
                     unsigned int retuneInterval,
                     std::vector<ContainerOptions> &allowedContainerOptions,
                     std::vector<TraversalOptions> &allowedTraversalOptions
-  ) : _retuneInterval(retuneInterval),
-      _retuneCounter(0),
-      _boxMin(boxMin),
+  ) : _boxMin(boxMin),
       _boxMax(boxMax),
       _cutoff(cutoff),
-      _allowedContainerOptions(allowedContainerOptions) {
+      _retuneInterval(retuneInterval),
+      _retuneCounter(0),
+      _allowedContainerOptions(allowedContainerOptions),
+      _allowedTraversalOptions(allowedTraversalOptions) {
   }
 
   ParticleContainer<Particle, ParticleCell> *getOptimalContainer();
@@ -56,12 +57,12 @@ class ContainerSelector {
   std::vector<ParticleContainer<Particle, ParticleCell> *> generateContainers();
   void chooseOptimalContainer(std::vector<ParticleContainer<Particle, ParticleCell> *> containers);
 
-  unsigned int _retuneInterval, _retuneCounter;
-  ParticleContainer<Particle, ParticleCell> *_optimalContainer;
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
+  unsigned int _retuneInterval, _retuneCounter;
   std::vector<ContainerOptions> _allowedContainerOptions;
   std::vector<TraversalOptions> _allowedTraversalOptions;
+  ParticleContainer<Particle, ParticleCell> *_optimalContainer;
 };
 
 template<class Particle, class ParticleCell>

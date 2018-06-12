@@ -35,7 +35,12 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
                     const std::array<double, 3> boxMax,
                     const double cutoff,
                     const std::vector<TraversalOptions> &applicableTraversals = {})
-      : _data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _applicableTraversals(applicableTraversals), _traversalSelector(nullptr) {
+      : _data(),
+        _traversalSelector(nullptr),
+        _applicableTraversals(applicableTraversals),
+        _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cutoff(cutoff) {
   }
 
   /**
@@ -130,7 +135,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * common vector for this purpose.
    */
   std::vector<ParticleCell> _data;
-//  std::unique_ptr<TraversalSelector> *_traversalSelector;
   TraversalSelector<ParticleCell> *_traversalSelector;
   const std::vector<TraversalOptions> &_applicableTraversals;
 
