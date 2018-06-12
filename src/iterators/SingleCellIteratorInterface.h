@@ -49,7 +49,7 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
    * Get the index of the particle in the cell
    * @return index of the current particle
    */
-  virtual int getIndex() const = 0;
+  virtual size_t getIndex() const = 0;
 };
 
 namespace internal {

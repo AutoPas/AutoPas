@@ -73,7 +73,7 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
     return _particleIterator->operator!=(rhs);
   }
 
-  int getIndex() const override final { return _particleIterator->getIndex(); }
+  size_t getIndex() const override final { return _particleIterator->getIndex(); }
 
  private:
   std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>> _particleIterator;

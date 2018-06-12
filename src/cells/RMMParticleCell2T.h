@@ -28,7 +28,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
   /**
    * Constructor of RMMParticleCell
    */
-  RMMParticleCell2T() {}
+  RMMParticleCell2T() = default;
 
   void addParticle(Particle &m) override {
     _particleSoABuffer.template push<Particle::AttributeNames::id>(m.getID());
@@ -105,7 +105,7 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg, size_t ind = 0)
+  explicit RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg, size_t ind = 0)
       : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   //  SingleCellIterator(const SingleCellIterator &cellIterator) {
@@ -172,7 +172,7 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
    * Get the index of the particle in the cell
    * @return index of the current particle
    */
-  int getIndex() const override { return _index; }
+  size_t getIndex() const override { return _index; }
 
   /**
    * Deletes the current particle

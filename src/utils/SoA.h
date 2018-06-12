@@ -35,10 +35,6 @@ class SoA {
    */
   SoA(const SoA &soa) = default;
 
-  /**
-   * @brief Destructor.
-   */
-  ~SoA() {}
 
   /**
    * @brief Resizes all Vectors to the given length.
@@ -66,7 +62,7 @@ class SoA {
    * @param values New value.
    */
   template <int... attributes, class ValueArrayType>
-  void writeMultiple(unsigned int particleId, const ValueArrayType &values) {
+  void writeMultiple(size_t particleId, const ValueArrayType &values) {
     write_impl<attributes...>(particleId, values);
   }
 
@@ -78,7 +74,7 @@ class SoA {
    * @param values
    */
   template <int... attributes, size_t N = sizeof...(attributes)>
-  inline void writeMultiple(unsigned int particleId, std::array<double, N> values) {
+  inline void writeMultiple(size_t particleId, std::array<double, N> values) {
     write_impl<attributes...>(particleId, values);
   }
 
@@ -91,7 +87,7 @@ class SoA {
    * @return Array of attributes ordered by given attribute order.
    */
   template <int... attributes>
-  std::array<double, sizeof...(attributes)> readMultiple(unsigned int particleId) {
+  std::array<double, sizeof...(attributes)> readMultiple(size_t particleId) {
     std::array<double, sizeof...(attributes)> retArray;
     int i = 0;
     if (particleId >= getNumParticles()) {
@@ -111,7 +107,7 @@ class SoA {
    * @return Attribute value.
    */
   template <std::size_t attribute>
-  auto read(unsigned int particleId) {
+  auto read(size_t particleId) {
     return soaStorage.template get<attribute>().at(particleId);
   }
 
@@ -164,25 +160,25 @@ class SoA {
 
   // actual implementation of read
   template <int attribute, int... attributes, class ValueArrayType>
-  void read_impl(unsigned int particleId, ValueArrayType &values, int _current = 0) {
+  void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) {
     values[_current] = soaStorage.template get<attribute>().at(particleId);
     read_impl<attributes...>(particleId, values, _current + 1);
   }
 
   // stop of recursive read call
   template <class ValueArrayType>
-  void read_impl(unsigned int particleId, ValueArrayType &values, int _current = 0) {}
+  void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) {}
 
   // actual implementation of the write function.
   // uses a recursive call.
   template <int attribute, int... attributes, class ValueArrayType>
-  void write_impl(unsigned int particleId, const ValueArrayType &values, int _current = 0) {
+  void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {
     soaStorage.template get<attribute>().at(particleId) = values[_current];
     write_impl<attributes...>(particleId, values, _current + 1);
   }
 
   // Stop of the recursive write_impl call
   template <class ValueArrayType>
-  void write_impl(unsigned int particleId, const ValueArrayType &values, int _current = 0) {}
+  void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {}
 };
 }  // namespace autopas
