@@ -26,17 +26,15 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
  public:
   /**
    * Constructor of the c08 traversal.
-   * @param cells The cells through which the traversal should traverse.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param cellfunctor The cell functor that defines the interaction of
    * particles between two different cells.
    */
-  explicit C08Traversal(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
-                        CellFunctor *cellfunctor)
-      : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {}
+  explicit C08Traversal(const std::array<unsigned long, 3> &dims, CellFunctor *cellfunctor)
+      : C08BasedTraversal<ParticleCell, CellFunctor>(dims, cellfunctor) {}
   // documentation in base class
-  void traverseCellPairs() override;
+  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
   bool isApplicable() override;
 };
 
@@ -46,7 +44,7 @@ inline bool C08Traversal<ParticleCell, CellFunctor>::isApplicable() {
 }
 
 template <class ParticleCell, class CellFunctor>
-inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
+inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs(std::vector<ParticleCell> &cells) {
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
   array<unsigned long, 3> end;
@@ -73,7 +71,7 @@ inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
           for (unsigned long x = start_x; x < end_x; x += stride_x) {
             unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-            this->processBaseCell(baseIndex);
+            this->processBaseCell(cells, baseIndex);
           }
         }
       }

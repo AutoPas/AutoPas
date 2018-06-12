@@ -23,20 +23,18 @@ namespace autopas {
  * @tparam CellFunctor the cell functor that defines the interaction of the
  * particles of two specific cells
  */
-template <class ParticleCell, class CellFunctor>
-class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
+template<class ParticleCell, class CellFunctor>
+class C08BasedTraversal : public CellPairTraversal<ParticleCell, CellFunctor> {
  public:
   /**
    * Constructor of the c08 traversal.
-   * @param cells The cells through which the traversal should traverse.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param cellfunctor The cell functor that defines the interaction of
    * particles between two different cells.
    */
-  explicit C08BasedTraversal(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
-                             CellFunctor *cellfunctor)
-      : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {
+  explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, CellFunctor *cellfunctor)
+      : CellPairTraversal<ParticleCell, CellFunctor>(dims, cellfunctor) {
     computeOffsets();
   }
 
@@ -46,7 +44,7 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
    * frontal corner (=base index) of a 2x2x2 block of cells.
    * @param baseIndex Index respective to which box is constructed.
    */
-  void processBaseCell(unsigned long baseIndex) const;
+  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex) const;
   /**
    * Computes pairs for the block used in processBaseCell()
    */
@@ -62,8 +60,9 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
   std::array<unsigned long, 8> _cellOffsets;
 };
 
-template <class ParticleCell, class CellFunctor>
-inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(unsigned long baseIndex) const {
+template<class ParticleCell, class CellFunctor>
+inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
+                                                                          unsigned long baseIndex) const {
   using std::pair;
 
   const int num_pairs = _cellPairOffsets.size();
@@ -76,8 +75,8 @@ inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(unsign
     unsigned long offset2 = current_pair.second;
     unsigned long cellIndex2 = baseIndex + offset2;
 
-    ParticleCell &cell1 = this->_cells->at(cellIndex1);
-    ParticleCell &cell2 = this->_cells->at(cellIndex2);
+    ParticleCell &cell1 = cells[cellIndex1];
+    ParticleCell &cell2 = cells[cellIndex2];
 
     if (cellIndex1 == cellIndex2) {
       this->_cellFunctor->processCell(cell1);
@@ -87,7 +86,7 @@ inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(unsign
   }
 }
 
-template <class ParticleCell, class CellFunctor>
+template<class ParticleCell, class CellFunctor>
 inline void C08BasedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
   using std::make_pair;
   typedef ThreeDimensionalMapping TDM;

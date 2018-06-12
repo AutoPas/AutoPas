@@ -32,25 +32,23 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
  public:
   /**
    * Constructor of the sliced traversal.
-   * @param cells the cells through which the traversal should traverse.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param cellfunctor The cell functor that defines the interaction of
    * particles between two different cells.
    */
-  explicit SlicedTraversal(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
-                           CellFunctor *cellfunctor)
-      : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {
-    rebuild(cells, dims);
+  explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, CellFunctor *cellfunctor)
+      : C08BasedTraversal<ParticleCell, CellFunctor>(dims, cellfunctor) {
+    rebuild(dims);
   }
   // documentation in base class
-  void traverseCellPairs() override;
+  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
   bool isApplicable() override;
-  void rebuild(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims) override;
+  void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  private:
   // FIXME: Remove this as soon as other traversals are available
-  void traverseCellPairsFallback();
+  void traverseCellPairsFallback(std::vector<ParticleCell> &cells);
 
   /**
    * store ids of dimensions ordered by number of cells per dimensions
@@ -70,9 +68,8 @@ inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
 }
 
 template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(std::vector<ParticleCell> &cells,
-                                                                const std::array<unsigned long, 3> &dims) {
-  CellPairTraversals<ParticleCell, CellFunctor>::rebuild(cells, dims);
+inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(const std::array<unsigned long, 3> &dims) {
+  CellPairTraversal<ParticleCell, CellFunctor>::rebuild(dims);
 
   // find longest dimension
   auto minMaxElem = std::minmax_element(this->_cellsPerDimension.begin(), this->_cellsPerDimension.end());
@@ -97,7 +94,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(std::vector<Part
 
 // FIXME: Remove this as soon as other traversals are available
 template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallback() {
+inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallback(std::vector<ParticleCell> &cells) {
   std::array<unsigned long, 3> endid;
   for (int d = 0; d < 3; ++d) {
     endid[d] = this->_cellsPerDimension[d] - 1;
@@ -106,14 +103,14 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallbac
     for (unsigned long y = 0; y < endid[1]; ++y) {
       for (unsigned long x = 0; x < endid[0]; ++x) {
         unsigned long ind = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-        this->processBaseCell(ind);
+        this->processBaseCell(cells, ind);
       }
     }
   }
 }
 
 template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
+inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs(std::vector<ParticleCell> &cells) {
   using std::array;
 
   auto numSlices = _sliceThickness.size();
@@ -122,7 +119,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
   // use fallback version if not applicable
   // FIXME: Remove this as soon as other traversals are available
   if (not isApplicable()) {
-    traverseCellPairsFallback();
+    traverseCellPairsFallback(cells);
     return;
   }
 
@@ -160,7 +157,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
           idArray[_dimsPerLength[1]] = dimMedium;
           idArray[_dimsPerLength[2]] = dimShort;
           auto id = ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
-          this->processBaseCell(id);
+          this->processBaseCell(cells, id);
         }
       }
       // at the end of the first layer release the lock

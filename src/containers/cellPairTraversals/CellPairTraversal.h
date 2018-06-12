@@ -20,22 +20,20 @@ namespace autopas {
  * @tparam CellFunctor a cell functor.
  */
 template <class ParticleCell, class CellFunctor>
-class CellPairTraversals {
+class CellPairTraversal {
  public:
   /**
-   * Constructor of CellPairTraversals.
-   * @param cells the vector of cells.
+   * Constructor of CellPairTraversal.
    * @param dims the dimensions of the cellblock.
    * @param cellFunctor the cell functor.
    */
-  CellPairTraversals(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
-                     CellFunctor *cellFunctor)
-      : _cells(&cells), _cellsPerDimension(dims), _cellFunctor(cellFunctor) {}
+  CellPairTraversal(const std::array<unsigned long, 3> &dims, CellFunctor *cellFunctor)
+      :_cellsPerDimension(dims), _cellFunctor(cellFunctor) {}
 
   /**
-   * Destructor of CellPairTraversals.
+   * Destructor of CellPairTraversal.
    */
-  virtual ~CellPairTraversals() = default;
+  virtual ~CellPairTraversal() = default;
 
   /**
    * Checks if the traversal is applicable to the current state of the domain.
@@ -45,11 +43,9 @@ class CellPairTraversals {
 
   /**
    * Resets the cell structure of the traversal.
-   * @param cells
    * @param dims
    */
-  virtual void rebuild(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims) {
-    _cells = &cells;
+  virtual void rebuild(const std::array<unsigned long, 3> &dims) {
     _cellsPerDimension = dims;
   };
 
@@ -58,14 +54,9 @@ class CellPairTraversals {
    * This function needs to be implemented by derived classes and handles to
    * order in which the cells are traversed.
    */
-  virtual void traverseCellPairs() = 0;
+  virtual void traverseCellPairs(std::vector<ParticleCell> &cells) = 0;
 
  protected:
-  /**
-   * The vector of cells.
-   */
-  std::vector<ParticleCell> *_cells;
-
   /**
    * The dimensions of the cellblock.
    * The dimensions are the number of cells in x, y and z direction.
