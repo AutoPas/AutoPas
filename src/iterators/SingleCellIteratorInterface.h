@@ -21,7 +21,7 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
   /**
    * default constructor of SingleCellIteratorInterface
    */
-  SingleCellIteratorInterface() {}
+  SingleCellIteratorInterface() = default;
 
   /**
    * destructor of SingleCellIteratorInterface
