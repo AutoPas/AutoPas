@@ -8,9 +8,8 @@
 #pragma once
 
 #include <array>
+#include <selectors/TraversalSelector.h>
 #include "ParticleContainerInterface.h"
-#include "iterators/ParticleIterator.h"
-#include "iterators/RegionParticleIterator.h"
 #include "pairwiseFunctors/Functor.h"
 
 namespace autopas {
@@ -22,7 +21,7 @@ namespace autopas {
  * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template <class Particle, class ParticleCell>
+template<class Particle, class ParticleCell>
 class ParticleContainer : public ParticleContainerInterface<Particle> {
  public:
   /**
@@ -30,9 +29,14 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param applicableTraversals Traversals applicable for this Container
    */
-  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : _data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
+  ParticleContainer(const std::array<double, 3> boxMin,
+                    const std::array<double, 3> boxMax,
+                    const double cutoff,
+                    const std::vector<TraversalOptions> &applicableTraversals = {})
+      : _data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _applicableTraversals(applicableTraversals), _traversalSelector(nullptr) {
+  }
 
   /**
    * destructor of ParticleContainer
@@ -106,6 +110,19 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    */
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
+  /**
+   * Checks if the given traversals are applicable to this traversal.
+   * @param traversalOptions
+   * @return True iff traversalOptions is a subset of _applicableTraversals
+   */
+  bool checkIfTraversalsAreApplicable(std::vector<TraversalOptions> traversalOptions) {
+    for (auto &option: traversalOptions) {
+      if (find(_applicableTraversals.begin(), _applicableTraversals.end(), option) == _applicableTraversals.end())
+        return false;
+    }
+    return true;
+  }
+
  protected:
   /**
    * vector of particle cells.
@@ -113,6 +130,9 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * common vector for this purpose.
    */
   std::vector<ParticleCell> _data;
+//  std::unique_ptr<TraversalSelector> *_traversalSelector;
+  TraversalSelector<ParticleCell> *_traversalSelector;
+  const std::vector<TraversalOptions> &_applicableTraversals;
 
  private:
   std::array<double, 3> _boxMin;
