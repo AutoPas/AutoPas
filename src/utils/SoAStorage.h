@@ -18,7 +18,7 @@ namespace utils {
 template <class SoAArraysType>
 class SoAStorage {
  private:
-  // Unused arguments are given no names.
+  // End of iteration.
   template <std::size_t I = 0, typename FuncT, typename... Tp>
   inline typename std::enable_if<I == sizeof...(Tp), void>::type for_each(std::tuple<Tp...>&, FuncT) {}
 
