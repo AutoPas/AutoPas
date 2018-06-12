@@ -35,7 +35,6 @@ class SoA {
    */
   SoA(const SoA &soa) = default;
 
-
   /**
    * @brief Resizes all Vectors to the given length.
    * @param length new length.

@@ -105,7 +105,8 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  explicit RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg, size_t ind = 0)
+  explicit RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg,
+                                   size_t ind = 0)
       : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   //  SingleCellIterator(const SingleCellIterator &cellIterator) {
