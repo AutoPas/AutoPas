@@ -70,6 +70,13 @@ class SoA {
     write_impl<attributes...>(particleId, values);
   }
 
+  /**
+   * Specialized version to pass arrays without specifying it directly.
+   * @tparam attributes
+   * @tparam N
+   * @param particleId
+   * @param values
+   */
   template <int... attributes, size_t N = sizeof...(attributes)>
   inline void writeMultiple(unsigned int particleId, std::array<double, N> values) {
     write_impl<attributes...>(particleId, values);
