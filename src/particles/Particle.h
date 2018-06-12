@@ -8,7 +8,9 @@
 #pragma once
 #include <array>
 #include <tuple>
+#include "utils/SoAType.h"
 #include "utils/ArrayMath.h"
+#include "utils/SoAStorage.h"
 
 namespace autopas {
 
@@ -127,9 +129,7 @@ class Particle {
   /**
    * the type for the soa storage
    */
-  typedef std::tuple<std::vector<size_t>, std::vector<double>, std::vector<double>, std::vector<double>,
-                     std::vector<double>, std::vector<double>, std::vector<double>>
-      SoAArraysType;
+  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
  private:
   std::array<double, 3> _r;
