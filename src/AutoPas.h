@@ -123,7 +123,7 @@ class AutoPas {
    * @param f Functor that describes the pair-potential
    * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
    */
-  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f, autopas::DataLayoutOption dataLayoutOption) {
+  void iteratePairwise(autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType> *f, autopas::DataLayoutOption dataLayoutOption) {
     bool newton3Allowed = f->allowsNewton3();
     bool nonNewton3Allowed = f->allowsNonNewton3();
     bool useNewton3;

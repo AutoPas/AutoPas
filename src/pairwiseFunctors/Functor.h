@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam Particle the type of Particle
  * @tparam ParticleCell the type of ParticleCell
  */
-template <class Particle, class ParticleCell>
+template <class Particle, class ParticleCell, class SoAArraysType>
 class Functor {
  public:
   virtual ~Functor() = default;
@@ -54,7 +54,7 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<Particle> &soa, bool newton3 = true) {
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3 = true) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(one soa): not yet implemented");
   }
 
@@ -77,7 +77,7 @@ class Functor {
    * least iFrom and less than soa.size())
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<Particle> &soa,
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa,
                           const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                           size_t iFrom, size_t iTo, bool newton3 = true) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
@@ -94,7 +94,7 @@ class Functor {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<Particle> &soa1, SoA<Particle> &soa2, bool newton3 = true) {
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3 = true) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 
@@ -106,8 +106,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the cell should be added
    * to the SoA with the specified offset.
    */
-
-  virtual void SoALoader(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) {
+  virtual void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("Functor::SoALoader: not yet implemented");
   }
 
@@ -119,7 +118,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) {
+  virtual void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("Functor::SoAExtractor: not yet implemented");
   }
 

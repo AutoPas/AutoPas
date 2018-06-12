@@ -22,15 +22,15 @@ namespace autopas {
  * @tparam Particle
  * @tparam ParticleCell
  */
-template <class Particle, class ParticleCell>
-class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
+class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
  public:
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
   explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
-      : autopas::Functor<Particle, ParticleCell>(),
+      : autopas::Functor<Particle, ParticleCell, SoAArraysType>(),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
@@ -47,7 +47,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     };
   }
 
-  void SoAFunctor(SoA<Particle> &soa, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3 = true) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -86,7 +86,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA<Particle> &soa1, SoA<Particle> &soa2, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3 = true) override {
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -130,7 +130,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {
+  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
     soa.resizeArrays(offset + cell.numParticles());
 
     if (cell.numParticles() == 0) return;
@@ -150,7 +150,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAExtractor(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {}
+  void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {}
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
    * of kernel calls compared to the number of distance calculations
