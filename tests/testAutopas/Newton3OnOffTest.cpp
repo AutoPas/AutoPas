@@ -38,7 +38,7 @@ void Newton3OnOffTest::fillContainerWithMolecules(
 }
 
 TEST_F(Newton3OnOffTest, testAoS) {
-  for (auto containerOption : autopas::possibleContainerOptions) {
+  for (auto containerOption : autopas::allContainerOptions) {
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), containerOption);
     fillContainerWithMolecules(100, autoPas);
 
@@ -67,7 +67,7 @@ TEST_F(Newton3OnOffTest, testAoS) {
 }
 
 TEST_F(Newton3OnOffTest, testSoA) {
-  for (auto containerOption : autopas::possibleContainerOptions) {
+  for (auto containerOption : autopas::allContainerOptions) {
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), containerOption);
     fillContainerWithMolecules(100, autoPas);
 

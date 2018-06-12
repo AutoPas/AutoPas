@@ -260,7 +260,8 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
-  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3);
+  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>>
+      linkedCells({0., 0., 0.}, {10., 10., 10.}, 3);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   linkedCells.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
