@@ -13,6 +13,8 @@
 #include <containers/cellPairTraversals/C08Traversal.h>
 #include <containers/cellPairTraversals/SlicedTraversal.h>
 #include "utils/Logger.h"
+#include "utils/ExceptionHandler.h"
+
 namespace autopas {
 
 enum TraversalOptions {
@@ -42,16 +44,15 @@ class TraversalSelector {
   CellPairTraversal<ParticleCell, CellFunctor> *getOptimalTraversal(CellFunctor &cellFunctor);
 
  private:
-//  template<class CellFunctor>
-//  using TraversalType = CellPairTraversal<ParticleCell, CellFunctor>;
-//  using TraversalList = std::vector<std::unique_ptr<TraversalSelector::TraversalType>>;
 
   template<class CellFunctor>
-  std::vector<CellPairTraversal<ParticleCell, CellFunctor>> generateTraversals(CellFunctor &cellFunctor);
+  std::vector<CellPairTraversal<ParticleCell, CellFunctor> *> *generateTraversals(CellFunctor &cellFunctor);
   template<class CellFunctor>
-  CellPairTraversal<ParticleCell, CellFunctor> *chooseOptimalTraversal(std::vector<CellPairTraversal<ParticleCell, CellFunctor>> traversals);
+  CellPairTraversal<ParticleCell, CellFunctor> *chooseOptimalTraversal(std::vector<CellPairTraversal<ParticleCell,
+                                                                                                     CellFunctor> *> &traversals);
 
-//  std::unique_ptr<CellPairTraversal<ParticleCell, CellFunctor>> _optimalTraversal;
+  // for each encountered cell processor save the optimal traversal. The cell processor is saved through its hash
+  std::unordered_map<size_t, TraversalOptions> _optimalTraversalOptions;
   const std::array<unsigned long, 3> &_dims;
   unsigned int _retuneInterval, _retuneCounter;
   const std::vector<TraversalOptions> &_allowedTraversalOptions;
@@ -59,18 +60,19 @@ class TraversalSelector {
 
 template<class ParticleCell>
 template<class CellFunctor>
-std::vector<CellPairTraversal<ParticleCell, CellFunctor>> TraversalSelector<ParticleCell>::generateTraversals(CellFunctor &cellFunctor) {
+std::vector<CellPairTraversal<ParticleCell, CellFunctor> *> *TraversalSelector<ParticleCell>::generateTraversals(
+    CellFunctor &cellFunctor) {
 
-  std::vector<CellPairTraversal<ParticleCell, CellFunctor>*> traversals;
+  auto *traversals = new std::vector<CellPairTraversal<ParticleCell, CellFunctor> *>;
 
   for (auto &option : _allowedTraversalOptions) {
     switch (option) {
       case c08: {
-        traversals.push_back(new C08Traversal<ParticleCell, CellFunctor>(_dims, cellFunctor));
+        traversals->push_back(new C08Traversal<ParticleCell, CellFunctor>(_dims, &cellFunctor));
         break;
       }
       case sliced : {
-        traversals.push_back(new SlicedTraversal<ParticleCell, CellFunctor>(_dims, cellFunctor));
+        traversals->push_back(new SlicedTraversal<ParticleCell, CellFunctor>(_dims, &cellFunctor));
         break;
       }
       default: {
@@ -79,29 +81,52 @@ std::vector<CellPairTraversal<ParticleCell, CellFunctor>> TraversalSelector<Part
     }
   }
 
-  assert(traversals.size() > 0);
+  assert(traversals->size() > 0);
   return traversals;
 }
 
 template<class ParticleCell>
 template<class CellFunctor>
-CellPairTraversal<ParticleCell, CellFunctor> *TraversalSelector<ParticleCell>::chooseOptimalTraversal(std::vector<CellPairTraversal<ParticleCell, CellFunctor>> traversals) {
+CellPairTraversal<ParticleCell, CellFunctor> *TraversalSelector<ParticleCell>::chooseOptimalTraversal(std::vector<
+    CellPairTraversal<ParticleCell, CellFunctor> *> &traversals) {
   //TODO: Autotuning goes here
-//  _optimalTraversal = traversals.front();
-  return traversals.front();
-}
+  auto optimalTraversal = traversals.front();
 
+  if (dynamic_cast<C08Traversal<ParticleCell, CellFunctor> *>(optimalTraversal))
+    _optimalTraversalOptions[typeid(CellFunctor).hash_code()] = TraversalOptions::c08;
+  else if (dynamic_cast<SlicedTraversal<ParticleCell, CellFunctor> *>(optimalTraversal))
+    _optimalTraversalOptions[typeid(CellFunctor).hash_code()] = TraversalOptions::sliced;
+  else {
+    utils::ExceptionHandler::exception("Optimal traversal has unknown type!");
+  }
+
+  return optimalTraversal;
+}
 
 template<class ParticleCell>
 template<class CellFunctor>
 CellPairTraversal<ParticleCell, CellFunctor> *TraversalSelector<ParticleCell>::getOptimalTraversal(CellFunctor &cellFunctor) {
-//  if (_retuneCounter == 0) {
-    return chooseOptimalTraversal<CellFunctor>(generateTraversals<CellFunctor>(cellFunctor));
-//    _retuneCounter = _retuneInterval;
-//  }
-//
-//  --_retuneCounter;
+  CellPairTraversal<ParticleCell, CellFunctor> *traversal;
 
-//  return _optimalTraversal;
+  if (_retuneCounter == 0 || _optimalTraversalOptions.find(typeid(CellFunctor).hash_code()) == _optimalTraversalOptions.end()) {
+    _retuneCounter = _retuneInterval;
+    traversal = chooseOptimalTraversal<CellFunctor>(*(generateTraversals<CellFunctor>(cellFunctor)));
+  } else {
+    switch (_optimalTraversalOptions[typeid(CellFunctor).hash_code()]) {
+      case c08 : {
+        traversal = new C08Traversal<ParticleCell, CellFunctor>(_dims, &cellFunctor);
+        break;
+      }
+      case sliced : {
+        traversal = new SlicedTraversal<ParticleCell, CellFunctor>(_dims, &cellFunctor);
+        break;
+      }
+      default: {
+        utils::ExceptionHandler::exception("Optimal traversal option is unknown!");
+      }
+    }
+  }
+  --_retuneCounter;
+  return traversal;
 }
 }
