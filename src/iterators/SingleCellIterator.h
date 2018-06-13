@@ -92,7 +92,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * Get the index of the particle in the cell
    * @return index of the current particle
    */
-  int getIndex() const override { return _index; }
+  size_t getIndex() const override { return _index; }
 
   /**
    * Deletes the current particle

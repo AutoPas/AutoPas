@@ -21,17 +21,7 @@ namespace autopas {
 template <class Particle>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-  FullParticleCell() {
-    _particleSoABuffer.initArrays({
-        Particle::AttributeNames::id,
-        Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forceX,
-        Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ,
-    });
-  }
+  FullParticleCell() {}
 
   void addParticle(Particle &m) override { _particles.push_back(m); }
 
@@ -63,7 +53,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * the soa buffer of this cell
    */
-  SoA _particleSoABuffer;
+  SoA<Particle> _particleSoABuffer;
 
   /**
    * friend class iterator
