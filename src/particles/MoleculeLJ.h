@@ -56,9 +56,7 @@ class MoleculeLJ : public Particle {
   /**
    * the type for the soa storage
    */
-  typedef std::tuple<std::vector<size_t>, std::vector<double>, std::vector<double>, std::vector<double>,
-                     std::vector<double>, std::vector<double>, std::vector<double>>
-      SoAArraysType;
+  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
  private:
   static double EPSILON, SIGMA;

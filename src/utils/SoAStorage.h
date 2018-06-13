@@ -18,14 +18,14 @@ namespace utils {
 template <class SoAArraysType>
 class SoAStorage {
  private:
-  // End of iteration.
-  template <std::size_t I = 0, typename FuncT, typename... Tp>
-  inline typename std::enable_if<I == sizeof...(Tp), void>::type for_each(std::tuple<Tp...>&, FuncT) {}
+  // End of iteration/recursion.
+  template <std::size_t I = 0, typename FunctorT, typename... Tp>
+  inline typename std::enable_if<I == sizeof...(Tp), void>::type for_each(std::tuple<Tp...>&, FunctorT) {}
 
-  template <std::size_t I = 0, typename FuncT, typename... Tp>
-      inline typename std::enable_if < I<sizeof...(Tp), void>::type for_each(std::tuple<Tp...>& t, FuncT f) {
+  template <std::size_t I = 0, typename FunctorT, typename... Tp>
+  inline typename std::enable_if<(I < sizeof...(Tp)), void>::type for_each(std::tuple<Tp...>& t, FunctorT f) {
     f(std::get<I>(t));
-    for_each<I + 1, FuncT, Tp...>(t, f);
+    for_each<I + 1, FunctorT, Tp...>(t, f);
   }
 
  public:
@@ -33,11 +33,12 @@ class SoAStorage {
    * Apply the specific function to all vectors.
    * This can e.g. be resize operations, ...
    * The functor func should not require input parameters. The returns of the functor are ignored.
-   * @tparam TFunctor the type of the functor
-   * @param func a functor, that should be applied on all vectors (e.g. lambda functions)
+   * @tparam FunctorT the type of the functor
+   * @param func a functor, that should be applied on all vectors (e.g. lambda functions, should take `auto& list` as an
+   * argument)
    */
-  template <typename TFunctor>
-  void apply(TFunctor func) {
+  template <typename FunctorT>
+  void apply(FunctorT func) {
     for_each(soaStorageTuple, func);
   }
 
