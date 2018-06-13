@@ -25,8 +25,8 @@ enum TraversalOptions {
 /**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
-static std::array<TraversalOptions, 3> allTraversalOptions = {TraversalOptions::c08,
-                                                              TraversalOptions::sliced};
+static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08,
+                                                            TraversalOptions::sliced};
 
 template<class ParticleCell>
 class TraversalSelector {

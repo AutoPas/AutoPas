@@ -26,9 +26,9 @@ enum ContainerOptions {
 /**
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
-static std::array<ContainerOptions, 3> allContainerOptions = {ContainerOptions::directSum,
-                                                              ContainerOptions::linkedCells,
-                                                              ContainerOptions::verletLists};
+static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::directSum,
+                                                            ContainerOptions::linkedCells,
+                                                            ContainerOptions::verletLists};
 
 template<class Particle, class ParticleCell>
 class ContainerSelector {
