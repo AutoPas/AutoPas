@@ -53,7 +53,7 @@ class SoAStorage {
   }
 
   /**
-   * @copydoc auto& get()
+   * @copydoc get()
    * @note const variant
    */
   template <size_t soaAttribute>
