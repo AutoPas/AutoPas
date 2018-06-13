@@ -20,7 +20,7 @@ TEST_F(SoATest, SoATypeTest) {
                 "type must be same");
 }
 
-TEST_F(SoATest, SoAStorageTest) {
+TEST_F(SoATest, SoAStorageTestGet) {
   typedef autopas::utils::SoAType<size_t, double, double, double>::Type soatype;
   autopas::utils::SoAStorage<soatype> soAStorage;
 
@@ -28,13 +28,6 @@ TEST_F(SoATest, SoAStorageTest) {
   EXPECT_EQ(soAStorage.get<1>().size(), 0);
   EXPECT_EQ(soAStorage.get<2>().size(), 0);
   EXPECT_EQ(soAStorage.get<3>().size(), 0);
-
-  soAStorage.apply([](auto &list) { list.resize(2); });
-
-  EXPECT_EQ(soAStorage.get<0>().size(), 2);
-  EXPECT_EQ(soAStorage.get<1>().size(), 2);
-  EXPECT_EQ(soAStorage.get<2>().size(), 2);
-  EXPECT_EQ(soAStorage.get<3>().size(), 2);
 
   soAStorage.get<0>().resize(4);
   soAStorage.get<1>().resize(5);
@@ -53,6 +46,22 @@ TEST_F(SoATest, SoAStorageTest) {
                 "position type must be proper(double)");
   static_assert(std::is_same<decltype(soAStorage.get<3>().data()), double *>::value,
                 "position type must be proper(double)");
+}
+
+TEST_F(SoATest, SoAStorageTestAlignment) {
+  typedef autopas::utils::SoAType<size_t, double, double, double>::Type soatype;
+  autopas::utils::SoAStorage<soatype> soAStorage;
+
+  // check alignment to DEFAULT_CACHE_LINE_SIZE
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
+
+  soAStorage.get<0>().resize(4);
+  soAStorage.get<1>().resize(5);
+  soAStorage.get<2>().resize(6);
+  soAStorage.get<3>().resize(7);
 
   // check alignment to DEFAULT_CACHE_LINE_SIZE
   EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
@@ -61,7 +70,161 @@ TEST_F(SoATest, SoAStorageTest) {
   EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
 }
 
-TEST_F(SoATest, SoATestPublicMethods) {
+TEST_F(SoATest, SoAStorageTestApply) {
+  typedef autopas::utils::SoAType<size_t, double, double, double>::Type soatype;
+  autopas::utils::SoAStorage<soatype> soAStorage;
+
+  EXPECT_EQ(soAStorage.get<0>().size(), 0);
+  EXPECT_EQ(soAStorage.get<1>().size(), 0);
+  EXPECT_EQ(soAStorage.get<2>().size(), 0);
+  EXPECT_EQ(soAStorage.get<3>().size(), 0);
+
+  soAStorage.apply([](auto &list) { list.resize(2); });
+
+  EXPECT_EQ(soAStorage.get<0>().size(), 2);
+  EXPECT_EQ(soAStorage.get<1>().size(), 2);
+  EXPECT_EQ(soAStorage.get<2>().size(), 2);
+  EXPECT_EQ(soAStorage.get<3>().size(), 2);
+}
+
+TEST_F(SoATest, SoATestPush) {
+  // default soa using autopas::Particle
+  using autopas::Particle;
+  autopas::SoA<Particle> soa;
+
+  EXPECT_EQ(soa.getNumParticles(), 0);
+
+  soa.push<Particle::AttributeNames::id>(2);
+  soa.push<Particle::AttributeNames::posX>(0.3);
+  soa.push<Particle::AttributeNames::posY>(0.1);
+  soa.push<Particle::AttributeNames::posZ>(0.5);
+  soa.push<Particle::AttributeNames::forceX>(-0.2);
+  soa.push<Particle::AttributeNames::forceY>(0.7);
+  soa.push<Particle::AttributeNames::forceZ>(0.07);
+
+  EXPECT_EQ(soa.getNumParticles(), 1);
+
+  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 2);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 0.3);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 0.1);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 0.5);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -0.2);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 0.7);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 0.07);
+}
+
+TEST_F(SoATest, SoATestClear) {
+  // default soa using autopas::Particle
+  using autopas::Particle;
+  autopas::SoA<Particle> soa;
+
+  EXPECT_EQ(soa.getNumParticles(), 0);
+
+  soa.resizeArrays(2);
+
+  EXPECT_EQ(soa.getNumParticles(), 2);
+
+  soa.clear();
+
+  EXPECT_EQ(soa.getNumParticles(), 0);
+}
+
+TEST_F(SoATest, SoATestSwap) {
+  // default soa using autopas::Particle
+  using autopas::Particle;
+  autopas::SoA<Particle> soa;
+
+  soa.resizeArrays(2);
+
+  soa.begin<Particle::AttributeNames::id>()[0] = 3;
+  soa.begin<Particle::AttributeNames::posX>()[0] = 1.3;
+  soa.begin<Particle::AttributeNames::posY>()[0] = 1.1;
+  soa.begin<Particle::AttributeNames::posZ>()[0] = 1.5;
+  soa.begin<Particle::AttributeNames::forceX>()[0] = -1.2;
+  soa.begin<Particle::AttributeNames::forceY>()[0] = 1.7;
+  soa.begin<Particle::AttributeNames::forceZ>()[0] = 1.07;
+
+  soa.begin<Particle::AttributeNames::id>()[1] = 1;
+  soa.begin<Particle::AttributeNames::posX>()[1] = 10.3;
+  soa.begin<Particle::AttributeNames::posY>()[1] = 10.1;
+  soa.begin<Particle::AttributeNames::posZ>()[1] = 10.5;
+  soa.begin<Particle::AttributeNames::forceX>()[1] = -10.2;
+  soa.begin<Particle::AttributeNames::forceY>()[1] = 10.7;
+  soa.begin<Particle::AttributeNames::forceZ>()[1] = 10.07;
+
+  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 3);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 1.3);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 1.1);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 1.5);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -1.2);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 1.7);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 1.07);
+
+  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(1), 1);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(1), 10.3);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(1), 10.1);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(1), 10.5);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(1), -10.2);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(1), 10.7);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(1), 10.07);
+
+  soa.swap(0, 1);
+
+  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(1), 3);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(1), 1.3);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(1), 1.1);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(1), 1.5);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(1), -1.2);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(1), 1.7);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(1), 1.07);
+
+  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 1);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 10.3);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 10.1);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 10.5);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -10.2);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 10.7);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 10.07);
+}
+
+TEST_F(SoATest, SoATestMultiWriteRead) {
+  // default soa using autopas::Particle
+  using autopas::Particle;
+  autopas::SoA<Particle> soa;
+
+  soa.resizeArrays(1);
+
+  soa.begin<Particle::AttributeNames::id>()[0] = 1;
+
+  EXPECT_EQ(soa.getNumParticles(), 1);
+
+  soa.writeMultiple<Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ>(
+      0, {4., 5., 6.});
+
+  std::array<double, 3> f = {7., 8., 9.};
+  soa.writeMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+                    Particle::AttributeNames::forceZ>(0, f);
+
+  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 1);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 4.);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 5.);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 6.);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), 7.);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 8.);
+  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 9.);
+
+  auto res = soa.readMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+                              Particle::AttributeNames::forceZ>(0);
+
+  static_assert(std::is_same<decltype(res), std::array<double, 3>>::value, "id type must be proper(size_t)");
+
+  EXPECT_EQ(res[0], 7.);
+  EXPECT_EQ(res[1], 8.);
+  EXPECT_EQ(res[2], 9.);
+}
+
+// this test makes certain that methods don't destroy the inner state of the test
+TEST_F(SoATest, SoATestComplicatedAccess) {
   // default soa using autopas::Particle
   using autopas::Particle;
   autopas::SoA<Particle> soa;
