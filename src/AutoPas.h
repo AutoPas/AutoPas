@@ -49,19 +49,25 @@ class AutoPas {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
-   * @param containerOption Type of the container.
+   * @param retuneInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
+   * @param allowedContainers List of container types AutoPas can choose from.
+   * @param allowedTraversals List of traversals AutoPas can choose from.
    */
-  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
-            autopas::ContainerOptions containerOption) {
+  void init(std::array<double, 3> boxMin,
+            std::array<double, 3> boxMax,
+            double cutoff,
+            const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
+            const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
+            unsigned int retuneInterval = 100) {
 
-    autoTuner = new autopas::AutoTuner<Particle, ParticleCell>(boxMin,
+    _autoTuner = new autopas::AutoTuner<Particle, ParticleCell>(boxMin,
                                                                boxMax,
                                                                cutoff,
-                                                               100,
-                                                               {autopas::ContainerOptions::linkedCells},
-                                                               {autopas::TraversalOptions::c08});
+                                                               retuneInterval,
+                                                               allowedContainers,
+                                                               allowedTraversals);
 
-    container = autoTuner->getContainer();
+    _container = _autoTuner->getContainer();
   }
 
   /**
@@ -69,10 +75,15 @@ class AutoPas {
    *
    * @param boxSize Size of the container.
    * @param cutoff  Cutoff radius to be used in this container.
-   * @param containerOption Type of the container.
+   * @param allowedContainers List of container types AutoPas can choose from.
+   * @param allowedTraversals List of traversals AutoPas can choose from.
    */
-  void init(std::array<double, 3> boxSize, double cutoff, autopas::ContainerOptions containerOption) {
-    init({0, 0, 0}, boxSize, cutoff, containerOption);
+  void init(std::array<double, 3> boxSize,
+            double cutoff,
+            const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
+            const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
+            unsigned int retuneInterval = 100) {
+    init({0, 0, 0}, boxSize, cutoff, allowedContainers, allowedTraversals, retuneInterval);
   }
 
   /**
@@ -82,25 +93,25 @@ class AutoPas {
    */
   // TODO: remove this once we are convinced all necessary container functions
   // are wrapped
-  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return container.get(); }
+  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _container.get(); }
 
   /**
    * Adds a particle to the container.
    * @param p Reference to the particle to be added
    */
-  void addParticle(Particle &p) { container->addParticle(p); }
+  void addParticle(Particle &p) { _container->addParticle(p); }
 
   /**
    * adds a particle to the container that lies in the halo region of the
    * container
    * @param haloParticle particle to be added
    */
-  void addHaloParticle(Particle &haloParticle) { container->addHaloParticle(haloParticle); };
+  void addHaloParticle(Particle &haloParticle) { _container->addHaloParticle(haloParticle); };
 
   /**
    * deletes all halo particles
    */
-  void deleteHaloParticles() { container->deleteHaloParticles(); };
+  void deleteHaloParticles() { _container->deleteHaloParticles(); };
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -121,11 +132,11 @@ class AutoPas {
     }
     switch (dataLayoutOption) {
       case autopas::aos: {
-        container->iteratePairwiseAoS(f, useNewton3);
+        _container->iteratePairwiseAoS(f, useNewton3);
         break;
       }
       case autopas::soa: {
-        container->iteratePairwiseSoA(f, useNewton3);
+        _container->iteratePairwiseSoA(f, useNewton3);
       }
     }
   }
@@ -135,7 +146,7 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @return iterator to the first particle
    */
-  autopas::ParticleIteratorWrapper<Particle> begin() { return container->begin(); }
+  autopas::ParticleIteratorWrapper<Particle> begin() { return _container->begin(); }
 
   /**
    * iterate over all particles in a specified region
@@ -147,11 +158,11 @@ class AutoPas {
    */
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
                                                                std::array<double, 3> higherCorner) {
-    return container->getRegionIterator(lowerCorner, higherCorner);
+    return _container->getRegionIterator(lowerCorner, higherCorner);
   }
 
  private:
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
-  std::unique_ptr<ContainerType> container;
-  autopas::AutoTuner<Particle, ParticleCell> *autoTuner;
+  std::unique_ptr<ContainerType> _container;
+  autopas::AutoTuner<Particle, ParticleCell> *_autoTuner;
 };

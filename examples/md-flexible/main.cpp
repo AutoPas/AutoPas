@@ -38,7 +38,8 @@ void initContainer(autopas::ContainerOptions containerOption,
   std::array<double, 3> boxMax({(particlesPerDim + 1.0) * particelSpacing, (particlesPerDim + 1.0) * particelSpacing,
                                 (particlesPerDim + 1.0) * particelSpacing});
 
-  autopas.init(boxMax, cutoff, containerOption);
+  // TODO: Extend example to be tunable and also include traversal choices
+  autopas.init(boxMax, cutoff, {containerOption});
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,

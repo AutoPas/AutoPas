@@ -37,7 +37,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
 
   // generates one cell per particle + 1 halo layer
-  autoPas.init(boxMin, boxMax, cellLength, autopas::linkedCells);
+  autoPas.init(boxMin, boxMax, cellLength, {autopas::ContainerOptions::linkedCells});
 
   fillWithParticles(autoPas, particlesPerDimension);
 
