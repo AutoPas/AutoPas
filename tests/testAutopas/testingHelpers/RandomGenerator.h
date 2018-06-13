@@ -16,14 +16,13 @@ class RandomGenerator {
 
  public:
   template <class Container, class Particle>
-  static void fillWithParticles(Container& container, Particle defaultParticle, int numParticles = 100) {
+  static void fillWithParticles(Container& container, Particle defaultParticle, unsigned long numParticles = 100) {
     srand(42);  // fixed seedpoint
 
-    for (int i = 0; i < numParticles; ++i) {
-      auto id = static_cast<unsigned long>(i);
+    for (unsigned long i = 0; i < numParticles; ++i) {
       Particle particle = defaultParticle;
       particle.setR(randomPosition(container.getBoxMin(), container.getBoxMax()));
-      particle.setID(id);
+      particle.setID(i);
       container.addParticle(particle);
     }
   }
