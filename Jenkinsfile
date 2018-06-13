@@ -21,7 +21,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build"){
                                 sh "cmake .."
-                                sh "make -j 4"
+                                sh "make -j 4 2>&1 | tee buildlog.txt"
                             }
                         }
                     },
@@ -29,7 +29,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp"){
                                 sh "cmake -DOPENMP=ON .."
-                                sh "make -j 4"
+                                sh "make -j 4 2>&1 | tee buildlog.txt"
                             }
                         }
                     },
@@ -37,7 +37,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp-address-sanitizer"){
                                 sh "cmake -DOPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4"
+                                sh "make -j 4 2>&1 | tee buildlog.txt"
                             }
                         }
                     },
@@ -45,7 +45,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
                                 sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4"
+                                sh "make -j 4 2>&1 | tee buildlog.txt"
                             }
                         }
                     },
@@ -53,7 +53,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release"){
                                 sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4"
+                                sh "make -j 4 2>&1 | tee buildlog.txt"
                             }
                         }
                     },
@@ -62,7 +62,7 @@ pipeline{
                             dir("build-threadsanitizer"){
                                 // this is for simple testing of our threading libraries.
                                 sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
-                                sh "make -j 4"
+                                sh "make -j 4 2>&1 | tee buildlog.txt"
                             }
                         }
                     },
@@ -74,7 +74,7 @@ pipeline{
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-openmp"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
-                                sh "ninja -j 4"
+                                sh "ninja -j 4 2>&1 | tee buildlog_clang.txt"
                             }
                         }
                     },
@@ -82,7 +82,7 @@ pipeline{
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "ninja -j 4"
+                                sh "ninja -j 4 2>&1 | tee buildlog_clang.txt"
                             }
                         }
                     },
@@ -90,7 +90,7 @@ pipeline{
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "ninja -j 4"
+                                sh "ninja -j 4 2>&1 | tee buildlog_clang.txt"
                             }
                         }
                     },
@@ -98,13 +98,16 @@ pipeline{
                         container('autopas-archer'){
                             dir("build-archer"){
                                 sh "CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DUSE_VECTORIZATION=OFF .."
-                                sh "ninja -j 4"
+                                sh "ninja -j 4 2>&1 | tee buildlog_clang.txt"
                             }
                         }
                     }
                 )
             }
             post{
+                always{
+					warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+                }
                 success{
                     githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
                 }
