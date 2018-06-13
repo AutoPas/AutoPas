@@ -5,7 +5,7 @@ if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.1)
 endif ()
 
 # needed for GCC to vectorize LJFunctor.SoAFunctor
-option(ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize efficiently" OFF)
+option(ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize efficiently" ON)
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     if (ENABLE_FAST_MATH)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
