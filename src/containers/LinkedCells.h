@@ -30,6 +30,12 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
+ private:
+  static const std::vector<TraversalOptions> &LCApplicableTraversals() {
+    static const std::vector<TraversalOptions> v{TraversalOptions::c08, TraversalOptions::sliced};
+    return v;
+  }
+
  public:
   /**
    * Constructor of the LinkedCells class
@@ -43,20 +49,22 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
               const std::array<double, 3> boxMax,
               const double cutoff,
               const unsigned int retuneInterval = 100,
-              const std::vector<TraversalOptions> &allowedTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced})
+              const std::vector<TraversalOptions> &allowedTraversalOptions = LCApplicableTraversals())
       : ParticleContainer<Particle, ParticleCell>(boxMin,
                                                   boxMax,
                                                   cutoff,
-                                                  {TraversalOptions::c08, TraversalOptions::sliced}),
+                                                  LCApplicableTraversals()),
         _cellBlock(this->_data,
                    boxMin,
                    boxMax,
                    cutoff) {
 
     assert(this->checkIfTraversalsAreApplicable(allowedTraversalOptions));
-    if (allowedTraversalOptions.size() > 0)
+    if (not allowedTraversalOptions.empty())
       this->_traversalSelector =
-          new TraversalSelector<ParticleCell>(_cellBlock.getCellsPerDimensionWithHalo(), retuneInterval, allowedTraversalOptions);
+          new TraversalSelector<ParticleCell>(_cellBlock.getCellsPerDimensionWithHalo(),
+                                              retuneInterval,
+                                              allowedTraversalOptions);
 
   }
 
@@ -100,34 +108,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
-    auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");
+
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
-      // IMPLEMENTED
-      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>>
-            traversal(_cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs(this->_data);
-      } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>>
-            traversal(_cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs(this->_data);
-      }
-
+      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_data);
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
-      // IMPLEMENTED
-      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
-            traversal(_cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs(this->_data);
-      } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>>
-            traversal(_cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs(this->_data);
-      }
+      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_data);
     }
   }
 
@@ -263,5 +250,4 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 };
-
 }  // namespace autopas

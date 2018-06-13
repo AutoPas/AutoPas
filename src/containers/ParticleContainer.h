@@ -23,6 +23,12 @@ namespace autopas {
  */
 template<class Particle, class ParticleCell>
 class ParticleContainer : public ParticleContainerInterface<Particle> {
+ private:
+  static const std::vector<TraversalOptions> &DefaultApplicableTraversals() {
+    static const std::vector<TraversalOptions> v{};
+    return v;
+  }
+
  public:
   /**
    * Constructor of ParticleContainer
@@ -34,7 +40,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
   ParticleContainer(const std::array<double, 3> boxMin,
                     const std::array<double, 3> boxMax,
                     const double cutoff,
-                    const std::vector<TraversalOptions> &applicableTraversals = {})
+                    const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
       : _data(),
         _traversalSelector(nullptr),
         _applicableTraversals(applicableTraversals),
