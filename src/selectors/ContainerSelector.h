@@ -51,8 +51,6 @@ class ContainerSelector {
   ParticleContainer<Particle, ParticleCell> *getOptimalContainer();
 
  private:
-//  typedef ParticleContainer<Particle, ParticleCell> ContainerType;
-//  typedef std::vector<std::unique_ptr<ContainerSelector::ContainerType>> ContainerList;
 
   std::vector<ParticleContainer<Particle, ParticleCell> *> generateContainers();
   void chooseOptimalContainer(std::vector<ParticleContainer<Particle, ParticleCell> *> containers);
