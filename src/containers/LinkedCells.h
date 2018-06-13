@@ -134,34 +134,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
     loadSoAs(f);
 
-    auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
-      // IMPLEMENTED
-      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>>
-            traversal(_cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs(this->_data);
-      } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>>
-            traversal(_cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs(this->_data);
-      }
-
+      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_data);
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-      // TODO: REMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
-      // IMPLEMENTED
-      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>>
-            traversal(_cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs(this->_data);
-      } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>>
-            traversal(_cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs(this->_data);
-      }
+      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_data);
     }
 
     extractSoAs(f);
