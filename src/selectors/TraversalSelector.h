@@ -104,7 +104,7 @@ CellPairTraversal<ParticleCell, CellFunctor> *TraversalSelector<ParticleCell>::c
 template<class ParticleCell>
 template<class CellFunctor>
 CellPairTraversal<ParticleCell, CellFunctor> *TraversalSelector<ParticleCell>::getOptimalTraversal(CellFunctor &cellFunctor) {
-  CellPairTraversal<ParticleCell, CellFunctor> *traversal;
+  CellPairTraversal<ParticleCell, CellFunctor> *traversal = nullptr;
 
   if (_optimalTraversalOptions.find(typeid(CellFunctor).hash_code()) == _optimalTraversalOptions.end()) {
     traversal = chooseOptimalTraversal<CellFunctor>(*(generateTraversals<CellFunctor>(cellFunctor)));
