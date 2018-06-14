@@ -42,7 +42,8 @@ class ContainerSelector {
       _boxMax(boxMax),
       _cutoff(cutoff),
       _allowedContainerOptions(allowedContainerOptions),
-      _allowedTraversalOptions(allowedTraversalOptions) {
+      _allowedTraversalOptions(allowedTraversalOptions),
+      _optimalContainer(nullptr)  {
   }
 
   ParticleContainer<Particle, ParticleCell> *getOptimalContainer();
