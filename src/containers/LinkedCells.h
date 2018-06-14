@@ -56,8 +56,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     assert(this->checkIfTraversalsAreApplicable(allowedTraversalOptions));
     if (not allowedTraversalOptions.empty())
       this->_traversalSelector =
-          new TraversalSelector<ParticleCell>(_cellBlock.getCellsPerDimensionWithHalo(),
-                                              allowedTraversalOptions);
+          std::make_unique<TraversalSelector<ParticleCell>>(_cellBlock.getCellsPerDimensionWithHalo(),
+                                                            allowedTraversalOptions);
 
   }
 
