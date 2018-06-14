@@ -26,8 +26,8 @@ void SlicedTraversalTest::fillWithParticles(std::vector<FPCell> &cells, std::arr
 }
 
 TEST_F(SlicedTraversalTest, testTraversalCube) {
-  // TODO: more propper way to do this would be through a mock of the
-  // cellFunctor
+  /// @todo: more propper way to do this would be through a mock of the
+  /// cellFunctor
   size_t edgeLength = 10;
 
   MFunctor functor;
@@ -52,8 +52,8 @@ TEST_F(SlicedTraversalTest, testTraversalCube) {
 }
 
 TEST_F(SlicedTraversalTest, testTraversalCuboid) {
-  // TODO: more propper way to do this would be through a mock of the
-  // cellFunctor
+  /// @todo: more propper way to do this would be through a mock of the
+  /// cellFunctor
   std::array<size_t, 3> edgeLength = {5, 7, 10};
 
   MFunctor functor;

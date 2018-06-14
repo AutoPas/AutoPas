@@ -11,7 +11,7 @@
 
 TEST_F(LinkedCellsTest, testParticleAdding) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
-      linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0, std::vector<autopas::TraversalOptions>());
+      linkedCells({0., 0., 0.}, {10., 10., 10.}, 1.);
   int id = 1;
   for (double x : {-1.5, -.5, 0., 5., 9.999, 10., 10.5, 11.5}) {
     for (double y : {-1.5, -.5, 0., 5., 9.999, 10., 10.5, 11.5}) {
@@ -36,7 +36,7 @@ TEST_F(LinkedCellsTest, testParticleAdding) {
 TEST_F(LinkedCellsTest, testCheckUpdateContainerNeededNoMove) {
   {
     autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
-        linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0, std::vector<autopas::TraversalOptions>());
+        linkedCells({0., 0., 0.}, {10., 10., 10.}, 1.);
     int id = 1;
     for (double x : {-.5, 0., 5., 9.999, 10., 10.5}) {
       for (double y : {-.5, 0., 5., 9.999, 10., 10.5}) {
@@ -60,7 +60,7 @@ TEST_F(LinkedCellsTest, testCheckUpdateContainerNeededNoMove) {
   }
   {
     autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>
-        linkedCells({0., 0., 0.}, {10., 10., 10.}, 3., 0, std::vector<autopas::TraversalOptions>());
+        linkedCells({0., 0., 0.}, {10., 10., 10.}, 3.);
     int id = 1;
     for (double x : {-1.5, -.5, 0., 1. / 3, 2. / 3, 10., 10.5, 11.5}) {
       for (double y : {-1.5, -.5, 0., 1. / 3, 2. / 3, 10., 10.5, 11.5}) {

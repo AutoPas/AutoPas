@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
   double cutoff = .03;
 
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
-      lcCont(boxMin, boxMax, cutoff, 0, std::vector<autopas::TraversalOptions>());
+      lcCont(boxMin, boxMax, cutoff);
 
   autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
       boxMin, boxMax, cutoff);
