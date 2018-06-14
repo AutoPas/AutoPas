@@ -120,23 +120,16 @@ class AutoPas {
    * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
    */
   void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f, autopas::DataLayoutOption dataLayoutOption) {
-    bool newton3Allowed = f->allowsNewton3();
-    bool nonNewton3Allowed = f->allowsNonNewton3();
-    bool useNewton3 = false;
-    if (newton3Allowed and nonNewton3Allowed) {
-      /// @todo auto-tune (far off future)
-    } else if (not newton3Allowed and not nonNewton3Allowed) {
-      /// @todo throw exception
-    } else {
-      useNewton3 = newton3Allowed;
-    }
+
+    // @todo remove this and let is be handled via a selector
     switch (dataLayoutOption) {
       case autopas::aos: {
-        _container->iteratePairwiseAoS(f, useNewton3);
+        _autoTuner->iteratePairwise(f, false);
         break;
       }
       case autopas::soa: {
-        _container->iteratePairwiseSoA(f, useNewton3);
+        _autoTuner->iteratePairwise(f, true);
+        break;
       }
     }
   }

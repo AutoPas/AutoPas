@@ -32,16 +32,15 @@ template<class ParticleCell>
 class TraversalSelector {
  public:
   TraversalSelector(const std::array<unsigned long, 3> &dims,
-                    unsigned int retuneInterval,
                     const std::vector<TraversalOptions> &allowedTraversalOptions
   ) : _dims(dims),
-      _retuneInterval(retuneInterval),
-      _retuneCounter(0),
       _allowedTraversalOptions(allowedTraversalOptions) {
   }
 
   template<class CellFunctor>
   CellPairTraversal<ParticleCell, CellFunctor> *getOptimalTraversal(CellFunctor &cellFunctor);
+  template<class CellFunctor>
+  void tune(CellFunctor &cellFunctor);
 
  private:
 
@@ -54,7 +53,6 @@ class TraversalSelector {
   // for each encountered cell processor save the optimal traversal. The cell processor is saved through its hash
   std::unordered_map<size_t, TraversalOptions> _optimalTraversalOptions;
   const std::array<unsigned long, 3> &_dims;
-  unsigned int _retuneInterval, _retuneCounter;
   const std::vector<TraversalOptions> &_allowedTraversalOptions;
 };
 
@@ -108,8 +106,7 @@ template<class CellFunctor>
 CellPairTraversal<ParticleCell, CellFunctor> *TraversalSelector<ParticleCell>::getOptimalTraversal(CellFunctor &cellFunctor) {
   CellPairTraversal<ParticleCell, CellFunctor> *traversal;
 
-  if (_retuneCounter == 0 || _optimalTraversalOptions.find(typeid(CellFunctor).hash_code()) == _optimalTraversalOptions.end()) {
-    _retuneCounter = _retuneInterval;
+  if (_optimalTraversalOptions.find(typeid(CellFunctor).hash_code()) == _optimalTraversalOptions.end()) {
     traversal = chooseOptimalTraversal<CellFunctor>(*(generateTraversals<CellFunctor>(cellFunctor)));
   } else {
     switch (_optimalTraversalOptions[typeid(CellFunctor).hash_code()]) {
@@ -126,7 +123,12 @@ CellPairTraversal<ParticleCell, CellFunctor> *TraversalSelector<ParticleCell>::g
       }
     }
   }
-  --_retuneCounter;
   return traversal;
+}
+
+template<class ParticleCell>
+template<class CellFunctor>
+void TraversalSelector<ParticleCell>::tune(CellFunctor &cellFunctor) {
+  chooseOptimalTraversal<CellFunctor>(*(generateTraversals<CellFunctor>(cellFunctor)));
 }
 }

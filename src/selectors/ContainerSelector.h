@@ -36,19 +36,17 @@ class ContainerSelector {
   ContainerSelector(std::array<double, 3> &boxMin,
                     std::array<double, 3> &boxMax,
                     double cutoff,
-                    unsigned int retuneInterval,
                     std::vector<ContainerOptions> &allowedContainerOptions,
                     std::vector<TraversalOptions> &allowedTraversalOptions
   ) : _boxMin(boxMin),
       _boxMax(boxMax),
       _cutoff(cutoff),
-      _retuneInterval(retuneInterval),
-      _retuneCounter(0),
       _allowedContainerOptions(allowedContainerOptions),
       _allowedTraversalOptions(allowedTraversalOptions) {
   }
 
   ParticleContainer<Particle, ParticleCell> *getOptimalContainer();
+  void tune();
 
  private:
 
@@ -57,7 +55,6 @@ class ContainerSelector {
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
-  unsigned int _retuneInterval, _retuneCounter;
   std::vector<ContainerOptions> _allowedContainerOptions;
   std::vector<TraversalOptions> _allowedTraversalOptions;
   ParticleContainer<Particle, ParticleCell> *_optimalContainer;
@@ -81,7 +78,6 @@ std::vector<ParticleContainer<Particle, ParticleCell> *> ContainerSelector<Parti
         containers.push_back(new LinkedCells<Particle, ParticleCell>(_boxMin,
                                                                      _boxMax,
                                                                      _cutoff,
-                                                                     0,
                                                                      _allowedTraversalOptions));
         break;
       }
@@ -112,13 +108,12 @@ void ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(std::vect
 template<class Particle, class ParticleCell>
 ParticleContainer<Particle, ParticleCell> *ContainerSelector<Particle,
                                                              ParticleCell>::getOptimalContainer() {
-  if (_retuneCounter == 0) {
-    chooseOptimalContainer(generateContainers());
-    _retuneCounter = _retuneInterval;
-  }
-
-  --_retuneCounter;
-
+  if (_optimalContainer == nullptr)
+    tune();
   return _optimalContainer;
+}
+template<class Particle, class ParticleCell>
+void ContainerSelector<Particle, ParticleCell>::tune() {
+  chooseOptimalContainer(generateContainers());
 }
 }
