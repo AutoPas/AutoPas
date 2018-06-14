@@ -60,12 +60,12 @@ class AutoPas {
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
             unsigned int retuneInterval = 100) {
 
-    _autoTuner = new autopas::AutoTuner<Particle, ParticleCell>(boxMin,
-                                                               boxMax,
-                                                               cutoff,
-                                                               retuneInterval,
-                                                               allowedContainers,
-                                                               allowedTraversals);
+    _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(boxMin,
+                                                                              boxMax,
+                                                                              cutoff,
+                                                                              retuneInterval,
+                                                                              allowedContainers,
+                                                                              allowedTraversals);
 
     _container = _autoTuner->getContainer();
   }
@@ -157,5 +157,5 @@ class AutoPas {
  private:
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
   std::shared_ptr<ContainerType> _container;
-  autopas::AutoTuner<Particle, ParticleCell> *_autoTuner;
+  std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>>_autoTuner;
 };
