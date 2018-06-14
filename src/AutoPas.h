@@ -156,6 +156,6 @@ class AutoPas {
 
  private:
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
-  std::unique_ptr<ContainerType> _container;
+  std::shared_ptr<ContainerType> _container;
   autopas::AutoTuner<Particle, ParticleCell> *_autoTuner;
 };

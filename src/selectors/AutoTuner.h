@@ -31,9 +31,8 @@ class AutoTuner {
                          allowedTraversalOptions) {
   }
 
-  std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getContainer() {
-    return std::unique_ptr<autopas::ParticleContainer<Particle,
-                                                      ParticleCell>>(_containerSelector.getOptimalContainer());
+  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getContainer() {
+    return _containerSelector.getOptimalContainer();
   };
 
   template<class ParticleFunctor>
@@ -102,7 +101,7 @@ template<class Particle, class ParticleCell>
 template<class CellFunctor>
 void AutoTuner<Particle, ParticleCell>::tune(CellFunctor &cellFunctor) {
   _containerSelector.tune();
-  _containerSelector.getOptimalContainer()->tuneTraversal(cellFunctor);
+//  _containerSelector.getOptimalContainer()->tuneTraversal(cellFunctor);
   iterationsSinceTuning = 0;
 }
 }

@@ -43,50 +43,50 @@ class ContainerSelector {
       _cutoff(cutoff),
       _allowedContainerOptions(allowedContainerOptions),
       _allowedTraversalOptions(allowedTraversalOptions),
-      _optimalContainer(nullptr)  {
+      _optimalContainer(nullptr) {
   }
 
-  ParticleContainer<Particle, ParticleCell> *getOptimalContainer();
+  std::shared_ptr<ParticleContainer<Particle, ParticleCell> > getOptimalContainer();
   void tune();
 
  private:
 
-  std::vector<ParticleContainer<Particle, ParticleCell> *> generateContainers();
-  void chooseOptimalContainer(std::vector<ParticleContainer<Particle, ParticleCell> *> containers);
+  std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell>>> generateContainers();
+  void chooseOptimalContainer(std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell> >> containers);
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
   std::vector<ContainerOptions> _allowedContainerOptions;
   std::vector<TraversalOptions> _allowedTraversalOptions;
-  ParticleContainer<Particle, ParticleCell> *_optimalContainer;
+  std::shared_ptr<ParticleContainer<Particle, ParticleCell> > _optimalContainer;
 };
 
 template<class Particle, class ParticleCell>
-std::vector<ParticleContainer<Particle, ParticleCell> *> ContainerSelector<Particle,
-                                                                           ParticleCell>::generateContainers() {
+std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell>>> ContainerSelector<Particle,
+                                                                                          ParticleCell>::generateContainers() {
 
-  std::vector<ParticleContainer<Particle, ParticleCell> *> containers;
+  std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell> >> containers;
 
   for (auto &option: _allowedContainerOptions) {
     switch (option) {
       case directSum : {
-        containers.push_back(new DirectSum<Particle, ParticleCell>(_boxMin,
-                                                                   _boxMax,
-                                                                   _cutoff));
+        containers.push_back(std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin,
+                                                                                 _boxMax,
+                                                                                 _cutoff));
         break;
       }
       case linkedCells : {
-        containers.push_back(new LinkedCells<Particle, ParticleCell>(_boxMin,
-                                                                     _boxMax,
-                                                                     _cutoff,
-                                                                     _allowedTraversalOptions));
+        containers.push_back(std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin,
+                                                                                   _boxMax,
+                                                                                   _cutoff,
+                                                                                   _allowedTraversalOptions));
         break;
       }
       case verletLists : {
-        containers.push_back(new DirectSum<Particle,
-                                           ParticleCell>(_boxMin,
-                                                         _boxMax,
-                                                         _cutoff));
+        containers.push_back(std::make_unique<DirectSum<Particle,
+                                                        ParticleCell>>(_boxMin,
+                                                                       _boxMax,
+                                                                       _cutoff));
         break;
       }
       default: {
@@ -100,15 +100,16 @@ std::vector<ParticleContainer<Particle, ParticleCell> *> ContainerSelector<Parti
 }
 
 template<class Particle, class ParticleCell>
-void ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(std::vector<ParticleContainer<Particle,
-                                                                                                     ParticleCell> *> containers) {
+void ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(std::vector<std::unique_ptr<ParticleContainer<
+    Particle,
+    ParticleCell> >> containers) {
   // TODO: Autotuning goes here
-  _optimalContainer = containers.front();
+  _optimalContainer = std::move(containers.front());
 }
 
 template<class Particle, class ParticleCell>
-ParticleContainer<Particle, ParticleCell> *ContainerSelector<Particle,
-                                                             ParticleCell>::getOptimalContainer() {
+std::shared_ptr<ParticleContainer<Particle, ParticleCell>> ContainerSelector<Particle,
+                                                                             ParticleCell>::getOptimalContainer() {
   if (_optimalContainer == nullptr)
     tune();
   return _optimalContainer;
