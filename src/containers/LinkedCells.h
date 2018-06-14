@@ -30,11 +30,6 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
- private:
-  static const std::vector<TraversalOptions> &LCApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::c08, TraversalOptions::sliced};
-    return v;
-  }
 
  public:
   /**
@@ -48,13 +43,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   LinkedCells(const std::array<double, 3> boxMin,
               const std::array<double, 3> boxMax,
               const double cutoff,
-              const unsigned int retuneInterval = 100,
-              const std::vector<TraversalOptions> &allowedTraversalOptions = LCApplicableTraversals())
+              const std::vector<TraversalOptions> &allowedTraversalOptions = allLCApplicableTraversals())
       : ParticleContainer<Particle, ParticleCell>(boxMin,
                                                   boxMax,
                                                   cutoff,
-                                                  LCApplicableTraversals()),
-        _cellBlock(this->_data,
+                                                  allLCApplicableTraversals()),
+        _cellBlock(this->_cells,
                    boxMin,
                    boxMax,
                    cutoff) {
@@ -63,9 +57,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     if (not allowedTraversalOptions.empty())
       this->_traversalSelector =
           new TraversalSelector<ParticleCell>(_cellBlock.getCellsPerDimensionWithHalo(),
-                                              retuneInterval,
                                               allowedTraversalOptions);
 
+  }
+
+  static const std::vector<TraversalOptions> &allLCApplicableTraversals() {
+    static const std::vector<TraversalOptions> v{TraversalOptions::c08, TraversalOptions::sliced};
+    return v;
   }
 
   void addParticle(Particle &p) override {
@@ -111,10 +109,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_data);
+      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
-      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_data);
+      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
     }
   }
 
@@ -136,10 +134,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
-      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_data);
+      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
     } else {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_data);
+      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
     }
 
     extractSoAs(f);
@@ -151,7 +149,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     for (auto iter = this->begin(); iter.isValid(); ++iter) {
       invalidParticles.push_back(*iter);
     }
-    for (auto &cell : this->_data) {
+    for (auto &cell : this->_cells) {
       cell.clear();
     }
     for (auto &particle : invalidParticles) {
@@ -164,11 +162,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
   }
 
   bool isContainerUpdateNeeded() override {
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+    for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
+      for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not inBox(iter->getR(), boxmin, boxmax)) {
           return true;  // we need an update
         }
@@ -179,14 +177,14 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBlock, behavior));
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, &_cellBlock, behavior));
   }
 
   ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
-        &this->_data, lowerCorner, higherCorner, &_cellBlock, behavior));
+        &this->_cells, lowerCorner, higherCorner, &_cellBlock, behavior));
   }
 
  protected:
@@ -207,8 +205,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < this->_data.size(); ++i) {
-      functor->SoALoader(this->_data[i], this->_data[i]._particleSoABuffer);
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      functor->SoALoader(this->_cells[i], this->_cells[i]._particleSoABuffer);
     }
   }
 
@@ -223,8 +221,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < this->_data.size(); ++i) {
-      functor->SoAExtractor(this->_data[i], this->_data[i]._particleSoABuffer);
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      functor->SoAExtractor(this->_cells[i], this->_cells[i]._particleSoABuffer);
     }
   }
 };

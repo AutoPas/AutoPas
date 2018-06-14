@@ -41,7 +41,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
                     const std::array<double, 3> boxMax,
                     const double cutoff,
                     const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
-      : _data(),
+      : _cells(),
         _traversalSelector(nullptr),
         _applicableTraversals(applicableTraversals),
         _boxMin(boxMin),
@@ -140,7 +140,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * All particle containers store their particles in ParticleCells. This is the
    * common vector for this purpose.
    */
-  std::vector<ParticleCell> _data;
+  std::vector<ParticleCell> _cells;
   TraversalSelector<ParticleCell> *_traversalSelector;
   const std::vector<TraversalOptions> &_applicableTraversals;
 
