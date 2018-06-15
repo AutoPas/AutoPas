@@ -49,23 +49,23 @@ class AutoPas {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
-   * @param retuneInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param allowedContainers List of container types AutoPas can choose from.
    * @param allowedTraversals List of traversals AutoPas can choose from.
+   * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
   void init(std::array<double, 3> boxMin,
             std::array<double, 3> boxMax,
             double cutoff,
             const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
-            unsigned int retuneInterval = 100) {
+            unsigned int tuningInterval = 100) {
 
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(boxMin,
                                                                               boxMax,
                                                                               cutoff,
-                                                                              retuneInterval,
                                                                               allowedContainers,
-                                                                              allowedTraversals);
+                                                                              allowedTraversals,
+                                                                              tuningInterval);
 
     _container = _autoTuner->getContainer();
   }

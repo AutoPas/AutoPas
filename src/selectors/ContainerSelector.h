@@ -33,6 +33,14 @@ static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::di
 template<class Particle, class ParticleCell>
 class ContainerSelector {
  public:
+  /**
+   * Constructor for the ContainerSelecor class.
+   * @param boxMin Lower corner of the container.
+   * @param boxMax Upper corner of the container.
+   * @param cutoff  Cutoff radius to be used in this container.
+   * @param allowedContainers Vector of container types the selector can choose from.
+   * @param allowedTraversals Vector of traversals the selector can choose from.
+   */
   ContainerSelector(std::array<double, 3> &boxMin,
                     std::array<double, 3> &boxMax,
                     double cutoff,
@@ -46,7 +54,15 @@ class ContainerSelector {
       _optimalContainer(nullptr) {
   }
 
+  /**
+   * Getter for the optimal container.
+   * @return Smartpointer to the optimal container.
+   */
   std::shared_ptr<ParticleContainer<Particle, ParticleCell> > getOptimalContainer();
+
+  /**
+   * Evaluates the optimal container option.
+   */
   void tune();
 
  private:

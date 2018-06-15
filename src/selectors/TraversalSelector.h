@@ -31,14 +31,31 @@ static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c0
 template<class ParticleCell>
 class TraversalSelector {
  public:
+  /**
+   * Constructor of the TraversalSelector class.
+   * @param dims Array with the dimension lengths of the domain.
+   * @param allowedTraversalOptions Vector of traversals the selector can choose from.
+   */
   TraversalSelector(const std::array<unsigned long, 3> &dims,
                     const std::vector<TraversalOptions> &allowedTraversalOptions
   ) : _dims(dims),
       _allowedTraversalOptions(allowedTraversalOptions) {
   }
 
+  /**
+   * Gets the optimal traversal for a given cell functor. If no traversal is selected yet a optimum search is started.
+   * @tparam CellFunctor
+   * @param cellFunctor
+   * @return Smartpointer to the optimal traversal.
+   */
   template<class CellFunctor>
   std::unique_ptr<CellPairTraversal<ParticleCell, CellFunctor>> getOptimalTraversal(CellFunctor &cellFunctor);
+
+  /**
+   * Evaluates to optimal traversal based on a given cell functor.
+   * @tparam CellFunctor
+   * @param cellFunctor
+   */
   template<class CellFunctor>
   void tune(CellFunctor &cellFunctor);
 
