@@ -32,8 +32,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>>
-      lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
@@ -60,8 +59,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>>
-      lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
@@ -91,8 +89,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>>
-      lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add no particles
 
@@ -117,8 +114,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyConstructor) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>>
-      lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));
@@ -143,8 +139,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyCons
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssignment) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>>
-      lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));

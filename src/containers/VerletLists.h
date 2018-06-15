@@ -30,7 +30,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   typedef VerletListHelpers<Particle, ParticleCell> verlet_internal;
 
  private:
-  static const std::vector<TraversalOptions> &VLApplicableTraversals() {
+  static const std::vector<TraversalOptions>& VLApplicableTraversals() {
     // TODO: implement some traversals for this
     static const std::vector<TraversalOptions> v{};
     return v;
@@ -62,7 +62,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
               unsigned int rebuildFrequency = 1,
               BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
-      : LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),  // default TraversalSelector for LC needed for checkNeighborListsAreValid
+      : LinkedCells<Particle, ParticleCell>(
+            boxMin, boxMax, cutoff + skin),  // default TraversalSelector for LC needed for checkNeighborListsAreValid
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),

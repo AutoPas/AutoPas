@@ -11,10 +11,10 @@
 #include "ParticleContainer.h"
 #include "containers/cellPairTraversals/C08Traversal.h"
 #include "containers/cellPairTraversals/SlicedTraversal.h"
-#include "pairwiseFunctors/CellFunctor.h"
-#include "utils/inBox.h"
 #include "iterators/ParticleIterator.h"
 #include "iterators/RegionParticleIterator.h"
+#include "pairwiseFunctors/CellFunctor.h"
+#include "utils/inBox.h"
 
 namespace autopas {
 
@@ -30,7 +30,6 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
-
  public:
   /**
    * Constructor of the LinkedCells class
@@ -40,25 +39,14 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    * @param allowedTraversalOptions Traversal options from which the TraversalSelector shall choose.
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin,
-              const std::array<double, 3> boxMax,
-              const double cutoff,
+  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const std::vector<TraversalOptions> &allowedTraversalOptions = allLCApplicableTraversals())
-      : ParticleContainer<Particle, ParticleCell>(boxMin,
-                                                  boxMax,
-                                                  cutoff,
-                                                  allLCApplicableTraversals()),
-        _cellBlock(this->_cells,
-                   boxMin,
-                   boxMax,
-                   cutoff) {
-
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff) {
     assert(this->checkIfTraversalsAreApplicable(allowedTraversalOptions));
     if (not allowedTraversalOptions.empty())
-      this->_traversalSelector =
-          std::make_unique<TraversalSelector<ParticleCell>>(_cellBlock.getCellsPerDimensionWithHalo(),
-                                                            allowedTraversalOptions);
-
+      this->_traversalSelector = std::make_unique<TraversalSelector<ParticleCell>>(
+          _cellBlock.getCellsPerDimensionWithHalo(), allowedTraversalOptions);
   }
 
   /**
@@ -110,7 +98,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
-
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
       this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);

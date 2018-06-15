@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include <containers/CellBorderAndFlagManager.h>
 #include <utils/ExceptionHandler.h>
 #include <vector>
-#include <containers/CellBorderAndFlagManager.h>
 #include "ParticleIteratorInterface.h"
 #include "SingleCellIterator.h"
 #include "SingleCellIteratorWrapper.h"

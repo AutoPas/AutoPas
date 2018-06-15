@@ -28,7 +28,7 @@ class CellPairTraversal {
    * @param cellFunctor the cell functor.
    */
   CellPairTraversal(const std::array<unsigned long, 3> &dims, CellFunctor *cellFunctor)
-      :_cellsPerDimension(dims), _cellFunctor(cellFunctor) {}
+      : _cellsPerDimension(dims), _cellFunctor(cellFunctor) {}
 
   /**
    * Destructor of CellPairTraversal.
@@ -45,9 +45,7 @@ class CellPairTraversal {
    * Resets the cell structure of the traversal.
    * @param dims
    */
-  virtual void rebuild(const std::array<unsigned long, 3> &dims) {
-    _cellsPerDimension = dims;
-  };
+  virtual void rebuild(const std::array<unsigned long, 3> &dims) { _cellsPerDimension = dims; };
 
   /**
    * Traverse all pairs of cells.

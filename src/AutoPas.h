@@ -6,14 +6,14 @@
 
 #pragma once
 
+#include <selectors/AutoTuner.h>
 #include <iostream>
 #include <memory>
-#include <selectors/AutoTuner.h>
 #include "autopasIncludes.h"
 
 namespace autopas {
 
-//TODO: Move this to a selector
+// TODO: Move this to a selector
 /**
  * Possible Choices for the particle data layout.
  */
@@ -53,19 +53,12 @@ class AutoPas {
    * @param allowedTraversals List of traversals AutoPas can choose from.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
-  void init(std::array<double, 3> boxMin,
-            std::array<double, 3> boxMax,
-            double cutoff,
+  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
             const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
             unsigned int tuningInterval = 100) {
-
-    _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(boxMin,
-                                                                              boxMax,
-                                                                              cutoff,
-                                                                              allowedContainers,
-                                                                              allowedTraversals,
-                                                                              tuningInterval);
+    _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(boxMin, boxMax, cutoff, allowedContainers,
+                                                                              allowedTraversals, tuningInterval);
 
     _container = _autoTuner->getContainer();
   }
@@ -79,8 +72,7 @@ class AutoPas {
    * @param allowedTraversals List of traversals AutoPas can choose from.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections
    */
-  void init(std::array<double, 3> boxSize,
-            double cutoff,
+  void init(std::array<double, 3> boxSize, double cutoff,
             const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
             unsigned int tuningInterval = 100) {
@@ -121,7 +113,6 @@ class AutoPas {
    * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
    */
   void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f, autopas::DataLayoutOption dataLayoutOption) {
-
     // @todo remove this and let is be handled via a selector
     switch (dataLayoutOption) {
       case autopas::aos: {
@@ -158,5 +149,5 @@ class AutoPas {
  private:
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
   std::shared_ptr<ContainerType> _container;
-  std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>>_autoTuner;
+  std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };

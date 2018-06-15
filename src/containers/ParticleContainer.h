@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <array>
 #include <selectors/TraversalSelector.h>
+#include <array>
 #include "ParticleContainerInterface.h"
 #include "pairwiseFunctors/Functor.h"
 
@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 class ParticleContainer : public ParticleContainerInterface<Particle> {
  private:
   static const std::vector<TraversalOptions> &DefaultApplicableTraversals() {
@@ -37,17 +37,14 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param cutoff
    * @param applicableTraversals Traversals applicable for this Container
    */
-  ParticleContainer(const std::array<double, 3> boxMin,
-                    const std::array<double, 3> boxMax,
-                    const double cutoff,
+  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                     const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
       : _cells(),
         _traversalSelector(nullptr),
         _applicableTraversals(applicableTraversals),
         _boxMin(boxMin),
         _boxMax(boxMax),
-        _cutoff(cutoff) {
-  }
+        _cutoff(cutoff) {}
 
   /**
    * destructor of ParticleContainer
@@ -127,7 +124,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @return True iff traversalOptions is a subset of _applicableTraversals
    */
   bool checkIfTraversalsAreApplicable(std::vector<TraversalOptions> traversalOptions) {
-    for (auto &option: traversalOptions) {
+    for (auto &option : traversalOptions) {
       if (find(_applicableTraversals.begin(), _applicableTraversals.end(), option) == _applicableTraversals.end())
         return false;
     }
@@ -144,7 +141,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
   /**
    * Selector for traversal of the container.
    */
-  std::unique_ptr<TraversalSelector<ParticleCell>>_traversalSelector;
+  std::unique_ptr<TraversalSelector<ParticleCell>> _traversalSelector;
   /**
    * Vector of all applicable traversal options for the container.
    */

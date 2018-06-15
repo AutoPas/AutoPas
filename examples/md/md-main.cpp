@@ -120,8 +120,7 @@ void measure(int which, int numMolecules, int numIterations, int rebuildFrequenc
   //  cout << "measuring" << endl;
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({5., 5., 5.});
 
-  LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>>
-      lcCont(boxMin, boxMax, cutoff);
+  LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lcCont(boxMin, boxMax, cutoff);
   DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dirCont(boxMin, boxMax, cutoff);
   VerletLists<PrintableMolecule, FullParticleCell<PrintableMolecule>> verletListsCont(
       boxMin, boxMax, cutoff, cutoff * skinRadiusToCutoffRatio, rebuildFrequency);

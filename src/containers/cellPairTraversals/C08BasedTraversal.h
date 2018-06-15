@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam CellFunctor the cell functor that defines the interaction of the
  * particles of two specific cells
  */
-template<class ParticleCell, class CellFunctor>
+template <class ParticleCell, class CellFunctor>
 class C08BasedTraversal : public CellPairTraversal<ParticleCell, CellFunctor> {
  public:
   /**
@@ -61,7 +61,7 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell, CellFunctor> {
   std::array<unsigned long, 8> _cellOffsets;
 };
 
-template<class ParticleCell, class CellFunctor>
+template <class ParticleCell, class CellFunctor>
 inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
                                                                           unsigned long baseIndex) const {
   using std::pair;
@@ -87,7 +87,7 @@ inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(std::v
   }
 }
 
-template<class ParticleCell, class CellFunctor>
+template <class ParticleCell, class CellFunctor>
 inline void C08BasedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
   using std::make_pair;
   typedef ThreeDimensionalMapping TDM;
