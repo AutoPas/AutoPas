@@ -30,6 +30,10 @@ enum TraversalOptions {
  */
 static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced};
 
+/**
+ * Selector for a container traversal.
+ * @tparam ParticleCell
+ */
 template <class ParticleCell>
 class TraversalSelector {
  public:

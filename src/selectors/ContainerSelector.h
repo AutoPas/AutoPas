@@ -29,6 +29,15 @@ enum ContainerOptions {
 static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::directSum, ContainerOptions::linkedCells,
                                                             ContainerOptions::verletLists};
 
+/**
+ * Selector for a particle container.
+ *
+ * The class is given a list of allowed container and traversal options to choose from.
+ * This class selects the optimal container and delegates the choice of the optimal traversal down to this container.
+ *
+ * @tparam Particle
+ * @tparam ParticleCell
+ */
 template <class Particle, class ParticleCell>
 class ContainerSelector {
  public:
