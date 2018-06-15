@@ -38,8 +38,8 @@ class ContainerSelector {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
-   * @param allowedContainers Vector of container types the selector can choose from.
-   * @param allowedTraversals Vector of traversals the selector can choose from.
+   * @param allowedContainerOptions Vector of container types the selector can choose from.
+   * @param allowedTraversalOptions Vector of traversals the selector can choose from.
    */
   ContainerSelector(std::array<double, 3> &boxMin,
                     std::array<double, 3> &boxMax,

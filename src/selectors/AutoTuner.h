@@ -30,8 +30,8 @@ class AutoTuner {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
-   * @param allowedContainers Vector of container types AutoPas can choose from.
-   * @param allowedTraversals Vector of traversals AutoPas can choose from.
+   * @param allowedContainerOptions Vector of container types AutoPas can choose from.
+   * @param allowedTraversalOptions Vector of traversals AutoPas can choose from.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
   AutoTuner(std::array<double, 3> boxMin,
@@ -58,7 +58,6 @@ class AutoTuner {
   };
 
   /**
-   * /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
    * @tparam ParticleFunctor

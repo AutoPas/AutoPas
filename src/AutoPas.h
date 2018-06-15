@@ -77,13 +77,14 @@ class AutoPas {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param allowedContainers List of container types AutoPas can choose from.
    * @param allowedTraversals List of traversals AutoPas can choose from.
+   * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections
    */
   void init(std::array<double, 3> boxSize,
             double cutoff,
             const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
-            unsigned int retuneInterval = 100) {
-    init({0, 0, 0}, boxSize, cutoff, allowedContainers, allowedTraversals, retuneInterval);
+            unsigned int tuningInterval = 100) {
+    init({0, 0, 0}, boxSize, cutoff, allowedContainers, allowedTraversals, tuningInterval);
   }
 
   /**

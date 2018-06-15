@@ -42,6 +42,7 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell, CellFunctor> {
   /**
    * Computes one interaction for each spacial direction based on the lower left
    * frontal corner (=base index) of a 2x2x2 block of cells.
+   * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex) const;

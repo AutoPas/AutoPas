@@ -141,7 +141,13 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * common vector for this purpose.
    */
   std::vector<ParticleCell> _cells;
+  /**
+   * Selector for traversal of the container.
+   */
   std::unique_ptr<TraversalSelector<ParticleCell>>_traversalSelector;
+  /**
+   * Vector of all applicable traversal options for the container.
+   */
   const std::vector<TraversalOptions> &_applicableTraversals;
 
  private:
