@@ -90,7 +90,8 @@ pipeline{
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "ninja -j 4 2>&1 | tee buildlog_clang.txt"
+                                //sh "ninja -j 4 2>&1 | tee buildlog_clang.txt"
+                                sh "ninja -j 4"
                             }
                         }
                     },
