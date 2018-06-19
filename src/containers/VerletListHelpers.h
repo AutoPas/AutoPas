@@ -133,7 +133,7 @@ class VerletListHelpers {
       // load particles in SoAs
       for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
         Particle *pptr = &(*cellIter);
-        idptr[i] = reinterpret_cast<unsigned long &>(pptr);
+        idptr[i] = reinterpret_cast<std::uintptr_t>(pptr);
         xptr[i] = cellIter->getR()[0];
         yptr[i] = cellIter->getR()[1];
         zptr[i] = cellIter->getR()[2];
