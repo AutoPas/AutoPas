@@ -212,9 +212,9 @@ void getRequiredHalo(double boxMin, double boxMax, int diff, double& reqMin, dou
 void updateHaloParticles(Container& sphSystem) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
-  std::array<double, 3> requiredHaloMin, requiredHaloMax;
-  std::array<int, 3> diff;
-  std::array<double, 3> shift;
+  std::array<double, 3> requiredHaloMin{0., 0., 0.}, requiredHaloMax{0., 0., 0.};
+  std::array<int, 3> diff{0, 0, 0};
+  std::array<double, 3> shift{0., 0., 0.};
   double cutoff = sphSystem.getCutoff();
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
