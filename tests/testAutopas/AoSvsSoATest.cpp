@@ -38,7 +38,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   std::chrono::high_resolution_clock::time_point start, stop;
   start = std::chrono::high_resolution_clock::now();
   for (unsigned int i = 0; i < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++i) {
-    for (unsigned int j = i+1; j < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++j) {
+    for (unsigned int j = i + 1; j < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++j) {
       if (i != j) {
         ljFunctor.AoSFunctor(particlesAoS[i], particlesAoS[j]);
       }
