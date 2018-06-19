@@ -64,7 +64,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        if (i == j) continue;
+        // if (i == j) continue;
 
         const double drx = xptr[i] - xptr[j];
         const double dry = yptr[i] - yptr[j];
@@ -76,14 +76,14 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE) continue;
+        const double mask = (dr2 > CUTOFFSQUARE) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
         const double lj2 = SIGMASQUARE * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -133,7 +133,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        if (id1ptr[i] == id2ptr[j]) continue;
+        // if (id1ptr[i] == id2ptr[j]) continue;
 
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -145,14 +145,14 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE) continue;
+        const double mask = (dr2 > CUTOFFSQUARE) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
         const double lj2 = SIGMASQUARE * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
