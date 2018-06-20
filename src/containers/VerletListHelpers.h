@@ -21,7 +21,7 @@ class VerletListHelpers {
   typedef std::unordered_map<Particle *, std::vector<Particle *>> AoS_verletlist_storage_type;
 
   /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-  typedef utils::SoAType<size_t, double, double, double> SoAArraysType;
+  typedef utils::SoAType<size_t, double, double, double>::Type SoAArraysType;
 
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
   enum AttributeNames : int { id, posX, posY, posZ };
@@ -29,11 +29,9 @@ class VerletListHelpers {
   /**
    * This functor can generate verlet lists using the typical pairwise
    * traversal.
-   * @tparam ParticleCell
-   * @todo: SoA?
    */
-  template <class ParticleCell>
-  class VerletListGeneratorFunctor : public autopas::Functor<Particle, ParticleCell, SoAArraysType> {
+ class VerletListGeneratorFunctor : public autopas::Functor<Particle, autopas::FullParticleCell<Particle, SoAArraysType>, SoAArraysType> {
+   typedef autopas::FullParticleCell<Particle, SoAArraysType> ParticleCell;
    public:
     /**
      * Constructor
@@ -56,14 +54,14 @@ class VerletListHelpers {
         _verletListsAoS.at(&i).push_back(&j);
     }
 
-    virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/ = true) override {
+    void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/ = true) override {
       if (soa.getNumParticles() == 0) return;
 
       Particle **const __restrict__ idptr =
-          reinterpret_cast<Particle **const>(soa.template begin<AttributeNames::id>());
-      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
+          reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
+      double *const __restrict__ xptr = soa.begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.begin<AttributeNames::posZ>();
 
       size_t numPart = soa.getNumParticles();
       for (unsigned int i = 0; i < numPart; ++i) {
@@ -87,20 +85,20 @@ class VerletListHelpers {
       }
     }
 
-    virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/ = true) override {
+    void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/ = true) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       Particle **const __restrict__ id1ptr =
-          reinterpret_cast<Particle **const>(soa1.template begin<AttributeNames::id>());
-      double *const __restrict__ x1ptr = soa1.template begin<AttributeNames::posX>();
-      double *const __restrict__ y1ptr = soa1.template begin<AttributeNames::posY>();
-      double *const __restrict__ z1ptr = soa1.template begin<AttributeNames::posZ>();
+          reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
+      double *const __restrict__ x1ptr = soa1.begin<AttributeNames::posX>();
+      double *const __restrict__ y1ptr = soa1.begin<AttributeNames::posY>();
+      double *const __restrict__ z1ptr = soa1.begin<AttributeNames::posZ>();
 
       Particle **const __restrict__ id2ptr =
-          reinterpret_cast<Particle **const>(soa2.template begin<AttributeNames::id>());
-      double *const __restrict__ x2ptr = soa2.template begin<AttributeNames::posX>();
-      double *const __restrict__ y2ptr = soa2.template begin<AttributeNames::posY>();
-      double *const __restrict__ z2ptr = soa2.template begin<AttributeNames::posZ>();
+          reinterpret_cast<Particle **const>(soa2.begin<AttributeNames::id>());
+      double *const __restrict__ x2ptr = soa2.begin<AttributeNames::posX>();
+      double *const __restrict__ y2ptr = soa2.begin<AttributeNames::posY>();
+      double *const __restrict__ z2ptr = soa2.begin<AttributeNames::posZ>();
 
       size_t numPart1 = soa1.getNumParticles();
       for (unsigned int i = 0; i < numPart1; ++i) {
@@ -126,16 +124,16 @@ class VerletListHelpers {
       }
     }
 
-    virtual void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+    void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
       assert(offset == 0);
       soa.resizeArrays(cell.numParticles());
 
       if (cell.numParticles() == 0) return;
 
-      unsigned long *const __restrict__ idptr = soa.template begin<AttributeNames::id>();
-      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
+      unsigned long *const __restrict__ idptr = soa.begin<AttributeNames::id>();
+      double *const __restrict__ xptr = soa.begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.begin<AttributeNames::posZ>();
 
       auto cellIter = cell.begin();
       // load particles in SoAs
@@ -148,7 +146,7 @@ class VerletListHelpers {
       }
     }
 
-    virtual void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+    void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
       // nothing yet...
     }
 

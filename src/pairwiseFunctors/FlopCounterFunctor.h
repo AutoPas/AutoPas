@@ -29,7 +29,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType>
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
+  explicit FlopCounterFunctor<Particle, ParticleCell, SoAArraysType>(double cutoffRadius)
       : autopas::Functor<Particle, ParticleCell, SoAArraysType>(),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),

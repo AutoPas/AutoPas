@@ -26,8 +26,8 @@ namespace autopas {
  * @tparam ParticleCell type of the ParticleCells that are used to store the
  * particles
  */
-template <class Particle, class ParticleCell>
-class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
+template <class Particle, class ParticleCell, class SoAArraysType=typename Particle::SoAArraysType>
+class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
  public:
   /**
    * Constructor of the LinkedCells class
@@ -36,7 +36,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff),
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff),
         _cellBlock(this->_data, boxMin, boxMax, cutoff) {}
 
   void addParticle(Particle &p) override {
@@ -65,7 +65,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell, typename Particle::SoAArraysType> *f, bool useNewton3 = true) override {
+  void iteratePairwiseAoS(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) override {
     iteratePairwiseAoS2(f, useNewton3);
   }
 
@@ -110,7 +110,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell, typename Particle::SoAArraysType> *f, bool useNewton3 = true) override {
+  void iteratePairwiseSoA(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) override {
     /// @todo iteratePairwiseSoA
     iteratePairwiseSoA2(f, useNewton3);
   }
@@ -201,6 +201,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
         &this->_data, lowerCorner, higherCorner, &_cellBlock, behavior));
+  }
+
+  CellBlock3D<ParticleCell>& getCellBlock(){
+    return _cellBlock;
   }
 
  protected:
