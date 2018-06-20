@@ -18,10 +18,10 @@
 namespace autopas {
 
 /**
- * structur of array class
- * @tparam Particle The particle type for which the SoA should be generated
+ * Structur of the array class.
+ * @tparam SoAArraysType The SoAArrayType to be used for storage.
  */
-template <class Particle>
+template <class SoAArraysType>
 class SoA {
  public:
   /**
@@ -146,7 +146,7 @@ class SoA {
     soaStorage.apply([=](auto &list) { std::swap(list[a], list[b]); });
   }
 
-  /**primary
+  /**
    * delete the last particle in the soa
    */
   void pop_back() {
@@ -154,9 +154,6 @@ class SoA {
   }
 
  private:
-  // storage container for the SoA's
-  utils::SoAStorage<typename Particle::SoAArraysType> soaStorage;
-
   // actual implementation of read
   template <int attribute, int... attributes, class ValueArrayType>
   void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) {
@@ -179,5 +176,10 @@ class SoA {
   // Stop of the recursive write_impl call
   template <class ValueArrayType>
   void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {}
+
+  // ------------- members ---------------
+
+  // storage container for the SoA's
+  utils::SoAStorage<SoAArraysType> soaStorage;
 };
 }  // namespace autopas

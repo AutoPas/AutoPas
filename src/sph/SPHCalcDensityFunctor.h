@@ -16,7 +16,7 @@ namespace sph {
  * Class that defines the density functor.
  * It is used to calculate the density based on the given SPH kernel.
  */
-class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHParticle>> {
+class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType> {
  public:
   /**
    * Calculates the density contribution of the interaction of particle i and j.

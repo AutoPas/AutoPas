@@ -24,8 +24,8 @@ namespace autopas {
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
  */
-template <class Particle, class ParticleCell>
-class LJFunctor : public Functor<Particle, ParticleCell> {
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
+class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
  public:
   void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
@@ -44,7 +44,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     j.subF(f);
   }
 
-  void SoAFunctor(SoA<Particle> &soa, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3 = true) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -104,7 +104,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA<Particle> &soa1, SoA<Particle> &soa2, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3 = true) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -179,7 +179,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
    */
   // clang-format on
-  virtual void SoAFunctor(SoA<Particle> &soa,
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa,
                           const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                           size_t iFrom, size_t iTo, bool newton3 = true) override {
     auto numParts = soa.getNumParticles();
@@ -331,7 +331,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {
+  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
     /// @todo it is probably better to resize the soa only once, before calling
     /// SoALoader (verlet-list only)
     soa.resizeArrays(offset + cell.numParticles());
@@ -359,7 +359,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAExtractor(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {
+  void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
     if (soa.getNumParticles() == 0) return;
 
     auto cellIter = cell.begin();
@@ -409,16 +409,16 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
 };  // namespace autopas
 
-template <class T, class U>
-double LJFunctor<T, U>::CUTOFFSQUARE;
+template <class T, class U, class V>
+double LJFunctor<T, U, V>::CUTOFFSQUARE;
 
-template <class T, class U>
-double LJFunctor<T, U>::EPSILON24;
+template <class T, class U, class V>
+double LJFunctor<T, U, V>::EPSILON24;
 
-template <class T, class U>
-double LJFunctor<T, U>::SIGMASQUARE;
+template <class T, class U, class V>
+double LJFunctor<T, U, V>::SIGMASQUARE;
 
-template <class T, class U>
-double LJFunctor<T, U>::SHIFT6;
+template <class T, class U, class V>
+double LJFunctor<T, U, V>::SHIFT6;
 
 }  // namespace autopas
