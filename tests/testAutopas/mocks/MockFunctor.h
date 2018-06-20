@@ -24,32 +24,32 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD3_T(AoSFunctor, void(Particle &i, Particle &j, bool newton3));
 
   // virtual void SoAFunctor(SoA &soa, bool newton3 = true) {}
-  MOCK_METHOD1_T(SoAFunctor, void(autopas::SoA<Particle> &soa));
-  MOCK_METHOD2_T(SoAFunctor, void(autopas::SoA<Particle> &soa, bool newton3));
+  MOCK_METHOD1_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD2_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa, bool newton3));
 
   // virtual void SoAFunctor(SoA &soa1, SoA &soa2, bool newton3 = true) {}
-  MOCK_METHOD2_T(SoAFunctor, void(autopas::SoA<Particle> &soa, autopas::SoA<Particle> &soa2));
-  MOCK_METHOD3_T(SoAFunctor, void(autopas::SoA<Particle> &soa, autopas::SoA<Particle> &soa2, bool newton3));
+  MOCK_METHOD2_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa, autopas::SoA<typename Particle::SoAArraysType> &soa2));
+  MOCK_METHOD3_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa, autopas::SoA<typename Particle::SoAArraysType> &soa2, bool newton3));
 
   // virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t,
   // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool
   // newton3 = true{})
   MOCK_METHOD4_T(SoAFunctor,
-                 void(autopas::SoA<Particle> &soa,
+                 void(autopas::SoA<typename Particle::SoAArraysType> &soa,
                       const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t, size_t));
-  MOCK_METHOD5_T(SoAFunctor, void(autopas::SoA<Particle> &soa,
+  MOCK_METHOD5_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa,
                                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t,
                                   size_t, bool));
 
   // virtual void SoALoader(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoALoader, void(ParticleCell &cell, autopas::SoA<Particle> &soa));
-  MOCK_METHOD3_T(SoALoader, void(ParticleCell &cell, autopas::SoA<Particle> &soa, size_t offset));
+  MOCK_METHOD2_T(SoALoader, void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD3_T(SoALoader, void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   // virtual void SoAExtractor(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell &cell, autopas::SoA<Particle> &soa));
-  MOCK_METHOD3_T(SoAExtractor, void(ParticleCell &cell, autopas::SoA<Particle> &soa, size_t offset));
+  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD3_T(SoAExtractor, void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   // virtual bool allowsNewton3() { return true; }
   MOCK_METHOD0(allowsNewton3, bool());

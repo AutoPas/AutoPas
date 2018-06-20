@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam Particle the type of Particle
  * @tparam ParticleCell the type of ParticleCell
  */
-template <class Particle, class ParticleCell, class SoAArraysType>
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class Functor {
  public:
   virtual ~Functor() = default;
