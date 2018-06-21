@@ -138,7 +138,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell, CellFunctor>> TraversalSelector<
         traversal = std::make_unique<SlicedTraversal<ParticleCell, CellFunctor>>(_dims, &cellFunctor);
         break;
       }
-      default: { utils::ExceptionHandler::exception("Optimal traversal option is unknown!"); }
+      default: { utils::ExceptionHandler::exception("Invalid saved optimal traversal option for this CellFunctor!"); }
     }
   }
   return traversal;
