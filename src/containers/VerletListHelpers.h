@@ -7,6 +7,8 @@
 #pragma once
 
 #include <atomic>
+#include "cells/FullParticleCell.h"
+#include "pairwiseFunctors/Functor.h"
 namespace autopas {
 
 /**
@@ -26,12 +28,16 @@ class VerletListHelpers {
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
   enum AttributeNames : int { id, posX, posY, posZ };
 
+  /// typedef for verlet-list particle cell type
+  typedef FullParticleCell<Particle, SoAArraysType> VerletListParticleCellType;
+
   /**
    * This functor can generate verlet lists using the typical pairwise
    * traversal.
    */
- class VerletListGeneratorFunctor : public autopas::Functor<Particle, autopas::FullParticleCell<Particle, SoAArraysType>, SoAArraysType> {
-   typedef autopas::FullParticleCell<Particle, SoAArraysType> ParticleCell;
+  class VerletListGeneratorFunctor : public autopas::Functor<Particle, VerletListParticleCellType, SoAArraysType> {
+    typedef VerletListParticleCellType ParticleCell;
+
    public:
     /**
      * Constructor
@@ -57,8 +63,7 @@ class VerletListHelpers {
     void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/ = true) override {
       if (soa.getNumParticles() == 0) return;
 
-      Particle **const __restrict__ idptr =
-          reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
+      Particle **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
       double *const __restrict__ xptr = soa.begin<AttributeNames::posX>();
       double *const __restrict__ yptr = soa.begin<AttributeNames::posY>();
       double *const __restrict__ zptr = soa.begin<AttributeNames::posZ>();
@@ -88,14 +93,12 @@ class VerletListHelpers {
     void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/ = true) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-      Particle **const __restrict__ id1ptr =
-          reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
+      Particle **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
       double *const __restrict__ x1ptr = soa1.begin<AttributeNames::posX>();
       double *const __restrict__ y1ptr = soa1.begin<AttributeNames::posY>();
       double *const __restrict__ z1ptr = soa1.begin<AttributeNames::posZ>();
 
-      Particle **const __restrict__ id2ptr =
-          reinterpret_cast<Particle **const>(soa2.begin<AttributeNames::id>());
+      Particle **const __restrict__ id2ptr = reinterpret_cast<Particle **const>(soa2.begin<AttributeNames::id>());
       double *const __restrict__ x2ptr = soa2.begin<AttributeNames::posX>();
       double *const __restrict__ y2ptr = soa2.begin<AttributeNames::posY>();
       double *const __restrict__ z2ptr = soa2.begin<AttributeNames::posZ>();

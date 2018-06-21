@@ -13,6 +13,9 @@
 
 namespace autopas {
 
+template <class Particle>
+class VerletListHelpers;
+
 /**
  * Functor class. This class describes the pairwise interactions between
  * particles.
@@ -110,6 +113,14 @@ class Functor {
     utils::ExceptionHandler::exception("Functor::SoALoader: not yet implemented");
   }
 
+  template <typename /*dummy*/ = void,
+            typename = std::enable_if_t<not std::is_same<
+                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
+  void SoALoader(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa,
+                 size_t offset = 0) {
+    utils::ExceptionHandler::exception("Functor::SoAExtractor_Verlet: not yet implemented");
+  }
+
   /**
    * @brief Copies the data stored in the soa back into the cell.
    *
@@ -120,6 +131,14 @@ class Functor {
    */
   virtual void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("Functor::SoAExtractor: not yet implemented");
+  }
+
+  template <typename /*dummy*/ = void,
+            typename = std::enable_if_t<not std::is_same<
+                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
+  void SoAExtractor(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa,
+                    size_t offset = 0) {
+    utils::ExceptionHandler::exception("Functor::SoAExtractor_Verlet: not yet implemented");
   }
 
   /**
@@ -144,4 +163,26 @@ class Functor {
   virtual bool allowsNonNewton3() { return false; }
 };
 
+#define AUTOPAS_FUNCTOR_SOALOADER(body)                                                                           \
+  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }                \
+  template <typename /*dummy*/ = void,                                                                            \
+            typename = std::enable_if_t<not std::is_same<                                                         \
+                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>          \
+  void SoALoader(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa, \
+                 size_t offset = 0) {                                                                             \
+    body                                                                                                          \
+  }
+
+#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(body)                                                                           \
+  void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }                \
+  template <typename /*dummy*/ = void,                                                                               \
+            typename = std::enable_if_t<not std::is_same<                                                            \
+                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>             \
+  void SoAExtractor(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa, \
+                    size_t offset = 0) {                                                                             \
+    body                                                                                                             \
+  }
+
 }  // namespace autopas
+
+#include "containers/VerletListHelpers.h"

@@ -331,52 +331,50 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
-    /// @todo it is probably better to resize the soa only once, before calling
-    /// SoALoader (verlet-list only)
-    soa.resizeArrays(offset + cell.numParticles());
+  AUTOPAS_FUNCTOR_SOALOADER(
+      /// @todo it is probably better to resize the soa only once, before calling
+      /// SoALoader (verlet-list only)
+      soa.resizeArrays(offset + cell.numParticles());
 
-    if (cell.numParticles() == 0) return;
+      if (cell.numParticles() == 0) return;
 
-    unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      idptr[i] = cellIter->getID();
-      xptr[i] = cellIter->getR()[0];
-      yptr[i] = cellIter->getR()[1];
-      zptr[i] = cellIter->getR()[2];
-      fxptr[i] = cellIter->getF()[0];
-      fyptr[i] = cellIter->getF()[1];
-      fzptr[i] = cellIter->getF()[2];
-    }
-  }
+      auto cellIter = cell.begin();
+      // load particles in SoAs
+      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+        idptr[i] = cellIter->getID();
+        xptr[i] = cellIter->getR()[0];
+        yptr[i] = cellIter->getR()[1];
+        zptr[i] = cellIter->getR()[2];
+        fxptr[i] = cellIter->getF()[0];
+        fyptr[i] = cellIter->getF()[1];
+        fzptr[i] = cellIter->getF()[2];
+      })
 
-  void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
-    if (soa.getNumParticles() == 0) return;
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR(
+      if (soa.getNumParticles() == 0) return;
 
-    auto cellIter = cell.begin();
+      auto cellIter = cell.begin();
 
 #ifndef NDEBUG
-    unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
 #endif
 
-    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    for (unsigned int i = offset; cellIter.isValid(); ++i, ++cellIter) {
-      assert(idptr[i] == cellIter->getID());
-      cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
-    }
-  }
+      for (unsigned int i = offset; cellIter.isValid(); ++i, ++cellIter) {
+        assert(idptr[i] == cellIter->getID());
+        cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
+      })
 
   /**
    * Set the global values, i.e. cutoff, epsilon, sigma and shift
