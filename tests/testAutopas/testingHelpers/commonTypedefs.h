@@ -15,8 +15,15 @@ typedef autopas::Particle Particle;
 
 typedef autopas::FullParticleCell<autopas::Particle> FPCell;
 
+// M prefix for mocks
 typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;
 
 typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, false, true>
-    MCellFunctorAoSN3;
+    CellFunctorAoSN3;
+typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, false, false>
+    CellFunctorAoSNoN3;
+typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, true, true>
+    CellFunctorSoAN3;
+typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, true, false>
+    CellFunctorSoANoN3;
 
