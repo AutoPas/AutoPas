@@ -25,6 +25,8 @@ namespace autopas {
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class ParticleContainer : public ParticleContainerInterface<Particle> {
  public:
+  typedef Particle ParticleType;
+  typedef ParticleCell ParticleCellType;
   /**
    * Constructor of ParticleContainer
    * @param boxMin

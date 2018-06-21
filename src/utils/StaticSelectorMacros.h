@@ -6,5 +6,27 @@
 
 #pragma once
 
-#define WithStaticContainerType(container, body) \
-  {}
+// either LinkedCells<Particle,ParticleCell>
+// or VerletLists<Particle>
+// or DirectSum
+#define WithStaticContainerType(container, body)                                                                    \
+  {                                                                                                                 \
+    auto container_ptr = container.get();                                                                           \
+    if (auto container = dynamic_cast<                                                                              \
+            autopas::LinkedCells<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,             \
+                                 typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType>*>(      \
+            container_ptr)) {                                                                                       \
+      body                                                                                                          \
+    } else if (auto container = dynamic_cast<                                                                       \
+                   autopas::VerletLists<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType>*>(   \
+                   container_ptr)) {                                                                                \
+      body                                                                                                          \
+    } else if (auto container = dynamic_cast<                                                                       \
+                   autopas::DirectSum<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,        \
+                                      typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType>*>( \
+                   container_ptr)) {                                                                                \
+      body                                                                                                          \
+    } else {                                                                                                        \
+      autopas::utils::ExceptionHandler::exception("wrong type of container in StaticSelectorMacros.h");             \
+    }                                                                                                               \
+  }
