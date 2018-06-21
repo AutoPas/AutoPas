@@ -67,8 +67,9 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD3_T(SoAExtractor,
                  void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
-  MOCK_METHOD3_T(SoAExtractorVerlet, void(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
-                                          autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
+  MOCK_METHOD3_T(SoAExtractorVerlet,
+                 void(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
+                      autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   template <typename /*dummy*/ = void,
             typename = std::enable_if_t<not std::is_same<

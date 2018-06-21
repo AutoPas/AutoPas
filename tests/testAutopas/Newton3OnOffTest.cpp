@@ -50,7 +50,7 @@ TEST_F(Newton3OnOffTest, testAoS) {
       callsNewton3++;
     }));
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(0);  // disables newton3 variant
-    EXPECT_CALL(mockFunctor, AoSFunctor(_, _)).Times(0); // disables 2 parameter variant
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _)).Times(0);         // disables 2 parameter variant
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
     // without newton 3:
@@ -61,7 +61,7 @@ TEST_F(Newton3OnOffTest, testAoS) {
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
       callsNonNewton3++;
     }));
-    EXPECT_CALL(mockFunctor, AoSFunctor(_, _)).Times(0); // disables 2 parameter variant
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _)).Times(0);  // disables 2 parameter variant
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
     EXPECT_EQ(callsNewton3 * 2,

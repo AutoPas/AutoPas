@@ -5,11 +5,11 @@
  */
 
 #include "VerletListsTest.h"
+#include "cells/FullParticleCell.h"
 #include "mocks/MockFunctor.h"
 #include "mocks/MockVerletLists.h"
-#include "testingHelpers/RandomGenerator.h"
-#include "cells/FullParticleCell.h"
 #include "particles/Particle.h"
+#include "testingHelpers/RandomGenerator.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -245,20 +245,19 @@ TEST_F(VerletListsTest, testForceRebuild) {
   ON_CALL(mockVerletLists, addParticle(_))
       .WillByDefault(Invoke(
           &mockVerletLists,
-          &MockVerletLists<autopas::Particle,
-                           autopas::FullParticleCell<autopas::Particle>>::addParticleVerletLists));
+          &MockVerletLists<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>::addParticleVerletLists));
   // delegating to parent
   ON_CALL(mockVerletLists, addHaloParticle(_))
-      .WillByDefault(Invoke(
-          &mockVerletLists,
-          &MockVerletLists<autopas::Particle,
-                           autopas::FullParticleCell<autopas::Particle>>::addHaloParticleVerletLists));
+      .WillByDefault(
+          Invoke(&mockVerletLists,
+                 &MockVerletLists<autopas::Particle,
+                                  autopas::FullParticleCell<autopas::Particle>>::addHaloParticleVerletLists));
   // delegating to parent
   ON_CALL(mockVerletLists, updateContainer())
-      .WillByDefault(Invoke(
-          &mockVerletLists,
-          &MockVerletLists<autopas::Particle,
-                           autopas::FullParticleCell<autopas::Particle>>::updateContainerVerletLists));
+      .WillByDefault(
+          Invoke(&mockVerletLists,
+                 &MockVerletLists<autopas::Particle,
+                                  autopas::FullParticleCell<autopas::Particle>>::updateContainerVerletLists));
 
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> emptyFunctor;
 

@@ -7,8 +7,8 @@
 #pragma once
 
 #include "../utils/ArrayMath.h"
-#include "ParticleContainer.h"
 #include "LinkedCells.h"
+#include "ParticleContainer.h"
 #include "VerletListHelpers.h"
 
 namespace autopas {
@@ -29,6 +29,7 @@ namespace autopas {
 template <class Particle, class ParticleCell = FullParticleCell<Particle>>
 class VerletLists : public ParticleContainer<Particle, ParticleCell> {
   typedef VerletListHelpers<Particle> verlet_internal;
+
  public:
   /**
    * Enum that specifies how the verlet lists should be build
@@ -64,7 +65,6 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
         _soaListIsValid(false),
         _soa(),
         _buildVerletListType(buildVerletListType) {}
-
 
   /**
    * @copydoc LinkedCells::iteratePairwiseAoS2
@@ -250,7 +250,8 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
    * @param particleI
    * @return
    */
-  bool checkParticleInCellAndUpdate(FullParticleCell<Particle, typename verlet_internal::SoAArraysType>& cellI, Particle& particleI) {
+  bool checkParticleInCellAndUpdate(FullParticleCell<Particle, typename verlet_internal::SoAArraysType>& cellI,
+                                    Particle& particleI) {
     for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
       if (iterator->getID() == particleI.getID()) {
         *iterator = particleI;
@@ -419,7 +420,9 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
   typename verlet_internal::AoS_verletlist_storage_type _aosNeighborLists;
 
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
-  LinkedCells<Particle, FullParticleCell<Particle, typename verlet_internal::SoAArraysType>, typename verlet_internal::SoAArraysType> _linkedCells;
+  LinkedCells<Particle, FullParticleCell<Particle, typename verlet_internal::SoAArraysType>,
+              typename verlet_internal::SoAArraysType>
+      _linkedCells;
 
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
@@ -453,7 +456,6 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
 
   /// specifies how the verlet lists are build
   BuildVerletListType _buildVerletListType;
-
 };
 
 }  // namespace autopas

@@ -26,7 +26,7 @@ namespace autopas {
  * @tparam ParticleCell type of the ParticleCells that are used to store the
  * particles
  */
-template <class Particle, class ParticleCell, class SoAArraysType=typename Particle::SoAArraysType>
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
  public:
   /**
@@ -64,7 +64,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
-
 
   /**
    * same as iteratePairwiseAoS, but potentially faster (if called with the
@@ -106,7 +105,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       }
     }
   }
-
 
   /**
    * same as iteratePairwiseSoA, but faster, as the class of the functor is
@@ -196,13 +194,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         &this->_data, lowerCorner, higherCorner, &_cellBlock, behavior));
   }
 
-  CellBlock3D<ParticleCell>& getCellBlock(){
-    return _cellBlock;
-  }
+  CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
 
-  std::vector<ParticleCell>& getData(){
-    return this->_data;
-  }
+  std::vector<ParticleCell> &getData() { return this->_data; }
 
  protected:
   /**

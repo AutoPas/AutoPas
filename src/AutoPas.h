@@ -138,8 +138,7 @@ class AutoPas {
     switch (dataLayoutOption) {
       case autopas::aos: {
         // WithStaticContainerType(container, container->iteratePairwiseAoS2(f, useNewton3););
-        WithStaticContainerType(container, container->iteratePairwiseAoS2(f, useNewton3);)
-        break;
+        WithStaticContainerType(container, container->iteratePairwiseAoS2(f, useNewton3);) break;
       }
       case autopas::soa: {
         WithStaticContainerType(container, container->iteratePairwiseSoA2(f, useNewton3);)
