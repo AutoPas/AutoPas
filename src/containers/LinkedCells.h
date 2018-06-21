@@ -207,6 +207,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return _cellBlock;
   }
 
+  std::vector<ParticleCell>& getData(){
+    return this->_data;
+  }
+
  protected:
   /**
    * object to manage the block of cells.

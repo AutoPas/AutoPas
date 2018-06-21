@@ -183,13 +183,13 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
   }
 
   bool isContainerUpdateNeeded() override {
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+    for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getData().size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       _linkedCells.getCellBlock().getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
-      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
+      for (auto iter = _linkedCells.getData()[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not iter->inBox(boxmin, boxmax)) {
           AutoPasLogger->debug(
               "VerletLists: containerUpdate needed! Particles are fast. You "
@@ -365,7 +365,7 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void loadVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
-    for (auto& cell : this->_data) {
+    for (auto& cell : _linkedCells.getData()) {
       functor->SoALoader(cell, _soa, offset);
       offset += cell.numParticles();
     }
@@ -381,7 +381,7 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void extractVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
-    for (auto& cell : this->_data) {
+    for (auto& cell : _linkedCells.getData()) {
       functor->SoAExtractor(cell, _soa, offset);
       offset += cell.numParticles();
     }
