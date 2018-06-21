@@ -10,11 +10,7 @@
 #include <AutoPas.h>
 #include <gtest/gtest.h>
 #include <mocks/MockFunctor.h>
-
-typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;
-typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, false, true>
-    MCellFunctor;
-typedef autopas::FullParticleCell<autopas::Particle> FPCell;
+#include <testingHelpers/commonTypedefs.h>
 
 class SlicedTraversalTest : public testing::Test {
  public:

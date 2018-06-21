@@ -9,9 +9,7 @@
 
 #include <AutoPas.h>
 #include "AutoPasTestBase.h"
-
-typedef autopas::Particle Particle;
-typedef autopas::FullParticleCell<autopas::Particle> FPCell;
+#include <testingHelpers/commonTypedefs.h>
 
 class FlopCounterTest : public AutoPasTestBase {
  public:

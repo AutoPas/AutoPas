@@ -11,15 +11,11 @@
 #include "AutoPas.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/GridGenerator.h"
+#include <testingHelpers/commonTypedefs.h>
 
 #ifdef AUTOPAS_OPENMP
 #include <omp.h>
 #endif
-
-typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;
-typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, false, true>
-    MCellFunctor;
-typedef autopas::FullParticleCell<autopas::Particle> FPCell;
 
 class C08TraversalTest : public testing::Test {
  public:
