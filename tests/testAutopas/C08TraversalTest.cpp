@@ -28,7 +28,7 @@ TEST_F(C08TraversalTest, testTraversalCube) {
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions
-  EXPECT_CALL(functor, AoSFunctor(_, _)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
+  EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
   c08Traversal.traverseCellPairs();
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
@@ -53,7 +53,7 @@ TEST_F(C08TraversalTest, testTraversal2x2x2) {
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions
-  EXPECT_CALL(functor, AoSFunctor(_, _)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
+  EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
   c08Traversal.traverseCellPairs();
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
@@ -80,7 +80,7 @@ TEST_F(C08TraversalTest, testTraversal2x3x4) {
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions
-  EXPECT_CALL(functor, AoSFunctor(_, _)).Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1) * 13);
+  EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1) * 13);
   c08Traversal.traverseCellPairs();
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);

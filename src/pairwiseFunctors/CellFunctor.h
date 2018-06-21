@@ -89,7 +89,7 @@ class CellFunctor {
       for (; inner.isValid(); ++inner) {
         Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2);
+        _functor->AoSFunctor(p1, p2, true);
       }
     }
   }
@@ -135,7 +135,7 @@ class CellFunctor {
       for (auto inner = cell2.begin(); inner.isValid(); ++inner) {
         Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2);
+        _functor->AoSFunctor(p1, p2, true);
       }
     }
   }
