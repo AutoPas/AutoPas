@@ -149,6 +149,7 @@ class Functor {
 
 #define AUTOPAS_FUNCTOR_SOALOADER(body)                                                                           \
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }                \
+                                                                                                                  \
   template <typename /*dummy*/ = void,                                                                            \
             typename = std::enable_if_t<not std::is_same<                                                         \
                 typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>          \
@@ -158,7 +159,8 @@ class Functor {
   }
 
 #define AUTOPAS_FUNCTOR_SOAEXTRACTOR(body)                                                                           \
-  void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }                \
+  void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { body }     \
+                                                                                                                     \
   template <typename /*dummy*/ = void,                                                                               \
             typename = std::enable_if_t<not std::is_same<                                                            \
                 typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>             \

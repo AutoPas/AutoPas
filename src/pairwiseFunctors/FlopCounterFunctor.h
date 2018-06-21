@@ -131,27 +131,33 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType>
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
-    soa.resizeArrays(offset + cell.numParticles());
-
-    if (cell.numParticles() == 0) return;
-
-    unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      idptr[i] = cellIter->getID();
-      xptr[i] = cellIter->getR()[0];
-      yptr[i] = cellIter->getR()[1];
-      zptr[i] = cellIter->getR()[2];
-    }
+  void SoAFunctor(SoA<SoAArraysType> &soa,
+                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
+                  size_t iTo, bool newton3 = true) override {
+    utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
 
-  void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {}
+  AUTOPAS_FUNCTOR_SOALOADER(
+      soa.resizeArrays(offset + cell.numParticles());
+
+      if (cell.numParticles() == 0) return;
+
+      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+      auto cellIter = cell.begin();
+      // load particles in SoAs
+      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+        idptr[i] = cellIter->getID();
+        xptr[i] = cellIter->getR()[0];
+        yptr[i] = cellIter->getR()[1];
+        zptr[i] = cellIter->getR()[2];
+      })
+
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR()
+
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
    * of kernel calls compared to the number of distance calculations
