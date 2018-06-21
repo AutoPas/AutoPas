@@ -9,6 +9,8 @@
 #include <atomic>
 #include "cells/FullParticleCell.h"
 #include "pairwiseFunctors/Functor.h"
+#include "utils/ArrayMath.h"
+#include "utils/SoA.h"
 namespace autopas {
 
 /**

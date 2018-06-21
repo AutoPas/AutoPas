@@ -65,9 +65,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) override {
-    iteratePairwiseAoS2(f, useNewton3);
-  }
 
   /**
    * same as iteratePairwiseAoS, but potentially faster (if called with the
@@ -110,10 +107,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) override {
-    /// @todo iteratePairwiseSoA
-    iteratePairwiseSoA2(f, useNewton3);
-  }
 
   /**
    * same as iteratePairwiseSoA, but faster, as the class of the functor is

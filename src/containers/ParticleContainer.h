@@ -60,7 +60,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param f functor that describes the pair-potential
    * @param useNewton3 defines whether newton3 should be used
    */
-  virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) = 0;
+  //virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) = 0;
 
   /**
    * function to iterate over all pairs of particles in a structure of array
@@ -68,7 +68,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param f functor that describes the pair-potential
    * @param useNewton3 defines whether newton3 should be used
    */
-  virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) = 0;
+  //virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) = 0;
 
   /**
    * get the upper corner of the container

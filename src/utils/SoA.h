@@ -14,6 +14,7 @@
 #include "AlignedAllocator.h"
 #include "ExceptionHandler.h"
 #include "SoAStorage.h"
+#include "SoAType.h"
 
 namespace autopas {
 

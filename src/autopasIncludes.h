@@ -15,6 +15,7 @@
 #include "utils/ArrayMath.h"
 #include "utils/Logger.h"
 #include "utils/SoA.h"
+#include "utils/StaticSelectorMacros.h"
 #include "utils/Timer.h"
 
 // particles

@@ -113,14 +113,6 @@ class Functor {
     utils::ExceptionHandler::exception("Functor::SoALoader: not yet implemented");
   }
 
-  template <typename /*dummy*/ = void,
-            typename = std::enable_if_t<not std::is_same<
-                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
-  void SoALoader(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa,
-                 size_t offset = 0) {
-    utils::ExceptionHandler::exception("Functor::SoAExtractor_Verlet: not yet implemented");
-  }
-
   /**
    * @brief Copies the data stored in the soa back into the cell.
    *
@@ -131,14 +123,6 @@ class Functor {
    */
   virtual void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("Functor::SoAExtractor: not yet implemented");
-  }
-
-  template <typename /*dummy*/ = void,
-            typename = std::enable_if_t<not std::is_same<
-                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
-  void SoAExtractor(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa,
-                    size_t offset = 0) {
-    utils::ExceptionHandler::exception("Functor::SoAExtractor_Verlet: not yet implemented");
   }
 
   /**

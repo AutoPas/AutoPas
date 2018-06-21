@@ -65,10 +65,6 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
         _soa(),
         _buildVerletListType(buildVerletListType) {}
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell, typename Particle::SoAArraysType>* f,
-                          bool useNewton3 = true) override {
-    iteratePairwiseAoS2(f, useNewton3);
-  }
 
   /**
    * @copydoc LinkedCells::iteratePairwiseAoS2
@@ -85,11 +81,6 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
     this->iterateVerletListsAoS(f, useNewton3);
     // we iterated, so increase traversal counter
     _traversalsSinceLastRebuild++;
-  }
-
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell, typename Particle::SoAArraysType>* f,
-                          bool useNewton3 = true) override {
-    iteratePairwiseSoA2(f, useNewton3);
   }
 
   /**
