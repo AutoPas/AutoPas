@@ -7,7 +7,10 @@
 
 #pragma once
 #include <array>
+#include <tuple>
 #include "utils/ArrayMath.h"
+#include "utils/SoAStorage.h"
+#include "utils/SoAType.h"
 
 namespace autopas {
 
@@ -122,6 +125,11 @@ class Particle {
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
+
+  /**
+   * the type for the soa storage
+   */
+  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
  private:
   std::array<double, 3> _r;

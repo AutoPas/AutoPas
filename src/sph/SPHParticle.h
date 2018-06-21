@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include <cstring>
 #include <vector>
 #include "particles/Particle.h"
 
@@ -302,7 +303,11 @@ class SPHParticle : public autopas::Particle {
       // stream.push_back(this->getF()[i]);  // not actually needed
     }
     auto id = this->getID();
-    stream.push_back(reinterpret_cast<double &>(id));
+    double id_dbl;
+    memcpy(&id_dbl, &id, sizeof(double));
+    static_assert(sizeof(id) == sizeof(double), "sizes shoule be the same, otherwise the above will not work");
+
+    stream.push_back(id_dbl);
     stream.push_back(_density);
     stream.push_back(_pressure);
     stream.push_back(_mass);
@@ -329,7 +334,7 @@ class SPHParticle : public autopas::Particle {
    * deserializing to mark already processed data.
    * @return
    */
-  static SPHParticle deserialize(double *stream, size_t &index) {
+  static SPHParticle deserialize(const double *stream, size_t &index) {
     std::array<double, 3> r = {stream[index], stream[index + 1], stream[index + 2]};
     index += 3;
     std::array<double, 3> v = {stream[index], stream[index + 1], stream[index + 2]};
@@ -337,7 +342,10 @@ class SPHParticle : public autopas::Particle {
     // std::array<double,3> F = {stream[index], stream[index+1],
     // stream[index+2]};  // not needed
     // index+=3  // not needed
-    unsigned long id = reinterpret_cast<unsigned long &>(stream[index++]);
+    double id_dbl = stream[index++];
+    unsigned long id;
+    memcpy(&id, &id_dbl, sizeof(double));
+    static_assert(sizeof(id) == sizeof(double), "sizes shoule be the same, otherwise the above will not work");
 
     double density = stream[index++];
     double pressure = stream[index++];

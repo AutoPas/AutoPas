@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <vector>
 #include "Particle.h"
 
 namespace autopas {
@@ -51,6 +52,11 @@ class MoleculeLJ : public Particle {
    * @param sigma
    */
   static void setSigma(double sigma) { SIGMA = sigma; }
+
+  /**
+   * the type for the soa storage
+   */
+  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
  private:
   static double EPSILON, SIGMA;

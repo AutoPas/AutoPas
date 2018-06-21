@@ -70,17 +70,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         _neighborListIsValid(false),
         _soaListIsValid(false),
         _soa(),
-        _buildVerletListType(buildVerletListType) {
-    _soa.initArrays({
-        Particle::AttributeNames::id,
-        Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forceX,
-        Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ,
-    });
-  }
+        _buildVerletListType(buildVerletListType) {}
 
   void iteratePairwiseAoS(Functor<Particle, ParticleCell>* f, bool useNewton3 = true) override {
     iteratePairwiseAoS2(f, useNewton3);
@@ -460,7 +450,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   bool _soaListIsValid;
 
   /// global SoA of verlet lists
-  SoA _soa;
+  SoA<Particle> _soa;
 
   /// specifies how the verlet lists are build
   BuildVerletListType _buildVerletListType;

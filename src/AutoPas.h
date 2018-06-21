@@ -13,7 +13,6 @@
 
 namespace autopas {
 
-// TODO: Move this to a selector
 /**
  * Possible Choices for the particle data layout.
  */

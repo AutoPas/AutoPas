@@ -15,7 +15,7 @@ Alternatively you can build the documentation on your own:
 ## Requirements
 * cmake 3.3 or newer
 * make (build-essentials) or ninja
-* a c++11 compiler (gcc7 and clang6 are tested)
+* a c++14 compiler (gcc7 and clang6 are tested)
 
 
 ## Building AutoPas
@@ -77,6 +77,10 @@ use the --gtest_filter variable:
 or use the GTEST_FILTER environment variable:
 ```
 GTEST_FILTER="ArrayMathTest.testAdd*" ctest --verbose
+```
+or `ctest` arguments like `-R` (run tests matching regex) and `-D` (exclude tests matching regex)
+```
+ctest -R 'Array.*testAdd' -E `Double'
 ```
 
 
