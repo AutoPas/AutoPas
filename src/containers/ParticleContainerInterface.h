@@ -14,12 +14,12 @@
 namespace autopas {
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor
-// FIXME: WRONG DOCUMENTATION
 /**
- * The ParticleContainer class stores particles in some object and provides
- * methods to iterate over its particles.
+ * The ParticleContainerInterface class provides a basic interface for all Containers within AutoPas.
+ * It defines method interfaces for addition and deletion of particles, accessing general container
+ * properietes and creating iterators.
+ *
  * @tparam Particle Class for particles
- * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle>
 class ParticleContainerInterface {
