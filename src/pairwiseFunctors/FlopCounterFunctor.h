@@ -159,7 +159,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType>
       })
 
   /**
-   * empty SoAExtractor
+   * empty SoAExtractor.
+   * nothing to be done yet.
    */
   AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , )
 
