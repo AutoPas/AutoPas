@@ -16,7 +16,6 @@ namespace autopas {
 /**
  * class of helpers for verlet lists
  * @tparam Particle
-
  */
 template <class Particle>
 class VerletListHelpers {
