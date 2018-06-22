@@ -159,7 +159,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType>
       })
 
   AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , ,
-  // no body needed, but definition
+                               // no body needed, but definition
   )
 
   /**
