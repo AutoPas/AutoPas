@@ -8,6 +8,7 @@
 
 #include "../utils/ArrayMath.h"
 #include "LinkedCells.h"
+#include "ParticleContainer.h"
 #include "VerletListHelpers.h"
 
 namespace autopas {
@@ -21,13 +22,13 @@ namespace autopas {
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
- * @tparam ParticleCell
  * @todo deleting particles should also invalidate the verlet lists - should be
  * implemented somehow
  */
-template <class Particle, class ParticleCell>
-class VerletLists : public LinkedCells<Particle, ParticleCell> {
-  typedef VerletListHelpers<Particle, ParticleCell> verlet_internal;
+template <class Particle>
+class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell<Particle>> {
+  typedef VerletListHelpers<Particle> verlet_internal;
+  typedef FullParticleCell<Particle> ParticleCell;
 
  public:
   /**
@@ -55,7 +56,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
               unsigned int rebuildFrequency = 1,
               BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
-      : LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
+        _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
@@ -64,15 +66,11 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
         _soa(),
         _buildVerletListType(buildVerletListType) {}
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell>* f, bool useNewton3 = true) override {
-    iteratePairwiseAoS2(f, useNewton3);
-  }
-
   /**
-   * @copydoc LinkedCells::iteratePairwiseAoS2
+   * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
+  void iteratePairwiseAoS(ParticleFunctor* f, bool useNewton3 = true) {
     if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
                            // it!
       this->updateVerletListsAoS(useNewton3);
@@ -85,15 +83,11 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     _traversalsSinceLastRebuild++;
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell>* f, bool useNewton3 = true) override {
-    iteratePairwiseSoA2(f, useNewton3);
-  }
-
   /**
-   * @copydoc LinkedCells::iteratePairwiseSoA2
+   * @copydoc LinkedCells::iteratePairwiseSoA
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA2(ParticleFunctor* f, bool useNewton3 = true) {
+  void iteratePairwiseSoA(ParticleFunctor* f, bool useNewton3 = true) {
     if (needsRebuild()) {
       this->updateVerletListsAoS(useNewton3);
       // the neighbor list is now valid
@@ -119,7 +113,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   void addParticle(Particle& p) override {
     _neighborListIsValid = false;
-    LinkedCells<Particle, ParticleCell>::addParticle(p);
+    _linkedCells.addParticle(p);
   }
 
   /**
@@ -128,7 +122,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   void addHaloParticle(Particle& haloParticle) override {
     _neighborListIsValid = false;
-    LinkedCells<Particle, ParticleCell>::addHaloParticle(haloParticle);
+    _linkedCells.addHaloParticle(haloParticle);
   }
 
   /**
@@ -137,7 +131,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    */
   void deleteHaloParticles() override {
     _neighborListIsValid = false;
-    LinkedCells<Particle, ParticleCell>::deleteHaloParticles();
+    _linkedCells.deleteHaloParticles();
   }
 
   /**
@@ -147,7 +141,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   void updateContainer() override {
     AutoPasLogger->debug("updating container");
     _neighborListIsValid = false;
-    LinkedCells<Particle, ParticleCell>::updateContainer();
+    _linkedCells.updateContainer();
   }
 
   /**
@@ -171,22 +165,22 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     }
 
     // particles can also simply be very close already:
-    typename verlet_internal::VerletListValidityCheckerFunctor validityCheckerFunctor(
+    typename verlet_internal::template VerletListValidityCheckerFunctor<ParticleCell> validityCheckerFunctor(
         _aosNeighborLists, ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
-    LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&validityCheckerFunctor, useNewton3);
+    _linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, useNewton3);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
   bool isContainerUpdateNeeded() override {
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+    for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getData().size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
-      this->_cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
+      _linkedCells.getCellBlock().getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
-      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
+      for (auto iter = _linkedCells.getData()[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not iter->inBox(boxmin, boxmax)) {
           AutoPasLogger->debug(
               "VerletLists: containerUpdate needed! Particles are fast. You "
@@ -220,7 +214,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @param particle
    */
   void updateHaloParticle(Particle& particle) {
-    auto cells = this->_cellBlock.getNearbyHaloCells(particle.getR(), _skin);
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), _skin);
     bool updated = false;
     for (auto cellptr : cells) {
       updated |= checkParticleInCellAndUpdate(*cellptr, particle);
@@ -237,6 +231,16 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
     }
   }
 
+  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.begin(behavior);
+  }
+
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
  protected:
   /**
    * Updates a found particle within cellI to the values of particleI.
@@ -246,7 +250,8 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
    * @param particleI
    * @return
    */
-  bool checkParticleInCellAndUpdate(ParticleCell& cellI, Particle& particleI) {
+  bool checkParticleInCellAndUpdate(FullParticleCell<Particle, typename verlet_internal::SoAArraysType>& cellI,
+                                    Particle& particleI) {
     for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
       if (iterator->getID() == particleI.getID()) {
         *iterator = particleI;
@@ -266,10 +271,10 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
 
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS:
-        LinkedCells<Particle, ParticleCell>::iteratePairwiseAoS2(&f, useNewton3);
+        _linkedCells.iteratePairwiseAoS(&f, useNewton3);
         break;
       case BuildVerletListType::VerletSoA:
-        LinkedCells<Particle, ParticleCell>::iteratePairwiseSoA2(&f, useNewton3);
+        _linkedCells.iteratePairwiseSoA(&f, useNewton3);
         break;
       default:
         utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
@@ -352,7 +357,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void loadVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
-    for (auto& cell : this->_data) {
+    for (auto& cell : _linkedCells.getData()) {
       functor->SoALoader(cell, _soa, offset);
       offset += cell.numParticles();
     }
@@ -368,7 +373,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   template <class ParticleFunctor>
   void extractVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
-    for (auto& cell : this->_data) {
+    for (auto& cell : _linkedCells.getData()) {
       functor->SoAExtractor(cell, _soa, offset);
       offset += cell.numParticles();
     }
@@ -414,6 +419,11 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   /// verlet lists.
   typename verlet_internal::AoS_verletlist_storage_type _aosNeighborLists;
 
+  /// internal linked cells storage, handles Particle storage and used to build verlet lists
+  LinkedCells<Particle, FullParticleCell<Particle, typename verlet_internal::SoAArraysType>,
+              typename verlet_internal::SoAArraysType>
+      _linkedCells;
+
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
   std::unordered_map<Particle*, size_t> _aos2soaMap;
@@ -423,7 +433,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   std::vector<Particle*> _soa2aosmap;
 
   /// verlet list for SoA:
-  std::vector<std::vector<size_t, AlignedAllocator<size_t>>> _soaNeighborLists;
+  std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;
 
   /// skin radius
   double _skin;
@@ -442,7 +452,7 @@ class VerletLists : public LinkedCells<Particle, ParticleCell> {
   bool _soaListIsValid;
 
   /// global SoA of verlet lists
-  SoA<Particle> _soa;
+  SoA<typename Particle::SoAArraysType> _soa;
 
   /// specifies how the verlet lists are build
   BuildVerletListType _buildVerletListType;

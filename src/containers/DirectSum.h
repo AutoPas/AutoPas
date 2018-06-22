@@ -59,35 +59,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { getHaloCell()->clear(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
-    //		CellFunctor<Particle, ParticleCell,LJFunctor<Particle>>
-    // cellFunctor(f);
-    //		cellFunctor.processCellAoSN3(*getCell());
-    iteratePairwiseAoS2(f, useNewton3);
-#if 0
-		for (auto outer = getIt(); outer.isValid(); ++outer) {
-			Particle & p1 = *outer;
-
-			int ind = outer.getIndex() + 1;
-
-			for (auto inner = getIt(ind); inner.isValid(); ++inner) {
-				Particle & p2 = *inner;
-
-				f->AoSFunctor(p1, p2);
-			}
-		}
-#endif
-  }
-
   /**
-   * same as iteratePairwiseAoS, but faster, as the class of the functor is
-   * known and thus the compiler can do some better optimizations.
-   * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3 defines whether newton3 should be used
+   * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
       cellFunctor.processCell(*getCell());
@@ -99,19 +75,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
-    iteratePairwiseSoA2(f, useNewton3);
-  }
-
   /**
-   * same as iteratePairwiseSoA, but faster, as the class of the functor is
-   * known and thus the compiler can do some better optimizations.
-   * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3
+   * @copydoc LinkedCells::iteratePairwiseSoA
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
     f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 

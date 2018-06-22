@@ -100,12 +100,12 @@ void measureContainer(Container *cont, int numParticles, int numIterations) {
 
   autopas::utils::Timer t;
 
-  cont->iteratePairwiseAoS2(&flopFunctor);
+  cont->iteratePairwiseAoS(&flopFunctor);
   double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS2(&func);
+    cont->iteratePairwiseAoS(&func);
   }
   double elapsedTime = t.stop();
 

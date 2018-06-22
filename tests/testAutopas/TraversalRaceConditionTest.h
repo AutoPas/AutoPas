@@ -22,7 +22,12 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
    * constant force of 1.
    */
   class SimpleFunctor : public autopas::Functor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> {
-    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j, bool newton3 = true) override {
+   public:
+    typedef PrintableMolecule Particle;
+    typedef PrintableMolecule::SoAArraysType SoAArraysType;
+    typedef autopas::FullParticleCell<PrintableMolecule> ParticleCell;
+
+    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j, bool newton3) override {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
 
@@ -46,6 +51,10 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
       i.addF(f);
       j.subF(f);
     }
+
+    AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , );
+
+    AUTOPAS_FUNCTOR_SOALOADER(, , , );
 
    private:
     // in a grid with separation 1 this includes all neighbors with a Chebyshev

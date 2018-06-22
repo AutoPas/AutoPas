@@ -32,3 +32,7 @@ QT_AUTOBRIEF           = YES # default NO
 #WARN_IF_UNDOCUMENTED   = YES # default YES
 #WARN_IF_DOC_ERROR      = YES # default YES
 WARN_NO_PARAMDOC       = YES # default NO
+
+
+#Macro expansion settings:
+MACRO_EXPANSION        = YES

@@ -403,7 +403,7 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm, const std::
     part->setDensity(part->getDensity() / 2);
   }
 
-  sphSystem.iteratePairwiseAoS2(&densityFunctor);
+  sphSystem.iteratePairwiseAoS(&densityFunctor);
   // 1.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 
@@ -423,7 +423,7 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm, const std::
     part->setAcceleration(std::array<double, 3>{0., 0., 0.});
     part->setEngDot(0.);
   }
-  sphSystem.iteratePairwiseAoS2(&hydroForceFunctor);
+  sphSystem.iteratePairwiseAoS(&hydroForceFunctor);
   // 0.3.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 }

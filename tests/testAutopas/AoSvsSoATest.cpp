@@ -40,7 +40,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   for (unsigned int i = 0; i < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++i) {
     for (unsigned int j = i + 1; j < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++j) {
       if (i != j) {
-        ljFunctor.AoSFunctor(particlesAoS[i], particlesAoS[j]);
+        ljFunctor.AoSFunctor(particlesAoS[i], particlesAoS[j], true);
       }
     }
   }
@@ -57,7 +57,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
 
   ljFunctor.SoALoader(cell, cell._particleSoABuffer);
   start = std::chrono::high_resolution_clock::now();
-  ljFunctor.SoAFunctor(cell._particleSoABuffer);
+  ljFunctor.SoAFunctor(cell._particleSoABuffer, true);
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
 

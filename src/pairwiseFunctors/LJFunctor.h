@@ -24,10 +24,10 @@ namespace autopas {
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
  */
-template <class Particle, class ParticleCell>
-class LJFunctor : public Functor<Particle, ParticleCell> {
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
+class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
  public:
-  void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     double dr2 = ArrayMath::dot(dr, dr);
 
@@ -44,7 +44,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     j.subF(f);
   }
 
-  void SoAFunctor(SoA<Particle> &soa, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -104,7 +104,7 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA<Particle> &soa1, SoA<Particle> &soa2, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -174,14 +174,14 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
   }
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<Particle> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3 = true)
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
    * @note if you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
    */
   // clang-format on
-  virtual void SoAFunctor(SoA<Particle> &soa,
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa,
                           const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                          size_t iFrom, size_t iTo, bool newton3 = true) override {
+                          size_t iFrom, size_t iTo, bool newton3) override {
     auto numParts = soa.getNumParticles();
     AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
 
@@ -331,52 +331,64 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {
-    /// @todo it is probably better to resize the soa only once, before calling
-    /// SoALoader (verlet-list only)
-    soa.resizeArrays(offset + cell.numParticles());
+  /**
+   * SoALoader
+   * @param cell
+   * @param soa
+   * @param offset
+   */
+  AUTOPAS_FUNCTOR_SOALOADER(
+      cell, soa, offset,
+      // todo it is probably better to resize the soa only once, before calling
+      // SoALoader (verlet-list only)
+      soa.resizeArrays(offset + cell.numParticles());
 
-    if (cell.numParticles() == 0) return;
+      if (cell.numParticles() == 0) return;
 
-    unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      idptr[i] = cellIter->getID();
-      xptr[i] = cellIter->getR()[0];
-      yptr[i] = cellIter->getR()[1];
-      zptr[i] = cellIter->getR()[2];
-      fxptr[i] = cellIter->getF()[0];
-      fyptr[i] = cellIter->getF()[1];
-      fzptr[i] = cellIter->getF()[2];
-    }
-  }
+      auto cellIter = cell.begin();
+      // load particles in SoAs
+      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+        idptr[i] = cellIter->getID();
+        xptr[i] = cellIter->getR()[0];
+        yptr[i] = cellIter->getR()[1];
+        zptr[i] = cellIter->getR()[2];
+        fxptr[i] = cellIter->getF()[0];
+        fyptr[i] = cellIter->getF()[1];
+        fzptr[i] = cellIter->getF()[2];
+      })
+  /**
+   * soaextractor
+   * @param cell
+   * @param soa
+   * @param offset
+   */
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR(
+      cell, soa, offset,
+      // body start
+      if (soa.getNumParticles() == 0) return;
 
-  void SoAExtractor(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {
-    if (soa.getNumParticles() == 0) return;
-
-    auto cellIter = cell.begin();
+      auto cellIter = cell.begin();
 
 #ifndef NDEBUG
-    unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
 #endif
 
-    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    for (unsigned int i = offset; cellIter.isValid(); ++i, ++cellIter) {
-      assert(idptr[i] == cellIter->getID());
-      cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
-    }
-  }
+      for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
+        assert(idptr[i] == cellIter->getID());
+        cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
+      })
 
   /**
    * Set the global values, i.e. cutoff, epsilon, sigma and shift
@@ -409,16 +421,16 @@ class LJFunctor : public Functor<Particle, ParticleCell> {
 
 };  // namespace autopas
 
-template <class T, class U>
-double LJFunctor<T, U>::CUTOFFSQUARE;
+template <class T, class U, class V>
+double LJFunctor<T, U, V>::CUTOFFSQUARE;
 
-template <class T, class U>
-double LJFunctor<T, U>::EPSILON24;
+template <class T, class U, class V>
+double LJFunctor<T, U, V>::EPSILON24;
 
-template <class T, class U>
-double LJFunctor<T, U>::SIGMASQUARE;
+template <class T, class U, class V>
+double LJFunctor<T, U, V>::SIGMASQUARE;
 
-template <class T, class U>
-double LJFunctor<T, U>::SHIFT6;
+template <class T, class U, class V>
+double LJFunctor<T, U, V>::SHIFT6;
 
 }  // namespace autopas

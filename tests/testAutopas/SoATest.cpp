@@ -90,7 +90,7 @@ TEST_F(SoATest, SoAStorageTestApply) {
 TEST_F(SoATest, SoATestPush) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle> soa;
+  autopas::SoA<Particle::SoAArraysType> soa;
 
   EXPECT_EQ(soa.getNumParticles(), 0);
 
@@ -116,7 +116,7 @@ TEST_F(SoATest, SoATestPush) {
 TEST_F(SoATest, SoATestClear) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle> soa;
+  autopas::SoA<Particle::SoAArraysType> soa;
 
   EXPECT_EQ(soa.getNumParticles(), 0);
 
@@ -132,7 +132,7 @@ TEST_F(SoATest, SoATestClear) {
 TEST_F(SoATest, SoATestSwap) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle> soa;
+  autopas::SoA<Particle::SoAArraysType> soa;
 
   soa.resizeArrays(2);
 
@@ -190,7 +190,7 @@ TEST_F(SoATest, SoATestSwap) {
 TEST_F(SoATest, SoATestMultiWriteRead) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle> soa;
+  autopas::SoA<Particle::SoAArraysType> soa;
 
   soa.resizeArrays(1);
 
@@ -227,7 +227,7 @@ TEST_F(SoATest, SoATestMultiWriteRead) {
 TEST_F(SoATest, SoATestComplicatedAccess) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle> soa;
+  autopas::SoA<Particle::SoAArraysType> soa;
 
   EXPECT_EQ(soa.getNumParticles(), 0);
 

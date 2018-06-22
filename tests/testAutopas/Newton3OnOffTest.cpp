@@ -49,6 +49,7 @@ TEST_F(Newton3OnOffTest, testAoS) {
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
       callsNewton3++;
     }));
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(0);  // disables newton3 variant
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
     // without newton 3:
@@ -72,8 +73,8 @@ TEST_F(Newton3OnOffTest, testSoA) {
     fillContainerWithMolecules(100, autoPas);
 
     // loader and extractor will be called, we don't care how often.
-    EXPECT_CALL(mockFunctor, SoALoader(_, _, _)).Times(testing::AtLeast(1));
-    EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoALoader(_, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
 
     // with newton 3:
     int callsNewton3SC = 0;    // same cell
