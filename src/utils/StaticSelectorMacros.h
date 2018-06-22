@@ -6,7 +6,7 @@
 
 #pragma once
 
-// either LinkedCells<Particle,ParticleCell>
+// either LinkedCells<Particle, ParticleCell>
 // or VerletLists<Particle>
 // or DirectSum<Particle, ParticleCell>
 /**

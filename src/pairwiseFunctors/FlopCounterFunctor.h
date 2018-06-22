@@ -22,15 +22,17 @@ namespace autopas {
  * @tparam Particle
  * @tparam ParticleCell
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
+template <class Particle, class ParticleCell>
+class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
+  typedef typename Particle::SoAArraysType SoAArraysType;
+
  public:
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell, SoAArraysType>(double cutoffRadius)
-      : autopas::Functor<Particle, ParticleCell, SoAArraysType>(),
+  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
+      : autopas::Functor<Particle, ParticleCell>(),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
