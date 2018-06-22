@@ -73,8 +73,8 @@ class TraversalSelector {
 
   // for each encountered cell processor save the optimal traversal. The cell processor is saved through its hash
   std::unordered_map<size_t, TraversalOptions> _optimalTraversalOptions;
-  const std::array<unsigned long, 3> &_dims;
-  const std::vector<TraversalOptions> &_allowedTraversalOptions;
+  const std::array<unsigned long, 3> _dims;
+  const std::vector<TraversalOptions> _allowedTraversalOptions;
 };
 
 template <class ParticleCell>
