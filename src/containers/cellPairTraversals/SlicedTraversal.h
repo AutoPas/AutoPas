@@ -47,9 +47,6 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  private:
-  // FIXME: Remove this as soon as other traversals are available
-  void traverseCellPairsFallback(std::vector<ParticleCell> &cells);
-
   /**
    * store ids of dimensions ordered by number of cells per dimensions
    */
@@ -92,36 +89,12 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(const std::array
   locks.resize(numSlices);
 }
 
-// FIXME: Remove this as soon as other traversals are available
-template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallback(std::vector<ParticleCell> &cells) {
-  std::array<unsigned long, 3> endid;
-  for (int d = 0; d < 3; ++d) {
-    endid[d] = this->_cellsPerDimension[d] - 1;
-  }
-  for (unsigned long z = 0; z < endid[2]; ++z) {
-    for (unsigned long y = 0; y < endid[1]; ++y) {
-      for (unsigned long x = 0; x < endid[0]; ++x) {
-        unsigned long ind = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-        this->processBaseCell(cells, ind);
-      }
-    }
-  }
-}
-
 template <class ParticleCell, class CellFunctor>
 inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs(std::vector<ParticleCell> &cells) {
   using std::array;
 
   auto numSlices = _sliceThickness.size();
   // 0) check if applicable
-
-  // use fallback version if not applicable
-  // FIXME: Remove this as soon as other traversals are available
-  if (not isApplicable()) {
-    traverseCellPairsFallback(cells);
-    return;
-  }
 
   for (size_t i = 0; i < numSlices - 1; ++i) {
     locks[i] = new autopas_lock_t;
