@@ -122,6 +122,7 @@ class AutoPas {
    * This function only handles short-range interactions.
    * @param f Functor that describes the pair-potential
    * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
+   * @tparam Functor type of the functor
    */
   template <class Functor>
   void iteratePairwise(Functor *f, autopas::DataLayoutOption dataLayoutOption) {
