@@ -23,8 +23,8 @@ namespace autopas {
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
  * @tparam Particle type of the particles that need to be stored
- * @tparam ParticleCell type of the ParticleCells that are used to store the
- * particles
+ * @tparam ParticleCell type of the ParticleCells that are used to store the particles
+ * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
