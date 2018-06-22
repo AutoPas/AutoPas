@@ -194,8 +194,16 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         &this->_data, lowerCorner, higherCorner, &_cellBlock, behavior));
   }
 
+  /**
+   * Get the cell block, not supposed to be used except by verlet lists
+   * @return the cell block
+   */
   CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
 
+  /**
+   * returns reference to the data of LinkedCells
+   * @return the data
+   */
   std::vector<ParticleCell> &getData() { return this->_data; }
 
  protected:

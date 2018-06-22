@@ -8,7 +8,13 @@
 
 // either LinkedCells<Particle,ParticleCell>
 // or VerletLists<Particle>
-// or DirectSum
+// or DirectSum<Particle, ParticleCell>
+/**
+ * Will execute the passed body with the static container type of container, i.e. either
+ * LinkedCells, VerletLists or DirectSum
+ * @param container the container to be used
+ * @param body the function body to be executed
+ */
 #define WithStaticContainerType(container, body)                                                                    \
   {                                                                                                                 \
     auto container_ptr = container.get();                                                                           \

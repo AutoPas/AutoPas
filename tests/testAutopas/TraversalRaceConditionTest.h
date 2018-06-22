@@ -52,9 +52,9 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
       j.subF(f);
     }
 
-    AUTOPAS_FUNCTOR_SOAEXTRACTOR();
+    AUTOPAS_FUNCTOR_SOAEXTRACTOR(,,,);
 
-    AUTOPAS_FUNCTOR_SOALOADER();
+    AUTOPAS_FUNCTOR_SOALOADER(,,,);
 
    private:
     // in a grid with separation 1 this includes all neighbors with a Chebyshev

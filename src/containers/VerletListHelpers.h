@@ -62,6 +62,10 @@ class VerletListHelpers {
         _verletListsAoS.at(&i).push_back(&j);
     }
 
+    /**
+     * SoAFunctor for verlet list generation. (two cell version)
+     * @param soa the soa
+     */
     void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/ = true) override {
       if (soa.getNumParticles() == 0) return;
 
@@ -92,6 +96,11 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     * SoAfunctor for the verlet list generation. (two cell version)
+     * @param soa1 soa of first cell
+     * @param soa2 soa of second cell
+     */
     void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/ = true) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -129,6 +138,13 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     * SoALoader for verlet list generator.
+     * Only loads IDs and positions
+     * @param cell
+     * @param soa
+     * @param offset
+     */
     void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
       assert(offset == 0);
       soa.resizeArrays(cell.numParticles());
@@ -151,6 +167,13 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     * SoAExtractor for verlet list generation.
+     * Currently empty.
+     * @param cell
+     * @param soa
+     * @param offset
+     */
     void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
       // nothing yet...
     }

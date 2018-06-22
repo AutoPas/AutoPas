@@ -138,6 +138,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType>
   }
 
   AUTOPAS_FUNCTOR_SOALOADER(
+      cell, soa, offset,
+      // body start
       soa.resizeArrays(offset + cell.numParticles());
 
       if (cell.numParticles() == 0) return;
@@ -156,7 +158,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType>
         zptr[i] = cellIter->getR()[2];
       })
 
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR()
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , ,
+  // no body needed, but definition
+  )
 
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number

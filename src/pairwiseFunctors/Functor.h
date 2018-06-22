@@ -147,7 +147,17 @@ class Functor {
   virtual bool allowsNonNewton3() { return false; }
 };
 
-#define AUTOPAS_FUNCTOR_SOALOADER(body)                                                                           \
+/**
+ * Macro to define the SoALoaders. The parameters are:
+ * @param cell name for cell like parameter
+ * @param soa name for soa
+ * @param offset name for offset
+ * @param body the actual function body for the soa loader
+ *
+ * @note generates two loaders, one for verlet lists, one for the normal case.
+ * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
+ */
+#define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, body)                                                        \
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }                \
                                                                                                                   \
   template <typename /*dummy*/ = void,                                                                            \
@@ -158,7 +168,17 @@ class Functor {
     body                                                                                                          \
   }
 
-#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(body)                                                                           \
+/**
+ * Macro to define the SoAExtractors. The parameters are:
+ * @param cell name for cell like parameter
+ * @param soa name for soa
+ * @param offset name for offset
+ * @param body the actual function body for the soa loader
+ *
+ * @note generates two extractors, one for verlet lists, one for the normal case.
+ * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
+ */
+#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, body)                                                        \
   void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { body }     \
                                                                                                                      \
   template <typename /*dummy*/ = void,                                                                               \
