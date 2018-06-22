@@ -27,7 +27,7 @@ namespace autopas {
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
  public:
-  void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     double dr2 = ArrayMath::dot(dr, dr);
 
@@ -44,7 +44,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     j.subF(f);
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -104,7 +104,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     }
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -174,14 +174,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
   }
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3 = true)
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
    * @note if you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
    */
   // clang-format on
   virtual void SoAFunctor(SoA<SoAArraysType> &soa,
                           const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                          size_t iFrom, size_t iTo, bool newton3 = true) override {
+                          size_t iFrom, size_t iTo, bool newton3) override {
     auto numParts = soa.getNumParticles();
     AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
 

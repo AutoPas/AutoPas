@@ -49,7 +49,7 @@ class VerletListHelpers {
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskinsquared)
         : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskinsquared) {}
 
-    void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared)
@@ -66,7 +66,7 @@ class VerletListHelpers {
      * SoAFunctor for verlet list generation. (two cell version)
      * @param soa the soa
      */
-    void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/ = true) override {
+    void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/) override {
       if (soa.getNumParticles() == 0) return;
 
       Particle **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
@@ -101,7 +101,7 @@ class VerletListHelpers {
      * @param soa1 soa of first cell
      * @param soa2 soa of second cell
      */
-    void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/ = true) override {
+    void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       Particle **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
@@ -203,7 +203,7 @@ class VerletListHelpers {
     VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
         : _verletListsAoS(verletListsAoS), _cutoffsquared(cutoffsquared), _valid(true) {}
 
-    void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffsquared) {

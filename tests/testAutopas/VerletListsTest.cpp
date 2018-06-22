@@ -492,7 +492,6 @@ TEST_F(VerletListsTest, LoadExtractSoA) {
 
   EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(216);  // 6*6*6=216 cells
   EXPECT_CALL(mockFunctor, SoAExtractorVerlet(_, _, _)).Times(216);
-  EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _)).Times(0);
   EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _, _)).Times(1);
   verletLists.iteratePairwiseSoA(&mockFunctor, true);
 }

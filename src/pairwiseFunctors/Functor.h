@@ -43,7 +43,7 @@ class Functor {
    * @param j Particle j
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) {
+  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3) {
     utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
   }
 
@@ -57,7 +57,7 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3 = true) {
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(one soa): not yet implemented");
   }
 
@@ -82,7 +82,7 @@ class Functor {
    */
   virtual void SoAFunctor(SoA<SoAArraysType> &soa,
                           const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                          size_t iFrom, size_t iTo, bool newton3 = true) {
+                          size_t iFrom, size_t iTo, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
 
@@ -97,7 +97,7 @@ class Functor {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3 = true) {
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 

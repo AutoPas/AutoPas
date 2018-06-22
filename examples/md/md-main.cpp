@@ -41,10 +41,10 @@ int main(int argc, char *argv[]) {
   PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
   PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
-  func.AoSFunctor(p1, p2);
+  func.AoSFunctor(p1, p2, true);
   //	p1.print();
   //	p2.print();
-  func.AoSFunctor(p2, p1);
+  func.AoSFunctor(p2, p1, true);
   //	p1.print();
   //	p2.print();
 
