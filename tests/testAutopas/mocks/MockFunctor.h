@@ -63,8 +63,7 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
                  void(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
                       autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
-  template <typename /*dummy*/ = void,
-            typename = std::enable_if_t<not std::is_same<
+  template <typename = std::enable_if_t<not std::is_same<
                 typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
   void SoAExtractor(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
                     autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset = 0) {

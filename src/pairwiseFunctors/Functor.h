@@ -160,8 +160,7 @@ class Functor {
 #define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, body)                                                        \
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }                \
   /** @copydoc SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) */                           \
-  template <typename /*dummy*/ = void,                                                                            \
-            typename = std::enable_if_t<not std::is_same<                                                         \
+  template <typename = std::enable_if_t<not std::is_same<                                                         \
                 typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>          \
   void SoALoader(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa, \
                  size_t offset = 0) {                                                                             \
@@ -181,8 +180,7 @@ class Functor {
 #define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, body)                                                        \
   void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { body }     \
   /** @copydoc SoAExtractor(ParticleCell &, ::autopas::SoA<SoAArraysType> &, size_t) */                              \
-  template <typename /*dummy*/ = void,                                                                               \
-            typename = std::enable_if_t<not std::is_same<                                                            \
+  template <typename = std::enable_if_t<not std::is_same<                                                            \
                 typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>             \
   void SoAExtractor(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa, \
                     size_t offset = 0) {                                                                             \
