@@ -59,22 +59,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    */
   ParticleContainer &operator=(const ParticleContainer &other) = delete;
 
-  // /*
-  //  * function to iterate over all pairs of particles in an array of structures
-  //  * setting. This function only handles short-range interactions.
-  //  * @param f functor that describes the pair-potential
-  //  * @param useNewton3 defines whether newton3 should be used
-  //  */
-  // virtual void iteratePairwiseAoS(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) = 0;
-
-  //  /*
-  //   * function to iterate over all pairs of particles in a structure of array
-  //   * setting. This function is often better vectorizable.
-  //   * @param f functor that describes the pair-potential
-  //   * @param useNewton3 defines whether newton3 should be used
-  //   */
-  // virtual void iteratePairwiseSoA(Functor<Particle, ParticleCell, SoAArraysType> *f, bool useNewton3 = true) = 0;
-
   /**
    * get the upper corner of the container
    * @return upper corner of the container

@@ -67,10 +67,10 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
         _buildVerletListType(buildVerletListType) {}
 
   /**
-   * @copydoc LinkedCells::iteratePairwiseAoS2
+   * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS2(ParticleFunctor* f, bool useNewton3 = true) {
+  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
     if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
                            // it!
       this->updateVerletListsAoS(useNewton3);
@@ -84,10 +84,10 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
   }
 
   /**
-   * @copydoc LinkedCells::iteratePairwiseSoA2
+   * @copydoc LinkedCells::iteratePairwiseSoA
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA2(ParticleFunctor* f, bool useNewton3 = true) {
+  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
     if (needsRebuild()) {
       this->updateVerletListsAoS(useNewton3);
       // the neighbor list is now valid
@@ -168,7 +168,7 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
     typename verlet_internal::template VerletListValidityCheckerFunctor<ParticleCell> validityCheckerFunctor(
         _aosNeighborLists, ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
-    _linkedCells.iteratePairwiseAoS2(&validityCheckerFunctor, useNewton3);
+    _linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, useNewton3);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
@@ -270,11 +270,10 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
     typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, (this->getCutoff() * this->getCutoff()));
 
     switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS:
-        _linkedCells.iteratePairwiseAoS2(&f, useNewton3);
+      case BuildVerletListType::VerletAoS:_linkedCells.iteratePairwiseAoS(&f, useNewton3);
         break;
       case BuildVerletListType::VerletSoA:
-        _linkedCells.iteratePairwiseSoA2(&f, useNewton3);
+        _linkedCells.iteratePairwiseSoA(&f, useNewton3);
         break;
       default:
         utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",

@@ -89,15 +89,15 @@ void measureContainer(Container *cont, int numMolecules, int numIterations, doub
 
   utils::Timer t;
 
-  cont->iteratePairwiseAoS2(&flopFunctor);
+  cont->iteratePairwiseAoS(&flopFunctor);
   double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
     if (soa)
-      cont->iteratePairwiseSoA2(&func);
+      cont->iteratePairwiseSoA(&func);
     else
-      cont->iteratePairwiseAoS2(&func);
+      cont->iteratePairwiseAoS(&func);
   }
   double elapsedTime = t.stop();
 
@@ -162,7 +162,7 @@ void testForceLJ() {
   container.addParticle(p4);
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
-  container.iteratePairwiseAoS2(&func);
+  container.iteratePairwiseAoS(&func);
 
   //	for (auto it = container.begin(); it.isValid(); ++it) {
   //		it->print();

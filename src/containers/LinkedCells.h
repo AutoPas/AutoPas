@@ -65,20 +65,19 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  /**
-   * same as iteratePairwiseAoS, but potentially faster (if called with the
-   * derived functor), as the class of the functor is known and thus the
-   * compiler can do some better optimizations.
-   * @tparam ParticleFunctor
-   * @param f
+  /*
+   * Function to iterate over all pairs of particles in an array of structures setting. This function only handles
+   * short-range interactions.
+   * @tparam the type of ParticleFunctor
+   * @param f functor that describes the pair-potential
    * @param useNewton3 defines whether newton3 should be used
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
     auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
+      // TODO: REMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
       // IMPLEMENTED
       if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
         C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>> traversal(
@@ -106,15 +105,15 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
   }
 
-  /**
-   * same as iteratePairwiseSoA, but faster, as the class of the functor is
-   * known and thus the compiler can do some better optimizations.
+  /*
+   * function to iterate over all pairs of particles in a structure of array
+   * setting. This function is often better vectorizable.
    * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3
+   * @param f functor that describes the pair-potential
+   * @param useNewton3 defines whether newton3 should be used
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
     loadSoAs(f);
 
     auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");

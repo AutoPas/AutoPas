@@ -59,15 +59,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { getHaloCell()->clear(); }
 
-  /**
-   * same as iteratePairwiseAoS, but faster, as the class of the functor is
-   * known and thus the compiler can do some better optimizations.
-   * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3 defines whether newton3 should be used
+  /*
+   * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
       cellFunctor.processCell(*getCell());
@@ -80,14 +76,10 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   /**
-   * same as iteratePairwiseSoA, but faster, as the class of the functor is
-   * known and thus the compiler can do some better optimizations.
-   * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3
+   * @copydoc LinkedCells::iteratePairwiseSoA
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
     f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 

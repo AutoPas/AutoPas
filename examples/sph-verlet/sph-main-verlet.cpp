@@ -280,7 +280,7 @@ void densityPressureHydroForce(Container& sphSystem) {
     part->setDensity(part->getDensity() / 2);
   }
   std::cout << "calculation of density... started" << std::endl;
-  sphSystem.iteratePairwiseAoS2(&densityFunctor);
+  sphSystem.iteratePairwiseAoS(&densityFunctor);
   std::cout << "calculation of density... completed" << std::endl;
   // 1.3 delete halo particles, as their values are no longer valid
   // deleteHaloParticles(sphSystem);
@@ -304,7 +304,7 @@ void densityPressureHydroForce(Container& sphSystem) {
     part->setEngDot(0.);
   }
   std::cout << "calculation of hydroforces... started" << std::endl;
-  sphSystem.iteratePairwiseAoS2(&hydroForceFunctor);
+  sphSystem.iteratePairwiseAoS(&hydroForceFunctor);
   std::cout << "calculation of hydroforces... completed" << std::endl;
   // 0.3.3 delete halo particles, as their values are no longer valid
   // deleteHaloParticles(sphSystem);
