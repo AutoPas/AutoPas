@@ -22,13 +22,13 @@ namespace autopas {
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
- * @tparam ParticleCell
  * @todo deleting particles should also invalidate the verlet lists - should be
  * implemented somehow
  */
-template <class Particle, class ParticleCell = FullParticleCell<Particle>>
-class VerletLists : public ParticleContainer<Particle, ParticleCell> {
+template <class Particle>
+class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell<Particle>> {
   typedef VerletListHelpers<Particle> verlet_internal;
+  typedef FullParticleCell<Particle> ParticleCell;
 
  public:
   /**
@@ -70,7 +70,7 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
    * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseAoS(ParticleFunctor* f, bool useNewton3 = true) {
     if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
                            // it!
       this->updateVerletListsAoS(useNewton3);
@@ -87,7 +87,7 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
    * @copydoc LinkedCells::iteratePairwiseSoA
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseSoA(ParticleFunctor* f, bool useNewton3 = true) {
     if (needsRebuild()) {
       this->updateVerletListsAoS(useNewton3);
       // the neighbor list is now valid
@@ -270,7 +270,8 @@ class VerletLists : public ParticleContainer<Particle, ParticleCell> {
     typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, (this->getCutoff() * this->getCutoff()));
 
     switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS:_linkedCells.iteratePairwiseAoS(&f, useNewton3);
+      case BuildVerletListType::VerletAoS:
+        _linkedCells.iteratePairwiseAoS(&f, useNewton3);
         break;
       case BuildVerletListType::VerletSoA:
         _linkedCells.iteratePairwiseSoA(&f, useNewton3);

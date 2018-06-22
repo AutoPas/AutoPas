@@ -14,7 +14,7 @@
 //    autopas::FullParticleCell<autopas::sph::SPHParticle>>
 //    Container;
 
-typedef autopas::VerletLists<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> Container;
+typedef autopas::VerletLists<autopas::sph::SPHParticle> Container;
 
 // typedef autopas::DirectSum<
 //    autopas::sph::SPHParticle,

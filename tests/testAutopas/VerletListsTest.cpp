@@ -206,8 +206,7 @@ TEST_F(VerletListsTest, testVerletListBuildHalo) {
 }
 
 TEST_F(VerletListsTest, testRebuildFrequencyAlways) {
-  MockVerletLists<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockVerletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 1);
+  MockVerletLists<autopas::Particle> mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 1);
 
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> emptyFunctor;
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(4);
@@ -218,8 +217,7 @@ TEST_F(VerletListsTest, testRebuildFrequencyAlways) {
 }
 
 TEST_F(VerletListsTest, testRebuildFrequencyEvery3) {
-  MockVerletLists<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockVerletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
+  MockVerletLists<autopas::Particle> mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
 
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> emptyFunctor;
 
@@ -239,25 +237,16 @@ TEST_F(VerletListsTest, testRebuildFrequencyEvery3) {
 
 TEST_F(VerletListsTest, testForceRebuild) {
   // generate Velet list with rebuild frequency of 3
-  MockVerletLists<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockVerletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
+  MockVerletLists<autopas::Particle> mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
   // delegating to parent
   ON_CALL(mockVerletLists, addParticle(_))
-      .WillByDefault(Invoke(
-          &mockVerletLists,
-          &MockVerletLists<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>::addParticleVerletLists));
+      .WillByDefault(Invoke(&mockVerletLists, &MockVerletLists<autopas::Particle>::addParticleVerletLists));
   // delegating to parent
   ON_CALL(mockVerletLists, addHaloParticle(_))
-      .WillByDefault(
-          Invoke(&mockVerletLists,
-                 &MockVerletLists<autopas::Particle,
-                                  autopas::FullParticleCell<autopas::Particle>>::addHaloParticleVerletLists));
+      .WillByDefault(Invoke(&mockVerletLists, &MockVerletLists<autopas::Particle>::addHaloParticleVerletLists));
   // delegating to parent
   ON_CALL(mockVerletLists, updateContainer())
-      .WillByDefault(
-          Invoke(&mockVerletLists,
-                 &MockVerletLists<autopas::Particle,
-                                  autopas::FullParticleCell<autopas::Particle>>::updateContainerVerletLists));
+      .WillByDefault(Invoke(&mockVerletLists, &MockVerletLists<autopas::Particle>::updateContainerVerletLists));
 
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> emptyFunctor;
 
