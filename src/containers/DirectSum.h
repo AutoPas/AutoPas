@@ -59,7 +59,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { getHaloCell()->clear(); }
 
-  /*
+  /**
    * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor>

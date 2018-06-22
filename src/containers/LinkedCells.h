@@ -65,7 +65,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  /*
+  /**
    * Function to iterate over all pairs of particles in an array of structures setting. This function only handles
    * short-range interactions.
    * @tparam the type of ParticleFunctor
@@ -105,7 +105,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
   }
 
-  /*
+  /**
    * function to iterate over all pairs of particles in a structure of array
    * setting. This function is often better vectorizable.
    * @tparam ParticleFunctor
