@@ -158,9 +158,10 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, SoAArraysType>
         zptr[i] = cellIter->getR()[2];
       })
 
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , ,
-                               // no body needed, but definition
-  )
+  /**
+   * empty SoAExtractor
+   */
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , )
 
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number

@@ -148,7 +148,7 @@ class Functor {
 };
 
 /**
- * Macro to define the SoALoaders. The parameters are:
+ * Macro to define the SoALoaders.
  * @param cell name for cell like parameter
  * @param soa name for soa
  * @param offset name for offset
@@ -157,9 +157,12 @@ class Functor {
  * @note generates two loaders, one for verlet lists, one for the normal case.
  * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
  */
-#define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, body)                                                        \
-  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }                \
-                                                                                                                  \
+#define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, body)                                                   \
+  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }            \
+  /**                                                                                                             \
+   * @copydoc SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset)                               \
+   * @note verlet list variant                                                                                          \
+   */                                                                                                             \
   template <typename /*dummy*/ = void,                                                                            \
             typename = std::enable_if_t<not std::is_same<                                                         \
                 typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>          \
@@ -169,7 +172,7 @@ class Functor {
   }
 
 /**
- * Macro to define the SoAExtractors. The parameters are:
+ * Macro to define the SoAExtractors.
  * @param cell name for cell like parameter
  * @param soa name for soa
  * @param offset name for offset
@@ -178,9 +181,12 @@ class Functor {
  * @note generates two extractors, one for verlet lists, one for the normal case.
  * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
  */
-#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, body)                                                        \
+#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, body)                                                   \
   void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { body }     \
-                                                                                                                     \
+  /**                                                                                                                \
+   * @copydoc SoAExtractor(ParticleCell &, ::autopas::SoA<SoAArraysType> &, size_t)                               \
+   * @note verlet list variant                                                                                       \
+   */                                                                                                                \
   template <typename /*dummy*/ = void,                                                                               \
             typename = std::enable_if_t<not std::is_same<                                                            \
                 typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>             \

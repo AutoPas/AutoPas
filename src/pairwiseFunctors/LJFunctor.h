@@ -331,10 +331,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     }
   }
 
+  /**
+   * SoALoader
+   * @param cell
+   * @param soa
+   * @param offset
+   */
   AUTOPAS_FUNCTOR_SOALOADER(
       cell, soa, offset,
-      /// @todo it is probably better to resize the soa only once, before calling
-      /// SoALoader (verlet-list only)
+      // todo it is probably better to resize the soa only once, before calling
+      // SoALoader (verlet-list only)
       soa.resizeArrays(offset + cell.numParticles());
 
       if (cell.numParticles() == 0) return;
@@ -358,7 +364,12 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
         fyptr[i] = cellIter->getF()[1];
         fzptr[i] = cellIter->getF()[2];
       })
-
+  /**
+   * soaextractor
+   * @param cell
+   * @param soa
+   * @param offset
+   */
   AUTOPAS_FUNCTOR_SOAEXTRACTOR(
       cell, soa, offset,
       // body start
@@ -374,7 +385,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
       double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
       double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-      for (unsigned int i = offset; cellIter.isValid(); ++i, ++cellIter) {
+      for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
         assert(idptr[i] == cellIter->getID());
         cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
       })
