@@ -164,31 +164,31 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
    * @param soa
    * @param offset
    */
-  AUTOPAS_FUNCTOR_SOALOADER(
-      cell, soa, offset,
-      // todo it is probably better to resize the soa only once, before calling
-      // SoALoader (verlet-list only)
-      soa.resizeArrays(offset + cell.numParticles());
+  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, {
+    // todo it is probably better to resize the soa only once, before calling
+    // SoALoader (verlet-list only)
+    soa.resizeArrays(offset + cell.numParticles());
 
-      if (cell.numParticles() == 0) return;
+    if (cell.numParticles() == 0) return;
 
-      double *const __restrict__ massptr = soa.begin<Particle::AttributeNames::mass>();
-      double *const __restrict__ xptr = soa.begin<Particle::AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.begin<Particle::AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.begin<Particle::AttributeNames::posZ>();
-      double *const __restrict__ smthptr = soa.begin<Particle::AttributeNames::smth>();
-      double *const __restrict__ densptr = soa.begin<Particle::AttributeNames::density>();
+    double *const __restrict__ massptr = soa.begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ xptr = soa.begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ smthptr = soa.begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ densptr = soa.begin<Particle::AttributeNames::density>();
 
-      auto cellIter = cell.begin();
-      // load particles in SoAs
-      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-        massptr[i] = cellIter->getMass();
-        xptr[i] = cellIter->getR()[0];
-        yptr[i] = cellIter->getR()[1];
-        zptr[i] = cellIter->getR()[2];
-        smthptr[i] = cellIter->getSmoothingLength();
-        densptr[i] = cellIter->getDensity();
-      })
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      massptr[i] = cellIter->getMass();
+      xptr[i] = cellIter->getR()[0];
+      yptr[i] = cellIter->getR()[1];
+      zptr[i] = cellIter->getR()[2];
+      smthptr[i] = cellIter->getSmoothingLength();
+      densptr[i] = cellIter->getDensity();
+    }
+  })
 
   /**
    * SoAExtractor for SPHCalcDensityFunctor.
