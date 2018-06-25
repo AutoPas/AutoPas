@@ -18,6 +18,13 @@ namespace sph {
 class SPHCalcHydroForceFunctor
     : public autopas::Functor<SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> {
  public:
+  /// particle type
+  typedef SPHParticle Particle;
+  /// soa arrays type
+  typedef SPHParticle::SoAArraysType SoAArraysType;
+  /// particle cell type
+  typedef FullParticleCell<Particle> ParticleCell;
+
   /**
    * Calculates the contribution of the interaction of particle i and j to the
    * hydrodynamic force.
@@ -92,6 +99,86 @@ class SPHCalcHydroForceFunctor
     ///@todo return correct flopcount
     return 1ul;
   }
+
+  /**
+   * SoALoader for SPHCalcDensityFunctor.
+   * Loads mass, position, smoothing length, density, velocity, speed of sound, pressure, vsigmax, acceleration and
+   * engdot.
+   * @param cell
+   * @param soa
+   * @param offset
+   */
+  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, {
+    // todo it is probably better to resize the soa only once, before calling
+    // SoALoader (verlet-list only)
+    soa.resizeArrays(offset + cell.numParticles());
+
+    if (cell.numParticles() == 0) return;
+
+    auto massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+    auto densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
+    auto smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+    auto soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
+    auto pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
+    auto vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
+    auto engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    auto xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+    auto yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+    auto zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+    auto velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
+    auto velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
+    auto velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
+    auto accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
+    auto accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
+    auto accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      massptr[i] = cellIter->getMass();
+      densityptr[i] = cellIter->getDensity();
+      smthlngthptr[i] = cellIter->getSmoothingLength();
+      soundSpeedptr[i] = cellIter->getSoundSpeed();
+      pressureptr[i] = cellIter->getPressure();
+      vsigmaxptr[i] = cellIter->getVSigMax();
+      engDotptr[i] = cellIter->getEngDot();
+      xptr[i] = cellIter->getR()[0];
+      yptr[i] = cellIter->getR()[1];
+      zptr[i] = cellIter->getR()[2];
+      velXptr[i] = cellIter->getV()[0];
+      velYptr[i] = cellIter->getV()[1];
+      velZptr[i] = cellIter->getV()[2];
+      accXptr[i] = cellIter->getAcceleration()[0];
+      accYptr[i] = cellIter->getAcceleration()[1];
+      accZptr[i] = cellIter->getAcceleration()[2];
+    }
+  })
+
+  /**
+   * SoAExtractor for SPHCalcDensityFunctor.
+   * Extracts vsigmax, acceleration and engdot.
+   * @param cell
+   * @param soa
+   * @param offset
+   */
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, {
+    // function body
+    if (cell.numParticles() == 0) return;
+
+    double *const __restrict__ vsigmaxPtr = soa.begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotPtr = soa.begin<Particle::AttributeNames::engDot>();
+    double *const __restrict__ accXPtr = soa.begin<Particle::AttributeNames::accX>();
+    double *const __restrict__ accYPtr = soa.begin<Particle::AttributeNames::accY>();
+    double *const __restrict__ accZPtr = soa.begin<Particle::AttributeNames::accZ>();
+
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      cellIter->setVSigMax(vsigmaxPtr[i]);
+      cellIter->setEngDot(engDotPtr[i]);
+      cellIter->setAcceleration({accXPtr[i],accYPtr[i],accZPtr[i]});
+    }
+  })
 };
 
 }  // namespace sph
