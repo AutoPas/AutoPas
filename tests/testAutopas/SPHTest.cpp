@@ -5,6 +5,7 @@
 #include "SPHTest.h"
 #include "autopasIncludes.h"
 #include "sph/autopassph.h"
+#include "testingHelpers/RandomGenerator.h"
 
 TEST_F(SPHTest, testW) {
   double value = autopas::sph::SPHKernels::W({1., 1., 1.}, 1.);
@@ -52,7 +53,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
   cell.addParticle(sphParticle2);
 
   // declare + instantiate soa
-  autopas::SoA<autopas::sph::SPHParticle::SoAArraysType> soa;
+  auto &soa = cell._particleSoABuffer;
 
   // declare functor
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
@@ -96,6 +97,112 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
       EXPECT_EQ(xptr[i], iterator->getR()[0]);
       EXPECT_EQ(yptr[i], iterator->getR()[1]);
       EXPECT_EQ(zptr[i], iterator->getR()[2]);
+    }
+  }
+}
+
+TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos;
+  {
+    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    RandomGenerator::fillWithParticles(cell_using_soa, defaultSphParticle, {0., 0., 0.}, {1., 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_aos, defaultSphParticle, {0., 0., 0.}, {1., 1., 1.}, 30);
+  }
+
+  // declare functor
+  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+
+  // ------------- aos ------------------ (using newton3)
+  for (auto outer = cell_using_aos.begin(); outer.isValid(); ++outer) {
+    auto &p1 = *outer;
+
+    auto inner = outer;
+    ++inner;
+    for (; inner.isValid(); ++inner) {
+      auto &p2 = *inner;
+
+      densityFunctor.AoSFunctor(p1, p2, true);
+    }
+  }
+
+  // ------------- soa ------------------ (using newton3)
+
+  // load soa
+  densityFunctor.SoALoader(cell_using_soa, cell_using_soa._particleSoABuffer, 0);
+
+  // functors (single cell)
+  densityFunctor.SoAFunctor(cell_using_soa._particleSoABuffer, true);
+
+  // extract soa
+  densityFunctor.SoAExtractor(cell_using_soa, cell_using_soa._particleSoABuffer);
+
+  // check same densities
+  {
+    auto iteratoraos = cell_using_aos.begin();
+    auto iteratorsoa = cell_using_soa.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_EQ(iteratoraos->getDensity(), iteratorsoa->getDensity());
+    }
+  }
+}
+
+TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa1;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa2;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos1;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos2;
+  {
+    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    RandomGenerator::fillWithParticles(cell_using_soa1, defaultSphParticle, {0., 0., 0.}, {.5, 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_aos1, defaultSphParticle, {0., 0., 0.}, {.5, 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_soa2, defaultSphParticle, {0.5, 0., 0.}, {1., 1., 1.}, 20);
+    RandomGenerator::fillWithParticles(cell_using_aos2, defaultSphParticle, {0.5, 0., 0.}, {1., 1., 1.}, 20);
+  }
+
+  // declare functor
+  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+
+  // ------------- aos ------------------ (using newton3)
+  for (auto outer = cell_using_aos1.begin(); outer.isValid(); ++outer) {
+    auto &p1 = *outer;
+
+    for (auto inner = cell_using_aos2.begin(); inner.isValid(); ++inner) {
+      auto &p2 = *inner;
+
+      densityFunctor.AoSFunctor(p1, p2, true);
+    }
+  }
+
+  // ------------- soa ------------------ (using newton3)
+
+  // load soa
+  densityFunctor.SoALoader(cell_using_soa1, cell_using_soa1._particleSoABuffer, 0);
+  densityFunctor.SoALoader(cell_using_soa2, cell_using_soa2._particleSoABuffer, 0);
+
+  // functors (single cell)
+  densityFunctor.SoAFunctor(cell_using_soa1._particleSoABuffer, cell_using_soa2._particleSoABuffer, true);
+
+  // extract soa
+  densityFunctor.SoAExtractor(cell_using_soa1, cell_using_soa1._particleSoABuffer);
+  densityFunctor.SoAExtractor(cell_using_soa2, cell_using_soa2._particleSoABuffer);
+
+  // check same densities
+  {
+    auto iteratoraos = cell_using_aos1.begin();
+    auto iteratorsoa = cell_using_soa1.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_EQ(iteratoraos->getDensity(), iteratorsoa->getDensity());
+    }
+  }
+  {
+    auto iteratoraos = cell_using_aos2.begin();
+    auto iteratorsoa = cell_using_soa2.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_EQ(iteratoraos->getDensity(), iteratorsoa->getDensity());
     }
   }
 }

@@ -56,6 +56,15 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     return flops;
   }
 
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+    if (soa.getNumParticles() == 0) return;
+  }
+
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+  }
+
+
   /**
    * SoALoader for SPHCalcDensityFunctor.
    * Loads mass, position, smoothing length and density.

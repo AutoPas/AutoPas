@@ -43,3 +43,4 @@
 #include "pairwiseFunctors/FlopCounterFunctor.h"
 #include "pairwiseFunctors/Functor.h"
 #include "pairwiseFunctors/LJFunctor.h"
+#include "pairwiseFunctors/CellFunctor.h"
