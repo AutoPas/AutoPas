@@ -95,13 +95,13 @@ int main(int argc, char *argv[]) {
 template <class Container>
 void measureContainer(Container *cont, int numParticles, int numIterations) {
   autopas::sph::SPHCalcDensityFunctor func;
-  autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
-      flopFunctor(cont->getCutoff());
+  //autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
+  //    flopFunctor(cont->getCutoff());
 
   autopas::utils::Timer t;
 
-  cont->iteratePairwiseAoS(&flopFunctor);
-  double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
+  //cont->iteratePairwiseAoS(&flopFunctor);
+  //double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
@@ -109,14 +109,29 @@ void measureContainer(Container *cont, int numParticles, int numIterations) {
   }
   double elapsedTime = t.stop();
 
-  double flops = flopsPerIteration * numIterations;
+  //double flops = flopsPerIteration * numIterations;
 
-  double MFUPS = numParticles * numIterations / elapsedTime * 1e-6;
+  double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
 
-  std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime / numIterations << "\t" << MFUPS;
-  std::cout << "\t" << flops;
-  std::cout << "\t" << flopFunctor.getHitRate();
-  std::cout << "\t" << flops / elapsedTime * 1e-9 << std::endl;
+
+  t.start();
+  for (int i = 0; i < numIterations; ++i) {
+    cont->iteratePairwiseSoA(&func);
+  }
+  elapsedTime = t.stop();
+
+  //double flops = flopsPerIteration * numIterations;
+
+  double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-6;
+
+
+  std::cout << numParticles << "\t" << numIterations << "\t" << MFUPS_aos << "\t" << MFUPS_soa;
+  //std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime / numIterations << "\t" << MFUPS;
+  //std::cout << "\t" << flops;
+  //std::cout << "\t" << flopFunctor.getHitRate();
+  //std::cout << "\t" << flops / elapsedTime * 1e-9 << std::endl;
 
   // std::cout << "measuring done" << std::endl;
+
+  std::cout << std::endl;
 }

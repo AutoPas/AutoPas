@@ -374,6 +374,10 @@ class SPHParticle : public autopas::Particle {
     return p;
   }
 
+  enum AttributeNames : int { mass, posX, posY, posZ, smth, density };
+
+  typedef autopas::utils::SoAType< double, double, double, double, double, double>::Type SoAArraysType;
+
  private:
   double _density;   // density
   double _pressure;  // pressure
