@@ -273,8 +273,11 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
     for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
       ASSERT_TRUE(iteratorsoa.isValid());
       double density = static_cast<double>(rand()) / RAND_MAX;
+      double pressure = static_cast<double>(rand()) / RAND_MAX;
       iteratoraos->setDensity(density);
+      iteratoraos->setPressure(pressure);
       iteratorsoa->setDensity(density);
+      iteratorsoa->setPressure(pressure);
     }
   }
 
@@ -314,11 +317,11 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
       EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-15 * fabs(iteratoraos->getVSigMax()));
       EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-15 * fabs(iteratoraos->getEngDot()));
       EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[0]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
       EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[1]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
       EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[2]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
     }
   }
 }
@@ -402,8 +405,11 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
     for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
       ASSERT_TRUE(iteratorsoa.isValid());
       double density = static_cast<double>(rand()) / RAND_MAX;
+      double pressure = static_cast<double>(rand()) / RAND_MAX;
       iteratoraos->setDensity(density);
+      iteratoraos->setPressure(pressure);
       iteratorsoa->setDensity(density);
+      iteratorsoa->setPressure(pressure);
     }
   }
   {  // cell 2
@@ -412,8 +418,11 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
     for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
       ASSERT_TRUE(iteratorsoa.isValid());
       double density = static_cast<double>(rand()) / RAND_MAX;
+      double pressure = static_cast<double>(rand()) / RAND_MAX;
       iteratoraos->setDensity(density);
+      iteratoraos->setPressure(pressure);
       iteratorsoa->setDensity(density);
+      iteratorsoa->setPressure(pressure);
     }
   }
 
@@ -444,20 +453,20 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
   hydroForceFunctor.SoAExtractor(cell_using_soa1, cell_using_soa1._particleSoABuffer);
   hydroForceFunctor.SoAExtractor(cell_using_soa2, cell_using_soa2._particleSoABuffer);
 
-  // check same densities
+  // check same results properties
   {
     auto iteratoraos = cell_using_aos1.begin();
     auto iteratorsoa = cell_using_soa1.begin();
     for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
       ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-15 * fabs(iteratoraos->getVSigMax()));
-      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-15 * fabs(iteratoraos->getEngDot()));
+      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-14 * fabs(iteratoraos->getVSigMax()));
+      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-14 * fabs(iteratoraos->getEngDot()));
       EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[0]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
       EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[1]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
       EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[2]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
     }
   }
   {
@@ -465,14 +474,14 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
     auto iteratorsoa = cell_using_soa2.begin();
     for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
       ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-15 * fabs(iteratoraos->getVSigMax()));
-      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-15 * fabs(iteratoraos->getEngDot()));
+      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-14 * fabs(iteratoraos->getVSigMax()));
+      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-14 * fabs(iteratoraos->getEngDot()));
       EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[0]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
       EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[1]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
       EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
-                  1.e-15 * fabs(iteratoraos->getAcceleration()[2]));
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
     }
   }
 }
