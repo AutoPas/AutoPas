@@ -377,12 +377,30 @@ class SPHParticle : public autopas::Particle {
   /**
    * Attribute names for the soa arrays
    */
-  enum AttributeNames : int { mass, posX, posY, posZ, smth, density };
+  enum AttributeNames : int {
+    mass,
+    posX,
+    posY,
+    posZ,
+    smth,
+    density,
+    velX,
+    velY,
+    velZ,
+    soundSpeed,
+    pressure,
+    vsigmax,
+    accX,
+    accY,
+    accZ,
+    engDot
+  };
 
   /**
    * SoA arrays type, cf. AttributeNames
    */
-  typedef autopas::utils::SoAType<double, double, double, double, double, double>::Type SoAArraysType;
+  typedef autopas::utils::SoAType<double, double, double, double, double, double, double, double, double, double,
+                                  double, double, double, double, double, double>::Type SoAArraysType;
 
  private:
   double _density;   // density

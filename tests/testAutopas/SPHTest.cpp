@@ -61,6 +61,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
   // load soa
   densityFunctor.SoALoader(cell, soa, 0);
 
+  auto massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
   auto densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
   auto smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
   auto xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
@@ -71,6 +72,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
   {
     auto iterator = cell.begin();
     for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(massptr[i], iterator->getMass());
       EXPECT_EQ(densityptr[i], 0.);
       EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
       EXPECT_EQ(xptr[i], iterator->getR()[0]);
@@ -91,12 +93,119 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
     std::array<double, 2> expectedDensity{3., 2.};
     auto iterator = cell.begin();
     for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(massptr[i], iterator->getMass());
       EXPECT_EQ(densityptr[i], iterator->getDensity());
       EXPECT_EQ(expectedDensity[i], iterator->getDensity());
       EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
       EXPECT_EQ(xptr[i], iterator->getR()[0]);
       EXPECT_EQ(yptr[i], iterator->getR()[1]);
       EXPECT_EQ(zptr[i], iterator->getR()[2]);
+    }
+  }
+}
+
+TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoALoadExtract) {
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+
+  // simulate density functor call
+  sphParticle1.setDensity(3.);
+  sphParticle2.setDensity(2.);
+
+  // add particles to cell
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell;
+  cell.addParticle(sphParticle1);
+  cell.addParticle(sphParticle2);
+
+  // declare + instantiate soa
+  auto &soa = cell._particleSoABuffer;
+
+  // declare functor
+  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+
+  // load soa
+  hydroForceFunctor.SoALoader(cell, soa, 0);
+
+  auto massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+  auto densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
+  auto smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+  auto soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
+  auto pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
+  auto vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
+  auto engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+  auto xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+  auto yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+  auto zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+  auto velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
+  auto velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
+  auto velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
+  auto accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
+  auto accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
+  auto accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+
+  // check loading
+  {
+    auto iterator = cell.begin();
+    for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(massptr[i], iterator->getMass());
+      EXPECT_EQ(densityptr[i], iterator->getDensity());
+      EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
+      EXPECT_EQ(soundSpeedptr[i], iterator->getSoundSpeed());
+      EXPECT_EQ(pressureptr[i], iterator->getPressure());
+      EXPECT_EQ(vsigmaxptr[i], iterator->getVSigMax());
+      EXPECT_EQ(engDotptr[i], iterator->getEngDot());
+      EXPECT_EQ(xptr[i], iterator->getR()[0]);
+      EXPECT_EQ(yptr[i], iterator->getR()[1]);
+      EXPECT_EQ(zptr[i], iterator->getR()[2]);
+      EXPECT_EQ(velXptr[i], iterator->getV()[0]);
+      EXPECT_EQ(velYptr[i], iterator->getV()[1]);
+      EXPECT_EQ(velZptr[i], iterator->getV()[2]);
+      EXPECT_EQ(accXptr[i], iterator->getAcceleration()[0]);
+      EXPECT_EQ(accYptr[i], iterator->getAcceleration()[1]);
+      EXPECT_EQ(accZptr[i], iterator->getAcceleration()[2]);
+    }
+  }
+
+  // simulate functor call by changing density
+  engDotptr[0] = -3.;
+  engDotptr[1] = -2.;
+  vsigmaxptr[0] = 1.;
+  vsigmaxptr[1] = 1.5;
+  accXptr[0] = 0.1;
+  accXptr[1] = -0.1;
+  accYptr[0] = 0.2;
+  accYptr[1] = -0.2;
+  accZptr[0] = 0.3;
+  accZptr[1] = -0.3;
+
+  // extract soa
+  hydroForceFunctor.SoAExtractor(cell, soa, 0);
+
+  // check extraction
+  {
+    std::array<double, 2> expectedEngdot{-3., -2.};
+    std::array<double, 2> expectedvsigmax{1., 1.5};
+    std::array<double, 2> expectedAccX{.1, -.1};
+    std::array<double, 2> expectedAccY{.2, -.2};
+    std::array<double, 2> expectedAccZ{.3, -.3};
+    auto iterator = cell.begin();
+    for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(massptr[i], iterator->getMass());
+      EXPECT_EQ(densityptr[i], iterator->getDensity());
+      EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
+      EXPECT_EQ(soundSpeedptr[i], iterator->getSoundSpeed());
+      EXPECT_EQ(pressureptr[i], iterator->getPressure());
+      EXPECT_EQ(expectedvsigmax[i], iterator->getVSigMax());
+      EXPECT_EQ(expectedEngdot[i], iterator->getEngDot());
+      EXPECT_EQ(xptr[i], iterator->getR()[0]);
+      EXPECT_EQ(yptr[i], iterator->getR()[1]);
+      EXPECT_EQ(zptr[i], iterator->getR()[2]);
+      EXPECT_EQ(velXptr[i], iterator->getV()[0]);
+      EXPECT_EQ(velYptr[i], iterator->getV()[1]);
+      EXPECT_EQ(velZptr[i], iterator->getV()[2]);
+      EXPECT_EQ(expectedAccX[i], iterator->getAcceleration()[0]);
+      EXPECT_EQ(expectedAccY[i], iterator->getAcceleration()[1]);
+      EXPECT_EQ(expectedAccZ[i], iterator->getAcceleration()[2]);
     }
   }
 }
