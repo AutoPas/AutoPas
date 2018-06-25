@@ -143,7 +143,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
     auto iteratorsoa = cell_using_soa.begin();
     for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
       ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_EQ(iteratoraos->getDensity(), iteratorsoa->getDensity());
+      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
     }
   }
 }
@@ -194,7 +194,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
     auto iteratorsoa = cell_using_soa1.begin();
     for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
       ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_EQ(iteratoraos->getDensity(), iteratorsoa->getDensity());
+      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
     }
   }
   {
@@ -202,7 +202,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
     auto iteratorsoa = cell_using_soa2.begin();
     for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
       ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_EQ(iteratoraos->getDensity(), iteratorsoa->getDensity());
+      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
     }
   }
 }

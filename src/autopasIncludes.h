@@ -40,7 +40,7 @@
 #include "containers/VerletLists.h"
 
 // pairwise functors
+#include "pairwiseFunctors/CellFunctor.h"
 #include "pairwiseFunctors/FlopCounterFunctor.h"
 #include "pairwiseFunctors/Functor.h"
 #include "pairwiseFunctors/LJFunctor.h"
-#include "pairwiseFunctors/CellFunctor.h"
