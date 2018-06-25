@@ -110,21 +110,21 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ xptr1 = soa1.begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr1 = soa1.begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr1 = soa1.begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr1 = soa1.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr1 = soa1.begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr1 = soa1.begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr1 = soa1.begin<Particle::AttributeNames::mass>();
 
-    double *const __restrict__ xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ xptr2 = soa2.begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr2 = soa2.begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr2 = soa2.begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ densityptr2 = soa2.template begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr2 = soa2.begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr2 = soa2.begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr2 = soa2.begin<Particle::AttributeNames::mass>();
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double densacc = 0;
@@ -172,12 +172,12 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
 
       if (cell.numParticles() == 0) return;
 
-      double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
-      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-      double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
-      double *const __restrict__ densptr = soa.template begin<Particle::AttributeNames::density>();
+      double *const __restrict__ massptr = soa.begin<Particle::AttributeNames::mass>();
+      double *const __restrict__ xptr = soa.begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.begin<Particle::AttributeNames::posZ>();
+      double *const __restrict__ smthptr = soa.begin<Particle::AttributeNames::smth>();
+      double *const __restrict__ densptr = soa.begin<Particle::AttributeNames::density>();
 
       auto cellIter = cell.begin();
       // load particles in SoAs
