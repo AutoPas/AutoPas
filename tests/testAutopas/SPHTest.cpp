@@ -42,6 +42,64 @@ TEST_F(SPHTest, testSPHCalcDensityFunctor) {
   EXPECT_NEAR(sphParticle2.getDensity(), 0.172401, 1e-6);
 }
 
+TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+
+  // add particles to cell
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell;
+  cell.addParticle(sphParticle1);
+  cell.addParticle(sphParticle2);
+
+  // declare + instantiate soa
+  autopas::SoA<autopas::sph::SPHParticle::SoAArraysType> soa;
+
+  // declare functor
+  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+
+  // load soa
+  densityFunctor.SoALoader(cell, soa, 0);
+
+  auto densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
+  auto smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+  auto xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+  auto yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+  auto zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+
+  // check loading
+  {
+    auto iterator = cell.begin();
+    for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(densityptr[i], 0.);
+      EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
+      EXPECT_EQ(xptr[i], iterator->getR()[0]);
+      EXPECT_EQ(yptr[i], iterator->getR()[1]);
+      EXPECT_EQ(zptr[i], iterator->getR()[2]);
+    }
+  }
+
+  // simulate functor call by changing density
+  densityptr[0] = 3.;
+  densityptr[1] = 2.;
+
+  // extract soa
+  densityFunctor.SoAExtractor(cell, soa, 0);
+
+  // check extraction
+  {
+    std::array<double, 2> expectedDensity{3., 2.};
+    auto iterator = cell.begin();
+    for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(densityptr[i], iterator->getDensity());
+      EXPECT_EQ(expectedDensity[i], iterator->getDensity());
+      EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
+      EXPECT_EQ(xptr[i], iterator->getR()[0]);
+      EXPECT_EQ(yptr[i], iterator->getR()[1]);
+      EXPECT_EQ(zptr[i], iterator->getR()[2]);
+    }
+  }
+}
+
 TEST_F(SPHTest, testSPHCalcPressure) {
   autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
   autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
