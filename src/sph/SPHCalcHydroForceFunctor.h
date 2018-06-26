@@ -123,9 +123,9 @@ class SPHCalcHydroForceFunctor
       double localAccY = 0.;
       double localAccZ = 0.;
 
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
-//#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
+      // icpc vectorizes this.
+      // g++ only with -ffast-math or -funsafe-math-optimizations
+      //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
         const double drx = xptr[i] - xptr[j];
         const double dry = yptr[i] - yptr[j];
@@ -253,9 +253,9 @@ class SPHCalcHydroForceFunctor
       double localAccY = 0.;
       double localAccZ = 0.;
 
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
-//#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
+      // icpc vectorizes this.
+      // g++ only with -ffast-math or -funsafe-math-optimizations
+      //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         const double drx = xptr1[i] - xptr2[j];
         const double dry = yptr1[i] - yptr2[j];
