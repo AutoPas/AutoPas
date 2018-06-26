@@ -160,7 +160,46 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   void SoAFunctor(SoA<SoAArraysType> &soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                   size_t iFrom, size_t iTo, bool newton3) override {
-    //utils::ExceptionHandler::exception("SPHCalcDensityFunctor::SoAFunctor(verlet): not yet implemented");
+    if (soa.getNumParticles() == 0) return;
+
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
+
+    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+      double densacc = 0;
+      auto& currentList = neighborList[i];
+      size_t listSize = currentList.size();
+// icpc vectorizes this.
+// g++ only with -ffast-math or -funsafe-math-optimizations
+#pragma omp simd reduction(+ : densacc)
+      for (unsigned int j = 0; j < listSize; ++j) {
+        const double drx = xptr[i] - xptr[currentList[j]];
+        const double dry = yptr[i] - yptr[currentList[j]];
+        const double drz = zptr[i] - zptr[currentList[j]];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        const double density = massptr[currentList[j]] * SPHKernels::W(dr2, smthptr[i]);
+        densacc += density;
+        if (newton3) {
+          // Newton 3:
+          // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
+          const double density2 = massptr[i] * SPHKernels::W(dr2, smthptr[currentList[j]]);
+          densityptr[currentList[j]] += density2;
+        }
+      }
+
+      densityptr[i] += densacc;
+    }
   }
 
   /**
