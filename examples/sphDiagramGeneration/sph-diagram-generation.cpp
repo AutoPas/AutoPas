@@ -102,6 +102,7 @@ int main(int argc, char *argv[]) {
 
   for (auto it = lcCont.begin(); it.isValid(); ++it) {
     dirCont.addParticle(*it);
+    verletCont.addParticle(*it);
   }
 
   if (whichContainer == 0) {
