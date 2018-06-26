@@ -334,6 +334,12 @@ class SPHCalcHydroForceFunctor
     }
   }
 
+  void SoAFunctor(SoA<SoAArraysType> &soa,
+                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
+                  size_t iFrom, size_t iTo, bool newton3) override {
+    utils::ExceptionHandler::exception("SPHCalcHydroForceFunctor::SoAFunctor(verlet): not yet implemented");
+  }
+
   /**
    * SoALoader for SPHCalcDensityFunctor.
    * Loads mass, position, smoothing length, density, velocity, speed of sound, pressure, vsigmax, acceleration and

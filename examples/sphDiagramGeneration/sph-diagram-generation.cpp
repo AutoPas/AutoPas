@@ -74,7 +74,16 @@ int main(int argc, char *argv[]) {
   int numIterations = 100000;
   int whichContainer = 0;
   int whichFunctor = 0;
-  if (argc == 5) {
+  double skin = 0.;
+  int rebuildFrequency = 10;
+  if (argc == 7) {
+    numParticles = atoi(argv[1]);
+    numIterations = atoi(argv[2]);
+    whichContainer = atoi(argv[3]);
+    whichFunctor = atoi(argv[4]);
+    skin = atof(argv[5]);
+    rebuildFrequency = atof(argv[6]);
+  } else if (argc == 5) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
     whichContainer = atoi(argv[3]);
@@ -86,6 +95,8 @@ int main(int argc, char *argv[]) {
   } else {
     exit(1);
   }
+
+  autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin, rebuildFrequency);
 
   addParticles(lcCont, numParticles);
 
@@ -111,6 +122,18 @@ int main(int argc, char *argv[]) {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
     }
+  } else if (whichContainer == 2) {
+    if (whichFunctor == 0) {
+      measureContainer(&verletCont, &densfunc, numParticles, numIterations);
+    } else if (whichFunctor == 1) {
+      measureContainer(&verletCont, &hydrofunc, numParticles, numIterations);
+    } else {
+      std::cout << "wrong functor given" << std::endl;
+      exit(2);
+    }
+  } else {
+    std::cout << "invalid container id" << std::endl;
+    exit(3);
   }
 }
 
