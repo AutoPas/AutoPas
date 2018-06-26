@@ -623,7 +623,8 @@ TEST_F(SPHTest, testVerletVsLCAoS) {
   autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.},
                                                                                          cutoff);
 
-  autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
+                                               cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);
   RandomGenerator::fillWithParticles(_verletLists, defaultSPHParticle, numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
@@ -636,28 +637,25 @@ TEST_F(SPHTest, testVerletVsLCAoS) {
   _verletLists.iteratePairwiseAoS(&densityFunctor);
   _linkedCells.iteratePairwiseAoS(&densityFunctor);
 
-
   auto itDirect = _verletLists.begin();
   auto itLinked = _linkedCells.begin();
 
-  std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
+  std::vector<double> densityDirect(numMolecules), densityLinked(numMolecules);
   // get and sort by id, the
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     SPHParticle &m = *it;
-    forcesDirect.at(m.getID()) = m.getF();
+    densityDirect.at(m.getID()) = m.getDensity();
   }
 
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
     SPHParticle &m = *it;
-    forcesLinked.at(m.getID()) = m.getF();
+    densityLinked.at(m.getID()) = m.getDensity();
   }
 
   for (unsigned long i = 0; i < numMolecules; ++i) {
-    for (int d = 0; d < 3; ++d) {
-      double f1 = forcesDirect[i][d];
-      double f2 = forcesLinked[i][d];
-      EXPECT_NEAR(f1, f2, std::fabs(f1 * rel_err_tolerance));
-    }
+    double d1 = densityDirect[i];
+    double d2 = densityLinked[i];
+    EXPECT_NEAR(d1, d2, std::fabs(d1 * rel_err_tolerance));
   }
 }
 
@@ -671,7 +669,8 @@ TEST_F(SPHTest, testVerletVsLCSoA) {
   autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.},
                                                                                          cutoff);
 
-  autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
+                                               cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);
   RandomGenerator::fillWithParticles(_verletLists, defaultSPHParticle, numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
@@ -686,23 +685,21 @@ TEST_F(SPHTest, testVerletVsLCSoA) {
   auto itDirect = _verletLists.begin();
   auto itLinked = _linkedCells.begin();
 
-  std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
+  std::vector<double> densityDirect(numMolecules), densityLinked(numMolecules);
   // get and sort by id, the
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     SPHParticle &m = *it;
-    forcesDirect.at(m.getID()) = m.getF();
+    densityDirect.at(m.getID()) = m.getDensity();
   }
 
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
     SPHParticle &m = *it;
-    forcesLinked.at(m.getID()) = m.getF();
+    densityLinked.at(m.getID()) = m.getDensity();
   }
 
   for (unsigned long i = 0; i < numMolecules; ++i) {
-    for (int d = 0; d < 3; ++d) {
-      double f1 = forcesDirect[i][d];
-      double f2 = forcesLinked[i][d];
-      EXPECT_NEAR(f1, f2, std::fabs(f1 * rel_err_tolerance));
-    }
+    double d1 = densityDirect[i];
+    double d2 = densityLinked[i];
+    EXPECT_NEAR(d1, d2, std::fabs(d1 * rel_err_tolerance));
   }
 }
