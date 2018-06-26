@@ -308,7 +308,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
   // extract soa
   hydroForceFunctor.SoAExtractor(cell_using_soa, cell_using_soa._particleSoABuffer);
 
-  // check same densities
+  // check same values
   {
     auto iteratoraos = cell_using_aos.begin();
     auto iteratorsoa = cell_using_soa.begin();
@@ -613,93 +613,102 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   EXPECT_NEAR(sphParticle4.getDt(), sphParticle2.getDt(), 1e-10);
 }
 
-TEST_F(SPHTest, testVerletVsLCAoS) {
-  unsigned int numMolecules = 500;
-  double rel_err_tolerance = 1e-10;
-  double cutoff = 1.;
-  using autopas::sph::SPHParticle;
-
-  autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 3);
-  autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.},
-                                                                                         cutoff);
-
-  autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
-                                               cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);
-  RandomGenerator::fillWithParticles(_verletLists, defaultSPHParticle, numMolecules);
-  // now fill second container with the molecules from the first one, because
-  // otherwise we generate new particles
-  for (auto it = _verletLists.begin(); it.isValid(); ++it) {
-    _linkedCells.addParticle(*it);
+#define TESTVERLETVSLC(mode, functor, init, check)                                                                     \
+  TEST_F(SPHTest, testVerletVsLC##mode##functor) {                                                                     \
+    unsigned int numMolecules = 50;                                                                                    \
+    double rel_err_tolerance = 1e-10;                                                                                  \
+    double cutoff = 1.;                                                                                                \
+    using autopas::sph::SPHParticle;                                                                                   \
+                                                                                                                       \
+    autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 3);                        \
+    autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.}, \
+                                                                                           cutoff);                    \
+                                                                                                                       \
+    autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,                                  \
+                                                 cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);    \
+    RandomGenerator::fillWithParticles(_verletLists, defaultSPHParticle, numMolecules);                                \
+                                                                                                                       \
+    /*init particles in verlet list container*/                                                                        \
+    init;                                                                                                              \
+                                                                                                                       \
+    /* now fill second container with the molecules from the first one, because otherwise we generate new particles */ \
+    for (auto it = _verletLists.begin(); it.isValid(); ++it) {                                                         \
+      _linkedCells.addParticle(*it);                                                                                   \
+    }                                                                                                                  \
+                                                                                                                       \
+    autopas::sph::functor fnctr;                                                                                       \
+                                                                                                                       \
+    _verletLists.iteratePairwise##mode(&fnctr);                                                                        \
+    _linkedCells.iteratePairwise##mode(&fnctr);                                                                        \
+                                                                                                                       \
+    check;                                                                                                             \
   }
 
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
-
-  _verletLists.iteratePairwiseAoS(&densityFunctor);
-  _linkedCells.iteratePairwiseAoS(&densityFunctor);
-
-  auto itDirect = _verletLists.begin();
-  auto itLinked = _linkedCells.begin();
-
-  std::vector<double> densityDirect(numMolecules), densityLinked(numMolecules);
-  // get and sort by id, the
-  for (auto it = _verletLists.begin(); it.isValid(); ++it) {
-    SPHParticle &m = *it;
-    densityDirect.at(m.getID()) = m.getDensity();
+#define DENSITYCHECK                                                              \
+  {                                                                               \
+    std::vector<double> densityVerlet(numMolecules), densityLinked(numMolecules); \
+    /* get and sort by id, the */                                                 \
+    for (auto it = _verletLists.begin(); it.isValid(); ++it) {                    \
+      SPHParticle &m = *it;                                                       \
+      densityVerlet.at(m.getID()) = m.getDensity();                               \
+    }                                                                             \
+                                                                                  \
+    for (auto it = _linkedCells.begin(); it.isValid(); ++it) {                    \
+      SPHParticle &m = *it;                                                       \
+      densityLinked.at(m.getID()) = m.getDensity();                               \
+    }                                                                             \
+                                                                                  \
+    for (unsigned long i = 0; i < numMolecules; ++i) {                            \
+      double d1 = densityVerlet[i];                                               \
+      double d2 = densityLinked[i];                                               \
+      EXPECT_NEAR(d1, d2, std::fabs(d1 *rel_err_tolerance));                      \
+    }                                                                             \
   }
 
-  for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
-    SPHParticle &m = *it;
-    densityLinked.at(m.getID()) = m.getDensity();
+#define HYDROINIT                                               \
+  {                                                             \
+    auto itVerlet = _verletLists.begin();                       \
+    for (; itVerlet.isValid(); ++itVerlet) {                    \
+      double density = static_cast<double>(rand()) / RAND_MAX;  \
+      double pressure = static_cast<double>(rand()) / RAND_MAX; \
+      itVerlet->setDensity(density);                            \
+      itVerlet->setPressure(pressure);                          \
+    }                                                           \
   }
 
-  for (unsigned long i = 0; i < numMolecules; ++i) {
-    double d1 = densityDirect[i];
-    double d2 = densityLinked[i];
-    EXPECT_NEAR(d1, d2, std::fabs(d1 * rel_err_tolerance));
-  }
-}
-
-TEST_F(SPHTest, testVerletVsLCSoA) {
-  unsigned int numMolecules = 500;
-  double rel_err_tolerance = 1e-10;
-  double cutoff = 1.;
-  using autopas::sph::SPHParticle;
-
-  autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 3);
-  autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.},
-                                                                                         cutoff);
-
-  autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
-                                               cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);
-  RandomGenerator::fillWithParticles(_verletLists, defaultSPHParticle, numMolecules);
-  // now fill second container with the molecules from the first one, because
-  // otherwise we generate new particles
-  for (auto it = _verletLists.begin(); it.isValid(); ++it) {
-    _linkedCells.addParticle(*it);
-  }
-
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
-  _verletLists.iteratePairwiseSoA(&densityFunctor);
-  _linkedCells.iteratePairwiseSoA(&densityFunctor);
-
-  auto itDirect = _verletLists.begin();
-  auto itLinked = _linkedCells.begin();
-
-  std::vector<double> densityDirect(numMolecules), densityLinked(numMolecules);
-  // get and sort by id, the
-  for (auto it = _verletLists.begin(); it.isValid(); ++it) {
-    SPHParticle &m = *it;
-    densityDirect.at(m.getID()) = m.getDensity();
+#define HYDROCHECK                                                                                \
+  {                                                                                               \
+    std::vector<double> vsigmaxVerlet(numMolecules), vsigmaxLinked(numMolecules);                 \
+    std::vector<double> engdotVerlet(numMolecules), engdotLinked(numMolecules);                   \
+    std::vector<std::array<double, 3>> accVerlet(numMolecules), accLinked(numMolecules);          \
+    /* get and sort by id, the */                                                                 \
+    for (auto it = _verletLists.begin(); it.isValid(); ++it) {                                    \
+      SPHParticle &m = *it;                                                                       \
+      vsigmaxVerlet.at(m.getID()) = m.getVSigMax();                                               \
+      engdotVerlet.at(m.getID()) = m.getEngDot();                                                 \
+      accVerlet.at(m.getID()) = m.getAcceleration();                                              \
+    }                                                                                             \
+                                                                                                  \
+    for (auto it = _linkedCells.begin(); it.isValid(); ++it) {                                    \
+      SPHParticle &m = *it;                                                                       \
+      vsigmaxLinked.at(m.getID()) = m.getVSigMax();                                               \
+      engdotLinked.at(m.getID()) = m.getEngDot();                                                 \
+      accLinked.at(m.getID()) = m.getAcceleration();                                              \
+    }                                                                                             \
+                                                                                                  \
+    for (unsigned long i = 0; i < numMolecules; ++i) {                                            \
+      EXPECT_NEAR(vsigmaxVerlet[i], vsigmaxLinked[i], rel_err_tolerance *fabs(vsigmaxLinked[i])); \
+      EXPECT_NEAR(engdotVerlet[i], engdotLinked[i], rel_err_tolerance *fabs(engdotLinked[i]));    \
+      EXPECT_NEAR(accVerlet[i][0], accLinked[i][0], rel_err_tolerance *fabs(accLinked[i][0]));    \
+      EXPECT_NEAR(accVerlet[i][1], accLinked[i][1], rel_err_tolerance *fabs(accLinked[i][1]));    \
+      EXPECT_NEAR(accVerlet[i][2], accLinked[i][2], rel_err_tolerance *fabs(accLinked[i][2]));    \
+    }                                                                                             \
   }
 
-  for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
-    SPHParticle &m = *it;
-    densityLinked.at(m.getID()) = m.getDensity();
-  }
+TESTVERLETVSLC(AoS, SPHCalcDensityFunctor, , DENSITYCHECK);
 
-  for (unsigned long i = 0; i < numMolecules; ++i) {
-    double d1 = densityDirect[i];
-    double d2 = densityLinked[i];
-    EXPECT_NEAR(d1, d2, std::fabs(d1 * rel_err_tolerance));
-  }
-}
+TESTVERLETVSLC(SoA, SPHCalcDensityFunctor, , DENSITYCHECK);
+
+TESTVERLETVSLC(AoS, SPHCalcHydroForceFunctor, HYDROINIT, HYDROCHECK);
+
+TESTVERLETVSLC(SoA, SPHCalcHydroForceFunctor, HYDROINIT, HYDROCHECK);
