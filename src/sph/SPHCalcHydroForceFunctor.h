@@ -153,7 +153,8 @@ class SPHCalcHydroForceFunctor
 
         localvsigmax = std::max(localvsigmax, v_sig);
         if (newton3) {
-          vsigmaxptr[j] = std::max(vsigmaxptr[j], v_sig);  // Newton 3
+          // vsigmaxptr[j] = std::max(vsigmaxptr[j], v_sig);  // Newton 3
+          vsigmaxptr[j] = vsigmaxptr[j] > v_sig ? vsigmaxptr[j] : v_sig;  // Newton 3
           // v_sig_max = std::max(v_sig_max, v_sig);
         }
         const double AV = -0.5 * v_sig * w_ij / (0.5 * (densityptr[i] + densityptr[j]));
@@ -282,7 +283,8 @@ class SPHCalcHydroForceFunctor
 
         localvsigmax = std::max(localvsigmax, v_sig);
         if (newton3) {
-          vsigmaxptr2[j] = std::max(vsigmaxptr2[j], v_sig);  // Newton 3
+          // vsigmaxptr2[j] = std::max(vsigmaxptr2[j], v_sig);  // Newton 3
+          vsigmaxptr2[j] = vsigmaxptr2[j] > v_sig ? vsigmaxptr2[j] : v_sig;  // Newton 3
           // v_sig_max = std::max(v_sig_max, v_sig);
         }
         const double AV = -0.5 * v_sig * w_ij / (0.5 * (densityptr1[i] + densityptr2[j]));
