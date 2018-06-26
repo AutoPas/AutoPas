@@ -157,6 +157,11 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     }
   }
 
+  // clang-format off
+  /**
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t, size_t, bool)
+   */
+  // clang-format on
   void SoAFunctor(SoA<SoAArraysType> &soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
