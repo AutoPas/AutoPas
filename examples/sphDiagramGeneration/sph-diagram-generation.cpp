@@ -8,8 +8,8 @@
 #include "sph/autopassph.h"
 #include "utils/Timer.h"
 
-template <class Container>
-void measureContainer(Container *cont, int numParticles, int numIterations);
+template <class Container, class Functor>
+void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);
 
 double fRand(double fMin, double fMax) {
   double f = static_cast<double>(rand()) / RAND_MAX;
@@ -66,15 +66,23 @@ int main(int argc, char *argv[]) {
   autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
       boxMin, boxMax, cutoff);
 
+  autopas::sph::SPHCalcDensityFunctor densfunc;
+
+  autopas::sph::SPHCalcHydroForceFunctor hydrofunc;
+
   int numParticles = 16;
   int numIterations = 100000;
   int whichContainer = 0;
-  // int whichFunctor = 0;
-  if (argc == 5 or argc == 4) {
+  int whichFunctor = 0;
+  if (argc == 5) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
     whichContainer = atoi(argv[3]);
-    //  whichFunctor = atoi(argv[4]);
+    whichFunctor = atoi(argv[4]);
+  } else if (argc == 4) {
+    numParticles = atoi(argv[1]);
+    numIterations = atoi(argv[2]);
+    whichContainer = atoi(argv[3]);
   } else {
     exit(1);
   }
@@ -86,15 +94,28 @@ int main(int argc, char *argv[]) {
   }
 
   if (whichContainer == 0) {
-    measureContainer(&lcCont, numParticles, numIterations);
+    if (whichFunctor == 0) {
+      measureContainer(&lcCont, &densfunc, numParticles, numIterations);
+    } else if (whichFunctor == 1) {
+      measureContainer(&lcCont, &hydrofunc, numParticles, numIterations);
+    } else {
+      std::cout << "wrong functor given" << std::endl;
+      exit(2);
+    }
   } else if (whichContainer == 1) {
-    measureContainer(&dirCont, numParticles, numIterations);
+    if (whichFunctor == 0) {
+      measureContainer(&dirCont, &densfunc, numParticles, numIterations);
+    } else if (whichFunctor == 1) {
+      measureContainer(&dirCont, &hydrofunc, numParticles, numIterations);
+    } else {
+      std::cout << "wrong functor given" << std::endl;
+      exit(2);
+    }
   }
 }
 
-template <class Container>
-void measureContainer(Container *cont, int numParticles, int numIterations) {
-  autopas::sph::SPHCalcDensityFunctor func;
+template <class Container, class Functor>
+void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations) {
   // autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
   //    flopFunctor(cont->getCutoff());
 
@@ -105,7 +126,7 @@ void measureContainer(Container *cont, int numParticles, int numIterations) {
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS(&func);
+    cont->iteratePairwiseAoS(func);
   }
   double elapsedTime = t.stop();
 
@@ -115,7 +136,7 @@ void measureContainer(Container *cont, int numParticles, int numIterations) {
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseSoA(&func);
+    cont->iteratePairwiseSoA(func);
   }
   elapsedTime = t.stop();
 
