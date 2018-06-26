@@ -335,8 +335,8 @@ class SPHCalcHydroForceFunctor
   }
 
   void SoAFunctor(SoA<SoAArraysType> &soa,
-                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                  size_t iFrom, size_t iTo, bool newton3) override {
+                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
+                  size_t iTo, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
@@ -364,7 +364,7 @@ class SPHCalcHydroForceFunctor
       double localAccY = 0.;
       double localAccZ = 0.;
 
-      auto& currentList = neighborList[i];
+      auto &currentList = neighborList[i];
       size_t listSize = currentList.size();
 
       // icpc vectorizes this.
@@ -398,7 +398,8 @@ class SPHCalcHydroForceFunctor
         localvsigmax = std::max(localvsigmax, v_sig);
         if (newton3) {
           // vsigmaxptr[currentList[j]] = std::max(vsigmaxptr[currentList[j]], v_sig);  // Newton 3
-          vsigmaxptr[currentList[j]] = vsigmaxptr[currentList[j]] > v_sig ? vsigmaxptr[currentList[j]] : v_sig;  // Newton 3
+          vsigmaxptr[currentList[j]] =
+              vsigmaxptr[currentList[j]] > v_sig ? vsigmaxptr[currentList[j]] : v_sig;  // Newton 3
           // v_sig_max = std::max(v_sig_max, v_sig);
         }
         const double AV = -0.5 * v_sig * w_ij / (0.5 * (densityptr[i] + densityptr[currentList[j]]));
@@ -412,8 +413,8 @@ class SPHCalcHydroForceFunctor
         // const PS::F64vec gradW_ij = 0.5 * (gradW(dr, ep_i[i].smth) + gradW(dr,
         // ep_j[currentList[j]].smth));
 
-        double scale =
-            pressureptr[i] / (densityptr[i] * densityptr[i]) + pressureptr[currentList[j]] / (densityptr[currentList[j]] * densityptr[currentList[j]]) + AV;
+        double scale = pressureptr[i] / (densityptr[i] * densityptr[i]) +
+                       pressureptr[currentList[j]] / (densityptr[currentList[j]] * densityptr[currentList[j]]) + AV;
         const double massscale = scale * massptr[currentList[j]];
         localAccX -= gradW_ij[0] * massscale;
         localAccY -= gradW_ij[1] * massscale;
@@ -434,7 +435,9 @@ class SPHCalcHydroForceFunctor
         // ep_i[i].dens) + 0.5 * AV) * dv * gradW_ij;
 
         if (newton3) {
-          double scale2j = massptr[i] * (pressureptr[currentList[j]] / (densityptr[currentList[j]] * densityptr[currentList[j]]) + 0.5 * AV);
+          double scale2j =
+              massptr[i] *
+              (pressureptr[currentList[j]] / (densityptr[currentList[j]] * densityptr[currentList[j]]) + 0.5 * AV);
           engDotptr[currentList[j]] += (gradW_ij[0] * dvX + gradW_ij[1] * dvY + gradW_ij[2] * dvZ) * scale2j;
           // Newton 3
         }

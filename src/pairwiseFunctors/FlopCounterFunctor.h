@@ -65,7 +65,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x1ptr[j];
@@ -102,7 +101,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x2ptr[j];
@@ -130,24 +128,23 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
 
-  AUTOPAS_FUNCTOR_SOALOADER(
-      cell, soa, offset,
-      // body start
-      soa.resizeArrays(offset + cell.numParticles());
+  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
+                            // body start
+                            soa.resizeArrays(offset + cell.numParticles());
 
-      if (cell.numParticles() == 0) return;
+                            if (cell.numParticles() == 0) return;
 
-      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+                            double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+                            double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+                            double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-      auto cellIter = cell.begin();
-      // load particles in SoAs
-      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-        xptr[i] = cellIter->getR()[0];
-        yptr[i] = cellIter->getR()[1];
-        zptr[i] = cellIter->getR()[2];
-      })
+                            auto cellIter = cell.begin();
+                            // load particles in SoAs
+                            for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+                              xptr[i] = cellIter->getR()[0];
+                              yptr[i] = cellIter->getR()[1];
+                              zptr[i] = cellIter->getR()[2];
+                            })
 
   /**
    * empty SoAExtractor.

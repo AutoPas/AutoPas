@@ -158,8 +158,8 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   }
 
   void SoAFunctor(SoA<SoAArraysType> &soa,
-                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                  size_t iFrom, size_t iTo, bool newton3) override {
+                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
+                  size_t iTo, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -172,7 +172,7 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       double densacc = 0;
-      auto& currentList = neighborList[i];
+      auto &currentList = neighborList[i];
       size_t listSize = currentList.size();
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
