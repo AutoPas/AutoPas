@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include "cells/RMMParticleCell2T.h"
 #include "iterators/SingleCellIterator.h"
 #include "utils/ExceptionHandler.h"
-#include "cells/RMMParticleCell2T.h"
 
 namespace autopas {
 
@@ -39,6 +39,9 @@ class CellFunctor {
    * calculated
    */
   void processCell(ParticleCell &cell) {
+    if (cell.numParticles() == 0) {
+      return;
+    }
     if (useSoA) {
       if (useNewton3) {
         processCellSoAN3(cell);
@@ -61,6 +64,9 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2) {
+    if (cell1.numParticles() == 0 || cell2.numParticles() == 0) {
+      return;
+    }
     if (useSoA) {
       if (useNewton3) {
         processCellPairSoAN3(cell1, cell2);
