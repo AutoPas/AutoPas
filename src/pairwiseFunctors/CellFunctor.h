@@ -8,6 +8,8 @@
 #pragma once
 
 #include "iterators/SingleCellIterator.h"
+#include "utils/ExceptionHandler.h"
+#include "cells/RMMParticleCell2T.h"
 
 namespace autopas {
 
@@ -74,6 +76,22 @@ class CellFunctor {
     }
   }
 
+#define WITH_STATIC_CELL_ITER(iter, cell, body)                                                                       \
+  auto __wrapper = cell.begin();                                                                                      \
+  auto __ptr = __wrapper.get();                                                                                       \
+  {                                                                                                                   \
+    if (auto __##iter##ptr = dynamic_cast<                                                                            \
+            internal::SingleCellIterator<Particle, typename std::remove_reference<decltype(cell)>::type> *>(__ptr)) { \
+      auto iter = *__##iter##ptr;                                                                                     \
+      body                                                                                                            \
+    } else if (auto __##iter##ptr = dynamic_cast<RMMParticleCellIterator<Particle> *>(__ptr)) {                       \
+      auto iter = *__##iter##ptr;                                                                                     \
+      body                                                                                                            \
+    } else {                                                                                                          \
+      autopas::utils::ExceptionHandler::exception("unknown iteratortype in WITH_STATIC_CELL_ITER");                   \
+    }                                                                                                                 \
+  }
+
  private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of
@@ -81,17 +99,19 @@ class CellFunctor {
    * @param cell
    */
   void processCellAoSN3(ParticleCell &cell) {
-    for (auto outer = cell.begin(); outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+    WITH_STATIC_CELL_ITER(outer, cell, {
+      for (; outer.isValid(); ++outer) {
+        Particle &p1 = *outer;
 
-      auto inner = outer;
-      ++inner;
-      for (; inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
+        auto inner = outer;
+        ++inner;
+        for (; inner.isValid(); ++inner) {
+          Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, true);
+          _functor->AoSFunctor(p1, p2, true);
+        }
       }
-    }
+    })
   }
 
   /**
