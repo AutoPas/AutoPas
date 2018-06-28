@@ -82,28 +82,6 @@ class CellFunctor {
     }
   }
 
-  /**
-   * gets a static cell iterator from an iteratorwrapper of a cell.
-   * @param iter the iterator to be defined
-   * @param cell the cell for which the iterator should be get
-   * @param body the body to be executed with the static iterator
-   */
-#define WITH_STATIC_CELL_ITER(iter, cell, body)                                                                       \
-  auto __wrapper = cell.begin();                                                                                      \
-  auto __ptr = __wrapper.get();                                                                                       \
-  {                                                                                                                   \
-    if (auto __##iter##ptr = dynamic_cast<                                                                            \
-            internal::SingleCellIterator<Particle, typename std::remove_reference<decltype(cell)>::type> *>(__ptr)) { \
-      auto iter = *__##iter##ptr;                                                                                     \
-      body                                                                                                            \
-    } else if (auto __##iter##ptr = dynamic_cast<RMMParticleCellIterator<Particle> *>(__ptr)) {                       \
-      auto iter = *__##iter##ptr;                                                                                     \
-      body                                                                                                            \
-    } else {                                                                                                          \
-      autopas::utils::ExceptionHandler::exception("unknown iteratortype in WITH_STATIC_CELL_ITER");                   \
-    }                                                                                                                 \
-  }
-
  private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of
