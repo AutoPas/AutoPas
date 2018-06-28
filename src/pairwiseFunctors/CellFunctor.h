@@ -82,6 +82,12 @@ class CellFunctor {
     }
   }
 
+  /**
+   * gets a static cell iterator from an iteratorwrapper of a cell.
+   * @param iter the iterator to be defined
+   * @param cell the cell for which the iterator should be get
+   * @param body the body to be executed with the static iterator
+   */
 #define WITH_STATIC_CELL_ITER(iter, cell, body)                                                                       \
   auto __wrapper = cell.begin();                                                                                      \
   auto __ptr = __wrapper.get();                                                                                       \
@@ -126,26 +132,28 @@ class CellFunctor {
    * @param cell
    */
   void processCellAoSNoN3(ParticleCell &cell) {
-    for (auto outer = cell.begin(); outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+    WITH_STATIC_CELL_ITER(outer, cell, {
+      auto innerStart = outer;
+      for (; outer.isValid(); ++outer) {
+        Particle &p1 = *outer;
 
-      // loop over everything until outer
-      auto inner = cell.begin();
-      for (; inner != outer; ++inner) {
-        Particle &p2 = *inner;
+        // loop over everything until outer
+        auto inner = innerStart;
+        for (; inner != outer; ++inner) {
+          Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, false);
+          _functor->AoSFunctor(p1, p2, false);
+        }
+        // skip over the outer one
+        ++inner;
+
+        // loop over everything after outer
+        for (; inner.isValid(); ++inner) {
+          Particle &p2 = *inner;
+          _functor->AoSFunctor(p1, p2, false);
+        }
       }
-      // skip over the outer one
-      ++inner;
-
-      // loop over everything after outer
-      for (; inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
-
-        _functor->AoSFunctor(p1, p2, false);
-      }
-    }
+    })
   }
 
   /**
@@ -155,15 +163,20 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2) {
-    for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+    WITH_STATIC_CELL_ITER(outer, cell1, {
+      WITH_STATIC_CELL_ITER(innerStart, cell2, {
+        // body
+        for (; outer.isValid(); ++outer) {
+          Particle &p1 = *outer;
 
-      for (auto inner = cell2.begin(); inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
+          for (auto inner = innerStart; inner.isValid(); ++inner) {
+            Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, true);
-      }
-    }
+            _functor->AoSFunctor(p1, p2, true);
+          }
+        }
+      });
+    });
   }
 
   /**
@@ -173,16 +186,21 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2) {
-    for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+    WITH_STATIC_CELL_ITER(outer, cell1, {
+      WITH_STATIC_CELL_ITER(innerStart, cell2, {
+        // body
+        for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
+          Particle &p1 = *outer;
 
-      for (auto inner = cell2.begin(); inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
+          for (auto inner = innerStart; inner.isValid(); ++inner) {
+            Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, false);
-        _functor->AoSFunctor(p2, p1, false);
-      }
-    }
+            _functor->AoSFunctor(p1, p2, false);
+            _functor->AoSFunctor(p2, p1, false);
+          }
+        }
+      });
+    });
   }
 
   void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2) {
