@@ -71,7 +71,6 @@ class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Parti
 }  // namespace internal
 }  // namespace autopas
 
-
 /**
  * gets a static cell iterator from an iteratorwrapper of a cell.
  * @param iter the iterator to be defined
