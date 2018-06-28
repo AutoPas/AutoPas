@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin, rebuildFrequency);
+  autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin*cutoff, rebuildFrequency);
 
   addParticles(lcCont, numParticles);
 
