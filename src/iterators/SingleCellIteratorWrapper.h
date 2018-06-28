@@ -75,6 +75,10 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
 
   inline size_t getIndex() const override final { return _particleIterator->getIndex(); }
 
+  /**
+   * Returns the stored single cell iterator.
+   * @return
+   */
   inline SingleCellIteratorInterface<Particle>* get() const { return _particleIterator.get(); }
 
  private:
