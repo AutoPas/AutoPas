@@ -10,12 +10,12 @@ do
 	# iterate over molecules with the correct repetition
 	echo -e "Number of Molecules\tNumber of Force updates\tElapsed time\tMFUPS\tFLOPs\thit rate\tGFLOP/sec" > output-${iCont}.txt
 	for i in {0..8}; do ./md-main ${iCont} ${Mols[$i]} ${Reps[$i]}; done >> output-${iCont}.txt
-done
+	echo Container ${iCont} soa:
 
-echo "Container 0 soa:"
-iCont=0
-    echo -e "Number of Molecules\tNumber of Force updates\tElapsed time\tMFUPS\tFLOPs\thit rate\tGFLOP/sec" > output-${iCont}-soa.txt
+	echo -e "Number of Molecules\tNumber of Force updates\tElapsed time\tMFUPS\tFLOPs\thit rate\tGFLOP/sec" > output-${iCont}-soa.txt
     for i in {0..8}; do ./md-main ${iCont} ${Mols[$i]} ${Reps[$i]} soa; done >> output-${iCont}-soa.txt
+
+done
 
 
 # verlet
@@ -31,7 +31,7 @@ iCont=2;
     echo -e "Number of Molecules\tNumber of Force updates\tElapsed time\tMFUPS\tFLOPs\thit rate\tGFLOP/sec" > output-${iCont}-verlet-20-0.3.txt
 	for i in {0..8}; do ./md-main ${iCont} ${Mols[$i]} ${Reps[$i]} 20 0.3; done >> output-${iCont}-verlet-20-0.3.txt
 
-	echo "Container ${iCont}, soa:"
+	echo "Container ${iCont} soa:"
     echo -e "Number of Molecules\tNumber of Force updates\tElapsed time\tMFUPS\tFLOPs\thit rate\tGFLOP/sec" > output-${iCont}-verlet-1-0.0-soa.txt
 	for i in {0..8}; do ./md-main ${iCont} ${Mols[$i]} ${Reps[$i]} 1 0. soa; done >> output-${iCont}-verlet-1-0.0-soa.txt
     echo -e "Number of Molecules\tNumber of Force updates\tElapsed time\tMFUPS\tFLOPs\thit rate\tGFLOP/sec" > output-${iCont}-verlet-5-0.1-soa.txt
