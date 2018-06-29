@@ -5,6 +5,7 @@
 #include "SPHTest.h"
 #include "autopasIncludes.h"
 #include "sph/autopassph.h"
+#include "testingHelpers/RandomGenerator.h"
 
 TEST_F(SPHTest, testW) {
   double value = autopas::sph::SPHKernels::W({1., 1., 1.}, 1.);
@@ -40,6 +41,449 @@ TEST_F(SPHTest, testSPHCalcDensityFunctor) {
 
   EXPECT_NEAR(sphParticle1.getDensity(), 0.559026, 1e-6);
   EXPECT_NEAR(sphParticle2.getDensity(), 0.172401, 1e-6);
+}
+
+TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+
+  // add particles to cell
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell;
+  cell.addParticle(sphParticle1);
+  cell.addParticle(sphParticle2);
+
+  // declare + instantiate soa
+  auto &soa = cell._particleSoABuffer;
+
+  // declare functor
+  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+
+  // load soa
+  densityFunctor.SoALoader(cell, soa, 0);
+
+  auto massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+  auto densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
+  auto smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+  auto xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+  auto yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+  auto zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+
+  // check loading
+  {
+    auto iterator = cell.begin();
+    for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(massptr[i], iterator->getMass());
+      EXPECT_EQ(densityptr[i], 0.);
+      EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
+      EXPECT_EQ(xptr[i], iterator->getR()[0]);
+      EXPECT_EQ(yptr[i], iterator->getR()[1]);
+      EXPECT_EQ(zptr[i], iterator->getR()[2]);
+    }
+  }
+
+  // simulate functor call by changing density
+  densityptr[0] = 3.;
+  densityptr[1] = 2.;
+
+  // extract soa
+  densityFunctor.SoAExtractor(cell, soa, 0);
+
+  // check extraction
+  {
+    std::array<double, 2> expectedDensity{3., 2.};
+    auto iterator = cell.begin();
+    for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(massptr[i], iterator->getMass());
+      EXPECT_EQ(densityptr[i], iterator->getDensity());
+      EXPECT_EQ(expectedDensity[i], iterator->getDensity());
+      EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
+      EXPECT_EQ(xptr[i], iterator->getR()[0]);
+      EXPECT_EQ(yptr[i], iterator->getR()[1]);
+      EXPECT_EQ(zptr[i], iterator->getR()[2]);
+    }
+  }
+}
+
+TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoALoadExtract) {
+  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+
+  // simulate density functor call
+  sphParticle1.setDensity(3.);
+  sphParticle2.setDensity(2.);
+
+  // add particles to cell
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell;
+  cell.addParticle(sphParticle1);
+  cell.addParticle(sphParticle2);
+
+  // declare + instantiate soa
+  auto &soa = cell._particleSoABuffer;
+
+  // declare functor
+  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+
+  // load soa
+  hydroForceFunctor.SoALoader(cell, soa, 0);
+
+  auto massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+  auto densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
+  auto smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+  auto soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
+  auto pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
+  auto vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
+  auto engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+  auto xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+  auto yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+  auto zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+  auto velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
+  auto velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
+  auto velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
+  auto accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
+  auto accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
+  auto accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+
+  // check loading
+  {
+    auto iterator = cell.begin();
+    for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(massptr[i], iterator->getMass());
+      EXPECT_EQ(densityptr[i], iterator->getDensity());
+      EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
+      EXPECT_EQ(soundSpeedptr[i], iterator->getSoundSpeed());
+      EXPECT_EQ(pressureptr[i], iterator->getPressure());
+      EXPECT_EQ(vsigmaxptr[i], iterator->getVSigMax());
+      EXPECT_EQ(engDotptr[i], iterator->getEngDot());
+      EXPECT_EQ(xptr[i], iterator->getR()[0]);
+      EXPECT_EQ(yptr[i], iterator->getR()[1]);
+      EXPECT_EQ(zptr[i], iterator->getR()[2]);
+      EXPECT_EQ(velXptr[i], iterator->getV()[0]);
+      EXPECT_EQ(velYptr[i], iterator->getV()[1]);
+      EXPECT_EQ(velZptr[i], iterator->getV()[2]);
+      EXPECT_EQ(accXptr[i], iterator->getAcceleration()[0]);
+      EXPECT_EQ(accYptr[i], iterator->getAcceleration()[1]);
+      EXPECT_EQ(accZptr[i], iterator->getAcceleration()[2]);
+    }
+  }
+
+  // simulate functor call by changing density
+  engDotptr[0] = -3.;
+  engDotptr[1] = -2.;
+  vsigmaxptr[0] = 1.;
+  vsigmaxptr[1] = 1.5;
+  accXptr[0] = 0.1;
+  accXptr[1] = -0.1;
+  accYptr[0] = 0.2;
+  accYptr[1] = -0.2;
+  accZptr[0] = 0.3;
+  accZptr[1] = -0.3;
+
+  // extract soa
+  hydroForceFunctor.SoAExtractor(cell, soa, 0);
+
+  // check extraction
+  {
+    std::array<double, 2> expectedEngdot{-3., -2.};
+    std::array<double, 2> expectedvsigmax{1., 1.5};
+    std::array<double, 2> expectedAccX{.1, -.1};
+    std::array<double, 2> expectedAccY{.2, -.2};
+    std::array<double, 2> expectedAccZ{.3, -.3};
+    auto iterator = cell.begin();
+    for (size_t i = 0; i < 2; i++, ++iterator) {
+      EXPECT_EQ(massptr[i], iterator->getMass());
+      EXPECT_EQ(densityptr[i], iterator->getDensity());
+      EXPECT_EQ(smthlngthptr[i], iterator->getSmoothingLength());
+      EXPECT_EQ(soundSpeedptr[i], iterator->getSoundSpeed());
+      EXPECT_EQ(pressureptr[i], iterator->getPressure());
+      EXPECT_EQ(expectedvsigmax[i], iterator->getVSigMax());
+      EXPECT_EQ(expectedEngdot[i], iterator->getEngDot());
+      EXPECT_EQ(xptr[i], iterator->getR()[0]);
+      EXPECT_EQ(yptr[i], iterator->getR()[1]);
+      EXPECT_EQ(zptr[i], iterator->getR()[2]);
+      EXPECT_EQ(velXptr[i], iterator->getV()[0]);
+      EXPECT_EQ(velYptr[i], iterator->getV()[1]);
+      EXPECT_EQ(velZptr[i], iterator->getV()[2]);
+      EXPECT_EQ(expectedAccX[i], iterator->getAcceleration()[0]);
+      EXPECT_EQ(expectedAccY[i], iterator->getAcceleration()[1]);
+      EXPECT_EQ(expectedAccZ[i], iterator->getAcceleration()[2]);
+    }
+  }
+}
+
+TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos;
+  {
+    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    RandomGenerator::fillWithParticles(cell_using_soa, defaultSphParticle, {0., 0., 0.}, {1., 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_aos, defaultSphParticle, {0., 0., 0.}, {1., 1., 1.}, 30);
+  }
+
+  // declare functor
+  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+
+  // ------------- aos ------------------ (using newton3)
+  for (auto outer = cell_using_aos.begin(); outer.isValid(); ++outer) {
+    auto &p1 = *outer;
+
+    auto inner = outer;
+    ++inner;
+    for (; inner.isValid(); ++inner) {
+      auto &p2 = *inner;
+
+      densityFunctor.AoSFunctor(p1, p2, true);
+    }
+  }
+
+  // ------------- soa ------------------ (using newton3)
+
+  // load soa
+  densityFunctor.SoALoader(cell_using_soa, cell_using_soa._particleSoABuffer, 0);
+
+  // functors (single cell)
+  densityFunctor.SoAFunctor(cell_using_soa._particleSoABuffer, true);
+
+  // extract soa
+  densityFunctor.SoAExtractor(cell_using_soa, cell_using_soa._particleSoABuffer);
+
+  // check same densities
+  {
+    auto iteratoraos = cell_using_aos.begin();
+    auto iteratorsoa = cell_using_soa.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
+    }
+  }
+}
+
+TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos;
+  {
+    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    RandomGenerator::fillWithParticles(cell_using_soa, defaultSphParticle, {0., 0., 0.}, {1., 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_aos, defaultSphParticle, {0., 0., 0.}, {1., 1., 1.}, 30);
+  }
+
+  // simulate density functor call by setting density to sth. between 0 and 1
+  {
+    auto iteratoraos = cell_using_aos.begin();
+    auto iteratorsoa = cell_using_soa.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      double density = static_cast<double>(rand()) / RAND_MAX;
+      double pressure = static_cast<double>(rand()) / RAND_MAX;
+      iteratoraos->setDensity(density);
+      iteratoraos->setPressure(pressure);
+      iteratorsoa->setDensity(density);
+      iteratorsoa->setPressure(pressure);
+    }
+  }
+
+  // declare functor
+  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+
+  // ------------- aos ------------------ (using newton3)
+  for (auto outer = cell_using_aos.begin(); outer.isValid(); ++outer) {
+    auto &p1 = *outer;
+
+    auto inner = outer;
+    ++inner;
+    for (; inner.isValid(); ++inner) {
+      auto &p2 = *inner;
+
+      hydroForceFunctor.AoSFunctor(p1, p2, true);
+    }
+  }
+
+  // ------------- soa ------------------ (using newton3)
+
+  // load soa
+  hydroForceFunctor.SoALoader(cell_using_soa, cell_using_soa._particleSoABuffer, 0);
+
+  // functors (single cell)
+  hydroForceFunctor.SoAFunctor(cell_using_soa._particleSoABuffer, true);
+
+  // extract soa
+  hydroForceFunctor.SoAExtractor(cell_using_soa, cell_using_soa._particleSoABuffer);
+
+  // check same values
+  {
+    auto iteratoraos = cell_using_aos.begin();
+    auto iteratorsoa = cell_using_soa.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-15 * fabs(iteratoraos->getVSigMax()));
+      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-15 * fabs(iteratoraos->getEngDot()));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
+    }
+  }
+}
+
+TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa1;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa2;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos1;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos2;
+  {
+    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    RandomGenerator::fillWithParticles(cell_using_soa1, defaultSphParticle, {0., 0., 0.}, {.5, 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_aos1, defaultSphParticle, {0., 0., 0.}, {.5, 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_soa2, defaultSphParticle, {0.5, 0., 0.}, {1., 1., 1.}, 20);
+    RandomGenerator::fillWithParticles(cell_using_aos2, defaultSphParticle, {0.5, 0., 0.}, {1., 1., 1.}, 20);
+  }
+
+  // declare functor
+  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+
+  // ------------- aos ------------------ (using newton3)
+  for (auto outer = cell_using_aos1.begin(); outer.isValid(); ++outer) {
+    auto &p1 = *outer;
+
+    for (auto inner = cell_using_aos2.begin(); inner.isValid(); ++inner) {
+      auto &p2 = *inner;
+
+      densityFunctor.AoSFunctor(p1, p2, true);
+    }
+  }
+
+  // ------------- soa ------------------ (using newton3)
+
+  // load soa
+  densityFunctor.SoALoader(cell_using_soa1, cell_using_soa1._particleSoABuffer, 0);
+  densityFunctor.SoALoader(cell_using_soa2, cell_using_soa2._particleSoABuffer, 0);
+
+  // functors (single cell)
+  densityFunctor.SoAFunctor(cell_using_soa1._particleSoABuffer, cell_using_soa2._particleSoABuffer, true);
+
+  // extract soa
+  densityFunctor.SoAExtractor(cell_using_soa1, cell_using_soa1._particleSoABuffer);
+  densityFunctor.SoAExtractor(cell_using_soa2, cell_using_soa2._particleSoABuffer);
+
+  // check same densities
+  {
+    auto iteratoraos = cell_using_aos1.begin();
+    auto iteratorsoa = cell_using_soa1.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
+    }
+  }
+  {
+    auto iteratoraos = cell_using_aos2.begin();
+    auto iteratorsoa = cell_using_soa2.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
+    }
+  }
+}
+
+TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa1;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_soa2;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos1;
+  autopas::FullParticleCell<autopas::sph::SPHParticle> cell_using_aos2;
+  {
+    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+    RandomGenerator::fillWithParticles(cell_using_soa1, defaultSphParticle, {0., 0., 0.}, {.5, 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_aos1, defaultSphParticle, {0., 0., 0.}, {.5, 1., 1.}, 30);
+    RandomGenerator::fillWithParticles(cell_using_soa2, defaultSphParticle, {0.5, 0., 0.}, {1., 1., 1.}, 20);
+    RandomGenerator::fillWithParticles(cell_using_aos2, defaultSphParticle, {0.5, 0., 0.}, {1., 1., 1.}, 20);
+  }
+
+  // simulate density functor call by setting density to sth. between 0 and 1
+  {  // cell 1
+    auto iteratoraos = cell_using_aos1.begin();
+    auto iteratorsoa = cell_using_soa1.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      double density = static_cast<double>(rand()) / RAND_MAX;
+      double pressure = static_cast<double>(rand()) / RAND_MAX;
+      iteratoraos->setDensity(density);
+      iteratoraos->setPressure(pressure);
+      iteratorsoa->setDensity(density);
+      iteratorsoa->setPressure(pressure);
+    }
+  }
+  {  // cell 2
+    auto iteratoraos = cell_using_aos2.begin();
+    auto iteratorsoa = cell_using_soa2.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      double density = static_cast<double>(rand()) / RAND_MAX;
+      double pressure = static_cast<double>(rand()) / RAND_MAX;
+      iteratoraos->setDensity(density);
+      iteratoraos->setPressure(pressure);
+      iteratorsoa->setDensity(density);
+      iteratorsoa->setPressure(pressure);
+    }
+  }
+
+  // declare functor
+  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+
+  // ------------- aos ------------------ (using newton3)
+  for (auto outer = cell_using_aos1.begin(); outer.isValid(); ++outer) {
+    auto &p1 = *outer;
+
+    for (auto inner = cell_using_aos2.begin(); inner.isValid(); ++inner) {
+      auto &p2 = *inner;
+
+      hydroForceFunctor.AoSFunctor(p1, p2, true);
+    }
+  }
+
+  // ------------- soa ------------------ (using newton3)
+
+  // load soa
+  hydroForceFunctor.SoALoader(cell_using_soa1, cell_using_soa1._particleSoABuffer, 0);
+  hydroForceFunctor.SoALoader(cell_using_soa2, cell_using_soa2._particleSoABuffer, 0);
+
+  // functors (single cell)
+  hydroForceFunctor.SoAFunctor(cell_using_soa1._particleSoABuffer, cell_using_soa2._particleSoABuffer, true);
+
+  // extract soa
+  hydroForceFunctor.SoAExtractor(cell_using_soa1, cell_using_soa1._particleSoABuffer);
+  hydroForceFunctor.SoAExtractor(cell_using_soa2, cell_using_soa2._particleSoABuffer);
+
+  // check same results properties
+  {
+    auto iteratoraos = cell_using_aos1.begin();
+    auto iteratorsoa = cell_using_soa1.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-14 * fabs(iteratoraos->getVSigMax()));
+      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-14 * fabs(iteratoraos->getEngDot()));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
+    }
+  }
+  {
+    auto iteratoraos = cell_using_aos2.begin();
+    auto iteratorsoa = cell_using_soa2.begin();
+    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
+      ASSERT_TRUE(iteratorsoa.isValid());
+      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-14 * fabs(iteratoraos->getVSigMax()));
+      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-14 * fabs(iteratoraos->getEngDot()));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
+      EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
+                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
+    }
+  }
 }
 
 TEST_F(SPHTest, testSPHCalcPressure) {
@@ -168,3 +612,103 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   sphParticle4.calcDt();
   EXPECT_NEAR(sphParticle4.getDt(), sphParticle2.getDt(), 1e-10);
 }
+
+#define TESTVERLETVSLC(mode, functor, init, check)                                                                     \
+  TEST_F(SPHTest, testVerletVsLC##mode##functor) {                                                                     \
+    unsigned int numMolecules = 50;                                                                                    \
+    double rel_err_tolerance = 1e-10;                                                                                  \
+    double cutoff = 1.;                                                                                                \
+    using autopas::sph::SPHParticle;                                                                                   \
+                                                                                                                       \
+    autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 3);                        \
+    autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.}, \
+                                                                                           cutoff);                    \
+                                                                                                                       \
+    autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,                                  \
+                                                 cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);    \
+    RandomGenerator::fillWithParticles(_verletLists, defaultSPHParticle, numMolecules);                                \
+                                                                                                                       \
+    /*init particles in verlet list container*/                                                                        \
+    init;                                                                                                              \
+                                                                                                                       \
+    /* now fill second container with the molecules from the first one, because otherwise we generate new particles */ \
+    for (auto it = _verletLists.begin(); it.isValid(); ++it) {                                                         \
+      _linkedCells.addParticle(*it);                                                                                   \
+    }                                                                                                                  \
+                                                                                                                       \
+    autopas::sph::functor fnctr;                                                                                       \
+                                                                                                                       \
+    _verletLists.iteratePairwise##mode(&fnctr);                                                                        \
+    _linkedCells.iteratePairwise##mode(&fnctr);                                                                        \
+                                                                                                                       \
+    check;                                                                                                             \
+  }
+
+#define DENSITYCHECK                                                              \
+  {                                                                               \
+    std::vector<double> densityVerlet(numMolecules), densityLinked(numMolecules); \
+    /* get and sort by id, the */                                                 \
+    for (auto it = _verletLists.begin(); it.isValid(); ++it) {                    \
+      SPHParticle &m = *it;                                                       \
+      densityVerlet.at(m.getID()) = m.getDensity();                               \
+    }                                                                             \
+                                                                                  \
+    for (auto it = _linkedCells.begin(); it.isValid(); ++it) {                    \
+      SPHParticle &m = *it;                                                       \
+      densityLinked.at(m.getID()) = m.getDensity();                               \
+    }                                                                             \
+                                                                                  \
+    for (unsigned long i = 0; i < numMolecules; ++i) {                            \
+      double d1 = densityVerlet[i];                                               \
+      double d2 = densityLinked[i];                                               \
+      EXPECT_NEAR(d1, d2, std::fabs(d1 *rel_err_tolerance));                      \
+    }                                                                             \
+  }
+
+#define HYDROINIT                                               \
+  {                                                             \
+    auto itVerlet = _verletLists.begin();                       \
+    for (; itVerlet.isValid(); ++itVerlet) {                    \
+      double density = static_cast<double>(rand()) / RAND_MAX;  \
+      double pressure = static_cast<double>(rand()) / RAND_MAX; \
+      itVerlet->setDensity(density);                            \
+      itVerlet->setPressure(pressure);                          \
+    }                                                           \
+  }
+
+#define HYDROCHECK                                                                                \
+  {                                                                                               \
+    std::vector<double> vsigmaxVerlet(numMolecules), vsigmaxLinked(numMolecules);                 \
+    std::vector<double> engdotVerlet(numMolecules), engdotLinked(numMolecules);                   \
+    std::vector<std::array<double, 3>> accVerlet(numMolecules), accLinked(numMolecules);          \
+    /* get and sort by id, the */                                                                 \
+    for (auto it = _verletLists.begin(); it.isValid(); ++it) {                                    \
+      SPHParticle &m = *it;                                                                       \
+      vsigmaxVerlet.at(m.getID()) = m.getVSigMax();                                               \
+      engdotVerlet.at(m.getID()) = m.getEngDot();                                                 \
+      accVerlet.at(m.getID()) = m.getAcceleration();                                              \
+    }                                                                                             \
+                                                                                                  \
+    for (auto it = _linkedCells.begin(); it.isValid(); ++it) {                                    \
+      SPHParticle &m = *it;                                                                       \
+      vsigmaxLinked.at(m.getID()) = m.getVSigMax();                                               \
+      engdotLinked.at(m.getID()) = m.getEngDot();                                                 \
+      accLinked.at(m.getID()) = m.getAcceleration();                                              \
+    }                                                                                             \
+                                                                                                  \
+    for (unsigned long i = 0; i < numMolecules; ++i) {                                            \
+      EXPECT_NEAR(vsigmaxVerlet[i], vsigmaxLinked[i], rel_err_tolerance *fabs(vsigmaxLinked[i])); \
+      EXPECT_NEAR(engdotVerlet[i], engdotLinked[i], rel_err_tolerance *fabs(engdotLinked[i]));    \
+      EXPECT_NEAR(accVerlet[i][0], accLinked[i][0], rel_err_tolerance *fabs(accLinked[i][0]));    \
+      EXPECT_NEAR(accVerlet[i][1], accLinked[i][1], rel_err_tolerance *fabs(accLinked[i][1]));    \
+      EXPECT_NEAR(accVerlet[i][2], accLinked[i][2], rel_err_tolerance *fabs(accLinked[i][2]));    \
+    }                                                                                             \
+  }
+
+TESTVERLETVSLC(AoS, SPHCalcDensityFunctor, , DENSITYCHECK);
+
+TESTVERLETVSLC(SoA, SPHCalcDensityFunctor, , DENSITYCHECK);
+
+TESTVERLETVSLC(AoS, SPHCalcHydroForceFunctor, HYDROINIT, HYDROCHECK);
+
+TESTVERLETVSLC(SoA, SPHCalcHydroForceFunctor, HYDROINIT, HYDROCHECK);

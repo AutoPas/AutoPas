@@ -172,6 +172,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
       fz1ptr[i] += fzacc;
     }
   }
+
   // clang-format off
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
@@ -179,9 +180,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
    */
   // clang-format on
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa,
-                          const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                          size_t iFrom, size_t iTo, bool newton3) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa,
+                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
+                  size_t iTo, bool newton3) override {
     auto numParts = soa.getNumParticles();
     AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
 
