@@ -89,7 +89,7 @@ class CellFunctor {
    * @param cell
    */
   void processCellAoSN3(ParticleCell &cell) {
-    WITH_STATIC_CELL_ITER(outer, cell, {
+    AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell, {
       for (; outer.isValid(); ++outer) {
         Particle &p1 = *outer;
 
@@ -110,7 +110,7 @@ class CellFunctor {
    * @param cell
    */
   void processCellAoSNoN3(ParticleCell &cell) {
-    WITH_STATIC_CELL_ITER(outer, cell, {
+    AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell, {
       auto innerStart = outer;
       for (; outer.isValid(); ++outer) {
         Particle &p1 = *outer;
@@ -141,8 +141,8 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2) {
-    WITH_STATIC_CELL_ITER(outer, cell1, {
-      WITH_STATIC_CELL_ITER(innerStart, cell2, {
+    AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell1, {
+      AUTOPAS_WITH_STATIC_CELL_ITER(innerStart, cell2, {
         // body
         for (; outer.isValid(); ++outer) {
           Particle &p1 = *outer;
@@ -164,8 +164,8 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2) {
-    WITH_STATIC_CELL_ITER(outer, cell1, {
-      WITH_STATIC_CELL_ITER(innerStart, cell2, {
+    AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell1, {
+      AUTOPAS_WITH_STATIC_CELL_ITER(innerStart, cell2, {
         // body
         for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
           Particle &p1 = *outer;

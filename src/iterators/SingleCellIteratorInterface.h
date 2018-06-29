@@ -77,7 +77,7 @@ class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Parti
  * @param cell the cell for which the iterator should be get
  * @param body the body to be executed with the static iterator
  */
-#define WITH_STATIC_CELL_ITER(iter, cell, body)                                                                       \
+#define AUTOPAS_WITH_STATIC_CELL_ITER(iter, cell, body)                                                               \
   auto __wrapper = cell.begin();                                                                                      \
   auto __ptr = __wrapper.get();                                                                                       \
   {                                                                                                                   \
