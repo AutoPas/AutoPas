@@ -302,7 +302,7 @@ pipeline{
                             sh 'grep -L "#pragma once" -r . | grep "\\.h"'
                         }
 
-                        // check if all header files are documented
+                        // check if all files are documented with @file or \file doxygen comments
                         try{
                             // if .cpp or .h files do not contain a file comment, return 2
                             sh "grep '\\\\file\\|\\@file' -Lr . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
