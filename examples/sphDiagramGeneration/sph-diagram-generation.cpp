@@ -72,28 +72,52 @@ int main(int argc, char *argv[]) {
 
   int numParticles = 16;
   int numIterations = 100000;
-  int whichContainer = 0;
-  int whichFunctor = 0;
+  int containerTypeInt = 0;
+  enum ContainerType { linkedCells, directSum, verletLists } containerType = linkedCells;
+  int functorTypeInt = 0;
+  enum FunctorType { densityFunctor, hydroForceFunctor } functorType = densityFunctor;
   double skin = 0.;
   int rebuildFrequency = 10;
   if (argc == 7) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
-    whichContainer = atoi(argv[3]);
-    whichFunctor = atoi(argv[4]);
+    containerTypeInt = atoi(argv[3]);
+    functorTypeInt = atoi(argv[4]);
     skin = atof(argv[5]);
     rebuildFrequency = atof(argv[6]);
   } else if (argc == 5) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
-    whichContainer = atoi(argv[3]);
-    whichFunctor = atoi(argv[4]);
+    containerTypeInt = atoi(argv[3]);
+    functorTypeInt = atoi(argv[4]);
   } else if (argc == 4) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
-    whichContainer = atoi(argv[3]);
+    containerTypeInt = atoi(argv[3]);
   } else {
+    std::cerr << "ERROR: wrong number of arguments given. " << std::endl
+              << "sph-diagram-generation requires the following arguments:" << std::endl
+              << "numParticles numIterations containerType [functorType [skin rebuildFrequency]]:" << std::endl
+              << std::endl
+              << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl
+              << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
     exit(1);
+  }
+
+  if (containerTypeInt <= verletLists) {
+    containerType = static_cast<ContainerType>(containerTypeInt);
+  } else {
+    std::cerr << "Error: wrong containerType " << containerTypeInt << std::endl
+              << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl;
+    exit(2);
+  }
+
+  if (functorTypeInt <= hydroForceFunctor) {
+    functorType = static_cast<FunctorType>(functorTypeInt);
+  } else {
+    std::cerr << "Error: wrong functorType " << functorTypeInt << std::endl
+              << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
+    exit(2);
   }
 
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
@@ -105,28 +129,28 @@ int main(int argc, char *argv[]) {
     verletCont.addParticle(*it);
   }
 
-  if (whichContainer == 0) {
-    if (whichFunctor == 0) {
+  if (containerType == linkedCells) {
+    if (functorType == densityFunctor) {
       measureContainer(&lcCont, &densfunc, numParticles, numIterations);
-    } else if (whichFunctor == 1) {
+    } else if (functorType == hydroForceFunctor) {
       measureContainer(&lcCont, &hydrofunc, numParticles, numIterations);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
     }
-  } else if (whichContainer == 1) {
-    if (whichFunctor == 0) {
+  } else if (containerType == directSum) {
+    if (functorType == densityFunctor) {
       measureContainer(&dirCont, &densfunc, numParticles, numIterations);
-    } else if (whichFunctor == 1) {
+    } else if (functorType == hydroForceFunctor) {
       measureContainer(&dirCont, &hydrofunc, numParticles, numIterations);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
     }
-  } else if (whichContainer == 2) {
-    if (whichFunctor == 0) {
+  } else if (containerType == verletLists) {
+    if (functorType == densityFunctor) {
       measureContainer(&verletCont, &densfunc, numParticles, numIterations);
-    } else if (whichFunctor == 1) {
+    } else if (functorType == hydroForceFunctor) {
       measureContainer(&verletCont, &hydrofunc, numParticles, numIterations);
     } else {
       std::cout << "wrong functor given" << std::endl;
