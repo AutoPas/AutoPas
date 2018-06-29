@@ -12,6 +12,7 @@
 #include <containers/ParticleContainer.h>
 #include <array>
 #include <vector>
+#include <containers/VerletLists.h>
 namespace autopas {
 
 /**
@@ -98,7 +99,8 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
         break;
       }
       case verletLists: {
-        containers.push_back(std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff));
+        // FIXME skin should be configurable (or determined by a tuner :)
+        containers.push_back(std::make_unique<VerletLists<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, 0));
         break;
       }
       default: { AutoPasLogger->warn("Container type {} is not a known type!", option); }

@@ -14,8 +14,8 @@
 
 class ContainerSelectorTest : public AutoPasTestBase {
  public:
-  ContainerSelectorTest();
-  ~ContainerSelectorTest();
+  ContainerSelectorTest() = default;
+  ~ContainerSelectorTest() = default;
 };
 
 

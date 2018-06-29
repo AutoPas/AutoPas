@@ -7,8 +7,8 @@
 
 #include "ContainerSelectorTest.h"
 
-TEST(ContainerSelectorTest, testGetOptimalContainerOneOption) {
-
+// must be TEST_F because the logger which is called in the LC constructor is part of the fixture
+TEST_F(ContainerSelectorTest, testGetOptimalContainerOneOption) {
   std::vector<autopas::ContainerOptions> optionVectorDir = {autopas::ContainerOptions::directSum};
   std::vector<autopas::ContainerOptions> optionVectorLC = {autopas::ContainerOptions::linkedCells};
   std::vector<autopas::ContainerOptions> optionVectorVerlet = {autopas::ContainerOptions::verletLists};
