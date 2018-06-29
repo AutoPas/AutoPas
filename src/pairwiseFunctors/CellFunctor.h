@@ -7,7 +7,9 @@
 
 #pragma once
 
+#include "cells/RMMParticleCell2T.h"
 #include "iterators/SingleCellIterator.h"
+#include "utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -37,6 +39,9 @@ class CellFunctor {
    * calculated
    */
   void processCell(ParticleCell &cell) {
+    if (cell.numParticles() == 0) {
+      return;
+    }
     if (useSoA) {
       if (useNewton3) {
         processCellSoAN3(cell);
@@ -59,6 +64,9 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2) {
+    if (cell1.numParticles() == 0 || cell2.numParticles() == 0) {
+      return;
+    }
     if (useSoA) {
       if (useNewton3) {
         processCellPairSoAN3(cell1, cell2);
@@ -81,17 +89,19 @@ class CellFunctor {
    * @param cell
    */
   void processCellAoSN3(ParticleCell &cell) {
-    for (auto outer = cell.begin(); outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+    WITH_STATIC_CELL_ITER(outer, cell, {
+      for (; outer.isValid(); ++outer) {
+        Particle &p1 = *outer;
 
-      auto inner = outer;
-      ++inner;
-      for (; inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
+        auto inner = outer;
+        ++inner;
+        for (; inner.isValid(); ++inner) {
+          Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, true);
+          _functor->AoSFunctor(p1, p2, true);
+        }
       }
-    }
+    })
   }
 
   /**
@@ -100,26 +110,28 @@ class CellFunctor {
    * @param cell
    */
   void processCellAoSNoN3(ParticleCell &cell) {
-    for (auto outer = cell.begin(); outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+    WITH_STATIC_CELL_ITER(outer, cell, {
+      auto innerStart = outer;
+      for (; outer.isValid(); ++outer) {
+        Particle &p1 = *outer;
 
-      // loop over everything until outer
-      auto inner = cell.begin();
-      for (; inner != outer; ++inner) {
-        Particle &p2 = *inner;
+        // loop over everything until outer
+        auto inner = innerStart;
+        for (; inner != outer; ++inner) {
+          Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, false);
+          _functor->AoSFunctor(p1, p2, false);
+        }
+        // skip over the outer one
+        ++inner;
+
+        // loop over everything after outer
+        for (; inner.isValid(); ++inner) {
+          Particle &p2 = *inner;
+          _functor->AoSFunctor(p1, p2, false);
+        }
       }
-      // skip over the outer one
-      ++inner;
-
-      // loop over everything after outer
-      for (; inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
-
-        _functor->AoSFunctor(p1, p2, false);
-      }
-    }
+    })
   }
 
   /**
@@ -129,15 +141,20 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2) {
-    for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+    WITH_STATIC_CELL_ITER(outer, cell1, {
+      WITH_STATIC_CELL_ITER(innerStart, cell2, {
+        // body
+        for (; outer.isValid(); ++outer) {
+          Particle &p1 = *outer;
 
-      for (auto inner = cell2.begin(); inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
+          for (auto inner = innerStart; inner.isValid(); ++inner) {
+            Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, true);
-      }
-    }
+            _functor->AoSFunctor(p1, p2, true);
+          }
+        }
+      });
+    });
   }
 
   /**
@@ -147,16 +164,21 @@ class CellFunctor {
    * @param cell2
    */
   void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2) {
-    for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+    WITH_STATIC_CELL_ITER(outer, cell1, {
+      WITH_STATIC_CELL_ITER(innerStart, cell2, {
+        // body
+        for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
+          Particle &p1 = *outer;
 
-      for (auto inner = cell2.begin(); inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
+          for (auto inner = innerStart; inner.isValid(); ++inner) {
+            Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, false);
-        _functor->AoSFunctor(p2, p1, false);
-      }
-    }
+            _functor->AoSFunctor(p1, p2, false);
+            _functor->AoSFunctor(p2, p1, false);
+          }
+        }
+      });
+    });
   }
 
   void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2) {

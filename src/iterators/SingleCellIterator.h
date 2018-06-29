@@ -42,7 +42,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * this is the indirection operator
    * @return current particle
    */
-  Particle &operator*() const override {
+  inline Particle &operator*() const override {
     Particle *ptr = nullptr;
     //_cell->particleAt(_index, ptr);
     ptr = &(_cell->_particles.at(_index));
@@ -53,7 +53,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * increment operator to get the next particle
    * @return the next particle, usually ignored
    */
-  SingleCellIterator &operator++() override {
+  inline SingleCellIterator &operator++() override {
     if (not _deleted) ++_index;
     _deleted = false;
     return *this;
@@ -67,7 +67,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @return true if the iterators point to the same particle (in the same
    * cell), false otherwise
    */
-  bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const override {
+  inline bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const override {
     if (auto other = dynamic_cast<const SingleCellIterator<Particle, ParticleCell> *>(&rhs)) {
       return (not rhs.isValid() and not this->isValid()) or (_cell == other->_cell && _index == other->_index);
     } else {
@@ -81,28 +81,28 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @param rhs
    * @return
    */
-  bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const override { return !(rhs == *this); }
+  inline bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const override { return !(rhs == *this); }
   /**
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
-  bool isValid() const override { return _cell != nullptr and _index < _cell->numParticles(); }
+  inline bool isValid() const override { return _cell != nullptr and _index < _cell->numParticles(); }
 
   /**
    * Get the index of the particle in the cell
    * @return index of the current particle
    */
-  size_t getIndex() const override { return _index; }
+  inline size_t getIndex() const override { return _index; }
 
   /**
    * Deletes the current particle
    */
-  void deleteCurrentParticle() override {
+  inline void deleteCurrentParticle() override {
     _cell->deleteByIndex(_index);
     _deleted = true;
   }
 
-  SingleCellIteratorInterfaceImpl<Particle> *clone() const override {
+  inline SingleCellIteratorInterfaceImpl<Particle> *clone() const override {
     return new SingleCellIterator<Particle, ParticleCell>(*this);
   }
 
