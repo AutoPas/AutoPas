@@ -77,18 +77,10 @@ class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Parti
  * @param cell the cell for which the iterator should be get
  * @param body the body to be executed with the static iterator
  */
-#define AUTOPAS_WITH_STATIC_CELL_ITER(iter, cell, body)                                                               \
-  auto __wrapper = cell.begin();                                                                                      \
-  auto __ptr = __wrapper.get();                                                                                       \
-  {                                                                                                                   \
-    if (auto __##iter##ptr = dynamic_cast<                                                                            \
-            internal::SingleCellIterator<Particle, typename std::remove_reference<decltype(cell)>::type> *>(__ptr)) { \
-      auto iter = *__##iter##ptr;                                                                                     \
-      body                                                                                                            \
-    } else if (auto __##iter##ptr = dynamic_cast<RMMParticleCellIterator<Particle> *>(__ptr)) {                       \
-      auto iter = *__##iter##ptr;                                                                                     \
-      body                                                                                                            \
-    } else {                                                                                                          \
-      autopas::utils::ExceptionHandler::exception("unknown iteratortype in WITH_STATIC_CELL_ITER");                   \
-    }                                                                                                                 \
+#define AUTOPAS_WITH_STATIC_CELL_ITER(iter, cell, body)                                                  \
+  auto __wrapper = cell.begin();                                                                         \
+  auto __ptr = __wrapper.get();                                                                          \
+  {                                                                                                      \
+    auto iter = static_cast<typename std::remove_reference<decltype(cell)>::type::iterator_t &>(*__ptr); \
+    body;                                                                                                \
   }

@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "cells/RMMParticleCell2T.h"
 #include "iterators/SingleCellIterator.h"
 #include "utils/ExceptionHandler.h"
 
