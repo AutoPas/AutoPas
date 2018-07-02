@@ -1,5 +1,5 @@
 /**
- * @file ContainerSelector.cpp
+ * @file ContainerSelector.h
  * @author F. Gratl
  * @date 11.06.18
  */
