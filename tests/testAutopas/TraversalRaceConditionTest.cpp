@@ -33,36 +33,34 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {(double)particlesPerDimension[0], (double)particlesPerDimension[1],
                                   (double)particlesPerDimension[2]};
+  /// @todo: test all containers
+  for (auto &traversalLC :
+       autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>>::allLCApplicableTraversals()) {
+    AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
 
-  //  for (auto &traversalLC : autopas::LinkedCells<PrintableMolecule,
-  //  FullParticleCell<PrintableMolecule>>::allLCApplicableTraversals()) {
-  AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
+    // generates one cell per particle + 1 halo layer
+    auto containerList = {autopas::ContainerOptions::linkedCells};
+    auto traversalList = {traversalLC};
+    autoPas.init(boxMin, boxMax, cellLength, 0, 1, containerList, traversalList);
 
-  // generates one cell per particle + 1 halo layer
-  //    autoPas.init(boxMin, boxMax, cellLength, {autopas::ContainerOptions::linkedCells}, {traversalLC});
-  auto containerList = {autopas::ContainerOptions::linkedCells};
-  auto traversalList = {autopas::TraversalOptions::c08};
-  autoPas.init(boxMin, boxMax, cellLength, 0, 1, containerList, traversalList);
+    fillWithParticles(autoPas, particlesPerDimension);
 
-  fillWithParticles(autoPas, particlesPerDimension);
+    SimpleFunctor functor;
 
-  SimpleFunctor functor;
+    autoPas.iteratePairwise(&functor, autopas::aos);
 
-  /// @todo: test all traversals -> no autotuning
-  autoPas.iteratePairwise(&functor, autopas::aos);
+    for (auto particleIterator = autoPas.begin(); particleIterator.isValid(); ++particleIterator) {
+      if (particleIterator->getR()[0] == .5 || particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||
+          particleIterator->getR()[1] == .5 || particleIterator->getR()[1] == particlesPerDimension[1] - .5 ||
+          particleIterator->getR()[2] == .5 || particleIterator->getR()[2] == particlesPerDimension[2] - .5)
+        continue;
+      // for debugging:
+      //    particleIterator->print();
 
-  for (auto particleIterator = autoPas.begin(); particleIterator.isValid(); ++particleIterator) {
-    if (particleIterator->getR()[0] == .5 || particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||
-        particleIterator->getR()[1] == .5 || particleIterator->getR()[1] == particlesPerDimension[1] - .5 ||
-        particleIterator->getR()[2] == .5 || particleIterator->getR()[2] == particlesPerDimension[2] - .5)
-      continue;
-    // for debugging:
-    //    particleIterator->print();
-
-    // although these are doubles this should be exactly zero
-    ASSERT_EQ(particleIterator->getF()[0], 0);
-    ASSERT_EQ(particleIterator->getF()[1], 0);
-    ASSERT_EQ(particleIterator->getF()[2], 0);
+      // although these are doubles this should be exactly zero
+      ASSERT_EQ(particleIterator->getF()[0], 0) << "in traversal: " << traversalLC;
+      ASSERT_EQ(particleIterator->getF()[1], 0) << "in traversal: " << traversalLC;
+      ASSERT_EQ(particleIterator->getF()[2], 0) << "in traversal: " << traversalLC;
+    }
   }
-  //  }
 }
