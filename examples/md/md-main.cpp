@@ -41,10 +41,10 @@ int main(int argc, char *argv[]) {
   PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
   PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
-  func.AoSFunctor(p1, p2);
+  func.AoSFunctor(p1, p2, true);
   //	p1.print();
   //	p2.print();
-  func.AoSFunctor(p2, p1);
+  func.AoSFunctor(p2, p1, true);
   //	p1.print();
   //	p2.print();
 
@@ -89,15 +89,15 @@ void measureContainer(Container *cont, int numMolecules, int numIterations, doub
 
   utils::Timer t;
 
-  cont->iteratePairwiseAoS2(&flopFunctor);
+  cont->iteratePairwiseAoS(&flopFunctor);
   double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
     if (soa)
-      cont->iteratePairwiseSoA2(&func);
+      cont->iteratePairwiseSoA(&func);
     else
-      cont->iteratePairwiseAoS2(&func);
+      cont->iteratePairwiseAoS(&func);
   }
   double elapsedTime = t.stop();
 
@@ -122,8 +122,8 @@ void measure(int which, int numMolecules, int numIterations, int rebuildFrequenc
 
   LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lcCont(boxMin, boxMax, cutoff);
   DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dirCont(boxMin, boxMax, cutoff);
-  VerletLists<PrintableMolecule, FullParticleCell<PrintableMolecule>> verletListsCont(
-      boxMin, boxMax, cutoff, cutoff * skinRadiusToCutoffRatio, rebuildFrequency);
+  VerletLists<PrintableMolecule> verletListsCont(boxMin, boxMax, cutoff, cutoff * skinRadiusToCutoffRatio,
+                                                 rebuildFrequency);
 
   fillContainerWithMolecules(numMolecules, &lcCont);
   for (auto it = lcCont.begin(); it.isValid(); ++it) {
@@ -162,7 +162,7 @@ void testForceLJ() {
   container.addParticle(p4);
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
-  container.iteratePairwiseAoS2(&func);
+  container.iteratePairwiseAoS(&func);
 
   //	for (auto it = container.begin(); it.isValid(); ++it) {
   //		it->print();

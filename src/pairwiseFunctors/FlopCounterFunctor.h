@@ -24,6 +24,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
+  typedef typename Particle::SoAArraysType SoAArraysType;
+
  public:
   /**
    * constructor of FlopCounterFunctor
@@ -35,7 +37,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     double dr2 = ArrayMath::dot(dr, dr);
 #ifdef AUTOPAS_OPENMP
@@ -48,7 +50,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     };
   }
 
-  void SoAFunctor(SoA<Particle> &soa, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -87,7 +89,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA<Particle> &soa1, SoA<Particle> &soa2, bool newton3 = true) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -131,27 +133,39 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoALoader(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {
-    soa.resizeArrays(offset + cell.numParticles());
-
-    if (cell.numParticles() == 0) return;
-
-    unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      idptr[i] = cellIter->getID();
-      xptr[i] = cellIter->getR()[0];
-      yptr[i] = cellIter->getR()[1];
-      zptr[i] = cellIter->getR()[2];
-    }
+  void SoAFunctor(SoA<SoAArraysType> &soa,
+                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
+                  size_t iTo, bool newton3) override {
+    utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
 
-  void SoAExtractor(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) override {}
+  AUTOPAS_FUNCTOR_SOALOADER(
+      cell, soa, offset,
+      // body start
+      soa.resizeArrays(offset + cell.numParticles());
+
+      if (cell.numParticles() == 0) return;
+
+      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+      auto cellIter = cell.begin();
+      // load particles in SoAs
+      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+        idptr[i] = cellIter->getID();
+        xptr[i] = cellIter->getR()[0];
+        yptr[i] = cellIter->getR()[1];
+        zptr[i] = cellIter->getR()[2];
+      })
+
+  /**
+   * empty SoAExtractor.
+   * nothing to be done yet.
+   */
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , )
+
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
    * of kernel calls compared to the number of distance calculations

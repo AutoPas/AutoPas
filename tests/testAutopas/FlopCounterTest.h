@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <AutoPas.h>
+#include "AutoPas.h"
 #include "AutoPasTestBase.h"
 #include <testingHelpers/commonTypedefs.h>
 

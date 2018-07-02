@@ -111,7 +111,8 @@ class AutoPas {
    * @param f Functor that describes the pair-potential
    * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
    */
-  void iteratePairwise(autopas::Functor<Particle, ParticleCell> *f, autopas::DataLayoutOption dataLayoutOption) {
+  template <class Functor>
+  void iteratePairwise(Functor *f, autopas::DataLayoutOption dataLayoutOption) {
     // @todo remove this and let is be handled via a selector
     switch (dataLayoutOption) {
       case autopas::aos: {

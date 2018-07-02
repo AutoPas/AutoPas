@@ -56,8 +56,8 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
   }
 
   autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func;
-  _directSum.iteratePairwiseAoS2(&func);
-  _linkedCells.iteratePairwiseAoS2(&func);
+  _directSum.iteratePairwiseAoS(&func);
+  _linkedCells.iteratePairwiseAoS(&func);
 
   auto itDirect = _directSum.begin();
   auto itLinked = _linkedCells.begin();
@@ -87,8 +87,8 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
   autopas::FlopCounterFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> flopsDirect(
       getCutoff()),
       flopsLinked(getCutoff());
-  _directSum.iteratePairwiseAoS2(&flopsDirect);
-  _linkedCells.iteratePairwiseAoS2(&flopsLinked);
+  _directSum.iteratePairwiseAoS(&flopsDirect);
+  _linkedCells.iteratePairwiseAoS(&flopsLinked);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsDirect.getKernelCalls());
   ASSERT_LE(flopsLinked.getDistanceCalculations(), flopsDirect.getDistanceCalculations());

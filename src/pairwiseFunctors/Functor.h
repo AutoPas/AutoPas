@@ -13,6 +13,9 @@
 
 namespace autopas {
 
+template <class Particle>
+class VerletListHelpers;
+
 /**
  * Functor class. This class describes the pairwise interactions between
  * particles.
@@ -25,7 +28,7 @@ namespace autopas {
  * @tparam Particle the type of Particle
  * @tparam ParticleCell the type of ParticleCell
  */
-template <class Particle, class ParticleCell>
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class Functor {
  public:
   virtual ~Functor() = default;
@@ -40,7 +43,7 @@ class Functor {
    * @param j Particle j
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) {
+  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3) {
     utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
   }
 
@@ -54,7 +57,7 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<Particle> &soa, bool newton3 = true) {
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(one soa): not yet implemented");
   }
 
@@ -77,9 +80,9 @@ class Functor {
    * least iFrom and less than soa.size())
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<Particle> &soa,
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa,
                           const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                          size_t iFrom, size_t iTo, bool newton3 = true) {
+                          size_t iFrom, size_t iTo, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
 
@@ -94,7 +97,7 @@ class Functor {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<Particle> &soa1, SoA<Particle> &soa2, bool newton3 = true) {
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 
@@ -106,8 +109,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the cell should be added
    * to the SoA with the specified offset.
    */
-
-  virtual void SoALoader(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) {
+  virtual void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("Functor::SoALoader: not yet implemented");
   }
 
@@ -119,7 +121,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell &cell, SoA<Particle> &soa, size_t offset = 0) {
+  virtual void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("Functor::SoAExtractor: not yet implemented");
   }
 
@@ -145,4 +147,46 @@ class Functor {
   virtual bool allowsNonNewton3() { return false; }
 };
 
+/**
+ * Macro to define the SoALoaders.
+ * @param cell name for cell like parameter
+ * @param soa name for soa
+ * @param offset name for offset
+ * @param body the actual function body for the soa loader
+ *
+ * @note generates two loaders, one for verlet lists, one for the normal case.
+ * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
+ */
+#define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, body)                                                        \
+  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { body }                \
+  /** @copydoc SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) */                           \
+  template <typename = std::enable_if_t<not std::is_same<                                                         \
+                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>          \
+  void SoALoader(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa, \
+                 size_t offset = 0) {                                                                             \
+    body                                                                                                          \
+  }
+
+/**
+ * Macro to define the SoAExtractors.
+ * @param cell name for cell like parameter
+ * @param soa name for soa
+ * @param offset name for offset
+ * @param body the actual function body for the soa loader
+ *
+ * @note generates two extractors, one for verlet lists, one for the normal case.
+ * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
+ */
+#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, body)                                                        \
+  void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { body }     \
+  /** @copydoc SoAExtractor(ParticleCell &, ::autopas::SoA<SoAArraysType> &, size_t) */                              \
+  template <typename = std::enable_if_t<not std::is_same<                                                            \
+                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>             \
+  void SoAExtractor(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa, \
+                    size_t offset = 0) {                                                                             \
+    body                                                                                                             \
+  }
+
 }  // namespace autopas
+
+#include "containers/VerletListHelpers.h"

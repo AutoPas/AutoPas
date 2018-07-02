@@ -30,8 +30,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   }
 
   autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func;
-  _verletLists.iteratePairwiseAoS2(&func);
-  _linkedCells.iteratePairwiseAoS2(&func);
+  _verletLists.iteratePairwiseAoS(&func);
+  _linkedCells.iteratePairwiseAoS(&func);
 
   auto itDirect = _verletLists.begin();
   auto itLinked = _linkedCells.begin();
@@ -61,8 +61,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   autopas::FlopCounterFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> flopsVerlet(
       getCutoff()),
       flopsLinked(getCutoff());
-  _verletLists.iteratePairwiseAoS2(&flopsVerlet);
-  _linkedCells.iteratePairwiseAoS2(&flopsLinked);
+  _verletLists.iteratePairwiseAoS(&flopsVerlet);
+  _linkedCells.iteratePairwiseAoS(&flopsLinked);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
   ASSERT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());

@@ -25,11 +25,11 @@ namespace autopas {
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
  * @tparam Particle type of the particles that need to be stored
- * @tparam ParticleCell type of the ParticleCells that are used to store the
- * particles
+ * @tparam ParticleCell type of the ParticleCells that are used to store the particles
+ * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
-template <class Particle, class ParticleCell>
-class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
+class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
  public:
   /**
    * Constructor of the LinkedCells class
@@ -41,7 +41,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const std::vector<TraversalOptions> &allowedTraversalOptions = allLCApplicableTraversals())
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff) {
     assert(this->checkIfTraversalsAreApplicable(allowedTraversalOptions));
     if (not allowedTraversalOptions.empty())
@@ -84,20 +84,15 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void iteratePairwiseAoS(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
-    iteratePairwiseAoS2(f, useNewton3);
-  }
-
   /**
-   * same as iteratePairwiseAoS, but potentially faster (if called with the
-   * derived functor), as the class of the functor is known and thus the
-   * compiler can do some better optimizations.
-   * @tparam ParticleFunctor
-   * @param f
+   * Function to iterate over all pairs of particles in an array of structures setting. This function only handles
+   * short-range interactions.
+   * @tparam the type of ParticleFunctor
+   * @param f functor that describes the pair-potential
    * @param useNewton3 defines whether newton3 should be used
    */
   template <class ParticleFunctor>
-  void iteratePairwiseAoS2(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
       this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
@@ -107,20 +102,15 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  void iteratePairwiseSoA(Functor<Particle, ParticleCell> *f, bool useNewton3 = true) override {
-    /// @todo iteratePairwiseSoA
-    iteratePairwiseSoA2(f, useNewton3);
-  }
-
   /**
-   * same as iteratePairwiseSoA, but faster, as the class of the functor is
-   * known and thus the compiler can do some better optimizations.
+   * function to iterate over all pairs of particles in a structure of array
+   * setting. This function is often better vectorizable.
    * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3
+   * @param f functor that describes the pair-potential
+   * @param useNewton3 defines whether newton3 should be used
    */
   template <class ParticleFunctor>
-  void iteratePairwiseSoA2(ParticleFunctor *f, bool useNewton3 = true) {
+  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
     loadSoAs(f);
 
     if (useNewton3) {
@@ -178,6 +168,18 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
         &this->_cells, lowerCorner, higherCorner, &_cellBlock, behavior));
   }
 
+  /**
+   * Get the cell block, not supposed to be used except by verlet lists
+   * @return the cell block
+   */
+  CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
+
+  /**
+   * returns reference to the data of LinkedCells
+   * @return the data
+   */
+  std::vector<ParticleCell> &getData() { return this->_cells; }
+
  protected:
   /**
    * object to manage the block of cells.
@@ -217,4 +219,5 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 };
+
 }  // namespace autopas
