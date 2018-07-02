@@ -1,10 +1,8 @@
 /**
- * TraversalSelectorTest.cpp
- *
- *  Created on: 6/21/18
- *     Aauthor: F. Gratl
+ * @file TraversalSelectorTest.cpp
+ * @author F. Gratl
+ * @date 21.06.18
  */
-
 #include "TraversalSelectorTest.h"
 
 /**

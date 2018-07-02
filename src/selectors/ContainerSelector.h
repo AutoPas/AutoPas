@@ -1,8 +1,7 @@
 /**
- * ContainerSelector.h
- *
- *  Created on: 6/11/18
- *     Aauthor: F. Gratl
+ * @file ContainerSelector.cpp
+ * @author F. Gratl
+ * @date 11.06.18
  */
 
 #pragma once

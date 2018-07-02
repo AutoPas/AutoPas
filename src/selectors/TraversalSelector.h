@@ -1,8 +1,7 @@
 /**
- * TraversalSelector.h
- *
- *  Created on: 6/11/18
- *     Aauthor: F. Gratl
+ * @file TraversalSelector.h
+ * @author F. Gratl
+ * @date 11.06.18
  */
 
 #pragma once

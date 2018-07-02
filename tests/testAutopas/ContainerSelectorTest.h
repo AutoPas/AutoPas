@@ -1,10 +1,8 @@
 /**
- * ContainerSelectorTest.h
- *
- *  Created on: 6/22/18
- *     Aauthor: F. Gratl
+ * @file ContainerSelectorTest.h
+ * @author F. Gratl
+ * @date 22.06.18
  */
-
 #pragma once
 
 #include <gtest/gtest.h>
