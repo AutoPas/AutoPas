@@ -64,6 +64,7 @@ class VerletListHelpers {
     /**
      * SoAFunctor for verlet list generation. (two cell version)
      * @param soa the soa
+     * @param newton3 whether to use newton 3
      */
     void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
