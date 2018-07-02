@@ -63,12 +63,18 @@ TEST_F(Newton3OnOffTest, testAoS) {
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
     EXPECT_EQ(callsNewton3 * 2,
-              callsNonNewton3) << "for containeroption: " << containerOption;  // should be called exactly two times
+              callsNonNewton3)
+        << "for containeroption: " << containerOption;  // should be called exactly two times
   }
 }
 
 TEST_F(Newton3OnOffTest, testSoA) {
+  //  for (auto containerOption : autopas::allContainerOptions) {
   for (auto containerOption : autopas::allContainerOptions) {
+    if (containerOption == autopas::ContainerOptions::verletLists) {
+      continue;
+    }
+
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), {containerOption});
     fillContainerWithMolecules(100, autoPas);
 

@@ -100,7 +100,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
       }
       case verletLists: {
         // FIXME skin should be configurable (or determined by a tuner :)
-        containers.push_back(std::make_unique<VerletLists<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, 0));
+        containers.push_back(std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, 0));
         break;
       }
       default: { AutoPasLogger->warn("Container type {} is not a known type!", option); }

@@ -178,7 +178,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * returns reference to the data of LinkedCells
    * @return the data
    */
-  std::vector<ParticleCell> &getData() { return this->_cells; }
+  std::vector<ParticleCell> &getCells() { return this->_cells; }
 
  protected:
   /**

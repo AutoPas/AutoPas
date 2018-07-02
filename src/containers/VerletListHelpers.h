@@ -65,7 +65,7 @@ class VerletListHelpers {
      * SoAFunctor for verlet list generation. (two cell version)
      * @param soa the soa
      */
-    void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/) override {
+    void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
       Particle **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
@@ -90,6 +90,9 @@ class VerletListHelpers {
 
           if (dr2 < _cutoffskinsquared) {
             currentList.push_back(idptr[j]);
+            if (not newton3) {
+              _verletListsAoS.at(idptr[j]).push_back(idptr[i]);
+            }
           }
         }
       }

@@ -21,11 +21,11 @@ TEST_F(ContainerSelectorTest, testGetOptimalContainerOneOption) {
   autopas::ContainerSelector<Particle, FPCell> containerSelectorLC(bBoxMin, bBoxMax, 1, optionVectorLC, traversals);
   autopas::ContainerSelector<Particle, FPCell> containerSelectorVerlet(bBoxMin, bBoxMax, 1, optionVectorVerlet, traversals);
 
-  auto contaienrDir = containerSelectorDir.getOptimalContainer();
-  auto contaienrLC = containerSelectorLC.getOptimalContainer();
-  auto contaienrVerlet = containerSelectorVerlet.getOptimalContainer();
+  auto containerDir = containerSelectorDir.getOptimalContainer();
+  auto containerLC = containerSelectorLC.getOptimalContainer();
+  auto containerVerlet = containerSelectorVerlet.getOptimalContainer();
 
-  ASSERT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(contaienrDir.get())));
-  ASSERT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(contaienrLC.get())));
-  ASSERT_TRUE((dynamic_cast<autopas::VerletLists<Particle, FPCell>*>(contaienrVerlet.get())));
+  ASSERT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(containerDir.get())));
+  ASSERT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(containerLC.get())));
+  ASSERT_TRUE((dynamic_cast<autopas::VerletLists<Particle>*>(containerVerlet.get())));
 }
