@@ -46,17 +46,21 @@ class ContainerSelector {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
+   * @param verletSkin Length added to the cutoff for the verlet lists' skin.
+   * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainerOptions Vector of container types the selector can choose from.
    * @param allowedTraversalOptions Vector of traversals the selector can choose from.
    */
-  ContainerSelector(std::array<double, 3> &boxMin, std::array<double, 3> &boxMax, double cutoff,
-                    std::vector<ContainerOptions> &allowedContainerOptions,
-                    std::vector<TraversalOptions> &allowedTraversalOptions)
+  ContainerSelector(std::array<double, 3> &boxMin, std::array<double, 3> &boxMax, double cutoff, double verletSkin,
+                    unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
+                    std::vector<TraversalOptions> allowedTraversalOptions)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
-        _allowedContainerOptions(allowedContainerOptions),
-        _allowedTraversalOptions(allowedTraversalOptions),
+        _verletSkin(verletSkin),
+        _verletRebuildFrequency(verletRebuildFrequency),
+        _allowedContainerOptions(std::move(allowedContainerOptions)),
+        _allowedTraversalOptions(std::move(allowedTraversalOptions)),
         _optimalContainer(nullptr) {}
 
   /**
@@ -76,6 +80,8 @@ class ContainerSelector {
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
+  double _verletSkin;
+  unsigned int _verletRebuildFrequency;
   std::vector<ContainerOptions> _allowedContainerOptions;
   std::vector<TraversalOptions> _allowedTraversalOptions;
   std::shared_ptr<ParticleContainer<Particle, ParticleCell>> _optimalContainer;
@@ -98,8 +104,9 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
         break;
       }
       case verletLists: {
-        // FIXME skin should be configurable (or determined by a tuner :)
-        containers.push_back(std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, 0));
+        // TODO determine verletSkin and verletRebuildFrequency via tuning
+        containers.push_back(
+            std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency));
         break;
       }
       default: { AutoPasLogger->warn("Container type {} is not a known type!", option); }

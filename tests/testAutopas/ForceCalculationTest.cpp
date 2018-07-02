@@ -9,7 +9,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {3., 3., 3.};
 
-  autoPas.init(boxMin, boxMax, cutoff, {autopas::ContainerOptions::linkedCells});
+  autoPas.init(boxMin, boxMax, cutoff, 0, 1, {autopas::ContainerOptions::linkedCells});
 
   autopas::MoleculeLJ defaultParticle;
 

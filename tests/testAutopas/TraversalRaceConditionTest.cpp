@@ -40,7 +40,9 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
 
   // generates one cell per particle + 1 halo layer
   //    autoPas.init(boxMin, boxMax, cellLength, {autopas::ContainerOptions::linkedCells}, {traversalLC});
-  autoPas.init(boxMin, boxMax, cellLength, {autopas::ContainerOptions::linkedCells}, {autopas::TraversalOptions::c08});
+  auto containerList = {autopas::ContainerOptions::linkedCells};
+  auto traversalList = {autopas::TraversalOptions::c08};
+  autoPas.init(boxMin, boxMax, cellLength, 0, 1, containerList, traversalList);
 
   fillWithParticles(autoPas, particlesPerDimension);
 

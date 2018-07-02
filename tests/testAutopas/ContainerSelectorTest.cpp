@@ -15,10 +15,15 @@ TEST_F(ContainerSelectorTest, testGetOptimalContainerOneOption) {
   std::vector<autopas::TraversalOptions> traversals = {autopas::TraversalOptions::c08};
 
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
-  autopas::ContainerSelector<Particle, FPCell> containerSelectorDir(bBoxMin, bBoxMax, 1, optionVectorDir, traversals);
-  autopas::ContainerSelector<Particle, FPCell> containerSelectorLC(bBoxMin, bBoxMax, 1, optionVectorLC, traversals);
-  autopas::ContainerSelector<Particle, FPCell> containerSelectorVerlet(bBoxMin, bBoxMax, 1, optionVectorVerlet,
-                                                                       traversals);
+  const double cutoff = 1;
+  const double verletSkin = 0;
+  const unsigned int verletRebuildFrequency = 1;
+  autopas::ContainerSelector<Particle, FPCell> containerSelectorDir(
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, optionVectorDir, traversals);
+  autopas::ContainerSelector<Particle, FPCell> containerSelectorLC(bBoxMin, bBoxMax, cutoff, verletSkin,
+                                                                   verletRebuildFrequency, optionVectorLC, traversals);
+  autopas::ContainerSelector<Particle, FPCell> containerSelectorVerlet(
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, optionVectorVerlet, traversals);
 
   auto containerDir = containerSelectorDir.getOptimalContainer();
   auto containerLC = containerSelectorLC.getOptimalContainer();

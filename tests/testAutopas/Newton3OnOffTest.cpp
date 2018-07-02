@@ -39,7 +39,8 @@ void Newton3OnOffTest::fillContainerWithMolecules(
 
 TEST_F(Newton3OnOffTest, testAoS) {
   for (auto containerOption : autopas::allContainerOptions) {
-    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), {containerOption});
+    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(),
+                 {containerOption});
     fillContainerWithMolecules(100, autoPas);
 
     // with newton 3:
@@ -75,7 +76,8 @@ TEST_F(Newton3OnOffTest, testSoA) {
       continue;
     }
 
-    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), {containerOption});
+    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(),
+                 {containerOption});
     fillContainerWithMolecules(100, autoPas);
 
     // loader and extractor will be called, we don't care how often.

@@ -30,16 +30,19 @@ class AutoTuner {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
+   * @param verletSkin Length added to the cutoff for the verlet lists' skin.
+   * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainerOptions Vector of container types AutoPas can choose from.
    * @param allowedTraversalOptions Vector of traversals AutoPas can choose from.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
-  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
-            std::vector<ContainerOptions> allowedContainerOptions,
+  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
+            unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
             std::vector<TraversalOptions> allowedTraversalOptions, unsigned int tuningInterval)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
-        _containerSelector(boxMin, boxMax, cutoff, allowedContainerOptions, allowedTraversalOptions) {}
+        _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainerOptions,
+                           allowedTraversalOptions) {}
 
   /**
    * Getter for the optimal container.
