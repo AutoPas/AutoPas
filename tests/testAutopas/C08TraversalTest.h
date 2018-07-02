@@ -8,10 +8,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <testingHelpers/commonTypedefs.h>
 #include "AutoPas.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/GridGenerator.h"
-#include <testingHelpers/commonTypedefs.h>
 
 #ifdef AUTOPAS_OPENMP
 #include <omp.h>

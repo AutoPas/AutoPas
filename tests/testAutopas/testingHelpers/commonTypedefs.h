@@ -26,4 +26,3 @@ typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopa
     CellFunctorSoAN3;
 typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, true, false>
     CellFunctorSoANoN3;
-

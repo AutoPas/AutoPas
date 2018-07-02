@@ -11,7 +11,6 @@
  * Check if the only allowed traversal is returned
  */
 TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
-
   MockFunctor<autopas::Particle, FPCell> functor;
   CellFunctorAoSN3 cf(&functor);
 
@@ -30,7 +29,6 @@ TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
 }
 
 TEST(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
-
   MockFunctor<autopas::Particle, FPCell> functor;
   CellFunctorAoSN3 cf(&functor);
 

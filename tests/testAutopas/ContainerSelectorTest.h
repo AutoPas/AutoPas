@@ -8,15 +8,12 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <testingHelpers/commonTypedefs.h>
 #include "AutoPasTestBase.h"
 #include "selectors/ContainerSelector.h"
-#include <testingHelpers/commonTypedefs.h>
 
 class ContainerSelectorTest : public AutoPasTestBase {
  public:
   ContainerSelectorTest() = default;
   ~ContainerSelectorTest() = default;
 };
-
-
-

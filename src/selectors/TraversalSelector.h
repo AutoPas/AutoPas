@@ -105,12 +105,10 @@ template <class ParticleCell>
 template <class CellFunctor>
 std::unique_ptr<CellPairTraversal<ParticleCell, CellFunctor>> TraversalSelector<ParticleCell>::chooseOptimalTraversal(
     std::vector<std::unique_ptr<CellPairTraversal<ParticleCell, CellFunctor>>> &traversals) {
-
   // remove traversals which are not applicable to the current domain size
-  traversals.erase(std::remove_if(traversals.begin(),
-                                  traversals.end(),
-                                  [](auto const& t) { return not t->isApplicable(); }),
-                   traversals.end());
+  traversals.erase(
+      std::remove_if(traversals.begin(), traversals.end(), [](auto const &t) { return not t->isApplicable(); }),
+      traversals.end());
   assert(traversals.size() > 0);
 
   // TODO: Autotuning goes here

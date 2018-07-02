@@ -10,9 +10,9 @@
 #include <containers/DirectSum.h>
 #include <containers/LinkedCells.h>
 #include <containers/ParticleContainer.h>
+#include <containers/VerletLists.h>
 #include <array>
 #include <vector>
-#include <containers/VerletLists.h>
 namespace autopas {
 
 /**

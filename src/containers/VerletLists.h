@@ -64,7 +64,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
               unsigned int rebuildFrequency = 1,
               BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
-        _linkedCells(boxMin, boxMax, cutoff + skin), // default TraversalSelector for LC needed for checkNeighborListsAreValid
+        _linkedCells(boxMin, boxMax,
+                     cutoff + skin),  // default TraversalSelector for LC needed for checkNeighborListsAreValid
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
