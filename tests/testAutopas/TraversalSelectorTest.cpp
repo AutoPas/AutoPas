@@ -27,7 +27,7 @@ TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
   // check that traversals are of the expected type
   ASSERT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, CellFunctorAoSN3> *>(traversalC08.get())));
   ASSERT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, CellFunctorAoSN3> *>(traversalSlice.get())))
-                << "Is the domain size large enough for the processors' thread count?";
+      << "Is the domain size large enough for the processors' thread count?";
 }
 
 TEST(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
