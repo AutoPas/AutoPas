@@ -9,8 +9,7 @@
  * Check if the only allowed traversal is returned
  */
 TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
-  MockFunctor<autopas::Particle, FPCell> functor;
-  CellFunctorAoSN3 cf(&functor);
+  MFunctor functor;
 
   std::vector<autopas::TraversalOptions> optionVectorC08 = {autopas::TraversalOptions::c08};
   std::vector<autopas::TraversalOptions> optionVectorSliced = {autopas::TraversalOptions::sliced};
@@ -20,27 +19,24 @@ TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
 
   autopas::TraversalSelector<FPCell> traversalSelectorC08({domainSize, domainSize, domainSize}, optionVectorC08);
   autopas::TraversalSelector<FPCell> traversalSelectorSlice({domainSize, domainSize, domainSize}, optionVectorSliced);
-
-  auto traversalC08 = traversalSelectorC08.getOptimalTraversal(cf);
-  auto traversalSlice = traversalSelectorSlice.getOptimalTraversal(cf);
+  auto traversalC08 = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
+  auto traversalSlice = traversalSelectorSlice.getOptimalTraversal<MFunctor, false, true>(functor);
 
   // check that traversals are of the expected type
-  ASSERT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, CellFunctorAoSN3> *>(traversalC08.get())));
-  ASSERT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, CellFunctorAoSN3> *>(traversalSlice.get())))
+  ASSERT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversalC08.get())));
+  ASSERT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversalSlice.get())))
       << "Is the domain size large enough for the processors' thread count?";
 }
 
 TEST(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
-  MockFunctor<autopas::Particle, FPCell> functor;
-  CellFunctorAoSN3 cf(&functor);
+  MFunctor functor;
 
   std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
                                                          autopas::TraversalOptions::c08};
 
   autopas::TraversalSelector<FPCell> traversalSelectorC08({1, 1, 1}, optionVector);
-
-  auto traversal = traversalSelectorC08.getOptimalTraversal(cf);
+  auto traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
 
   // check that traversals are of the expected type
-  ASSERT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, CellFunctorAoSN3> *>(traversal.get())));
+  ASSERT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
 }
