@@ -10,11 +10,19 @@
 namespace autopas {
 
 /**
+ * Possible choices for the cell pair traversal.
+ */
+enum TraversalOptions {
+  c08 = 0,
+  sliced = 1,
+};
+
+/**
  * This interface serves as a common parent class for all cell pair traversals.
  */
 class CellPairTraversalInterface {
  public:
-//  virtual TraversalOptions getName() = 0;
+  virtual TraversalOptions getName() = 0;
 
   /**
    * Checks if the traversal is applicable to the current state of the domain.

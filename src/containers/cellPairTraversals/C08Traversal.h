@@ -35,6 +35,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  TraversalOptions getName() override;
   bool isApplicable() override;
 };
 
@@ -77,6 +78,11 @@ inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
       }
     }
   }
+}
+
+template<class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+TraversalOptions C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getName() {
+  return TraversalOptions::c08;
 };
 
 }  // namespace autopas

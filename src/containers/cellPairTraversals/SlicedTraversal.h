@@ -44,7 +44,7 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, 
   }
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-//  TraversalOptions getName() override;
+  TraversalOptions getName() override;
   bool isApplicable() override;
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
@@ -61,10 +61,10 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, 
   std::vector<autopas_lock_t *> locks;
 };
 
-//template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-//inline TraversalOptions SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getName() {
-//  return TraversalOptions::slice;
-//}
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline TraversalOptions SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getName() {
+  return TraversalOptions::sliced;
+}
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline bool SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {

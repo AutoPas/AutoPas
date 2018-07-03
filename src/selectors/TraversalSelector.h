@@ -18,14 +18,6 @@
 namespace autopas {
 
 /**
- * Possible choices for the cell pair traversal.
- */
-enum TraversalOptions {
-  c08 = 0,
-  sliced = 1,
-};
-
-/**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
 static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced};
@@ -85,12 +77,12 @@ std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<Parti
 
   for (auto &option : _allowedTraversalOptions) {
     switch (option) {
-      case c08: {
+      case TraversalOptions::c08: {
         traversals.push_back(
             std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor));
         break;
       }
-      case sliced: {
+      case TraversalOptions::sliced: {
         traversals.push_back(std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
             _dims, &pairwiseFunctor));
         break;
@@ -114,19 +106,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   assert(not traversals.empty());
 
   // TODO: Autotuning goes here
-  //  auto optimalTraversal = std::move(traversals.front());
-
   // Tedious downcast
   std::unique_ptr<CellPairTraversal<ParticleCell>> optimalTraversal(
       dynamic_cast<CellPairTraversal<ParticleCell> *>(traversals.front().release()));
 
-  //  if (dynamic_cast<C08Traversal<ParticleCell> *>(optimalTraversal))
-  //    _optimalTraversalOptions[typeid(PairwiseFunctor).hash_code()] = TraversalOptions::c08;
-  //  else if (dynamic_cast<SlicedTraversal<ParticleCell> *>(optimalTraversal.get()))
-  //    _optimalTraversalOptions[typeid(PairwiseFunctor).hash_code()] = TraversalOptions::sliced;
-  //  else {
-  //    utils::ExceptionHandler::exception("Optimal traversal has unknown type!");
-  //  }
+  _optimalTraversalOptions[typeid(PairwiseFunctor).hash_code()] = optimalTraversal->getName();
 
   return optimalTraversal;
 }
@@ -142,12 +126,12 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     traversal = chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
   } else {
     switch (_optimalTraversalOptions[typeid(PairwiseFunctor).hash_code()]) {
-      case c08: {
+      case TraversalOptions::c08: {
         traversal =
             std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
         break;
       }
-      case sliced: {
+      case TraversalOptions::sliced: {
         traversal = std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
             _dims, &pairwiseFunctor);
         break;
