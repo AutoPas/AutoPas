@@ -21,8 +21,8 @@ namespace autopas {
  * @tparam CellFunctor the cell functor that defines the interaction of the
  * particles of two specific cells
  */
-template <class ParticleCell, class CellFunctor>
-class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -31,20 +31,20 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
    * @param cellfunctor The cell functor that defines the interaction of
    * particles between two different cells.
    */
-  explicit C08Traversal(const std::array<unsigned long, 3> &dims, CellFunctor *cellfunctor)
-      : C08BasedTraversal<ParticleCell, CellFunctor>(dims, cellfunctor) {}
+  explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
   bool isApplicable() override;
 };
 
-template <class ParticleCell, class CellFunctor>
-inline bool C08Traversal<ParticleCell, CellFunctor>::isApplicable() {
+template <class ParticleCell,  class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline bool C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
   return true;
 }
 
-template <class ParticleCell, class CellFunctor>
-inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs(std::vector<ParticleCell> &cells) {
+template <class ParticleCell,  class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(std::vector<ParticleCell> &cells) {
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
   array<unsigned long, 3> end;

@@ -94,12 +94,17 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor>
   void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
     if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
+      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, true>(*f)->traverseCellPairs(this->_cells);
     } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
-      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
+      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f)->traverseCellPairs(this->_cells);
     }
+//    if (useNewton3) {
+//      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
+//      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
+//    } else {
+//      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
+//      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
+//    }
   }
 
   /**
@@ -113,13 +118,19 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
     loadSoAs(f);
 
+
     if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
-      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
+      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, true>(*f)->traverseCellPairs(this->_cells);
     } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
+      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f)->traverseCellPairs(this->_cells);
     }
+//    if (useNewton3) {
+//      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
+//      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
+//    } else {
+//      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
+//      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
+//    }
 
     extractSoAs(f);
   }

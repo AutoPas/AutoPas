@@ -9,6 +9,7 @@
 
 #include <utils/WrapOpenMP.h>
 #include <algorithm>
+#include <selectors/TraversalSelector.h>
 #include "C08BasedTraversal.h"
 #include "utils/ThreeDimensionalMapping.h"
 
@@ -27,8 +28,8 @@ namespace autopas {
  * @tparam CellFunctor the cell functor that defines the interaction of the
  * particles of two specific cells
  */
-template <class ParticleCell, class CellFunctor>
-class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -37,12 +38,13 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
    * @param cellfunctor The cell functor that defines the interaction of
    * particles between two different cells.
    */
-  explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, CellFunctor *cellfunctor)
-      : C08BasedTraversal<ParticleCell, CellFunctor>(dims, cellfunctor) {
+  explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {
     rebuild(dims);
   }
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+//  TraversalOptions getName() override;
   bool isApplicable() override;
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
@@ -59,14 +61,19 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
   std::vector<autopas_lock_t *> locks;
 };
 
-template <class ParticleCell, class CellFunctor>
-inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
+//template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+//inline TraversalOptions SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getName() {
+//  return TraversalOptions::slice;
+//}
+
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline bool SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
   return this->_cellsPerDimension[_dimsPerLength[0]] / this->_sliceThickness.size() >= 2;
 }
 
-template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(const std::array<unsigned long, 3> &dims) {
-  CellPairTraversal<ParticleCell, CellFunctor>::rebuild(dims);
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::rebuild(const std::array<unsigned long, 3> &dims) {
+  CellPairTraversal<ParticleCell>::rebuild(dims);
 
   // find longest dimension
   auto minMaxElem = std::minmax_element(this->_cellsPerDimension.begin(), this->_cellsPerDimension.end());
@@ -89,8 +96,8 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(const std::array
   locks.resize(numSlices);
 }
 
-template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs(std::vector<ParticleCell> &cells) {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(std::vector<ParticleCell> &cells) {
   using std::array;
 
   auto numSlices = _sliceThickness.size();

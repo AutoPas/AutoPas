@@ -22,6 +22,9 @@ namespace autopas {
 template <class Particle>
 class ParticleCell {
  public:
+
+  typedef Particle ParticleType;
+
   /**
    * destructor of ParticleCell
    */

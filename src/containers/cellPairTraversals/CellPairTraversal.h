@@ -9,6 +9,8 @@
 
 #include <array>
 #include <vector>
+#include <selectors/TraversalSelector.h>
+#include "CellPairTraversalInterface.h"
 
 namespace autopas {
 
@@ -17,29 +19,22 @@ namespace autopas {
  * This class handles traversals through the cell structures.
  * Derived classes handle the order through which the cells are traversed.
  * @tparam ParticleCell type of cells.
- * @tparam CellFunctor a cell functor.
  */
-template <class ParticleCell, class CellFunctor>
-class CellPairTraversal {
+template <class ParticleCell>
+class CellPairTraversal : public CellPairTraversalInterface {
  public:
   /**
    * Constructor of CellPairTraversal.
    * @param dims the dimensions of the cellblock.
-   * @param cellFunctor the cell functor.
    */
-  CellPairTraversal(const std::array<unsigned long, 3> &dims, CellFunctor *cellFunctor)
-      : _cellsPerDimension(dims), _cellFunctor(cellFunctor) {}
+  CellPairTraversal(const std::array<unsigned long, 3> &dims)
+      : _cellsPerDimension(dims) {}
 
   /**
    * Destructor of CellPairTraversal.
    */
   virtual ~CellPairTraversal() = default;
 
-  /**
-   * Checks if the traversal is applicable to the current state of the domain.
-   * @return true iff the traversal can be applied.
-   */
-  virtual bool isApplicable() = 0;
 
   /**
    * Resets the cell structure of the traversal.
@@ -62,11 +57,6 @@ class CellPairTraversal {
    */
   std::array<unsigned long, 3> _cellsPerDimension;
 
-  /**
-   * The cell functor which defines the interaction of the particles between two
-   * specific cells.
-   */
-  CellFunctor *_cellFunctor;
 };
 
 }  // namespace autopas
