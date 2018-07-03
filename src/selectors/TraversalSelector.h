@@ -40,8 +40,10 @@ class TraversalSelector {
 
   /**
    * Gets the optimal traversal for a given cell functor. If no traversal is selected yet a optimum search is started.
-   * @tparam CellFunctor
-   * @param cellFunctor
+   * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+   * @tparam useSoA
+   * @tparam useNewton3
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @return Smartpointer to the optimal traversal.
    */
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
@@ -49,11 +51,13 @@ class TraversalSelector {
 
   /**
    * Evaluates to optimal traversal based on a given cell functor.
-   * @tparam CellFunctor
-   * @param cellFunctor
+   * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+   * @tparam useSoA
+   * @tparam useNewton3
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  template <class CellFunctor>
-  void tune(CellFunctor &cellFunctor);
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  void tune(PairwiseFunctor &pairwiseFunctor);
 
  private:
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
@@ -143,10 +147,10 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 }
 
 template <class ParticleCell>
-template <class CellFunctor>
-void TraversalSelector<ParticleCell>::tune(CellFunctor &cellFunctor) {
-  //  auto generatedTraversals = generateTraversals<CellFunctor>(cellFunctor);
-  //  chooseOptimalTraversal<CellFunctor>(generatedTraversals);
+template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+void TraversalSelector<ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
+  auto generatedTraversals = generateTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+  chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
 }
 
 }  // namespace autopas
