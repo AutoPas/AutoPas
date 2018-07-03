@@ -33,6 +33,12 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {(double)particlesPerDimension[0], (double)particlesPerDimension[1],
                                   (double)particlesPerDimension[2]};
+
+#ifdef AUTOPAS_OPENMP
+  int numThreadsBefore = omp_get_max_threads();
+  omp_set_num_threads(8);
+#endif
+
   /// @todo: test all containers
   for (auto &traversalLC :
        autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>>::allLCApplicableTraversals()) {
@@ -63,4 +69,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
       ASSERT_EQ(particleIterator->getF()[2], 0) << "in traversal: " << traversalLC;
     }
   }
+#ifdef AUTOPAS_OPENMP
+  omp_set_num_threads(numThreadsBefore);
+#endif
 }
