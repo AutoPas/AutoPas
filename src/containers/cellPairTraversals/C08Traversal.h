@@ -18,8 +18,9 @@ namespace autopas {
  * these steps overlap a domain coloring with eight colors is applied.
  *
  * @tparam ParticleCell the type of cells
- * @tparam CellFunctor the cell functor that defines the interaction of the
- * particles of two specific cells
+ * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam useSoA
+ * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3> {
@@ -28,8 +29,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
    * Constructor of the c08 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param cellfunctor The cell functor that defines the interaction of
-   * particles between two different cells.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
@@ -39,13 +39,14 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
   bool isApplicable() override;
 };
 
-template <class ParticleCell,  class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline bool C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
   return true;
 }
 
-template <class ParticleCell,  class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(std::vector<ParticleCell> &cells) {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+    std::vector<ParticleCell> &cells) {
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
   array<unsigned long, 3> end;
@@ -80,7 +81,7 @@ inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
   }
 }
 
-template<class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 TraversalOptions C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getName() {
   return TraversalOptions::c08;
 };

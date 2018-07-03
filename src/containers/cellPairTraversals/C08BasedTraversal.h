@@ -54,6 +54,9 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   void computeOffsets();
 
+  /**
+   * CellFunctor to be used for the traversal defining the interaction between two cells.
+   */
   CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellFunctor;
 
   /**

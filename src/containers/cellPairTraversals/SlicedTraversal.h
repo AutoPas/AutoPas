@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include <selectors/TraversalSelector.h>
 #include <utils/WrapOpenMP.h>
 #include <algorithm>
-#include <selectors/TraversalSelector.h>
 #include "C08BasedTraversal.h"
 #include "utils/ThreeDimensionalMapping.h"
 
@@ -25,8 +25,9 @@ namespace autopas {
  * as soon the boundary wall is fully processed.
  *
  * @tparam ParticleCell the type of cells
- * @tparam CellFunctor the cell functor that defines the interaction of the
- * particles of two specific cells
+ * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam useSoA
+ * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3> {
@@ -35,8 +36,7 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, 
    * Constructor of the sliced traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param cellfunctor The cell functor that defines the interaction of
-   * particles between two different cells.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {
@@ -72,7 +72,8 @@ inline bool SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::rebuild(const std::array<unsigned long, 3> &dims) {
+inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::rebuild(
+    const std::array<unsigned long, 3> &dims) {
   CellPairTraversal<ParticleCell>::rebuild(dims);
 
   // find longest dimension
@@ -97,7 +98,8 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(std::vector<ParticleCell> &cells) {
+inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+    std::vector<ParticleCell> &cells) {
   using std::array;
 
   auto numSlices = _sliceThickness.size();
