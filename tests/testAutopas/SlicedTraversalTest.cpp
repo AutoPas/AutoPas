@@ -41,7 +41,7 @@ TEST_F(SlicedTraversalTest, testTraversalCube) {
   omp_set_num_threads(4);
 #endif
   autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({edgeLength, edgeLength, edgeLength},
-                                                                     &functor);
+                                                                          &functor);
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions
@@ -68,7 +68,7 @@ TEST_F(SlicedTraversalTest, testTraversalCuboid) {
   omp_set_num_threads(4);
 #endif
   autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({edgeLength[0], edgeLength[1], edgeLength[2]},
-                                                                     &functor);
+                                                                          &functor);
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions

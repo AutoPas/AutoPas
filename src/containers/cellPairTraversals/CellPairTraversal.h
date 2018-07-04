@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include <selectors/TraversalSelector.h>
 #include <array>
 #include <vector>
-#include <selectors/TraversalSelector.h>
 #include "CellPairTraversalInterface.h"
 
 namespace autopas {
@@ -27,14 +27,12 @@ class CellPairTraversal : public CellPairTraversalInterface {
    * Constructor of CellPairTraversal.
    * @param dims the dimensions of the cellblock.
    */
-  CellPairTraversal(const std::array<unsigned long, 3> &dims)
-      : _cellsPerDimension(dims) {}
+  CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims) {}
 
   /**
    * Destructor of CellPairTraversal.
    */
   virtual ~CellPairTraversal() = default;
-
 
   /**
    * Resets the cell structure of the traversal.
@@ -56,7 +54,6 @@ class CellPairTraversal : public CellPairTraversalInterface {
    * The dimensions are the number of cells in x, y and z direction.
    */
   std::array<unsigned long, 3> _cellsPerDimension;
-
 };
 
 }  // namespace autopas

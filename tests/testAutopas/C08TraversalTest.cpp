@@ -73,7 +73,7 @@ TEST_F(C08TraversalTest, testTraversal2x3x4) {
   omp_set_num_threads(4);
 #endif
   autopas::C08Traversal<FPCell, MFunctor, false, true> c08Traversal({edgeLength[0], edgeLength[1], edgeLength[2]},
-                                                               &functor);
+                                                                    &functor);
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions

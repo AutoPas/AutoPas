@@ -71,6 +71,9 @@ class TraversalSelector {
   std::unordered_map<size_t, TraversalOptions> _optimalTraversalOptions;
   const std::array<unsigned long, 3> _dims;
   const std::vector<TraversalOptions> _allowedTraversalOptions;
+
+  template <typename Derived, typename Base, typename Del>
+  std::unique_ptr<Derived, Del> dynamic_unique_ptr_cast(std::unique_ptr<Base, Del> &&p);
 };
 
 template <class ParticleCell>

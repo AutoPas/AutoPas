@@ -37,7 +37,8 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims),
         _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor)) {
+            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
+                pairwiseFunctor)) {
     computeOffsets();
   }
 

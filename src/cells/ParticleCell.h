@@ -22,7 +22,6 @@ namespace autopas {
 template <class Particle>
 class ParticleCell {
  public:
-
   /**
    * The particle type for this cell.
    */
