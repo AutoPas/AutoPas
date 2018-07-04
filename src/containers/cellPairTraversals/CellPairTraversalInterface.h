@@ -22,6 +22,10 @@ enum TraversalOptions {
  */
 class CellPairTraversalInterface {
  public:
+  /**
+   * Destructor of CellPairTraversal.
+   */
+  virtual ~CellPairTraversalInterface() = default;
 
   /**
    * Return a enum representing the name of the traversal class.
