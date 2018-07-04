@@ -45,7 +45,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
   ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                     const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
       : _cells(),
-        _traversalSelector(nullptr),
+        _traversalSelector(nullptr),    // needs to be instantiated by respective container.
         _applicableTraversals(applicableTraversals),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -118,6 +118,12 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
         return false;
     }
     return true;
+  }
+
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  void tuneTraversal(PairwiseFunctor &pairwiseFunctor) {
+    if (_traversalSelector != nullptr)
+      _traversalSelector->template tune<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
   }
 
  protected:

@@ -43,10 +43,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
               const std::vector<TraversalOptions> &allowedTraversalOptions = allLCApplicableTraversals())
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff) {
+    // LC should only be instantiated with applicable traversals
     assert(this->checkIfTraversalsAreApplicable(allowedTraversalOptions));
-    if (not allowedTraversalOptions.empty())
-      this->_traversalSelector = std::make_unique<TraversalSelector<ParticleCell>>(
-          _cellBlock.getCellsPerDimensionWithHalo(), allowedTraversalOptions);
+    // LC should not bee instantiated without any traversals
+    assert(not allowedTraversalOptions.empty());
+    this->_traversalSelector = std::make_unique<TraversalSelector<ParticleCell>>(
+        _cellBlock.getCellsPerDimensionWithHalo(), allowedTraversalOptions);
   }
 
   /**
@@ -100,13 +102,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f)->traverseCellPairs(
           this->_cells);
     }
-    //    if (useNewton3) {
-    //      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-    //      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
-    //    } else {
-    //      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
-    //      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
-    //    }
   }
 
   /**
@@ -127,13 +122,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f)->traverseCellPairs(
           this->_cells);
     }
-    //    if (useNewton3) {
-    //      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
-    //      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
-    //    } else {
-    //      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-    //      this->_traversalSelector->getOptimalTraversal(cellFunctor)->traverseCellPairs(this->_cells);
-    //    }
 
     extractSoAs(f);
   }

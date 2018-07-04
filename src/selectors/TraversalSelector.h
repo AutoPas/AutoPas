@@ -149,6 +149,9 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 void TraversalSelector<ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
+  // Workaround for Containers that do not use traversals.
+  if(_allowedTraversalOptions.empty())
+    return;
   auto generatedTraversals = generateTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
   chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
 }
