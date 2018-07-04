@@ -29,6 +29,7 @@ class CellPairTraversalInterface {
 
   /**
    * Return a enum representing the name of the traversal class.
+   * @return Enum representing traversal.
    */
   virtual TraversalOptions getName() = 0;
 
