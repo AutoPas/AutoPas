@@ -26,4 +26,18 @@ class RandomGenerator {
       container.addParticle(particle);
     }
   }
+
+  template <class Container, class Particle>
+  static void fillWithParticles(Container& container, Particle defaultParticle, std::array<double, 3> boxMin,
+                                std::array<double, 3> boxMax, int numParticles = 100) {
+    srand(42);  // fixed seedpoint
+
+    for (int i = 0; i < numParticles; ++i) {
+      auto id = static_cast<unsigned long>(i);
+      Particle particle = defaultParticle;
+      particle.setR(randomPosition(boxMin, boxMax));
+      particle.setID(id);
+      container.addParticle(particle);
+    }
+  }
 };

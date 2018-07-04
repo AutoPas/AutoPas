@@ -26,8 +26,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   void addParticle(Particle &m) override { _particles.push_back(m); }
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
-    return SingleCellIteratorWrapper<Particle>(
-        new internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>>(this));
+    return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }
@@ -62,6 +61,11 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   template <class ParticleType, class ParticleCellType>
   friend class SingleCellIterator;
+
+  /**
+   * type of the internal iterator
+   */
+  typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
 };
 
 }  // namespace autopas

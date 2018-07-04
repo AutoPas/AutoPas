@@ -35,8 +35,18 @@ class SPHKernels {
    * @return value of the kernel function
    */
   static inline double W(const std::array<double, 3> dr, const double h) {
-    const double H = kernelSupportRadius * h;
     const double dr2 = autopas::ArrayMath::dot(dr, dr);
+    return W(dr2, h);
+  }
+
+  /**
+   * A kernel function for sph simulations
+   * @param dr2 squared absolute distance
+   * @param h relative kernel support radius
+   * @return value of the kernel function
+   */
+  static inline double W(const double dr2, const double h) {
+    const double H = kernelSupportRadius * h;
     if (dr2 < H * H) {
       const double s = sqrt(dr2) / H;  // sqrt(dr * dr) / H;
       const double s1 = 1.0 - s;       // (1.0 - s < 0) ? 0 : 1.0 - s;

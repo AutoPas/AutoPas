@@ -70,3 +70,17 @@ class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Parti
 };
 }  // namespace internal
 }  // namespace autopas
+
+/**
+ * gets a static cell iterator from an iteratorwrapper of a cell.
+ * @param iter the iterator to be defined
+ * @param cell the cell for which the iterator should be get
+ * @param body the body to be executed with the static iterator
+ */
+#define AUTOPAS_WITH_STATIC_CELL_ITER(iter, cell, body)                                                  \
+  auto __wrapper = cell.begin();                                                                         \
+  auto __ptr = __wrapper.get();                                                                          \
+  {                                                                                                      \
+    auto iter = static_cast<typename std::remove_reference<decltype(cell)>::type::iterator_t &>(*__ptr); \
+    body;                                                                                                \
+  }

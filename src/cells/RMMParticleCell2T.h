@@ -86,6 +86,11 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
    */
   template <class ParticleType>
   friend class RMMParticleCellIterator;
+
+  /**
+   * type of the internal iterator
+   */
+  typedef Iterator iterator_t;
 };
 
 /**
