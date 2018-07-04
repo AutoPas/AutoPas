@@ -120,6 +120,13 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
     return true;
   }
 
+  /**
+   * Determine the optimal traversal for the current situation.
+   * @tparam PairwiseFunctor
+   * @tparam useSoA
+   * @tparam useNewton3
+   * @param pairwiseFunctor Functor to optimize for.
+   */
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   void tuneTraversal(PairwiseFunctor &pairwiseFunctor) {
     if (_traversalSelector != nullptr)
