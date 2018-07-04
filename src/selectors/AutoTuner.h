@@ -63,8 +63,8 @@ class AutoTuner {
   void iteratePairwise(ParticleFunctor *f, bool useSoA);
 
  private:
-  template <class CellFunctor>
-  void tune(CellFunctor &cellFunctor);
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  void tune(PairwiseFunctor &pairwiseFunctor);
 
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
@@ -89,30 +89,26 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, bool
   /// @todo: CellFunctor for iteration should be build here using selectors for SoA and N3
   if (useSoA) {
     if (useNewton3) {
-      //      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
-      //      if (_iterationsSinceTuning == _tuningInterval)
-      //        tune(cellFunctor);
-      //      _containerSelector.getOptimalContainer()->iteratePairwiseSoA(cellFunctor);
+      if (_iterationsSinceTuning >= _tuningInterval) {
+        tune<ParticleFunctor, true, true>(*f);
+      }
       WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
     } else {
-      //      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-      //      if (_iterationsSinceTuning == _tuningInterval)
-      //        tune(cellFunctor);
-      //      _containerSelector.getOptimalContainer()->iteratePairwiseSoA(cellFunctor);
+      if (_iterationsSinceTuning >= _tuningInterval) {
+        tune<ParticleFunctor, true, false>(*f);
+      }
       WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
     }
   } else {
     if (useNewton3) {
-      //      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-      //      if (_iterationsSinceTuning == _tuningInterval)
-      //        tune(cellFunctor);
-      //      _containerSelector.getOptimalContainer()->iteratePairwiseAoS(cellFunctor);
+      if (_iterationsSinceTuning >= _tuningInterval) {
+        tune<ParticleFunctor, false, true>(*f);
+      }
       WithStaticContainerType(container, container->iteratePairwiseAoS(f, useNewton3););
     } else {
-      //      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
-      //      if (_iterationsSinceTuning == _tuningInterval)
-      //        tune(cellFunctor);
-      //      _containerSelector.getOptimalContainer()->iteratePairwiseAoS(cellFunctor);
+      if (_iterationsSinceTuning >= _tuningInterval) {
+        tune<ParticleFunctor, false, false>(*f);
+      }
       WithStaticContainerType(container, container->iteratePairwiseAoS(f, useNewton3););
     }
   }
@@ -120,10 +116,10 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, bool
   ++_iterationsSinceTuning;
 }
 template <class Particle, class ParticleCell>
-template <class CellFunctor>
-void AutoTuner<Particle, ParticleCell>::tune(CellFunctor &cellFunctor) {
+template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+void AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   _containerSelector.tune();
-  //  _containerSelector.getOptimalContainer()->tuneTraversal(cellFunctor);
+    _containerSelector.getOptimalContainer()->template tuneTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
   _iterationsSinceTuning = 0;
 }
 }  // namespace autopas

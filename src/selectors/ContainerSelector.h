@@ -111,6 +111,13 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
       }
       default: { AutoPasLogger->warn("Container type {} is not a known type!", option); }
     }
+
+    // copy particles so they do not get lost when container is switched
+    // TODO: optimize this such that we do not save the whole domain x times
+    if (_optimalContainer != nullptr)
+      for (auto particleIter = _optimalContainer->begin(); particleIter.isValid(); ++particleIter) {
+        containers[containers.size() - 1]->addParticle(*particleIter);
+      }
   }
 
   assert(containers.size() > 0);
