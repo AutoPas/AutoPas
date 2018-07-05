@@ -43,7 +43,8 @@ class RandomGenerator {
   }
 
   template <class Container, class Particle>
-  static void fillWithHaloParticles(Container& container, Particle defaultParticle, double haloWidth, unsigned long numParticles = 100) {
+  static void fillWithHaloParticles(Container& container, Particle defaultParticle, double haloWidth,
+                                    unsigned long numParticles = 100) {
     srand(42);  // fixed seedpoint
 
     auto haloBoxMin = container.getBoxMin();

@@ -45,7 +45,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
   ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                     const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
       : _cells(),
-        _traversalSelector(nullptr),    // needs to be instantiated by respective container.
+        _traversalSelector(nullptr),  // needs to be instantiated by respective container.
         _applicableTraversals(applicableTraversals),
         _boxMin(boxMin),
         _boxMax(boxMax),

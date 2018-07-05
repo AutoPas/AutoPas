@@ -119,7 +119,8 @@ template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 void AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   _containerSelector.tune();
-    _containerSelector.getOptimalContainer()->template tuneTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+  _containerSelector.getOptimalContainer()->template tuneTraversal<PairwiseFunctor, useSoA, useNewton3>(
+      pairwiseFunctor);
   _iterationsSinceTuning = 0;
 }
 }  // namespace autopas

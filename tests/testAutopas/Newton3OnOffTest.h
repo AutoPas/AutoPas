@@ -27,7 +27,6 @@ class Newton3OnOffTest : public AutoPasTestBase {
   unsigned int getVerletRebuildFrequency() const { return 1; }
 
  protected:
-
  public:
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockFunctor;
   AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
