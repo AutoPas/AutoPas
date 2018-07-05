@@ -114,10 +114,16 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
 
     // copy particles so they do not get lost when container is switched
     // TODO: optimize this such that we do not save the whole domain x times
-    if (_optimalContainer != nullptr)
-      for (auto particleIter = _optimalContainer->begin(); particleIter.isValid(); ++particleIter) {
+    if (_optimalContainer != nullptr) {
+      for (auto particleIter = _optimalContainer->begin(IteratorBehavior::ownedOnly); particleIter.isValid();
+           ++particleIter) {
         containers[containers.size() - 1]->addParticle(*particleIter);
       }
+      for (auto particleIter = _optimalContainer->begin(IteratorBehavior::haloOnly); particleIter.isValid();
+           ++particleIter) {
+        containers[containers.size() - 1]->addHaloParticle(*particleIter);
+      }
+    }
   }
 
   assert(containers.size() > 0);
