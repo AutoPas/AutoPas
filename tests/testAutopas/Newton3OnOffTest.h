@@ -27,12 +27,6 @@ class Newton3OnOffTest : public AutoPasTestBase {
   unsigned int getVerletRebuildFrequency() const { return 1; }
 
  protected:
-  double fRand(double fMin, double fMax) const;
-
-  std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) const;
-
-  void fillContainerWithMolecules(unsigned long numMolecules,
-                                  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> &cont) const;
 
  public:
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockFunctor;

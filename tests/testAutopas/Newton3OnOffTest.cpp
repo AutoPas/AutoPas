@@ -4,44 +4,19 @@
  * @date 18.04.18
  */
 
+#include <testingHelpers/RandomGenerator.h>
 #include "Newton3OnOffTest.h"
 
 using ::testing::_;       // anything is ok
 using ::testing::Return;  // anything is ok
 
-double Newton3OnOffTest::fRand(double fMin, double fMax) const {
-  double f = static_cast<double>(rand()) / RAND_MAX;
-  return fMin + f * (fMax - fMin);
-}
-
-std::array<double, 3> Newton3OnOffTest::randomPosition(const std::array<double, 3> &boxMin,
-                                                       const std::array<double, 3> &boxMax) const {
-  std::array<double, 3> r{};
-  for (int d = 0; d < 3; ++d) {
-    r[d] = fRand(boxMin[d], boxMax[d]);
-  }
-  return r;
-}
-
-void Newton3OnOffTest::fillContainerWithMolecules(
-    unsigned long numMolecules,
-    AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> &autoPas) const {
-  srand(42);  // fixed seedpoint
-
-  std::array<double, 3> boxMin(getBoxMin()), boxMax(getBoxMax());
-
-  for (size_t i = 0; i < numMolecules; ++i) {
-    auto id = static_cast<unsigned long>(i);
-    autopas::Particle m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
-    autoPas.addParticle(m);
-  }
-}
-
 TEST_F(Newton3OnOffTest, testAoS) {
   for (auto containerOption : autopas::allContainerOptions) {
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(),
                  {containerOption}, {autopas::TraversalOptions::c08}, 1);
-    fillContainerWithMolecules(100, autoPas);
+    autopas::MoleculeLJ defaultParticle;
+    RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
+    RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle, autoPas.getContainer()->getCutoff(), 10);
 
     // with newton 3:
     int callsNewton3 = 0;
@@ -77,10 +52,11 @@ TEST_F(Newton3OnOffTest, testSoA) {
     if (containerOption == autopas::ContainerOptions::verletLists) {
       continue;
     }
-
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(),
                  {containerOption});
-    fillContainerWithMolecules(100, autoPas);
+    autopas::MoleculeLJ defaultParticle;
+    RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
+    RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle, autoPas.getContainer()->getCutoff(), 10);
 
     // loader and extractor will be called, we don't care how often.
     EXPECT_CALL(mockFunctor, SoALoader(_, _)).Times(testing::AtLeast(1));
