@@ -114,7 +114,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   std::unique_ptr<CellPairTraversal<ParticleCell>> optimalTraversal(
       dynamic_cast<CellPairTraversal<ParticleCell> *>(traversals.front().release()));
 
-  _optimalTraversalOptions[typeid(PairwiseFunctor).hash_code()] = optimalTraversal->getName();
+  _optimalTraversalOptions[typeid(PairwiseFunctor).hash_code()] = optimalTraversal->getTraversalType();
 
   return optimalTraversal;
 }
