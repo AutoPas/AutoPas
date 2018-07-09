@@ -98,13 +98,12 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
         if (_iterationsSinceTuning >= _tuningInterval) {
           tune<ParticleFunctor, true, true>(*f);
         }
-        WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
       } else {
         if (_iterationsSinceTuning >= _tuningInterval) {
           tune<ParticleFunctor, true, false>(*f);
         }
-        WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
       }
+      WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
       break;
     }
     case autopas::aos: {
@@ -112,13 +111,12 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
         if (_iterationsSinceTuning >= _tuningInterval) {
           tune<ParticleFunctor, false, true>(*f);
         }
-        WithStaticContainerType(container, container->iteratePairwiseAoS(f, useNewton3););
       } else {
         if (_iterationsSinceTuning >= _tuningInterval) {
           tune<ParticleFunctor, false, false>(*f);
         }
-        WithStaticContainerType(container, container->iteratePairwiseAoS(f, useNewton3););
       }
+      WithStaticContainerType(container, container->iteratePairwiseAoS(f, useNewton3););
       break;
     }
   }
