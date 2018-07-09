@@ -11,14 +11,6 @@
 #include <memory>
 #include "autopasIncludes.h"
 
-namespace autopas {
-
-/**
- * Possible Choices for the particle data layout.
- */
-enum DataLayoutOption { aos, soa };
-}  // namespace autopas
-
 /**
  * The AutoPas class is intended to be the main point of Interaction for the
  * user. It puts a layer of abstraction over the container and handles the
@@ -115,16 +107,7 @@ class AutoPas {
   template <class Functor>
   void iteratePairwise(Functor *f, autopas::DataLayoutOption dataLayoutOption) {
     // @todo remove this and let is be handled via a selector
-    switch (dataLayoutOption) {
-      case autopas::aos: {
-        _autoTuner->iteratePairwise(f, false);
-        break;
-      }
-      case autopas::soa: {
-        _autoTuner->iteratePairwise(f, true);
-        break;
-      }
-    }
+    _autoTuner->iteratePairwise(f, dataLayoutOption);
   }
 
   /**
