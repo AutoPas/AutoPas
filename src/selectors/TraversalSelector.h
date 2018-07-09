@@ -95,7 +95,9 @@ std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<Parti
     }
   }
 
-  assert(not traversals.empty());
+  if (traversals.empty())
+    utils::ExceptionHandler::exception("TraversalSelector: No traversals were generated.");
+
   return traversals;
 }
 
@@ -107,7 +109,8 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   traversals.erase(
       std::remove_if(traversals.begin(), traversals.end(), [](auto const &t) { return not t->isApplicable(); }),
       traversals.end());
-  assert(not traversals.empty());
+  if (traversals.empty())
+    utils::ExceptionHandler::exception("TraversalSelector: None of the allowed traversals were applicable.");
 
   // TODO: Autotuning goes here
   // Tedious downcast

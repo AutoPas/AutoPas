@@ -44,9 +44,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff) {
     // LC should only be instantiated with applicable traversals
-    assert(this->checkIfTraversalsAreApplicable(allowedTraversalOptions));
+    if ( not this->checkIfTraversalsAreApplicable(allowedTraversalOptions))
+      utils::ExceptionHandler::exception("LinkedCells: At least one non-applicable traversal option was passed.");
     // LC should not bee instantiated without any traversals
-    assert(not allowedTraversalOptions.empty());
+    if (allowedTraversalOptions.empty())
+      utils::ExceptionHandler::exception("LinkedCells: No traversal option was passed.");
     this->_traversalSelector = std::make_unique<TraversalSelector<ParticleCell>>(
         _cellBlock.getCellsPerDimensionWithHalo(), allowedTraversalOptions);
   }

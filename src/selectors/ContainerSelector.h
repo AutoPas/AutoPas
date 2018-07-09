@@ -126,7 +126,9 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
     }
   }
 
-  assert(containers.size() > 0);
+  if (containers.empty())
+    utils::ExceptionHandler::exception("ContainerSelector: No containers were generated.");
+
   return containers;
 }
 
