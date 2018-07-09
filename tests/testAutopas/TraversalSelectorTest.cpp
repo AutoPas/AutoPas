@@ -23,8 +23,8 @@ TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
   auto traversalSlice = traversalSelectorSlice.getOptimalTraversal<MFunctor, false, true>(functor);
 
   // check that traversals are of the expected type
-  ASSERT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversalC08.get())));
-  ASSERT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversalSlice.get())))
+  EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversalC08.get())));
+  EXPECT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversalSlice.get())))
       << "Is the domain size large enough for the processors' thread count?";
 }
 
@@ -38,5 +38,5 @@ TEST(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
   auto traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
 
   // check that traversals are of the expected type
-  ASSERT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
+  EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
 }
