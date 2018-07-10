@@ -95,8 +95,7 @@ std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<Parti
     }
   }
 
-  if (traversals.empty())
-    utils::ExceptionHandler::exception("TraversalSelector: No traversals were generated.");
+  if (traversals.empty()) utils::ExceptionHandler::exception("TraversalSelector: No traversals were generated.");
 
   return traversals;
 }

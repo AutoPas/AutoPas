@@ -126,8 +126,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
     }
   }
 
-  if (containers.empty())
-    utils::ExceptionHandler::exception("ContainerSelector: No containers were generated.");
+  if (containers.empty()) utils::ExceptionHandler::exception("ContainerSelector: No containers were generated.");
 
   return containers;
 }
