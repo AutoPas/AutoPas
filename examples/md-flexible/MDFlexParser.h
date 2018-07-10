@@ -16,7 +16,7 @@ class MDFlexParser {
   MDFlexParser() = default;
 
   bool parseInput(int argc, char **argv);
-  autopas::ContainerOption getContainerOption() const;
+  autopas::ContainerOptions getContainerOption() const;
   double getCutoff() const;
   autopas::DataLayoutOption getDataLayoutOption() const;
   FunctorOption getFunctorOption() const;
@@ -25,7 +25,7 @@ class MDFlexParser {
   double getParticlesSpacing() const;
 
  private:
-  autopas::ContainerOption containerOption;
+  autopas::ContainerOptions containerOption;
   autopas::DataLayoutOption dataLayoutOption;
   FunctorOption functorOption;
   size_t particlesPerDim;

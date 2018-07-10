@@ -5,42 +5,19 @@
  */
 
 #include "Newton3OnOffTest.h"
+#include <testingHelpers/RandomGenerator.h>
 
 using ::testing::_;       // anything is ok
 using ::testing::Return;  // anything is ok
 
-double Newton3OnOffTest::fRand(double fMin, double fMax) const {
-  double f = static_cast<double>(rand()) / RAND_MAX;
-  return fMin + f * (fMax - fMin);
-}
-
-std::array<double, 3> Newton3OnOffTest::randomPosition(const std::array<double, 3> &boxMin,
-                                                       const std::array<double, 3> &boxMax) const {
-  std::array<double, 3> r{};
-  for (int d = 0; d < 3; ++d) {
-    r[d] = fRand(boxMin[d], boxMax[d]);
-  }
-  return r;
-}
-
-void Newton3OnOffTest::fillContainerWithMolecules(
-    unsigned long numMolecules,
-    AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> &autoPas) const {
-  srand(42);  // fixed seedpoint
-
-  std::array<double, 3> boxMin(getBoxMin()), boxMax(getBoxMax());
-
-  for (size_t i = 0; i < numMolecules; ++i) {
-    auto id = static_cast<unsigned long>(i);
-    autopas::Particle m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
-    autoPas.addParticle(m);
-  }
-}
-
 TEST_F(Newton3OnOffTest, testAoS) {
-  for (auto containerOption : autopas::possibleContainerOptions) {
-    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), containerOption);
-    fillContainerWithMolecules(100, autoPas);
+  for (auto containerOption : autopas::allContainerOptions) {
+    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(), {containerOption},
+                 {autopas::TraversalOptions::c08}, 1);
+    autopas::MoleculeLJ defaultParticle;
+    RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
+    RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
+                                           autoPas.getContainer()->getCutoff(), 10);
 
     // with newton 3:
     int callsNewton3 = 0;
@@ -49,6 +26,7 @@ TEST_F(Newton3OnOffTest, testAoS) {
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
       callsNewton3++;
     }));
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(testing::AtLeast(1));
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(0);  // disables newton3 variant
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
@@ -56,21 +34,31 @@ TEST_F(Newton3OnOffTest, testAoS) {
     int callsNonNewton3 = 0;
     EXPECT_CALL(mockFunctor, allowsNewton3()).WillOnce(Return(false));
     EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillOnce(Return(true));
-    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(0);  // disables newton3 variant
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
       callsNonNewton3++;
     }));
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(0);  // disables newton3 variant
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
     EXPECT_EQ(callsNewton3 * 2,
-              callsNonNewton3);  // should be called exactly two times
+              callsNonNewton3)
+        << "for containeroption: " << containerOption;  // should be called exactly two times
   }
 }
 
 TEST_F(Newton3OnOffTest, testSoA) {
-  for (auto containerOption : autopas::possibleContainerOptions) {
-    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), containerOption);
-    fillContainerWithMolecules(100, autoPas);
+  //  for (auto containerOption : autopas::allContainerOptions) {
+  for (auto containerOption : autopas::allContainerOptions) {
+    if (containerOption == autopas::ContainerOptions::verletLists) {
+      continue;
+    }
+    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(),
+                 {containerOption});
+    autopas::MoleculeLJ defaultParticle;
+    RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
+    RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
+                                           autoPas.getContainer()->getCutoff(), 10);
 
     // loader and extractor will be called, we don't care how often.
     EXPECT_CALL(mockFunctor, SoALoader(_, _)).Times(testing::AtLeast(1));
@@ -86,11 +74,13 @@ TEST_F(Newton3OnOffTest, testSoA) {
     EXPECT_CALL(mockFunctor, SoAFunctor(_, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
       callsNewton3SC++;
     }));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, true)).Times(testing::AtLeast(1));
 
     // pair of cells
     EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
       callsNewton3Pair++;
     }));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).Times(testing::AtLeast(1));
 
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
 
@@ -105,16 +95,18 @@ TEST_F(Newton3OnOffTest, testSoA) {
     EXPECT_CALL(mockFunctor, SoAFunctor(_, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
       callsNonNewton3SC++;
     }));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, false)).Times(testing::AtLeast(1));
 
     // pair of cells
     EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
       callsNonNewton3Pair++;
     }));
+    EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).Times(testing::AtLeast(1));
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
 
-    EXPECT_EQ(callsNewton3SC,
-              callsNonNewton3SC);  // should be called exactly two times
-    EXPECT_EQ(callsNewton3Pair * 2,
-              callsNonNewton3Pair);  // should be called exactly two times
+    EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
+    ;  // should be called exactly two times
+    EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
+    ;  // should be called exactly two times
   }
 }

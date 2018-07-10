@@ -7,10 +7,9 @@
 
 #pragma once
 
+#include <selectors/TraversalSelector.h>
 #include <array>
 #include "ParticleContainerInterface.h"
-#include "iterators/ParticleIterator.h"
-#include "iterators/RegionParticleIterator.h"
 #include "pairwiseFunctors/Functor.h"
 
 namespace autopas {
@@ -24,6 +23,12 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class ParticleContainer : public ParticleContainerInterface<Particle> {
+ private:
+  static const std::vector<TraversalOptions> &DefaultApplicableTraversals() {
+    static const std::vector<TraversalOptions> v{};
+    return v;
+  }
+
  public:
   /// type of the Particle
   typedef Particle ParticleType;
@@ -35,9 +40,16 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param applicableTraversals Traversals applicable for this Container
    */
-  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : _data(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
+  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+                    const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
+      : _cells(),
+        _traversalSelector(nullptr),  // needs to be instantiated by respective container.
+        _applicableTraversals(applicableTraversals),
+        _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cutoff(cutoff) {}
 
   /**
    * destructor of ParticleContainer
@@ -95,13 +107,47 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    */
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
+  /**
+   * Checks if the given traversals are applicable to this traversal.
+   * @param traversalOptions
+   * @return True iff traversalOptions is a subset of _applicableTraversals
+   */
+  bool checkIfTraversalsAreApplicable(std::vector<TraversalOptions> traversalOptions) {
+    for (auto &option : traversalOptions) {
+      if (find(_applicableTraversals.begin(), _applicableTraversals.end(), option) == _applicableTraversals.end())
+        return false;
+    }
+    return true;
+  }
+
+  /**
+   * Determine the optimal traversal for the current situation.
+   * @tparam PairwiseFunctor
+   * @tparam useSoA
+   * @tparam useNewton3
+   * @param pairwiseFunctor Functor to optimize for.
+   */
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  void tuneTraversal(PairwiseFunctor &pairwiseFunctor) {
+    if (_traversalSelector != nullptr)
+      _traversalSelector->template tune<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+  }
+
  protected:
   /**
    * vector of particle cells.
    * All particle containers store their particles in ParticleCells. This is the
    * common vector for this purpose.
    */
-  std::vector<ParticleCell> _data;
+  std::vector<ParticleCell> _cells;
+  /**
+   * Selector for traversal of the container.
+   */
+  std::unique_ptr<TraversalSelector<ParticleCell>> _traversalSelector;
+  /**
+   * Vector of all applicable traversal options for the container.
+   */
+  const std::vector<TraversalOptions> &_applicableTraversals;
 
  private:
   std::array<double, 3> _boxMin;

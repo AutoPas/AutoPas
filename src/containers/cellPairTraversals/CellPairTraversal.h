@@ -7,8 +7,10 @@
 
 #pragma once
 
+#include <selectors/TraversalSelector.h>
 #include <array>
 #include <vector>
+#include "CellPairTraversalInterface.h"
 
 namespace autopas {
 
@@ -17,66 +19,41 @@ namespace autopas {
  * This class handles traversals through the cell structures.
  * Derived classes handle the order through which the cells are traversed.
  * @tparam ParticleCell type of cells.
- * @tparam CellFunctor a cell functor.
  */
-template <class ParticleCell, class CellFunctor>
-class CellPairTraversals {
+template <class ParticleCell>
+class CellPairTraversal : public CellPairTraversalInterface {
  public:
   /**
-   * Constructor of CellPairTraversals.
-   * @param cells the vector of cells.
+   * Constructor of CellPairTraversal.
    * @param dims the dimensions of the cellblock.
-   * @param cellFunctor the cell functor.
    */
-  CellPairTraversals(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
-                     CellFunctor *cellFunctor)
-      : _cells(&cells), _cellsPerDimension(dims), _cellFunctor(cellFunctor) {}
+  CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims) {}
 
   /**
-   * Destructor of CellPairTraversals.
+   * Destructor of CellPairTraversal.
    */
-  virtual ~CellPairTraversals() = default;
-
-  /**
-   * Checks if the traversal is applicable to the current state of the domain.
-   * @return true iff the traversal can be applied.
-   */
-  virtual bool isApplicable() = 0;
+  virtual ~CellPairTraversal() = default;
 
   /**
    * Resets the cell structure of the traversal.
-   * @param cells
    * @param dims
    */
-  virtual void rebuild(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims) {
-    _cells = &cells;
-    _cellsPerDimension = dims;
-  };
+  virtual void rebuild(const std::array<unsigned long, 3> &dims) { _cellsPerDimension = dims; };
 
   /**
    * Traverse all pairs of cells.
    * This function needs to be implemented by derived classes and handles to
    * order in which the cells are traversed.
+   * @param cells Vector of cells to traverse
    */
-  virtual void traverseCellPairs() = 0;
+  virtual void traverseCellPairs(std::vector<ParticleCell> &cells) = 0;
 
  protected:
-  /**
-   * The vector of cells.
-   */
-  std::vector<ParticleCell> *_cells;
-
   /**
    * The dimensions of the cellblock.
    * The dimensions are the number of cells in x, y and z direction.
    */
   std::array<unsigned long, 3> _cellsPerDimension;
-
-  /**
-   * The cell functor which defines the interaction of the particles between two
-   * specific cells.
-   */
-  CellFunctor *_cellFunctor;
 };
 
 }  // namespace autopas

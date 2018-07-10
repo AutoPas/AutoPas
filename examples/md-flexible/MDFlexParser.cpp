@@ -125,7 +125,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
-autopas::ContainerOption MDFlexParser::getContainerOption() const { return containerOption; }
+autopas::ContainerOptions MDFlexParser::getContainerOption() const { return containerOption; }
 double MDFlexParser::getCutoff() const { return cutoff; }
 autopas::DataLayoutOption MDFlexParser::getDataLayoutOption() const { return dataLayoutOption; }
 MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const { return functorOption; }

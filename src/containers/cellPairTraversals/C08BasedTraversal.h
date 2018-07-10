@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <pairwiseFunctors/CellFunctor.h>
 #include "CellPairTraversal.h"
 #include "utils/ThreeDimensionalMapping.h"
 
@@ -20,23 +21,24 @@ namespace autopas {
  * all cells are done.
  *
  * @tparam ParticleCell the type of cells
- * @tparam CellFunctor the cell functor that defines the interaction of the
- * particles of two specific cells
+ * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam useSoA
+ * @tparam useNewton3
  */
-template <class ParticleCell, class CellFunctor>
-class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the c08 traversal.
-   * @param cells The cells through which the traversal should traverse.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param cellfunctor The cell functor that defines the interaction of
-   * particles between two different cells.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C08BasedTraversal(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
-                             CellFunctor *cellfunctor)
-      : CellPairTraversals<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {
+  explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+      : CellPairTraversal<ParticleCell>(dims),
+        _cellFunctor(
+            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
+                pairwiseFunctor)) {
     computeOffsets();
   }
 
@@ -44,13 +46,19 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
   /**
    * Computes one interaction for each spacial direction based on the lower left
    * frontal corner (=base index) of a 2x2x2 block of cells.
+   * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
-  void processBaseCell(unsigned long baseIndex) const;
+  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
   /**
    * Computes pairs for the block used in processBaseCell()
    */
   void computeOffsets();
+
+  /**
+   * CellFunctor to be used for the traversal defining the interaction between two cells.
+   */
+  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellFunctor;
 
   /**
    * Pair sets for processBaseCell().
@@ -62,8 +70,9 @@ class C08BasedTraversal : public CellPairTraversals<ParticleCell, CellFunctor> {
   std::array<unsigned long, 8> _cellOffsets;
 };
 
-template <class ParticleCell, class CellFunctor>
-inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(unsigned long baseIndex) const {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(
+    std::vector<ParticleCell> &cells, unsigned long baseIndex) {
   using std::pair;
 
   const int num_pairs = _cellPairOffsets.size();
@@ -76,19 +85,19 @@ inline void C08BasedTraversal<ParticleCell, CellFunctor>::processBaseCell(unsign
     unsigned long offset2 = current_pair.second;
     unsigned long cellIndex2 = baseIndex + offset2;
 
-    ParticleCell &cell1 = this->_cells->at(cellIndex1);
-    ParticleCell &cell2 = this->_cells->at(cellIndex2);
+    ParticleCell &cell1 = cells[cellIndex1];
+    ParticleCell &cell2 = cells[cellIndex2];
 
     if (cellIndex1 == cellIndex2) {
-      this->_cellFunctor->processCell(cell1);
+      this->_cellFunctor.processCell(cell1);
     } else {
-      this->_cellFunctor->processCellPair(cell1, cell2);
+      this->_cellFunctor.processCellPair(cell1, cell2);
     }
   }
 }
 
-template <class ParticleCell, class CellFunctor>
-inline void C08BasedTraversal<ParticleCell, CellFunctor>::computeOffsets() {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets() {
   using std::make_pair;
   typedef ThreeDimensionalMapping TDM;
 

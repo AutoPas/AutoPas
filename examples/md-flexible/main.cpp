@@ -32,13 +32,14 @@ void printMolecules(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecul
  * @param cutoff Cutoff radius to use. Affects number and size of cells for e.g.
  * LinkedCells.
  */
-void initContainer(autopas::ContainerOption containerOption,
+void initContainer(autopas::ContainerOptions containerOption,
                    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
                    double particelSpacing, double cutoff) {
   std::array<double, 3> boxMax({(particlesPerDim + 1.0) * particelSpacing, (particlesPerDim + 1.0) * particelSpacing,
                                 (particlesPerDim + 1.0) * particelSpacing});
 
-  autopas.init(boxMax, cutoff, containerOption);
+  // TODO: Extend example to be tunable and also include traversal choices
+  autopas.init(boxMax, cutoff, 0, 1, {containerOption});
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,

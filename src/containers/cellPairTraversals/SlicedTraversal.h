@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <selectors/TraversalSelector.h>
 #include <utils/WrapOpenMP.h>
 #include <algorithm>
 #include "C08BasedTraversal.h"
@@ -24,34 +25,30 @@ namespace autopas {
  * as soon the boundary wall is fully processed.
  *
  * @tparam ParticleCell the type of cells
- * @tparam CellFunctor the cell functor that defines the interaction of the
- * particles of two specific cells
+ * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam useSoA
+ * @tparam useNewton3
  */
-template <class ParticleCell, class CellFunctor>
-class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3> {
  public:
   /**
    * Constructor of the sliced traversal.
-   * @param cells the cells through which the traversal should traverse.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param cellfunctor The cell functor that defines the interaction of
-   * particles between two different cells.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit SlicedTraversal(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
-                           CellFunctor *cellfunctor)
-      : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {
-    rebuild(cells, dims);
+  explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {
+    rebuild(dims);
   }
   // documentation in base class
-  void traverseCellPairs() override;
+  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  TraversalOptions getTraversalType() override;
   bool isApplicable() override;
-  void rebuild(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims) override;
+  void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  private:
-  // FIXME: Remove this as soon as other traversals are available
-  void traverseCellPairsFallback();
-
   /**
    * store ids of dimensions ordered by number of cells per dimensions
    */
@@ -64,15 +61,20 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
   std::vector<autopas_lock_t *> locks;
 };
 
-template <class ParticleCell, class CellFunctor>
-inline bool SlicedTraversal<ParticleCell, CellFunctor>::isApplicable() {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline TraversalOptions SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
+  return TraversalOptions::sliced;
+}
+
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline bool SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
   return this->_cellsPerDimension[_dimsPerLength[0]] / this->_sliceThickness.size() >= 2;
 }
 
-template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(std::vector<ParticleCell> &cells,
-                                                                const std::array<unsigned long, 3> &dims) {
-  CellPairTraversals<ParticleCell, CellFunctor>::rebuild(cells, dims);
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::rebuild(
+    const std::array<unsigned long, 3> &dims) {
+  CellPairTraversal<ParticleCell>::rebuild(dims);
 
   // find longest dimension
   auto minMaxElem = std::minmax_element(this->_cellsPerDimension.begin(), this->_cellsPerDimension.end());
@@ -95,36 +97,13 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::rebuild(std::vector<Part
   locks.resize(numSlices);
 }
 
-// FIXME: Remove this as soon as other traversals are available
-template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairsFallback() {
-  std::array<unsigned long, 3> endid;
-  for (int d = 0; d < 3; ++d) {
-    endid[d] = this->_cellsPerDimension[d] - 1;
-  }
-  for (unsigned long z = 0; z < endid[2]; ++z) {
-    for (unsigned long y = 0; y < endid[1]; ++y) {
-      for (unsigned long x = 0; x < endid[0]; ++x) {
-        unsigned long ind = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-        this->processBaseCell(ind);
-      }
-    }
-  }
-}
-
-template <class ParticleCell, class CellFunctor>
-inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+    std::vector<ParticleCell> &cells) {
   using std::array;
 
   auto numSlices = _sliceThickness.size();
   // 0) check if applicable
-
-  // use fallback version if not applicable
-  // FIXME: Remove this as soon as other traversals are available
-  if (not isApplicable()) {
-    traverseCellPairsFallback();
-    return;
-  }
 
   for (size_t i = 0; i < numSlices - 1; ++i) {
     locks[i] = new autopas_lock_t;
@@ -160,7 +139,7 @@ inline void SlicedTraversal<ParticleCell, CellFunctor>::traverseCellPairs() {
           idArray[_dimsPerLength[1]] = dimMedium;
           idArray[_dimsPerLength[2]] = dimShort;
           auto id = ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
-          this->processBaseCell(id);
+          this->processBaseCell(cells, id);
         }
       }
       // at the end of the first layer release the lock

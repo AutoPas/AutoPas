@@ -18,35 +18,35 @@ namespace autopas {
  * these steps overlap a domain coloring with eight colors is applied.
  *
  * @tparam ParticleCell the type of cells
- * @tparam CellFunctor the cell functor that defines the interaction of the
- * particles of two specific cells
+ * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam useSoA
+ * @tparam useNewton3
  */
-template <class ParticleCell, class CellFunctor>
-class C08Traversal : public C08BasedTraversal<ParticleCell, CellFunctor> {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3> {
  public:
   /**
    * Constructor of the c08 traversal.
-   * @param cells The cells through which the traversal should traverse.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param cellfunctor The cell functor that defines the interaction of
-   * particles between two different cells.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C08Traversal(std::vector<ParticleCell> &cells, const std::array<unsigned long, 3> &dims,
-                        CellFunctor *cellfunctor)
-      : C08BasedTraversal<ParticleCell, CellFunctor>(cells, dims, cellfunctor) {}
+  explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
   // documentation in base class
-  void traverseCellPairs() override;
+  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  TraversalOptions getTraversalType() override;
   bool isApplicable() override;
 };
 
-template <class ParticleCell, class CellFunctor>
-inline bool C08Traversal<ParticleCell, CellFunctor>::isApplicable() {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline bool C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
   return true;
 }
 
-template <class ParticleCell, class CellFunctor>
-inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+    std::vector<ParticleCell> &cells) {
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
   array<unsigned long, 3> end;
@@ -73,12 +73,17 @@ inline void C08Traversal<ParticleCell, CellFunctor>::traverseCellPairs() {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
           for (unsigned long x = start_x; x < end_x; x += stride_x) {
             unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-            this->processBaseCell(baseIndex);
+            this->processBaseCell(cells, baseIndex);
           }
         }
       }
     }
   }
+}
+
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+TraversalOptions C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
+  return TraversalOptions::c08;
 };
 
 }  // namespace autopas

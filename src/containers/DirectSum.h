@@ -6,6 +6,8 @@
  */
 
 #pragma once
+#include <iterators/ParticleIterator.h>
+#include <iterators/RegionParticleIterator.h>
 #include "CellBorderAndFlagManager.h"
 #include "ParticleContainer.h"
 #include "pairwiseFunctors/CellFunctor.h"
@@ -34,7 +36,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff), _cellBorderFlagManager() {
-    this->_data.resize(2);
+    this->_cells.resize(2);
   }
 
   void addParticle(Particle &p) override {
@@ -112,14 +114,14 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBorderFlagManager, behavior));
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, &_cellBorderFlagManager, behavior));
   }
 
   ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
-        &this->_data, lowerCorner, higherCorner, &_cellBorderFlagManager, behavior));
+        &this->_cells, lowerCorner, higherCorner, &_cellBorderFlagManager, behavior));
   }
 
  private:
@@ -135,9 +137,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
   } _cellBorderFlagManager;
 
-  ParticleCell *getCell() { return &(this->_data.at(0)); };
+  ParticleCell *getCell() { return &(this->_cells.at(0)); };
 
-  ParticleCell *getHaloCell() { return &(this->_data.at(1)); };
+  ParticleCell *getHaloCell() { return &(this->_cells.at(1)); };
 };
 
 }  // namespace autopas

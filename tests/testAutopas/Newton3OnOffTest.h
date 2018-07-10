@@ -23,15 +23,10 @@ class Newton3OnOffTest : public AutoPasTestBase {
   std::array<double, 3> getBoxMax() const { return {3.0, 3.0, 3.0}; }
 
   double getCutoff() const { return 1.0; }
+  double getVerletSkin() const { return 0.0; }
+  unsigned int getVerletRebuildFrequency() const { return 1; }
 
  protected:
-  double fRand(double fMin, double fMax) const;
-
-  std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) const;
-
-  void fillContainerWithMolecules(unsigned long numMolecules,
-                                  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> &cont) const;
-
  public:
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockFunctor;
   AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;

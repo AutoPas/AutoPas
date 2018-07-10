@@ -7,11 +7,9 @@
 
 #pragma once
 
+#include <testingHelpers/commonTypedefs.h>
 #include "AutoPas.h"
 #include "AutoPasTestBase.h"
-
-typedef autopas::Particle Particle;
-typedef autopas::FullParticleCell<Particle> FPCell;
 
 class FlopCounterTest : public AutoPasTestBase {
  public:

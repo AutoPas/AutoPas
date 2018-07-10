@@ -23,6 +23,11 @@ template <class Particle>
 class ParticleCell {
  public:
   /**
+   * The particle type for this cell.
+   */
+  typedef Particle ParticleType;
+
+  /**
    * destructor of ParticleCell
    */
   virtual ~ParticleCell() = default;

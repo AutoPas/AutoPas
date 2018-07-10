@@ -85,7 +85,7 @@ TEST_F(LinkedCellsVersusVerletListsTest, test1000) {
   // empirically determined and set near the minimal possible value
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1e-12;
+  double rel_err_tolerance = 2e-12;
   test(numMolecules, rel_err_tolerance);
 }
 

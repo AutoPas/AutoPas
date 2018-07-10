@@ -11,6 +11,8 @@
 #include "ParticleContainer.h"
 #include "containers/cellPairTraversals/C08Traversal.h"
 #include "containers/cellPairTraversals/SlicedTraversal.h"
+#include "iterators/ParticleIterator.h"
+#include "iterators/RegionParticleIterator.h"
 #include "pairwiseFunctors/CellFunctor.h"
 #include "utils/inBox.h"
 
@@ -34,10 +36,31 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param allowedTraversalOptions Traversal options from which the TraversalSelector shall choose.
+   * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff),
-        _cellBlock(this->_data, boxMin, boxMax, cutoff) {}
+  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+              const std::vector<TraversalOptions> &allowedTraversalOptions = allLCApplicableTraversals())
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff) {
+    // LC should only be instantiated with applicable traversals
+    if (not this->checkIfTraversalsAreApplicable(allowedTraversalOptions))
+      utils::ExceptionHandler::exception("LinkedCells: At least one non-applicable traversal option was passed.");
+    // LC should not bee instantiated without any traversals
+    if (allowedTraversalOptions.empty())
+      utils::ExceptionHandler::exception("LinkedCells: No traversal option was passed.");
+    this->_traversalSelector = std::make_unique<TraversalSelector<ParticleCell>>(
+        _cellBlock.getCellsPerDimensionWithHalo(), allowedTraversalOptions);
+  }
+
+  /**
+   * Lists all traversal options applicable for the Linked Cells container.
+   * @return Vector of all applicable traversal options.
+   */
+  static const std::vector<TraversalOptions> &allLCApplicableTraversals() {
+    static const std::vector<TraversalOptions> v{TraversalOptions::c08, TraversalOptions::sliced};
+    return v;
+  }
 
   void addParticle(Particle &p) override {
     bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
@@ -74,34 +97,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
-    auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");
     if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-      // TODO: REMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
-      // IMPLEMENTED
-      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>> traversal(
-            this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs();
-      } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true>> traversal(
-            this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs();
-      }
-
+      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, true>(*f)->traverseCellPairs(
+          this->_cells);
     } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
-      // IMPLEMENTED
-      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>> traversal(
-            this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs();
-      } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false>> traversal(
-            this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs();
-      }
+      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f)->traverseCellPairs(
+          this->_cells);
     }
   }
 
@@ -116,34 +117,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
     loadSoAs(f);
 
-    auto envTraversal = std::getenv("AUTOPAS_TRAVERSAL");
     if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
-      // TODO: REVMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
-      // IMPLEMENTED
-      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>> traversal(
-            this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs();
-      } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true>> traversal(
-            this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs();
-      }
-
+      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, true>(*f)->traverseCellPairs(
+          this->_cells);
     } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-      // TODO: REMOVE SELECTION VIA ENVIRONMENT VAR AS SOON AS SELECTOR IS
-      // IMPLEMENTED
-      if (envTraversal != nullptr && strcmp(envTraversal, "C08") == 0) {
-        C08Traversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>> traversal(
-            this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs();
-      } else {
-        SlicedTraversal<ParticleCell, CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false>> traversal(
-            this->_data, _cellBlock.getCellsPerDimensionWithHalo(), &cellFunctor);
-        traversal.traverseCellPairs();
-      }
+      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f)->traverseCellPairs(
+          this->_cells);
     }
 
     extractSoAs(f);
@@ -155,7 +134,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     for (auto iter = this->begin(); iter.isValid(); ++iter) {
       invalidParticles.push_back(*iter);
     }
-    for (auto &cell : this->_data) {
+    for (auto &cell : this->_cells) {
       cell.clear();
     }
     for (auto &particle : invalidParticles) {
@@ -168,11 +147,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   bool isContainerUpdateNeeded() override {
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_data.size(); ++cellIndex1d) {
+    for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      for (auto iter = this->_data[cellIndex1d].begin(); iter.isValid(); ++iter) {
+      for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not inBox(iter->getR(), boxmin, boxmax)) {
           return true;  // we need an update
         }
@@ -183,14 +162,14 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, ParticleCell>(&this->_data, &_cellBlock, behavior));
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, &_cellBlock, behavior));
   }
 
   ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
-        &this->_data, lowerCorner, higherCorner, &_cellBlock, behavior));
+        &this->_cells, lowerCorner, higherCorner, &_cellBlock, behavior));
   }
 
   /**
@@ -203,7 +182,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * returns reference to the data of LinkedCells
    * @return the data
    */
-  std::vector<ParticleCell> &getData() { return this->_data; }
+  std::vector<ParticleCell> &getCells() { return this->_cells; }
 
  protected:
   /**
@@ -223,8 +202,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < this->_data.size(); ++i) {
-      functor->SoALoader(this->_data[i], this->_data[i]._particleSoABuffer);
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      functor->SoALoader(this->_cells[i], this->_cells[i]._particleSoABuffer);
     }
   }
 
@@ -239,8 +218,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < this->_data.size(); ++i) {
-      functor->SoAExtractor(this->_data[i], this->_data[i]._particleSoABuffer);
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      functor->SoAExtractor(this->_cells[i], this->_cells[i]._particleSoABuffer);
     }
   }
 };

@@ -34,29 +34,42 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   std::array<double, 3> boxMax = {(double)particlesPerDimension[0], (double)particlesPerDimension[1],
                                   (double)particlesPerDimension[2]};
 
-  AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
+#ifdef AUTOPAS_OPENMP
+  int numThreadsBefore = omp_get_max_threads();
+  omp_set_num_threads(8);
+#endif
 
-  // generates one cell per particle + 1 halo layer
-  autoPas.init(boxMin, boxMax, cellLength, autopas::linkedCells);
+  /// @todo: test all containers
+  for (auto &traversalLC :
+       autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>>::allLCApplicableTraversals()) {
+    AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
 
-  fillWithParticles(autoPas, particlesPerDimension);
+    // generates one cell per particle + 1 halo layer
+    auto containerList = {autopas::ContainerOptions::linkedCells};
+    auto traversalList = {traversalLC};
+    autoPas.init(boxMin, boxMax, cellLength, 0, 1, containerList, traversalList);
 
-  SimpleFunctor functor;
+    fillWithParticles(autoPas, particlesPerDimension);
 
-  // TODO: test all traversals -> no autotuning
-  autoPas.iteratePairwise(&functor, autopas::aos);
+    SimpleFunctor functor;
 
-  for (auto particleIterator = autoPas.begin(); particleIterator.isValid(); ++particleIterator) {
-    if (particleIterator->getR()[0] == .5 || particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||
-        particleIterator->getR()[1] == .5 || particleIterator->getR()[1] == particlesPerDimension[1] - .5 ||
-        particleIterator->getR()[2] == .5 || particleIterator->getR()[2] == particlesPerDimension[2] - .5)
-      continue;
-    // for debugging:
-    //    particleIterator->print();
+    autoPas.iteratePairwise(&functor, autopas::aos);
 
-    // although these are doubles this should be exactly zero
-    ASSERT_EQ(particleIterator->getF()[0], 0);
-    ASSERT_EQ(particleIterator->getF()[1], 0);
-    ASSERT_EQ(particleIterator->getF()[2], 0);
+    for (auto particleIterator = autoPas.begin(); particleIterator.isValid(); ++particleIterator) {
+      if (particleIterator->getR()[0] == .5 || particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||
+          particleIterator->getR()[1] == .5 || particleIterator->getR()[1] == particlesPerDimension[1] - .5 ||
+          particleIterator->getR()[2] == .5 || particleIterator->getR()[2] == particlesPerDimension[2] - .5)
+        continue;
+      // for debugging:
+      //    particleIterator->print();
+
+      // although these are doubles this should be exactly zero
+      ASSERT_EQ(particleIterator->getF()[0], 0) << "in traversal: " << traversalLC;
+      ASSERT_EQ(particleIterator->getF()[1], 0) << "in traversal: " << traversalLC;
+      ASSERT_EQ(particleIterator->getF()[2], 0) << "in traversal: " << traversalLC;
+    }
   }
+#ifdef AUTOPAS_OPENMP
+  omp_set_num_threads(numThreadsBefore);
+#endif
 }

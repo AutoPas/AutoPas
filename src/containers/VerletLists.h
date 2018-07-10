@@ -30,6 +30,13 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   typedef VerletListHelpers<Particle> verlet_internal;
   typedef FullParticleCell<Particle> ParticleCell;
 
+ private:
+  static const std::vector<TraversalOptions>& VLApplicableTraversals() {
+    // TODO: implement some traversals for this
+    static const std::vector<TraversalOptions> v{};
+    return v;
+  }
+
  public:
   /**
    * Enum that specifies how the verlet lists should be build
@@ -57,7 +64,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
               unsigned int rebuildFrequency = 1,
               BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
-        _linkedCells(boxMin, boxMax, cutoff + skin),
+        _linkedCells(boxMin, boxMax,
+                     cutoff + skin),  // default TraversalSelector for LC needed for checkNeighborListsAreValid
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
@@ -174,13 +182,13 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   }
 
   bool isContainerUpdateNeeded() override {
-    for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getData().size(); ++cellIndex1d) {
+    for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getCells().size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       _linkedCells.getCellBlock().getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
-      for (auto iter = _linkedCells.getData()[cellIndex1d].begin(); iter.isValid(); ++iter) {
+      for (auto iter = _linkedCells.getCells()[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not iter->inBox(boxmin, boxmax)) {
           AutoPasLogger->debug(
               "VerletLists: containerUpdate needed! Particles are fast. You "
@@ -357,7 +365,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   template <class ParticleFunctor>
   void loadVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
-    for (auto& cell : _linkedCells.getData()) {
+    for (auto& cell : _linkedCells.getCells()) {
       functor->SoALoader(cell, _soa, offset);
       offset += cell.numParticles();
     }
@@ -373,7 +381,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   template <class ParticleFunctor>
   void extractVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
-    for (auto& cell : _linkedCells.getData()) {
+    for (auto& cell : _linkedCells.getCells()) {
       functor->SoAExtractor(cell, _soa, offset);
       offset += cell.numParticles();
     }

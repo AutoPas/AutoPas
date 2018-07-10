@@ -8,9 +8,6 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/GridGenerator.h"
 
-typedef autopas::MoleculeLJ Molecule;
-typedef autopas::FullParticleCell<autopas::MoleculeLJ> FPCell;
-
 class ForceCalculationTest : public AutoPasTestBase {
  public:
   ForceCalculationTest() = default;

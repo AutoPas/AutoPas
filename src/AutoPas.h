@@ -6,27 +6,10 @@
 
 #pragma once
 
+#include <selectors/AutoTuner.h>
 #include <iostream>
 #include <memory>
 #include "autopasIncludes.h"
-
-namespace autopas {
-/**
- * Possible choices for the particle container type.
- */
-enum ContainerOption { directSum, linkedCells };
-
-/**
- * Provides a way to iterate over the possible choices of ContainerOption.
- */
-static std::array<ContainerOption, 2> possibleContainerOptions = {ContainerOption::directSum,
-                                                                  ContainerOption::linkedCells};
-
-/**
- * Possible Choices for the particle data layout.
- */
-enum DataLayoutOption { aos, soa };
-}  // namespace autopas
 
 /**
  * The AutoPas class is intended to be the main point of Interaction for the
@@ -57,37 +40,35 @@ class AutoPas {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
-   * @param containerOption Type of the container.
+   * @param verletSkin Length added to the cutoff for the verlet lists' skin.
+   * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * @param allowedContainers List of container types AutoPas can choose from.
+   * @param allowedTraversals List of traversals AutoPas can choose from.
+   * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
-  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
-            autopas::ContainerOption containerOption) {
-    switch (containerOption) {
-      case autopas::directSum: {
-        container =
-            std::unique_ptr<ContainerType>(new autopas::DirectSum<Particle, ParticleCell>(boxMin, boxMax, cutoff));
-        break;
-      }
-      case autopas::linkedCells: {
-        container =
-            std::unique_ptr<ContainerType>(new autopas::LinkedCells<Particle, ParticleCell>(boxMin, boxMax, cutoff));
-        break;
-      }
-      default: {
-        std::cerr << "AutoPas.init(): Unknown container Option! " << containerOption << std::endl;
-        exit(1);
-      }
-    }
+  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
+            unsigned int verletRebuildFrequency,
+            const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
+            const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
+            unsigned int tuningInterval = 100) {
+    _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(boxMin, boxMax, cutoff, verletSkin,
+                                                                              verletRebuildFrequency, allowedContainers,
+                                                                              allowedTraversals, tuningInterval);
+
+    _container = _autoTuner->getContainer();
   }
 
   /**
    * @overload
    *
-   * @param boxSize Size of the container.
-   * @param cutoff  Cutoff radius to be used in this container.
-   * @param containerOption Type of the container.
    */
-  void init(std::array<double, 3> boxSize, double cutoff, autopas::ContainerOption containerOption) {
-    init({0, 0, 0}, boxSize, cutoff, containerOption);
+  void init(std::array<double, 3> boxSize, double cutoff, double verletSkin = 0,
+            unsigned int verletRebuildFrequency = 1,
+            const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
+            const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
+            unsigned int tuningInterval = 100) {
+    init({0, 0, 0}, boxSize, cutoff, verletRebuildFrequency, verletRebuildFrequency, allowedContainers,
+         allowedTraversals, tuningInterval);
   }
 
   /**
@@ -97,55 +78,36 @@ class AutoPas {
    */
   // TODO: remove this once we are convinced all necessary container functions
   // are wrapped
-  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return container.get(); }
+  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _container.get(); }
 
   /**
    * Adds a particle to the container.
    * @param p Reference to the particle to be added
    */
-  void addParticle(Particle &p) { container->addParticle(p); }
+  void addParticle(Particle &p) { _container->addParticle(p); }
 
   /**
    * adds a particle to the container that lies in the halo region of the
    * container
    * @param haloParticle particle to be added
    */
-  void addHaloParticle(Particle &haloParticle) { container->addHaloParticle(haloParticle); };
+  void addHaloParticle(Particle &haloParticle) { _container->addHaloParticle(haloParticle); };
 
   /**
    * deletes all halo particles
    */
-  void deleteHaloParticles() { container->deleteHaloParticles(); };
+  void deleteHaloParticles() { _container->deleteHaloParticles(); };
 
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
    * @param f Functor that describes the pair-potential
    * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
-   * @tparam Functor type of the functor
    */
   template <class Functor>
   void iteratePairwise(Functor *f, autopas::DataLayoutOption dataLayoutOption) {
-    bool newton3Allowed = f->allowsNewton3();
-    bool nonNewton3Allowed = f->allowsNonNewton3();
-    bool useNewton3 = true;
-    if (newton3Allowed and nonNewton3Allowed) {
-      /// @todo auto-tune (far off future)
-    } else if (not newton3Allowed and not nonNewton3Allowed) {
-      /// @todo throw exception
-    } else {
-      useNewton3 = newton3Allowed;
-    }
-    switch (dataLayoutOption) {
-      case autopas::aos: {
-        WithStaticContainerType(container, container->iteratePairwiseAoS(f, useNewton3););
-        break;
-      }
-      case autopas::soa: {
-        WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
-        break;
-      }
-    }
+    // @todo remove this and let is be handled via a selector
+    _autoTuner->iteratePairwise(f, dataLayoutOption);
   }
 
   /**
@@ -153,7 +115,7 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @return iterator to the first particle
    */
-  autopas::ParticleIteratorWrapper<Particle> begin() { return container->begin(); }
+  autopas::ParticleIteratorWrapper<Particle> begin() { return _container->begin(); }
 
   /**
    * iterate over all particles in a specified region
@@ -165,10 +127,11 @@ class AutoPas {
    */
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
                                                                std::array<double, 3> higherCorner) {
-    return container->getRegionIterator(lowerCorner, higherCorner);
+    return _container->getRegionIterator(lowerCorner, higherCorner);
   }
 
  private:
   typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
-  std::unique_ptr<ContainerType> container;
+  std::shared_ptr<ContainerType> _container;
+  std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };
