@@ -40,14 +40,15 @@ void printMolecules(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecul
 void initContainer(autopas::ContainerOptions containerOption, std::vector<autopas::TraversalOptions> traversalOptions,
                    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
                    double particelSpacing, double cutoff) {
-  std::array<double, 3> boxMax({(particlesPerDim + 1.0) * particelSpacing, (particlesPerDim + 1.0) * particelSpacing,
-                                (particlesPerDim + 1.0) * particelSpacing});
+  std::array<double, 3> boxMax(
+      {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
   autopas.init(boxMax, cutoff, 0, 1, {containerOption}, traversalOptions);
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
-                                   {particelSpacing, particelSpacing, particelSpacing});
+                                   {particelSpacing, particelSpacing, particelSpacing},
+                                   {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
 }
 
 int main(int argc, char **argv) {
