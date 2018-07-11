@@ -9,6 +9,7 @@
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
   int option, option_index;
+  constexpr size_t valueOffset = 20;
   static struct option long_options[] = {
       {"container", required_argument, nullptr, 'c'},
       {"cutoff", required_argument, nullptr, 'C'},
@@ -27,14 +28,16 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
       switch (option) {
         case 'c': {
+          cout << setw(valueOffset) << left << "Container"
+               << ":  ";
           if (strArg.find("direct") != string::npos) {
-            cout << "Using container: DirectSum" << endl;
+            cout << "DirectSum" << endl;
             containerOption = autopas::directSum;
           } else if (strArg.find("linked") != string::npos) {
-            cout << "Using container: LinkedCells" << endl;
+            cout << "LinkedCells" << endl;
             containerOption = autopas::linkedCells;
           } else if (strArg.find("verlet") != string::npos) {
-            cout << "Using container: VerletLists" << endl;
+            cout << "VerletLists" << endl;
             containerOption = autopas::verletLists;
           } else {
             cerr << "Unknown container : " << strArg << endl;
@@ -51,15 +54,18 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
             break;
           }
-          cout << "Cutoff radius: " << cutoff << endl;
+          cout << setw(valueOffset) << left << "Cutoff radius"
+               << ":  " << cutoff << endl;
           break;
         }
         case 'd': {
+          cout << setw(valueOffset) << left << "Data Layout"
+               << ":  ";
           if (strArg.find("aos") != string::npos) {
-            cout << "Using Array-of-Structures" << endl;
+            cout << "Array-of-Structures" << endl;
             dataLayoutOption = autopas::aos;
           } else if (strArg.find("soa") != string::npos) {
-            cout << "Using Structure-of-Arrays" << endl;
+            cout << "Structure-of-Arrays" << endl;
             dataLayoutOption = autopas::soa;
           } else {
             cerr << "Unknown data layout : " << strArg << endl;
@@ -69,8 +75,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           break;
         }
         case 'f': {
+          cout << setw(valueOffset) << left << "Functor"
+               << ":  ";
           if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
-            cout << "Using Lennard-Jones (12-6) Functor" << endl;
+            cout << "Lennard-Jones (12-6)" << endl;
             functorOption = lj12_6;
           } else {
             cerr << "Unknown functor : " << strArg << endl;
@@ -87,7 +95,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
             break;
           }
-          cout << "Simulating " << iterations << " iterations." << endl;
+          cout << setw(valueOffset) << left << "Iterations"
+               << ":  " << iterations << endl;
           break;
         }
         case 'n': {
@@ -98,8 +107,11 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
             break;
           }
-          cout << "Simulating " << particlesPerDim
-               << " particles per dimension. (Total: " << (particlesPerDim * particlesPerDim * particlesPerDim) <<")" << endl;
+          cout << "Particles" << endl;
+          cout << setw(valueOffset) << left << "  per dimension"
+               << ":  " << particlesPerDim << endl;
+          cout << setw(valueOffset) << left << "  total"
+               << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
           break;
         }
         case 's': {
@@ -110,11 +122,13 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
             break;
           }
-          cout << "Particles are separated by " << particleSpacing << " [?]" << endl;
+          cout << setw(valueOffset) << left << "Particle spacing"
+               << ":  " << particleSpacing << endl;
           break;
         }
         case 't': {
-          cout << "Allowing traversals: ";
+          cout << setw(valueOffset) << left << "Allowed traversals"
+               << ":  ";
           if (strArg.find("c08") != string::npos) {
             cout << "c08, ";
             traversalOptions.push_back(autopas::TraversalOptions::c08);
