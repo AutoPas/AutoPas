@@ -27,11 +27,15 @@ class MDFlexParser {
   FunctorOption getFunctorOption() const;
   size_t getIterations() const;
   size_t getParticlesPerDim() const;
-  double getParticlesSpacing() const;
+  double getParticleSpacing() const;
+  const vector<autopas::TraversalOptions> &getTraversalOptions() const;
 
  private:
   autopas::ContainerOptions containerOption;
   autopas::DataLayoutOption dataLayoutOption;
+  std::vector<autopas::TraversalOptions> traversalOptions;
+
+ private:
   FunctorOption functorOption;
   size_t particlesPerDim;
   double particleSpacing;

@@ -17,6 +17,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       {"iterations", required_argument, nullptr, 'i'},
       {"particles-per-dimension", required_argument, nullptr, 'n'},
       {"particle-spacing", required_argument, nullptr, 's'},
+      {"traversal", required_argument, nullptr, 't'},
   };
   int numOptions = sizeof(long_options) / sizeof(long_options[0]) * 2 + 1;
   if (argc == numOptions) {
@@ -94,7 +95,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
             break;
           }
-          cout << "Simulating " << particlesPerDim << " particles per dimension." << endl;
+          cout << "Simulating " << particlesPerDim
+               << " particles per dimension. (Total: " << (particlesPerDim * particlesPerDim * particlesPerDim) <<")" << endl;
           break;
         }
         case 's': {
@@ -106,6 +108,24 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             break;
           }
           cout << "Particles are separated by " << particleSpacing << " [?]" << endl;
+          break;
+        }
+        case 't': {
+          cout << "Allowing traversals: ";
+          if (strArg.find("c08") != string::npos) {
+            cout << "c08, ";
+            traversalOptions.push_back(autopas::TraversalOptions::c08);
+          }
+          if (strArg.find("slice") != string::npos) {
+            cout << "sliced, ";
+            traversalOptions.push_back(autopas::TraversalOptions::sliced);
+          }
+          if (traversalOptions.empty()) {
+            cerr << "Unknown Traversal : " << strArg << endl;
+            cerr << "Please use 'c08' or 'sliced'!" << endl;
+            displayHelp = true;
+          }
+          cout << "\b\b  " << endl;
           break;
         }
         default: {
@@ -140,4 +160,6 @@ size_t MDFlexParser::getIterations() const { return iterations; }
 
 size_t MDFlexParser::getParticlesPerDim() const { return particlesPerDim; }
 
-double MDFlexParser::getParticlesSpacing() const { return particleSpacing; }
+double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
+
+const vector<autopas::TraversalOptions> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }

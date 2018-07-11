@@ -37,14 +37,13 @@ void printMolecules(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecul
  * @param cutoff Cutoff radius to use. Affects number and size of cells for e.g.
  * LinkedCells.
  */
-void initContainer(autopas::ContainerOptions containerOption,
+void initContainer(autopas::ContainerOptions containerOption, std::vector<autopas::TraversalOptions> traversalOptions,
                    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
                    double particelSpacing, double cutoff) {
   std::array<double, 3> boxMax({(particlesPerDim + 1.0) * particelSpacing, (particlesPerDim + 1.0) * particelSpacing,
                                 (particlesPerDim + 1.0) * particelSpacing});
 
-  // TODO: Extend example to be tunable and also include traversal choices
-  autopas.init(boxMax, cutoff, 0, 1, {containerOption});
+  autopas.init(boxMax, cutoff, 0, 1, {containerOption}, traversalOptions);
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
@@ -63,7 +62,8 @@ int main(int argc, char **argv) {
   auto particlesPerDim(parser.getParticlesPerDim());
   auto cutoff(parser.getCutoff());
   auto numIterations(parser.getIterations());
-  auto particleSpacing(parser.getParticlesSpacing());
+  auto particleSpacing(parser.getParticleSpacing());
+  auto traversalOptions(parser.getTraversalOptions());
 
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal, startCalc, stopCalc;
 
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
   // Initialization
   AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
 
-  initContainer(containerChoice, autopas, particlesPerDim, particleSpacing, cutoff);
+  initContainer(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff);
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
@@ -83,6 +83,7 @@ int main(int argc, char **argv) {
                                                                                 MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
 
+  cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
   cout << "Starting force calculation... " << flush;
   startCalc = std::chrono::high_resolution_clock::now();
   // Calculation
