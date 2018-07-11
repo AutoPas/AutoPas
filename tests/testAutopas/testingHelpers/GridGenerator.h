@@ -6,7 +6,7 @@
  */
 
 #pragma once
-#include "AutoPas.h"
+#include "autopas/AutoPas.h"
 
 /**
  * Generator for grids of particles.

@@ -7,11 +7,11 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <mocks/MockFunctor.h>
-#include <particles/Particle.h>
-#include <selectors/TraversalSelector.h>
-#include <testingHelpers/commonTypedefs.h>
 #include "AutoPasTestBase.h"
+#include "autopas/particles/Particle.h"
+#include "autopas/selectors/TraversalSelector.h"
+#include "mocks/MockFunctor.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class TraversalSelectorTest : public AutoPasTestBase {
  public:

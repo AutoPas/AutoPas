@@ -1,11 +1,10 @@
-//
-// Created by seckler on 22.01.18.
-//
+/**
+ * @file SPHTest.cpp
+ * @author seckler
+ * @date 22.01.18
+ */
 
 #include "SPHTest.h"
-#include "autopasIncludes.h"
-#include "sph/autopassph.h"
-#include "testingHelpers/RandomGenerator.h"
 
 TEST_F(SPHTest, testW) {
   double value = autopas::sph::SPHKernels::W({1., 1., 1.}, 1.);

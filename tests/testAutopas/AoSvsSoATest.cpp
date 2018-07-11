@@ -1,5 +1,10 @@
+/**
+ * @file AoSvsSoATest.cpp
+ * @author F.Gratl
+ * @date 8.02.18
+ */
+
 #include "AoSvsSoATest.h"
-#include <chrono>
 
 using namespace autopas;
 

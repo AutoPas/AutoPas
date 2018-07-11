@@ -3,12 +3,13 @@
  * @author F. Gratl
  * @date 22.06.18
  */
+
 #pragma once
 
 #include <gtest/gtest.h>
-#include <testingHelpers/commonTypedefs.h>
 #include "AutoPasTestBase.h"
-#include "selectors/ContainerSelector.h"
+#include "autopas/selectors/ContainerSelector.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class ContainerSelectorTest : public AutoPasTestBase {
  public:

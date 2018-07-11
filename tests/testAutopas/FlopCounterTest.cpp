@@ -1,8 +1,7 @@
 /**
- * FlopCounterTest.cpp
- *
- *  Created on: 6/1/18
- *     Aauthor: F. Gratl
+ * @file FlopCounterTest.cpp
+ * @author F. Gratl
+ * @date 01.06.18
  */
 
 #include "FlopCounterTest.h"

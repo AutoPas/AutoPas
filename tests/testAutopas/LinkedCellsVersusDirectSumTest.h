@@ -1,16 +1,15 @@
-/*
- * LinkedCellsVersusDirectSumTest.h
- *
- *  Created on: 23 Jan 2018
- *      Author: tchipevn
+/**
+ * @file LinkedCellsVersusDirectSumTest.h
+ * @author tchipev
+ * @date 23.01.18
  */
 
-#ifndef TESTS_TESTAUTOPAS_LINKEDCELLSVERSUSDIRECTSUMTEST_H_
-#define TESTS_TESTAUTOPAS_LINKEDCELLSVERSUSDIRECTSUMTEST_H_
+#pragma once
 
 #include <gtest/gtest.h>
+#include <cstdlib>
 #include "AutoPasTestBase.h"
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
 
 class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
  public:
@@ -38,5 +37,3 @@ class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
   autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
   autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
 };
-
-#endif /* TESTS_TESTAUTOPAS_LINKEDCELLSVERSUSDIRECTSUMTEST_H_ */

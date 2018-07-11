@@ -1,12 +1,11 @@
-/*
- * ArrayMathTest.cpp
- *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+/**
+ * @file ArrayMathTest.cpp
+ * @author tchipev
+ * @date 19.01.18
  */
 
-#include "gtest/gtest.h"
-#include "utils/ArrayMath.h"
+#include <gtest/gtest.h>
+#include "autopas/utils/ArrayMath.h"
 
 using namespace autopas;
 

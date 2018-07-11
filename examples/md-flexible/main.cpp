@@ -1,10 +1,15 @@
+/**
+ * @file main.cpp
+ * @date 23.02.2018
+ * @author F. Gratl
+ */
 
-#include <AutoPas.h>
 #include <chrono>
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
+#include "autopas/AutoPas.h"
 
 using namespace std;
 using namespace autopas;

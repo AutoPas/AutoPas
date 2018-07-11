@@ -5,8 +5,6 @@
  */
 
 #include "LoggerTest.h"
-#include "autopasIncludes.h"
-#include "gtest/gtest.h"
 
 void LoggerTest::SetUp() { autopas::Logger::create(stream); }
 

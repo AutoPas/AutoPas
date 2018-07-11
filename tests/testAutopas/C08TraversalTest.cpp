@@ -1,8 +1,7 @@
 /**
- * C08TraversalTest.cpp
- *
- *  Created on: 5/24/18
- *     Aauthor: F. Gratl
+ * @file C08TraversalTest.cpp
+ * @author F. Gratl
+ * @date 24.05.18
  */
 
 #include "C08TraversalTest.h"

@@ -5,7 +5,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <utils/Logger.h>
+#include "autopas/utils/Logger.h"
 
 #pragma once
 

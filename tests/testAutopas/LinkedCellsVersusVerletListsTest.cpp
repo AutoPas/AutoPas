@@ -1,13 +1,10 @@
-/*
- * LinkedCellsVersusDirectSumTest.cpp
- *
- *  Created on: 23 Jan 2018
- *      Author: tchipevn
+/**
+ * @file LinkedCellsVersusDirectSumTest.cpp
+ * @author seckler
+ * @date 21.05.18
  */
 
 #include "LinkedCellsVersusVerletListsTest.h"
-#include <testingHelpers/RandomGenerator.h>
-#include <cstdlib>
 
 LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest()
     : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),

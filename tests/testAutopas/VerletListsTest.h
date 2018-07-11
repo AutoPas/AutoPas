@@ -8,6 +8,11 @@
 
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/particles/Particle.h"
+#include "mocks/MockFunctor.h"
+#include "mocks/MockVerletLists.h"
+#include "testingHelpers/RandomGenerator.h"
 
 class VerletListsTest : public AutoPasTestBase {};

@@ -1,11 +1,16 @@
-#ifndef AUTOPAS_MDFLEXPARSER_H
-#define AUTOPAS_MDFLEXPARSER_H
+/**
+ * @file MDFlexParser.h
+ * @date 23.02.2018
+ * @author F. Gratl
+ */
 
-#include <AutoPas.h>
+#pragma once
+
 #include <getopt.h>
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include "autopas/AutoPas.h"
 
 using namespace std;
 
@@ -33,5 +38,3 @@ class MDFlexParser {
   size_t iterations;
   double cutoff;
 };
-
-#endif  // AUTOPAS_MDFLEXPARSER_H

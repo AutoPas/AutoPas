@@ -1,12 +1,14 @@
-//
-// Created by seckler on 19.01.18.
-//
+/**
+ * @file sph-diagram-generation.cpp
+ * @date 25.01.2018
+ * @author seckler
+ */
 
 #include <array>
 #include <iostream>
-#include "autopasIncludes.h"
-#include "sph/autopassph.h"
-#include "utils/Timer.h"
+#include "autopas/autopasIncludes.h"
+#include "autopas/sph/autopassph.h"
+#include "autopas/utils/Timer.h"
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);

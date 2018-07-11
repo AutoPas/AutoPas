@@ -1,12 +1,9 @@
-/*
- * SlicedTraversalTest.cpp
- *
- *  Created on: 22 Jan 2018
- *      Author: gratl
+/**
+ * @file SlicedTraversalTest.cpp
+ * @author F. Gratl
+ * @date 01.05.18
  */
-#ifdef AUTOPAS_OPENMP
-#include <omp.h>
-#endif
+
 #include "SlicedTraversalTest.h"
 
 using ::testing::_;

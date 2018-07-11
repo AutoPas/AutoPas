@@ -1,12 +1,11 @@
-/*
- * main.cpp
- *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn
+/**
+ * @file main.cpp
+ * @date 17.01.2018
+ * @author tchipev
  */
 
 #include <iostream>
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
 
 using namespace std;
 using namespace autopas;

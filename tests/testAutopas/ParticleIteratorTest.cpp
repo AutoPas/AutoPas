@@ -1,13 +1,10 @@
-/*
- * ParticleIteratorTest.cpp
- *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+/**
+ * @file ParticleIteratorTest.cpp
+ * @author tchipev
+ * @date 19.01.18
  */
 
 #include "ParticleIteratorTest.h"
-#include "autopasIncludes.h"
-#include "gtest/gtest.h"
 
 using namespace autopas;
 using namespace autopas::internal;

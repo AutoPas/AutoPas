@@ -3,6 +3,7 @@
  * @author F. Gratl
  * @date 21.06.18
  */
+
 #include "TraversalSelectorTest.h"
 
 /**

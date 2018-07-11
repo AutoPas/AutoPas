@@ -1,25 +1,17 @@
-//
-// Created by seckler on 19.01.18.
-//
+/**
+ * @file sph-main-verlet.cpp
+ * @date 10.05.2018
+ * @author seckler
+ */
 
 #include <array>
 #include <cmath>
 #include <iostream>
 
-#include "autopasIncludes.h"
-#include "sph/autopassph.h"
-
-// typedef autopas::LinkedCells<
-//    autopas::sph::SPHParticle,
-//    autopas::FullParticleCell<autopas::sph::SPHParticle>>
-//    Container;
+#include "autopas/autopasIncludes.h"
+#include "autopas/sph/autopassph.h"
 
 typedef autopas::VerletLists<autopas::sph::SPHParticle> Container;
-
-// typedef autopas::DirectSum<
-//    autopas::sph::SPHParticle,
-//    autopas::FullParticleCell<autopas::sph::SPHParticle>>
-//    Container;
 
 std::map<std::array<int, 3>, std::vector<autopas::sph::SPHParticle*>> sph_verlet_particle_list;
 

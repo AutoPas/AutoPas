@@ -7,7 +7,7 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "containers/VerletLists.h"
+#include "autopas/containers/VerletLists.h"
 
 // gmock does not write overrides, so we suppress that warning here!
 #if __GNUC__ >= 5

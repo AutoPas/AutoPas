@@ -1,3 +1,9 @@
+/**
+ * @file TraversalRaceConditionTest.cpp
+ * @author seckler
+ * @date 18.04.18
+ */
+
 #include "TraversalRaceConditionTest.h"
 
 void TraversalRaceConditionTest::fillWithParticles(

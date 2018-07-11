@@ -5,9 +5,9 @@
  */
 
 #include "LinkedCellsTest.h"
-#include <cells/FullParticleCell.h>
-#include <containers/LinkedCells.h>
-#include <particles/Particle.h>
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/LinkedCells.h"
+#include "autopas/particles/Particle.h"
 
 TEST_F(LinkedCellsTest, testParticleAdding) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(

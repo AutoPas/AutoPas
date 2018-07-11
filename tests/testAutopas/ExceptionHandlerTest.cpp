@@ -4,10 +4,7 @@
  * @date 17.04.18
  */
 
-#include <gtest/gtest.h>
-
 #include "ExceptionHandlerTest.h"
-#include "utils/ExceptionHandler.h"
 
 using autopas::utils::ExceptionBehavior;
 using autopas::utils::ExceptionHandler;

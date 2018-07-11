@@ -5,9 +5,6 @@
  */
 
 #include "DirectSumTest.h"
-#include <cells/FullParticleCell.h>
-#include <containers/DirectSum.h>
-#include <particles/Particle.h>
 
 TEST_F(DirectSumTest, testParticleAdding) {
   autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},

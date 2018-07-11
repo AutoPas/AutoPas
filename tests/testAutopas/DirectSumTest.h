@@ -7,5 +7,8 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/DirectSum.h"
+#include "autopas/particles/Particle.h"
 
 class DirectSumTest : public AutoPasTestBase {};

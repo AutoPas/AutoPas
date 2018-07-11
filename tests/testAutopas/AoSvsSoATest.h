@@ -1,17 +1,17 @@
-//
-// Created by ga68cat on 2/8/18.
-//
+/**
+ * @file AoSvsSoATest.h
+ * @author F.Gratl
+ * @date 8.02.18
+ */
 
-#ifndef AUTOPAS_AOSVSSOATest_H
-#define AUTOPAS_AOSVSSOATest_H
+#pragma once
 
 #include <gtest/gtest.h>
+#include <chrono>
 #include "AutoPasTestBase.h"
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
 
 class AoSvsSoATest : public AutoPasTestBase {
  public:
   void generateParticles(std::vector<autopas::Particle> *particles);
 };
-
-#endif  // AUTOPAS_AOSVSSOATest_H

@@ -7,10 +7,12 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "AutoPas.h"
 #include "AutoPasTestBase.h"
+#include "autopas/AutoPas.h"
+#include "autopas/sph/autopassph.h"
 #include "mocks/MockFunctor.h"
-#include "sph/autopassph.h"
+#include "testingHelpers/RandomGenerator.h"
+
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */

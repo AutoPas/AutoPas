@@ -1,16 +1,14 @@
-/*
- * SingleCellIteratorTest.h
- *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+/**
+ * @file SingleCellIteratorTest.h
+ * @author tchipev
+ * @date 19.01.18
  */
 
-#ifndef TESTS_TESTAUTOPAS_SINGLECELLITERATORTEST_H_
-#define TESTS_TESTAUTOPAS_SINGLECELLITERATORTEST_H_
+#pragma once
 
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
 
 class SingleCellIteratorTest : public AutoPasTestBase {
  public:
@@ -34,5 +32,3 @@ class SingleCellIteratorTest : public AutoPasTestBase {
   // for each unit test.
   std::vector<autopas::MoleculeLJ> _vecOfMolecules;
 };
-
-#endif /* TESTS_TESTAUTOPAS_SINGLECELLITERATORTEST_H_ */

@@ -1,16 +1,19 @@
-/*
- * SlicedTraversalTest.h
- *
- *  Created on: 22 Jan 2018
- *      Author: gratl
+/**
+ * @file SlicedTraversalTest.h
+ * @author F. Gratl
+ * @date 01.05.18
  */
 
 #pragma once
 
-#include <AutoPas.h>
 #include <gtest/gtest.h>
-#include <mocks/MockFunctor.h>
-#include <testingHelpers/commonTypedefs.h>
+#include "autopas/AutoPas.h"
+#include "mocks/MockFunctor.h"
+#include "testingHelpers/commonTypedefs.h"
+
+#ifdef AUTOPAS_OPENMP
+#include <omp.h>
+#endif
 
 class SlicedTraversalTest : public testing::Test {
  public:

@@ -1,15 +1,16 @@
-/*
- * LinkedCellsVersusDirectSumTest.h
- *
- *  Created on: 21 May 2018
- *      Author: seckler
+/**
+ * @file LinkedCellsVersusDirectSumTest.h
+ * @author seckler
+ * @date 21.05.18
  */
 
 #pragma once
 
 #include <gtest/gtest.h>
+#include <cstdlib>
 #include "AutoPasTestBase.h"
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
+#include "testingHelpers/RandomGenerator.h"
 
 class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
  public:

@@ -1,16 +1,14 @@
-/*
- * main.cpp
- *
- *  Created on: 17 Jan 2018
- *      Author: tchipevn, seckler
+/**
+ * @file main.cpp
+ * @date 17.01.2018
+ * @author tchipev, seckler
  */
-
-#include "autopasIncludes.h"
-#include "mdutils.h"
-#include "utils/Timer.h"
 
 #include <cstdlib>
 #include <iostream>
+#include "autopas/autopasIncludes.h"
+#include "autopas/utils/Timer.h"
+#include "mdutils.h"
 
 using namespace std;
 using namespace autopas;

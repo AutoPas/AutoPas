@@ -1,15 +1,14 @@
 /**
- * FlopCounterTest.h
- *
- *  Created on: 6/1/18
- *     Aauthor: F. Gratl
+ * @file FlopCounterTest.h
+ * @author F. Gratl
+ * @date 01.06.18
  */
 
 #pragma once
 
-#include <testingHelpers/commonTypedefs.h>
-#include "AutoPas.h"
 #include "AutoPasTestBase.h"
+#include "autopas/AutoPas.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class FlopCounterTest : public AutoPasTestBase {
  public:

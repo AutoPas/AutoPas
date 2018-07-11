@@ -1,13 +1,11 @@
-/*
- * myMoleculeTest.cpp
- *
- *  Created on: Jan 18, 2018
- *      Author: seckler
+/**
+ * @file myMoleculeTest.cpp
+ * @author seckler
+ * @date 18.01.18
  */
-#include "autopasIncludes.h"
-#include "gtest/gtest.h"
 
-#include <iostream>
+#include <gtest/gtest.h>
+#include "autopas/autopasIncludes.h"
 
 using namespace autopas;
 

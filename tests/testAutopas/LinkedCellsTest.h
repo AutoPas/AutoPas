@@ -7,4 +7,5 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
+
 class LinkedCellsTest : public AutoPasTestBase {};

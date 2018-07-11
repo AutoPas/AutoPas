@@ -5,7 +5,6 @@
  */
 
 #include "Newton3OnOffTest.h"
-#include <testingHelpers/RandomGenerator.h>
 
 using ::testing::_;       // anything is ok
 using ::testing::Return;  // anything is ok

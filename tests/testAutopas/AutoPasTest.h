@@ -7,7 +7,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "AutoPas.h"
+#include "autopas/AutoPas.h"
 
 class AutoPasTest : public testing::Test {
  public:

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <utils/inBox.h>
 #include <array>
+#include "autopas/utils/inBox.h"
 
 class RandomGenerator {
  private:

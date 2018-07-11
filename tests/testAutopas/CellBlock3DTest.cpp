@@ -1,8 +1,7 @@
-/*
- * CellBlock3DTest.cpp
- *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+/**
+ * @file CellBlock3DTest.cpp
+ * @author tchipev
+ * @date 19.01.18
  */
 
 #include "CellBlock3DTest.h"

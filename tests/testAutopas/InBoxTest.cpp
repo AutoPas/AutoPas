@@ -5,7 +5,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "utils/inBox.h"
+#include "autopas/utils/inBox.h"
 
 TEST(InBoxTest, testInBox) {
   std::array<double, 3> lowCorner{1. / 3., 0., 2. / 3.};

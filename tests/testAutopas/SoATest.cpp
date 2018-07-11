@@ -5,9 +5,6 @@
  */
 
 #include "SoATest.h"
-#include "particles/Particle.h"
-#include "utils/SoA.h"
-#include "utils/SoAType.h"
 
 TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle> soa; }
 

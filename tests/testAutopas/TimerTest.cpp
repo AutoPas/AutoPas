@@ -5,7 +5,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "utils/Timer.h"
+#include "autopas/utils/Timer.h"
 
 TEST(TimerTest, testTimer) {
   autopas::utils::Timer timer;

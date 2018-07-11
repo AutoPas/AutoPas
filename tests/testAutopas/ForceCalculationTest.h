@@ -1,11 +1,16 @@
-#ifndef AUTOPAS_LJFORCECALCULATIONTEST_H
-#define AUTOPAS_LJFORCECALCULATIONTEST_H
+/**
+ * @file ForceCalculationTest.h
+ * @author F. Gratl
+ * @date 13.04.18
+ */
+
+#pragma once
 
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <vector>
-#include "AutoPas.h"
 #include "AutoPasTestBase.h"
+#include "autopas/AutoPas.h"
 #include "testingHelpers/GridGenerator.h"
 
 class ForceCalculationTest : public AutoPasTestBase {
@@ -28,5 +33,3 @@ class ForceCalculationTest : public AutoPasTestBase {
   void testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
               std::array<std::array<double, 3>, 4> expectedForces, double tolerance);
 };
-
-#endif  // AUTOPAS_LJFORCECALCULATIONTEST_H

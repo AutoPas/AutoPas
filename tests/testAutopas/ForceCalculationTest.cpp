@@ -1,3 +1,9 @@
+/**
+ * @file ForceCalculationTest.cpp
+ * @author F. Gratl
+ * @date 13.04.18
+ */
+
 #include "ForceCalculationTest.h"
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,

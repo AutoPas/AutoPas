@@ -1,13 +1,12 @@
-/*
- * SingleCellIteratorTest.cpp
- *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+/**
+ * @file SingleCellIteratorTest.cpp
+ * @author tchipev
+ * @date 19.01.18
  */
 
 #include "SingleCellIteratorTest.h"
-#include "autopasIncludes.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+#include "autopas/autopasIncludes.h"
 
 using namespace autopas;
 

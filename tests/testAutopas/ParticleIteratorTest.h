@@ -1,16 +1,14 @@
-/*
- * ParticleIteratorTest.h
- *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+/**
+ * @file ParticleIteratorTest.h
+ * @author tchipev
+ * @date 19.01.18
  */
 
-#ifndef TESTS_TESTAUTOPAS_PARTICLEITERATORTEST_H_
-#define TESTS_TESTAUTOPAS_PARTICLEITERATORTEST_H_
+#pragma once
 
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
 
 class ParticleIteratorTest : public AutoPasTestBase {
  public:
@@ -38,5 +36,3 @@ class ParticleIteratorTest : public AutoPasTestBase {
   std::vector<autopas::MoleculeLJ> _vecOfMolecules;
   unsigned long _currentIndex;
 };
-
-#endif /* TESTS_TESTAUTOPAS_PARTICLEITERATORTEST_H_ */

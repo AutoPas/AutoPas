@@ -5,7 +5,6 @@
  */
 
 #include "AutoPasTest.h"
-#include "AutoPas.h"
 
 /**
  * test whether the RegionIterator can be generated and something is returned.

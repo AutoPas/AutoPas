@@ -1,12 +1,10 @@
-/*
- * LinkedCellsVersusDirectSumTest.cpp
- *
- *  Created on: 23 Jan 2018
- *      Author: tchipevn
+/**
+ * @file LinkedCellsVersusDirectSumTest.cpp
+ * @author tchipev
+ * @date 23.01.18
  */
 
 #include "LinkedCellsVersusDirectSumTest.h"
-#include <cstdlib>
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {

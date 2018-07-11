@@ -5,7 +5,6 @@
  */
 
 #include "RegionParticleIteratorTest.h"
-#include "testingHelpers/RandomGenerator.h"
 
 using namespace autopas;
 

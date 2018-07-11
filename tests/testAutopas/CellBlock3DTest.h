@@ -1,16 +1,14 @@
-/*
- * CellBlock3DTest.h
- *
- *  Created on: 19 Jan 2018
- *      Author: tchipevn
+/**
+ * @file CellBlock3DTest.h
+ * @author tchipev
+ * @date 19.01.18
  */
 
-#ifndef TESTS_TESTAUTOPAS_CELLBLOCK3DTEST_H_
-#define TESTS_TESTAUTOPAS_CELLBLOCK3DTEST_H_
+#pragma once
 
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
 
 class CellBlock3DTest : public AutoPasTestBase {
  public:
@@ -30,5 +28,3 @@ class CellBlock3DTest : public AutoPasTestBase {
   autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> _cells_1x1x1, _cells_2x2x2, _cells_3x3x3,
       _cells_11x4x4_nonZeroBoxMin;
 };
-
-#endif /* TESTS_TESTAUTOPAS_CELLBLOCK3DTEST_H_ */

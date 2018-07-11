@@ -1,13 +1,14 @@
-//
-// Created by seckler on 19.01.18.
-//
+/**
+ * @file sph-main.cpp
+ * @date 19.01.2018
+ * @author seckler
+ */
 
 #include <array>
 #include <cmath>
 #include <iostream>
-
-#include "autopasIncludes.h"
-#include "sph/autopassph.h"
+#include "autopas/autopasIncludes.h"
+#include "autopas/sph/autopassph.h"
 
 typedef autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> Container;
 

@@ -1,3 +1,9 @@
+/**
+ * @file MDFlexParser.cpp
+ * @date 23.02.2018
+ * @author F. Gratl
+ */
+
 #include "MDFlexParser.h"
 
 bool MDFlexParser::parseInput(int argc, char **argv) {

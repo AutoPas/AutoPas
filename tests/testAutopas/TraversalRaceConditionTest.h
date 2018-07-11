@@ -1,12 +1,17 @@
-#ifndef AUTOPAS_TRAVERSALRACECONDITIONTEST_H
-#define AUTOPAS_TRAVERSALRACECONDITIONTEST_H
+/**
+ * @file TraversalRaceConditionTest.h
+ * @author seckler
+ * @date 18.04.18
+ */
 
-#include <AutoPas.h>
+#pragma once
+
 #include <gtest/gtest.h>
 #include <vector>
 #include "../../examples/md/mdutils.h"
 #include "AutoPasTestBase.h"
-#include "containers/cellPairTraversals/SlicedTraversal.h"
+#include "autopas/AutoPas.h"
+#include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
 
 class TraversalRaceConditionTest : public AutoPasTestBase {
  public:
@@ -62,5 +67,3 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
     constexpr static double CUTOFFSQUARE = 3;
   };
 };
-
-#endif  // AUTOPAS_TRAVERSALRACECONDITIONTEST_H

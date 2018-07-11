@@ -1,21 +1,17 @@
-//
-// Created by seckler on 19.01.18.
-//
+/**
+ * @file sph-main-mpi.cpp
+ * @date 10.04.2018
+ * @author seckler
+ */
 
 #include <mpi.h>
 #include <array>
 #include <cmath>
 #include <iostream>
-
-#include "autopasIncludes.h"
-#include "sph/autopassph.h"
+#include "autopas/autopasIncludes.h"
+#include "autopas/sph/autopassph.h"
 
 typedef autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> Container;
-
-// typedef autopas::DirectSum<
-//    autopas::sph::SPHParticle,
-//    autopas::FullParticleCell<autopas::sph::SPHParticle>>
-//    Container;
 
 void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>& bBoxMax) {
   // Place SPH particles

@@ -5,11 +5,6 @@
  */
 
 #include "VerletListsTest.h"
-#include "cells/FullParticleCell.h"
-#include "mocks/MockFunctor.h"
-#include "mocks/MockVerletLists.h"
-#include "particles/Particle.h"
-#include "testingHelpers/RandomGenerator.h"
 
 using ::testing::_;
 using ::testing::AtLeast;

@@ -1,17 +1,15 @@
-/*
- * mdutils.h
- *
- *  Created on: 18 Jan 2018
- *      Author: tchipevn
+/**
+ * @file main.cpp
+ * @date 18.01.2018
+ * @author tchipev
  */
 
-#ifndef EXAMPLES_MD_MDUTILS_H_
-#define EXAMPLES_MD_MDUTILS_H_
+#pragma once
 
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
-#include "autopasIncludes.h"
+#include "autopas/autopasIncludes.h"
 
 using namespace std;
 using namespace autopas;
@@ -64,5 +62,3 @@ void fillContainerWithMolecules(int numMolecules, ParticleContainer<Molecule, Mo
   //		it->print();
   //	}
 }
-
-#endif /* EXAMPLES_MD_MDUTILS_H_ */
