@@ -33,6 +33,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           } else if (strArg.find("linked") != string::npos) {
             cout << "Using container: LinkedCells" << endl;
             containerOption = autopas::linkedCells;
+          } else if (strArg.find("verlet") != string::npos) {
+            cout << "Using container: VerletLists" << endl;
+            containerOption = autopas::verletLists;
           } else {
             cerr << "Unknown container : " << strArg << endl;
             cerr << "Please use 'DirectSum' or 'LinkedCells'!" << endl;
