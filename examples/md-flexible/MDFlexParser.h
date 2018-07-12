@@ -20,25 +20,28 @@ class MDFlexParser {
 
   MDFlexParser() = default;
 
-  bool parseInput(int argc, char **argv);
   autopas::ContainerOptions getContainerOption() const;
   double getCutoff() const;
   autopas::DataLayoutOption getDataLayoutOption() const;
   FunctorOption getFunctorOption() const;
   size_t getIterations() const;
-  size_t getParticlesPerDim() const;
   double getParticleSpacing() const;
+  size_t getParticlesPerDim() const;
   const vector<autopas::TraversalOptions> &getTraversalOptions() const;
+  size_t getVerletRebuildFrequency() const;
+  double getVerletSkinRadius() const;
+  bool parseInput(int argc, char **argv);
 
  private:
   autopas::ContainerOptions containerOption;
   autopas::DataLayoutOption dataLayoutOption;
   std::vector<autopas::TraversalOptions> traversalOptions;
 
- private:
+  double cutoff;
   FunctorOption functorOption;
+  size_t iterations;
   size_t particlesPerDim;
   double particleSpacing;
-  size_t iterations;
-  double cutoff;
+  size_t verletRebuildFrequency;
+  double verletSkinRadius;
 };

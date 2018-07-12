@@ -39,11 +39,11 @@ void printMolecules(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecul
  */
 void initContainer(autopas::ContainerOptions containerOption, std::vector<autopas::TraversalOptions> traversalOptions,
                    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
-                   double particelSpacing, double cutoff) {
+                   double particelSpacing, double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMax, cutoff, 0, 1, {containerOption}, traversalOptions);
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions);
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
@@ -65,6 +65,8 @@ int main(int argc, char **argv) {
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
   auto traversalOptions(parser.getTraversalOptions());
+  auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
+  auto verletSkinRadius(parser.getVerletSkinRadius());
 
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal, startCalc, stopCalc;
 
@@ -73,16 +75,33 @@ int main(int argc, char **argv) {
   // Initialization
   AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
 
-  initContainer(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff);
+  initContainer(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff, verletSkinRadius,
+                verletRebuildFrequency);
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
+  cout << endl;
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
   cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(cutoff, MoleculeLJ::getEpsilon(),
                                                                                 MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
+
+  // statistics for linked cells
+  if (containerChoice == autopas::ContainerOptions::linkedCells) {
+    auto lcContainer = dynamic_cast<autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> *>(
+        autopas.getContainer());
+    auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
+    std::array<size_t, 3> cellsPerDim{cellsPerDimHalo[0] - 2, cellsPerDimHalo[1] - 2, cellsPerDimHalo[2] - 2};
+    auto numCellsHalo = lcContainer->getCells().size();
+    auto numCells = cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2];
+
+    cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
+         << cellsPerDimHalo[2] << " (Total: " << numCells << ")" << endl;
+    cout << "Particles per cell: " << (particlesPerDim * particlesPerDim * particlesPerDim) / (double)numCells << endl;
+    cout << endl;
+  }
 
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
   cout << "Starting force calculation... " << flush;

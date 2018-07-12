@@ -23,8 +23,7 @@ TARGET_LINK_LIBRARIES(md-flexible
 # add check for current target
 add_test(
         NAME md-flexible.test
-        COMMAND md-flexible --container linked --cutoff 1. --data-layout soa --functor lj --iterations 10
-            --particles-per-dimension 10 --particle-spacing 0.4
+        COMMAND md-flexible --container linked --cutoff 1. --data-layout soa --functor lj --iterations 10 --particles-per-dimension 10 --particle-spacing 0.4 --traversal c08,sliced --verlet-rebuild-frequency 5 --verlet-skin-radius 0
         CONFIGURATIONS checkExamples
 )
 
