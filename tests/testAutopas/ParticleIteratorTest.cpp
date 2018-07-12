@@ -37,7 +37,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF_parallel) {
 
   std::vector<size_t> foundParticles;
 
-#pragma omp parallel reduction(vecMerge: foundParticles)
+#pragma omp parallel reduction(vecMerge : foundParticles)
   {
     for (auto iter = ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>>(&data); iter.isValid(); ++iter) {
       foundParticles.push_back(iter->getID());

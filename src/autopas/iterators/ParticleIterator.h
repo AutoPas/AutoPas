@@ -43,7 +43,6 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
         _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
         _behavior(behavior) {
-
     size_t myThreadId = autopas_get_thread_num();
     if (myThreadId < cont->size()) {
       _iteratorAcrossCells += myThreadId;
