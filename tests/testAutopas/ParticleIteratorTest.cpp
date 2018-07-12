@@ -24,6 +24,33 @@ void ParticleIteratorTest::SetUp() {
 
 void ParticleIteratorTest::TearDown() {}
 
+// reduction for merging vectors: {1,2} + {2,3} -> {1,2,2,3}
+#pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+
+TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF_parallel) {
+  // Empty Full Empty Full Full Empty Empty Full Empty Full
+  std::vector<FullParticleCell<MoleculeLJ>> data(10);
+
+  for (auto i : {1ul, 3ul, 4ul, 7ul, 9ul}) {
+    fillWithParticles(&data.at(i));
+  }
+
+  std::vector<size_t> foundParticles;
+
+#pragma omp parallel reduction(vecMerge: foundParticles)
+  {
+    for (auto iter = ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>>(&data); iter.isValid(); ++iter) {
+      foundParticles.push_back(iter->getID());
+    }
+  }
+
+  std::sort(foundParticles.begin(), foundParticles.end());
+  ASSERT_EQ(foundParticles.size(), 20);
+  for (size_t i = 0; i < 20; ++i) {
+    ASSERT_EQ(i, foundParticles[i]);
+  }
+}
+
 TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full
   std::vector<FullParticleCell<MoleculeLJ>> data(10);
