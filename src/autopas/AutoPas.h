@@ -67,7 +67,7 @@ class AutoPas {
             const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
             unsigned int tuningInterval = 100) {
-    init({0, 0, 0}, boxSize, cutoff, verletRebuildFrequency, verletRebuildFrequency, allowedContainers,
+    init({0, 0, 0}, boxSize, cutoff, verletSkin, verletRebuildFrequency, allowedContainers,
          allowedTraversals, tuningInterval);
   }
 
