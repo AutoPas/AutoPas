@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
   auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
   // approximation for flops of verlet list generation
   if (containerChoice == autopas::ContainerOptions::verletLists)
-    flops += flopCounterFunctor.getDistanceCalculations() * FlopCounterFunctor::numFlopsPerDistanceCalculation *
+    flops += flopCounterFunctor.getDistanceCalculations() * flopCounterFunctor.numFlopsPerDistanceCalculation *
              floor(numIterations / verletRebuildFrequency);
   auto mmups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
 
