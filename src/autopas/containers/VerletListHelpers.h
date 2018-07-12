@@ -43,10 +43,10 @@ class VerletListHelpers {
     /**
      * Constructor
      * @param verletListsAoS
-     * @param cutoffskinsquared
+     * @param cutoffskin
      */
-    VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskinsquared)
-        : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskinsquared) {}
+    VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
+        : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
