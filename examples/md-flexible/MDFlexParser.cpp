@@ -9,7 +9,7 @@
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
   int option, option_index;
-  constexpr size_t valueOffset = 20;
+  constexpr size_t valueOffset = 25;
   static struct option long_options[] = {
       {"container", required_argument, nullptr, 'c'},
       {"cutoff", required_argument, nullptr, 'C'},
@@ -19,6 +19,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       {"particles-per-dimension", required_argument, nullptr, 'n'},
       {"particle-spacing", required_argument, nullptr, 's'},
       {"traversal", required_argument, nullptr, 't'},
+      {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
+      {"verlet-skin-radius", required_argument, nullptr, 'r'},
   };
   int numOptions = sizeof(long_options) / sizeof(long_options[0]) * 2 + 1;
   if (argc == numOptions) {
@@ -145,6 +147,30 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           cout << "\b\b  " << endl;
           break;
         }
+        case 'v': {
+          try {
+            verletRebuildFrequency = stoul(strArg);
+          } catch (const exception &) {
+            cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+            displayHelp = true;
+            break;
+          }
+          cout << setw(valueOffset) << left << "Verlet rebuild frequency"
+               << ":  " << particleSpacing << endl;
+          break;
+        }
+        case 'r': {
+          try {
+            verletSkinRadius = stod(strArg);
+          } catch (const exception &) {
+            cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+            displayHelp = true;
+            break;
+          }
+          cout << setw(valueOffset) << left << "Verlet skin radius"
+               << ":  " << particleSpacing << endl;
+          break;
+        }
         default: {
           // error message handled by getopt
           displayHelp = true;
@@ -159,7 +185,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   if (displayHelp) {
     cout << "Usage: " << argv[0] << endl;
     for (auto o : long_options) {
-      cout << "    --" << setw(25) << left << o.name;
+      cout << "    --" << setw(valueOffset+2) << left << o.name;
       if (o.has_arg) cout << "option";
       cout << endl;
     }
@@ -169,8 +195,11 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
 }
 
 autopas::ContainerOptions MDFlexParser::getContainerOption() const { return containerOption; }
+
 double MDFlexParser::getCutoff() const { return cutoff; }
+
 autopas::DataLayoutOption MDFlexParser::getDataLayoutOption() const { return dataLayoutOption; }
+
 MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const { return functorOption; }
 
 size_t MDFlexParser::getIterations() const { return iterations; }
@@ -180,3 +209,7 @@ size_t MDFlexParser::getParticlesPerDim() const { return particlesPerDim; }
 double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
 
 const vector<autopas::TraversalOptions> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
+
+size_t MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
+
+double MDFlexParser::getVerletSkinRadius() const { return verletSkinRadius; }

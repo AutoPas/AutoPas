@@ -39,11 +39,11 @@ void printMolecules(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecul
  */
 void initContainer(autopas::ContainerOptions containerOption, std::vector<autopas::TraversalOptions> traversalOptions,
                    AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
-                   double particelSpacing, double cutoff) {
+                   double particelSpacing, double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMax, cutoff, 0, 1, {containerOption}, traversalOptions);
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions);
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
@@ -65,6 +65,8 @@ int main(int argc, char **argv) {
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
   auto traversalOptions(parser.getTraversalOptions());
+  auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
+  auto verletSkinRadius(parser.getVerletSkinRadius());
 
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal, startCalc, stopCalc;
 
@@ -73,7 +75,8 @@ int main(int argc, char **argv) {
   // Initialization
   AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
 
-  initContainer(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff);
+  initContainer(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff, verletSkinRadius,
+                verletRebuildFrequency);
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
