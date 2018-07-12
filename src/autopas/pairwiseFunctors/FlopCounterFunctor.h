@@ -182,7 +182,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
-
             ++distanceCalculationsAcc;
             const double drx = xtmp[j] - xArr[j];
             const double dry = ytmp[j] - yArr[j];
@@ -229,7 +228,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       _kernelCalls += kernelCallsAcc;
     }
   }
-
 
   AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
                             // body start
@@ -286,11 +284,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
    */
   unsigned long getKernelCalls() const { return _kernelCalls; }
 
+  /**
+   * number of flops for one distance calculation.
+   * 3 sub + 3 square + 2 add
+   */
+  static constexpr double numFlopsPerDistanceCalculation = 8.0;
+
  private:
   double _cutoffSquare;
   unsigned long _distanceCalculations, _kernelCalls;
-  // 3 sub + 3 square + 2 add
-  static constexpr double numFlopsPerDistanceCalculation = 8.0;
 };
 
 }  // namespace autopas

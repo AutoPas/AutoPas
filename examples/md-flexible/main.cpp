@@ -126,6 +126,10 @@ int main(int argc, char **argv) {
       autopas.getContainer()->getCutoff());
   autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
   auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
+  // approximation for flops of verlet list generation
+  if (containerChoice == autopas::ContainerOptions::verletLists)
+    flops += flopCounterFunctor.getDistanceCalculations() * FlopCounterFunctor::numFlopsPerDistanceCalculation *
+             floor(numIterations / verletRebuildFrequency);
   auto mmups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
 
   // Output
