@@ -307,6 +307,7 @@ template <class Container, class Molecule>
 void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule& haloMol) {
   // default
   int count = 0;
+#pragma omp parallel reduction(+ : count)
   for (auto iter = container.begin(); iter.isValid(); ++iter) {
     count++;
   }
@@ -314,6 +315,7 @@ void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule
 
   // haloAndOwned (same as default)
   count = 0;
+#pragma omp parallel reduction(+ : count)
   for (auto iter = container.begin(IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
     count++;
   }
@@ -321,6 +323,7 @@ void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule
 
   // owned only
   count = 0;
+#pragma omp parallel reduction(+ : count)
   for (auto iter = container.begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     count++;
     EXPECT_EQ(iter->getID(), mol.getID());
@@ -329,6 +332,7 @@ void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule
 
   // halo only
   count = 0;
+#pragma omp parallel reduction(+ : count)
   for (auto iter = container.begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
     count++;
     EXPECT_EQ(iter->getID(), haloMol.getID());
