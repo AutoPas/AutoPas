@@ -27,6 +27,7 @@ void ParticleIteratorTest::TearDown() {}
 #ifdef AUTOPAS_OPENMP
 // reduction for merging vectors: {1,2} + {2,3} -> {1,2,2,3}
 #pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 #endif
 
 TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
@@ -164,13 +165,25 @@ TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
     fillWithParticles(&data.at(i));
   }
 
-  ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
-  int i = 0;
-  for (; iter.isValid(); ++iter, ++i) {
-    for (int d = 0; d < 3; ++d) {
-      ASSERT_DOUBLE_EQ(iter->getR()[d], _vecOfMolecules[i].getR()[d]);
+  std::vector<double> foundParticles;
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(vecMerge : foundParticles)
+#endif
+  {
+    for (auto iter = ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>>(&data); iter.isValid(); ++iter) {
+      auto particleID = iter->getR()[0];
+      foundParticles.push_back(particleID);
+      for (int d = 1; d < 3; ++d) {
+        EXPECT_DOUBLE_EQ(iter->getR()[d], particleID);
+      }
     }
-    //		ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
+  }
+
+  ASSERT_EQ(foundParticles.size(), 20);
+  std::sort(foundParticles.begin(), foundParticles.end());
+  for (size_t i = 0; i < 20; ++i) {
+    ASSERT_EQ(i, foundParticles[i]);
   }
 }
 
@@ -182,13 +195,25 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
     fillWithParticles(&data.at(i));
   }
 
-  ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
-  int i = 0;
-  for (; iter.isValid(); ++iter, ++i) {
-    for (int d = 0; d < 3; ++d) {
-      ASSERT_DOUBLE_EQ(iter->getR()[d], _vecOfMolecules[i].getR()[d]);
+  std::vector<double> foundParticles;
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(vecMerge : foundParticles)
+#endif
+  {
+    for (auto iter = ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>>(&data); iter.isValid(); ++iter) {
+      auto particleID = iter->getR()[0];
+      foundParticles.push_back(particleID);
+      for (int d = 1; d < 3; ++d) {
+        EXPECT_DOUBLE_EQ(iter->getR()[d], particleID);
+      }
     }
-    //		ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
+  }
+
+  ASSERT_EQ(foundParticles.size(), 20);
+  std::sort(foundParticles.begin(), foundParticles.end());
+  for (size_t i = 0; i < 20; ++i) {
+    ASSERT_EQ(i, foundParticles[i]);
   }
 }
 
@@ -199,22 +224,30 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
   for (auto i : {0u, 2u, 5u, 6u, 8u}) {
     fillWithParticles(&data.at(i));
   }
+
+  int numFoundParticles = 0;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(+ : numFoundParticles)
+#endif
   {
     ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
-    int i = 0;
-    for (; iter.isValid(); ++iter, ++i) {
+    for (; iter.isValid(); ++iter, ++numFoundParticles) {
       iter.deleteCurrentParticle();
     }
-    ASSERT_EQ(i, 20);
   }
+  ASSERT_EQ(numFoundParticles, 20);
+
+  numFoundParticles = 0;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(+ : numFoundParticles)
+#endif
   {
     ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
-    int i = 0;
     for (; iter.isValid(); ++iter) {
-      ++i;
+      ++numFoundParticles;
     }
-    ASSERT_EQ(i, 0);
   }
+  ASSERT_EQ(numFoundParticles, 0);
 }
 
 TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
@@ -224,23 +257,37 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
   for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
     fillWithParticles(&data.at(i));
   }
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
   {
     ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
-    double i = 0.;
-    for (; iter.isValid(); ++iter, ++i) {
-      iter->setF({i, i, i});
+    for (; iter.isValid(); ++iter) {
+      double newPos = (iter->getR()[0]) + 1;
+      iter->setR({newPos, newPos, newPos});
     }
   }
 
+  std::vector<double> foundPositios;
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(vecMerge : foundPositios)
+#endif
   {
     ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
-    double i = 0.;
-    for (; iter.isValid(); ++iter, ++i) {
-      auto force = iter->getF();
-      ASSERT_EQ(force[0], i);
-      ASSERT_EQ(force[1], i);
-      ASSERT_EQ(force[2], i);
+    for (; iter.isValid(); ++iter) {
+      auto pos = iter->getR();
+      EXPECT_EQ(pos[1], pos[0]);
+      EXPECT_EQ(pos[2], pos[0]);
+      foundPositios.push_back(pos[0]);
     }
+  }
+
+  ASSERT_EQ(foundPositios.size(), 20);
+  std::sort(foundPositios.begin(), foundPositios.end());
+  for (size_t i = 0; i < 20; ++i) {
+    ASSERT_EQ(i + 1, foundPositios[i]);
   }
 }
 
