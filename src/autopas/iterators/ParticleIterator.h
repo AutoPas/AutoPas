@@ -30,6 +30,10 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * Constructor of the ParticleIterator class.
    *
+   * When started in a parallel block iterators are generated with offset
+   * and iterate in a round robin fashion. If there are more threads than cells
+   * surplus iterators are directly set to cont->end().
+   *
    * @param cont linear data vector of ParticleCells
    * @param flagManager the CellBorderAndFlagManager that shall be used to
    * query the cell types. Can be nullptr if the behavior is haloAndOwned
@@ -47,6 +51,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
     if (myThreadId < cont->size()) {
       _iteratorAcrossCells += myThreadId;
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
+    } else {
+      _iteratorAcrossCells = cont->end();
     }
 
     if (behavior != haloAndOwned and flagManager == nullptr) {
