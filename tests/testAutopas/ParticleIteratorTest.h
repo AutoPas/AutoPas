@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 class ParticleIteratorTest : public AutoPasTestBase {
  public:

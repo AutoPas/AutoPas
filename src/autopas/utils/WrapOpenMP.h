@@ -72,6 +72,14 @@ inline void autopas_unset_lock(autopas_lock_t *l) { omp_unset_lock(l); }
  */
 inline void autopas_destroy_lock(autopas_lock_t *l) { omp_destroy_lock(l); }
 
+/**
+ * Custom reductions:
+ */
+// reduction for merging vectors: {1,2} + {2,3} -> {1,2,2,3}
+#pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+
+
 #else
 
 /**

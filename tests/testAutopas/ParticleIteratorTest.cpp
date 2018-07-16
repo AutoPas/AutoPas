@@ -24,12 +24,6 @@ void ParticleIteratorTest::SetUp() {
 
 void ParticleIteratorTest::TearDown() {}
 
-#ifdef AUTOPAS_OPENMP
-// reduction for merging vectors: {1,2} + {2,3} -> {1,2,2,3}
-#pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-#pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-#endif
-
 TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full
   std::vector<FullParticleCell<MoleculeLJ>> data(10);
@@ -198,6 +192,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
   std::vector<double> foundParticles;
 
 #ifdef AUTOPAS_OPENMP
+//#pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
