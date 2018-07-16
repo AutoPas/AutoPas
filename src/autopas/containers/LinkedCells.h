@@ -133,13 +133,17 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     std::vector<Particle> invalidParticles;
 // custom reduction with templates not supported
 //#pragma omp parallel reduction(vecMerge: invalidParticles)
+#ifdef AUTOPAS_OPENMP
 #pragma omp parallel
+#endif // AUTOPAS_OPENMP
     {
       std::vector<Particle> myInvalidParticles;
       for (auto iter = this->begin(); iter.isValid(); ++iter) {
         myInvalidParticles.push_back(*iter);
       }
+#ifdef AUTOPAS_OPENMP
 #pragma omp critical
+#endif // AUTOPAS_OPENMP
       invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
     for (auto &cell : this->_cells) {
@@ -155,17 +159,45 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   bool isContainerUpdateNeeded() override {
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin{0., 0., 0.};
-      std::array<double, 3> boxmax{0., 0., 0.};
-      _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (not inBox(iter->getR(), boxmin, boxmax)) {
-          return true;  // we need an update
+    // TODO: assert OMP_CANCELLATION=true
+#ifdef AUTOPAS_OPENMP
+    // this is only worthwhile if cancellation is allowed
+    if (omp_get_cancellation()) {
+      bool outlierFound = false;
+      // TODO: find a sensible value for ???
+#pragma omp parallel reduction(|| : outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
+#pragma omp for
+      for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
+        std::array<double, 3> boxmin{0., 0., 0.};
+        std::array<double, 3> boxmax{0., 0., 0.};
+        _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
+
+        for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
+          if (not inBox(iter->getR(), boxmin, boxmax)) {
+            outlierFound = true;  // we need an update
+#pragma omp cancel for
+          }
+        }
+        // don't check for cancellation too often
+#pragma omp cancellation point for
+      }
+
+      return outlierFound;
+    } else
+#endif // AUTOPAS_OPENMP
+    {
+      for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
+        std::array<double, 3> boxmin{0., 0., 0.};
+        std::array<double, 3> boxmax{0., 0., 0.};
+        _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
+        for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
+          if (not inBox(iter->getR(), boxmin, boxmax)) {
+            return true;  // we need an update
+          }
         }
       }
+      return false;
     }
-    return false;
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
