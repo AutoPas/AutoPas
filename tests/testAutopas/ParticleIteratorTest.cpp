@@ -272,7 +272,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
   std::vector<double> foundPositions;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(vecMerge : foundPositios)
+#pragma omp parallel reduction(vecMerge : foundPositions)
 #endif
   {
     ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
