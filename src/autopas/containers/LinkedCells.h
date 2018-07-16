@@ -14,6 +14,7 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -130,8 +131,16 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void updateContainer() override {
     /// @todo optimize
     std::vector<Particle> invalidParticles;
-    for (auto iter = this->begin(); iter.isValid(); ++iter) {
-      invalidParticles.push_back(*iter);
+// custom reduction with templates not supported
+//#pragma omp parallel reduction(vecMerge: invalidParticles)
+#pragma omp parallel
+    {
+      std::vector<Particle> myInvalidParticles;
+      for (auto iter = this->begin(); iter.isValid(); ++iter) {
+        myInvalidParticles.push_back(*iter);
+      }
+#pragma omp critical
+      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
     for (auto &cell : this->_cells) {
       cell.clear();
