@@ -79,7 +79,6 @@ inline void autopas_destroy_lock(autopas_lock_t *l) { omp_destroy_lock(l); }
 #pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 #pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 
-
 #else
 
 /**

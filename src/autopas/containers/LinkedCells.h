@@ -135,7 +135,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 //#pragma omp parallel reduction(vecMerge: invalidParticles)
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
-#endif // AUTOPAS_OPENMP
+#endif  // AUTOPAS_OPENMP
     {
       std::vector<Particle> myInvalidParticles;
       for (auto iter = this->begin(); iter.isValid(); ++iter) {
@@ -143,7 +143,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       }
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
-#endif // AUTOPAS_OPENMP
+#endif  // AUTOPAS_OPENMP
       invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
     for (auto &cell : this->_cells) {
@@ -184,7 +184,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
       return outlierFound;
     } else
-#endif // AUTOPAS_OPENMP
+#endif  // AUTOPAS_OPENMP
     {
       for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
         std::array<double, 3> boxmin{0., 0., 0.};
