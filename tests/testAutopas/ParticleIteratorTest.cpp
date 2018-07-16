@@ -269,7 +269,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
     }
   }
 
-  std::vector<double> foundPositios;
+  std::vector<double> foundPositions;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel reduction(vecMerge : foundPositios)
@@ -280,14 +280,14 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
       auto pos = iter->getR();
       EXPECT_EQ(pos[1], pos[0]);
       EXPECT_EQ(pos[2], pos[0]);
-      foundPositios.push_back(pos[0]);
+      foundPositions.push_back(pos[0]);
     }
   }
 
-  ASSERT_EQ(foundPositios.size(), 20);
-  std::sort(foundPositios.begin(), foundPositios.end());
+  ASSERT_EQ(foundPositions.size(), 20);
+  std::sort(foundPositions.begin(), foundPositions.end());
   for (size_t i = 0; i < 20; ++i) {
-    ASSERT_EQ(i + 1, foundPositios[i]);
+    ASSERT_EQ(i + 1, foundPositions[i]);
   }
 }
 
