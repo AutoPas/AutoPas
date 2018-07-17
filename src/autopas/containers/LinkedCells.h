@@ -175,13 +175,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
           if (not inBox(iter->getR(), boxmin, boxmax)) {
             outlierFound = true;  // we need an update
-//#pragma omp cancel for
+                                  //#pragma omp cancel for
           }
         }
         // don't check for cancellation too often
-//#pragma omp cancellation point for
-        if(outlierFound)
-          cellIndex1d = this->_cells.size();
+        //#pragma omp cancellation point for
+        if (outlierFound) cellIndex1d = this->_cells.size();
       }
 
       return outlierFound;

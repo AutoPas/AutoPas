@@ -193,7 +193,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
 
 #ifdef AUTOPAS_OPENMP
 //#pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(),
-//omp_in.end()))
+// omp_in.end()))
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
