@@ -176,6 +176,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         if (not inBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update
                                 //#pragma omp cancel for
+          break;
         }
       }
       // don't check for cancellation too often
