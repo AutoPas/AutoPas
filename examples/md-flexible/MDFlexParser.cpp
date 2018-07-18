@@ -144,6 +144,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             cerr << "Please use 'c08' or 'sliced'!" << endl;
             displayHelp = true;
           }
+          // deletes last comma
           cout << "\b\b  " << endl;
           break;
         }
@@ -156,7 +157,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             break;
           }
           cout << setw(valueOffset) << left << "Verlet rebuild frequency"
-               << ":  " << particleSpacing << endl;
+               << ":  " << verletRebuildFrequency << endl;
           break;
         }
         case 'r': {
@@ -168,7 +169,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             break;
           }
           cout << setw(valueOffset) << left << "Verlet skin radius"
-               << ":  " << particleSpacing << endl;
+               << ":  " << verletSkinRadius << endl;
           break;
         }
         default: {
