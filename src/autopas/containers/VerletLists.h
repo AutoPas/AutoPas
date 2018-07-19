@@ -185,8 +185,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
     // TODO: find a sensible value for ???
-#pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
-#pragma omp for
+#pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getCells().size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
