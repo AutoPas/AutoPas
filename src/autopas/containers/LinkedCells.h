@@ -163,7 +163,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 #ifdef AUTOPAS_OPENMP
     // this is only worthwhile if cancellation is allowed
     //    if (omp_get_cancellation()) {
-    bool outlierFound = false;
+    std::atomic<bool> outlierFound{};
+    outlierFound = false;
     // TODO: find a sensible value for ???
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #pragma omp for

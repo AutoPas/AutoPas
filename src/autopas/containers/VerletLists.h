@@ -182,7 +182,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   }
 
   bool isContainerUpdateNeeded() override {
-    bool outlierFound = false;
+    std::atomic<bool> outlierFound{};
+    outlierFound = false;
 #ifdef AUTOPAS_OPENMP
     // TODO: find a sensible value for ???
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
