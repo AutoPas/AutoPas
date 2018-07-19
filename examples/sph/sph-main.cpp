@@ -71,6 +71,7 @@ void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>
     part->setMass(part->getMass() * bBoxMax[0] * bBoxMax[1] * bBoxMax[2] / (double)(i));
   }
   std::cout << "# of particles is... " << i << std::endl;
+  std::cout << "# of cells is... " << sphSystem.getCells().size() << std::endl;
 
   // Set the end time
   *end_time = 0.12;
@@ -366,8 +367,8 @@ int main() {
     leapfrogInitialKick(sphSystem, dt);
     leapfrogFullDrift(sphSystem, dt);
 
-    // 1.2.1 positions have changed, so the container needs to be updated!
-    sphSystem.updateContainer();
+    // 1.2.1 positions have changed, so the container might need to be updated!
+    if (sphSystem.isContainerUpdateNeeded()) sphSystem.updateContainer();
 
     // 1.2.2 adjust positions based on boundary conditions (here: periodic)
     periodicBoundaryUpdate(sphSystem, boxMin, boxMax);

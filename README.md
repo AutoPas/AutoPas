@@ -1,4 +1,4 @@
-# AutoPas
+#AutoPas
 AutoPas is a node-level auto-tuned particle simulation library developed
 in the context of the **TaLPas** project. [![Build Status](https://www5.in.tum.de/jenkins/mardyn/buildStatus/icon?job=AutoPas-Multibranch/master)](https://www5.in.tum.de/jenkins/mardyn/job/AutoPas-Multibranch/job/master/)
 
@@ -115,11 +115,13 @@ Once you have defined your particle you can start with functors;
 
 ### Iterating Through Particles
 Iterators to iterate over particle are provided.
-The particle can be accesses using `iter->` (`*iter` is also possible), e.g.
+The particle can be accesses using `iter->` (`*iter` is also possible).
+When created inside a OpenMP parallel region, work is automatically spread over all iterators.
 ```C++
-for(auto iter = container.begin(), iter.isValid(); ++iter){
-    // user code
-    auto position = iter->getR();
+#pragma omp parallel
+for(auto iter = container.begin(), iter.isValid(); ++iter) {
+  // user code:
+  auto position = iter->getR();
 }
 ```
 
@@ -142,7 +144,7 @@ e.g. because of boundary conditions please delete the particles and add them aga
 ```C++
 std::vector<autopas::sph::SPHParticle> invalidParticles;
 for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-  if( /*check*/){
+  if (/*check*/) {
     invalidParticles.push_back(*part);
     part.deleteCurrentParticle();
   }
