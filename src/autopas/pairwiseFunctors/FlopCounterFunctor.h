@@ -152,7 +152,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       const size_t vecsize = 12;
 #endif
       size_t joff = 0;
-
+      
       // if the size of the verlet list is larger than the given size vecsize,
       // we will use a vectorized version.
       if (listSizeI >= vecsize) {
