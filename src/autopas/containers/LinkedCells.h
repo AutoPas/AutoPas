@@ -163,7 +163,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 #ifdef AUTOPAS_OPENMP
     // TODO: find a sensible value for ???
 #pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
-#endif                                         // AUTOPAS_OPENMP
+#endif
     for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
