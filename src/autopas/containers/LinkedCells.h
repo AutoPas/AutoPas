@@ -159,15 +159,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   bool isContainerUpdateNeeded() override {
-    // TODO: assert OMP_CANCELLATION=true and remove workaraund
-#ifdef AUTOPAS_OPENMP
-    // this is only worthwhile if cancellation is allowed
-    //    if (omp_get_cancellation()) {
     std::atomic<bool> outlierFound{};
     outlierFound = false;
+#ifdef AUTOPAS_OPENMP
     // TODO: find a sensible value for ???
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #pragma omp for
+#endif  // AUTOPAS_OPENMP
     for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
@@ -176,32 +174,14 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not inBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update
-                                //#pragma omp cancel for
           break;
         }
       }
-      // don't check for cancellation too often
-      //#pragma omp cancellation point for
+      // abort loop (for all threads) by moving loop index to end
       if (outlierFound) cellIndex1d = this->_cells.size();
     }
 
     return outlierFound;
-//    } else
-#else
-    {
-      for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
-        std::array<double, 3> boxmin{0., 0., 0.};
-        std::array<double, 3> boxmax{0., 0., 0.};
-        _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-        for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
-          if (not inBox(iter->getR(), boxmin, boxmax)) {
-            return true;  // we need an update
-          }
-        }
-      }
-      return false;
-    }
-#endif  // AUTOPAS_OPENMP
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
