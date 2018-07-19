@@ -159,8 +159,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   bool isContainerUpdateNeeded() override {
-    std::atomic<bool> outlierFound{};
-    outlierFound = false;
+    std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
     // TODO: find a sensible value for ???
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
