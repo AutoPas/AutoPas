@@ -77,7 +77,8 @@ class ContainerSelector {
 
  private:
   std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> generateContainers();
-  void chooseOptimalContainer(std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers);
+  void chooseOptimalContainer(
+      std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers);
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
