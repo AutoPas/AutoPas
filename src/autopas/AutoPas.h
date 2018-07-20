@@ -54,8 +54,6 @@ class AutoPas {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(boxMin, boxMax, cutoff, verletSkin,
                                                                               verletRebuildFrequency, allowedContainers,
                                                                               allowedTraversals, tuningInterval);
-
-    _container = _autoTuner->getContainer();
   }
 
   /**
@@ -76,27 +74,26 @@ class AutoPas {
    * @todo do we need the whole container functionality available to the outside
    * @return container
    */
-  // TODO: remove this once we are convinced all necessary container functions
-  // are wrapped
-  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _container.get(); }
+  // TODO: remove this once we are convinced all necessary container functions are wrapped
+  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _autoTuner->getContainer().get(); }
 
   /**
    * Adds a particle to the container.
    * @param p Reference to the particle to be added
    */
-  void addParticle(Particle &p) { _container->addParticle(p); }
+  void addParticle(Particle &p) { _autoTuner->getContainer()->addParticle(p); }
 
   /**
    * adds a particle to the container that lies in the halo region of the
    * container
    * @param haloParticle particle to be added
    */
-  void addHaloParticle(Particle &haloParticle) { _container->addHaloParticle(haloParticle); };
+  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); };
 
   /**
    * deletes all halo particles
    */
-  void deleteHaloParticles() { _container->deleteHaloParticles(); };
+  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); };
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -108,8 +105,6 @@ class AutoPas {
   void iteratePairwise(Functor *f, autopas::DataLayoutOption dataLayoutOption) {
     // @todo remove this and let is be handled via a selector
     _autoTuner->iteratePairwise(f, dataLayoutOption);
-    // the container might have changed
-    _container = _autoTuner->getContainer();
   }
 
   /**
@@ -117,7 +112,7 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @return iterator to the first particle
    */
-  autopas::ParticleIteratorWrapper<Particle> begin() { return _container->begin(); }
+  autopas::ParticleIteratorWrapper<Particle> begin() { return _autoTuner->getContainer()->begin(); }
 
   /**
    * iterate over all particles in a specified region
@@ -129,11 +124,9 @@ class AutoPas {
    */
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
                                                                std::array<double, 3> higherCorner) {
-    return _container->getRegionIterator(lowerCorner, higherCorner);
+    return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner);
   }
 
  private:
-  typedef autopas::ParticleContainer<Particle, ParticleCell> ContainerType;
-  std::shared_ptr<ContainerType> _container;
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };
