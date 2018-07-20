@@ -108,6 +108,8 @@ class AutoPas {
   void iteratePairwise(Functor *f, autopas::DataLayoutOption dataLayoutOption) {
     // @todo remove this and let is be handled via a selector
     _autoTuner->iteratePairwise(f, dataLayoutOption);
+    // the container might have changed
+    _container = _autoTuner->getContainer();
   }
 
   /**
