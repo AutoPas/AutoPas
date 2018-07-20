@@ -14,5 +14,6 @@
 #include "mocks/MockFunctor.h"
 #include "mocks/MockVerletLists.h"
 #include "testingHelpers/RandomGenerator.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class VerletListsTest : public AutoPasTestBase {};
