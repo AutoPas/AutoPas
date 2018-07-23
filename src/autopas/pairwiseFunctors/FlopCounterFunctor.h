@@ -139,9 +139,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
       // this is a magic number, that should correspond to at least
       // vectorization width*N have testet multiple sizes:
-      // 4: does not give a speedup, slower than original AoSFunctor
+      // 4: small speedup compared to AoS
       // 8: small speedup compared to AoS
-      // 12: highest speedup compared to Aos
+      // 12: small but best speedup compared to Aos
       // 16: smaller speedup
       // in theory this is a variable, we could auto-tune over...
 #ifdef __AVX512F__
