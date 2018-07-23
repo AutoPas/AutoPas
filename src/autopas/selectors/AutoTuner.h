@@ -89,8 +89,6 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
     useNewton3 = newton3Allowed;
   }
 
-  auto container = _containerSelector.getOptimalContainer();
-
   /// @todo: WANT one single iteratePairwise(CellFunctor) for containers
   /// @todo: CellFunctor for iteration should be build here using selectors for SoA and N3
   switch (dataLayoutOption) {
@@ -104,6 +102,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
           tune<ParticleFunctor, true, false>(*f);
         }
       }
+      auto container = _containerSelector.getOptimalContainer();
       WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
       break;
     }
@@ -117,6 +116,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
           tune<ParticleFunctor, false, false>(*f);
         }
       }
+      auto container = _containerSelector.getOptimalContainer();
       WithStaticContainerType(container, container->iteratePairwiseAoS(f, useNewton3););
       break;
     }

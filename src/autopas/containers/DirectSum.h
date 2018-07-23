@@ -105,12 +105,17 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   bool isContainerUpdateNeeded() override {
-    for (auto iter = this->begin(); iter.isValid(); ++iter) {
+    std::atomic<bool> outlierFound(false);
+#ifdef AUTOPAS_OPENMP
+    // TODO: find a sensible value for ???
+#pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
+#endif
+    for (auto iter = this->begin(); iter.isValid() && (not outlierFound); ++iter) {
       if (not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
-        return true;
+        outlierFound = true;
       }
     }
-    return false;
+    return outlierFound;
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

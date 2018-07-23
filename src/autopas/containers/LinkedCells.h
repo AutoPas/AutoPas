@@ -14,6 +14,7 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -130,8 +131,20 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void updateContainer() override {
     /// @todo optimize
     std::vector<Particle> invalidParticles;
-    for (auto iter = this->begin(); iter.isValid(); ++iter) {
-      invalidParticles.push_back(*iter);
+// custom reduction with templates not supported
+//#pragma omp parallel reduction(vecMerge: invalidParticles)
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif  // AUTOPAS_OPENMP
+    {
+      std::vector<Particle> myInvalidParticles;
+      for (auto iter = this->begin(); iter.isValid(); ++iter) {
+        myInvalidParticles.push_back(*iter);
+      }
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif  // AUTOPAS_OPENMP
+      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
     for (auto &cell : this->_cells) {
       cell.clear();
@@ -146,17 +159,27 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   bool isContainerUpdateNeeded() override {
+    std::atomic<bool> outlierFound(false);
+#ifdef AUTOPAS_OPENMP
+    // TODO: find a sensible value for ???
+#pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
+#endif
     for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
+
       for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not inBox(iter->getR(), boxmin, boxmax)) {
-          return true;  // we need an update
+          outlierFound = true;  // we need an update
+          break;
         }
       }
+      // abort loop (for all threads) by moving loop index to end
+      if (outlierFound) cellIndex1d = this->_cells.size();
     }
-    return false;
+
+    return outlierFound;
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

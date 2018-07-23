@@ -30,6 +30,10 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * Constructor of the ParticleIterator class.
    *
+   * When started in a parallel block iterators are generated with offset
+   * and iterate in a round robin fashion. If there are more threads than cells
+   * surplus iterators are directly set to cont->end().
+   *
    * @param cont linear data vector of ParticleCells
    * @param flagManager the CellBorderAndFlagManager that shall be used to
    * query the cell types. Can be nullptr if the behavior is haloAndOwned
@@ -43,6 +47,15 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
         _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
         _behavior(behavior) {
+    size_t myThreadId = autopas_get_thread_num();
+    if (myThreadId < cont->size()) {
+      _iteratorAcrossCells += myThreadId;
+      _iteratorWithinOneCell = _iteratorAcrossCells->begin();
+    } else {
+      _iteratorAcrossCells = cont->end();
+      AutoPasLogger->warn("ParticleIterator: More threads than cells. No work left for thread {}!", myThreadId);
+    }
+
     if (behavior != haloAndOwned and flagManager == nullptr) {
       AutoPasLogger->error(
           "ParticleIterator: behavior is not haloAndOwned, but flagManager is "
@@ -110,7 +123,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    */
   void next_non_empty_cell() {
     // find the next non-empty cell
-    const int stride = 1;  // num threads
+    const int stride = autopas_get_num_threads();  // num threads
     for (_iteratorAcrossCells += stride; _iteratorAcrossCells < _vectorOfCells->end(); _iteratorAcrossCells += stride) {
       if (_iteratorAcrossCells->isNotEmpty() and isCellTypeBehaviorCorrect()) {
         _iteratorWithinOneCell = _iteratorAcrossCells->begin();
@@ -143,7 +156,6 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   SingleCellIteratorWrapper<Particle> _iteratorWithinOneCell;
   CellBorderAndFlagManager* _flagManager;
   IteratorBehavior _behavior;
-  // SingleCellIterator<Particle, ParticleCell> _iteratorWithinOneCell;
 };
 }  // namespace internal
 }  // namespace autopas

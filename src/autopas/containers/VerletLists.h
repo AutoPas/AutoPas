@@ -182,6 +182,11 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   }
 
   bool isContainerUpdateNeeded() override {
+    std::atomic<bool> outlierFound(false);
+#ifdef AUTOPAS_OPENMP
+    // TODO: find a sensible value for ???
+#pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
+#endif
     for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getCells().size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
@@ -190,18 +195,22 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
       boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
       for (auto iter = _linkedCells.getCells()[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not iter->inBox(boxmin, boxmax)) {
-          AutoPasLogger->debug(
-              "VerletLists: containerUpdate needed! Particles are fast. You "
-              "might want to increase the skin radius or decrease the rebuild "
-              "frequency.");
-          return true;  // we need an update
+          outlierFound = true;  // we need an update
+          break;
         }
       }
+      if (outlierFound) cellIndex1d = _linkedCells.getCells().size();
     }
-    AutoPasLogger->debug(
-        "VerletLists: containerUpdate not yet needed. Particles are slow "
-        "enough.");
-    return false;
+    if (outlierFound)
+      AutoPasLogger->debug(
+          "VerletLists: containerUpdate needed! Particles are fast. You "
+          "might want to increase the skin radius or decrease the rebuild "
+          "frequency.");
+    else
+      AutoPasLogger->debug(
+          "VerletLists: containerUpdate not yet needed. Particles are slow "
+          "enough.");
+    return outlierFound;
   }
 
   /**

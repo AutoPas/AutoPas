@@ -68,7 +68,7 @@ class ContainerSelector {
    * Getter for the optimal container.
    * @return Smartpointer to the optimal container.
    */
-  std::shared_ptr<ParticleContainer<Particle, ParticleCell>> getOptimalContainer();
+  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getOptimalContainer();
 
   /**
    * Evaluates the optimal container option.
@@ -76,8 +76,9 @@ class ContainerSelector {
   void tune();
 
  private:
-  std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell>>> generateContainers();
-  void chooseOptimalContainer(std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell>>> containers);
+  std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> generateContainers();
+  void chooseOptimalContainer(
+      std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers);
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
@@ -85,13 +86,13 @@ class ContainerSelector {
   unsigned int _verletRebuildFrequency;
   std::vector<ContainerOptions> _allowedContainerOptions;
   std::vector<TraversalOptions> _allowedTraversalOptions;
-  std::shared_ptr<ParticleContainer<Particle, ParticleCell>> _optimalContainer;
+  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _optimalContainer;
 };
 
 template <class Particle, class ParticleCell>
-std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell>>>
+std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>>
 ContainerSelector<Particle, ParticleCell>::generateContainers() {
-  std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell>>> containers;
+  std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers;
 
   for (auto &option : _allowedContainerOptions) {
     switch (option) {
@@ -134,13 +135,13 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
 
 template <class Particle, class ParticleCell>
 void ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(
-    std::vector<std::unique_ptr<ParticleContainer<Particle, ParticleCell>>> containers) {
+    std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers) {
   // TODO: Autotuning goes here
   _optimalContainer = std::move(containers.front());
 }
 
 template <class Particle, class ParticleCell>
-std::shared_ptr<ParticleContainer<Particle, ParticleCell>>
+std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getOptimalContainer() {
   if (_optimalContainer == nullptr) tune();
   return _optimalContainer;
