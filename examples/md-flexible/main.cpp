@@ -122,20 +122,9 @@ int main(int argc, char **argv) {
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
 
-  // TODO remove measuring stuff
-  std::chrono::high_resolution_clock::time_point startFlopCalc, stopFlopCalc;
-
   FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
       autopas.getContainer()->getCutoff());
-
-  startFlopCalc = std::chrono::high_resolution_clock::now();
   autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
-  stopFlopCalc = std::chrono::high_resolution_clock::now();
-
-  auto durationFlopCalc = std::chrono::duration_cast<std::chrono::milliseconds>(stopFlopCalc - startFlopCalc).count();
-
-  cout << "XXXXXXXXXXXXXXXXXXXXX " << durationFlopCalc << endl;
-  // END TODO
 
   auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
   // approximation for flops of verlet list generation
