@@ -5,9 +5,6 @@
  */
 
 #include "LinkedCellsTest.h"
-#include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/LinkedCells.h"
-#include "autopas/particles/Particle.h"
 
 TEST_F(LinkedCellsTest, testParticleAdding) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
@@ -82,4 +79,25 @@ TEST_F(LinkedCellsTest, testCheckUpdateContainerNeededNoMove) {
       }
     }
   }
+}
+
+TEST_F(LinkedCellsTest, testIsContainerNeeded) {
+  std::array<double, 3> boxMin{0, 0, 0};
+  std::array<double, 3> boxMax{10, 10, 10};
+  double cutoff = 1.;
+  autopas::LinkedCells<Particle, FPCell> container(boxMin, boxMax, cutoff);
+
+  EXPECT_FALSE(container.isContainerUpdateNeeded());
+
+  Particle p({1, 1, 1}, {0, 0, 0}, 0);
+  container.addParticle(p);
+  EXPECT_FALSE(container.isContainerUpdateNeeded());
+
+  // Particle moves to different cell -> needs update
+  container.begin()->setR({2.5, 1, 1});
+  EXPECT_TRUE(container.isContainerUpdateNeeded());
+
+  // Particle moves to halo cell -> needs update
+  container.begin()->setR({-1, -1, -1});
+  EXPECT_TRUE(container.isContainerUpdateNeeded());
 }

@@ -477,6 +477,28 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
   EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
 }
 
+TEST_F(VerletListsTest, testIsContainerNeeded) {
+  std::array<double, 3> boxMin{0, 0, 0};
+  std::array<double, 3> boxMax{10, 10, 10};
+  double cutoff = 1.;
+  double skin = 1.;
+  autopas::VerletLists<Particle> container(boxMin, boxMax, cutoff, skin);
+
+  EXPECT_FALSE(container.isContainerUpdateNeeded());
+
+  Particle p({1, 1, 1}, {0, 0, 0}, 0);
+  container.addParticle(p);
+  EXPECT_FALSE(container.isContainerUpdateNeeded());
+
+  // Particle moves to different cell -> needs update
+  container.begin()->setR({2.5, 1, 1});
+  EXPECT_TRUE(container.isContainerUpdateNeeded());
+
+  // Particle moves to halo cell -> needs update
+  container.begin()->setR({-1, -1, -1});
+  EXPECT_TRUE(container.isContainerUpdateNeeded());
+}
+
 TEST_F(VerletListsTest, LoadExtractSoA) {
   autopas::VerletLists<autopas::Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
 

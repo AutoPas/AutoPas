@@ -10,5 +10,6 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/DirectSum.h"
 #include "autopas/particles/Particle.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class DirectSumTest : public AutoPasTestBase {};

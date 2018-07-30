@@ -26,3 +26,24 @@ TEST_F(DirectSumTest, testParticleAdding) {
     }
   }
 }
+
+TEST_F(DirectSumTest, testIsContainerNeeded) {
+  std::array<double, 3> boxMin{0, 0, 0};
+  std::array<double, 3> boxMax{10, 10, 10};
+  double cutoff = 1.;
+  autopas::DirectSum<Particle, FPCell> container(boxMin, boxMax, cutoff);
+
+  EXPECT_FALSE(container.isContainerUpdateNeeded());
+
+  Particle p({1, 1, 1}, {0, 0, 0}, 0);
+  container.addParticle(p);
+  EXPECT_FALSE(container.isContainerUpdateNeeded());
+
+  // Particle moves within cell -> needs no update
+  container.begin()->setR({2.5, 1, 1});
+  EXPECT_FALSE(container.isContainerUpdateNeeded());
+
+  // Particle moves to different cell -> needs update
+  container.begin()->setR({-1, -1, -1});
+  EXPECT_TRUE(container.isContainerUpdateNeeded());
+}
