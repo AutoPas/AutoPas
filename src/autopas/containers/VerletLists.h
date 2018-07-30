@@ -284,7 +284,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
-    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, (this->getCutoff() * this->getCutoff()));
+    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff());
 
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS:
