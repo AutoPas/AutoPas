@@ -221,7 +221,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor>
   void loadSoAs(ParticleFunctor *functor) {
 #ifdef AUTOPAS_OPENMP
-    // TODO find a condition on when to use omp or when it is just overhead
+  // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < this->_cells.size(); ++i) {
@@ -237,7 +237,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor>
   void extractSoAs(ParticleFunctor *functor) {
 #ifdef AUTOPAS_OPENMP
-    // TODO find a condition on when to use omp or when it is just overhead
+  // TODO find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < this->_cells.size(); ++i) {

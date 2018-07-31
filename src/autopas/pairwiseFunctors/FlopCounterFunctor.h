@@ -179,7 +179,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
             zArr[tmpj] = zptr[currentList[joff + tmpj]];
           }
 
-          // do omp simd with reduction of the interaction
+            // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
             ++distanceCalculationsAcc;
