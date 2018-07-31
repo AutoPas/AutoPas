@@ -40,8 +40,9 @@ void printMolecules(autopas::AutoPas<PrintableMolecule, FullParticleCell<Printab
  */
 void initContainerGrid(autopas::ContainerOptions containerOption,
                        std::vector<autopas::TraversalOptions> traversalOptions,
-                       autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
-                       double particelSpacing, double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
+                       autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                       size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
+                       int verletRebuildFrequency) {
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
@@ -55,9 +56,9 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
 
 void initContainerGauss(autopas::ContainerOptions containerOption,
                         std::vector<autopas::TraversalOptions> traversalOptions,
-                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t numParticles,
-                        double distributionMean, double distributionStdDev, double cutoff, double verletSkinRadius,
-                        int verletRebuildFrequency) {
+                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                        size_t numParticles, double distributionMean, double distributionStdDev, double cutoff,
+                        double verletSkinRadius, int verletRebuildFrequency) {
   auto boxLength = ceil(distributionMean) * 2;
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
