@@ -58,9 +58,8 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
 void initContainerGauss(autopas::ContainerOptions containerOption,
                         std::vector<autopas::TraversalOptions> traversalOptions,
                         autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                        size_t numParticles, double distributionMean, double distributionStdDev, double cutoff,
-                        double verletSkinRadius, int verletRebuildFrequency) {
-  auto boxLength = ceil(distributionMean) * 2;
+                        double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
+                        double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
   autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions);
@@ -95,6 +94,7 @@ int main(int argc, char **argv) {
     exit(-1);
   }
 
+  auto boxLength(parser.getBoxLength());
   auto containerChoice(parser.getContainerOption());
   auto dataLayoutChoice(parser.getDataLayoutOption());
   auto particlesPerDim(parser.getParticlesPerDim());
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
-      initContainerGauss(containerChoice, traversalOptions, autopas,
+      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength,
                          particlesPerDim * particlesPerDim * particlesPerDim, distributionMean, distributionStdDev,
                          cutoff, verletSkinRadius, verletRebuildFrequency);
       break;

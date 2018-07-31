@@ -9,28 +9,39 @@
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
   int option, option_index;
-  static struct option long_options[] = {
-      {"container", required_argument, nullptr, 'c'},
-      {"cutoff", required_argument, nullptr, 'C'},
-      {"distribution-mean", required_argument, nullptr, 'm'},
-      {"distribution-stddeviation", required_argument, nullptr, 'z'},
-      {"data-layout", required_argument, nullptr, 'd'},
-      {"functor", required_argument, nullptr, 'f'},
-      {"help", no_argument, nullptr, 'h'},
-      {"iterations", required_argument, nullptr, 'i'},
-      {"particles-generator", required_argument, nullptr, 'g'},
-      {"particles-per-dimension", required_argument, nullptr, 'n'},
-      {"particle-spacing", required_argument, nullptr, 's'},
-      {"traversal", required_argument, nullptr, 't'},
-      {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
-      {"verlet-skin-radius", required_argument, nullptr, 'r'},
-      {"vtk", required_argument, nullptr, 'w'},
-  };
+  static struct option long_options[] = {{"box-length", required_argument, nullptr, 'b'},
+                                         {"container", required_argument, nullptr, 'c'},
+                                         {"cutoff", required_argument, nullptr, 'C'},
+                                         {"distribution-mean", required_argument, nullptr, 'm'},
+                                         {"distribution-stddeviation", required_argument, nullptr, 'z'},
+                                         {"data-layout", required_argument, nullptr, 'd'},
+                                         {"functor", required_argument, nullptr, 'f'},
+                                         {"help", no_argument, nullptr, 'h'},
+                                         {"iterations", required_argument, nullptr, 'i'},
+                                         {"particles-generator", required_argument, nullptr, 'g'},
+                                         {"particles-per-dimension", required_argument, nullptr, 'n'},
+                                         {"particle-spacing", required_argument, nullptr, 's'},
+                                         {"traversal", required_argument, nullptr, 't'},
+                                         {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
+                                         {"verlet-skin-radius", required_argument, nullptr, 'r'},
+                                         {"vtk", required_argument, nullptr, 'w'},
+                                         {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   string strArg;
+  int bla = 0;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
-    strArg = optarg;
+    ++bla;
+    if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
+      case 'b': {
+        try {
+          boxLength = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing box length: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 'c': {
         if (strArg.find("direct") != string::npos) {
           containerOption = autopas::directSum;
@@ -254,9 +265,10 @@ void MDFlexParser::printConfig() {
     }
     case GeneratorOption::gaussian: {
       cout << "Gaussian generator" << endl;
+      cout << setw(valueOffset) << left << "Box length"
+           << ":  " << boxLength << endl;
       cout << setw(valueOffset) << left << "Distribution mean"
            << ":  " << distributionMean << endl;
-
       cout << setw(valueOffset) << left << "Distribution standard deviation"
            << ":  " << distributionStdDev << endl;
       break;
@@ -319,3 +331,8 @@ double MDFlexParser::getDistributionMean() const { return distributionMean; }
 double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; }
 
 string MDFlexParser::getWriteVTK() const { return writeVTK; }
+
+double MDFlexParser::getBoxLength() const {
+  if (boxLength == -1) return ceil(2 * distributionMean);
+  return boxLength;
+}
