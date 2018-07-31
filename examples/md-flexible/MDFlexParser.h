@@ -17,13 +17,17 @@ using namespace std;
 class MDFlexParser {
  public:
   enum FunctorOption { lj12_6 };
+  enum GeneratorOption { grid, gaussian };
 
   MDFlexParser() = default;
 
   autopas::ContainerOptions getContainerOption() const;
   double getCutoff() const;
   autopas::DataLayoutOption getDataLayoutOption() const;
+  double getDistributionMean() const;
+  double getDistributionStdDev() const;
   FunctorOption getFunctorOption() const;
+  GeneratorOption getGeneratorOption() const;
   size_t getIterations() const;
   double getParticleSpacing() const;
   size_t getParticlesPerDim() const;
@@ -38,7 +42,10 @@ class MDFlexParser {
   std::vector<autopas::TraversalOptions> traversalOptions;
 
   double cutoff;
+  double distributionMean;
+  double distributionStdDev;
   FunctorOption functorOption;
+  GeneratorOption generatorOption;
   size_t iterations;
   size_t particlesPerDim;
   double particleSpacing;

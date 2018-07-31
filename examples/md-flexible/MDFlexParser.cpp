@@ -9,13 +9,16 @@
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
   int option, option_index;
-  constexpr size_t valueOffset = 25;
+  constexpr size_t valueOffset = 32;
   static struct option long_options[] = {
       {"container", required_argument, nullptr, 'c'},
       {"cutoff", required_argument, nullptr, 'C'},
+      {"distribution-mean", required_argument, nullptr, 'm'},
+      {"distribution-stddeviation", required_argument, nullptr, 'z'},
       {"data-layout", required_argument, nullptr, 'd'},
       {"functor", required_argument, nullptr, 'f'},
       {"iterations", required_argument, nullptr, 'i'},
+      {"particles-generator", required_argument, nullptr, 'g'},
       {"particles-per-dimension", required_argument, nullptr, 'n'},
       {"particle-spacing", required_argument, nullptr, 's'},
       {"traversal", required_argument, nullptr, 't'},
@@ -35,10 +38,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           if (strArg.find("direct") != string::npos) {
             cout << "DirectSum" << endl;
             containerOption = autopas::directSum;
-          } else if (strArg.find("linked") != string::npos) {
+          } else if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
             cout << "LinkedCells" << endl;
             containerOption = autopas::linkedCells;
-          } else if (strArg.find("verlet") != string::npos) {
+          } else if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
             cout << "VerletLists" << endl;
             containerOption = autopas::verletLists;
           } else {
@@ -89,6 +92,22 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           }
           break;
         }
+        case 'g': {
+          cout << setw(valueOffset) << left << "Particle Generator"
+               << ":  ";
+          if (strArg.find("grid") != string::npos) {
+            cout << "Grid generator" << endl;
+            generatorOption = GeneratorOption::grid;
+          } else if (strArg.find("gaus") != string::npos) {
+            cout << "Gaussian generator" << endl;
+            generatorOption = GeneratorOption::gaussian;
+          } else {
+            cerr << "Unknown generator : " << strArg << endl;
+            cerr << "Please use 'Grid' or 'Gaussian'" << endl;
+            displayHelp = true;
+          }
+          break;
+        }
         case 'i': {
           try {
             iterations = stoul(strArg);
@@ -99,6 +118,18 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           }
           cout << setw(valueOffset) << left << "Iterations"
                << ":  " << iterations << endl;
+          break;
+        }
+        case 'm': {
+          try {
+            distributionMean = stod(strArg);
+          } catch (const exception &) {
+            cerr << "Error parsing distribution mean: " << optarg << endl;
+            displayHelp = true;
+            break;
+          }
+          cout << setw(valueOffset) << left << "Distribution mean"
+               << ":  " << distributionMean << endl;
           break;
         }
         case 'n': {
@@ -172,6 +203,18 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                << ":  " << verletSkinRadius << endl;
           break;
         }
+        case 'z': {
+          try {
+            distributionStdDev = stod(strArg);
+          } catch (const exception &) {
+            cerr << "Error parsing distribution standard deviation: " << optarg << endl;
+            displayHelp = true;
+            break;
+          }
+          cout << setw(valueOffset) << left << "Distribution standard deviation"
+               << ":  " << distributionStdDev << endl;
+          break;
+        }
         default: {
           // error message handled by getopt
           displayHelp = true;
@@ -214,3 +257,9 @@ const vector<autopas::TraversalOptions> &MDFlexParser::getTraversalOptions() con
 size_t MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
 double MDFlexParser::getVerletSkinRadius() const { return verletSkinRadius; }
+
+MDFlexParser::GeneratorOption MDFlexParser::getGeneratorOption() const { return generatorOption; }
+
+double MDFlexParser::getDistributionMean() const { return distributionMean; }
+
+double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; }

@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <iostream>
+#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
@@ -37,9 +38,10 @@ void printMolecules(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecul
  * @param cutoff Cutoff radius to use. Affects number and size of cells for e.g.
  * LinkedCells.
  */
-void initContainer(autopas::ContainerOptions containerOption, std::vector<autopas::TraversalOptions> traversalOptions,
-                   AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
-                   double particelSpacing, double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
+void initContainerGrid(autopas::ContainerOptions containerOption,
+                       std::vector<autopas::TraversalOptions> traversalOptions,
+                       AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
+                       double particelSpacing, double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
@@ -49,6 +51,19 @@ void initContainer(autopas::ContainerOptions containerOption, std::vector<autopa
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
                                    {particelSpacing, particelSpacing, particelSpacing},
                                    {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
+}
+
+void initContainerGauss(autopas::ContainerOptions containerOption,
+                        std::vector<autopas::TraversalOptions> traversalOptions,
+                        AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t numParticles,
+                        double distributionMean, double distributionStdDev, double cutoff, double verletSkinRadius,
+                        int verletRebuildFrequency) {
+  auto boxLength = ceil(distributionMean) * 2;
+  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
+
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions);
+  PrintableMolecule dummyParticle;
+  GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
 
 int main(int argc, char **argv) {
@@ -67,6 +82,9 @@ int main(int argc, char **argv) {
   auto traversalOptions(parser.getTraversalOptions());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
   auto verletSkinRadius(parser.getVerletSkinRadius());
+  auto generatorChoice(parser.getGeneratorOption());
+  auto distributionMean(parser.getDistributionMean());
+  auto distributionStdDev(parser.getDistributionStdDev());
 
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal, startCalc, stopCalc;
 
@@ -75,8 +93,22 @@ int main(int argc, char **argv) {
   // Initialization
   AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
 
-  initContainer(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff, verletSkinRadius,
-                verletRebuildFrequency);
+  switch (generatorChoice) {
+    case MDFlexParser::GeneratorOption::grid: {
+      initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,
+                        verletSkinRadius, verletRebuildFrequency);
+      break;
+    }
+    case MDFlexParser::GeneratorOption::gaussian: {
+      initContainerGauss(containerChoice, traversalOptions, autopas,
+                         particlesPerDim * particlesPerDim * particlesPerDim, distributionMean, distributionStdDev,
+                         cutoff, verletSkinRadius, verletRebuildFrequency);
+      break;
+    }
+    default:
+      std::cerr << "Unknown generator choice" << std::endl;
+      return -1;
+  }
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
