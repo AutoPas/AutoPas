@@ -16,5 +16,5 @@ class AutoPasTest : public testing::Test {
                  {autopas::TraversalOptions::c08});
   }
 
-  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
+  autopas::AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
 };

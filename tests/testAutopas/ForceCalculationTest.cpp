@@ -8,7 +8,7 @@
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
-  AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> autoPas;
+  autopas::AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> autoPas;
 
   double epsilon = 1.;
   double sigma = 1.;

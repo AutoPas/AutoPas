@@ -11,6 +11,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/selectors/AutoTuner.h"
 
+namespace autopas {
 /**
  * The AutoPas class is intended to be the main point of Interaction for the
  * user. It puts a layer of abstraction over the container and handles the
@@ -141,3 +142,5 @@ class AutoPas {
  private:
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };
+
+}  // namespace autopas

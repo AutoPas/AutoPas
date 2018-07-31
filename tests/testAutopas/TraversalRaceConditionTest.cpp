@@ -7,7 +7,7 @@
 #include "TraversalRaceConditionTest.h"
 
 void TraversalRaceConditionTest::fillWithParticles(
-    AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autoPas,
+    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autoPas,
     std::array<size_t, 3> particlesPerDim) {
   size_t id = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
@@ -48,7 +48,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   /// @todo: test all containers
   for (auto &traversalLC :
        autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>>::allLCApplicableTraversals()) {
-    AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
+    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
 
     // generates one cell per particle + 1 halo layer
     auto containerList = {autopas::ContainerOptions::linkedCells};

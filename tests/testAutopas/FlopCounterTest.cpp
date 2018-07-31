@@ -11,7 +11,7 @@
  * @param dataLayoutOption
  */
 void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
-  AutoPas<Particle, FPCell> autoPas;
+  autopas::AutoPas<Particle, FPCell> autoPas;
 
   autoPas.init({0, 0, 0}, {3, 3, 3}, 1, 0, 1, {autopas::ContainerOptions::directSum});
 

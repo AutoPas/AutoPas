@@ -19,7 +19,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
   ~TraversalRaceConditionTest() override = default;
 
-  void fillWithParticles(AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autoPas,
+  void fillWithParticles(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autoPas,
                          std::array<size_t, 3> particlesPerDim);
 
   /*

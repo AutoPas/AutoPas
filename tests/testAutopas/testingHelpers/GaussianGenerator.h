@@ -12,7 +12,7 @@
 class GaussianGenerator {
  public:
   template <class Particle, class ParticleCell>
-  static void fillWithParticles(AutoPas<Particle, ParticleCell> &autoPas, size_t numParticles,
+  static void fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas, size_t numParticles,
                                 Particle &defaultParicle = autopas::Particle(), double distributionMean = 5.0,
                                 double distributionStdDev = 2.0) {
     std::default_random_engine generator(42);

@@ -31,5 +31,5 @@ class Newton3OnOffTest : public AutoPasTestBase {
  protected:
  public:
   MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockFunctor;
-  AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
+  autopas::AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
 };

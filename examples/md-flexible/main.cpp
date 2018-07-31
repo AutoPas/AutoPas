@@ -19,7 +19,7 @@ using namespace autopas;
  * Prints position and forces of all particels in the autopas object.
  * @param autopas
  */
-void printMolecules(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas) {
+void printMolecules(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas) {
   for (auto particleIterator = autopas.begin(); particleIterator.isValid(); ++particleIterator) {
     particleIterator->print();
   }
@@ -40,7 +40,7 @@ void printMolecules(AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecul
  */
 void initContainerGrid(autopas::ContainerOptions containerOption,
                        std::vector<autopas::TraversalOptions> traversalOptions,
-                       AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
+                       autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t particlesPerDim,
                        double particelSpacing, double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
@@ -55,7 +55,7 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
 
 void initContainerGauss(autopas::ContainerOptions containerOption,
                         std::vector<autopas::TraversalOptions> traversalOptions,
-                        AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t numParticles,
+                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas, size_t numParticles,
                         double distributionMean, double distributionStdDev, double cutoff, double verletSkinRadius,
                         int verletRebuildFrequency) {
   auto boxLength = ceil(distributionMean) * 2;
@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
   startTotal = std::chrono::high_resolution_clock::now();
 
   // Initialization
-  AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
+  autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
