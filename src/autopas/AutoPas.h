@@ -126,6 +126,17 @@ class AutoPas {
                                                                std::array<double, 3> higherCorner) {
     return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner);
   }
+  /**
+   * Get the lower corner of the container.
+   * @return lower corner of the container.
+   */
+  std::array<double, 3> getBoxMin() { return _autoTuner->getContainer()->getBoxMin(); }
+
+  /**
+   * Get the upper corner of the container.
+   * @return upper corner of the container.
+   */
+  std::array<double, 3> getBoxMax() { return _autoTuner->getContainer()->getBoxMax(); }
 
  private:
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
