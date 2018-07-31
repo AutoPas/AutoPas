@@ -1,8 +1,7 @@
 /**
- * GridGenerator.h
- *
- *  Created on: 5/25/18
- *     Aauthor: F. Gratl
+ * @file GaussianGenerator.h
+ * @author F. Gratl
+ * @date 5/25/18
  */
 
 #pragma once
