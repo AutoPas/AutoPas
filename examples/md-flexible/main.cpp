@@ -5,6 +5,7 @@
  */
 
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
@@ -67,6 +68,26 @@ void initContainerGauss(autopas::ContainerOptions containerOption,
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
 
+void wirteVTKFile(string filename, size_t numParticles,
+                  autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas) {
+  std::ofstream vtkFile;
+  vtkFile.open(filename);
+
+  vtkFile << "# vtk DataFile Version 2.0" << endl;
+  vtkFile << "Timestep" << endl;
+  vtkFile << "ASCII" << endl;
+  vtkFile << "DATASET STRUCTURED_GRID" << endl;
+  vtkFile << "DIMENSIONS 1 1 1" << endl;
+  vtkFile << "POINTS " << numParticles << " double" << endl;
+
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    auto pos = iter->getR();
+    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+  }
+
+  vtkFile.close();
+}
+
 int main(int argc, char **argv) {
   // Parsing
   MDFlexParser parser;
@@ -86,6 +107,7 @@ int main(int argc, char **argv) {
   auto generatorChoice(parser.getGeneratorOption());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
+  auto vtkFilename(parser.getWriteVTK());
 
   parser.printConfig();
 
@@ -122,6 +144,9 @@ int main(int argc, char **argv) {
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(cutoff, MoleculeLJ::getEpsilon(),
                                                                                 MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
+
+  if (vtkFilename.compare("") != 0)
+    wirteVTKFile("foo.vtk", particlesPerDim * particlesPerDim * particlesPerDim, autopas);
 
   // statistics for linked cells
   if (containerChoice == autopas::ContainerOptions::linkedCells) {

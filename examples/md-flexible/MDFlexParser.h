@@ -31,6 +31,7 @@ class MDFlexParser {
   size_t getIterations() const;
   double getParticleSpacing() const;
   size_t getParticlesPerDim() const;
+  string getWriteVTK() const;
   const vector<autopas::TraversalOptions> &getTraversalOptions() const;
   size_t getVerletRebuildFrequency() const;
   double getVerletSkinRadius() const;
@@ -53,6 +54,7 @@ class MDFlexParser {
   size_t iterations = 10;
   size_t particlesPerDim = 20;
   double particleSpacing = .4;
+  string writeVTK = "";
   size_t verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
 };

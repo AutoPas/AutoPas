@@ -24,6 +24,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       {"traversal", required_argument, nullptr, 't'},
       {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
       {"verlet-skin-radius", required_argument, nullptr, 'r'},
+      {"vtk", required_argument, nullptr, 'w'},
   };
   string strArg;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
@@ -148,6 +149,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case 'w': {
+        writeVTK = strArg;
         break;
       }
       case 'r': {
@@ -312,3 +317,5 @@ MDFlexParser::GeneratorOption MDFlexParser::getGeneratorOption() const { return 
 double MDFlexParser::getDistributionMean() const { return distributionMean; }
 
 double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; }
+
+string MDFlexParser::getWriteVTK() const { return writeVTK; }
