@@ -6,9 +6,9 @@
 
 #include "VerletListsTest.h"
 
+using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Invoke;
-using ::testing::_;
 
 TEST_F(VerletListsTest, VerletListConstructor) {
   std::array<double, 3> min = {1, 1, 1};

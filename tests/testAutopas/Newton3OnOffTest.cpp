@@ -6,8 +6,8 @@
 
 #include "Newton3OnOffTest.h"
 
-using ::testing::Return;  // anything is ok
 using ::testing::_;       // anything is ok
+using ::testing::Return;  // anything is ok
 
 TEST_F(Newton3OnOffTest, testAoS) {
   for (auto containerOption : autopas::allContainerOptions) {
