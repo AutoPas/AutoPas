@@ -86,6 +86,8 @@ int main(int argc, char **argv) {
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
 
+  parser.printConfig();
+
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal, startCalc, stopCalc;
 
   startTotal = std::chrono::high_resolution_clock::now();

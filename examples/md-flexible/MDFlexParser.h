@@ -35,20 +35,24 @@ class MDFlexParser {
   size_t getVerletRebuildFrequency() const;
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
+  void printConfig();
 
  private:
-  autopas::ContainerOptions containerOption;
-  autopas::DataLayoutOption dataLayoutOption;
+  static constexpr size_t valueOffset = 32;
+
+  // defaults:
+  autopas::ContainerOptions containerOption = autopas::ContainerOptions::verletLists;
+  autopas::DataLayoutOption dataLayoutOption = autopas::DataLayoutOption::soa;
   std::vector<autopas::TraversalOptions> traversalOptions;
 
-  double cutoff;
-  double distributionMean;
-  double distributionStdDev;
-  FunctorOption functorOption;
-  GeneratorOption generatorOption;
-  size_t iterations;
-  size_t particlesPerDim;
-  double particleSpacing;
-  size_t verletRebuildFrequency;
-  double verletSkinRadius;
+  double cutoff = 1.;
+  double distributionMean = 5.;
+  double distributionStdDev = 2.;
+  FunctorOption functorOption = FunctorOption::lj12_6;
+  GeneratorOption generatorOption = GeneratorOption::grid;
+  size_t iterations = 10;
+  size_t particlesPerDim = 20;
+  double particleSpacing = .4;
+  size_t verletRebuildFrequency = 5;
+  double verletSkinRadius = .2;
 };

@@ -9,7 +9,6 @@
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
   int option, option_index;
-  constexpr size_t valueOffset = 32;
   static struct option long_options[] = {
       {"container", required_argument, nullptr, 'c'},
       {"cutoff", required_argument, nullptr, 'C'},
@@ -17,6 +16,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       {"distribution-stddeviation", required_argument, nullptr, 'z'},
       {"data-layout", required_argument, nullptr, 'd'},
       {"functor", required_argument, nullptr, 'f'},
+      {"help", no_argument, nullptr, 'h'},
       {"iterations", required_argument, nullptr, 'i'},
       {"particles-generator", required_argument, nullptr, 'g'},
       {"particles-per-dimension", required_argument, nullptr, 'n'},
@@ -25,206 +25,154 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
       {"verlet-skin-radius", required_argument, nullptr, 'r'},
   };
-  int numOptions = sizeof(long_options) / sizeof(long_options[0]) * 2 + 1;
-  if (argc == numOptions) {
-    string strArg;
-    while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
-      strArg = optarg;
-      transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-      switch (option) {
-        case 'c': {
-          cout << setw(valueOffset) << left << "Container"
-               << ":  ";
-          if (strArg.find("direct") != string::npos) {
-            cout << "DirectSum" << endl;
-            containerOption = autopas::directSum;
-          } else if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
-            cout << "LinkedCells" << endl;
-            containerOption = autopas::linkedCells;
-          } else if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
-            cout << "VerletLists" << endl;
-            containerOption = autopas::verletLists;
-          } else {
-            cerr << "Unknown container : " << strArg << endl;
-            cerr << "Please use 'DirectSum' or 'LinkedCells'!" << endl;
-            displayHelp = true;
-          }
-          break;
-        }
-        case 'C': {
-          try {
-            cutoff = stod(strArg);
-          } catch (const exception &) {
-            cerr << "Error parsing cutoff Radius: " << optarg << endl;
-            displayHelp = true;
-            break;
-          }
-          cout << setw(valueOffset) << left << "Cutoff radius"
-               << ":  " << cutoff << endl;
-          break;
-        }
-        case 'd': {
-          cout << setw(valueOffset) << left << "Data Layout"
-               << ":  ";
-          if (strArg.find("aos") != string::npos) {
-            cout << "Array-of-Structures" << endl;
-            dataLayoutOption = autopas::aos;
-          } else if (strArg.find("soa") != string::npos) {
-            cout << "Structure-of-Arrays" << endl;
-            dataLayoutOption = autopas::soa;
-          } else {
-            cerr << "Unknown data layout : " << strArg << endl;
-            cerr << "Please use 'AoS' or 'SoA'!" << endl;
-            displayHelp = true;
-          }
-          break;
-        }
-        case 'f': {
-          cout << setw(valueOffset) << left << "Functor"
-               << ":  ";
-          if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
-            cout << "Lennard-Jones (12-6)" << endl;
-            functorOption = lj12_6;
-          } else {
-            cerr << "Unknown functor : " << strArg << endl;
-            cerr << "Please use 'Lennard-Jones', you have no options here :P" << endl;
-            displayHelp = true;
-          }
-          break;
-        }
-        case 'g': {
-          cout << setw(valueOffset) << left << "Particle Generator"
-               << ":  ";
-          if (strArg.find("grid") != string::npos) {
-            cout << "Grid generator" << endl;
-            generatorOption = GeneratorOption::grid;
-          } else if (strArg.find("gaus") != string::npos) {
-            cout << "Gaussian generator" << endl;
-            generatorOption = GeneratorOption::gaussian;
-          } else {
-            cerr << "Unknown generator : " << strArg << endl;
-            cerr << "Please use 'Grid' or 'Gaussian'" << endl;
-            displayHelp = true;
-          }
-          break;
-        }
-        case 'i': {
-          try {
-            iterations = stoul(strArg);
-          } catch (const exception &) {
-            cerr << "Error parsing number of iterations: " << optarg << endl;
-            displayHelp = true;
-            break;
-          }
-          cout << setw(valueOffset) << left << "Iterations"
-               << ":  " << iterations << endl;
-          break;
-        }
-        case 'm': {
-          try {
-            distributionMean = stod(strArg);
-          } catch (const exception &) {
-            cerr << "Error parsing distribution mean: " << optarg << endl;
-            displayHelp = true;
-            break;
-          }
-          cout << setw(valueOffset) << left << "Distribution mean"
-               << ":  " << distributionMean << endl;
-          break;
-        }
-        case 'n': {
-          try {
-            particlesPerDim = stoul(strArg);
-          } catch (const exception &) {
-            cerr << "Error parsing number of particles per dimension: " << optarg << endl;
-            displayHelp = true;
-            break;
-          }
-          cout << "Particles" << endl;
-          cout << setw(valueOffset) << left << "  per dimension"
-               << ":  " << particlesPerDim << endl;
-          cout << setw(valueOffset) << left << "  total"
-               << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
-          break;
-        }
-        case 's': {
-          try {
-            particleSpacing = stod(strArg);
-          } catch (const exception &) {
-            cerr << "Error parsing separation of particles: " << optarg << endl;
-            displayHelp = true;
-            break;
-          }
-          cout << setw(valueOffset) << left << "Particle spacing"
-               << ":  " << particleSpacing << endl;
-          break;
-        }
-        case 't': {
-          cout << setw(valueOffset) << left << "Allowed traversals"
-               << ":  ";
-          if (strArg.find("c08") != string::npos) {
-            cout << "c08, ";
-            traversalOptions.push_back(autopas::TraversalOptions::c08);
-          }
-          if (strArg.find("slice") != string::npos) {
-            cout << "sliced, ";
-            traversalOptions.push_back(autopas::TraversalOptions::sliced);
-          }
-          if (traversalOptions.empty()) {
-            cerr << "Unknown Traversal : " << strArg << endl;
-            cerr << "Please use 'c08' or 'sliced'!" << endl;
-            displayHelp = true;
-          }
-          // deletes last comma
-          cout << "\b\b  " << endl;
-          break;
-        }
-        case 'v': {
-          try {
-            verletRebuildFrequency = stoul(strArg);
-          } catch (const exception &) {
-            cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
-            displayHelp = true;
-            break;
-          }
-          cout << setw(valueOffset) << left << "Verlet rebuild frequency"
-               << ":  " << verletRebuildFrequency << endl;
-          break;
-        }
-        case 'r': {
-          try {
-            verletSkinRadius = stod(strArg);
-          } catch (const exception &) {
-            cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
-            displayHelp = true;
-            break;
-          }
-          cout << setw(valueOffset) << left << "Verlet skin radius"
-               << ":  " << verletSkinRadius << endl;
-          break;
-        }
-        case 'z': {
-          try {
-            distributionStdDev = stod(strArg);
-          } catch (const exception &) {
-            cerr << "Error parsing distribution standard deviation: " << optarg << endl;
-            displayHelp = true;
-            break;
-          }
-          cout << setw(valueOffset) << left << "Distribution standard deviation"
-               << ":  " << distributionStdDev << endl;
-          break;
-        }
-        default: {
-          // error message handled by getopt
+  string strArg;
+  while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
+    strArg = optarg;
+    transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+    switch (option) {
+      case 'c': {
+        if (strArg.find("direct") != string::npos) {
+          containerOption = autopas::directSum;
+        } else if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
+          containerOption = autopas::linkedCells;
+        } else if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
+          containerOption = autopas::verletLists;
+        } else {
+          cerr << "Unknown container option: " << strArg << endl;
+          cerr << "Please use 'DirectSum' or 'LinkedCells'!" << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case 'C': {
+        try {
+          cutoff = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing cutoff Radius: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'd': {
+        if (strArg.find("aos") != string::npos) {
+          dataLayoutOption = autopas::aos;
+        } else if (strArg.find("soa") != string::npos) {
+          dataLayoutOption = autopas::soa;
+        } else {
+          cerr << "Unknown data layout : " << strArg << endl;
+          cerr << "Please use 'AoS' or 'SoA'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'f': {
+        if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+          functorOption = lj12_6;
+        } else {
+          cerr << "Unknown functor : " << strArg << endl;
+          cerr << "Please use 'Lennard-Jones', you have no options here :P" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'g': {
+        if (strArg.find("grid") != string::npos) {
+          generatorOption = GeneratorOption::grid;
+        } else if (strArg.find("gaus") != string::npos) {
+          generatorOption = GeneratorOption::gaussian;
+        } else {
+          cerr << "Unknown generator : " << strArg << endl;
+          cerr << "Please use 'Grid' or 'Gaussian'" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'h': {
+        displayHelp = true;
+        break;
+      }
+      case 'i': {
+        try {
+          iterations = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing number of iterations: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'm': {
+        try {
+          distributionMean = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing distribution mean: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'n': {
+        try {
+          particlesPerDim = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing number of particles per dimension: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 's': {
+        try {
+          particleSpacing = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing separation of particles: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 't': {
+        if (strArg.find("c08") != string::npos) {
+          traversalOptions.push_back(autopas::TraversalOptions::c08);
+        }
+        if (strArg.find("slice") != string::npos) {
+          traversalOptions.push_back(autopas::TraversalOptions::sliced);
+        }
+        if (traversalOptions.empty()) {
+          cerr << "Unknown Traversal : " << strArg << endl;
+          cerr << "Please use 'c08' or 'sliced'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'v': {
+        try {
+          verletRebuildFrequency = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'r': {
+        try {
+          verletSkinRadius = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'z': {
+        try {
+          distributionStdDev = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing distribution standard deviation: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      default: {
+        // error message handled by getopt
+        displayHelp = true;
       }
     }
-  } else {
-    cerr << "Wrong number of arguments!" << endl;
-    cerr << "Received: " << argc << " Expected: " << numOptions << endl;
-    displayHelp = true;
   }
   if (displayHelp) {
     cout << "Usage: " << argv[0] << endl;
@@ -236,6 +184,107 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
     return false;
   }
   return true;
+}
+
+void MDFlexParser::printConfig() {
+  constexpr size_t valueOffset = 32;
+  cout << setw(valueOffset) << left << "Container"
+       << ":  ";
+  switch (containerOption) {
+    case autopas::ContainerOptions::directSum: {
+      cout << "DirectSum" << endl;
+      break;
+    }
+    case autopas::ContainerOptions::linkedCells: {
+      cout << "LinkedCells" << endl;
+      break;
+    }
+    case autopas::ContainerOptions::verletLists: {
+      cout << "VerletLists" << endl;
+      break;
+    }
+  }
+
+  if (containerOption == autopas::ContainerOptions::verletLists) {
+    cout << setw(valueOffset) << left << "Verlet rebuild frequency"
+         << ":  " << verletRebuildFrequency << endl;
+
+    cout << setw(valueOffset) << left << "Verlet skin radius"
+         << ":  " << verletSkinRadius << endl;
+  }
+
+  cout << setw(valueOffset) << left << "Data Layout"
+       << ":  ";
+  switch (dataLayoutOption) {
+    case autopas::DataLayoutOption::aos: {
+      cout << "Array-of-Structures" << endl;
+      break;
+    }
+    case autopas::DataLayoutOption::soa: {
+      cout << "Structure-of-Arrays" << endl;
+      break;
+    }
+  }
+
+  cout << setw(valueOffset) << left << "Functor"
+       << ":  ";
+  switch (functorOption) {
+    case FunctorOption::lj12_6: {
+      cout << "Lennard-Jones (12-6)" << endl;
+      break;
+    }
+  }
+
+  cout << setw(valueOffset) << left << "Cutoff radius"
+       << ":  " << cutoff << endl;
+
+  cout << setw(valueOffset) << left << "Particle Generator"
+       << ":  ";
+  switch (generatorOption) {
+    case GeneratorOption::grid: {
+      cout << "Grid generator" << endl;
+      cout << setw(valueOffset) << left << "Particle spacing"
+           << ":  " << particleSpacing << endl;
+      break;
+    }
+    case GeneratorOption::gaussian: {
+      cout << "Gaussian generator" << endl;
+      cout << setw(valueOffset) << left << "Distribution mean"
+           << ":  " << distributionMean << endl;
+
+      cout << setw(valueOffset) << left << "Distribution standard deviation"
+           << ":  " << distributionStdDev << endl;
+      break;
+    }
+  }
+
+  cout << "Particles" << endl;
+  cout << setw(valueOffset) << left << "  per dimension"
+       << ":  " << particlesPerDim;
+  if (generatorOption != grid) cout << " (approximately)";
+  cout << endl;
+  cout << setw(valueOffset) << left << "  total"
+       << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
+
+  cout << setw(valueOffset) << left << "Allowed traversals"
+       << ":  ";
+  for (auto &t : traversalOptions) {
+    switch (t) {
+      case autopas::TraversalOptions::c08: {
+        cout << "c08, ";
+        break;
+      }
+      case autopas::TraversalOptions::sliced: {
+        cout << "sliced, ";
+        break;
+      }
+    }
+  }
+  // deletes last comma
+  cout << "\b\b  " << endl;
+
+  cout << setw(valueOffset) << left << "Iterations"
+       << ":  " << iterations << endl;
 }
 
 autopas::ContainerOptions MDFlexParser::getContainerOption() const { return containerOption; }
