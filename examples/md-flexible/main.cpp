@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
         flopCounterFunctor.getDistanceCalculations() *
         FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
         floor(numIterations / verletRebuildFrequency);
-  auto mmups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
+  auto mfups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
 
   // Output
   cout << fixed << setprecision(2);
@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
        << endl;
   cout << "GFLOPs       : " << flops * 1e-9 << endl;
   cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
-  cout << "MMUPs/sec    : " << mmups << endl;
+  cout << "MFUPs/sec    : " << mfups << endl;
   cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
 
   return EXIT_SUCCESS;
