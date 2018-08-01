@@ -193,8 +193,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   if (displayHelp) {
     cout << "Usage: " << argv[0] << endl;
     for (auto o : long_options) {
-      if(o.name == nullptr)
-        continue;
+      if (o.name == nullptr) continue;
       cout << "    --" << setw(valueOffset + 2) << left << o.name;
       if (o.has_arg) cout << "option";
       cout << endl;
