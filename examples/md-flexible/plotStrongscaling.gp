@@ -17,6 +17,7 @@ titles = "\
 'Verlet Lists SoA rebuild rate 10, skin 0.2*cutoff' \
 'Verlet Lists AoS rebuild rate 10, skin 0.2*cutoff' \
 "
+
 # list of keywords used for coloring (same keyword in title = same color)
 colorSelectors = "\
 Linked \
@@ -29,16 +30,25 @@ pointSelectors = "\
 SoA \
 AoS \
 "
-set xrange [30:11000]
-set yrange [0.001:100]
 
-set xlabel 'NumParticles'
-#set xlabel 'Std Deviation'
-# set xlabel 'Threads'
-set ylabel 'MFUPs/s'
+# Names of the columns to be used for plotting and axis labels
+xData = "Number of Molecules"
+yData = "MFUPS"
+
+# if your data file has no header (shame on you) this would be 0 else the number of header blocks
+dataBlock = 0
+
+# use this if you are not satisfied with the automatically chosen size
+#set xrange [30:11000]
+#set yrange [0.001:100]
+
 set logscale x 10
 set logscale y 10
 set grid
+
+
+set xlabel xData
+set ylabel yData
 
 set key autotitle columnheader
 set key bottom right
@@ -51,10 +61,10 @@ set key font ",". fontsize
 set xlabel font ",". fontsize
 set ylabel font ",". fontsize
 
-# 1:3 -> first col what should be scaled, third is MFUPS
 plot for [i=1:words(datafiles)] \
     word(datafiles, i) \
-    using 1:4 \
+    index dataBlock \
+    using xData:yData \
     with linespoints \
     lc rgbcolor system("case '".word(titles, i)."' in \
                             *'".word(colorSelectors, 1)."'*) \
