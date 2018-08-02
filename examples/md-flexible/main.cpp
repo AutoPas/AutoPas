@@ -145,8 +145,7 @@ int main(int argc, char **argv) {
                                                                                 MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
 
-  if (not vtkFilename.empty())
-    wirteVTKFile(vtkFilename, particlesPerDim * particlesPerDim * particlesPerDim, autopas);
+  if (not vtkFilename.empty()) wirteVTKFile(vtkFilename, particlesPerDim * particlesPerDim * particlesPerDim, autopas);
 
   // statistics for linked cells
   if (containerChoice == autopas::ContainerOptions::linkedCells) {
@@ -159,7 +158,8 @@ int main(int argc, char **argv) {
 
     cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
          << cellsPerDimHalo[2] << " (Total: " << numCells << ")" << endl;
-    cout << "Average Particles per cell: " << (particlesPerDim * particlesPerDim * particlesPerDim) / (double)numCells << endl;
+    cout << "Average Particles per cell: " << (particlesPerDim * particlesPerDim * particlesPerDim) / (double)numCells
+         << endl;
     cout << endl;
   }
 
@@ -199,8 +199,9 @@ int main(int argc, char **argv) {
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
-  cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations << "s)"
-       << endl;
+  if (numIterations > 0)
+    cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
+         << "s)" << endl;
   cout << "GFLOPs       : " << flops * 1e-9 << endl;
   cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
