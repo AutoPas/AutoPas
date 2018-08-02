@@ -145,8 +145,8 @@ int main(int argc, char **argv) {
                                                                                 MoleculeLJ::getSigma(), 0.0);
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
 
-  if (vtkFilename.compare("") != 0)
-    wirteVTKFile("foo.vtk", particlesPerDim * particlesPerDim * particlesPerDim, autopas);
+  if (not vtkFilename.empty())
+    wirteVTKFile(vtkFilename, particlesPerDim * particlesPerDim * particlesPerDim, autopas);
 
   // statistics for linked cells
   if (containerChoice == autopas::ContainerOptions::linkedCells) {
