@@ -101,6 +101,22 @@ pipeline{
                                 sh "ninja -j 4 2>&1 > buildlog_clang.txt || (cat buildlog_clang.txt && exit 1)"
                             }
                         }
+                    },
+                    "intel": {
+                        container('autopas-intel18'){
+                            dir("build-intel"){
+                                sh "CC=icc CXX=icpc cmake -DOPENMP=OFF .."
+                                sh "make -j 4 2>&1 > buildlog_intel.txt || (cat buildlog_intel.txt && exit 1)"
+                            }
+                        }
+                    },
+                    "intel openmp": {
+                        container('autopas-intel18'){
+                            dir("build-intel-ninja-openmp"){
+                                sh "CC=icc CXX=icpc cmake -G Ninja -DOPENMP=ON .."
+                                sh "ninja -j 4 2>&1 > buildlog_intel-openmp-ninja.txt || (cat buildlog_intel-openmp-ninja.txt && exit 1)"
+                            }
+                        }
                     }
                 )
             }
