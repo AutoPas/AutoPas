@@ -105,7 +105,7 @@ pipeline{
                     "intel": {
                         container('autopas-intel18'){
                             dir("build-intel"){
-                                sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DOPENMP=OFF ..'"
+                                sh 'bash -i -c "which icc && CC=`which icc` CXX=`which icpc` cmake -DOPENMP=OFF .."'
                                 sh "make -j 4 2>&1 > buildlog_intel.txt || (cat buildlog_intel.txt && exit 1)"
                             }
                         }
@@ -113,7 +113,7 @@ pipeline{
                     "intel openmp": {
                         container('autopas-intel18'){
                             dir("build-intel-ninja-openmp"){
-                                sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DOPENMP=ON ..'"
+                                sh 'bash -i -c "which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DOPENMP=ON .."'
                                 sh "ninja -j 4 2>&1 > buildlog_intel.txt || (cat buildlog_intel.txt && exit 1)"
                             }
                         }
