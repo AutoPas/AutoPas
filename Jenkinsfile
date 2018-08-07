@@ -114,7 +114,7 @@ pipeline{
                         container('autopas-intel18'){
                             dir("build-intel-ninja-openmp"){
                                 sh "CC=icc CXX=icpc cmake -G Ninja -DOPENMP=ON .."
-                                sh "ninja -j 4 2>&1 > buildlog_intel-openmp-ninja.txt || (cat buildlog_intel-openmp-ninja.txt && exit 1)"
+                                sh "ninja -j 4 2>&1 > buildlog_intel.txt || (cat buildlog_intel.txt && exit 1)"
                             }
                         }
                     }
@@ -122,7 +122,7 @@ pipeline{
             }
             post{
                 always{
-					warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+					warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', incldePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
                 }
                 success{
                     githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
