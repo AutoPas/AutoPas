@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
 
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
-
+  AutoPasLogger->set_level(spdlog::level::debug);
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
       initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,

@@ -131,7 +131,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   void tuneTraversal(PairwiseFunctor &pairwiseFunctor) {
     if (_traversalSelector != nullptr)
-      _traversalSelector->template tune<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+      _traversalSelector->template tune<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor, this->_cells);
   }
 
  protected:
