@@ -134,6 +134,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   }
 
   // reset forces
+  // omp parallelization seems only beneficial for really large systems
+  // TODO: find good threshold when to activate OMP here
+  //#ifdef AUTOPAS_OPENMP
+  //#pragma omp parallel for
+  //#endif
   for (size_t i = 0; i < cells.size(); ++i) {
     for (size_t j = 0; j < cells[i]._particles.size(); ++j) {
       cells[i]._particles[j].setF({0, 0, 0});
