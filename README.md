@@ -166,6 +166,17 @@ as long as particles move not more than a skin radius.
 	clang-format-6.0 
 	(Version is important since formatting is not consistent)
 
+## Logging
+AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
+```
+AutoPasLogger->warn("Hello {}", name);
+```
+The global log level can be set at runtime with:
+```
+AutoPasLogger->set_level(spdlog::level::debug);
+```
+Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `off`,
+
 ## Acknowledgements
 * TaLPas BMBF
 
