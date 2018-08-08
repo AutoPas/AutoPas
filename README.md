@@ -119,7 +119,7 @@ The particle can be accesses using `iter->` (`*iter` is also possible).
 When created inside a OpenMP parallel region, work is automatically spread over all iterators.
 ```C++
 #pragma omp parallel
-for(auto iter = container.begin(), iter.isValid(); ++iter) {
+for(auto iter = container.begin(); iter.isValid(); ++iter) {
   // user code:
   auto position = iter->getR();
 }
