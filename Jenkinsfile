@@ -261,13 +261,13 @@ pipeline{
                             }
                         }
                     },
-                    "gcc openmp address-sanitizer": {
+                    /*"gcc openmp address-sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp-address-sanitizer/examples"){
                                 sh 'ctest -C checkExamples -j8'
                             }
                         }
-                    },
+                    },*/
                     "address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer/examples"){
@@ -282,13 +282,13 @@ pipeline{
                             }
                         }
                     },
-                    "thread sanitizer": {
+                    /*"thread sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-threadsanitizer/examples"){
                                 sh 'ctest -C checkExamples -j8'
                             }
                         }
-                    },
+                    },*/
                     "clang openmp": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-openmp/examples"){
@@ -296,13 +296,13 @@ pipeline{
                             }
                         }
                     },
-                    "clang ninja address sanitizer": {
+                    /*"clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug/examples"){
                                 sh 'ctest -C checkExamples -j8'
                             }
                         }
-                    },
+                    },*/
                     "clang ninja address sanitizer release": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release/examples"){
