@@ -13,6 +13,15 @@
 
 namespace autopas {
 
+/**
+ * Possible choices for the particle container type.
+ */
+enum ContainerOptions {
+  directSum = 0,
+  linkedCells = 1,
+  verletLists = 2,
+};
+
 // consider multiple inheritance or delegation to avoid virtual call to Functor
 /**
  * The ParticleContainerInterface class provides a basic interface for all Containers within AutoPas.
@@ -45,6 +54,14 @@ class ParticleContainerInterface {
    * @return
    */
   ParticleContainerInterface &operator=(const ParticleContainerInterface &other) = delete;
+
+
+  /**
+   * Return a enum representing the name of the container class.
+   * @return Enum representing the container.
+   */
+  virtual ContainerOptions getContainerType() = 0;
+
 
   /**
    * adds a particle to the container

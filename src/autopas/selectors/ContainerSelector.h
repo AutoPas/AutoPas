@@ -16,15 +16,6 @@
 namespace autopas {
 
 /**
- * Possible choices for the particle container type.
- */
-enum ContainerOptions {
-  directSum = 0,
-  linkedCells = 1,
-  verletLists = 2,
-};
-
-/**
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
 static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::directSum, ContainerOptions::linkedCells,

@@ -63,6 +63,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return v;
   }
 
+  ContainerOptions getContainerType() override {
+    return ContainerOptions::linkedCells;
+  }
+
   void addParticle(Particle &p) override {
     bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
     if (inBox) {
