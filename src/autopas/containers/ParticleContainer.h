@@ -127,11 +127,13 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * @tparam useSoA
    * @tparam useNewton3
    * @param pairwiseFunctor Functor to optimize for.
+   * @return true if still in traversal tuning phase
    */
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  void tuneTraversal(PairwiseFunctor &pairwiseFunctor) {
+  bool tuneTraversal(PairwiseFunctor &pairwiseFunctor) {
     if (_traversalSelector != nullptr)
-      _traversalSelector->template tune<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor, this->_cells);
+      return _traversalSelector->template tune<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor, this->_cells);
+    return false;
   }
 
  protected:

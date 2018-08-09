@@ -74,6 +74,8 @@ class AutoTuner {
 
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
+  bool _isTuningTraversals = false;
+  bool _isTuningContainers = false;
 };
 template <class Particle, class ParticleCell>
 template <class ParticleFunctor>
@@ -127,9 +129,15 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 void AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
-  _containerSelector.tune();
-  _containerSelector.getOptimalContainer()->template tuneTraversal<PairwiseFunctor, useSoA, useNewton3>(
-      pairwiseFunctor);
-  _iterationsSinceTuning = 0;
+  if (not _isTuningTraversals) {
+    _isTuningContainers = _containerSelector.tune();
+  };
+
+  _isTuningTraversals =
+      _containerSelector.getOptimalContainer()->template tuneTraversal<PairwiseFunctor, useSoA, useNewton3>(
+          pairwiseFunctor);
+
+  // reset counter only if all tuning phases are done
+  if (not _isTuningTraversals and not _isTuningContainers) _iterationsSinceTuning = 0;
 }
 }  // namespace autopas

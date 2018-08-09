@@ -72,12 +72,19 @@ class ContainerSelector {
 
   /**
    * Evaluates the optimal container option.
+   * @return true if still in tuning phase
    */
-  void tune();
+  bool tune();
 
  private:
   std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> generateContainers();
-  void chooseOptimalContainer(
+
+  /**
+   * Chooses the optimal container from a given list.
+   * @param containers
+   * @return true if still in tuning phase
+   */
+  bool chooseOptimalContainer(
       std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers);
 
   std::array<double, 3> _boxMin, _boxMax;
@@ -134,10 +141,11 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
 }
 
 template <class Particle, class ParticleCell>
-void ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(
+bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(
     std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers) {
   // TODO: Autotuning goes here
   _optimalContainer = std::move(containers.front());
+  return false;
 }
 
 template <class Particle, class ParticleCell>
@@ -147,7 +155,7 @@ ContainerSelector<Particle, ParticleCell>::getOptimalContainer() {
   return _optimalContainer;
 }
 template <class Particle, class ParticleCell>
-void ContainerSelector<Particle, ParticleCell>::tune() {
-  chooseOptimalContainer(generateContainers());
+bool ContainerSelector<Particle, ParticleCell>::tune() {
+  return chooseOptimalContainer(generateContainers());
 }
 }  // namespace autopas
