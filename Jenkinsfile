@@ -66,10 +66,6 @@ pipeline{
                             }
                         }
                     },
-                    /*dir("build-memorysanitizer"){
-                        sh "CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_MEMORY_SANITIZER=ON .."
-                        sh "make -j 4"
-                    }*/
                     "clang openmp": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-openmp"){
@@ -229,13 +225,6 @@ pipeline{
                                 sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                         }
-                    },
-                    "checkExamples": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build/examples") {
-                                sh 'ctest -C checkExamples -j8'
-                            }
-                        }
                     }
                 )
             }
@@ -251,6 +240,111 @@ pipeline{
                 }
                 aborted{
                     githubNotify context: 'test', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
+                }
+            }
+        }
+        stage("checkExamples") {
+            steps{
+                parallel(
+                    "default": {
+                        githubNotify context: 'checkExamples', description: 'checking examples in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build/examples") {
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "gcc openmp": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp/examples") {
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "gcc openmp address-sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp-address-sanitizer/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "address sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-addresssanitizer/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "address sanitizer release": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-addresssanitizer-release/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "thread sanitizer": {
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-threadsanitizer/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "clang openmp": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-openmp/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "clang ninja address sanitizer": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-addresssanitizer-debug/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "clang ninja address sanitizer release": {
+                        container('autopas-clang6-cmake-ninja-make'){
+                            dir("build-clang-ninja-addresssanitizer-release/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "archer": {
+                        container('autopas-archer'){
+                            dir("build-archer/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "intel": {
+                        container('autopas-intel18'){
+                            dir("build-intel/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    },
+                    "intel openmp": {
+                        container('autopas-intel18'){
+                            dir("build-intel-ninja-openmp/examples"){
+                                sh 'ctest -C checkExamples -j8'
+                            }
+                        }
+                    }
+                )
+            }
+            post{
+                success{
+                    githubNotify context: 'checkExamples', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
+                }
+                failure{
+                    githubNotify context: 'checkExamples', description: currentBuild.description,  status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
+                }
+                unstable{
+                    githubNotify context: 'checkExamples', description: currentBuild.description,  status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
+                }
+                aborted{
+                    githubNotify context: 'checkExamples', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
                 }
             }
         }
