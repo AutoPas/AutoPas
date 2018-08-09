@@ -105,7 +105,11 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
         }
       }
       auto container = _containerSelector.getOptimalContainer();
+      auto start = std::chrono::high_resolution_clock::now();
       WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
+      auto stop = std::chrono::high_resolution_clock::now();
+      auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+      _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
       break;
     }
     case autopas::aos: {
@@ -119,7 +123,11 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
         }
       }
       auto container = _containerSelector.getOptimalContainer();
+      auto start = std::chrono::high_resolution_clock::now();
       WithStaticContainerType(container, container->iteratePairwiseAoS(f, useNewton3););
+      auto stop = std::chrono::high_resolution_clock::now();
+      auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+      _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
       break;
     }
   }

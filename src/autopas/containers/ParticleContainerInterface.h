@@ -55,13 +55,11 @@ class ParticleContainerInterface {
    */
   ParticleContainerInterface &operator=(const ParticleContainerInterface &other) = delete;
 
-
   /**
    * Return a enum representing the name of the container class.
    * @return Enum representing the container.
    */
   virtual ContainerOptions getContainerType() = 0;
-
 
   /**
    * adds a particle to the container

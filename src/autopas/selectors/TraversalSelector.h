@@ -63,6 +63,11 @@ class TraversalSelector {
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   bool tune(PairwiseFunctor &pairwiseFunctor, std::vector<ParticleCell> &cells);
 
+  /**
+   * Save the runtime of a given traversal
+   * @param traversal
+   * @param time
+   */
   void addTimeMeasurement(TraversalOptions traversal, long time) {
     _traversalTimes.push_back(std::make_pair(traversal, time));
   }
@@ -149,10 +154,12 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
           fastestTime = t.second;
         }
       }
+      // sanity check
       if (fastestTime == std::numeric_limits<long>::max()) {
         utils::ExceptionHandler::exception("TraversalSelector: nothing was faster than max long oO");
       }
 
+      // find id of fastest traversal in passed traversal list
       bestTraversal = std::find_if(traversals.begin(), traversals.end(),
                                    [&](const std::unique_ptr<CellPairTraversalInterface> &a) {
                                      return a->getTraversalType() == fastestTraversal;

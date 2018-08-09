@@ -74,9 +74,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
         _soa(),
         _buildVerletListType(buildVerletListType) {}
 
-  ContainerOptions getContainerType() override {
-    return ContainerOptions::verletLists;
-  }
+  ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
 
   /**
    * @copydoc LinkedCells::iteratePairwiseAoS

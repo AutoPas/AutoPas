@@ -40,9 +40,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     this->_cells.resize(2);
   }
 
-  ContainerOptions getContainerType() override {
-    return ContainerOptions::directSum;
-  }
+  ContainerOptions getContainerType() override { return ContainerOptions::directSum; }
 
   void addParticle(Particle &p) override {
     bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
