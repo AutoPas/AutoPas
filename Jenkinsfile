@@ -226,7 +226,6 @@ pipeline{
                     "intel openmp": {
                         container('autopas-intel18'){
                             dir("build-intel-ninja-openmp"){
-                                sh './tests/testAutopas/runTests'
                                 sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                         }
