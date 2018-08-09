@@ -216,6 +216,20 @@ pipeline{
                             }
                         }
                     },
+                    "intel": {
+                        container('autopas-intel18'){
+                            dir("build-intel"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
+                    "intel openmp": {
+                        container('autopas-intel18'){
+                            dir("build-intel-ninja-openmp"){
+                                sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
                     "checkExamples": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build/examples") {
