@@ -15,7 +15,7 @@ Alternatively you can build the documentation on your own:
 ## Requirements
 * cmake 3.3 or newer
 * make (build-essentials) or ninja
-* a c++14 compiler (gcc7 and clang6 are tested)
+* a c++14 compiler (gcc7, clang6 and icpc 2018 are tested)
 
 
 ## Building AutoPas
