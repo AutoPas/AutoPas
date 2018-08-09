@@ -98,13 +98,19 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor>
   void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
+    std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
     if (useNewton3) {
-      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, true>(*f, this->_cells)
-          ->traverseCellPairs(this->_cells);
+      traversal =
+          this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, true>(*f, this->_cells);
     } else {
-      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f, this->_cells)
-          ->traverseCellPairs(this->_cells);
+      traversal =
+          this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f, this->_cells);
     }
+    auto start = std::chrono::high_resolution_clock::now();
+    traversal->traverseCellPairs(this->_cells);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+    this->_traversalSelector->addTimeMeasurement(traversal->getTraversalType(), runtime);
   }
 
   /**
@@ -117,13 +123,18 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
     loadSoAs(f);
 
+    std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
     if (useNewton3) {
-      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, true>(*f, this->_cells)
-          ->traverseCellPairs(this->_cells);
+      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, true>(*f, this->_cells);
     } else {
-      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f, this->_cells)
-          ->traverseCellPairs(this->_cells);
+      traversal =
+          this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f, this->_cells);
     }
+    auto start = std::chrono::high_resolution_clock::now();
+    traversal->traverseCellPairs(this->_cells);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+    this->_traversalSelector->addTimeMeasurement(traversal->getTraversalType(), runtime);
 
     extractSoAs(f);
   }
