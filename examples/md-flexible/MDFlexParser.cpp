@@ -343,6 +343,4 @@ double MDFlexParser::getBoxLength() const {
   return boxLength;
 }
 
-bool MDFlexParser::getMeasureFlops() const {
-  return measureFlops;
-}
+bool MDFlexParser::getMeasureFlops() const { return measureFlops; }

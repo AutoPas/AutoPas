@@ -169,6 +169,7 @@ int main(int argc, char **argv) {
   startCalc = std::chrono::high_resolution_clock::now();
   // Calculation
   for (unsigned int i = 0; i < numIterations; ++i) {
+    AutoPasLogger->debug("Iteration {}", i);
     autopas.iteratePairwise(&functor, dataLayoutChoice);
   }
   stopCalc = std::chrono::high_resolution_clock::now();
