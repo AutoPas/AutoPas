@@ -67,8 +67,6 @@ class TraversalSelector {
     _traversalTimes.push_back(std::make_pair(traversal, time));
   }
 
-  bool isCurrentlyTuning() const;
-
  private:
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   std::vector<std::unique_ptr<CellPairTraversalInterface>> generateTraversals(PairwiseFunctor &pairwiseFunctor);
@@ -214,9 +212,4 @@ bool TraversalSelector<ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor, std
 
   return _currentlyTuning;
 }
-template <class ParticleCell>
-bool TraversalSelector<ParticleCell>::isCurrentlyTuning() const {
-  return _currentlyTuning;
-}
-
 }  // namespace autopas
