@@ -108,6 +108,7 @@ int main(int argc, char **argv) {
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
   auto vtkFilename(parser.getWriteVTK());
+  auto measureFlops(parser.getMeasureFlops());
 
   parser.printConfig();
 
@@ -176,36 +177,38 @@ int main(int argc, char **argv) {
 
   //  printMolecules(autopas);
 
-  // Statistics
   auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();
   auto durationApply = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
 
-  FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-      autopas.getContainer()->getCutoff());
-  autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
-
-  auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
-  // approximation for flops of verlet list generation
-  if (containerChoice == autopas::ContainerOptions::verletLists)
-    flops +=
-        flopCounterFunctor.getDistanceCalculations() *
-        FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
-        floor(numIterations / verletRebuildFrequency);
-  auto mfups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
-
-  // Output
+  // Statistics
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
   if (numIterations > 0)
     cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
          << "s)" << endl;
-  cout << "GFLOPs       : " << flops * 1e-9 << endl;
-  cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
-  cout << "MFUPs/sec    : " << mfups << endl;
-  cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+
+  if (measureFlops) {
+    FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
+        autopas.getContainer()->getCutoff());
+    autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
+
+    auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
+    // approximation for flops of verlet list generation
+    if (containerChoice == autopas::ContainerOptions::verletLists)
+      flops +=
+          flopCounterFunctor.getDistanceCalculations() *
+          FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
+          floor(numIterations / verletRebuildFrequency);
+    auto mfups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
+
+    cout << "GFLOPs       : " << flops * 1e-9 << endl;
+    cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
+    cout << "MFUPs/sec    : " << mfups << endl;
+    cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+  }
 
   return EXIT_SUCCESS;
 }

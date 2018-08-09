@@ -18,6 +18,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"functor", required_argument, nullptr, 'f'},
                                          {"help", no_argument, nullptr, 'h'},
                                          {"iterations", required_argument, nullptr, 'i'},
+                                         {"no-flops", no_argument, nullptr, 'F'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
@@ -85,6 +86,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           cerr << "Please use 'Lennard-Jones', you have no options here :P" << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case 'F': {
+        measureFlops = false;
         break;
       }
       case 'g': {
@@ -336,4 +341,8 @@ string MDFlexParser::getWriteVTK() const { return writeVTK; }
 double MDFlexParser::getBoxLength() const {
   if (boxLength == -1) return ceil(2 * distributionMean);
   return boxLength;
+}
+
+bool MDFlexParser::getMeasureFlops() const {
+  return measureFlops;
 }

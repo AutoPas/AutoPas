@@ -30,6 +30,7 @@ class MDFlexParser {
   FunctorOption getFunctorOption() const;
   GeneratorOption getGeneratorOption() const;
   size_t getIterations() const;
+  bool getMeasureFlops() const;
   double getParticleSpacing() const;
   size_t getParticlesPerDim() const;
   string getWriteVTK() const;
@@ -54,6 +55,7 @@ class MDFlexParser {
   FunctorOption functorOption = FunctorOption::lj12_6;
   GeneratorOption generatorOption = GeneratorOption::grid;
   size_t iterations = 10;
+  bool measureFlops = true;
   size_t particlesPerDim = 20;
   double particleSpacing = .4;
   string writeVTK = "";
