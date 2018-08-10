@@ -101,12 +101,28 @@ pipeline{
                                 sh "ninja -j 4 2>&1 > buildlog_clang.txt || (cat buildlog_clang.txt && exit 1)"
                             }
                         }
+                    },
+                    "intel": {
+                        container('autopas-intel18'){
+                            dir("build-intel"){
+                                sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DOPENMP=OFF ..'"
+                                sh "bash -i -c 'make -j 4 2>&1 > buildlog_intel.txt || (cat buildlog_intel.txt && exit 1)'"
+                            }
+                        }
+                    },
+                    "intel openmp": {
+                        container('autopas-intel18'){
+                            dir("build-intel-ninja-openmp"){
+                                sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DOPENMP=ON ..'"
+                                sh "bash -i -c 'ninja -j 4 2>&1 > buildlog_intel.txt || (cat buildlog_intel.txt && exit 1)'"
+                            }
+                        }
                     }
                 )
             }
             post{
                 always{
-					warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+					warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
                 }
                 success{
                     githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
@@ -197,6 +213,20 @@ pipeline{
                         container('autopas-archer'){
                             dir("build-archer"){
                                 sh './tests/testAutopas/runTests'
+                            }
+                        }
+                    },
+                    "intel": {
+                        container('autopas-intel18'){
+                            dir("build-intel"){
+                                sh "bash -i -c './tests/testAutopas/runTests'"
+                            }
+                        }
+                    },
+                    "intel openmp": {
+                        container('autopas-intel18'){
+                            dir("build-intel-ninja-openmp"){
+                                sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                         }
                     },
