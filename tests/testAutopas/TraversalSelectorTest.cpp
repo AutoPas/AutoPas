@@ -27,8 +27,17 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
   EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversalC08.get())));
   EXPECT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversalSlice.get())))
       << "Is the domain size large enough for the processors' thread count?";
+
+  // now that the functor is known check if still the same is returned
+  traversalC08 = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
+  traversalSlice = traversalSelectorSlice.getOptimalTraversal<MFunctor, false, true>(functor);
+  // check that traversals are of the expected type
+  EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversalC08.get())))
+      << "Repeated call for c08 failed";
+  EXPECT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversalSlice.get())))
+      << "Repeated call for sliced failed";
 }
-// TODO check repeated call
+
 TEST_F(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
   MFunctor functor;
 
@@ -39,5 +48,9 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
   auto traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
 
   // check that traversals are of the expected type
+  EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
+
+  // also after the functor is known
+  traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
   EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
 }
