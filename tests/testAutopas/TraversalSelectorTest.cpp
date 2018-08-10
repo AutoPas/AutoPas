@@ -54,3 +54,44 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
   traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
   EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
 }
+
+TEST_F(TraversalSelectorTest, testTune) {
+  MFunctor functor;
+
+  std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
+                                                         autopas::TraversalOptions::c08};
+
+  constexpr size_t domainSize = 1000;
+  autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
+
+  bool stillTuning = true;
+  for (int i = 0; stillTuning; ++i) {
+    stillTuning = traversalSelector.tune<MFunctor, false, false>(functor);
+    auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor);
+
+    switch (i) {
+      case 0: {
+        EXPECT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversal.get())));
+        traversalSelector.addTimeMeasurement(autopas::TraversalOptions::sliced, 20);
+        break;
+      }
+      case 1: {
+        EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
+        traversalSelector.addTimeMeasurement(autopas::TraversalOptions::c08, 10);
+        break;
+      }
+      case 2: {
+        EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())))
+            << "tune() selected the wrong traversal after collecting all timings";
+        EXPECT_FALSE(stillTuning) << "tune() returns true(=still tuning) after checking all options!";
+        break;
+      }
+      default:
+        FAIL() << "Tuning took more turns than expected!";
+    }
+  }
+
+  auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor);
+  EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())))
+            << "tune() returned the wrong traversal tuning phase";
+}
