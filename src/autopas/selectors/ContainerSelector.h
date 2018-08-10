@@ -77,15 +77,19 @@ class ContainerSelector {
   void addTimeMeasurement(ContainerOptions container, long time);
 
  private:
-  std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> generateContainers();
+  /**
+   * Container factory that also copies all particles to the new container
+   * @param containerChoice container to generate
+   * @return smartpointer to new container
+   */
+  std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
+      ContainerOptions containerChoice);
 
   /**
    * Chooses the optimal container from a given list.
-   * @param containers
    * @return true if still in tuning phase
    */
-  bool chooseOptimalContainer(
-      std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers);
+  bool chooseOptimalContainer();
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
@@ -99,69 +103,60 @@ class ContainerSelector {
 };
 
 template <class Particle, class ParticleCell>
-std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>>
-ContainerSelector<Particle, ParticleCell>::generateContainers() {
-  std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers;
+std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
+ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions containerChoice) {
+  std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> container;
 
-  for (auto &option : _allowedContainerOptions) {
-    switch (option) {
-      case directSum: {
-        containers.push_back(std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff));
-        break;
-      }
-      case linkedCells: {
-        containers.push_back(
-            std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _allowedTraversalOptions));
-        break;
-      }
-      case verletLists: {
-        // TODO determine verletSkin and verletRebuildFrequency via tuning
-        containers.push_back(
-            std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency));
-        break;
-      }
-      default: { AutoPasLogger->warn("Container type {} is not a known type!", option); }
+  switch (containerChoice) {
+    case directSum: {
+      container = std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
+      break;
     }
+    case linkedCells: {
+      container =
+          std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _allowedTraversalOptions);
+      break;
+    }
+    case verletLists: {
+      // TODO determine verletSkin and verletRebuildFrequency via tuning
+      container =
+          std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
+      break;
+    }
+    default: { AutoPasLogger->warn("Container type {} is not a known type!", containerChoice); }
+  }
 
-    // copy particles so they do not get lost when container is switched
-    // TODO: optimize this such that we do not save the whole domain x times
-    if (_optimalContainer != nullptr) {
-      for (auto particleIter = _optimalContainer->begin(IteratorBehavior::ownedOnly); particleIter.isValid();
-           ++particleIter) {
-        containers[containers.size() - 1]->addParticle(*particleIter);
-      }
-      for (auto particleIter = _optimalContainer->begin(IteratorBehavior::haloOnly); particleIter.isValid();
-           ++particleIter) {
-        containers[containers.size() - 1]->addHaloParticle(*particleIter);
-      }
+  // copy particles so they do not get lost when container is switched
+  if (_optimalContainer != nullptr) {
+    for (auto particleIter = _optimalContainer->begin(IteratorBehavior::ownedOnly); particleIter.isValid();
+         ++particleIter) {
+      container->addParticle(*particleIter);
+    }
+    for (auto particleIter = _optimalContainer->begin(IteratorBehavior::haloOnly); particleIter.isValid();
+         ++particleIter) {
+      container->addHaloParticle(*particleIter);
     }
   }
 
-  if (containers.empty()) utils::ExceptionHandler::exception("ContainerSelector: No containers were generated.");
-
-  return containers;
+  return container;
 }
 
 template <class Particle, class ParticleCell>
-bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(
-    std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers) {
+bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
   size_t bestContainerID = 0;
 
   // Test all options to find the fastest
   // If there is no container chosen yet or no measurements were made by now choose the first
   if (_optimalContainer == nullptr || _containerTimes.size() == 0) {
-    _optimalContainer = std::move(containers.front());
+    _optimalContainer = std::move(generateContainer(_allowedContainerOptions.front()));
   } else if (_currentlyTuning) {
     // if we are in tuning state just select next container
-    for (size_t i = 0; i < containers.size(); ++i) {
-      if (containers[i]->getContainerType() == _optimalContainer->getContainerType()) {
-        bestContainerID = i;
-        break;
-      }
-    }
+    bestContainerID = std::find(_allowedContainerOptions.begin(), _allowedContainerOptions.end(),
+                                _optimalContainer->getContainerType()) -
+                      _allowedContainerOptions.begin();
     ++bestContainerID;
     // if the last possible traversal has already been tested choose fastest one and reset timings
-    if (bestContainerID >= containers.size()) {
+    if (bestContainerID >= _allowedContainerOptions.size()) {
       _currentlyTuning = false;
       ContainerOptions fastestContainer;
       long fastestTime = std::numeric_limits<long>::max();
@@ -179,15 +174,12 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(
       }
 
       // find id of fastest container in passed container list
-      bestContainerID = std::find_if(containers.begin(), containers.end(),
-                                     [&](const std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> &a) {
-                                       return a->getContainerType() == fastestContainer;
-                                     }) -
-                        containers.begin();
+      bestContainerID = std::find(_allowedContainerOptions.begin(), _allowedContainerOptions.end(), fastestContainer) -
+                        _allowedContainerOptions.begin();
       _containerTimes.clear();
     }
 
-    _optimalContainer = std::move(containers[bestContainerID]);
+    _optimalContainer = std::move(generateContainer(_allowedContainerOptions[bestContainerID]));
     AutoPasLogger->debug("Selected container {}", _optimalContainer->getContainerType());
   }
   return _currentlyTuning;
@@ -202,7 +194,7 @@ ContainerSelector<Particle, ParticleCell>::getOptimalContainer() {
 template <class Particle, class ParticleCell>
 bool ContainerSelector<Particle, ParticleCell>::tune() {
   _currentlyTuning = true;
-  return chooseOptimalContainer(generateContainers());
+  return chooseOptimalContainer();
 }
 
 template <class Particle, class ParticleCell>
