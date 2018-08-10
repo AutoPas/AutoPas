@@ -65,7 +65,8 @@ TEST_F(TraversalSelectorTest, testTune) {
   autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
 
   bool stillTuning = true;
-  for (int i = 0; stillTuning; ++i) {
+  int i = 0;
+  for (; stillTuning; ++i) {
     stillTuning = traversalSelector.tune<MFunctor, false, false>(functor);
     auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor);
 
@@ -90,6 +91,8 @@ TEST_F(TraversalSelectorTest, testTune) {
         FAIL() << "Tuning took more turns than expected!";
     }
   }
+
+  EXPECT_EQ(i, 3) << "Too unexpected number of tuning iterations!";
 
   auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor);
   EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())))
