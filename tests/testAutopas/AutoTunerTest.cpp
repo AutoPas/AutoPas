@@ -15,7 +15,7 @@ TEST_F(AutoTunerTest, testTune) {
   std::vector<autopas::TraversalOptions> traversals = {autopas::TraversalOptions::sliced,
                                                        autopas::TraversalOptions::c08};
 
-  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
+  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 100};
   const double cutoff = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
@@ -43,11 +43,12 @@ TEST_F(AutoTunerTest, testTune) {
       }
       // only here both traversals are checked
       case 2:
-      case 3: {
+      case 3:
+      case 4: {
         EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())));
         break;
       }
-      case 4: {
+      case 5: {
         // the fastest container might be nondeterministic here due to hardware constrains so just remember it
         // and check if the selector returns the same later
         fastestContainer = container;
@@ -59,7 +60,7 @@ TEST_F(AutoTunerTest, testTune) {
     }
   }
 
-  EXPECT_EQ(i, 5) << "Too unexpected number of tuning iterations!";
+  EXPECT_EQ(i, 6) << "Too unexpected number of tuning iterations!";
 
   auto container = autoTuner.getContainer();
   EXPECT_EQ(fastestContainer->getContainerType(), container->getContainerType())
