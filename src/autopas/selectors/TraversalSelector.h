@@ -52,7 +52,7 @@ class TraversalSelector {
   std::unique_ptr<CellPairTraversal<ParticleCell>> getOptimalTraversal(PairwiseFunctor &pairwiseFunctor);
 
   /**
-   * Evaluates to optimal traversal based on a given cell functor.
+   * Evaluates to optimal traversal based on a given functor.
    * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
    * @tparam useSoA
    * @tparam useNewton3

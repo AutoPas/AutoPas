@@ -7,7 +7,7 @@
 #pragma once
 
 #include <array>
-#include "autopas/AutoPas.h"
+#include <gtest/gtest_prod.h>
 #include "autopas/autopasIncludes.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/ContainerSelector.h"
@@ -64,13 +64,14 @@ class AutoTuner {
    * @tparam ParticleFunctor
    * @param f Functor that describes the pair-potential
    * @param dataLayoutOption if true SoA data structure is used otherwise AoS
+   * @return true if this was a tuning iteration
    */
   template <class ParticleFunctor>
-  void iteratePairwise(ParticleFunctor *f, DataLayoutOption dataLayoutOption);
+  bool iteratePairwise(ParticleFunctor *f, DataLayoutOption dataLayoutOption);
 
  private:
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  void tune(PairwiseFunctor &pairwiseFunctor);
+  bool tune(PairwiseFunctor &pairwiseFunctor);
 
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
@@ -79,7 +80,7 @@ class AutoTuner {
 };
 template <class Particle, class ParticleCell>
 template <class ParticleFunctor>
-void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, DataLayoutOption dataLayoutOption) {
+bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, DataLayoutOption dataLayoutOption) {
   bool newton3Allowed = f->allowsNewton3();
   bool nonNewton3Allowed = f->allowsNonNewton3();
   bool useNewton3 = false;
@@ -93,15 +94,16 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
 
   /// @todo: WANT one single iteratePairwise(CellFunctor) for containers
   /// @todo: CellFunctor for iteration should be build here using selectors for SoA and N3
+  bool isTuning = false;
   switch (dataLayoutOption) {
     case autopas::soa: {
       if (useNewton3) {
         if (_iterationsSinceTuning >= _tuningInterval) {
-          tune<ParticleFunctor, true, true>(*f);
+          isTuning = tune<ParticleFunctor, true, true>(*f);
         }
       } else {
         if (_iterationsSinceTuning >= _tuningInterval) {
-          tune<ParticleFunctor, true, false>(*f);
+          isTuning = tune<ParticleFunctor, true, false>(*f);
         }
       }
       auto container = _containerSelector.getOptimalContainer();
@@ -115,11 +117,11 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
     case autopas::aos: {
       if (useNewton3) {
         if (_iterationsSinceTuning >= _tuningInterval) {
-          tune<ParticleFunctor, false, true>(*f);
+          isTuning = tune<ParticleFunctor, false, true>(*f);
         }
       } else {
         if (_iterationsSinceTuning >= _tuningInterval) {
-          tune<ParticleFunctor, false, false>(*f);
+          isTuning = tune<ParticleFunctor, false, false>(*f);
         }
       }
       auto container = _containerSelector.getOptimalContainer();
@@ -132,11 +134,12 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
     }
   }
   ++_iterationsSinceTuning;
+  return isTuning;
 }
 
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-void AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
+bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   if (not _isTuningTraversals) {
     _isTuningContainers = _containerSelector.tune();
   };
@@ -146,6 +149,10 @@ void AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
           pairwiseFunctor);
 
   // reset counter only if all tuning phases are done
-  if (not _isTuningTraversals and not _isTuningContainers) _iterationsSinceTuning = 0;
+  if (not _isTuningTraversals and not _isTuningContainers) {
+    _iterationsSinceTuning = 0;
+    return false;
+  }
+  return true;
 }
 }  // namespace autopas
