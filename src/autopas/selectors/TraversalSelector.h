@@ -49,8 +49,7 @@ class TraversalSelector {
    * @return Smartpointer to the optimal traversal.
    */
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  std::unique_ptr<CellPairTraversal<ParticleCell>> getOptimalTraversal(PairwiseFunctor &pairwiseFunctor,
-                                                                       std::vector<ParticleCell> &cells);
+  std::unique_ptr<CellPairTraversal<ParticleCell>> getOptimalTraversal(PairwiseFunctor &pairwiseFunctor);
 
   /**
    * Evaluates to optimal traversal based on a given cell functor.
@@ -61,7 +60,7 @@ class TraversalSelector {
    * @return true if still in tuning phase
    */
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  bool tune(PairwiseFunctor &pairwiseFunctor, std::vector<ParticleCell> &cells);
+  bool tune(PairwiseFunctor &pairwiseFunctor);
 
   /**
    * Save the runtime of a given traversal
@@ -78,7 +77,7 @@ class TraversalSelector {
 
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> chooseOptimalTraversal(
-      std::vector<std::unique_ptr<CellPairTraversalInterface>> &traversals, std::vector<ParticleCell> &cells);
+      std::vector<std::unique_ptr<CellPairTraversalInterface>> &traversals);
 
   // for each encountered cell processor save the optimal traversal. The cell processor is saved through its hash
   std::unordered_map<size_t, TraversalOptions> _optimalTraversalOptions;
@@ -118,7 +117,7 @@ std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<Parti
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::chooseOptimalTraversal(
-    std::vector<std::unique_ptr<CellPairTraversalInterface>> &traversals, std::vector<ParticleCell> &cells) {
+    std::vector<std::unique_ptr<CellPairTraversalInterface>> &traversals) {
   // remove traversals which are not applicable to the current domain size
   traversals.erase(
       std::remove_if(traversals.begin(), traversals.end(), [](auto const &t) { return not t->isApplicable(); }),
@@ -182,14 +181,14 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::getOptimalTraversal(
-    PairwiseFunctor &pairwiseFunctor, std::vector<ParticleCell> &cells) {
+    PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
 
   auto functorHash = typeid(PairwiseFunctor).hash_code();
 
   if (_optimalTraversalOptions.find(functorHash) == _optimalTraversalOptions.end()) {
     auto generatedTraversals = generateTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
-    traversal = chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals, cells);
+    traversal = chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
   } else {
     switch (_optimalTraversalOptions[functorHash]) {
       case TraversalOptions::c08: {
@@ -210,12 +209,12 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-bool TraversalSelector<ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor, std::vector<ParticleCell> &cells) {
+bool TraversalSelector<ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   _currentlyTuning = true;
   // Workaround for Containers that do not use traversals. If there are no traversals there is nothing to tune.
   if (_allowedTraversalOptions.empty()) return false;
   auto generatedTraversals = generateTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
-  chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals, cells);
+  chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
 
   return _currentlyTuning;
 }

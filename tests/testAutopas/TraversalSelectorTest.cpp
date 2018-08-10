@@ -28,7 +28,7 @@ TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
   EXPECT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversalSlice.get())))
       << "Is the domain size large enough for the processors' thread count?";
 }
-
+// TODO check repeated call
 TEST(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
   MFunctor functor;
 

@@ -47,7 +47,8 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions, tuningInterval);
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+               tuningInterval);
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
@@ -59,11 +60,13 @@ void initContainerGauss(autopas::ContainerOptions containerOption,
                         std::vector<autopas::TraversalOptions> traversalOptions,
                         autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
-                        double cutoff, double verletSkinRadius, int verletRebuildFrequency, unsigned int tuningInterval) {
+                        double cutoff, double verletSkinRadius, int verletRebuildFrequency,
+                        unsigned int tuningInterval) {
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,  tuningInterval);
-  
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+               tuningInterval);
+
   PrintableMolecule dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }

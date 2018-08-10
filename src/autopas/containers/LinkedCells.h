@@ -102,11 +102,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
     std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
     if (useNewton3) {
-      traversal =
-          this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, true>(*f, this->_cells);
+      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, true>(*f);
     } else {
-      traversal =
-          this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f, this->_cells);
+      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f);
     }
     auto start = std::chrono::high_resolution_clock::now();
     traversal->traverseCellPairs(this->_cells);
@@ -127,10 +125,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
     std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
     if (useNewton3) {
-      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, true>(*f, this->_cells);
+      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, true>(*f);
     } else {
-      traversal =
-          this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f, this->_cells);
+      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f);
     }
     auto start = std::chrono::high_resolution_clock::now();
     traversal->traverseCellPairs(this->_cells);
