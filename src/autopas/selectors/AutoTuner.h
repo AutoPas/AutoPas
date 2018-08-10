@@ -106,6 +106,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
         }
       }
       auto container = _containerSelector.getOptimalContainer();
+      AutoPasLogger->debug("AutoTuner: Using container {}", container->getContainerType());
       auto start = std::chrono::high_resolution_clock::now();
       WithStaticContainerType(container, container->iteratePairwiseSoA(f, useNewton3););
       auto stop = std::chrono::high_resolution_clock::now();

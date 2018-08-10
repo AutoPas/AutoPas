@@ -160,9 +160,9 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
       _currentlyTuning = false;
       ContainerOptions fastestContainer;
       long fastestTime = std::numeric_limits<long>::max();
-      AutoPasLogger->debug("ContainerSelector: Collected containers:");
+      AutoPasLogger->debug("ContainerSelector.tune(): ContainerSelector: Collected containers:");
       for (auto &&c : _containerTimes) {
-        AutoPasLogger->debug("Container {} took {} nanoseconds:", c.first, c.second);
+        AutoPasLogger->debug("ContainerSelector.tune(): Container {} took {} nanoseconds:", c.first, c.second);
         if (c.second < fastestTime) {
           fastestContainer = c.first;
           fastestTime = c.second;
@@ -180,8 +180,8 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
     }
 
     _optimalContainer = std::move(generateContainer(_allowedContainerOptions[bestContainerID]));
-    AutoPasLogger->debug("Selected container {}", _optimalContainer->getContainerType());
   }
+  AutoPasLogger->debug("ContainerSelector.tune(): Selected container {}", _optimalContainer->getContainerType());
   return _currentlyTuning;
 }
 

@@ -145,9 +145,9 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       _currentlyTuning = false;
       TraversalOptions fastestTraversal;
       long fastestTime = std::numeric_limits<long>::max();
-      AutoPasLogger->debug("TraversalSelector: Collected traversals:");
+      AutoPasLogger->debug("TraversalSelector.tune(): TraversalSelector: Collected traversals:");
       for (auto &&t : _traversalTimes) {
-        AutoPasLogger->debug("Traversal {} took {} nanoseconds:", t.first, t.second);
+        AutoPasLogger->debug("TraversalSelector.tune(): Traversal {} took {} nanoseconds:", t.first, t.second);
         if (t.second < fastestTime) {
           fastestTraversal = t.first;
           fastestTime = t.second;
@@ -173,7 +173,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       dynamic_cast<CellPairTraversal<ParticleCell> *>(traversals[bestTraversal].release()));
 
   _optimalTraversalOptions[functorHash] = optimalTraversal->getTraversalType();
-  AutoPasLogger->debug("Selected traversal {}", optimalTraversal->getTraversalType());
+  AutoPasLogger->debug("TraversalSelector.tune(): Selected traversal {}", optimalTraversal->getTraversalType());
 
   return optimalTraversal;
 }

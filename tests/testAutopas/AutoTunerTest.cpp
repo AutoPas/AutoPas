@@ -23,9 +23,11 @@ TEST_F(AutoTunerTest, testTune) {
                                                  containers, traversals, 100);
 
   std::shared_ptr<autopas::ParticleContainer<Particle, FPCell>> fastestContainer;
+  AutoPasLogger->set_level(spdlog::level::debug);
   bool stillTuning = true;
   int i = 0;
   for (; stillTuning; ++i) {
+    AutoPasLogger->debug("AutoTunerTest: Iteration {}", i);
     stillTuning = autoTuner.iteratePairwise(&functor, autopas::DataLayoutOption::aos);
 
     auto container = autoTuner.getContainer();

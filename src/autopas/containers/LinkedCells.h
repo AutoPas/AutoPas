@@ -106,6 +106,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     } else {
       traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f);
     }
+    AutoPasLogger->debug("LinkedCells: using traversal {}", traversal->getTraversalType());
     auto start = std::chrono::high_resolution_clock::now();
     traversal->traverseCellPairs(this->_cells);
     auto stop = std::chrono::high_resolution_clock::now();
