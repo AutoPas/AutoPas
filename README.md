@@ -55,6 +55,7 @@ make
 
 
 ## Testing
+### Running Tests
 to run tests:
 ```
 make test
@@ -82,7 +83,15 @@ or `ctest` arguments like `-R` (run tests matching regex) and `-D` (exclude test
 ```
 ctest -R 'Array.*testAdd' -E `Double'
 ```
-
+### Debugging Tests
+Find out the command to start your desired test with `-N` aka. `--show-only`:
+```
+ctest -R 'Array.*testAdd' -N
+```
+Start the test with `gdb`
+```
+gdb --args ${TestCommand}
+```
 
 ## Examples
 As AutoPas is only a library for particle simulations it itself is not able to run simulations.
