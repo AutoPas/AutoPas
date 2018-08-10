@@ -43,11 +43,11 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
                        std::vector<autopas::TraversalOptions> traversalOptions,
                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                        size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
-                       int verletRebuildFrequency) {
+                       unsigned int verletRebuildFrequency, unsigned int tuningInterval) {
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions);
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions, tuningInterval);
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
@@ -59,10 +59,11 @@ void initContainerGauss(autopas::ContainerOptions containerOption,
                         std::vector<autopas::TraversalOptions> traversalOptions,
                         autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
-                        double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
+                        double cutoff, double verletSkinRadius, int verletRebuildFrequency, unsigned int tuningInterval) {
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions);
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,  tuningInterval);
+  
   PrintableMolecule dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
@@ -96,19 +97,20 @@ int main(int argc, char **argv) {
 
   auto boxLength(parser.getBoxLength());
   auto containerChoice(parser.getContainerOption());
-  auto dataLayoutChoice(parser.getDataLayoutOption());
-  auto particlesPerDim(parser.getParticlesPerDim());
   auto cutoff(parser.getCutoff());
-  auto numIterations(parser.getIterations());
-  auto particleSpacing(parser.getParticleSpacing());
-  auto traversalOptions(parser.getTraversalOptions());
-  auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
-  auto verletSkinRadius(parser.getVerletSkinRadius());
-  auto generatorChoice(parser.getGeneratorOption());
+  auto dataLayoutChoice(parser.getDataLayoutOption());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
-  auto vtkFilename(parser.getWriteVTK());
+  auto generatorChoice(parser.getGeneratorOption());
   auto measureFlops(parser.getMeasureFlops());
+  auto numIterations(parser.getIterations());
+  auto particleSpacing(parser.getParticleSpacing());
+  auto particlesPerDim(parser.getParticlesPerDim());
+  auto traversalOptions(parser.getTraversalOptions());
+  auto tuningInterval(parser.getTuningInterval());
+  auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
+  auto verletSkinRadius(parser.getVerletSkinRadius());
+  auto vtkFilename(parser.getWriteVTK());
 
   parser.printConfig();
 
@@ -122,13 +124,13 @@ int main(int argc, char **argv) {
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
       initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,
-                        verletSkinRadius, verletRebuildFrequency);
+                        verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
       initContainerGauss(containerChoice, traversalOptions, autopas, boxLength,
                          particlesPerDim * particlesPerDim * particlesPerDim, distributionMean, distributionStdDev,
-                         cutoff, verletSkinRadius, verletRebuildFrequency);
+                         cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
     default:

@@ -23,6 +23,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
+                                         {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk", required_argument, nullptr, 'w'},
@@ -113,6 +114,15 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           iterations = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing number of iterations: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'I': {
+        try {
+          tuningInterval = (unsigned int)stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing tuning interval: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -308,6 +318,8 @@ void MDFlexParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
+  cout << setw(valueOffset) << left << "Tuning Interval"
+       << ":  " << tuningInterval << endl;
 }
 
 autopas::ContainerOptions MDFlexParser::getContainerOption() const { return containerOption; }
@@ -344,3 +356,5 @@ double MDFlexParser::getBoxLength() const {
 }
 
 bool MDFlexParser::getMeasureFlops() const { return measureFlops; }
+
+unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
