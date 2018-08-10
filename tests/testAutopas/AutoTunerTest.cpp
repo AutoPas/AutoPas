@@ -32,6 +32,14 @@ TEST_F(AutoTunerTest, testTune) {
 
     auto container = autoTuner.getContainer();
 
+    // tuning phases:
+    // 0 -> test verlet
+    // 1 -> test directSum
+    // 2 -> test linked with sliced
+    // 3 -> test linked with c08
+    // 4 -> choose best lc traversal -> traversal tuning finished
+    // 5 -> choose best container -> tuning finished
+    // 6 -> normal iteration using optimal combination
     switch (i) {
       case 0: {
         EXPECT_TRUE((dynamic_cast<autopas::VerletLists<Particle>*>(container.get())));
