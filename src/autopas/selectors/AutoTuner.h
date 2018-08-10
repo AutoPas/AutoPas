@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <array>
 #include <gtest/gtest_prod.h>
+#include <array>
 #include "autopas/autopasIncludes.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/ContainerSelector.h"

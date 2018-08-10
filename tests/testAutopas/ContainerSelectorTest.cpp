@@ -86,5 +86,5 @@ TEST_F(ContainerSelectorTest, testTune) {
 
   auto container = containerSelector.getOptimalContainer();
   EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())))
-            << "tune() returned the wrong container after tuning phase";
+      << "tune() returned the wrong container after tuning phase";
 }

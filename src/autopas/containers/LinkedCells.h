@@ -173,7 +173,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 #ifdef AUTOPAS_OPENMP
     // TODO: find a sensible value for magic number
     // numThreads should be at least 1 and maximal max_threads
-    int numThreads = std::max(1, std::min(omp_get_max_threads(),(int)(this->_cells.size() / 500)));
+    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 500)));
     std::cout << numThreads << std::endl;
 #pragma omp parallel for shared(outlierFound) num_threads(numThreads)
 #endif

@@ -96,5 +96,5 @@ TEST_F(TraversalSelectorTest, testTune) {
 
   auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor);
   EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())))
-            << "tune() returned the wrong traversal tuning phase";
+      << "tune() returned the wrong traversal tuning phase";
 }
