@@ -49,7 +49,8 @@ TEST_F(ContainerSelectorTest, testTune) {
                                                                  verletRebuildFrequency, containers, traversals);
 
   bool stillTuning = true;
-  for (int i = 0; stillTuning; ++i) {
+  int i = 0;
+  for (; stillTuning; ++i) {
     stillTuning = containerSelector.tune();
 
     auto container = containerSelector.getOptimalContainer();
@@ -61,17 +62,17 @@ TEST_F(ContainerSelectorTest, testTune) {
         break;
       }
       case 1: {
-        EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())));
+        EXPECT_TRUE((dynamic_cast<autopas::VerletLists<Particle>*>(container.get())));
         containerSelector.addTimeMeasurement(autopas::ContainerOptions::verletLists, 30);
         break;
       }
       case 2: {
-        EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())));
+        EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())));
         containerSelector.addTimeMeasurement(autopas::ContainerOptions::linkedCells, 10);
         break;
       }
       case 3: {
-        EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())))
+        EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())))
             << "tune() selected the wrong container after collecting all timings";
         EXPECT_FALSE(stillTuning) << "tune() returns true(=still tuning) after checking all options!";
         break;
@@ -81,7 +82,9 @@ TEST_F(ContainerSelectorTest, testTune) {
     }
   }
 
+  EXPECT_EQ(i, 4) << "Too unexpected number of tuning iterations!";
+
   auto container = containerSelector.getOptimalContainer();
-  EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())))
-            << "tune() returned the wrong traversal tuning phase";
+  EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())))
+            << "tune() returned the wrong container after tuning phase";
 }
