@@ -9,7 +9,7 @@
 /**
  * Check if the only allowed traversal is returned
  */
-TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
+TEST_F(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
   MFunctor functor;
 
   std::vector<autopas::TraversalOptions> optionVectorC08 = {autopas::TraversalOptions::c08};
@@ -29,7 +29,7 @@ TEST(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
       << "Is the domain size large enough for the processors' thread count?";
 }
 // TODO check repeated call
-TEST(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
+TEST_F(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
   MFunctor functor;
 
   std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
