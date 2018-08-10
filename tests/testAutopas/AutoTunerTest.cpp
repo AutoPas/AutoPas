@@ -60,5 +60,5 @@ TEST_F(AutoTunerTest, testTune) {
 
   auto container = autoTuner.getContainer();
   EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())))
-            << "tune() returned the wrong container after tuning phase";
+      << "tune() returned the wrong container after tuning phase";
 }
