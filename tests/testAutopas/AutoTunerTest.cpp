@@ -22,6 +22,7 @@ TEST_F(AutoTunerTest, testTune) {
   autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency,
                                                  containers, traversals, 100);
 
+  std::shared_ptr<autopas::ParticleContainer<Particle, FPCell>> fastestContainer;
   bool stillTuning = true;
   int i = 0;
   for (; stillTuning; ++i) {
@@ -45,9 +46,9 @@ TEST_F(AutoTunerTest, testTune) {
         break;
       }
       case 4: {
-        // direct sum should be the fastest since it has the least overhead
-        EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())))
-            << "tune() selected the wrong container after collecting all timings";
+        // the fastest container might be nondeterministic here due to hardware constrains so just remember it
+        // and check if the selector returns the same later
+        fastestContainer = container;
         EXPECT_FALSE(stillTuning) << "tune() returns true(=still tuning) after checking all options!";
         break;
       }
@@ -59,6 +60,6 @@ TEST_F(AutoTunerTest, testTune) {
   EXPECT_EQ(i, 5) << "Too unexpected number of tuning iterations!";
 
   auto container = autoTuner.getContainer();
-  EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())))
+  EXPECT_EQ(fastestContainer->getContainerType(), container->getContainerType())
       << "tune() returned the wrong container after tuning phase";
 }
