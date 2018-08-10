@@ -145,7 +145,6 @@ ContainerSelector<Particle, ParticleCell>::generateContainers() {
 template <class Particle, class ParticleCell>
 bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(
     std::vector<std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>> containers) {
-  // TODO: Autotuning goes here
   size_t bestContainerID = 0;
 
   // Test all options to find the fastest
@@ -186,12 +185,12 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(
                                      }) -
                         containers.begin();
       _containerTimes.clear();
-
-      _optimalContainer = std::move(containers[bestContainerID]);
-      AutoPasLogger->debug("Selected container {}", _optimalContainer->getContainerType());
     }
+
+    _optimalContainer = std::move(containers[bestContainerID]);
+    AutoPasLogger->debug("Selected container {}", _optimalContainer->getContainerType());
   }
-  return false;
+  return _currentlyTuning;
 }
 
 template <class Particle, class ParticleCell>
@@ -202,6 +201,7 @@ ContainerSelector<Particle, ParticleCell>::getOptimalContainer() {
 }
 template <class Particle, class ParticleCell>
 bool ContainerSelector<Particle, ParticleCell>::tune() {
+  _currentlyTuning = true;
   return chooseOptimalContainer(generateContainers());
 }
 
