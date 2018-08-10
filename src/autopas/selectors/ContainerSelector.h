@@ -148,8 +148,8 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer(
   size_t bestContainerID = 0;
 
   // Test all options to find the fastest
-  // If there is no container chosen yet choose the first
-  if (_optimalContainer == nullptr) {
+  // If there is no container chosen yet or no measurements were made by now choose the first
+  if (_optimalContainer == nullptr || _containerTimes.size() == 0) {
     _optimalContainer = std::move(containers.front());
   } else if (_currentlyTuning) {
     // if we are in tuning state just select next container
