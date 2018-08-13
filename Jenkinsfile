@@ -93,7 +93,7 @@ pipeline{
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer"){
-                                sh "CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DUSE_VECTORIZATION=OFF .."
+                                sh "CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
                                 sh "ninja -j 4 2>&1 > buildlog_clang.txt || (cat buildlog_clang.txt && exit 1)"
                             }
                         }
@@ -268,20 +268,20 @@ pipeline{
                             }
                         }
                     },*/
-                    "address sanitizer": {
+                    /*"address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer/examples"){
                                 sh 'ctest -C checkExamples -j8'
                             }
                         }
-                    },
-                    "address sanitizer release": {
+                    },*/
+                    /*"address sanitizer release": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release/examples"){
                                 sh 'ctest -C checkExamples -j8'
                             }
                         }
-                    },
+                    },*/
                     /*"thread sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-threadsanitizer/examples"){
@@ -320,14 +320,15 @@ pipeline{
                     "intel": {
                         container('autopas-intel18'){
                             dir("build-intel/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh "bash -i -c 'ctest -C checkExamples -j8'"
+
                             }
                         }
                     },
                     "intel openmp": {
                         container('autopas-intel18'){
                             dir("build-intel-ninja-openmp/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh "bash -i -c 'ctest -C checkExamples -j8'"
                             }
                         }
                     }
