@@ -320,9 +320,7 @@ pipeline{
                     "intel": {
                         container('autopas-intel18'){
                             dir("build-intel/examples"){
-                                sh "bash -i -c 'mpirun -n 4 sph-mpi/sph-main-mpi'"
                                 sh "bash -i -c 'ctest -C checkExamples -j8'"
-
                             }
                         }
                     },
