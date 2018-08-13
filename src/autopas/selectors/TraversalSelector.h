@@ -144,12 +144,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     bestTraversal = 0;
   } else if (_currentlyTuning) {
     // if we are in tuning state just select next traversal
-    for (size_t i = 0; i < traversals.size(); ++i) {
-      if (traversals[i]->getTraversalType() == _optimalTraversalOptions[functorHash]) {
-        bestTraversal = i;
-        break;
-      }
-    }
+    bestTraversal = std::find_if(traversals.begin(), traversals.end(),
+                                 [&](const std::unique_ptr<CellPairTraversalInterface> &a) {
+                                   return a->getTraversalType() == _optimalTraversalOptions[functorHash];
+                                 }) -
+                    traversals.begin();
     ++bestTraversal;
     // if the last possible traversal has already been tested choose fastest one and reset timings
     if (bestTraversal >= traversals.size()) {
