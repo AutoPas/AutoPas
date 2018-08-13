@@ -111,7 +111,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     traversal->traverseCellPairs(this->_cells);
     auto stop = std::chrono::high_resolution_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-    this->_traversalSelector->addTimeMeasurement(traversal->getTraversalType(), runtime);
+    this->_traversalSelector->addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
   }
 
   /**
@@ -134,7 +134,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     traversal->traverseCellPairs(this->_cells);
     auto stop = std::chrono::high_resolution_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-    this->_traversalSelector->addTimeMeasurement(traversal->getTraversalType(), runtime);
+    this->_traversalSelector->addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
 
     extractSoAs(f);
   }

@@ -73,12 +73,12 @@ TEST_F(TraversalSelectorTest, testTune) {
     switch (i) {
       case 0: {
         EXPECT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversal.get())));
-        traversalSelector.addTimeMeasurement(autopas::TraversalOptions::sliced, 20);
+        traversalSelector.addTimeMeasurement(functor, autopas::TraversalOptions::sliced, 20);
         break;
       }
       case 1: {
         EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
-        traversalSelector.addTimeMeasurement(autopas::TraversalOptions::c08, 10);
+        traversalSelector.addTimeMeasurement(functor, autopas::TraversalOptions::c08, 10);
         break;
       }
       case 2: {

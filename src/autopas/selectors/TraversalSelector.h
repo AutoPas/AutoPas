@@ -63,12 +63,16 @@ class TraversalSelector {
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
   /**
-   * Save the runtime of a given traversal
+   * Save the runtime of a given traversal with a given functor
+   * @param functor
    * @param traversal
    * @param time
    */
-  void addTimeMeasurement(TraversalOptions traversal, long time) {
-    _traversalTimes.push_back(std::make_pair(traversal, time));
+  template <class PairwiseFunctor>
+  void addTimeMeasurement(PairwiseFunctor &f, TraversalOptions traversal, long time) {
+    auto functorHash = typeid(PairwiseFunctor).hash_code();
+    struct TimeMeasurement measurement = {functorHash, traversal, time};
+    _traversalTimes.push_back(measurement);
   }
 
  private:
@@ -83,7 +87,14 @@ class TraversalSelector {
   std::unordered_map<size_t, TraversalOptions> _optimalTraversalOptions;
   const std::array<unsigned long, 3> _dims;
   const std::vector<TraversalOptions> _allowedTraversalOptions;
-  std::vector<std::pair<TraversalOptions, long>> _traversalTimes;
+
+  struct TimeMeasurement {
+    size_t functorHash;
+    TraversalOptions traversal;
+    long time;
+  };
+  // vector of (functor hash, traversal type, execution time)
+  std::vector<TraversalSelector::TimeMeasurement> _traversalTimes;
   bool _currentlyTuning = false;
 };
 
@@ -146,12 +157,19 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       TraversalOptions fastestTraversal;
       long fastestTime = std::numeric_limits<long>::max();
       AutoPasLogger->debug("TraversalSelector.tune(): TraversalSelector: Collected traversals:");
-      for (auto &&t : _traversalTimes) {
-        AutoPasLogger->debug("TraversalSelector.tune(): Traversal {} took {} nanoseconds:", t.first, t.second);
-        if (t.second < fastestTime) {
-          fastestTraversal = t.first;
-          fastestTime = t.second;
+      for (auto t = _traversalTimes.begin(); t != _traversalTimes.end();) {
+        // only look at times from the correct functor
+        if (t->functorHash != functorHash) {
+          ++t;
+          continue;
         }
+        AutoPasLogger->debug("TraversalSelector.tune(): Traversal {} took {} nanoseconds:", t->traversal, t->time);
+        if (t->time < fastestTime) {
+          fastestTraversal = t->traversal;
+          fastestTime = t->time;
+        }
+        // when a measurement was used delete it
+        t = _traversalTimes.erase(t);
       }
       // sanity check
       if (fastestTime == std::numeric_limits<long>::max()) {
@@ -164,7 +182,6 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
                                      return a->getTraversalType() == fastestTraversal;
                                    }) -
                       traversals.begin();
-      _traversalTimes.clear();
     }
   }
 
