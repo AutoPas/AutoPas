@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
   auto generatorChoice(parser.getGeneratorOption());
+  auto logLevel(parser.getLogLevel());
   auto measureFlops(parser.getMeasureFlops());
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
@@ -123,7 +124,7 @@ int main(int argc, char **argv) {
 
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
-  AutoPasLogger->set_level(spdlog::level::debug);
+  AutoPasLogger->set_level(logLevel);
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
       initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,
