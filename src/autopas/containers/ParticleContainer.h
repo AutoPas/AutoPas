@@ -11,7 +11,6 @@
 #include <array>
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/pairwiseFunctors/Functor.h"
-#include "autopas/selectors/TraversalSelector.h"
 
 namespace autopas {
 
@@ -45,12 +44,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    */
   ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                     const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
-      : _cells(),
-        _traversalSelector(nullptr),  // needs to be instantiated by respective container.
-        _applicableTraversals(applicableTraversals),
-        _boxMin(boxMin),
-        _boxMax(boxMax),
-        _cutoff(cutoff) {}
+      : _cells(), _applicableTraversals(applicableTraversals), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
 
   /**
    * destructor of ParticleContainer
@@ -121,21 +115,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
     return true;
   }
 
-  /**
-   * Determine the optimal traversal for the current situation.
-   * @tparam PairwiseFunctor
-   * @tparam useSoA
-   * @tparam useNewton3
-   * @param pairwiseFunctor Functor to optimize for.
-   * @return true if still in traversal tuning phase
-   */
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  bool tuneTraversal(PairwiseFunctor &pairwiseFunctor) {
-    if (_traversalSelector != nullptr)
-      return _traversalSelector->template tune<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
-    return false;
-  }
-
  protected:
   /**
    * vector of particle cells.
@@ -143,10 +122,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * common vector for this purpose.
    */
   std::vector<ParticleCell> _cells;
-  /**
-   * Selector for traversal of the container.
-   */
-  std::unique_ptr<TraversalSelector<ParticleCell>> _traversalSelector;
   /**
    * Vector of all applicable traversal options for the container.
    */

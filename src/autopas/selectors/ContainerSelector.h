@@ -113,8 +113,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
       break;
     }
     case linkedCells: {
-      container =
-          std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _allowedTraversalOptions);
+      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
       break;
     }
     case verletLists: {
