@@ -64,8 +64,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
               unsigned int rebuildFrequency = 1,
               BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
-        _linkedCells(boxMin, boxMax,
-                     cutoff + skin),  // default TraversalSelector for LC needed for checkNeighborListsAreValid
+        _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
@@ -79,8 +78,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   /**
    * @copydoc LinkedCells::iteratePairwiseAoS
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseAoS(ParticleFunctor* f, bool useNewton3 = true) {
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
                            // it!
       this->updateVerletListsAoS(useNewton3);
@@ -96,8 +95,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   /**
    * @copydoc LinkedCells::iteratePairwiseSoA
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseSoA(ParticleFunctor* f, bool useNewton3 = true) {
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {
       this->updateVerletListsAoS(useNewton3);
       // the neighbor list is now valid
@@ -178,7 +177,11 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     typename verlet_internal::template VerletListValidityCheckerFunctor<ParticleCell> validityCheckerFunctor(
         _aosNeighborLists, ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
-    _linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, useNewton3);
+    auto traversal =
+        C08Traversal<FullParticleCell<Particle, typename verlet_internal::SoAArraysType>,
+                     typename verlet_internal::template VerletListValidityCheckerFunctor<ParticleCell>, false, true>(
+            _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &validityCheckerFunctor);
+    _linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, &traversal, useNewton3);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
@@ -288,13 +291,22 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff());
 
+    // @todo autotune traversal
     switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS:
-        _linkedCells.iteratePairwiseAoS(&f, useNewton3);
+      case BuildVerletListType::VerletAoS: {
+        auto traversal = C08Traversal<FullParticleCell<Particle, typename verlet_internal::SoAArraysType>,
+                                      typename verlet_internal::VerletListGeneratorFunctor, false, true>(
+            _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+        _linkedCells.iteratePairwiseAoS(&f, &traversal);
         break;
-      case BuildVerletListType::VerletSoA:
-        _linkedCells.iteratePairwiseSoA(&f, useNewton3);
+      }
+      case BuildVerletListType::VerletSoA: {
+        auto traversal = C08Traversal<FullParticleCell<Particle, typename verlet_internal::SoAArraysType>,
+                                      typename verlet_internal::VerletListGeneratorFunctor, true, true>(
+            _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+        _linkedCells.iteratePairwiseSoA(&f, &traversal);
         break;
+      }
       default:
         utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
                                            _buildVerletListType);

@@ -13,7 +13,6 @@
 #include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -37,22 +36,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param allowedTraversalOptions Traversal options from which the TraversalSelector shall choose.
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const std::vector<TraversalOptions> &allowedTraversalOptions = allLCApplicableTraversals())
+  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff)
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff) {
-    // LC should only be instantiated with applicable traversals
-    if (not this->checkIfTraversalsAreApplicable(allowedTraversalOptions))
-      utils::ExceptionHandler::exception("LinkedCells: At least one non-applicable traversal option was passed.");
-    // LC should not bee instantiated without any traversals
-    if (allowedTraversalOptions.empty())
-      utils::ExceptionHandler::exception("LinkedCells: No traversal option was passed.");
-    this->_traversalSelector = std::make_unique<TraversalSelector<ParticleCell>>(
-        _cellBlock.getCellsPerDimensionWithHalo(), allowedTraversalOptions);
-  }
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff) {}
 
   /**
    * Lists all traversal options applicable for the Linked Cells container.
@@ -96,45 +84,27 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * short-range interactions.
    * @tparam the type of ParticleFunctor
    * @param f functor that describes the pair-potential
-   * @param useNewton3 defines whether newton3 should be used
+   * @param traversal the traversal that will be used
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
-    std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
-    if (useNewton3) {
-      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, true>(*f);
-    } else {
-      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f);
-    }
-    AutoPasLogger->debug("LinkedCells: using traversal {}", traversal->getTraversalType());
-    auto start = std::chrono::high_resolution_clock::now();
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+    AutoPasLogger->debug("LinkedCells: using traversal {} with AoS", traversal->getTraversalType());
     traversal->traverseCellPairs(this->_cells);
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-    this->_traversalSelector->addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
   }
 
   /**
-   * setting. This function is often better vectorizable.
+   * Function to iterate over all pairs of particles in an structure of arrays setting. This function only handles
+   * short-range interactions. It is often better vectorizable than iteratePairwiseAoS.
    * @tparam ParticleFunctor
    * @param f functor that describes the pair-potential
-   * @param useNewton3 defines whether newton3 should be used
+   * @param traversal the traversal that will be used
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+    AutoPasLogger->debug("LinkedCells: using traversal {} with SoA ", traversal->getTraversalType());
     loadSoAs(f);
 
-    std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
-    if (useNewton3) {
-      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, true>(*f);
-    } else {
-      traversal = this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f);
-    }
-    auto start = std::chrono::high_resolution_clock::now();
     traversal->traverseCellPairs(this->_cells);
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-    this->_traversalSelector->addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
 
     extractSoAs(f);
   }

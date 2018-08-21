@@ -67,8 +67,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   /**
    * @copydoc LinkedCells::iteratePairwiseAoS
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     if (useNewton3) {
       CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
       cellFunctor.processCell(*getCell());
@@ -83,8 +83,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   /**
    * @copydoc LinkedCells::iteratePairwiseSoA
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 
