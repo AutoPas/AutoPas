@@ -17,6 +17,7 @@
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/StaticSelectorMacros.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 // particles
 #include "autopas/particles/MoleculeLJ.h"
@@ -32,6 +33,10 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/iterators/SingleCellIterator.h"
+
+// traversals
+#include "autopas/containers/cellPairTraversals/C08Traversal.h"
+#include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
 
 // containers
 #include "autopas/containers/CellBlock3D.h"
