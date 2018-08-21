@@ -68,7 +68,7 @@ TEST_F(AutoTunerTest, testTune) {
     }
   }
 
-  EXPECT_EQ(i, 6) << "Too unexpected number of tuning iterations!";
+  EXPECT_EQ(i, 6) << "Unexpected number of tuning iterations!";
 
   auto container = autoTuner.getContainer();
   EXPECT_EQ(fastestContainer->getContainerType(), container->getContainerType())

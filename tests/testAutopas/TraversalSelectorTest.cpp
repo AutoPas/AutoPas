@@ -92,7 +92,7 @@ TEST_F(TraversalSelectorTest, testTune) {
     }
   }
 
-  EXPECT_EQ(i, 3) << "Too unexpected number of tuning iterations!";
+  EXPECT_EQ(i, 3) << "Unexpected number of tuning iterations!";
 
   auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor);
   EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())))
