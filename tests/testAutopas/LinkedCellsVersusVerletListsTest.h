@@ -11,6 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/RandomGenerator.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
  public:

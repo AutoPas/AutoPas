@@ -12,8 +12,10 @@
 // a place for typedefs that are commonly used in tests
 
 typedef autopas::Particle Particle;
-
 typedef autopas::FullParticleCell<autopas::Particle> FPCell;
+
+typedef autopas::MoleculeLJ Molecule;
+typedef autopas::FullParticleCell<autopas::MoleculeLJ> FMCell;
 
 // M prefix for mocks
 typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;

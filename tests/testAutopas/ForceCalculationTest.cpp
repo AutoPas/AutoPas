@@ -15,8 +15,9 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {3., 3., 3.};
 
-  autoPas.init(boxMin, boxMax, cutoff, 0, 1, {autopas::ContainerOptions::linkedCells});
-
+  //@todo test this with all containers and traversals
+  autoPas.init(boxMin, boxMax, cutoff, 0, 1, {autopas::ContainerOptions::linkedCells},
+               {autopas::TraversalOptions::c08});
   autopas::MoleculeLJ defaultParticle;
 
   GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
@@ -33,9 +34,9 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
 
   for (auto p = autoPas.begin(); p.isValid(); ++p) {
     auto id = p->getID();
-    ASSERT_NEAR(expectedForces[id][0], p->getF()[0], tolerance);
-    ASSERT_NEAR(expectedForces[id][1], p->getF()[1], tolerance);
-    ASSERT_NEAR(expectedForces[id][2], p->getF()[2], tolerance);
+    EXPECT_NEAR(expectedForces[id][0], p->getF()[0], tolerance) << "ParticleID: " << id;
+    EXPECT_NEAR(expectedForces[id][1], p->getF()[1], tolerance) << "ParticleID: " << id;
+    EXPECT_NEAR(expectedForces[id][2], p->getF()[2], tolerance) << "ParticleID: " << id;
   }
 }
 
