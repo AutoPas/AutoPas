@@ -169,7 +169,7 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
       }
       // sanity check
       if (fastestTime == std::numeric_limits<long>::max()) {
-        utils::ExceptionHandler::exception("ContainerSelector: nothing was faster than max long oO");
+        utils::ExceptionHandler::exception("ContainerSelector: nothing was faster than max long! o_O");
       }
 
       // find id of fastest container in passed container list
