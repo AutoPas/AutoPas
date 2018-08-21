@@ -10,8 +10,6 @@
 #include <array>
 #include <vector>
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
-#include "autopas/selectors/TraversalSelector.h"
-//#include "CellPairTraversalInterface.h"
 
 namespace autopas {
 
