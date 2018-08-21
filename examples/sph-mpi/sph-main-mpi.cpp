@@ -12,6 +12,12 @@
 #include "autopas/sph/autopassph.h"
 
 typedef autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> Container;
+typedef autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                              autopas::sph::SPHCalcHydroForceFunctor, false, false>
+    HydroTraversal;
+typedef autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false, false>
+    DensityTraversal;
 
 void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>& bBoxMax) {
   // Place SPH particles
@@ -398,8 +404,8 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm, const std::
     densityFunctor.AoSFunctor(*part, *part);
     part->setDensity(part->getDensity() / 2);
   }
-
-  sphSystem.iteratePairwiseAoS(&densityFunctor);
+  DensityTraversal densityTraversal(sphSystem.getCellBlock().getCellsPerDimensionWithHalo(), &densityFunctor);
+  sphSystem.iteratePairwiseAoS(&densityFunctor, &densityTraversal, false);
   // 1.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 
@@ -419,7 +425,8 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm, const std::
     part->setAcceleration(std::array<double, 3>{0., 0., 0.});
     part->setEngDot(0.);
   }
-  sphSystem.iteratePairwiseAoS(&hydroForceFunctor);
+  HydroTraversal hydroTraversal(sphSystem.getCellBlock().getCellsPerDimensionWithHalo(), &hydroForceFunctor);
+  sphSystem.iteratePairwiseAoS(&hydroForceFunctor, &hydroTraversal, false);
   // 0.3.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 }

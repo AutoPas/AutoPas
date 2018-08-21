@@ -66,5 +66,4 @@ class MDFlexParser {
   string writeVTK = "";
   size_t verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
-
 };

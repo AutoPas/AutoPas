@@ -6,25 +6,13 @@
 
 #include <array>
 #include <iostream>
+#include "../md/mdutils.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);
-
-double fRand(double fMin, double fMax) {
-  double f = static_cast<double>(rand()) / RAND_MAX;
-  return fMin + f * (fMax - fMin);
-}
-
-std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
-  std::array<double, 3> r{0, 0, 0};
-  for (int d = 0; d < 3; ++d) {
-    r[d] = fRand(boxMin[d], boxMax[d]);
-  }
-  return r;
-}
 
 void addParticles(
     autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
@@ -174,9 +162,19 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   // cont->iteratePairwiseAoS(&flopFunctor);
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
+  autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false> dummyTraversal(
+      {0, 0, 0}, func);
+  if (cont->getContainerType() == ContainerOptions::linkedCells) {
+    dummyTraversal = C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
+        dynamic_cast<LinkedCells<autopas::sph::SPHParticle, FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
+            ->getCellBlock()
+            .getCellsPerDimensionWithHalo(),
+        func);
+  }
+
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS(func);
+    cont->iteratePairwiseAoS(func, &dummyTraversal);
   }
   double elapsedTime = t.stop();
 
@@ -186,7 +184,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseSoA(func);
+    cont->iteratePairwiseSoA(func, &dummyTraversal);
   }
   elapsedTime = t.stop();
 
