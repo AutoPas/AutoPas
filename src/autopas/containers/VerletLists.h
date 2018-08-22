@@ -218,6 +218,11 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     return outlierFound;
   }
 
+  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
+    // at the moment this is just a dummy
+    return TraversalSelector<ParticleCell>({0, 0, 0}, traversalOptions);
+  }
+
   /**
    * specifies whether the neighbor lists need to be rebuild
    * @return true if the neighbor lists need to be rebuild, false otherwise

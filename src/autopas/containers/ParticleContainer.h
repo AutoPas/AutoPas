@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <autopas/containers/cellPairTraversals/CellPairTraversalInterface.h>
 #include <array>
 #include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 
 namespace autopas {
@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class ParticleContainer : public ParticleContainerInterface<Particle> {
+class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
  private:
   static const std::vector<TraversalOptions> &DefaultApplicableTraversals() {
     static const std::vector<TraversalOptions> v{};

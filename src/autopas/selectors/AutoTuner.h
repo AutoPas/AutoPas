@@ -61,12 +61,10 @@ class AutoTuner {
     auto container = _containerSelector.getOptimalContainer();
     // if the container is new create a new traversal selector for it
     if (_traversalSelectors.find(container->getContainerType()) == _traversalSelectors.end()) {
+      // @todo as soon as all containers work with traversalselectors this if can be removed
       if (container->getContainerType() == ContainerOptions::linkedCells) {
-        auto lc = dynamic_cast<LinkedCells<Particle, ParticleCell> *>(container.get());
-        _traversalSelectors.insert(
-            std::make_pair(container->getContainerType(),
-                           TraversalSelector<ParticleCell>(lc->getCellBlock().getCellsPerDimensionWithHalo(),
-                                                           _allowedTraversalOptions)));
+        _traversalSelectors.insert(std::make_pair(container->getContainerType(),
+                                                  container->generateTraversalSelector(_allowedTraversalOptions)));
         // @todo think about how to handle traversal selectors for other containers (dedicated selector types?)
         //      } else {
       }
