@@ -171,16 +171,18 @@ int main(int argc, char **argv) {
   }
 
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
-  cout << "Starting force calculation... " << flush;
+  cout << "Starting force calculation... " << endl;
   startCalc = std::chrono::high_resolution_clock::now();
   // Calculation
   for (unsigned int i = 0; i < numIterations; ++i) {
-    AutoPasLogger->debug("Iteration {}", i);
+    if (AutoPasLogger->level() <= spdlog::level::debug) {
+      cout << "Iteration " << i << endl;
+    }
     autopas.iteratePairwise(&functor, dataLayoutChoice);
   }
   stopCalc = std::chrono::high_resolution_clock::now();
   stopTotal = std::chrono::high_resolution_clock::now();
-  cout << "done!" << endl;
+  cout << "Force calculation done!" << endl;
 
   //  printMolecules(autopas);
 
