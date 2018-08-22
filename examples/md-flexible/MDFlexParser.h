@@ -41,7 +41,6 @@ class MDFlexParser {
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
   void printConfig();
-  ;
 
  private:
   static constexpr size_t valueOffset = 32;
