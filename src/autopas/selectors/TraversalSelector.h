@@ -31,7 +31,7 @@ template <class ParticleCell>
 class TraversalSelector {
  public:
   /**
-   * Dummy constructor s.th. this class can be used in maps
+   * Dummy constructor such that this class can be used in maps
    */
   TraversalSelector() : _dims({0, 0, 0}), _allowedTraversalOptions({}) {}
   /**
