@@ -83,8 +83,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * Function to iterate over all pairs of particles in an array of structures setting. This function only handles
    * short-range interactions.
    * @tparam the type of ParticleFunctor
+   * @tparam Traversal
    * @param f functor that describes the pair-potential
    * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
@@ -96,8 +98,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * Function to iterate over all pairs of particles in an structure of arrays setting. This function only handles
    * short-range interactions. It is often better vectorizable than iteratePairwiseAoS.
    * @tparam ParticleFunctor
+   * @tparam Traversal
    * @param f functor that describes the pair-potential
    * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {

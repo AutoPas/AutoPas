@@ -66,13 +66,13 @@ class TraversalSelector {
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
   /**
-   * Save the runtime of a given traversal with a given functor
+   * Save the runtime of a given traversal with a given functor.
    * @param functor
    * @param traversal
    * @param time
    */
   template <class PairwiseFunctor>
-  void addTimeMeasurement(PairwiseFunctor &f, TraversalOptions traversal, long time) {
+  void addTimeMeasurement(PairwiseFunctor &functor, TraversalOptions traversal, long time) {
     auto functorHash = typeid(PairwiseFunctor).hash_code();
     struct TimeMeasurement measurement = {functorHash, traversal, time};
     _traversalTimes.push_back(measurement);
