@@ -7,11 +7,10 @@
 
 #pragma once
 
-#include <autopas/containers/cellPairTraversals/CellPairTraversalInterface.h>
 #include <array>
 #include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
 #include "autopas/pairwiseFunctors/Functor.h"
-#include "autopas/selectors/TraversalSelector.h"
 
 namespace autopas {
 
@@ -23,7 +22,7 @@ namespace autopas {
  * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class ParticleContainer : public ParticleContainerInterface<Particle> {
+class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
  private:
   static const std::vector<TraversalOptions> &DefaultApplicableTraversals() {
     static const std::vector<TraversalOptions> v{};
@@ -45,12 +44,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    */
   ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                     const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
-      : _cells(),
-        _traversalSelector(nullptr),  // needs to be instantiated by respective container.
-        _applicableTraversals(applicableTraversals),
-        _boxMin(boxMin),
-        _boxMax(boxMax),
-        _cutoff(cutoff) {}
+      : _cells(), _applicableTraversals(applicableTraversals), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
 
   /**
    * destructor of ParticleContainer
@@ -121,19 +115,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
     return true;
   }
 
-  /**
-   * Determine the optimal traversal for the current situation.
-   * @tparam PairwiseFunctor
-   * @tparam useSoA
-   * @tparam useNewton3
-   * @param pairwiseFunctor Functor to optimize for.
-   */
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  void tuneTraversal(PairwiseFunctor &pairwiseFunctor) {
-    if (_traversalSelector != nullptr)
-      _traversalSelector->template tune<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
-  }
-
  protected:
   /**
    * vector of particle cells.
@@ -141,10 +122,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle> {
    * common vector for this purpose.
    */
   std::vector<ParticleCell> _cells;
-  /**
-   * Selector for traversal of the container.
-   */
-  std::unique_ptr<TraversalSelector<ParticleCell>> _traversalSelector;
   /**
    * Vector of all applicable traversal options for the container.
    */

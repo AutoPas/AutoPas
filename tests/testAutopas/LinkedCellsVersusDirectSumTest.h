@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
  public:

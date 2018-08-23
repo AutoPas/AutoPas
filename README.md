@@ -55,6 +55,7 @@ make
 
 
 ## Testing
+### Running Tests
 to run tests:
 ```
 make test
@@ -82,7 +83,15 @@ or `ctest` arguments like `-R` (run tests matching regex) and `-D` (exclude test
 ```
 ctest -R 'Array.*testAdd' -E `Double'
 ```
-
+### Debugging Tests
+Find out the command to start your desired test with `-N` aka. `--show-only`:
+```
+ctest -R 'Array.*testAdd' -N
+```
+Start the test with `gdb`
+```
+gdb --args ${TestCommand}
+```
 
 ## Examples
 As AutoPas is only a library for particle simulations it itself is not able to run simulations.
@@ -119,7 +128,7 @@ The particle can be accesses using `iter->` (`*iter` is also possible).
 When created inside a OpenMP parallel region, work is automatically spread over all iterators.
 ```C++
 #pragma omp parallel
-for(auto iter = container.begin(), iter.isValid(); ++iter) {
+for(auto iter = container.begin(); iter.isValid(); ++iter) {
   // user code:
   auto position = iter->getR();
 }
@@ -165,6 +174,17 @@ as long as particles move not more than a skin radius.
 * requirements:
 	clang-format-6.0 
 	(Version is important since formatting is not consistent)
+
+## Logging
+AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
+```
+AutoPasLogger->warn("Hello {}", name);
+```
+The global log level can be set at runtime with:
+```
+AutoPasLogger->set_level(spdlog::level::debug);
+```
+Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `off`,
 
 ## Acknowledgements
 * TaLPas BMBF

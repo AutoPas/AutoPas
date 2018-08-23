@@ -15,6 +15,6 @@
 
 class TraversalSelectorTest : public AutoPasTestBase {
  public:
-  TraversalSelectorTest();
-  ~TraversalSelectorTest();
+  TraversalSelectorTest() = default;
+  ~TraversalSelectorTest() override = default;
 };
