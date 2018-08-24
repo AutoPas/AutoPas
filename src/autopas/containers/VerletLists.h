@@ -312,12 +312,30 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     /// @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
     /// traversals
 
-    // don't parallelize this with a simple openmp, unless useNewton3=false
-    for (auto& list : _aosNeighborLists) {
-      Particle& i = *list.first;
-      for (auto j_ptr : list.second) {
-        Particle& j = *j_ptr;
-        f->AoSFunctor(i, j, useNewton3);
+    size_t iFrom = 0;
+    size_t iTo = _aosNeighborLists.bucket_count();
+
+#if defined(AUTOPAS_OPENMP)
+    if (not useNewton3) {
+#pragma omp parallel for schedule(runtime)
+      for (size_t i = iFrom; i < iTo; i++) {
+        for (auto it = _aosNeighborLists.begin(i); it != _aosNeighborLists.end(i); it++) {
+         Particle& i = *it->first;
+          for (auto j_ptr : it->second) {
+            Particle& j = *j_ptr;
+            f->AoSFunctor(i, j, useNewton3);
+          }
+        }
+      }
+    } else 
+#endif
+    {    
+      for (auto& list : _aosNeighborLists) {
+        Particle& i = *list.first;
+        for (auto j_ptr : list.second) {
+          Particle& j = *j_ptr;
+          f->AoSFunctor(i, j, useNewton3);
+        }
       }
     }
   }
@@ -339,8 +357,19 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     /// @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
     size_t iFrom = 0;
     size_t iTo = _soaNeighborLists.size();
-    // iterate over SoA
-    f->SoAFunctor(_soa, _soaNeighborLists, iFrom, iTo, useNewton3);
+    
+#if defined(AUTOPAS_OPENMP)
+    if (not useNewton3) {
+#pragma omp parallel for schedule(runtime)
+      for (size_t i = iFrom; i < iTo; i++) {
+        f->SoAFunctor(_soa, _soaNeighborLists, i, i+1, useNewton3);
+      }
+    } else 
+#endif
+    {
+      // iterate over SoA
+      f->SoAFunctor(_soa, _soaNeighborLists, iFrom, iTo, useNewton3);
+    }
 
     // extract SoA
     extractVerletSoA(f);

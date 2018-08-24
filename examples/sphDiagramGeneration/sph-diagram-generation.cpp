@@ -11,7 +11,7 @@
 #include "autopas/utils/Timer.h"
 
 template <class Container, class Functor>
-void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);
+void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3);
 
 double fRand(double fMin, double fMax) {
   double f = static_cast<double>(rand()) / RAND_MAX;
@@ -80,7 +80,16 @@ int main(int argc, char *argv[]) {
   enum FunctorType { densityFunctor, hydroForceFunctor } functorType = densityFunctor;
   double skin = 0.;
   int rebuildFrequency = 10;
-  if (argc == 7) {
+  bool useNewton3 = true;
+  if (argc == 8) {
+    numParticles = atoi(argv[1]);
+    numIterations = atoi(argv[2]);
+    containerTypeInt = atoi(argv[3]);
+    functorTypeInt = atoi(argv[4]);
+    skin = atof(argv[5]);
+    rebuildFrequency = atof(argv[6]);
+    useNewton3 = atoi(argv[7]);
+  } else if (argc == 7) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
     containerTypeInt = atoi(argv[3]);
@@ -99,7 +108,7 @@ int main(int argc, char *argv[]) {
   } else {
     std::cerr << "ERROR: wrong number of arguments given. " << std::endl
               << "sph-diagram-generation requires the following arguments:" << std::endl
-              << "numParticles numIterations containerType [functorType [skin rebuildFrequency]]:" << std::endl
+              << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3]]]:" << std::endl
               << std::endl
               << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl
               << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
@@ -133,27 +142,27 @@ int main(int argc, char *argv[]) {
 
   if (containerType == linkedCells) {
     if (functorType == densityFunctor) {
-      measureContainer(&lcCont, &densfunc, numParticles, numIterations);
+      measureContainer(&lcCont, &densfunc, numParticles, numIterations, useNewton3);
     } else if (functorType == hydroForceFunctor) {
-      measureContainer(&lcCont, &hydrofunc, numParticles, numIterations);
+      measureContainer(&lcCont, &hydrofunc, numParticles, numIterations, useNewton3);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
     }
   } else if (containerType == directSum) {
     if (functorType == densityFunctor) {
-      measureContainer(&dirCont, &densfunc, numParticles, numIterations);
+      measureContainer(&dirCont, &densfunc, numParticles, numIterations, useNewton3);
     } else if (functorType == hydroForceFunctor) {
-      measureContainer(&dirCont, &hydrofunc, numParticles, numIterations);
+      measureContainer(&dirCont, &hydrofunc, numParticles, numIterations, useNewton3);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
     }
   } else if (containerType == verletLists) {
     if (functorType == densityFunctor) {
-      measureContainer(&verletCont, &densfunc, numParticles, numIterations);
+      measureContainer(&verletCont, &densfunc, numParticles, numIterations, useNewton3);
     } else if (functorType == hydroForceFunctor) {
-      measureContainer(&verletCont, &hydrofunc, numParticles, numIterations);
+      measureContainer(&verletCont, &hydrofunc, numParticles, numIterations, useNewton3);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
@@ -165,7 +174,7 @@ int main(int argc, char *argv[]) {
 }
 
 template <class Container, class Functor>
-void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations) {
+void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
   // autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
   //    flopFunctor(cont->getCutoff());
 
@@ -176,7 +185,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS(func);
+    cont->iteratePairwiseAoS(func, useNewton3);
   }
   double elapsedTime = t.stop();
 
@@ -186,7 +195,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseSoA(func);
+    cont->iteratePairwiseSoA(func, useNewton3);
   }
   elapsedTime = t.stop();
 
