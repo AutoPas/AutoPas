@@ -361,7 +361,7 @@ class SPHCalcHydroForceFunctor
     double *const __restrict__ accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
     double *const __restrict__ accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
 
-    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+    for (unsigned int i = iFrom; i < iTo; ++i) {
       double localvsigmax = 0.;
       double localengdotsum = 0.;
       double localAccX = 0.;

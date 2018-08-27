@@ -312,15 +312,13 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     /// @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
     /// traversals
 
-    size_t iFrom = 0;
-    size_t iTo = _aosNeighborLists.bucket_count();
-
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
+      size_t buckets = _aosNeighborLists.bucket_count();
 #pragma omp parallel for schedule(runtime)
-      for (size_t i = iFrom; i < iTo; i++) {
-        for (auto it = _aosNeighborLists.begin(i); it != _aosNeighborLists.end(i); it++) {
-         Particle& i = *it->first;
+      for (size_t b = 0; b < buckets; b++) {
+        for (auto it = _aosNeighborLists.begin(b); it != _aosNeighborLists.end(b); it++) {
+          Particle& i = *it->first;
           for (auto j_ptr : it->second) {
             Particle& j = *j_ptr;
             f->AoSFunctor(i, j, useNewton3);
