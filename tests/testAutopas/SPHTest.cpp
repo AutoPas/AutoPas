@@ -636,10 +636,19 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
     }                                                                                                                  \
                                                                                                                        \
     autopas::sph::functor fnctr;                                                                                       \
+    if (strcmp(#mode, "AoS") == 0) {                                                                                   \
+      autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor, false, true> traversalLJ(   \
+          _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                                         \
                                                                                                                        \
-    _verletLists.iteratePairwise##mode(&fnctr);                                                                        \
-    _linkedCells.iteratePairwise##mode(&fnctr);                                                                        \
+      _verletLists.iteratePairwise##mode(&fnctr, &traversalLJ);                                                        \
+      _linkedCells.iteratePairwise##mode(&fnctr, &traversalLJ);                                                        \
+    } else {                                                                                                           \
+      autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor, true, true> traversalLJ(    \
+          _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                                         \
                                                                                                                        \
+      _verletLists.iteratePairwise##mode(&fnctr, &traversalLJ);                                                        \
+      _linkedCells.iteratePairwise##mode(&fnctr, &traversalLJ);                                                        \
+    }                                                                                                                  \
     check;                                                                                                             \
   }
 

@@ -30,8 +30,11 @@ class MDFlexParser {
   FunctorOption getFunctorOption() const;
   GeneratorOption getGeneratorOption() const;
   size_t getIterations() const;
+  bool getMeasureFlops() const;
+  spdlog::level::level_enum getLogLevel() const;
   double getParticleSpacing() const;
   size_t getParticlesPerDim() const;
+  unsigned int getTuningInterval() const;
   string getWriteVTK() const;
   const vector<autopas::TraversalOptions> &getTraversalOptions() const;
   size_t getVerletRebuildFrequency() const;
@@ -54,8 +57,11 @@ class MDFlexParser {
   FunctorOption functorOption = FunctorOption::lj12_6;
   GeneratorOption generatorOption = GeneratorOption::grid;
   size_t iterations = 10;
+  spdlog::level::level_enum logLevel = spdlog::level::info;
+  bool measureFlops = true;
   size_t particlesPerDim = 20;
   double particleSpacing = .4;
+  unsigned int tuningInterval = 100;
   string writeVTK = "";
   size_t verletRebuildFrequency = 5;
   double verletSkinRadius = .2;

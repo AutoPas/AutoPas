@@ -86,16 +86,37 @@ void measureContainer(Container *cont, int numMolecules, int numIterations, doub
   FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopFunctor(cutoff);
 
   utils::Timer t;
+  C08Traversal<FullParticleCell<PrintableMolecule>, LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>,
+               false, false>
+      dummyTraversalLJ({0, 0, 0}, &func);
+  C08Traversal<FullParticleCell<PrintableMolecule>,
+               FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, false>
+      dummyTraversalFLOPS({0, 0, 0}, &flopFunctor);
+  if (cont->getContainerType() == ContainerOptions::linkedCells) {
+    dummyTraversalLJ = C08Traversal<FullParticleCell<PrintableMolecule>,
+                                    LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, false>(
+        dynamic_cast<LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> *>(cont)
+            ->getCellBlock()
+            .getCellsPerDimensionWithHalo(),
+        &func);
+    dummyTraversalFLOPS =
+        C08Traversal<FullParticleCell<PrintableMolecule>,
+                     FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, false>(
+            dynamic_cast<LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> *>(cont)
+                ->getCellBlock()
+                .getCellsPerDimensionWithHalo(),
+            &flopFunctor);
+  }
 
-  cont->iteratePairwiseAoS(&flopFunctor);
+  cont->iteratePairwiseAoS(&flopFunctor, &dummyTraversalFLOPS);
   double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
     if (soa)
-      cont->iteratePairwiseSoA(&func);
+      cont->iteratePairwiseSoA(&func, &dummyTraversalLJ);
     else
-      cont->iteratePairwiseAoS(&func);
+      cont->iteratePairwiseAoS(&func, &dummyTraversalLJ);
   }
   double elapsedTime = t.stop();
 
@@ -160,7 +181,10 @@ void testForceLJ() {
   container.addParticle(p4);
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
-  container.iteratePairwiseAoS(&func);
+  C08Traversal<FullParticleCell<PrintableMolecule>, LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>,
+               false, false>
+      dummyTraversal({0, 0, 0}, &func);
+  container.iteratePairwiseAoS(&func, &dummyTraversal, true);
 
   //	for (auto it = container.begin(); it.isValid(); ++it) {
   //		it->print();

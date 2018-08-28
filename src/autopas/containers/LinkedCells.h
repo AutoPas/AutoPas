@@ -13,7 +13,6 @@
 #include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -37,22 +36,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param allowedTraversalOptions Traversal options from which the TraversalSelector shall choose.
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const std::vector<TraversalOptions> &allowedTraversalOptions = allLCApplicableTraversals())
+  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff)
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff) {
-    // LC should only be instantiated with applicable traversals
-    if (not this->checkIfTraversalsAreApplicable(allowedTraversalOptions))
-      utils::ExceptionHandler::exception("LinkedCells: At least one non-applicable traversal option was passed.");
-    // LC should not bee instantiated without any traversals
-    if (allowedTraversalOptions.empty())
-      utils::ExceptionHandler::exception("LinkedCells: No traversal option was passed.");
-    this->_traversalSelector = std::make_unique<TraversalSelector<ParticleCell>>(
-        _cellBlock.getCellsPerDimensionWithHalo(), allowedTraversalOptions);
-  }
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff) {}
 
   /**
    * Lists all traversal options applicable for the Linked Cells container.
@@ -62,6 +50,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     static const std::vector<TraversalOptions> v{TraversalOptions::c08, TraversalOptions::sliced};
     return v;
   }
+
+  ContainerOptions getContainerType() override { return ContainerOptions::linkedCells; }
 
   void addParticle(Particle &p) override {
     bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
@@ -93,37 +83,32 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * Function to iterate over all pairs of particles in an array of structures setting. This function only handles
    * short-range interactions.
    * @tparam the type of ParticleFunctor
+   * @tparam Traversal
    * @param f functor that describes the pair-potential
-   * @param useNewton3 defines whether newton3 should be used
+   * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseAoS(ParticleFunctor *f, bool useNewton3 = true) {
-    if (useNewton3) {
-      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, true>(*f)->traverseCellPairs(
-          this->_cells);
-    } else {
-      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, false, false>(*f)->traverseCellPairs(
-          this->_cells);
-    }
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+    AutoPasLogger->debug("LinkedCells: using traversal {} with AoS", traversal->getTraversalType());
+    traversal->traverseCellPairs(this->_cells);
   }
 
   /**
-   * setting. This function is often better vectorizable.
+   * Function to iterate over all pairs of particles in an structure of arrays setting. This function only handles
+   * short-range interactions. It is often better vectorizable than iteratePairwiseAoS.
    * @tparam ParticleFunctor
+   * @tparam Traversal
    * @param f functor that describes the pair-potential
-   * @param useNewton3 defines whether newton3 should be used
+   * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseSoA(ParticleFunctor *f, bool useNewton3 = true) {
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+    AutoPasLogger->debug("LinkedCells: using traversal {} with SoA ", traversal->getTraversalType());
     loadSoAs(f);
 
-    if (useNewton3) {
-      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, true>(*f)->traverseCellPairs(
-          this->_cells);
-    } else {
-      this->_traversalSelector->template getOptimalTraversal<ParticleFunctor, true, false>(*f)->traverseCellPairs(
-          this->_cells);
-    }
+    traversal->traverseCellPairs(this->_cells);
 
     extractSoAs(f);
   }
@@ -161,8 +146,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
-    // TODO: find a sensible value for ???
-#pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
+    // TODO: find a sensible value for magic number
+    // numThreads should be at least 1 and maximal max_threads
+    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 500)));
+    std::cout << numThreads << std::endl;
+#pragma omp parallel for shared(outlierFound) num_threads(numThreads)
 #endif
     for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
       std::array<double, 3> boxmin{0., 0., 0.};
@@ -180,6 +168,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
 
     return outlierFound;
+  }
+
+  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
+    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), traversalOptions);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

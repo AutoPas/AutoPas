@@ -53,9 +53,11 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
     _linkedCells.addParticle(*it);
   }
 
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func;
-  _directSum.iteratePairwiseAoS(&func);
-  _linkedCells.iteratePairwiseAoS(&func);
+  autopas::LJFunctor<Molecule, FMCell> func;
+  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalLJ(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  _directSum.iteratePairwiseAoS(&func, &traversalLJ);
+  _linkedCells.iteratePairwiseAoS(&func, &traversalLJ);
 
   auto itDirect = _directSum.begin();
   auto itLinked = _linkedCells.begin();
@@ -82,11 +84,11 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
     }
   }
 
-  autopas::FlopCounterFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> flopsDirect(
-      getCutoff()),
-      flopsLinked(getCutoff());
-  _directSum.iteratePairwiseAoS(&flopsDirect);
-  _linkedCells.iteratePairwiseAoS(&flopsLinked);
+  autopas::FlopCounterFunctor<Molecule, FMCell> flopsDirect(getCutoff()), flopsLinked(getCutoff());
+  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalFLOPS(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+  _directSum.iteratePairwiseAoS(&flopsDirect, &traversalFLOPS);
+  _linkedCells.iteratePairwiseAoS(&flopsLinked, &traversalFLOPS);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsDirect.getKernelCalls());
   ASSERT_LE(flopsLinked.getDistanceCalculations(), flopsDirect.getDistanceCalculations());

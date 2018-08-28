@@ -64,8 +64,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
               unsigned int rebuildFrequency = 1,
               BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
-        _linkedCells(boxMin, boxMax,
-                     cutoff + skin),  // default TraversalSelector for LC needed for checkNeighborListsAreValid
+        _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
@@ -74,11 +73,13 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
         _soa(),
         _buildVerletListType(buildVerletListType) {}
 
+  ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
+
   /**
    * @copydoc LinkedCells::iteratePairwiseAoS
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseAoS(ParticleFunctor* f, bool useNewton3 = true) {
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
                            // it!
       this->updateVerletListsAoS(useNewton3);
@@ -94,8 +95,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   /**
    * @copydoc LinkedCells::iteratePairwiseSoA
    */
-  template <class ParticleFunctor>
-  void iteratePairwiseSoA(ParticleFunctor* f, bool useNewton3 = true) {
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {
       this->updateVerletListsAoS(useNewton3);
       // the neighbor list is now valid
@@ -176,7 +177,11 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     typename verlet_internal::template VerletListValidityCheckerFunctor<ParticleCell> validityCheckerFunctor(
         _aosNeighborLists, ((this->getCutoff() - _skin) * (this->getCutoff() - _skin)));
 
-    _linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, useNewton3);
+    auto traversal =
+        C08Traversal<FullParticleCell<Particle, typename verlet_internal::SoAArraysType>,
+                     typename verlet_internal::template VerletListValidityCheckerFunctor<ParticleCell>, false, true>(
+            _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &validityCheckerFunctor);
+    _linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, &traversal, useNewton3);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
@@ -211,6 +216,11 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
           "VerletLists: containerUpdate not yet needed. Particles are slow "
           "enough.");
     return outlierFound;
+  }
+
+  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
+    // at the moment this is just a dummy
+    return TraversalSelector<ParticleCell>({0, 0, 0}, traversalOptions);
   }
 
   /**
@@ -286,13 +296,22 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff());
 
+    // @todo autotune traversal
     switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS:
-        _linkedCells.iteratePairwiseAoS(&f, useNewton3);
+      case BuildVerletListType::VerletAoS: {
+        auto traversal = C08Traversal<FullParticleCell<Particle, typename verlet_internal::SoAArraysType>,
+                                      typename verlet_internal::VerletListGeneratorFunctor, false, true>(
+            _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+        _linkedCells.iteratePairwiseAoS(&f, &traversal);
         break;
-      case BuildVerletListType::VerletSoA:
-        _linkedCells.iteratePairwiseSoA(&f, useNewton3);
+      }
+      case BuildVerletListType::VerletSoA: {
+        auto traversal = C08Traversal<FullParticleCell<Particle, typename verlet_internal::SoAArraysType>,
+                                      typename verlet_internal::VerletListGeneratorFunctor, true, true>(
+            _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+        _linkedCells.iteratePairwiseSoA(&f, &traversal);
         break;
+      }
       default:
         utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
                                            _buildVerletListType);
@@ -315,7 +334,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
       size_t buckets = _aosNeighborLists.bucket_count();
-#pragma omp parallel for schedule(runtime)
+#pragma omp parallel for schedule(dynamic)
       for (size_t b = 0; b < buckets; b++) {
         for (auto it = _aosNeighborLists.begin(b); it != _aosNeighborLists.end(b); it++) {
           Particle& i = *it->first;
@@ -325,9 +344,9 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
           }
         }
       }
-    } else 
+    } else
 #endif
-    {    
+    {
       for (auto& list : _aosNeighborLists) {
         Particle& i = *list.first;
         for (auto j_ptr : list.second) {
@@ -355,14 +374,14 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     /// @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
     size_t iFrom = 0;
     size_t iTo = _soaNeighborLists.size();
-    
+
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
-#pragma omp parallel for schedule(runtime)
+#pragma omp parallel for schedule(dynamic)
       for (size_t i = iFrom; i < iTo; i++) {
-        f->SoAFunctor(_soa, _soaNeighborLists, i, i+1, useNewton3);
+        f->SoAFunctor(_soa, _soaNeighborLists, i, i + 1, useNewton3);
       }
-    } else 
+    } else
 #endif
     {
       // iterate over SoA

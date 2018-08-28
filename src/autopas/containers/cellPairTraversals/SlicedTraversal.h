@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
-#include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 

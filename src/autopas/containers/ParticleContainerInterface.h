@@ -7,11 +7,21 @@
 
 #pragma once
 
+#include <autopas/selectors/TraversalSelector.h>
 #include <array>
 
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 
 namespace autopas {
+
+/**
+ * Possible choices for the particle container type.
+ */
+enum ContainerOptions {
+  directSum = 0,
+  linkedCells = 1,
+  verletLists = 2,
+};
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor
 /**
@@ -21,7 +31,7 @@ namespace autopas {
  *
  * @tparam Particle Class for particles
  */
-template <class Particle>
+template <class Particle, class ParticleCell>
 class ParticleContainerInterface {
  public:
   ParticleContainerInterface() {}
@@ -45,6 +55,12 @@ class ParticleContainerInterface {
    * @return
    */
   ParticleContainerInterface &operator=(const ParticleContainerInterface &other) = delete;
+
+  /**
+   * Return a enum representing the name of the container class.
+   * @return Enum representing the container.
+   */
+  virtual ContainerOptions getContainerType() = 0;
 
   /**
    * adds a particle to the container
@@ -134,6 +150,13 @@ class ParticleContainerInterface {
    * @return true if an update is needed, false otherwise
    */
   virtual bool isContainerUpdateNeeded() = 0;
+
+  /**
+   * Generates a traversal selector for this container type.
+   * @param traversalOptions vector of traversal options that shall be allowed.
+   * @return Traversal selector for this container type.
+   */
+  virtual TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) = 0;
 };
 
 }  // namespace autopas

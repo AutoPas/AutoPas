@@ -43,11 +43,12 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
                        std::vector<autopas::TraversalOptions> traversalOptions,
                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                        size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
-                       int verletRebuildFrequency) {
+                       unsigned int verletRebuildFrequency, unsigned int tuningInterval) {
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions);
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+               tuningInterval);
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
@@ -59,10 +60,13 @@ void initContainerGauss(autopas::ContainerOptions containerOption,
                         std::vector<autopas::TraversalOptions> traversalOptions,
                         autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
-                        double cutoff, double verletSkinRadius, int verletRebuildFrequency) {
+                        double cutoff, double verletSkinRadius, int verletRebuildFrequency,
+                        unsigned int tuningInterval) {
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions);
+  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+               tuningInterval);
+
   PrintableMolecule dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
@@ -96,17 +100,20 @@ int main(int argc, char **argv) {
 
   auto boxLength(parser.getBoxLength());
   auto containerChoice(parser.getContainerOption());
-  auto dataLayoutChoice(parser.getDataLayoutOption());
-  auto particlesPerDim(parser.getParticlesPerDim());
   auto cutoff(parser.getCutoff());
-  auto numIterations(parser.getIterations());
-  auto particleSpacing(parser.getParticleSpacing());
-  auto traversalOptions(parser.getTraversalOptions());
-  auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
-  auto verletSkinRadius(parser.getVerletSkinRadius());
-  auto generatorChoice(parser.getGeneratorOption());
+  auto dataLayoutChoice(parser.getDataLayoutOption());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
+  auto generatorChoice(parser.getGeneratorOption());
+  auto logLevel(parser.getLogLevel());
+  auto measureFlops(parser.getMeasureFlops());
+  auto numIterations(parser.getIterations());
+  auto particleSpacing(parser.getParticleSpacing());
+  auto particlesPerDim(parser.getParticlesPerDim());
+  auto traversalOptions(parser.getTraversalOptions());
+  auto tuningInterval(parser.getTuningInterval());
+  auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
+  auto verletSkinRadius(parser.getVerletSkinRadius());
   auto vtkFilename(parser.getWriteVTK());
 
   parser.printConfig();
@@ -117,17 +124,17 @@ int main(int argc, char **argv) {
 
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
-
+  AutoPasLogger->set_level(logLevel);
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
       initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,
-                        verletSkinRadius, verletRebuildFrequency);
+                        verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
       initContainerGauss(containerChoice, traversalOptions, autopas, boxLength,
                          particlesPerDim * particlesPerDim * particlesPerDim, distributionMean, distributionStdDev,
-                         cutoff, verletSkinRadius, verletRebuildFrequency);
+                         cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
     default:
@@ -164,48 +171,53 @@ int main(int argc, char **argv) {
   }
 
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
-  cout << "Starting force calculation... " << flush;
+  cout << "Starting force calculation... " << endl;
   startCalc = std::chrono::high_resolution_clock::now();
   // Calculation
   for (unsigned int i = 0; i < numIterations; ++i) {
+    if (AutoPasLogger->level() <= spdlog::level::debug) {
+      cout << "Iteration " << i << endl;
+    }
     autopas.iteratePairwise(&functor, dataLayoutChoice);
   }
   stopCalc = std::chrono::high_resolution_clock::now();
   stopTotal = std::chrono::high_resolution_clock::now();
-  cout << "done!" << endl;
+  cout << "Force calculation done!" << endl;
 
   //  printMolecules(autopas);
 
-  // Statistics
   auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();
   auto durationApply = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
 
-  FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-      autopas.getContainer()->getCutoff());
-  autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
-
-  auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
-  // approximation for flops of verlet list generation
-  if (containerChoice == autopas::ContainerOptions::verletLists)
-    flops +=
-        flopCounterFunctor.getDistanceCalculations() *
-        FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
-        floor(numIterations / verletRebuildFrequency);
-  auto mfups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
-
-  // Output
+  // Statistics
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
   if (numIterations > 0)
     cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
          << "s)" << endl;
-  cout << "GFLOPs       : " << flops * 1e-9 << endl;
-  cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
-  cout << "MFUPs/sec    : " << mfups << endl;
-  cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+
+  if (measureFlops) {
+    FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
+        autopas.getContainer()->getCutoff());
+    autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
+
+    auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
+    // approximation for flops of verlet list generation
+    if (containerChoice == autopas::ContainerOptions::verletLists)
+      flops +=
+          flopCounterFunctor.getDistanceCalculations() *
+          FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
+          floor(numIterations / verletRebuildFrequency);
+    auto mfups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
+
+    cout << "GFLOPs       : " << flops * 1e-9 << endl;
+    cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
+    cout << "MFUPs/sec    : " << mfups << endl;
+    cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+  }
 
   return EXIT_SUCCESS;
 }

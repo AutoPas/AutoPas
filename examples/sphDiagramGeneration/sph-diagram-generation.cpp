@@ -6,25 +6,13 @@
 
 #include <array>
 #include <iostream>
+#include "../md/mdutils.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3);
-
-double fRand(double fMin, double fMax) {
-  double f = static_cast<double>(rand()) / RAND_MAX;
-  return fMin + f * (fMax - fMin);
-}
-
-std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
-  std::array<double, 3> r{0, 0, 0};
-  for (int d = 0; d < 3; ++d) {
-    r[d] = fRand(boxMin[d], boxMax[d]);
-  }
-  return r;
-}
 
 void addParticles(
     autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
@@ -108,7 +96,8 @@ int main(int argc, char *argv[]) {
   } else {
     std::cerr << "ERROR: wrong number of arguments given. " << std::endl
               << "sph-diagram-generation requires the following arguments:" << std::endl
-              << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3]]]:" << std::endl
+              << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3]]]:"
+              << std::endl
               << std::endl
               << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl
               << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
@@ -183,9 +172,19 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   // cont->iteratePairwiseAoS(&flopFunctor);
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
+  autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false> dummyTraversal(
+      {0, 0, 0}, func);
+  if (cont->getContainerType() == ContainerOptions::linkedCells) {
+    dummyTraversal = C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
+        dynamic_cast<LinkedCells<autopas::sph::SPHParticle, FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
+            ->getCellBlock()
+            .getCellsPerDimensionWithHalo(),
+        func);
+  }
+
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS(func, useNewton3);
+    cont->iteratePairwiseAoS(func, &dummyTraversal);
   }
   double elapsedTime = t.stop();
 
@@ -195,7 +194,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseSoA(func, useNewton3);
+    cont->iteratePairwiseSoA(func, &dummyTraversal);
   }
   elapsedTime = t.stop();
 

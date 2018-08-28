@@ -18,10 +18,13 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"functor", required_argument, nullptr, 'f'},
                                          {"help", no_argument, nullptr, 'h'},
                                          {"iterations", required_argument, nullptr, 'i'},
+                                         {"no-flops", no_argument, nullptr, 'F'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
+                                         {"tuning-interval", required_argument, nullptr, 'I'},
+                                         {"log-level", required_argument, nullptr, 'l'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk", required_argument, nullptr, 'w'},
@@ -87,6 +90,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'F': {
+        measureFlops = false;
+        break;
+      }
       case 'g': {
         if (strArg.find("grid") != string::npos) {
           generatorOption = GeneratorOption::grid;
@@ -109,6 +116,53 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         } catch (const exception &) {
           cerr << "Error parsing number of iterations: " << optarg << endl;
           displayHelp = true;
+        }
+        break;
+      }
+      case 'I': {
+        try {
+          tuningInterval = (unsigned int)stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing tuning interval: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'l': {
+        switch (strArg[0]) {
+          case 't': {
+            logLevel = spdlog::level::trace;
+            break;
+          }
+          case 'd': {
+            logLevel = spdlog::level::debug;
+            break;
+          }
+          case 'i': {
+            logLevel = spdlog::level::info;
+            break;
+          }
+          case 'w': {
+            logLevel = spdlog::level::warn;
+            break;
+          }
+          case 'e': {
+            logLevel = spdlog::level::err;
+            break;
+          }
+          case 'c': {
+            logLevel = spdlog::level::critical;
+            break;
+          }
+          case 'o': {
+            logLevel = spdlog::level::off;
+            break;
+          }
+          default: {
+            cerr << "Unknown Log Level : " << strArg << endl;
+            cerr << "Please use 'trace', 'debug', 'info', 'warning', 'error', 'critical' or 'off'." << endl;
+            displayHelp = true;
+          }
         }
         break;
       }
@@ -303,6 +357,8 @@ void MDFlexParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
+  cout << setw(valueOffset) << left << "Tuning Interval"
+       << ":  " << tuningInterval << endl;
 }
 
 autopas::ContainerOptions MDFlexParser::getContainerOption() const { return containerOption; }
@@ -337,3 +393,9 @@ double MDFlexParser::getBoxLength() const {
   if (boxLength == -1) return ceil(2 * distributionMean);
   return boxLength;
 }
+
+bool MDFlexParser::getMeasureFlops() const { return measureFlops; }
+
+unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
+
+spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }
