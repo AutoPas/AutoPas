@@ -10,10 +10,9 @@
 // or VerletLists<Particle>
 // or DirectSum<Particle, ParticleCell>
 /**
- * Will execute the passed body with the static container type of container, i.e. either
- * LinkedCells, VerletLists or DirectSum
+ * Will execute the passed body (=variadic argument) with the static container type of container, i.e. either
+ * LinkedCells, VerletLists or DirectSum.
  * @param container the container to be used
- * @param body the function body to be executed
  * @note The second Argument is variadic such that commas pose no problem.
  */
 #define WithStaticContainerType(container, ...)                                                                     \

@@ -148,11 +148,10 @@ class Functor {
 };
 
 /**
- * Macro to define the SoALoaders.
+ * Macro to define the SoALoaders. The body to be executed is the variadic argument.
  * @param cell name for cell like parameter
  * @param soa name for soa
  * @param offset name for offset
- * @param body the actual function body for the soa loader
  *
  * @note The last Argument is variadic such that commas pose no problem.
  * @note generates two loaders, one for verlet lists, one for the normal case.
@@ -169,11 +168,10 @@ class Functor {
   }
 
 /**
- * Macro to define the SoAExtractors.
+ * Macro to define the SoAExtractors. The body to be executed is the variadic argument.
  * @param cell name for cell like parameter
  * @param soa name for soa
  * @param offset name for offset
- * @param body the actual function body for the soa loader
  *
  * @note The last Argument is variadic such that commas pose no problem.
  * @note generates two extractors, one for verlet lists, one for the normal case.
