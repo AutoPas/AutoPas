@@ -50,12 +50,6 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff);
-
-  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
-      boxMin, boxMax, cutoff);
-
   autopas::sph::SPHCalcDensityFunctor densfunc;
 
   autopas::sph::SPHCalcHydroForceFunctor hydrofunc;
@@ -69,7 +63,16 @@ int main(int argc, char *argv[]) {
   double skin = 0.;
   int rebuildFrequency = 10;
   bool useNewton3 = true;
-  if (argc == 8) {
+  if (argc == 9) {
+    numParticles = atoi(argv[1]);
+    numIterations = atoi(argv[2]);
+    containerTypeInt = atoi(argv[3]);
+    functorTypeInt = atoi(argv[4]);
+    skin = atof(argv[5]);
+    rebuildFrequency = atof(argv[6]);
+    useNewton3 = atoi(argv[7]);
+    boxMax[0] = boxMax[1] = boxMax[2] = atof(argv[8]);
+  } else if (argc == 8) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
     containerTypeInt = atoi(argv[3]);
@@ -96,7 +99,7 @@ int main(int argc, char *argv[]) {
   } else {
     std::cerr << "ERROR: wrong number of arguments given. " << std::endl
               << "sph-diagram-generation requires the following arguments:" << std::endl
-              << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3]]]:"
+              << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 [boxSize]]]]:"
               << std::endl
               << std::endl
               << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl
@@ -120,6 +123,8 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
+  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(boxMin, boxMax, cutoff);
+  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(boxMin, boxMax, cutoff);
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
 
   addParticles(lcCont, numParticles);
