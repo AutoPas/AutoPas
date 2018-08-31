@@ -192,7 +192,8 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       dynamic_cast<CellPairTraversal<ParticleCell> *>(traversals[bestTraversal].release()));
 
   _optimalTraversalOptions[functorHash] = optimalTraversal->getTraversalType();
-  AutoPasLogger->debug("TraversalSelector.tune(): Selected traversal {}", optimalTraversal->getTraversalType());
+  AutoPasLogger->debug("TraversalSelector.tune(): {} traversal {}", _currentlyTuning ? "Testing" : "Selected",
+                       optimalTraversal->getTraversalType());
 
   return optimalTraversal;
 }

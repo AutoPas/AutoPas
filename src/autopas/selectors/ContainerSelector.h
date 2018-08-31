@@ -180,7 +180,8 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
 
     _optimalContainer = std::move(generateContainer(_allowedContainerOptions[bestContainerID]));
   }
-  AutoPasLogger->debug("ContainerSelector.tune(): Selected container {}", _optimalContainer->getContainerType());
+  AutoPasLogger->debug("ContainerSelector.tune(): {} container {}", _currentlyTuning ? "Testing" : "Selected",
+                       _optimalContainer->getContainerType());
   return _currentlyTuning;
 }
 
