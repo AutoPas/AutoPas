@@ -43,6 +43,7 @@
 #include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/VerletLists.h"
+#include "autopas/containers/VerletListsCells.h"
 
 // pairwise functors
 #include "autopas/pairwiseFunctors/CellFunctor.h"
