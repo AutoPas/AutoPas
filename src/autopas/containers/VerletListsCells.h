@@ -73,9 +73,6 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   void iteratePairwise(ParticleFunctor* f, Traversal* traversal) {
     if (needsRebuild()) {  // if rebuild needed
       this->updateVerletLists();
-      // the neighbor list is now valid
-      _neighborListIsValid = true;
-      _traversalsSinceLastRebuild = 0;
     }
     this->iterateVerletLists(f);
     // we iterated, so increase traversal counter
@@ -192,6 +189,18 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
   }
+  
+   /**
+   * get the neighbors of particle p
+   * @param p
+   */
+  std::vector<Particle*>& getVerletList(Particle* particle) {
+    if (needsRebuild()) {  // if rebuild needed
+      this->updateVerletLists();
+    }
+    auto indices = _cellMap[particle];
+    return _neighborLists[indices.first][indices.second].second;
+  }
 
  protected:
   /**
@@ -211,9 +220,13 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    * update the verlet lists
    */
   void updateVerletLists() {
+    // the neighbor list is now valid
+    _neighborListIsValid = true;
+    _traversalsSinceLastRebuild = 0;
+      
     // create a Verlet Lists for each cell
     _neighborLists.clear();
-    auto cells = _linkedCells.getCells();
+    auto& cells = _linkedCells.getCells();
     size_t cellsSize = cells.size();
     _neighborLists.resize(cellsSize);
     for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
@@ -246,8 +259,8 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
 #endif
     for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
       for (auto& list : _neighborLists[cellIndex]) {
-        Particle& i = *list->first;
-        for (auto j_ptr : list->second) {
+        Particle& i = *list.first;
+        for (auto j_ptr : list.second) {
           Particle& j = *j_ptr;
           f->AoSFunctor(i, j, useNewton3);
         }
