@@ -39,10 +39,11 @@ class VerletListsCellsHelpers {
      * @param verletLists
      * @param cutoffskin
      */
-    VerletListGeneratorFunctor(VerletList_storage_type& verletLists, std::unordered_map<Particle*, std::pair<size_t, size_t>>& cellMap, double cutoffskin)
+    VerletListGeneratorFunctor(VerletList_storage_type& verletLists,
+                               std::unordered_map<Particle*, std::pair<size_t, size_t>>& cellMap, double cutoffskin)
         : _verletLists(verletLists), _cellMap(cellMap), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
-    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    void AoSFunctor(Particle& i, Particle& j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
@@ -58,7 +59,7 @@ class VerletListsCellsHelpers {
     }
 
    private:
-    VerletList_storage_type&_verletLists;
+    VerletList_storage_type& _verletLists;
     std::unordered_map<Particle*, std::pair<size_t, size_t>>& _cellMap;
     double _cutoffskinsquared;
   };

@@ -97,13 +97,14 @@ int main(int argc, char *argv[]) {
     numIterations = atoi(argv[2]);
     containerTypeInt = atoi(argv[3]);
   } else {
-    std::cerr << "ERROR: wrong number of arguments given. " << std::endl
-              << "sph-diagram-generation requires the following arguments:" << std::endl
-              << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 [boxSize]]]]:"
-              << std::endl
-              << std::endl
-              << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl
-              << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
+    std::cerr
+        << "ERROR: wrong number of arguments given. " << std::endl
+        << "sph-diagram-generation requires the following arguments:" << std::endl
+        << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 [boxSize]]]]:"
+        << std::endl
+        << std::endl
+        << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl
+        << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
     exit(1);
   }
 
@@ -123,8 +124,10 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
-  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(boxMin, boxMax, cutoff);
-  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(boxMin, boxMax, cutoff);
+  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
+      boxMin, boxMax, cutoff);
+  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
+      boxMin, boxMax, cutoff);
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
 
   addParticles(lcCont, numParticles);
@@ -189,7 +192,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS(func, &dummyTraversal);
+    cont->iteratePairwiseAoS(func, &dummyTraversal, useNewton3);
   }
   double elapsedTime = t.stop();
 
@@ -199,7 +202,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseSoA(func, &dummyTraversal);
+    cont->iteratePairwiseSoA(func, &dummyTraversal, useNewton3);
   }
   elapsedTime = t.stop();
 

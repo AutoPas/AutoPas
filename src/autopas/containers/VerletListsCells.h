@@ -13,10 +13,9 @@
 
 namespace autopas {
 
-  
 /**
  * Linked Cells with Verlet Lists container.
- * The VerletListsCells class uses neighborhood lists for each cell 
+ * The VerletListsCells class uses neighborhood lists for each cell
  * to calculate pairwise interactions of particles.
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
@@ -37,7 +36,6 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   }
 
  public:
-
   /**
    * Constructor of the VerletListsCells class.
    * The neighbor lists are build using a search radius of cutoff + skin.
@@ -51,7 +49,8 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals
    */
-  VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin = 0, unsigned int rebuildFrequency = 1)
+  VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+                   double skin = 0, unsigned int rebuildFrequency = 1)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
         _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),
@@ -189,8 +188,8 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
   }
-  
-   /**
+
+  /**
    * get the neighbors of particle p
    * @param p
    */
@@ -223,7 +222,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
     // the neighbor list is now valid
     _neighborListIsValid = true;
     _traversalsSinceLastRebuild = 0;
-      
+
     // create a Verlet Lists for each cell
     _neighborLists.clear();
     auto& cells = _linkedCells.getCells();
@@ -233,16 +232,17 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
       size_t i = 0;
       for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++i) {
         Particle* particle = &*iter;
-        _neighborLists[cellIndex].push_back(std::pair<Particle*, std::vector<Particle*>>(particle, std::vector<Particle*>()));
-        _cellMap[particle] = std::pair<size_t,size_t>(cellIndex, i);
+        _neighborLists[cellIndex].push_back(
+            std::pair<Particle*, std::vector<Particle*>>(particle, std::vector<Particle*>()));
+        _cellMap[particle] = std::pair<size_t, size_t>(cellIndex, i);
       }
     }
-    
+
     typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap, this->getCutoff());
 
     auto traversal = C08Traversal<typename verlet_internal::VerletListParticleCellType,
-                                  typename verlet_internal::VerletListGeneratorFunctor, 
-                                  false, useNewton3>(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+                                  typename verlet_internal::VerletListGeneratorFunctor, false, useNewton3>(
+        _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
     _linkedCells.iteratePairwiseAoS(&f, &traversal);
   }
 

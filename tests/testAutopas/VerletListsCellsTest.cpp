@@ -36,12 +36,10 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
 
   autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &emptyFunctor);
   verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
-  
-  
+
   std::vector<Particle*> list;
-  for (auto iter = verletLists.begin(); iter.isValid(); ++iter)
-    list.push_back(&*iter);
-       
+  for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
+
   EXPECT_EQ(list.size(), 2);
   int partners = 0;
   for (auto p : list) {
@@ -72,9 +70,8 @@ TEST_F(VerletListsCellsTest, testVerletList) {
   verletLists.iteratePairwise(&mockFunctor, &dummyTraversal);
 
   std::vector<Particle*> list;
-  for (auto iter = verletLists.begin(); iter.isValid(); ++iter)
-    list.push_back(&*iter);
-       
+  for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
+
   EXPECT_EQ(list.size(), 2);
   int partners = 0;
   for (auto p : list) {
