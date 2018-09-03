@@ -76,16 +76,24 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
 
   /**
+   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
+   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @param useNewton3
+   */
+  void rebuild(bool useNewton3 = true) {
+    this->updateVerletListsAoS(useNewton3);
+    // the neighbor list is now valid
+    _neighborListIsValid = true;
+    _traversalsSinceLastRebuild = 0;
+  }
+
+  /**
    * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
-                           // it!
-      this->updateVerletListsAoS(useNewton3);
-      // the neighbor list is now valid
-      _neighborListIsValid = true;
-      _traversalsSinceLastRebuild = 0;
+    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild it!
+      rebuild(useNewton3);
     }
     this->iterateVerletListsAoS(f, useNewton3);
     // we iterated, so increase traversal counter
@@ -98,10 +106,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {
-      this->updateVerletListsAoS(useNewton3);
-      // the neighbor list is now valid
-      _neighborListIsValid = true;
-      _traversalsSinceLastRebuild = 0;
+      rebuild(useNewton3);
       generateSoAListFromAoSVerletLists();
     } else if (not _soaListIsValid) {
       generateSoAListFromAoSVerletLists();
@@ -290,7 +295,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * update the verlet lists for AoS usage
-   * @param useNewton3
+   * @param useNewton3 CURRENTLY NOT USED!
+   * @todo Build verlet lists according to newton 3.
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
