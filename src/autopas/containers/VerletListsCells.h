@@ -30,8 +30,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
 
  private:
   static const std::vector<TraversalOptions>& VLApplicableTraversals() {
-    // TODO: implement traversals
-    static const std::vector<TraversalOptions> v{};
+    static const std::vector<TraversalOptions> v{TraversalOptions::c18};
     return v;
   }
 
@@ -58,7 +57,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
         _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false) {}
 
-  ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
+  ContainerOptions getContainerType() override { return ContainerOptions::verletListsCells; }
 
   /**
    * Function to iterate over all pairs of particles.
@@ -240,7 +239,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
 
     typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap, this->getCutoff());
 
-    auto traversal = C08Traversal<typename verlet_internal::VerletListParticleCellType,
+    auto traversal = C18Traversal<typename verlet_internal::VerletListParticleCellType,
                                   typename verlet_internal::VerletListGeneratorFunctor, false, useNewton3>(
         _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
     _linkedCells.iteratePairwiseAoS(&f, &traversal);

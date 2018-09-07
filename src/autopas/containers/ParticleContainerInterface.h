@@ -21,6 +21,7 @@ enum ContainerOptions {
   directSum = 0,
   linkedCells = 1,
   verletLists = 2,
+  verletListsCells = 3,
 };
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor

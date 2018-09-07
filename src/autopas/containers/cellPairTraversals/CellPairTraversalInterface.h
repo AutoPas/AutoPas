@@ -14,6 +14,7 @@ namespace autopas {
 enum TraversalOptions {
   c08 = 0,
   sliced = 1,
+  c18 = 2,
 };
 
 /**

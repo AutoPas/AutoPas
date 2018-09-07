@@ -274,6 +274,10 @@ void MDFlexParser::printConfig() {
       cout << "VerletLists" << endl;
       break;
     }
+    case autopas::ContainerOptions::verletListsCells: {
+      cout << "VerletListsCells" << endl;
+      break;
+    }
   }
 
   if (containerOption == autopas::ContainerOptions::verletLists) {
@@ -348,6 +352,10 @@ void MDFlexParser::printConfig() {
       }
       case autopas::TraversalOptions::sliced: {
         cout << "sliced, ";
+        break;
+      }
+      case autopas::TraversalOptions::c18: {
+        cout << "c18, ";
         break;
       }
     }
