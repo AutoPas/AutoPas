@@ -36,7 +36,8 @@ class VerletListsCellsHelpers {
    public:
     /**
      * Constructor
-     * @param verletLists
+     * @param verletLists a verletlist for each cell
+     * @param cellMap used to get the verletlist of a particle
      * @param cutoffskin
      */
     VerletListGeneratorFunctor(VerletList_storage_type& verletLists,

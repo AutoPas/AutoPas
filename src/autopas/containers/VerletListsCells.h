@@ -189,8 +189,9 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   }
 
   /**
-   * get the neighbors of particle p
-   * @param p
+   * get the neighbors list of a particle
+   * @param particle
+   * @return the neighbor list of the particle
    */
   std::vector<Particle*>& getVerletList(Particle* particle) {
     if (needsRebuild()) {  // if rebuild needed
