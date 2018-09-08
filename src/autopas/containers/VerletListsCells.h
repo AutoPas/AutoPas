@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam Particle
  * @tparam useNewton3
  */
-template <class Particle, bool useNewton3>
+template <class Particle, bool useNewton3 = true>
 class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Particle>> {
   typedef VerletListsCellsHelpers<Particle> verlet_internal;
   typedef typename verlet_internal::VerletListParticleCellType ParticleCell;
