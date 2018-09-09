@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
   int numParticles = 16;
   int numIterations = 100000;
   int containerTypeInt = 0;
-  enum ContainerType { linkedCells, directSum, verletLists } containerType = linkedCells;
+  enum ContainerType { linkedCells, directSum, verletLists, verletListsCells } containerType = linkedCells;
   int functorTypeInt = 0;
   enum FunctorType { densityFunctor, hydroForceFunctor } functorType = densityFunctor;
   double skin = 0.;
@@ -103,16 +103,19 @@ int main(int argc, char *argv[]) {
         << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 [boxSize]]]]:"
         << std::endl
         << std::endl
-        << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl
+        << "containerType should be either 0 (linked-cells), 1 (direct sum), 2 (verlet lists) or 3 (verlet lists cells)"
+        << std::endl
         << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
     exit(1);
   }
 
-  if (containerTypeInt <= verletLists) {
+  if (containerTypeInt <= verletListsCells) {
     containerType = static_cast<ContainerType>(containerTypeInt);
   } else {
-    std::cerr << "Error: wrong containerType " << containerTypeInt << std::endl
-              << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl;
+    std::cerr
+        << "Error: wrong containerType " << containerTypeInt << std::endl
+        << "containerType should be either 0 (linked-cells), 1 (direct sum), 2 (verlet lists) or 3 (verlet lists cells)"
+        << std::endl;
     exit(2);
   }
 
@@ -129,12 +132,15 @@ int main(int argc, char *argv[]) {
   autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
       boxMin, boxMax, cutoff);
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
+  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(boxMin, boxMax, cutoff, skin * cutoff,
+                                                                      rebuildFrequency);
 
   addParticles(lcCont, numParticles);
 
   for (auto it = lcCont.begin(); it.isValid(); ++it) {
     dirCont.addParticle(*it);
     verletCont.addParticle(*it);
+    verletCellCont.addParticle(*it);
   }
 
   if (containerType == linkedCells) {
@@ -160,6 +166,15 @@ int main(int argc, char *argv[]) {
       measureContainer(&verletCont, &densfunc, numParticles, numIterations, useNewton3);
     } else if (functorType == hydroForceFunctor) {
       measureContainer(&verletCont, &hydrofunc, numParticles, numIterations, useNewton3);
+    } else {
+      std::cout << "wrong functor given" << std::endl;
+      exit(2);
+    }
+  } else if (containerType == verletListsCells) {
+    if (functorType == densityFunctor) {
+      measureContainer(&verletCellCont, &densfunc, numParticles, numIterations, useNewton3);
+    } else if (functorType == hydroForceFunctor) {
+      measureContainer(&verletCellCont, &hydrofunc, numParticles, numIterations, useNewton3);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);

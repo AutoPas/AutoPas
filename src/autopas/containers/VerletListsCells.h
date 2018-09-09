@@ -21,9 +21,8 @@ namespace autopas {
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle
- * @tparam useNewton3
  */
-template <class Particle, bool useNewton3 = true>
+template <class Particle>
 class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Particle>> {
   typedef VerletListsCellsHelpers<Particle> verlet_internal;
   typedef typename verlet_internal::VerletListParticleCellType ParticleCell;
@@ -66,15 +65,29 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    * @tparam Traversal
    * @param f functor that describes the pair-potential
    * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor* f, Traversal* traversal) {
+  void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {  // if rebuild needed
       this->updateVerletLists();
     }
-    this->iterateVerletLists(f);
+    this->iterateVerletLists(f, useNewton3);
     // we iterated, so increase traversal counter
     _traversalsSinceLastRebuild++;
+  }
+
+  /**
+   * Dummy function. (Uses AoS instead)
+   * @tparam the type of ParticleFunctor
+   * @tparam Traversal
+   * @param f functor that describes the pair-potential
+   * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
+   */
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
+    iteratePairwiseAoS(f, traversal, useNewton3);
   }
 
   /**
@@ -251,9 +264,10 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    * @tparam ParticleFunctor
    * @param f
    * @param cellIndex
+   * @param useNewton3
    */
   template <class ParticleFunctor>
-  inline void iterateVerletListsCell(ParticleFunctor* f, unsigned long cellIndex) {
+  inline void iterateVerletListsCell(ParticleFunctor* f, unsigned long cellIndex, bool useNewton3) {
     for (auto& list : _neighborLists[cellIndex]) {
       Particle& i = *list.first;
       for (auto j_ptr : list.second) {
@@ -272,7 +286,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    * @param f
    */
   template <class ParticleFunctor>
-  void iterateVerletLists(ParticleFunctor* f) {
+  void iterateVerletLists(ParticleFunctor* f, bool useNewton3) {
     using std::array;
 
     const auto cellsPerDimension = _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
@@ -301,7 +315,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {
               unsigned long cellIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
-              iterateVerletListsCell(f, cellIndex);
+              iterateVerletListsCell(f, cellIndex, useNewton3);
             }
           }
         }

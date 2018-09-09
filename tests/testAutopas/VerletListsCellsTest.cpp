@@ -14,7 +14,7 @@ TEST_F(VerletListsCellsTest, VerletListConstructor) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  autopas::VerletListsCells<Particle, true> verletLists(min, max, cutoff);
+  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff);
 }
 
 TEST_F(VerletListsCellsTest, testVerletListBuild) {
@@ -22,7 +22,7 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle, true> verletLists(min, max, cutoff, skin);
+  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -35,7 +35,7 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwiseAoS(&emptyFunctor, &dummyTraversal, true);
 
   std::vector<Particle*> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
@@ -53,7 +53,7 @@ TEST_F(VerletListsCellsTest, testVerletList) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle, true> verletLists(min, max, cutoff, skin);
+  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -67,7 +67,7 @@ TEST_F(VerletListsCellsTest, testVerletList) {
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
   autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &mockFunctor);
-  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal);
+  verletLists.iteratePairwiseAoS(&mockFunctor, &dummyTraversal, true);
 
   std::vector<Particle*> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
