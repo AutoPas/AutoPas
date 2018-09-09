@@ -284,6 +284,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    * iterate over the verlet list
    * @tparam ParticleFunctor
    * @param f
+   * @param useNewton3
    */
   template <class ParticleFunctor>
   void iterateVerletLists(ParticleFunctor* f, bool useNewton3) {
