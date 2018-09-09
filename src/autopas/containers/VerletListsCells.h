@@ -241,9 +241,29 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
     typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap, this->getCutoff());
 
     auto traversal = C18Traversal<typename verlet_internal::VerletListParticleCellType,
-                                  typename verlet_internal::VerletListGeneratorFunctor, false, useNewton3>(
+                                  typename verlet_internal::VerletListGeneratorFunctor, false, true>(
         _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
     _linkedCells.iteratePairwiseAoS(&f, &traversal);
+  }
+
+  /**
+   * iterate over the verlet list of a given cell
+   * @tparam ParticleFunctor
+   * @param f
+   * @param cellIndex
+   */
+  template <class ParticleFunctor>
+  inline void iterateVerletListsCell(ParticleFunctor* f, unsigned long cellIndex) {
+    for (auto& list : _neighborLists[cellIndex]) {
+      Particle& i = *list.first;
+      for (auto j_ptr : list.second) {
+        Particle& j = *j_ptr;
+        f->AoSFunctor(i, j, useNewton3);
+        if (not useNewton3) {
+          f->AoSFunctor(j, i, false);
+        }
+      }
+    }
   }
 
   /**
@@ -253,16 +273,37 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    */
   template <class ParticleFunctor>
   void iterateVerletLists(ParticleFunctor* f) {
-    size_t cellsSize = _neighborLists.size();
+    using std::array;
+
+    const auto cellsPerDimension = _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+    const array<unsigned long, 3> stride = {3, 3, 2};
+    array<unsigned long, 3> end;
+    end[0] = cellsPerDimension[0];
+    end[1] = cellsPerDimension[1];
+    end[2] = cellsPerDimension[2] - 1;
+
 #if defined(AUTOPAS_OPENMP)
-#pragma omp parallel for schedule(dynamic) if (not useNewton3)
+#pragma omp parallel
 #endif
-    for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
-      for (auto& list : _neighborLists[cellIndex]) {
-        Particle& i = *list.first;
-        for (auto j_ptr : list.second) {
-          Particle& j = *j_ptr;
-          f->AoSFunctor(i, j, useNewton3);
+    {
+      for (unsigned long col = 0; col < 18; ++col) {
+        std::array<unsigned long, 3> start = ThreeDimensionalMapping::oneToThreeD(col, stride);
+
+        // intel compiler demands following:
+        const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
+        const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
+        const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for schedule(dynamic, 1) collapse(3)
+#endif
+        for (unsigned long z = start_z; z < end_z; z += stride_z) {
+          for (unsigned long y = start_y; y < end_y; y += stride_y) {
+            for (unsigned long x = start_x; x < end_x; x += stride_x) {
+              unsigned long cellIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
+              iterateVerletListsCell(f, cellIndex);
+            }
+          }
         }
       }
     }
