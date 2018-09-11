@@ -79,7 +79,7 @@ or use the GTEST_FILTER environment variable:
 ```
 GTEST_FILTER="ArrayMathTest.testAdd*" ctest --verbose
 ```
-or `ctest` arguments like `-R` (run tests matching regex) and `-D` (exclude tests matching regex)
+or `ctest` arguments like `-R` (run tests matching regex) and `-E` (exclude tests matching regex)
 ```
 ctest -R 'Array.*testAdd' -E `Double'
 ```
