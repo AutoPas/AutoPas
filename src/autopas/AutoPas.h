@@ -26,6 +26,9 @@ class AutoPas {
   AutoPas() {
     // initialize the Logger
     autopas::Logger::create();
+    // The logger is normally only flushed on successful program termination.
+    // This line ensures flushing when log messages of level warning or more severe are created.
+    AutoPasLogger->flush_on(spdlog::level::warn);
   }
 
   ~AutoPas() {
