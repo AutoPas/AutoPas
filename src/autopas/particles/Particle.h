@@ -127,7 +127,7 @@ class Particle {
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  std::string toString() {
+  virtual std::string toString() {
     std::ostringstream text;
     // clang-format off
     text << "Particle"
@@ -152,7 +152,7 @@ class Particle {
    */
   typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
- private:
+ protected:
   std::array<double, 3> _r;
   std::array<double, 3> _v;
   std::array<double, 3> _f;
