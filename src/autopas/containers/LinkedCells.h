@@ -61,7 +61,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     } else {
       utils::ExceptionHandler::exception(
           "LinkedCells: trying to add particle that is not inside the bounding "
-          "box");
+          "box.\n" + p.toString());
     }
   }
 
@@ -73,7 +73,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     } else {
       utils::ExceptionHandler::exception(
           "LinkedCells: trying to add halo particle that is not in the halo "
-          "box");
+          "box.\n" + haloParticle.toString());
     }
   }
 

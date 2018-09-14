@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include <sstream>
 #include <tuple>
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoAStorage.h"
@@ -121,6 +122,25 @@ class Particle {
    * @param v vector to be added
    */
   void addV(const std::array<double, 3> &v) { _v = ArrayMath::add(_v, v); }
+
+  /**
+   * Creates a string containing all data of the particle.
+   * @return String representation.
+   */
+  std::string toString() {
+    std::ostringstream text;
+    // clang-format off
+    text << "Particle"
+         << "\nID      : " << _id
+         << "\nPosition: "
+         << _r[0] << " | " << _r[1] << " | " << _r[2]
+         << "\nVelocity: "
+         << _v[0] << " | " << _v[1] << " | " << _v[2]
+         << "\nForce   : "
+         << _f[0] << " | " << _f[1] << " | " << _f[2];
+    // clang-format on
+    return text.str();
+  }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
