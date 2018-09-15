@@ -36,6 +36,7 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims),
+        _pairwiseFunctor(pairwiseFunctor),
         _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)) {
@@ -52,10 +53,25 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param z z of base cell
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+
+  /**
+   * iterate over the verlet list of a given cell
+   * @param verlet
+   * @param cellIndex
+   * @param useNewton3
+   */
+  template <class Particle>
+  void iterateVerletListsCell(std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet,
+                              unsigned long cellIndex);
   /**
    * Computes pairs used in processBaseCell()
    */
   void computeOffsets();
+
+  /**
+   * PairwiseFunctor to be used for the traversal defining the interaction between two particles.
+   */
+  PairwiseFunctor *_pairwiseFunctor;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -103,6 +119,22 @@ inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
       this->_cellFunctor.processCell(baseCell);
     } else {
       this->_cellFunctor.processCellPair(baseCell, otherCell);
+    }
+  }
+}
+
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class Particle>
+inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::iterateVerletListsCell(
+    std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet, unsigned long cellIndex) {
+  for (auto &list : verlet[cellIndex]) {
+    Particle &i = *list.first;
+    for (auto j_ptr : list.second) {
+      Particle &j = *j_ptr;
+      this->_pairwiseFunctor->AoSFunctor(i, j, useNewton3);
+      if (not useNewton3) {
+        this->_pairwiseFunctor->AoSFunctor(j, i, false);
+      }
     }
   }
 }

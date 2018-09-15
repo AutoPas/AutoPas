@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/containers/VerletListsCellsHelpers.h"
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -35,6 +36,13 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+
+  /**
+   * Traverse verlet lists of all cells
+   * @param verlet verlet lists for each cell
+   */
+  template <class Particle>
+  void traverseCellVerlet(std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet);
   TraversalOptions getTraversalType() override;
   bool isApplicable() override;
 };
@@ -73,6 +81,44 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
           for (unsigned long x = start_x; x < end_x; x += stride_x) {
             this->processBaseCell(cells, x, y, z);
+          }
+        }
+      }
+    }
+  }
+}
+
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class Particle>
+inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellVerlet(
+    std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet) {
+  using std::array;
+  const array<unsigned long, 3> stride = {3, 3, 2};
+  array<unsigned long, 3> end;
+  end[0] = this->_cellsPerDimension[0];
+  end[1] = this->_cellsPerDimension[1];
+  end[2] = this->_cellsPerDimension[2] - 1;
+
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel
+#endif
+  {
+    for (unsigned long col = 0; col < 18; ++col) {
+      std::array<unsigned long, 3> start = ThreeDimensionalMapping::oneToThreeD(col, stride);
+
+      // intel compiler demands following:
+      const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
+      const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
+      const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for schedule(dynamic, 1) collapse(3)
+#endif
+      for (unsigned long z = start_z; z < end_z; z += stride_z) {
+        for (unsigned long y = start_y; y < end_y; y += stride_y) {
+          for (unsigned long x = start_x; x < end_x; x += stride_x) {
+            unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+            this->iterateVerletListsCell(verlet, baseIndex);
           }
         }
       }

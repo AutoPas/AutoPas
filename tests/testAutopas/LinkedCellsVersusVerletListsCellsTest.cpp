@@ -7,7 +7,7 @@
 #include "LinkedCellsVersusVerletListsCellsTest.h"
 
 LinkedCellsVersusVerletListsCellsTest::LinkedCellsVersusVerletListsCellsTest()
-    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),
+    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOptions::c18, 0.1 * getCutoff(), 2),
       _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {
   double eps = 1.0;
   double sig = 1.0;
@@ -28,10 +28,12 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   }
 
   autopas::LJFunctor<Molecule, FMCell> func;
-  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalLJ(
+  autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalVerletLJ(
+      _verletListsCells.getCellsPerDimension(), &func);
+  autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalLinkedLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  _verletListsCells.iteratePairwiseAoS(&func, &traversalLJ);
-  _linkedCells.iteratePairwiseAoS(&func, &traversalLJ);
+  _verletListsCells.iteratePairwiseAoS(&func, &traversalVerletLJ);
+  _linkedCells.iteratePairwiseAoS(&func, &traversalLinkedLJ);
 
   auto itDirect = _verletListsCells.begin();
   auto itLinked = _linkedCells.begin();
@@ -59,10 +61,12 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   }
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
-  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalFLOPS(
+  autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalVerletFLOPS(
+      _verletListsCells.getCellsPerDimension(), &flopsVerlet);
+  autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalLinkedFLOPS(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
-  _verletListsCells.iteratePairwiseAoS(&flopsVerlet, &traversalFLOPS);
-  _linkedCells.iteratePairwiseAoS(&flopsLinked, &traversalFLOPS);
+  _verletListsCells.iteratePairwiseAoS(&flopsVerlet, &traversalVerletFLOPS);
+  _linkedCells.iteratePairwiseAoS(&flopsLinked, &traversalLinkedFLOPS);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
   ASSERT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());
