@@ -227,6 +227,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   /**
    * get the neighbors list of a particle
    * @param particle
+   * @param useNewton3
    * @return the neighbor list of the particle
    */
   std::vector<Particle*>& getVerletList(Particle* particle, bool useNewton3 = true) {

@@ -58,7 +58,6 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    * iterate over the verlet list of a given cell
    * @param verlet
    * @param cellIndex
-   * @param useNewton3
    */
   template <class Particle>
   void iterateVerletListsCell(std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet,

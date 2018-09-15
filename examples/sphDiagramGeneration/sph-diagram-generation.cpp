@@ -197,23 +197,22 @@ int main(int argc, char *argv[]) {
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
   if (cont->getContainerType() == ContainerOptions::linkedCells) {
+    auto dims =
+        dynamic_cast<LinkedCells<autopas::sph::SPHParticle, FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
+            ->getCellBlock()
+            .getCellsPerDimensionWithHalo();
+    std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
+
     if (useNewton3) {
-      auto traversal = C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(
-          dynamic_cast<LinkedCells<autopas::sph::SPHParticle, FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
-              ->getCellBlock()
-              .getCellsPerDimensionWithHalo(),
-          func);
+      auto traversal = C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims, func);
       measureContainerTraversal(cont, func, &traversal, numParticles, numIterations, useNewton3);
     } else {
-      auto traversal = C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-          dynamic_cast<LinkedCells<autopas::sph::SPHParticle, FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
-              ->getCellBlock()
-              .getCellsPerDimensionWithHalo(),
-          func);
+      auto traversal = C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(dims, func);
       measureContainerTraversal(cont, func, &traversal, numParticles, numIterations, useNewton3);
     }
   } else {
     // containers which do not use traversal yet
+    std::cout << "Cells: Unknown" << std::endl;
     autopas::C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false> dummyTraversal({0, 0, 0},
                                                                                                              func);
     measureContainerTraversal(cont, func, &dummyTraversal, numParticles, numIterations, useNewton3);
@@ -224,13 +223,13 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 template <class Particle, class Functor>
 void measureContainer(autopas::VerletListsCells<Particle> *cont, Functor *func, int numParticles, int numIterations,
                       bool useNewton3) {
+  auto dims = cont->getCellsPerDimension();
+  std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
   if (useNewton3) {
-    auto traversal = C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(
-        cont->getCellsPerDimension(), func);
+    auto traversal = C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims, func);
     measureContainerTraversal(cont, func, &traversal, numParticles, numIterations, useNewton3);
   } else {
-    auto traversal = C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-        cont->getCellsPerDimension(), func);
+    auto traversal = C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(dims, func);
     measureContainerTraversal(cont, func, &traversal, numParticles, numIterations, useNewton3);
   }
 }
