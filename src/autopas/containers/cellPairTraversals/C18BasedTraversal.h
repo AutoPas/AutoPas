@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/cellPairTraversals/VerletListsTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
@@ -27,8 +26,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C18BasedTraversal : public CellPairTraversal<ParticleCell>,
-                          public VerletListsTraversal<PairwiseFunctor, useNewton3> {
+class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the c18 traversal.
@@ -38,7 +36,6 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell>,
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims),
-        VerletListsTraversal<PairwiseFunctor, useNewton3>(pairwiseFunctor),
         _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)) {

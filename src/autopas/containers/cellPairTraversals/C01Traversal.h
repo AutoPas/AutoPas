@@ -8,6 +8,7 @@
 
 #include "autopas/containers/VerletListsCellsHelpers.h"
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/VerletListsTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -23,7 +24,8 @@ namespace autopas {
  * @tparam useSoA
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA> {
+class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>,
+                     public VerletListsTraversal<PairwiseFunctor, false> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -32,7 +34,8 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>(dims, pairwiseFunctor) {}
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>(dims, pairwiseFunctor),
+        VerletListsTraversal<PairwiseFunctor, false>(pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 

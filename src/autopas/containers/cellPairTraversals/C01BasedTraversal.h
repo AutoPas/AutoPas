@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/cellPairTraversals/VerletListsTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
@@ -26,7 +25,7 @@ namespace autopas {
  * @tparam useSoA
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-class C01BasedTraversal : public CellPairTraversal<ParticleCell>, public VerletListsTraversal<PairwiseFunctor, false> {
+class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -36,7 +35,6 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell>, public VerletL
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims),
-        VerletListsTraversal<PairwiseFunctor, false>(pairwiseFunctor),
         _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false>(
                 pairwiseFunctor)) {
