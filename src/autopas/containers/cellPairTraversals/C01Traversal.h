@@ -52,9 +52,7 @@ inline bool C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::isApplicable() 
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
-
+inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellPairs(std::vector<ParticleCell> &cells) {
   const unsigned long end_x = this->_cellsPerDimension[0] - 1;
   const unsigned long end_y = this->_cellsPerDimension[1] - 1;
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
@@ -65,7 +63,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellPai
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {
       for (unsigned long x = 1; x < end_x; ++x) {
-	this->processBaseCell(cells, x, y, z);
+        this->processBaseCell(cells, x, y, z);
       }
     }
   }
@@ -75,7 +73,6 @@ template <class ParticleCell, class PairwiseFunctor, bool useSoA>
 template <class Particle>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellVerlet(
     std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet) {
-
   const unsigned long end_x = this->_cellsPerDimension[0] - 1;
   const unsigned long end_y = this->_cellsPerDimension[1] - 1;
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
@@ -86,8 +83,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellVer
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {
       for (unsigned long x = 1; x < end_x; ++x) {
-	unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-	this->iterateVerletListsCell(verlet, baseIndex);
+        unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+        this->iterateVerletListsCell(verlet, baseIndex);
       }
     }
   }

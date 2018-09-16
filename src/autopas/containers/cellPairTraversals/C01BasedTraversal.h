@@ -36,8 +36,10 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell>, public VerletL
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims),
-	VerletListsTraversal<PairwiseFunctor, false> (pairwiseFunctor),
-        _cellFunctor(CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false>(pairwiseFunctor)) {
+        VerletListsTraversal<PairwiseFunctor, false>(pairwiseFunctor),
+        _cellFunctor(
+            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false>(
+                pairwiseFunctor)) {
     computeOffsets();
   }
 
@@ -69,8 +71,9 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell>, public VerletL
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
+inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::processBaseCell(std::vector<ParticleCell> &cells,
+                                                                                      unsigned long x, unsigned long y,
+                                                                                      unsigned long z) {
   unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
 
@@ -93,7 +96,7 @@ inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::computeOff
     for (int y = -1; y <= 1; ++y) {
       for (int x = -1; x <= 1; ++x) {
         int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
-	_cellOffsets.push_back(offset);
+        _cellOffsets.push_back(offset);
       }
     }
   }

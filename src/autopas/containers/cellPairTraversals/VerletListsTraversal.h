@@ -7,11 +7,10 @@
 #pragma once
 
 #include <array>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace autopas {
-
 
 /**
  * A verlet list traversal.
@@ -21,12 +20,11 @@ namespace autopas {
 template <class PairwiseFunctor, bool useNewton3>
 class VerletListsTraversal {
  public:
- /**
-  * Constructor of the verlet traversal.
-  * @param pairwiseFunctor The functor that defines the interaction of two particles.
-  */
-  VerletListsTraversal(PairwiseFunctor *pairwiseFunctor)
-     : _pairwiseFunctor(pairwiseFunctor) { }
+  /**
+   * Constructor of the verlet traversal.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   */
+  VerletListsTraversal(PairwiseFunctor *pairwiseFunctor) : _pairwiseFunctor(pairwiseFunctor) {}
 
  protected:
   /**
@@ -36,7 +34,7 @@ class VerletListsTraversal {
    */
   template <class Particle>
   inline void iterateVerletListsCell(std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet,
-			      unsigned long cellIndex) {
+                                     unsigned long cellIndex) {
     for (auto &list : verlet[cellIndex]) {
       Particle &i = *list.first;
       for (auto j_ptr : list.second) {
@@ -54,7 +52,6 @@ class VerletListsTraversal {
    * PairwiseFunctor to be used for the traversal defining the interaction between two particles.
    */
   PairwiseFunctor *_pairwiseFunctor;
-
 };
 
 }  // namespace autopas
