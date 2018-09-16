@@ -20,6 +20,14 @@ namespace autopas {
  */
 template <class PairwiseFunctor, bool useNewton3>
 class VerletListsTraversal {
+ public:
+ /**
+  * Constructor of the verlet traversal.
+  * @param pairwiseFunctor The functor that defines the interaction of two particles.
+  */
+  VerletListsTraversal(PairwiseFunctor *pairwiseFunctor)
+     : _pairwiseFunctor(pairwiseFunctor) { }
+
  protected:
   /**
    * iterate over the verlet list of a given cell
@@ -41,6 +49,7 @@ class VerletListsTraversal {
     }
   }
 
+ private:
   /**
    * PairwiseFunctor to be used for the traversal defining the interaction between two particles.
    */

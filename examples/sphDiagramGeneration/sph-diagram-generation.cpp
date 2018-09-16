@@ -229,7 +229,7 @@ void measureContainer(autopas::VerletListsCells<Particle> *cont, Functor *func, 
     auto traversal = C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims, func);
     measureContainerTraversal(cont, func, &traversal, numParticles, numIterations, useNewton3);
   } else {
-    auto traversal = C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(dims, func);
+    auto traversal = C01Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false>(dims, func);
     measureContainerTraversal(cont, func, &traversal, numParticles, numIterations, useNewton3);
   }
 }

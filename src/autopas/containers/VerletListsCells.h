@@ -293,6 +293,17 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
         }
         break;
       }
+      case c01: {
+        if (not useNewton3) {
+          auto traversal = C01Traversal<typename verlet_internal::VerletListParticleCellType,
+                                        typename verlet_internal::VerletListGeneratorFunctor, false>(
+              _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          _linkedCells.iteratePairwiseAoS(&f, &traversal);
+        } else {
+          utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");
+        }
+        break;
+      }
       default:
         utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): unsupported Traversal: {}",
                                            _buildTraversal);

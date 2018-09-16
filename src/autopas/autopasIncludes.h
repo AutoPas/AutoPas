@@ -35,6 +35,7 @@
 #include "autopas/iterators/SingleCellIterator.h"
 
 // traversals
+#include "autopas/containers/cellPairTraversals/C01Traversal.h"
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
 #include "autopas/containers/cellPairTraversals/C18Traversal.h"
 #include "autopas/containers/cellPairTraversals/SlicedTraversal.h"

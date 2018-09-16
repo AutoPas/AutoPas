@@ -358,6 +358,10 @@ void MDFlexParser::printConfig() {
         cout << "c18, ";
         break;
       }
+      case autopas::TraversalOptions::c01: {
+        cout << "c01, ";
+        break;
+      }
     }
   }
   // deletes last comma

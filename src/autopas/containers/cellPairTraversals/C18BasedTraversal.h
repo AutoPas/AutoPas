@@ -38,10 +38,10 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell>,
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims),
+        VerletListsTraversal<PairwiseFunctor, useNewton3>(pairwiseFunctor),
         _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)) {
-    this->_pairwiseFunctor = pairwiseFunctor;
     computeOffsets();
   }
 

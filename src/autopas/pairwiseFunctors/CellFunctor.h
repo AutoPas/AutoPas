@@ -22,8 +22,11 @@ namespace autopas {
  * @tparam ParticleFunctor the functor which
  * @tparam useSoA
  * @tparam useNewton3
+ * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
+ * cell1)
  */
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3 = true>
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3 = true,
+          bool bidirectional = true>
 class CellFunctor {
  public:
   /**
@@ -173,7 +176,7 @@ class CellFunctor {
             Particle &p2 = *inner;
 
             _functor->AoSFunctor(p1, p2, false);
-            _functor->AoSFunctor(p2, p1, false);
+            if (bidirectional) _functor->AoSFunctor(p2, p1, false);
           }
         }
       });
@@ -186,7 +189,7 @@ class CellFunctor {
 
   void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
     _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
-    _functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+    if (bidirectional) _functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
   }
 
   void processCellSoAN3(ParticleCell &cell) { _functor->SoAFunctor(cell._particleSoABuffer, true); }
