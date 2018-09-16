@@ -30,8 +30,16 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
  private:
   const std::vector<TraversalOptions>& VLApplicableTraversals() {
     switch (_buildTraversal) {
+      case c08: {
+        static const std::vector<TraversalOptions> v{TraversalOptions::sliced, TraversalOptions::c01};
+        return v;
+      }
       case c18: {
-        static const std::vector<TraversalOptions> v{TraversalOptions::c18};
+        static const std::vector<TraversalOptions> v{TraversalOptions::c18, TraversalOptions::c01};
+        return v;
+      }
+      case c01: {
+        static const std::vector<TraversalOptions> v{TraversalOptions::c01};
         return v;
       }
       default: {
@@ -279,6 +287,20 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
     typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap, this->getCutoff());
 
     switch (_buildTraversal) {
+      case c08: {
+        if (useNewton3) {
+          auto traversal = C08Traversal<typename verlet_internal::VerletListParticleCellType,
+                                        typename verlet_internal::VerletListGeneratorFunctor, false, true>(
+              _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          _linkedCells.iteratePairwiseAoS(&f, &traversal);
+        } else {
+          auto traversal = C08Traversal<typename verlet_internal::VerletListParticleCellType,
+                                        typename verlet_internal::VerletListGeneratorFunctor, false, false>(
+              _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          _linkedCells.iteratePairwiseAoS(&f, &traversal);
+        }
+        break;
+      }
       case c18: {
         if (useNewton3) {
           auto traversal = C18Traversal<typename verlet_internal::VerletListParticleCellType,

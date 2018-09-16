@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
       boxMin, boxMax, cutoff);
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(
-      boxMin, boxMax, cutoff, autopas::TraversalOptions::c18, skin * cutoff, rebuildFrequency);
+      boxMin, boxMax, cutoff, autopas::TraversalOptions::c08, skin * cutoff, rebuildFrequency);
 
   addParticles(lcCont, numParticles);
 
@@ -226,7 +226,7 @@ void measureContainer(autopas::VerletListsCells<Particle> *cont, Functor *func, 
   auto dims = cont->getCellsPerDimension();
   std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
   if (useNewton3) {
-    auto traversal = C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims, func);
+    auto traversal = SlicedTraversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims, func);
     measureContainerTraversal(cont, func, &traversal, numParticles, numIterations, useNewton3);
   } else {
     auto traversal = C01Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false>(dims, func);
