@@ -40,9 +40,6 @@ class VerletListsTraversal {
       for (auto j_ptr : list.second) {
         Particle &j = *j_ptr;
         _pairwiseFunctor->AoSFunctor(i, j, useNewton3);
-        if (not useNewton3) {
-          _pairwiseFunctor->AoSFunctor(j, i, false);
-        }
       }
     }
   }
