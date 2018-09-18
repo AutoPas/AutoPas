@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
   for (unsigned int i = 0; i < numIterations; ++i) {
     if (AutoPasLogger->level() <= spdlog::level::debug) {
       cout << "Iteration " << i << endl;
-      cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << endl;
+      cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
     }
     autopas.iteratePairwise(&functor, dataLayoutChoice);
   }
