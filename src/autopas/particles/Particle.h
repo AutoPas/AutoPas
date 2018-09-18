@@ -153,9 +153,21 @@ class Particle {
   typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
  protected:
+  /**
+   * Particle position as 3D coordinates.
+   */
   std::array<double, 3> _r;
+  /**
+   * Particle velocity as 3D vector.
+   */
   std::array<double, 3> _v;
+  /**
+   * Force the particle experiences as 3D vector.
+   */
   std::array<double, 3> _f;
+  /**
+   * Particle id.
+   */
   unsigned long _id;
 };
 
