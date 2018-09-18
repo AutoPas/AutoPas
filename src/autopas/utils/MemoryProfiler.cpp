@@ -29,7 +29,7 @@ size_t autopas::memoryProfiler::currentMemoryUsage() {
     char *needle = buffer;
     // as long as 'V''s are found...
     while (needle != nullptr) {
-      // find next linebreak
+      // find next start of needle
       needle = (char *)memchr(needle, 'V', (buffer + bytes_read) - needle);
       if (strncmp(needle, "VmRSS:", 6) == 0) {
         // pass whole text after colon. strtol ignores leading whitespaces and stops after number.
