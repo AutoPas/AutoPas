@@ -59,9 +59,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      utils::ExceptionHandler::exception(
-          "LinkedCells: trying to add particle that is not inside the bounding "
-          "box.\n" + p.toString());
+      utils::ExceptionHandler::exception("LinkedCells: trying to add particle that is not inside the bounding box.\n" +
+                                         p.toString());
     }
   }
 
@@ -71,9 +70,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
       cell.addParticle(haloParticle);
     } else {
-      utils::ExceptionHandler::exception(
-          "LinkedCells: trying to add halo particle that is not in the halo "
-          "box.\n" + haloParticle.toString());
+      utils::ExceptionHandler::exception("LinkedCells: trying to add halo particle that is not in the halo box.\n" +
+                                         haloParticle.toString());
     }
   }
 
