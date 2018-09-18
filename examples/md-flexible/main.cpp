@@ -4,6 +4,7 @@
  * @author F. Gratl
  */
 
+#include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -177,6 +178,7 @@ int main(int argc, char **argv) {
   for (unsigned int i = 0; i < numIterations; ++i) {
     if (AutoPasLogger->level() <= spdlog::level::debug) {
       cout << "Iteration " << i << endl;
+      cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << endl;
     }
     autopas.iteratePairwise(&functor, dataLayoutChoice);
   }
