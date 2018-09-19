@@ -28,6 +28,9 @@
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
  * Macro for logging providing common meta information.
+ * @param lvl Possible levels: trace, debug, info, warn, err, critical, off.
+ * @param fmt Message with formatting tokens
+ * @param ... Formatting arguments
  */
 #define AutoPasLog(lvl, fmt, ...)                                        \
   {                                                                      \
@@ -38,14 +41,17 @@
     s.append(":");                                                       \
     s.append(std::to_string(__LINE__));                                  \
     s.resize(textwidth, ' ');                                            \
-    spdlog::get("AutoPasLog")->lvl("[{}] " fmt, s, ##__VA_ARGS__);       \
+    AutoPasLogger->lvl("[{}] " fmt, s, ##__VA_ARGS__);       \
   }
 #else
 /**
  * Macro for logging providing common meta information without filename.
+ * @param lvl Possible levels: trace, debug, info, warn, err, critical, off.
+ * @param fmt Message with formatting tokens
+ * @param ... Formatting arguments
  */
 #define AutoPasLog(lvl, fmt, ...) \
-  { spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__); }
+  { AutoPasLogger->lvl(fmt, ##__VA_ARGS__); }
 
 #endif
 
