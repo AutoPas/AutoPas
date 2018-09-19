@@ -277,7 +277,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
     const index_t nonnegativeValue = static_cast<index_t>(std::max(value, 0l));
     const index_t nonLargerValue = std::min(nonnegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
-    /// @todo this is a sanity check to prevent doubling of particles, but
+    // @todo this is a sanity check to prevent doubling of particles, but
     /// could be done better!
     if (pos[dim] >= _boxMax[dim]) {
       cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - 1;
@@ -288,7 +288,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
 
   return cellIndex;
   // in very rare cases rounding is stupid, thus we need a check...
-  /// @todo when the border and flag manager is there
+  // @todo when the border and flag manager is there
 }
 
 template <class ParticleCell>

@@ -78,7 +78,7 @@ class AutoPas {
    * @todo do we need the whole container functionality available to the outside
    * @return container
    */
-  // TODO: remove this once we are convinced all necessary container functions are wrapped
+  // @todo: remove this once we are convinced all necessary container functions are wrapped
   autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _autoTuner->getContainer().get(); }
 
   /**

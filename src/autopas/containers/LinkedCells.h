@@ -112,7 +112,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void updateContainer() override {
-    /// @todo optimize
+    // @todo optimize
     std::vector<Particle> invalidParticles;
 // custom reduction with templates not supported
 //#pragma omp parallel reduction(vecMerge: invalidParticles)
@@ -144,7 +144,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
-    // TODO: find a sensible value for magic number
+    // @todo: find a sensible value for magic number
     // numThreads should be at least 1 and maximal max_threads
     int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 500)));
     AutoPasLogger->trace("LinkedCells::isContainerUpdateNeeded() : using {} threads", numThreads);
@@ -211,7 +211,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor>
   void loadSoAs(ParticleFunctor *functor) {
 #ifdef AUTOPAS_OPENMP
-    // TODO find a condition on when to use omp or when it is just overhead
+    // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < this->_cells.size(); ++i) {
@@ -227,7 +227,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor>
   void extractSoAs(ParticleFunctor *functor) {
 #ifdef AUTOPAS_OPENMP
-    // TODO find a condition on when to use omp or when it is just overhead
+    // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < this->_cells.size(); ++i) {

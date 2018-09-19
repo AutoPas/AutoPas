@@ -103,15 +103,15 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
   bool nonNewton3Allowed = f->allowsNonNewton3();
   bool useNewton3 = false;
   if (newton3Allowed and nonNewton3Allowed) {
-    /// @todo auto-tune (far off future)
+    // @todo auto-tune (far off future)
   } else if (not newton3Allowed and not nonNewton3Allowed) {
-    /// @todo throw exception
+    // @todo throw exception
   } else {
     useNewton3 = newton3Allowed;
   }
 
-  /// @todo: WANT one single iteratePairwise(CellFunctor) for containers
-  /// @todo: CellFunctor for iteration should be build here using selectors for SoA and N3
+  // @todo: WANT one single iteratePairwise(CellFunctor) for containers
+  // @todo: CellFunctor for iteration should be build here using selectors for SoA and N3
   bool isTuning = false;
   switch (dataLayoutOption) {
     case autopas::soa: {

@@ -32,7 +32,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
  private:
   static const std::vector<TraversalOptions>& VLApplicableTraversals() {
-    // TODO: implement some traversals for this
+    // @todo: implement some traversals for this
     static const std::vector<TraversalOptions> v{};
     return v;
   }
@@ -194,7 +194,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
-    // TODO: find a sensible value for ???
+    // @todo: find a sensible value for ???
 #pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getCells().size(); ++cellIndex1d) {
@@ -334,7 +334,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    */
   template <class ParticleFunctor>
   void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
-    /// @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
+    // @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
     /// traversals
 
     // don't parallelize this with a simple openmp, unless useNewton3=false
@@ -355,13 +355,13 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    */
   template <class ParticleFunctor>
   void iterateVerletListsSoA(ParticleFunctor* f, const bool useNewton3) {
-    /// @todo optimize iterateVerletListsSoA, e.g. by using traversals with
+    // @todo optimize iterateVerletListsSoA, e.g. by using traversals with
     /// openmp possibilities
 
     // load data from cells into soa
     loadVerletSoA(f);
 
-    /// @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
+    // @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
     size_t iFrom = 0;
     size_t iTo = _soaNeighborLists.size();
     // iterate over SoA

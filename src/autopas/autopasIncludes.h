@@ -9,7 +9,7 @@
 
 #pragma once
 
-/// @todo separate autopas.h and autopasmd.h
+// @todo separate autopas.h and autopasmd.h
 
 // utils
 #include "autopas/utils/ArrayMath.h"

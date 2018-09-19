@@ -215,7 +215,7 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
    * @param offset
    */
   AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, {
-    // todo it is probably better to resize the soa only once, before calling
+    // @todo it is probably better to resize the soa only once, before calling
     // SoALoader (verlet-list only)
     soa.resizeArrays(offset + cell.numParticles());
 

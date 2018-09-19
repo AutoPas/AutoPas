@@ -117,7 +117,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
       break;
     }
     case verletLists: {
-      // TODO determine verletSkin and verletRebuildFrequency via tuning
+      // @todo determine verletSkin and verletRebuildFrequency via tuning
       container =
           std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
       break;

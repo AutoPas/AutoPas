@@ -105,13 +105,13 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void updateContainer() override {
-    /// @todo might need to do sth. if particles move outside of the box?
+    // @todo might need to do sth. if particles move outside of the box?
   }
 
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
-    // TODO: find a sensible value for ???
+    // @todo: find a sensible value for ???
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (auto iter = this->begin(); iter.isValid() && (not outlierFound); ++iter) {
