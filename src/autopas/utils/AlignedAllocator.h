@@ -18,7 +18,9 @@
 
 namespace autopas {
 
-// @todo maybe move to more sensible place?
+/**
+ * Default size for a cache line.
+ */
 #define DEFAULT_CACHE_LINE_SIZE 64
 
 /**
