@@ -41,7 +41,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     rebuild(vec, bMin, bMax, interactionLength);
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
-        AutoPasLogger->error("CellBlock3D: interaction length too large is {}, bmin {}, bmax {}", interactionLength,
+        AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength,
                              bMin[i], bMax[i]);
         utils::ExceptionHandler::exception("Error in CellBlock3D: interaction Length too large!");
       }
@@ -317,7 +317,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 
     _numCells *= _cellsPerDimensionWithHalo[d];
 
-    AutoPasLogger->debug("CellBlock3D: _cellsPerDimensionWithHalo[{}]={}", d, _cellsPerDimensionWithHalo[d]);
+    AutoPasLog(debug, "CellsPerDimensionWithHalo[{}]={}", d, _cellsPerDimensionWithHalo[d]);
   }
 
   _vec1D->resize(_numCells);

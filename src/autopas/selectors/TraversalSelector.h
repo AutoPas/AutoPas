@@ -119,7 +119,7 @@ std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<Parti
             _dims, &pairwiseFunctor));
         break;
       }
-      default: { AutoPasLogger->warn("Traversal type {} is not a known type!", option); }
+      default: { AutoPasLog(warn, "Traversal type {} is not a known type!", option); }
     }
   }
 
@@ -158,14 +158,14 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       _currentlyTuning = false;
       TraversalOptions fastestTraversal;
       long fastestTime = std::numeric_limits<long>::max();
-      AutoPasLogger->debug("TraversalSelector.tune(): TraversalSelector: Collected traversals:");
+      AutoPasLog(debug, "TraversalSelector: Collected traversals:");
       for (auto t = _traversalTimes.begin(); t != _traversalTimes.end();) {
         // only look at times from the correct functor
         if (t->functorHash != functorHash) {
           ++t;
           continue;
         }
-        AutoPasLogger->debug("TraversalSelector.tune(): Traversal {} took {} nanoseconds:", t->traversal, t->time);
+        AutoPasLog(debug, "Traversal {} took {} nanoseconds:", t->traversal, t->time);
         if (t->time < fastestTime) {
           fastestTraversal = t->traversal;
           fastestTime = t->time;
@@ -192,7 +192,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       dynamic_cast<CellPairTraversal<ParticleCell> *>(traversals[bestTraversal].release()));
 
   _optimalTraversalOptions[functorHash] = optimalTraversal->getTraversalType();
-  AutoPasLogger->debug("TraversalSelector.tune(): {} traversal {}", _currentlyTuning ? "Testing" : "Selected",
+  AutoPasLog(debug, "{} traversal {}", _currentlyTuning ? "Testing" : "Selected",
                        optimalTraversal->getTraversalType());
 
   return optimalTraversal;

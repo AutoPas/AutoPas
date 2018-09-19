@@ -122,7 +122,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
           std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
       break;
     }
-    default: { AutoPasLogger->warn("Container type {} is not a known type!", containerChoice); }
+    default: { AutoPasLog(warn, "Container type {} is not a known type!", containerChoice); }
   }
 
   // copy particles so they do not get lost when container is switched
@@ -162,9 +162,9 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
       _currentlyTuning = false;
       ContainerOptions fastestContainer;
       long fastestTime = std::numeric_limits<long>::max();
-      AutoPasLogger->debug("ContainerSelector.tune(): ContainerSelector: Collected containers:");
+      AutoPasLog(debug, "ContainerSelector: Collected containers:");
       for (auto &&c : _containerTimes) {
-        AutoPasLogger->debug("ContainerSelector.tune(): Container {} took {} nanoseconds:", c.first, c.second);
+        AutoPasLog(debug, "Container {} took {} nanoseconds:", c.first, c.second);
         if (c.second < fastestTime) {
           fastestContainer = c.first;
           fastestTime = c.second;
@@ -172,7 +172,7 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
       }
       // sanity check
       if (fastestTime == std::numeric_limits<long>::max()) {
-        utils::ExceptionHandler::exception("ContainerSelector: nothing was faster than max long! o_O");
+        utils::ExceptionHandler::exception("Nothing was faster than max long! o_O");
       }
 
       // find id of fastest container in passed container list
@@ -183,7 +183,7 @@ bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
 
     _optimalContainer = std::move(generateContainer(_allowedContainerOptions[bestContainerID]));
   }
-  AutoPasLogger->debug("ContainerSelector.tune(): {} container {}", _currentlyTuning ? "Testing" : "Selected",
+  AutoPasLog(debug, "{} container {}", _currentlyTuning ? "Testing" : "Selected",
                        _optimalContainer->getContainerType());
   return _currentlyTuning;
 }

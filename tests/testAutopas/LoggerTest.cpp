@@ -17,12 +17,12 @@ int LoggerTest::testLevel(spdlog::level::level_enum level, bool enabled = true) 
   stream.flush();
   stream.clear();
 
-  AutoPasLogger->trace("trace");
-  AutoPasLogger->debug("debug");
-  AutoPasLogger->info("info");
-  AutoPasLogger->warn("warn");
-  AutoPasLogger->error("error");
-  AutoPasLogger->critical("critical");
+  AutoPasLog(trace, "trace");
+  AutoPasLog(debug, "debug");
+  AutoPasLog(info, "info");
+  AutoPasLog(warn, "warn");
+  AutoPasLog(error, "error");
+  AutoPasLog(critical, "critical");
 
   int lineCount = 0;
   std::string str;

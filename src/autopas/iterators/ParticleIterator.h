@@ -54,15 +54,15 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
     } else {
       _iteratorAcrossCells = cont->end();
-      AutoPasLogger->warn("ParticleIterator: More threads than cells. No work left for thread {}!", myThreadId);
+      AutoPasLog(warn, "More threads than cells. No work left for thread {}!", myThreadId);
     }
 
     if (behavior != haloAndOwned and flagManager == nullptr) {
-      AutoPasLogger->error(
-          "ParticleIterator: behavior is not haloAndOwned, but flagManager is "
+      AutoPasLog(error,
+          "Behavior is not haloAndOwned, but flagManager is "
           "nullptr!");
       utils::ExceptionHandler::exception(
-          "ParticleIterator: behavior is not haloAndOwned, but flagManager is "
+          "Behavior is not haloAndOwned, but flagManager is "
           "nullptr!");
     }
     if (_iteratorAcrossCells < cont->end()) {

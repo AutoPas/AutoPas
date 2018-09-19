@@ -27,7 +27,7 @@ TEST_F(AutoTunerTest, testTune) {
   bool stillTuning = true;
   int i = 0;
   for (; stillTuning; ++i) {
-    // AutoPasLogger->debug("AutoTunerTest: Iteration {}", i);
+    // AutoPasLog(debug, "Iteration {}", i);
     stillTuning = autoTuner.iteratePairwise(&functor, autopas::DataLayoutOption::aos);
 
     auto container = autoTuner.getContainer();
