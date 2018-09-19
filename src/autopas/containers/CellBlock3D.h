@@ -41,8 +41,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     rebuild(vec, bMin, bMax, interactionLength);
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
-        AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength,
-                             bMin[i], bMax[i]);
+        AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
         utils::ExceptionHandler::exception("Error in CellBlock3D: interaction Length too large!");
       }
     }

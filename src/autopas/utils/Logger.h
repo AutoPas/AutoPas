@@ -19,31 +19,33 @@
 /**
  * Returns the filename without full path.
  */
-#define __FILENAME__ ({const char * pStr = strrchr(__FILE__, '/'); pStr ? pStr + 1 : __FILE__;})
+#define __FILENAME__                           \
+  ({                                           \
+    const char* pStr = strrchr(__FILE__, '/'); \
+    pStr ? pStr + 1 : __FILE__;                \
+  })
 
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
  * Macro for logging providing common meta information.
  */
-#define AutoPasLog(lvl, fmt, ...) \
-  { \
-  size_t textwidth = 26; /* If filenames get cropped increase this! */ \
-  std::string s; \
-  s.reserve(textwidth); \
-  s.append(__FILENAME__); \
-  s.append(":"); \
-  s.append(std::to_string(__LINE__)); \
-  s.resize(textwidth, ' '); \
-  spdlog::get("AutoPasLog")->lvl("[{}] " fmt, s , ## __VA_ARGS__); \
+#define AutoPasLog(lvl, fmt, ...)                                        \
+  {                                                                      \
+    size_t textwidth = 26; /* If filenames get cropped increase this! */ \
+    std::string s;                                                       \
+    s.reserve(textwidth);                                                \
+    s.append(__FILENAME__);                                              \
+    s.append(":");                                                       \
+    s.append(std::to_string(__LINE__));                                  \
+    s.resize(textwidth, ' ');                                            \
+    spdlog::get("AutoPasLog")->lvl("[{}] " fmt, s, ##__VA_ARGS__);       \
   }
 #else
 /**
  * Macro for logging providing common meta information without filename.
  */
 #define AutoPasLog(lvl, fmt, ...) \
-  { \
-  spdlog::get("AutoPasLog")->lvl(fmt, ## __VA_ARGS__); \
-  }
+  { spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__); }
 
 #endif
 
