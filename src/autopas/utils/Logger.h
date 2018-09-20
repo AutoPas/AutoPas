@@ -59,6 +59,9 @@ class Logger {
   static inline const auto loggerName() { return "AutoPasLog"; };
 
  public:
+  /**
+   * Typalias for log levels.
+   */
   typedef spdlog::level::level_enum LogLevel;
   /**
    * create a logger writing to the file system
