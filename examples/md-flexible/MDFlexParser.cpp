@@ -399,4 +399,4 @@ bool MDFlexParser::getMeasureFlops() const { return measureFlops; }
 unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
-//spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }
+// spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }

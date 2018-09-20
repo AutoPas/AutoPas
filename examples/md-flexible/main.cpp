@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
 
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
-//  AutoPasLogger->set_level(logLevel);
+  //  AutoPasLogger->set_level(logLevel);
   autopas::Logger::get()->set_level(logLevel);
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
