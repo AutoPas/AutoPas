@@ -97,7 +97,7 @@ class Particle {
    * @param rmax higher corner of the box
    * @return true if the particle is in the box, false otherwise
    */
-  bool inBox(const std::array<double, 3> &rmin, const std::array<double, 3>& rmax) const {
+  bool inBox(const std::array<double, 3> &rmin, const std::array<double, 3> &rmax) const {
     bool in = true;
     for (int d = 0; d < 3; ++d) {
       in &= (_r[d] >= rmin[d] and _r[d] < rmax[d]);

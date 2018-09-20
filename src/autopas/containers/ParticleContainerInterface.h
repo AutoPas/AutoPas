@@ -80,6 +80,11 @@ class ParticleContainerInterface {
   virtual void deleteHaloParticles() = 0;
 
   /**
+   * deletes all particles
+   */
+  virtual void deleteAllParticles() = 0;
+
+  /**
    * Iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter) .
    * @param behavior Behavior of the iterator, see IteratorBehavior.
