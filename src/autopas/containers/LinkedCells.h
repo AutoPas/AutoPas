@@ -112,30 +112,26 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void updateContainer() override {
-    std::vector<Particle> invalidParticles;
-// custom reduction with templates not supported
-//#pragma omp parallel reduction(vecMerge: invalidParticles)
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel for
 #endif  // AUTOPAS_OPENMP
-    {
-      std::vector<Particle> myInvalidParticles;
-      for (auto iter = this->begin(); iter.isValid(); ++iter) {
-        myInvalidParticles.push_back(*iter);
-      }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif  // AUTOPAS_OPENMP
-      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
-    }
-    for (auto &cell : this->_cells) {
-      cell.clear();
-    }
-    for (auto &particle : invalidParticles) {
-      if (inBox(particle.getR(), this->getBoxMin(), this->getBoxMax())) {
-        addParticle(particle);
-      } else {
-        addHaloParticle(particle);
+    for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
+      // if empty
+      if (not this->getCells()[cellId].isNotEmpty()) continue;
+
+      std::array<double, 3> cellLoweCorner, cellUpperCorner;
+      this->getCellBlock().getCellBoundingBox(cellId, cellLoweCorner, cellUpperCorner);
+
+      for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
+        // if not in cell
+        if (notInBox(pIter->getR(), cellLoweCorner, cellUpperCorner)) {
+          // if not in halo
+          if (inBox(pIter->getR(), this->getBoxMin(), this->getBoxMax()))
+            addParticle(*pIter);
+          else
+            addHaloParticle(*pIter);
+          pIter.deleteCurrentParticle();
+        }
       }
     }
   }
