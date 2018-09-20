@@ -11,12 +11,6 @@
 #include <iostream>
 
 /**
- * this gives you the logger for autopas. call this once the logger has been
- * initialized.
- */
-#define AutoPasLogger spdlog::get("AutoPasLog")
-
-/**
  * Returns the filename without full path.
  */
 #define __FILENAME__                           \
@@ -41,7 +35,7 @@
     s.append(":");                                                       \
     s.append(std::to_string(__LINE__));                                  \
     s.resize(textwidth, ' ');                                            \
-    AutoPasLogger->lvl("[{}] " fmt, s, ##__VA_ARGS__);                   \
+    spdlog::get("AutoPasLog")->lvl("[{}] " fmt, s, ##__VA_ARGS__);       \
   }
 #else
 /**
@@ -51,7 +45,7 @@
  * @param ... Formatting arguments
  */
 #define AutoPasLog(lvl, fmt, ...) \
-  { AutoPasLogger->lvl(fmt, ##__VA_ARGS__); }
+  { spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__); }
 
 #endif
 
@@ -61,15 +55,19 @@ namespace autopas {
  * You can create the spdlog's logger or delete it using the provided functions.
  */
 class Logger {
+ private:
+  static inline const auto loggerName() { return "AutoPasLog"; };
+
  public:
+  typedef spdlog::level::level_enum LogLevel;
   /**
    * create a logger writing to the file system
    * @param filename
    */
   static void create(std::string& filename) {
     // drop an already registered Logger if it exists
-    if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
-    spdlog::basic_logger_mt("AutoPasLog", filename);
+    if (spdlog::get(loggerName())) spdlog::drop(loggerName());
+    spdlog::basic_logger_mt(loggerName(), filename);
   }
 
   /**
@@ -79,9 +77,9 @@ class Logger {
    */
   static void create(std::ostream& oss = std::cout) {
     // drop an already registered Logger if it exists
-    if (spdlog::get("AutoPasLog")) spdlog::drop("AutoPasLog");
+    if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
-    auto logger = std::make_shared<spdlog::logger>("AutoPasLog", ostream_sink);
+    auto logger = std::make_shared<spdlog::logger>(loggerName(), ostream_sink);
     spdlog::register_logger(logger);
   }
 
@@ -91,11 +89,12 @@ class Logger {
    * logging after the logger has been removed and no new logger has been defined
    * will lead to undefined behavior!!!
    */
-  static void unregister() { spdlog::drop("AutoPasLog"); }
+  static void unregister() { spdlog::drop(loggerName()); }
 
   /**
-   * disable the logger
+   * Get a pointer to the actual logger object.
+   * @return Pointer to logger.
    */
-  static void disable() { spdlog::set_level(spdlog::level::off); }
+  static auto get() { return spdlog::get(loggerName()); }
 };  // class Logger
 }  // namespace autopas
