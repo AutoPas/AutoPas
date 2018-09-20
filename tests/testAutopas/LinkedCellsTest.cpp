@@ -5,6 +5,7 @@
  */
 
 #include "LinkedCellsTest.h"
+#include <gmock/gmock-generated-matchers.h>
 
 TEST_F(LinkedCellsTest, testParticleAdding) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
@@ -152,8 +153,9 @@ TEST_F(LinkedCellsTest, testUpdateContainer) {
       EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 3);
     } else if (i == 32) {
       EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 2);
-      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 0);
-      EXPECT_EQ((++(linkedCells.getCells()[i].begin()))->getID(), 4);
+      auto pIter = linkedCells.getCells()[i].begin();
+      auto ids = {pIter->getID(), (++pIter)->getID()};
+      EXPECT_THAT(ids, testing::UnorderedElementsAre(0,4));
     } else if (i == 38) {
       EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
       EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 1);
