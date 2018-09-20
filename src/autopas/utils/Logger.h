@@ -41,7 +41,7 @@
     s.append(":");                                                       \
     s.append(std::to_string(__LINE__));                                  \
     s.resize(textwidth, ' ');                                            \
-    AutoPasLogger->lvl("[{}] " fmt, s, ##__VA_ARGS__);       \
+    AutoPasLogger->lvl("[{}] " fmt, s, ##__VA_ARGS__);                   \
   }
 #else
 /**
