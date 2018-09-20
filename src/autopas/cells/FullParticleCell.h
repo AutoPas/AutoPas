@@ -10,6 +10,7 @@
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/SoA.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -20,9 +21,16 @@ namespace autopas {
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-  FullParticleCell() {}
+  FullParticleCell() {
+    autopas_init_lock(&addParticleLock); }
 
-  void addParticle(Particle &m) override { _particles.push_back(m); }
+  ~FullParticleCell() { autopas_destroy_lock(&addParticleLock); }
+
+  void addParticle(Particle &m) override {
+    autopas_set_lock(&addParticleLock);
+    _particles.push_back(m);
+    autopas_unset_lock(&addParticleLock);
+  }
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
     return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
@@ -65,6 +73,9 @@ class FullParticleCell : public ParticleCell<Particle> {
    * type of the internal iterator
    */
   typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
+
+ private:
+  autopas_lock_t addParticleLock;
 };
 
 }  // namespace autopas
