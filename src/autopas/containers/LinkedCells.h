@@ -112,7 +112,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void updateContainer() override {
-    // @todo optimize
     std::vector<Particle> invalidParticles;
 // custom reduction with templates not supported
 //#pragma omp parallel reduction(vecMerge: invalidParticles)
