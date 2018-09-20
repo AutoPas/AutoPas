@@ -115,6 +115,12 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
     return true;
   }
 
+  void deleteAllParticles() override {
+    for (auto &cell : _cells) {
+      cell.clear();
+    }
+  }
+
  protected:
   /**
    * vector of particle cells.

@@ -99,12 +99,17 @@ class AutoPas {
    * container
    * @param haloParticle particle to be added
    */
-  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); };
+  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); }
 
   /**
    * deletes all halo particles
    */
-  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); };
+  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); }
+
+  /**
+   * deletes all particles
+   */
+  void deleteAllParticles() { _autoTuner->getContainer()->deleteAllParticles(); }
 
   /**
    * Function to iterate over all pairs of particles in the container.
