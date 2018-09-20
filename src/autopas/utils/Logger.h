@@ -28,7 +28,7 @@
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
  * Macro for logging providing common meta information.
- * @param lvl Possible levels: trace, debug, info, warn, err, critical, off.
+ * @param lvl Possible levels: trace, debug, info, warn, error, critical.
  * @param fmt Message with formatting tokens
  * @param ... Formatting arguments
  */
@@ -46,7 +46,7 @@
 #else
 /**
  * Macro for logging providing common meta information without filename.
- * @param lvl Possible levels: trace, debug, info, warn, err, critical, off.
+ * @param lvl Possible levels: trace, debug, info, warn, error, critical.
  * @param fmt Message with formatting tokens
  * @param ... Formatting arguments
  */
