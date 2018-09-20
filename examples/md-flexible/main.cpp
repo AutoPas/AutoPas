@@ -125,7 +125,8 @@ int main(int argc, char **argv) {
 
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
-  AutoPasLogger->set_level(logLevel);
+//  AutoPasLogger->set_level(logLevel);
+  autopas::Logger::get()->set_level(logLevel);
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
       initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,
@@ -176,7 +177,7 @@ int main(int argc, char **argv) {
   startCalc = std::chrono::high_resolution_clock::now();
   // Calculation
   for (unsigned int i = 0; i < numIterations; ++i) {
-    if (AutoPasLogger->level() <= spdlog::level::debug) {
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       cout << "Iteration " << i << endl;
       cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
     }

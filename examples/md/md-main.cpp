@@ -23,7 +23,7 @@ void measureContainer(Container *cont, int numMolecules, int numIterations, bool
 
 int main(int argc, char *argv[]) {
   autopas::Logger::create();
-  AutoPasLogger->set_level(spdlog::level::info);
+  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::info);
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
 
   PrintableMolecule::setEpsilon(1.0);

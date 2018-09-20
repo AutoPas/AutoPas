@@ -10,9 +10,9 @@ void LoggerTest::SetUp() { autopas::Logger::create(stream); }
 
 void LoggerTest::TearDown() { autopas::Logger::unregister(); }
 
-int LoggerTest::testLevel(spdlog::level::level_enum level, bool enabled = true) {
-  AutoPasLogger->set_level(level);
-  if (not enabled) AutoPasLogger->set_level(spdlog::level::off);
+int LoggerTest::testLevel(autopas::Logger::LogLevel level, bool enabled = true) {
+  autopas::Logger::get()->set_level(level);
+  if (not enabled) autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
 
   stream.flush();
   stream.clear();
@@ -32,21 +32,21 @@ int LoggerTest::testLevel(spdlog::level::level_enum level, bool enabled = true) 
 }
 
 TEST_F(LoggerTest, LogLevelTest) {
-  EXPECT_EQ(testLevel(spdlog::level::trace), 6);
-  EXPECT_EQ(testLevel(spdlog::level::debug), 5);
-  EXPECT_EQ(testLevel(spdlog::level::info), 4);
-  EXPECT_EQ(testLevel(spdlog::level::warn), 3);
-  EXPECT_EQ(testLevel(spdlog::level::err), 2);
-  EXPECT_EQ(testLevel(spdlog::level::critical), 1);
-  EXPECT_EQ(testLevel(spdlog::level::off), 0);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::trace), 6);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::debug), 5);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::info), 4);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::warn), 3);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::err), 2);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::critical), 1);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::off), 0);
 }
 
 TEST_F(LoggerTest, LogLevelTestDisabled) {
-  EXPECT_EQ(testLevel(spdlog::level::trace, false), 0);
-  EXPECT_EQ(testLevel(spdlog::level::debug, false), 0);
-  EXPECT_EQ(testLevel(spdlog::level::info, false), 0);
-  EXPECT_EQ(testLevel(spdlog::level::warn, false), 0);
-  EXPECT_EQ(testLevel(spdlog::level::err, false), 0);
-  EXPECT_EQ(testLevel(spdlog::level::critical, false), 0);
-  EXPECT_EQ(testLevel(spdlog::level::off, false), 0);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::trace, false), 0);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::debug, false), 0);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::info, false), 0);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::warn, false), 0);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::err, false), 0);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::critical, false), 0);
+  EXPECT_EQ(testLevel(autopas::Logger::LogLevel::off, false), 0);
 }

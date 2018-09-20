@@ -111,12 +111,10 @@ class ExceptionHandler {
         break;
       case printAbort:
         AutoPasLog(error, "{}\naborting", e.what());
-        AutoPasLogger->flush();
         std::abort();
       case printCustomAbortFunction:
         spdlog::get("AutoPasLog");
         AutoPasLog(error, "{}\nusing custom abort function", e.what());
-        AutoPasLogger->flush();
         _customAbortFunction();
         break;
       default:
