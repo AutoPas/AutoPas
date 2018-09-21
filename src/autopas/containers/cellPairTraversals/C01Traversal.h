@@ -61,7 +61,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellPai
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
 
 #if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3)
+#pragma omp parallel for schedule(dynamic, 1) collapse(3)
 #endif
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {
