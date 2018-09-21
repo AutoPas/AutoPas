@@ -155,7 +155,7 @@ TEST_F(LinkedCellsTest, testUpdateContainer) {
       EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 2);
       auto pIter = linkedCells.getCells()[i].begin();
       auto ids = {pIter->getID(), (++pIter)->getID()};
-      EXPECT_THAT(ids, testing::UnorderedElementsAre(0,4));
+      EXPECT_THAT(ids, testing::UnorderedElementsAre(0, 4));
     } else if (i == 38) {
       EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
       EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 1);
@@ -166,4 +166,17 @@ TEST_F(LinkedCellsTest, testUpdateContainer) {
       EXPECT_FALSE(linkedCells.getCells()[i].isNotEmpty());
     }
   }
+}
+
+TEST_F(LinkedCellsTest, testUpdateContainerHalo) {
+  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.},
+                                                                                                    {3., 3., 3.}, 1.);
+
+  autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);
+  linkedCells.addHaloParticle(p);
+
+  EXPECT_EQ(linkedCells.getCells()[0].numParticles(), 1);
+  EXPECT_EQ(linkedCells.getCells()[0].begin()->getID(), 42);
+
+  EXPECT_THROW(linkedCells.updateContainer();, autopas::utils::ExceptionHandler::AutoPasException);
 }
