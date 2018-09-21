@@ -21,8 +21,7 @@ namespace autopas {
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-  FullParticleCell() {
-    autopas_init_lock(&addParticleLock); }
+  FullParticleCell() { autopas_init_lock(&addParticleLock); }
 
   ~FullParticleCell() { autopas_destroy_lock(&addParticleLock); }
 

@@ -119,6 +119,7 @@ inline void autopas_set_lock(autopas_lock_t *l) {
  */
 inline void autopas_init_lock(autopas_lock_t *l) {
   assert(l != nullptr);  // @todo: customize asserts
+  *l = 0;
 }
 
 /**
