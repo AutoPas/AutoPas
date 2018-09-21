@@ -125,7 +125,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
         }
       }
       auto container = getContainer();
-      AutoPasLogger->debug("AutoTuner: Using container {}", container->getContainerType());
+      AutoPasLog(debug, "Using container {}", container->getContainerType());
 
       std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
       if (container->getContainerType() == ContainerOptions::linkedCells) {
@@ -175,7 +175,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
         }
       }
       auto container = getContainer();
-      AutoPasLogger->debug("AutoTuner: Using container {}", container->getContainerType());
+      AutoPasLog(debug, "Using container {}", container->getContainerType());
 
       std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
       if (container->getContainerType() == ContainerOptions::linkedCells) {

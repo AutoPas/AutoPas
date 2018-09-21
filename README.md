@@ -178,11 +178,11 @@ as long as particles move not more than a skin radius.
 ## Logging
 AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
 ```
-AutoPasLogger->warn("Hello {}", name);
+AutoPasLog(warn, "Hello {}", name);
 ```
 The global log level can be set at runtime with:
 ```
-AutoPasLogger->set_level(spdlog::level::debug);
+autopas::Logger::get()->set_level(autpas::Logger::LogLevel::debug);
 ```
 Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `off`,
 

@@ -23,8 +23,13 @@ if(NOT CMAKE_BUILD_TYPE)
             "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-ENABLE_TESTING()
+# option for more verbose log messages.
+option(VERBOSE_LOGGING "Print Filename and line in every log line." OFF)
+if (VERBOSE_LOGGING)
+    add_definitions(-DAUTOPAS_VERBOSE_LOG)
+endif ()
 
+ENABLE_TESTING()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
