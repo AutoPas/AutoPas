@@ -16,7 +16,7 @@ size_t autopas::memoryProfiler::currentMemoryUsage() {
   // the stat file should be around ~1400 chars
   static const auto BUFFER_SIZE = 2 * 1024;
   int statusfile = open(statusFileName, O_RDONLY);
-  if (statusfile == -1) AutoPasLogger->error("MemoryProfiler::currentMemoryUsage: Error opening {}", statusFileName);
+  if (statusfile == -1) AutoPasLog(error, "Error opening {}", statusFileName);
   // Advise the kernel of our access pattern.
   posix_fadvise(statusfile, 0, 0, 1);  // FDADVICE_SEQUENTIAL
 

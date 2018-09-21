@@ -12,6 +12,10 @@
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 
+#ifdef AUTOPAS_OPENMP
+#include <omp.h>
+#endif
+
 namespace autopas {
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor
@@ -113,6 +117,22 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
         return false;
     }
     return true;
+  }
+
+  /**
+   * Deletes all particles from the container.
+   */
+  void deleteAllParticles() override {
+#ifdef AUTOPAS_OPENMP
+    // @todo: find a sensible value for magic number
+    // numThreads should be at least 1 and maximal max_threads
+    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
+    AutoPasLog(trace, "Using {} threads", numThreads);
+#pragma omp parallel for num_threads(numThreads)
+#endif
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      this->_cells[i].clear();
+    }
   }
 
  protected:

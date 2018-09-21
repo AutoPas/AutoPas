@@ -28,7 +28,7 @@ class AutoPas {
     autopas::Logger::create();
     // The logger is normally only flushed on successful program termination.
     // This line ensures flushing when log messages of level warning or more severe are created.
-    AutoPasLogger->flush_on(spdlog::level::warn);
+    autopas::Logger::get()->flush_on(spdlog::level::warn);
   }
 
   ~AutoPas() {
@@ -74,6 +74,13 @@ class AutoPas {
   }
 
   /**
+   * Updates the internal container.
+   * This is needed e.g. for linked-cells if particles move from one cell to another.
+   * It resorts particles into appropriate cells and moves them to the halo, if necessary.
+   */
+  void updateContainer() { _autoTuner->getContainer()->updateContainer(); }
+
+  /**
    * Returns a pointer to the actual container.
    * @todo do we need the whole container functionality available to the outside
    * @return container
@@ -92,12 +99,17 @@ class AutoPas {
    * container
    * @param haloParticle particle to be added
    */
-  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); };
+  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); }
 
   /**
    * deletes all halo particles
    */
-  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); };
+  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); }
+
+  /**
+   * deletes all particles
+   */
+  void deleteAllParticles() { _autoTuner->getContainer()->deleteAllParticles(); }
 
   /**
    * Function to iterate over all pairs of particles in the container.

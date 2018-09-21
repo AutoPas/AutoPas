@@ -184,7 +184,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
     auto numParts = soa.getNumParticles();
-    AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
+    AutoPasLog(debug, "SoAFunctorVerlet: {}", soa.getNumParticles());
 
     if (numParts == 0) return;
 

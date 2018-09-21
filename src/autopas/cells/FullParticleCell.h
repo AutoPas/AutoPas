@@ -61,14 +61,6 @@ class FullParticleCell : public ParticleCell<Particle> {
   SoA<SoAArraysType> _particleSoABuffer;
 
   /**
-   * friend class iterator
-   * @tparam ParticleType
-   * @tparam ParticleCellType
-   */
-  template <class ParticleType, class ParticleCellType>
-  friend class SingleCellIterator;
-
-  /**
    * type of the internal iterator
    */
   typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;

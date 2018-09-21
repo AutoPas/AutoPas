@@ -16,7 +16,7 @@ class LoggerTest : public AutoPasTestBase {
  public:
   void SetUp() override;
   void TearDown() override;
-  int testLevel(spdlog::level::level_enum level, bool enabled);
+  int testLevel(autopas::Logger::LogLevel level, bool enabled);
 
  private:
   std::stringstream stream;
