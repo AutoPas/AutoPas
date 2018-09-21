@@ -112,6 +112,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void updateContainer() override {
+    auto haloIter = this->getRegionIterator(this->_cellBlock.getHaloBoxMin(), this->_cellBlock.getHaloBoxMax(),
+                                            IteratorBehavior::haloOnly);
+    if (haloIter.isValid()) {
+      utils::ExceptionHandler::exception(
+          "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
+          haloIter->toString());
+    }
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for
 #endif  // AUTOPAS_OPENMP
