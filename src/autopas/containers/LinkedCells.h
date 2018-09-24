@@ -120,13 +120,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
  * 3 = add-barrier-delete: first check all particles fully parallel and delete invalid then after a barrier add with
  * locks
  */
-#define variant 3
+#define variant 2
 
 #if variant == 1
   // old variant
   void updateContainer() override {
-    auto haloIter = this->getRegionIterator(this->_cellBlock.getHaloBoxMin(), this->_cellBlock.getHaloBoxMax(),
-                                            IteratorBehavior::haloOnly);
+    auto haloIter = this->begin(IteratorBehavior::haloOnly);
     if (haloIter.isValid()) {
       utils::ExceptionHandler::exception(
           "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
@@ -164,8 +163,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
   // new with locking
   void updateContainer() override {
-    auto haloIter = this->getRegionIterator(this->_cellBlock.getHaloBoxMin(), this->_cellBlock.getHaloBoxMax(),
-                                            IteratorBehavior::haloOnly);
+    auto haloIter = this->begin(IteratorBehavior::haloOnly);
     if (haloIter.isValid()) {
       utils::ExceptionHandler::exception(
           "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
@@ -199,8 +197,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
   // new with barrier
   void updateContainer() override {
-    auto haloIter = this->getRegionIterator(this->_cellBlock.getHaloBoxMin(), this->_cellBlock.getHaloBoxMax(),
-                                            IteratorBehavior::haloOnly);
+    auto haloIter = this->begin(IteratorBehavior::haloOnly);
     if (haloIter.isValid()) {
       utils::ExceptionHandler::exception(
           "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
