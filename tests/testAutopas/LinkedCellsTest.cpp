@@ -33,6 +33,7 @@ TEST_F(LinkedCellsTest, testParticleAdding) {
 TEST_F(LinkedCellsTest, testGetNumParticles) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
       {0., 0., 0.}, {10., 10., 10.}, 1.);
+  EXPECT_EQ(linkedCells.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -48,6 +49,7 @@ TEST_F(LinkedCellsTest, testGetNumParticles) {
 TEST_F(LinkedCellsTest, testDeleteAllParticles) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
       {0., 0., 0.}, {10., 10., 10.}, 1.);
+  EXPECT_EQ(linkedCells.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);

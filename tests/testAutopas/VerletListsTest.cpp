@@ -24,6 +24,7 @@ TEST_F(VerletListsTest, testAddParticleNumParticle) {
   double cutoff = 1.;
   double skin = 0.2;
   autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  EXPECT_EQ(verletLists.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -42,6 +43,7 @@ TEST_F(VerletListsTest, testDeleteAllParticles) {
   double cutoff = 1.;
   double skin = 0.2;
   autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  EXPECT_EQ(verletLists.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);

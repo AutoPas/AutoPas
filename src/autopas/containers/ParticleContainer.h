@@ -56,14 +56,14 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   ~ParticleContainer() override = default;
 
   /**
-   * delete the copy constructor to prevent unwanted copies.
+   * Delete the copy constructor to prevent unwanted copies.
    * No particle container should ever be copied.
    * @param obj
    */
   ParticleContainer(const ParticleContainer &obj) = delete;
 
   /**
-   * delete the copy assignment operator to prevent unwanted copies
+   * Delete the copy assignment operator to prevent unwanted copies
    * No particle container should ever be copied.
    * @param other
    * @return
@@ -71,37 +71,37 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   ParticleContainer &operator=(const ParticleContainer &other) = delete;
 
   /**
-   * get the upper corner of the container
+   * Get the upper corner of the container
    * @return upper corner of the container
    */
   const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
 
   /**
-   * set the upper corner of the container
+   * Set the upper corner of the container
    * @param boxMax upper corner to be set
    */
   void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
 
   /**
-   * get the lower corner of the container
+   * Get the lower corner of the container
    * @return lower corner of the container
    */
   const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
 
   /**
-   * set the lower corner of the container
+   * Set the lower corner of the container
    * @param boxMin lower corner to be set
    */
   void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
   /**
-   * return the cutoff of the container
+   * Return the cutoff of the container
    * @return
    */
   double getCutoff() const override final { return _cutoff; }
 
   /**
-   * set the cutoff of the container
+   * Set the cutoff of the container
    * @param cutoff
    */
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
@@ -152,7 +152,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
 
  protected:
   /**
-   * vector of particle cells.
+   * Vector of particle cells.
    * All particle containers store their particles in ParticleCells. This is the
    * common vector for this purpose.
    */

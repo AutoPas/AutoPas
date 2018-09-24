@@ -30,6 +30,7 @@ TEST_F(DirectSumTest, testParticleAdding) {
 TEST_F(DirectSumTest, testGetNumParticles) {
   autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
                                                                                                 {10., 10., 10.}, 1.);
+  EXPECT_EQ(directSum.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -45,6 +46,7 @@ TEST_F(DirectSumTest, testGetNumParticles) {
 TEST_F(DirectSumTest, testDeleteAllParticles) {
   autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
                                                                                                 {10., 10., 10.}, 1.);
+  EXPECT_EQ(directSum.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);

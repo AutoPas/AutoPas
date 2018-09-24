@@ -123,7 +123,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc LinkedCells::addParticle()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void addParticle(Particle& p) override {
     _neighborListIsValid = false;
@@ -132,7 +132,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc LinkedCells::addHaloParticle()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void addHaloParticle(Particle& haloParticle) override {
     _neighborListIsValid = false;
@@ -143,7 +143,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc LinkedCells::deleteHaloParticles
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void deleteHaloParticles() override {
     _neighborListIsValid = false;
@@ -152,7 +152,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc ParticleContainerInterface::deleteAllParticles
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void deleteAllParticles() override {
     _neighborListIsValid = false;
@@ -161,7 +161,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc LinkedCells::updateContainer()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void updateContainer() override {
     AutoPasLog(debug, "Updating container");
@@ -175,7 +175,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    * be calculated are represented in the neighbor lists.
    * @param useNewton3 specified whether newton 3 should be used
    * @return whether the list is valid
-   * @note this check involves pair-wise interaction checks and is thus
+   * @note This check involves pair-wise interaction checks and is thus
    * relatively costly.
    */
   bool checkNeighborListsAreValid(bool useNewton3 = true) {
