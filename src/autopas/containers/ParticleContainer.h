@@ -135,6 +135,14 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
     }
   }
 
+  unsigned long getNumParticles() override {
+    size_t numParticles = 0ul;
+    for(size_t index = 0; index < _cells.size(); ++index){
+      numParticles += _cells[index].numParticles();
+    }
+    return numParticles;
+  }
+
  protected:
   /**
    * vector of particle cells.

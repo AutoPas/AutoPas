@@ -18,6 +18,44 @@ TEST_F(VerletListsTest, VerletListConstructor) {
   autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
 }
 
+TEST_F(VerletListsTest, testAddParticleNumParticle) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.2;
+  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+
+  std::array<double, 3> r = {2, 2, 2};
+  Particle p(r, {0., 0., 0.}, 0);
+  verletLists.addParticle(p);
+  EXPECT_EQ(verletLists.getNumParticles(), 1);
+
+  std::array<double, 3> r2 = {1.5, 2, 2};
+  Particle p2(r2, {0., 0., 0.}, 1);
+  verletLists.addParticle(p2);
+  EXPECT_EQ(verletLists.getNumParticles(), 2);
+}
+
+TEST_F(VerletListsTest, testDeleteAllParticles) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.2;
+  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+
+  std::array<double, 3> r = {2, 2, 2};
+  Particle p(r, {0., 0., 0.}, 0);
+  verletLists.addParticle(p);
+
+  std::array<double, 3> r2 = {1.5, 2, 2};
+  Particle p2(r2, {0., 0., 0.}, 1);
+  verletLists.addParticle(p2);
+  EXPECT_EQ(verletLists.getNumParticles(), 2);
+
+  verletLists.deleteAllParticles();
+  EXPECT_EQ(verletLists.getNumParticles(), 0);
+}
+
 TEST_F(VerletListsTest, testVerletListBuild) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};

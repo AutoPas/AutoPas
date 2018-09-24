@@ -139,6 +139,10 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     _linkedCells.addHaloParticle(haloParticle);
   }
 
+  unsigned long getNumParticles() override {
+    return _linkedCells.getNumParticles();
+  }
+
   /**
    * @copydoc LinkedCells::deleteHaloParticles
    * @note this function invalidates the neighbor lists
@@ -146,6 +150,15 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   void deleteHaloParticles() override {
     _neighborListIsValid = false;
     _linkedCells.deleteHaloParticles();
+  }
+
+  /**
+   * @copydoc ParticleContainerInterface::deleteAllParticles
+   * @note this function invalidates the neighbor lists
+   */
+  void deleteAllParticles() override {
+    _neighborListIsValid = false;
+    _linkedCells.deleteAllParticles();
   }
 
   /**
@@ -470,10 +483,6 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
   std::unordered_map<Particle*, size_t> _aos2soaMap;
-
-  /// map converting from the continuous soa type index (size_t) to the aos type
-  /// index (Particle *)
-  std::vector<Particle*> _soa2aosmap;
 
   /// verlet list for SoA:
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;

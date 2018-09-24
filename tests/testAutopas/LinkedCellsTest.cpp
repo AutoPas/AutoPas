@@ -30,6 +30,40 @@ TEST_F(LinkedCellsTest, testParticleAdding) {
   }
 }
 
+TEST_F(LinkedCellsTest, testGetNumParticles) {
+
+  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
+      {0., 0., 0.}, {10., 10., 10.}, 1.);
+
+  std::array<double, 3> r = {2, 2, 2};
+  Particle p(r, {0., 0., 0.}, 0);
+  linkedCells.addParticle(p);
+  EXPECT_EQ(linkedCells.getNumParticles(), 1);
+
+  std::array<double, 3> r2 = {1.5, 2, 2};
+  Particle p2(r2, {0., 0., 0.}, 1);
+  linkedCells.addParticle(p2);
+  EXPECT_EQ(linkedCells.getNumParticles(), 2);
+}
+
+TEST_F(LinkedCellsTest, testDeleteAllParticles) {
+  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
+      {0., 0., 0.}, {10., 10., 10.}, 1.);
+
+  std::array<double, 3> r = {2, 2, 2};
+  Particle p(r, {0., 0., 0.}, 0);
+  linkedCells.addParticle(p);
+  EXPECT_EQ(linkedCells.getNumParticles(), 1);
+
+  std::array<double, 3> r2 = {1.5, 2, 2};
+  Particle p2(r2, {0., 0., 0.}, 1);
+  linkedCells.addParticle(p2);
+  EXPECT_EQ(linkedCells.getNumParticles(), 2);
+
+  linkedCells.deleteAllParticles();
+  EXPECT_EQ(linkedCells.getNumParticles(), 0);
+}
+
 TEST_F(LinkedCellsTest, testCheckUpdateContainerNeededNoMove) {
   {
     autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
