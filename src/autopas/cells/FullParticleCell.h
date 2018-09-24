@@ -21,14 +21,23 @@ namespace autopas {
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-  FullParticleCell() { autopas_init_lock(&addParticleLock); }
+  FullParticleCell() { autopas_init_lock(&particlesLock); }
 
-  ~FullParticleCell() { autopas_destroy_lock(&addParticleLock); }
+  ~FullParticleCell() { autopas_destroy_lock(&particlesLock); }
+
+/**
+ * Switch for enabling thread safety
+ */
+#define uselocks 1
 
   void addParticle(Particle &m) override {
-    autopas_set_lock(&addParticleLock);
+#if uselocks == 1
+    autopas_set_lock(&particlesLock);
+#endif
     _particles.push_back(m);
-    autopas_unset_lock(&addParticleLock);
+#if uselocks == 1
+    autopas_unset_lock(&particlesLock);
+#endif
   }
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
@@ -42,12 +51,18 @@ class FullParticleCell : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteByIndex(size_t index) override {
+#if uselocks == 1
+    autopas_set_lock(&particlesLock);
+#endif
     assert(index < numParticles());
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
     }
     _particles.pop_back();
+#if uselocks == 1
+    autopas_unset_lock(&particlesLock);
+#endif
   }
 
   /**
@@ -66,7 +81,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
 
  private:
-  autopas_lock_t addParticleLock;
+  autopas_lock_t particlesLock;
 };
 
 }  // namespace autopas
