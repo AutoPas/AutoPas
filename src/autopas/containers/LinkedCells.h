@@ -178,12 +178,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       // if empty
       if (not this->getCells()[cellId].isNotEmpty()) continue;
 
-      std::array<double, 3> cellLoweCorner, cellUpperCorner;
-      this->getCellBlock().getCellBoundingBox(cellId, cellLoweCorner, cellUpperCorner);
+      std::array<double, 3> cellLowerCorner, cellUpperCorner;
+      this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
 
       for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
         // if not in cell
-        if (notInBox(pIter->getR(), cellLoweCorner, cellUpperCorner)) {
+        if (notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
           // if not in halo
           if (inBox(pIter->getR(), this->getBoxMin(), this->getBoxMax()))
             addParticle(*pIter);
@@ -219,12 +219,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 
-        std::array<double, 3> cellLoweCorner, cellUpperCorner;
-        this->getCellBlock().getCellBoundingBox(cellId, cellLoweCorner, cellUpperCorner);
+        std::array<double, 3> cellLowerCorner, cellUpperCorner;
+        this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
 
         for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
           // if not in cell
-          if (notInBox(pIter->getR(), cellLoweCorner, cellUpperCorner)) {
+          if (notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(*pIter);
             pIter.deleteCurrentParticle();
           }
