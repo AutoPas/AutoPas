@@ -25,19 +25,10 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   ~FullParticleCell() { autopas_destroy_lock(&particlesLock); }
 
-/**
- * Switch for enabling thread safety
- */
-#define uselocks 1
-
   void addParticle(Particle &m) override {
-#if uselocks == 1
     autopas_set_lock(&particlesLock);
-#endif
     _particles.push_back(m);
-#if uselocks == 1
     autopas_unset_lock(&particlesLock);
-#endif
   }
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
@@ -51,18 +42,14 @@ class FullParticleCell : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteByIndex(size_t index) override {
-#if uselocks == 1
     autopas_set_lock(&particlesLock);
-#endif
     assert(index < numParticles());
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
     }
     _particles.pop_back();
-#if uselocks == 1
     autopas_unset_lock(&particlesLock);
-#endif
   }
 
   /**

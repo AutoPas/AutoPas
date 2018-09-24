@@ -113,89 +113,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     extractSoAs(f);
   }
 
-/**
- * selector for implementation of updateContainer.
- * 1 = old version       : delete and add all particles
- * 2 = lock everything   : fully parallel check all particles and delete/add all with locking cells
- * 3 = add-barrier-delete: first check all particles fully parallel and delete invalid then after a barrier add with
- * locks
- */
-#define variant 2
-
-#if variant == 1
-  // old variant
-  void updateContainer() override {
-    auto haloIter = this->begin(IteratorBehavior::haloOnly);
-    if (haloIter.isValid()) {
-      utils::ExceptionHandler::exception(
-          "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
-          haloIter->toString());
-    }
-    std::vector<Particle> invalidParticles;
-// custom reduction with templates not supported
-//#pragma omp parallel reduction(vecMerge: invalidParticles)
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif  // AUTOPAS_OPENMP
-    {
-      std::vector<Particle> myInvalidParticles;
-      for (auto iter = this->begin(); iter.isValid(); ++iter) {
-        myInvalidParticles.push_back(*iter);
-      }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif  // AUTOPAS_OPENMP
-      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
-    }
-    for (auto &cell : this->_cells) {
-      cell.clear();
-    }
-    for (auto &particle : invalidParticles) {
-      if (inBox(particle.getR(), this->getBoxMin(), this->getBoxMax())) {
-        addParticle(particle);
-      } else {
-        addHaloParticle(particle);
-      }
-    }
-  }
-
-#elif variant == 2
-
-  // new with locking
-  void updateContainer() override {
-    auto haloIter = this->begin(IteratorBehavior::haloOnly);
-    if (haloIter.isValid()) {
-      utils::ExceptionHandler::exception(
-          "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
-          haloIter->toString());
-    }
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for
-#endif  // AUTOPAS_OPENMP
-    for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
-      // if empty
-      if (not this->getCells()[cellId].isNotEmpty()) continue;
-
-      std::array<double, 3> cellLowerCorner, cellUpperCorner;
-      this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
-
-      for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
-        // if not in cell
-        if (notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
-          // if not in halo
-          if (inBox(pIter->getR(), this->getBoxMin(), this->getBoxMax()))
-            addParticle(*pIter);
-          else
-            addHaloParticle(*pIter);
-          pIter.deleteCurrentParticle();
-        }
-      }
-    }
-  }
-
-#elif variant == 3
-
-  // new with barrier
   void updateContainer() override {
     auto haloIter = this->begin(IteratorBehavior::haloOnly);
     if (haloIter.isValid()) {
@@ -228,6 +145,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         }
       }
       // implicit barrier here
+      // the barrier is needed because iterators are not threadsafe w.r.t. addParticle()
 
       // this loop is executed for every thread
       for (auto &&p : myInvalidParticles)
@@ -238,8 +156,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
           addHaloParticle(p);
     }
   }
-
-#endif
 
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
