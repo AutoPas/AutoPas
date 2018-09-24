@@ -124,11 +124,15 @@ class AutoPas {
   }
 
   /**
-   * iterate over all particles by using
+   * Iterate over all particles by using
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
+   * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
+   * particles, or both.
    * @return iterator to the first particle
    */
-  autopas::ParticleIteratorWrapper<Particle> begin() { return _autoTuner->getContainer()->begin(); }
+  autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    return _autoTuner->getContainer()->begin(behavior);
+  }
 
   /**
    * iterate over all particles in a specified region
@@ -136,12 +140,17 @@ class AutoPas {
    * highCorner);iter.isValid();++iter)
    * @param lowerCorner lower corner of the region
    * @param higherCorner higher corner of the region
+   * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
+   * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                               std::array<double, 3> higherCorner) {
-    return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner);
+
+  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
+
   /**
    * Get the lower corner of the container.
    * @return lower corner of the container.
