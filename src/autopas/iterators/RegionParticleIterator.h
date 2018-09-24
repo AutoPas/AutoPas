@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <autopas/utils/inBox.h>
 #include <array>
 #include <vector>
 #include "autopas/iterators/ParticleIterator.h"
@@ -43,7 +44,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     // points to the first particle if one is found, otherwise the pointer is
     // not valid
     if (this->isValid()) {  // if there is NO particle, we can not dereference it, so we need a check.
-      if (not(this->operator*()).inBox(_startRegion, _endRegion)) {
+      if (notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
         operator++();
       }
     }
@@ -57,7 +58,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     do {
       ParticleIterator<Particle, ParticleCell>::operator++();
     } while (ParticleIterator<Particle, ParticleCell>::isValid() &&
-             !(this->operator*()).inBox(_startRegion, _endRegion));
+             notInBox(this->operator*().getR(), _startRegion, _endRegion));
     return *this;
   }
 

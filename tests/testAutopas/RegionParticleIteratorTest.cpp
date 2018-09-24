@@ -26,7 +26,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(_regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
   }
 }
 
@@ -53,7 +53,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(_boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(inBox(iterator->getR(), _boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
   }
 }
 
@@ -80,8 +80,8 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
-                  ? (iterator->inBox(_boxMin, _regionMax) ? 0 : 1)
+    ASSERT_EQ(inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
+                  ? (inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
                   : 0,
               iterator->getNumTouched());
   }
@@ -106,7 +106,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(_regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
     i++;
   }
   ASSERT_EQ(i, 0);
@@ -133,7 +133,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyCons
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(_regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
   }
 }
 
@@ -168,6 +168,6 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssi
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(iterator->inBox(_regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched());
+    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched());
   }
 }
