@@ -135,6 +135,9 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
     }
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getNumParticles
+   */
   unsigned long getNumParticles() override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
