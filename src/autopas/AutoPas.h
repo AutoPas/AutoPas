@@ -155,9 +155,7 @@ class AutoPas {
    * Returns the number of particles in this container.
    * @return the number of particles in this container.
    */
-  unsigned long getNumberOfParticles(){
-    return _autoTuner->getContainer()->getNumParticles();
-  }
+  unsigned long getNumberOfParticles() { return _autoTuner->getContainer()->getNumParticles(); }
 
   /**
    * Get the lower corner of the container.

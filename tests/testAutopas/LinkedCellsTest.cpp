@@ -31,7 +31,6 @@ TEST_F(LinkedCellsTest, testParticleAdding) {
 }
 
 TEST_F(LinkedCellsTest, testGetNumParticles) {
-
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
       {0., 0., 0.}, {10., 10., 10.}, 1.);
 

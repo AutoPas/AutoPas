@@ -139,9 +139,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     _linkedCells.addHaloParticle(haloParticle);
   }
 
-  unsigned long getNumParticles() override {
-    return _linkedCells.getNumParticles();
-  }
+  unsigned long getNumParticles() override { return _linkedCells.getNumParticles(); }
 
   /**
    * @copydoc LinkedCells::deleteHaloParticles

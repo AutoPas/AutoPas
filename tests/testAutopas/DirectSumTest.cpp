@@ -28,7 +28,6 @@ TEST_F(DirectSumTest, testParticleAdding) {
 }
 
 TEST_F(DirectSumTest, testGetNumParticles) {
-
   autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
                                                                                                 {10., 10., 10.}, 1.);
 

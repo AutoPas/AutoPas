@@ -142,9 +142,9 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
     // numThreads should be at least 1 and maximal max_threads
     int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
     AutoPasLog(trace, "Using {} threads", numThreads);
-#pragma omp parallel for num_threads(numThreads) reduction(+:numParticles)
+#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
 #endif
-    for(size_t index = 0; index < _cells.size(); ++index){
+    for (size_t index = 0; index < _cells.size(); ++index) {
       numParticles += _cells[index].numParticles();
     }
     return numParticles;
