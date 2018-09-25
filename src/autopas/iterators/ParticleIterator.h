@@ -42,10 +42,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * @param behavior The IteratorBehavior that specifies which type of cells.
    * shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell> *cont,
-                            size_t offset = 0,
-                            CellBorderAndFlagManager *flagManager = nullptr,
-                            IteratorBehavior behavior = haloAndOwned)
+  explicit ParticleIterator(std::vector<ParticleCell>* cont, size_t offset = 0,
+                            CellBorderAndFlagManager* flagManager = nullptr, IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
         _iteratorWithinOneCell(cont->begin()->begin()),

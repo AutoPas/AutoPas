@@ -26,12 +26,15 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
   /**
    * Constructor of the RegionParticleIterator.
    *
-   * @param cont container of particle cells
-   * @param startRegion lower corner of the region to iterate over
-   * @param endRegion top corner of the region to iterate over
-   * @param flagManager the CellBorderAndFlagManager that shall be used to
-   * query the cell types. Can be nullptr if the behavior is haloAndOwned
-   * @param behavior the IteratorBehavior that specifies which type of cells
+   * @param cont Container of particle cells.
+   * @param cellsPerDimension Total number of cells along each dimension.
+   * @param startRegion Lower corner of the region to iterate over.
+   * @param endRegion Top corner of the region to iterate over.
+   * @param startIndex Index of the first cell in the region of interest.
+   * @param endIndex Index of the last cell in the region of interest.
+   * @param flagManager The CellBorderAndFlagManager that shall be used to
+   * query the cell types. Can be nullptr if the behavior is haloAndOwned.
+   * @param behavior The IteratorBehavior that specifies which type of cells
    * shall be iterated through.
    */
   explicit RegionParticleIterator(std::vector<ParticleCell> *cont, const std::array<size_t, 3> cellsPerDimension,
