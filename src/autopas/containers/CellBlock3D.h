@@ -236,6 +236,18 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return closeHaloCells;
   }
 
+  /**
+   * Get the lower corner of the halo region.
+   * @return Coordinates of the lower corner.
+   */
+  std::array<double, 3> getHaloBoxMin() { return _haloBoxMin; }
+
+  /**
+   * Get the upper corner of the halo region.
+   * @return Coordinates of the upper corner.
+   */
+  std::array<double, 3> getHaloBoxMax() { return _haloBoxMax; }
+
  private:
   std::array<index_t, 3> index3D(index_t index1d) const;
   index_t index1D(const std::array<index_t, 3> &index3d) const;

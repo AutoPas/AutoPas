@@ -75,14 +75,20 @@ class ParticleContainerInterface {
   virtual void addHaloParticle(Particle &haloParticle) = 0;
 
   /**
-   * deletes all halo particles
+   * Deletes all halo particles.
    */
   virtual void deleteHaloParticles() = 0;
 
   /**
-   * deletes all particles
+   * Deletes all particles.
    */
   virtual void deleteAllParticles() = 0;
+
+  /**
+   * Get the number of particles saved in the container.
+   * @return Number of particles in the container.
+   */
+  virtual unsigned long getNumParticles() = 0;
 
   /**
    * Iterate over all particles using
