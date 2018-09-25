@@ -168,6 +168,48 @@ TEST_F(LinkedCellsTest, testUpdateContainer) {
   }
 }
 
+TEST_F(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
+  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
+      {0., 0., 0.}, {10., 10., 10.}, 1.);
+  int id = 1;
+  for (double x : {0., 5., 9.999}) {
+    for (double y : {0., 5., 9.999}) {
+      for (double z : {0., 5., 9.999}) {
+        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        EXPECT_NO_THROW(linkedCells.addParticle(p));       // inside, therefore ok!
+      }
+    }
+  }
+  std::set<unsigned long> movedIDs;
+  // we move particles that are close to the boundary to outside of the container and remember the id's we moved
+  for(auto iter = linkedCells.begin(); iter.isValid(); ++iter){
+    for(unsigned short dim = 0; dim < 3; ++dim){
+      if(iter->getR()[dim] < 0.5){
+        auto r = iter->getR();
+        // smallest double smaller than 0
+        r[dim] = std::nexttoward(0., -1.);
+        iter->setR(r);
+        movedIDs.insert(iter->getID());
+      }
+      if(iter->getR()[dim] > 9.5){
+        auto r = iter->getR();
+        r[dim] = 10.;
+        iter->setR(r);
+        movedIDs.insert(iter->getID());
+      }
+    }
+  }
+
+  // now update the container!
+  linkedCells.updateContainer();
+
+  // the particles should no longer be in the inner cells!
+  for(auto iter = linkedCells.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter){
+    EXPECT_EQ(movedIDs.count(iter->getID()), 0);
+  }
+
+}
+
 TEST_F(LinkedCellsTest, testUpdateContainerHalo) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.},
                                                                                                     {3., 3., 3.}, 1.);
