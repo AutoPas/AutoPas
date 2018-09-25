@@ -138,7 +138,6 @@ TEST_F(LinkedCellsTest, testIsContainerUpdateNeeded) {
   EXPECT_TRUE(container.isContainerUpdateNeeded());
 }
 
-
 TEST_F(LinkedCellsTest, testUpdateContainer) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.},
                                                                                                     {3., 3., 3.}, 1.);
