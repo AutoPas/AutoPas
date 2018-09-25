@@ -16,6 +16,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
+#include <bitset>
+
 namespace autopas {
 
 /**
@@ -112,32 +114,46 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void updateContainer() override {
-    // @todo optimize
-    std::vector<Particle> invalidParticles;
-// custom reduction with templates not supported
-//#pragma omp parallel reduction(vecMerge: invalidParticles)
+    auto haloIter = this->begin(IteratorBehavior::haloOnly);
+    if (haloIter.isValid()) {
+      utils::ExceptionHandler::exception(
+          "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
+          haloIter->toString());
+    }
+
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif  // AUTOPAS_OPENMP
     {
       std::vector<Particle> myInvalidParticles;
-      for (auto iter = this->begin(); iter.isValid(); ++iter) {
-        myInvalidParticles.push_back(*iter);
-      }
 #ifdef AUTOPAS_OPENMP
-#pragma omp critical
+#pragma omp for
 #endif  // AUTOPAS_OPENMP
-      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
-    }
-    for (auto &cell : this->_cells) {
-      cell.clear();
-    }
-    for (auto &particle : invalidParticles) {
-      if (inBox(particle.getR(), this->getBoxMin(), this->getBoxMax())) {
-        addParticle(particle);
-      } else {
-        addHaloParticle(particle);
+      for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
+        // if empty
+        if (not this->getCells()[cellId].isNotEmpty()) continue;
+
+        std::array<double, 3> cellLowerCorner, cellUpperCorner;
+        this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
+
+        for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
+          // if not in cell
+          if (notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
+            myInvalidParticles.push_back(*pIter);
+            pIter.deleteCurrentParticle();
+          }
+        }
       }
+      // implicit barrier here
+      // the barrier is needed because iterators are not threadsafe w.r.t. addParticle()
+
+      // this loop is executed for every thread
+      for (auto &&p : myInvalidParticles)
+        // if not in halo
+        if (inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
+          addParticle(p);
+        else
+          addHaloParticle(p);
     }
   }
 

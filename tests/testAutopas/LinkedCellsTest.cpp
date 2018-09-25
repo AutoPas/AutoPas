@@ -5,6 +5,7 @@
  */
 
 #include "LinkedCellsTest.h"
+#include <gmock/gmock-generated-matchers.h>
 
 TEST_F(LinkedCellsTest, testParticleAdding) {
   autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
@@ -116,7 +117,7 @@ TEST_F(LinkedCellsTest, testCheckUpdateContainerNeededNoMove) {
   }
 }
 
-TEST_F(LinkedCellsTest, testIsContainerNeeded) {
+TEST_F(LinkedCellsTest, testIsContainerUpdateNeeded) {
   std::array<double, 3> boxMin{0, 0, 0};
   std::array<double, 3> boxMax{10, 10, 10};
   double cutoff = 1.;
@@ -135,4 +136,83 @@ TEST_F(LinkedCellsTest, testIsContainerNeeded) {
   // Particle moves to halo cell -> needs update
   container.begin()->setR({-1, -1, -1});
   EXPECT_TRUE(container.isContainerUpdateNeeded());
+}
+
+
+TEST_F(LinkedCellsTest, testUpdateContainer) {
+  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.},
+                                                                                                    {3., 3., 3.}, 1.);
+
+  autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
+  autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
+  autopas::Particle p3({1.6, 1.5, 1.5}, {0, 0, 0}, 2);
+  autopas::Particle p4({2.5, 1.5, 1.5}, {0, 0, 0}, 3);
+  autopas::Particle p5({2.5, 2.5, 2.5}, {0, 0, 0}, 4);
+
+  linkedCells.addParticle(p1);
+  linkedCells.addParticle(p2);
+  linkedCells.addParticle(p3);
+  linkedCells.addParticle(p4);
+  linkedCells.addParticle(p5);
+
+  // check particles are where we expect them to be (and nothing else)
+  for (size_t i = 0; i < linkedCells.getCells().size(); ++i) {
+    if (i == 31) {
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
+      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 0);
+    } else if (i == 62) {
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 2);
+      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 1);
+      EXPECT_EQ((++(linkedCells.getCells()[i].begin()))->getID(), 2);
+    } else if (i == 63) {
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
+      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 3);
+    } else if (i == 93) {
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
+      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 4);
+    } else {
+      EXPECT_FALSE(linkedCells.getCells()[i].isNotEmpty());
+    }
+  }
+
+  // new locations for particles
+  linkedCells.getCells()[31].begin()->setR({1.5, 0.5, 0.5});
+  linkedCells.getCells()[62].begin()->setR({2.5, 1.5, 0.5});
+  linkedCells.getCells()[63].begin()->setR({-0.5, -0.5, -0.5});
+  linkedCells.getCells()[93].begin()->setR({1.6, 0.5, 0.5});
+  linkedCells.updateContainer();
+
+  // verify particles are in correct new cells (and nowhere else
+  for (size_t i = 0; i < linkedCells.getCells().size(); ++i) {
+    if (i == 0) {
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
+      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 3);
+    } else if (i == 32) {
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 2);
+      auto pIter = linkedCells.getCells()[i].begin();
+      auto ids = {pIter->getID(), (++pIter)->getID()};
+      EXPECT_THAT(ids, testing::UnorderedElementsAre(0, 4));
+    } else if (i == 38) {
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
+      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 1);
+    } else if (i == 62) {
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
+      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 2);
+    } else {
+      EXPECT_FALSE(linkedCells.getCells()[i].isNotEmpty());
+    }
+  }
+}
+
+TEST_F(LinkedCellsTest, testUpdateContainerHalo) {
+  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.},
+                                                                                                    {3., 3., 3.}, 1.);
+
+  autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);
+  linkedCells.addHaloParticle(p);
+
+  EXPECT_EQ(linkedCells.getCells()[0].numParticles(), 1);
+  EXPECT_EQ(linkedCells.getCells()[0].begin()->getID(), 42);
+
+  EXPECT_THROW(linkedCells.updateContainer();, autopas::utils::ExceptionHandler::AutoPasException);
 }
