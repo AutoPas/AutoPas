@@ -35,13 +35,16 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * and iterate in a round robin fashion. If there are more threads than cells
    * surplus iterators are directly set to cont->end().
    *
-   * @param cont linear data vector of ParticleCells
-   * @param flagManager the CellBorderAndFlagManager that shall be used to
-   * query the cell types. Can be nullptr if the behavior is haloAndOwned
-   * @param behavior the IteratorBehavior that specifies which type of cells
+   * @param cont Linear data vector of ParticleCells.
+   * @param offset Number of cells to skip before starting to iterate.
+   * @param flagManager The CellBorderAndFlagManager that shall be used to.
+   * query the cell types. Can be nullptr if the behavior is haloAndOwned.
+   * @param behavior The IteratorBehavior that specifies which type of cells.
    * shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell>* cont, CellBorderAndFlagManager* flagManager = nullptr,
+  explicit ParticleIterator(std::vector<ParticleCell> *cont,
+                            size_t offset = 0,
+                            CellBorderAndFlagManager *flagManager = nullptr,
                             IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
@@ -49,8 +52,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
         _flagManager(flagManager),
         _behavior(behavior) {
     size_t myThreadId = autopas_get_thread_num();
-    if (myThreadId < cont->size()) {
-      _iteratorAcrossCells += myThreadId;
+    offset += myThreadId;
+    if (offset < cont->size()) {
+      _iteratorAcrossCells += offset;
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
     } else {
       _iteratorAcrossCells = cont->end();

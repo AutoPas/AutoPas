@@ -21,7 +21,7 @@ namespace autopas {
 /**
  * LinkedCells class.
  * This class uses a list of neighboring cells to store the particles.
- * These cells dimensions at least as large as the given cutoff radius,
+ * These cells dimensions are at least as large as the given cutoff radius,
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
  * @tparam Particle type of the particles that need to be stored
@@ -174,14 +174,30 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, &_cellBlock, behavior));
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
   ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    auto cellsPerDim = this->_cellBlock.getCellsPerDimensionWithHalo();
+    std::array<double, 3> cellWidthPerDim, boxMinWithHalo, boxMaxWithHalo;
+    std::array<size_t, 3> startIndex3D, stopIndex3D;
+    for (int i = 0; i < 3; ++i) {
+      // getBox does not account for halo. Therefore subtract two cells per dim.
+      cellWidthPerDim[i] = (this->getBoxMax()[i] - this->getBoxMin()[i]) / (cellsPerDim[i] - 2);
+      boxMinWithHalo[i] = this->getBoxMin()[i] - cellWidthPerDim[i];
+      boxMaxWithHalo[i] = this->getBoxMax()[i] - cellWidthPerDim[i];
+      // implicit floor
+      startIndex3D[i] = lowerCorner[i] - boxMinWithHalo[i] / cellWidthPerDim[i];
+      stopIndex3D[i] = std::ceil(boxMaxWithHalo[i] - boxMinWithHalo[i] / cellWidthPerDim[i]);
+    }
+
+    auto startIndex = ThreeDimensionalMapping::threeToOneD(startIndex3D, cellsPerDim);
+    auto stopIndex = ThreeDimensionalMapping::threeToOneD(stopIndex3D, cellsPerDim);
+
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
-        &this->_cells, lowerCorner, higherCorner, &_cellBlock, behavior));
+        &this->_cells, cellsPerDim, lowerCorner, higherCorner, startIndex, stopIndex, &_cellBlock, behavior));
   }
 
   /**

@@ -34,12 +34,26 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
    * @param behavior the IteratorBehavior that specifies which type of cells
    * shall be iterated through.
    */
+#define newVersion
+#ifdef newVersion
+  explicit RegionParticleIterator(std::vector<ParticleCell> *cont,const std::array<size_t, 3> cellsPerDimension,
+                                  std::array<double, 3> startRegion, std::array<double, 3> endRegion, size_t startIndex,
+                                  size_t endIndex, CellBorderAndFlagManager *flagManager = nullptr,
+                                  IteratorBehavior behavior = haloAndOwned)
+      : ParticleIterator<Particle, ParticleCell>(cont, startIndex, flagManager, behavior),
+        _cellsPerDim(cellsPerDimension),
+        _startRegion(startRegion),
+        _endRegion(endRegion),
+        _startIndex(startIndex),
+        _endIndex(endIndex) {
+#else
   explicit RegionParticleIterator(std::vector<ParticleCell> *cont, std::array<double, 3> startRegion,
                                   std::array<double, 3> endRegion, CellBorderAndFlagManager *flagManager = nullptr,
                                   IteratorBehavior behavior = haloAndOwned)
       : ParticleIterator<Particle, ParticleCell>(cont, flagManager, behavior),
         _startRegion(startRegion),
         _endRegion(endRegion) {
+#endif
     // ParticleIterator's constructor will initialize the Iterator, such that it
     // points to the first particle if one is found, otherwise the pointer is
     // not valid
@@ -68,8 +82,16 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
   }
 
  private:
+#ifdef newVersion
+  std::array<size_t, 3> _cellsPerDim;
   std::array<double, 3> _startRegion;
   std::array<double, 3> _endRegion;
+  size_t _startIndex;
+  size_t _endIndex;
+#else
+  std::array<double, 3> _startRegion;
+  std::array<double, 3> _endRegion;
+#endif
 };
 }  // namespace internal
 }  // namespace autopas
