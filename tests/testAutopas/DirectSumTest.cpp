@@ -27,6 +27,41 @@ TEST_F(DirectSumTest, testParticleAdding) {
   }
 }
 
+TEST_F(DirectSumTest, testGetNumParticles) {
+  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
+                                                                                                {10., 10., 10.}, 1.);
+  EXPECT_EQ(directSum.getNumParticles(), 0);
+
+  std::array<double, 3> r = {2, 2, 2};
+  Particle p(r, {0., 0., 0.}, 0);
+  directSum.addParticle(p);
+  EXPECT_EQ(directSum.getNumParticles(), 1);
+
+  std::array<double, 3> r2 = {1.5, 2, 2};
+  Particle p2(r2, {0., 0., 0.}, 1);
+  directSum.addParticle(p2);
+  EXPECT_EQ(directSum.getNumParticles(), 2);
+}
+
+TEST_F(DirectSumTest, testDeleteAllParticles) {
+  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
+                                                                                                {10., 10., 10.}, 1.);
+  EXPECT_EQ(directSum.getNumParticles(), 0);
+
+  std::array<double, 3> r = {2, 2, 2};
+  Particle p(r, {0., 0., 0.}, 0);
+  directSum.addParticle(p);
+  EXPECT_EQ(directSum.getNumParticles(), 1);
+
+  std::array<double, 3> r2 = {1.5, 2, 2};
+  Particle p2(r2, {0., 0., 0.}, 1);
+  directSum.addParticle(p2);
+  EXPECT_EQ(directSum.getNumParticles(), 2);
+
+  directSum.deleteAllParticles();
+  EXPECT_EQ(directSum.getNumParticles(), 0);
+}
+
 TEST_F(DirectSumTest, testIsContainerNeeded) {
   std::array<double, 3> boxMin{0, 0, 0};
   std::array<double, 3> boxMax{10, 10, 10};

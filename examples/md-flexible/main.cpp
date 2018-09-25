@@ -45,10 +45,11 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                        size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
                        unsigned int verletRebuildFrequency, unsigned int tuningInterval) {
+  std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
                tuningInterval);
 
   PrintableMolecule dummyParticle;
@@ -63,9 +64,10 @@ void initContainerGauss(autopas::ContainerOptions containerOption,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
                         double cutoff, double verletSkinRadius, int verletRebuildFrequency,
                         unsigned int tuningInterval) {
+  std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
                tuningInterval);
 
   PrintableMolecule dummyParticle;

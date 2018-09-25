@@ -123,7 +123,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc LinkedCells::addParticle()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void addParticle(Particle& p) override {
     _neighborListIsValid = false;
@@ -132,16 +132,18 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc LinkedCells::addHaloParticle()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void addHaloParticle(Particle& haloParticle) override {
     _neighborListIsValid = false;
     _linkedCells.addHaloParticle(haloParticle);
   }
 
+  unsigned long getNumParticles() override { return _linkedCells.getNumParticles(); }
+
   /**
    * @copydoc LinkedCells::deleteHaloParticles
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void deleteHaloParticles() override {
     _neighborListIsValid = false;
@@ -149,8 +151,17 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   }
 
   /**
+   * @copydoc ParticleContainerInterface::deleteAllParticles
+   * @note This function invalidates the neighbor lists.
+   */
+  void deleteAllParticles() override {
+    _neighborListIsValid = false;
+    _linkedCells.deleteAllParticles();
+  }
+
+  /**
    * @copydoc LinkedCells::updateContainer()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void updateContainer() override {
     AutoPasLog(debug, "Updating container");
@@ -164,7 +175,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    * be calculated are represented in the neighbor lists.
    * @param useNewton3 specified whether newton 3 should be used
    * @return whether the list is valid
-   * @note this check involves pair-wise interaction checks and is thus
+   * @note This check involves pair-wise interaction checks and is thus
    * relatively costly.
    */
   bool checkNeighborListsAreValid(bool useNewton3 = true) {
@@ -470,10 +481,6 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
   std::unordered_map<Particle*, size_t> _aos2soaMap;
-
-  /// map converting from the continuous soa type index (size_t) to the aos type
-  /// index (Particle *)
-  std::vector<Particle*> _soa2aosmap;
 
   /// verlet list for SoA:
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;
