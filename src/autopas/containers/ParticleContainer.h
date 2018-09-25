@@ -136,7 +136,8 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   }
 
   /**
-   * @copydoc ParticleContainerInterface::getNumParticles
+   * Get the number of particles saved in the container.
+   * @return Number of particles in the container.
    */
   unsigned long getNumParticles() override {
     size_t numParticles = 0ul;
