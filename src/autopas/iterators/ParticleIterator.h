@@ -153,6 +153,12 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
     }
   }
 
+  /**
+   * Get the 1D index of the cell the iterator currently is in.
+   * @return Index of current cell.
+   */
+  size_t getCurrentCellId() { return _iteratorAcrossCells - _vectorOfCells->begin(); }
+
  private:
   std::vector<ParticleCell>* _vectorOfCells;
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;

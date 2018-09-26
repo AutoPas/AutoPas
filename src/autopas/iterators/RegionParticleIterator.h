@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include <autopas/utils/inBox.h>
 #include <array>
 #include <vector>
 #include "autopas/iterators/ParticleIterator.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 namespace internal {
@@ -45,7 +45,6 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
         _cellsPerDim(cellsPerDimension),
         _startRegion(startRegion),
         _endRegion(endRegion),
-        _startIndex(startIndex),
         _endIndex(endIndex) {
     // ParticleIterator's constructor will initialize the Iterator, such that it
     // points to the first particle if one is found, otherwise the pointer is
@@ -59,14 +58,18 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
 
   /**
    * @copydoc ParticleIteratorInterface::operator++
-   * @todo optimize! this version is currently very slow
    */
   inline RegionParticleIterator<Particle, ParticleCell> &operator++() override {
     do {
       ParticleIterator<Particle, ParticleCell>::operator++();
     } while (ParticleIterator<Particle, ParticleCell>::isValid() &&
-             notInBox(this->operator*().getR(), _startRegion, _endRegion));
+             notInBox(this->operator*().getR(), _startRegion, _endRegion) && this->getCurrentCellId() <= _endIndex);
     return *this;
+  }
+
+  bool isValid() const override {
+    return ParticleIterator<Particle, ParticleCell>::isValid() &&
+           inBox(this->operator*().getR(), _startRegion, _endRegion);
   }
 
   // @todo add test of clone
@@ -78,7 +81,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
   std::array<size_t, 3> _cellsPerDim;
   std::array<double, 3> _startRegion;
   std::array<double, 3> _endRegion;
-  size_t _startIndex;
+  //  size_t _startIndex;
   size_t _endIndex;
 };
 }  // namespace internal
