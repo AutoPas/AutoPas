@@ -108,7 +108,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   }
 
   /**
-   * Check whether the iterator is valid
+   * Check whether the iterator currently points to a valid particle.
    * @return returns whether the iterator is valid
    */
   bool isValid() const override {
@@ -122,7 +122,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
 
  protected:
   /**
-   * the next non-empty cell is selected
+   * Moves the iterator to the next non-empty cell with respect to the stride.
    */
   void next_non_empty_cell() {
     // find the next non-empty cell
