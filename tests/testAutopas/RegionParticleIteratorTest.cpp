@@ -171,3 +171,54 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssi
     ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched());
   }
 }
+
+/**
+ * Tests for correct iterator behavior when some of the cells in and outside of the region of interest are empty
+ */
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDomain) {
+  // box goes from {0,0,0} to {5,5,5} + one halo layer
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+
+  size_t idShouldTouch = 0;
+  TouchableParticle p({0, 0, 0}, idShouldTouch);
+  p.setR({2, 2, 2});
+  p.setID(idShouldTouch++);
+  lcContainer.addParticle(p);
+  p.setR({2, 3, 2});
+  p.setID(idShouldTouch++);
+  lcContainer.addParticle(p);
+  p.setR({2, 3, 3});
+  p.setID(idShouldTouch++);
+  lcContainer.addParticle(p);
+
+  size_t idOffset = 1000;
+  size_t idShouldNotTouch = idOffset;
+  p.setR({1, 1, 1});
+  p.setID(idShouldNotTouch++);
+  lcContainer.addParticle(p);
+  p.setR({2, 4.5, 2});
+  p.setID(idShouldNotTouch++);
+  lcContainer.addParticle(p);
+  p.setR({4, 4, 4});
+  p.setID(idShouldNotTouch++);
+  lcContainer.addParticle(p);
+
+  std::array<double, 3> regionOfInterstMin = {2, 2, 2};
+  std::array<double, 3> regionOfInterstMax = {3, 4, 4};
+
+  int particlesTouched = 0;
+  for (auto iterator = lcContainer.getRegionIterator(regionOfInterstMin, regionOfInterstMax); iterator.isValid();
+       ++iterator) {
+    iterator->touch();
+    ++particlesTouched;
+  }
+  EXPECT_EQ(particlesTouched, idShouldTouch);
+
+
+  int particlesChecked = 0;
+  for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
+    EXPECT_EQ(inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched());
+    ++particlesChecked;
+  }
+  EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
+}
