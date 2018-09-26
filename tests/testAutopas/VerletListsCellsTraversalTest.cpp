@@ -16,6 +16,11 @@ VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
 }
 
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
+#ifdef AUTOPAS_OPENMP
+  int numThreadsBefore = omp_get_max_threads();
+  omp_set_num_threads(1);
+#endif
+
   RandomGenerator::fillWithParticles(_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
                                      numMolecules);
 
@@ -42,6 +47,10 @@ void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
   ASSERT_EQ(flopsC18.getKernelCalls(), flopsSli.getKernelCalls());
   ASSERT_EQ(flopsC18.getKernelCalls(), (flopsC18N3.getKernelCalls() * 2));
   ASSERT_EQ(flopsC18N3.getKernelCalls(), flopsSliN3.getKernelCalls());
+
+#ifdef AUTOPAS_OPENMP
+  omp_set_num_threads(numThreadsBefore);
+#endif
 }
 
 TEST_F(VerletListsCellsTraversalTest, test100) {
