@@ -203,10 +203,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       // getBox does not account for halo. Therefore subtract two cells per dim.
       cellWidthPerDim[i] = (this->getBoxMax()[i] - this->getBoxMin()[i]) / (cellsPerDim[i] - 2);
       boxMinWithHalo[i] = this->getBoxMin()[i] - cellWidthPerDim[i];
-      boxMaxWithHalo[i] = this->getBoxMax()[i] - cellWidthPerDim[i];
+      boxMaxWithHalo[i] = this->getBoxMax()[i] + cellWidthPerDim[i];
       // implicit floor
-      startIndex3D[i] = lowerCorner[i] - boxMinWithHalo[i] / cellWidthPerDim[i];
-      stopIndex3D[i] = std::ceil(boxMaxWithHalo[i] - boxMinWithHalo[i] / cellWidthPerDim[i]);
+      startIndex3D[i] = (lowerCorner[i] - boxMinWithHalo[i]) / cellWidthPerDim[i];
+      stopIndex3D[i] = std::ceil((higherCorner[i] - boxMinWithHalo[i]) / cellWidthPerDim[i]);
     }
 
     auto startIndex = ThreeDimensionalMapping::threeToOneD(startIndex3D, cellsPerDim);
