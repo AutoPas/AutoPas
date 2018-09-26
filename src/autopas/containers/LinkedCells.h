@@ -209,8 +209,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       stopIndex3D[i] = std::ceil((higherCorner[i] - boxMinWithHalo[i]) / cellWidthPerDim[i]);
     }
 
-    auto startIndex = ThreeDimensionalMapping::threeToOneD(startIndex3D, cellsPerDim);
-    auto stopIndex = ThreeDimensionalMapping::threeToOneD(stopIndex3D, cellsPerDim);
+    auto startIndex = utils::ThreeDimensionalMapping::threeToOneD(startIndex3D, cellsPerDim);
+    auto stopIndex = utils::ThreeDimensionalMapping::threeToOneD(stopIndex3D, cellsPerDim);
 
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
         &this->_cells, cellsPerDim, lowerCorner, higherCorner, startIndex, stopIndex, &_cellBlock, behavior));

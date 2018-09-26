@@ -10,6 +10,7 @@
 #include <array>
 
 namespace autopas {
+namespace utils {
 /**
  * Class to handle the conversion between one dimensional and three dimensional indices.
  */
@@ -58,4 +59,5 @@ class ThreeDimensionalMapping {
   }
 
 };  // class ThreeDimensionalMapping
+}  // namespace utils
 }  // namespace autopas

@@ -99,7 +99,7 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets() {
   using std::make_pair;
-  typedef ThreeDimensionalMapping TDM;
+  typedef utils::ThreeDimensionalMapping TDM;
 
   unsigned long o = TDM::threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);  // origin
   unsigned long x = TDM::threeToOneD(1ul, 0ul, 0ul, this->_cellsPerDimension);  // displacement to the right
