@@ -214,7 +214,6 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDo
   }
   EXPECT_EQ(particlesTouched, idShouldTouch);
 
-
   int particlesChecked = 0;
   for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
     EXPECT_EQ(inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched());
