@@ -9,6 +9,7 @@
 #include <array>
 #include <vector>
 #include "autopas/iterators/ParticleIterator.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -45,11 +46,19 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
         _cellsPerDim(cellsPerDimension),
         _startRegion(startRegion),
         _endRegion(endRegion),
+        _startIndex(startIndex),  // @todo: maybe pass 3D indices since they are calculated right before
         _endIndex(endIndex) {
+    _startIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(_startIndex, _cellsPerDim);
+    _endIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(_endIndex, _cellsPerDim);
+
+    _shortJump = _cellsPerDim[0] - (_endIndex3D[0] - _startIndex3D[0]) - 1;
+    _longJump = _cellsPerDim[0] * (_cellsPerDim[1] - (_endIndex3D[1] - _startIndex3D[1]) - 1);
+
     // ParticleIterator's constructor will initialize the Iterator, such that it
     // points to the first particle if one is found, otherwise the pointer is
     // not valid
-    if (this->isValid()) {  // if there is NO particle, we can not dereference it, so we need a check.
+    if (ParticleIterator<Particle, ParticleCell>::isValid()) {  // if there is NO particle, we can not dereference it,
+                                                                // so we need a check.
       if (notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
         operator++();
       }
@@ -78,11 +87,41 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
   }
 
  private:
+  /**
+   * @copydoc
+   * @note overrides call in ParticleIterator<Particle, ParticleCell>::operator++()
+   */
+  void next_non_empty_cell() override {
+    // find the next non-empty cell
+    const int stride = autopas_get_num_threads();  // num threads
+    for (this->_iteratorAcrossCells += stride; this->getCurrentCellId() <= _endIndex;
+         this->_iteratorAcrossCells += stride) {
+      auto posDim0 = this->getCurrentCellId() % _cellsPerDim[0];
+      if (posDim0 > _endIndex3D[0] || posDim0 < _startIndex3D[0]) {
+        this->_iteratorAcrossCells += _shortJump;
+      }
+      auto posDim1 = (this->getCurrentCellId() / _cellsPerDim[0]) % _cellsPerDim[1];
+      if (posDim1 > _endIndex3D[1] || posDim1 < _startIndex3D[1]) {
+        this->_iteratorAcrossCells += _longJump;
+      }
+
+      if (this->_iteratorAcrossCells < this->_vectorOfCells->end() and this->_iteratorAcrossCells->isNotEmpty() and
+          this->isCellTypeBehaviorCorrect()) {
+        this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
+        break;
+      }
+    }
+  }
+
   std::array<size_t, 3> _cellsPerDim;
   std::array<double, 3> _startRegion;
   std::array<double, 3> _endRegion;
-  //  size_t _startIndex;
+  std::array<size_t, 3> _startIndex3D;
+  std::array<size_t, 3> _endIndex3D;
+  size_t _startIndex;
   size_t _endIndex;
+  size_t _shortJump;
+  size_t _longJump;
 };
 }  // namespace internal
 }  // namespace autopas
