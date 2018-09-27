@@ -207,6 +207,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       // implicit floor
       startIndex3D[i] = (lowerCorner[i] - boxMinWithHalo[i]) / cellWidthPerDim[i];
       stopIndex3D[i] = std::ceil((higherCorner[i] - boxMinWithHalo[i]) / cellWidthPerDim[i]);
+      stopIndex3D[i] = std::min(stopIndex3D[i], cellsPerDim[i] - 1);
     }
 
     auto startIndex = utils::ThreeDimensionalMapping::threeToOneD(startIndex3D, cellsPerDim);
