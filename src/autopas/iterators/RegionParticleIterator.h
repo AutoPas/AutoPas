@@ -46,7 +46,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
         _cellsPerDim(cellsPerDimension),
         _startRegion(startRegion),
         _endRegion(endRegion),
-        _startIndex(startIndex),  // @todo: maybe pass 3D indices since they are calculated right before
+        _startIndex(startIndex),
         _endIndex(endIndex) {
     _startIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(_startIndex, _cellsPerDim);
     _endIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(_endIndex, _cellsPerDim);
