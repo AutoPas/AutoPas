@@ -197,21 +197,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     auto cellsPerDim = this->_cellBlock.getCellsPerDimensionWithHalo();
-    std::array<double, 3> cellWidthPerDim, boxMinWithHalo, boxMaxWithHalo;
-    std::array<size_t, 3> startIndex3D, stopIndex3D;
-    for (int i = 0; i < 3; ++i) {
-      // getBox does not account for halo. Therefore subtract two cells per dim.
-      cellWidthPerDim[i] = (this->getBoxMax()[i] - this->getBoxMin()[i]) / (cellsPerDim[i] - 2);
-      boxMinWithHalo[i] = this->getBoxMin()[i] - cellWidthPerDim[i];
-      boxMaxWithHalo[i] = this->getBoxMax()[i] + cellWidthPerDim[i];
-      // implicit floor
-      startIndex3D[i] = (lowerCorner[i] - boxMinWithHalo[i]) / cellWidthPerDim[i];
-      stopIndex3D[i] = std::ceil((higherCorner[i] - boxMinWithHalo[i]) / cellWidthPerDim[i]);
-      stopIndex3D[i] = std::min(stopIndex3D[i], cellsPerDim[i] - 1);
-    }
 
-    auto startIndex = utils::ThreeDimensionalMapping::threeToOneD(startIndex3D, cellsPerDim);
-    auto stopIndex = utils::ThreeDimensionalMapping::threeToOneD(stopIndex3D, cellsPerDim);
+    auto startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
+    auto stopIndex = this->_cellBlock.get1DIndexOfPosition(higherCorner);
 
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
         &this->_cells, cellsPerDim, lowerCorner, higherCorner, startIndex, stopIndex, &_cellBlock, behavior));
