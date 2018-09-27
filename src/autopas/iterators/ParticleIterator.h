@@ -124,7 +124,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * Moves the iterator to the next non-empty cell with respect to the stride.
    */
-  void next_non_empty_cell() {
+  virtual void next_non_empty_cell() {
     // find the next non-empty cell
     const int stride = autopas_get_num_threads();  // num threads
     for (_iteratorAcrossCells += stride; _iteratorAcrossCells < _vectorOfCells->end(); _iteratorAcrossCells += stride) {
@@ -159,10 +159,20 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    */
   size_t getCurrentCellId() { return _iteratorAcrossCells - _vectorOfCells->begin(); }
 
- private:
+  /**
+   * Pointer to the cell vector.
+   */
   std::vector<ParticleCell>* _vectorOfCells;
+  /**
+   * Iterator for traversing the cell vector.
+   */
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
+  /**
+   * Particle iterator for a single cell.
+   */
   SingleCellIteratorWrapper<Particle> _iteratorWithinOneCell;
+
+ private:
   CellBorderAndFlagManager* _flagManager;
   IteratorBehavior _behavior;
 };
