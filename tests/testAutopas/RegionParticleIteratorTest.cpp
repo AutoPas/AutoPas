@@ -19,14 +19,14 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
     iterator->touch();
   }
 
-  // check the touch using the normal iterator
-  for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
-    //  std::cout << "id: " << iterator->getID() << " at [" <<
-    //  iterator->getR()[0]
-    //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
-    //              << "] touched:" << iterator->getNumTouched() << std::endl;
-
-    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+  // check the touch. Iterating over cells provides more debug info than normal iterator.
+  for (size_t cellId = 0; cellId < lcContainer.getCells().size(); ++cellId) {
+    auto cellId3D = utils::ThreeDimensionalMapping::oneToThreeD(cellId, {7, 7, 7});
+    for (auto pIter = lcContainer.getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
+      EXPECT_EQ(inBox(pIter->getR(), _regionMin, _regionMax) ? 1 : 0, pIter->getNumTouched())
+          << "at: [" << pIter->getR()[0] << ", " << pIter->getR()[1] << ", " << pIter->getR()[2] << "]" << std::endl
+          << "in cell: " << cellId << " [" << cellId3D[0] << " | " << cellId3D[1] << " | " << cellId3D[2] << "]";
+    }
   }
 }
 
