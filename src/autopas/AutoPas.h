@@ -61,19 +61,6 @@ class AutoPas {
   }
 
   /**
-   * @overload
-   *
-   */
-  void init(std::array<double, 3> boxSize, double cutoff, double verletSkin = 0,
-            unsigned int verletRebuildFrequency = 1,
-            const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
-            const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
-            unsigned int tuningInterval = 100) {
-    init({0, 0, 0}, boxSize, cutoff, verletSkin, verletRebuildFrequency, allowedContainers, allowedTraversals,
-         tuningInterval);
-  }
-
-  /**
    * Updates the internal container.
    * This is needed e.g. for linked-cells if particles move from one cell to another.
    * It resorts particles into appropriate cells and moves them to the halo, if necessary.
@@ -144,12 +131,17 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
+
+  /**
+   * Returns the number of particles in this container.
+   * @return the number of particles in this container.
+   */
+  unsigned long getNumberOfParticles() { return _autoTuner->getContainer()->getNumParticles(); }
 
   /**
    * Get the lower corner of the container.
