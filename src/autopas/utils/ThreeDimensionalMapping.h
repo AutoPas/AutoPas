@@ -13,6 +13,7 @@ namespace autopas {
 namespace utils {
 /**
  * Class to handle the conversion between one dimensional and three dimensional indices.
+ * The running index is x.
  */
 class ThreeDimensionalMapping {
  public:
