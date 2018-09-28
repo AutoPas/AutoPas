@@ -20,10 +20,9 @@ namespace internal {
 /**
  * ParticleIterator class to access particles inside of a container.
  * The particles can be accessed using "iterator->" or "*iterator". The next
- * particle using the ++operator, e.g. "++iterator"
- * @tparam Particle type of the particle that is accessed
- * @tparam ParticleCell type of the cell of the underlying data structure of the
- * container
+ * particle using the ++operator, e.g. "++iterator".
+ * @tparam Particle Type of the particle that is accessed.
+ * @tparam ParticleCell Type of the cell of the underlying data structure of the container.
  */
 template <class Particle, class ParticleCell>
 class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
@@ -37,10 +36,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    *
    * @param cont Linear data vector of ParticleCells.
    * @param offset Number of cells to skip before starting to iterate.
-   * @param flagManager The CellBorderAndFlagManager that shall be used to.
-   * query the cell types. Can be nullptr if the behavior is haloAndOwned.
-   * @param behavior The IteratorBehavior that specifies which type of cells.
-   * shall be iterated through.
+   * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
+   * Can be nullptr if the behavior is haloAndOwned.
+   * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
   explicit ParticleIterator(std::vector<ParticleCell>* cont, size_t offset = 0,
                             CellBorderAndFlagManager* flagManager = nullptr, IteratorBehavior behavior = haloAndOwned)
