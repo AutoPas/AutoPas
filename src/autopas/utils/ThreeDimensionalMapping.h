@@ -15,8 +15,7 @@ namespace utils {
  * Class to handle the conversion between one dimensional and three dimensional indices.
  * The running index is x.
  */
-class ThreeDimensionalMapping {
- public:
+namespace ThreeDimensionalMapping {
   /**
    * Convert a 3d index to a 1d index.
    * @tparam T type of the indices
