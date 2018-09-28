@@ -25,7 +25,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
   for (size_t cellId = 0; cellId < lcContainer.getCells().size(); ++cellId) {
     auto cellId3D = utils::ThreeDimensionalMapping::oneToThreeD(cellId, {7, 7, 7});
     for (auto pIter = lcContainer.getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
-      EXPECT_EQ(inBox(pIter->getR(), _regionMin, _regionMax) ? 1 : 0, pIter->getNumTouched())
+      EXPECT_EQ(utils::inBox(pIter->getR(), _regionMin, _regionMax) ? 1 : 0, pIter->getNumTouched())
           << "at: [" << pIter->getR()[0] << ", " << pIter->getR()[1] << ", " << pIter->getR()[2] << "]" << std::endl
           << "in cell: " << cellId << " [" << cellId3D[0] << " | " << cellId3D[1] << " | " << cellId3D[2] << "]";
     }
@@ -55,7 +55,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
   }
 }
 
@@ -82,8 +82,8 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
-                  ? (inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
+    ASSERT_EQ(utils::inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
+                  ? (utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
                   : 0,
               iterator->getNumTouched());
   }
@@ -108,7 +108,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
     i++;
   }
   ASSERT_EQ(i, 0);
@@ -135,7 +135,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyCons
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
   }
 }
 
@@ -170,7 +170,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssi
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched());
+    ASSERT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched());
   }
 }
 
@@ -218,7 +218,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDo
 
   int particlesChecked = 0;
   for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
-    EXPECT_EQ(inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched());
+    EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched());
     ++particlesChecked;
   }
   EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
@@ -267,7 +267,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDoma
 
   int particlesChecked = 0;
   for (auto iterator = dsContainer.begin(); iterator.isValid(); ++iterator) {
-    EXPECT_EQ(inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched());
+    EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched());
     ++particlesChecked;
   }
   EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
@@ -292,7 +292,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
+    ASSERT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
         << "at: [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]";
   }
 }
@@ -320,7 +320,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOw
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
   }
 }
 
@@ -347,8 +347,8 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
-                  ? (inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
+    ASSERT_EQ(utils::inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
+                  ? (utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
                   : 0,
               iterator->getNumTouched());
   }
@@ -373,7 +373,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
     i++;
   }
   ASSERT_EQ(i, 0);
@@ -400,7 +400,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstr
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+    ASSERT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
   }
 }
 
@@ -435,6 +435,6 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssign
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched());
+    ASSERT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched());
   }
 }

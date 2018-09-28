@@ -43,7 +43,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   ContainerOptions getContainerType() override { return ContainerOptions::directSum; }
 
   void addParticle(Particle &p) override {
-    if (inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+    if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getCell()->addParticle(p);
     } else {
       utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box.\n" +
@@ -52,7 +52,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void addHaloParticle(Particle &p) override {
-    if (notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+    if (utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getHaloCell()->addParticle(p);
     } else {  // particle is not outside of own box
       utils::ExceptionHandler::exception(
@@ -113,7 +113,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (auto iter = this->begin(); iter.isValid() && (not outlierFound); ++iter) {
-      if (notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         outlierFound = true;
       }
     }

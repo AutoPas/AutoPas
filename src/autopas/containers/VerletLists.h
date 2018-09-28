@@ -215,7 +215,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
       boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
       for (auto iter = _linkedCells.getCells()[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (notInBox(iter->getR(), boxmin, boxmax)) {
+        if (utils::notInBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update
           break;
         }

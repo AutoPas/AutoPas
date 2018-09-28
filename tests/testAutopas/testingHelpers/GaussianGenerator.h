@@ -21,7 +21,7 @@ class GaussianGenerator {
     for (size_t id = 0; id < numParticles;) {
       std::array<double, 3> position = {distribution(generator), distribution(generator), distribution(generator)};
       // only increment loop var (and place particle) if position is valid
-      if (not autopas::inBox(position, {0, 0, 0}, autoPas.getBoxMax())) continue;
+      if (not autopas::utils::inBox(position, {0, 0, 0}, autoPas.getBoxMax())) continue;
       Particle p(defaultParicle);
       p.setR(position);
       p.setID(id++);

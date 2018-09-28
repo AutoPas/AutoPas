@@ -11,7 +11,7 @@
 #include <type_traits>
 
 namespace autopas {
-
+namespace utils {
 /**
  * Checks if position is inside of a box defined by low and high.
  * The lower corner is included in, the upper is excluded from the box.
@@ -52,4 +52,5 @@ bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, con
   return not(inBox(position, low, high));
 }
 
+}  // namespace utils
 }  // namespace autopas

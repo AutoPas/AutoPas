@@ -403,6 +403,6 @@ inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::in
 
 template <class ParticleCell>
 bool CellBlock3D<ParticleCell>::checkInHalo(std::array<double, 3> position) const {
-  return autopas::inBox(position, _haloBoxMin, _haloBoxMax) && autopas::notInBox(position, _boxMin, _boxMax);
+  return autopas::utils::inBox(position, _haloBoxMin, _haloBoxMax) && autopas::utils::notInBox(position, _boxMin, _boxMax);
 }
 }  // namespace autopas

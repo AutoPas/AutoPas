@@ -56,7 +56,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   ContainerOptions getContainerType() override { return ContainerOptions::linkedCells; }
 
   void addParticle(Particle &p) override {
-    bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
+    bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
     if (inBox) {
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
@@ -138,7 +138,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
         for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
           // if not in cell
-          if (notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
+          if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(*pIter);
             pIter.deleteCurrentParticle();
           }
@@ -150,7 +150,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       // this loop is executed for every thread
       for (auto &&p : myInvalidParticles)
         // if not in halo
-        if (inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
+        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
           addParticle(p);
         else
           addHaloParticle(p);
@@ -172,7 +172,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
 
       for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (not inBox(iter->getR(), boxmin, boxmax)) {
+        if (not utils::inBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update
           break;
         }

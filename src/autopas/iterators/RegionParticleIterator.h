@@ -58,7 +58,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     // not valid
     if (ParticleIterator<Particle, ParticleCell>::isValid()) {  // if there is NO particle, we can not dereference it,
                                                                 // so we need a check.
-      if (notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
+      if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
         operator++();
       }
     }
@@ -71,13 +71,13 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     do {
       ParticleIterator<Particle, ParticleCell>::operator++();
     } while (ParticleIterator<Particle, ParticleCell>::isValid() &&
-             notInBox(this->operator*().getR(), _startRegion, _endRegion) && this->getCurrentCellId() <= _endIndex);
+             utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) && this->getCurrentCellId() <= _endIndex);
     return *this;
   }
 
   bool isValid() const override {
     return ParticleIterator<Particle, ParticleCell>::isValid() &&
-           inBox(this->operator*().getR(), _startRegion, _endRegion);
+           utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
   }
 
   // @todo add test of clone

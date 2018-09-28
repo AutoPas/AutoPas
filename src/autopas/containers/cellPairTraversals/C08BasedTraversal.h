@@ -140,5 +140,4 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
   _cellOffsets[i++] = xz;
   _cellOffsets[i++] = xyz;
 }
-
 }  // namespace autopas
