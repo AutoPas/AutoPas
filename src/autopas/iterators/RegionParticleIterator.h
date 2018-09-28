@@ -119,7 +119,15 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
   std::array<size_t, 3> _endIndex3D;
   size_t _startIndex;
   size_t _endIndex;
+  /**
+   * When the iterator passes _endIndex3D[0] this is the jump distance to increase y by 1 and setting x to
+   * _startIndex3D[0] (or behind this depending on the stride).
+   */
   size_t _shortJump;
+  /**
+   * When the iterator passes _endIndex3D[1] this is the jump distance to increase z by 1 and setting y to
+   * _startIndex3D[1] (or behind this depending on the stride).
+   */
   size_t _longJump;
 };
 }  // namespace internal
