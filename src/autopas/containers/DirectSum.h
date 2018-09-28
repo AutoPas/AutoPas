@@ -105,7 +105,17 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void updateContainer() override {
-    // @todo might need to do sth. if particles move outside of the box?
+    if (getHaloCell()->isNotEmpty()) {
+      utils::ExceptionHandler::exception(
+          "DirectSum: Halo particles still present when updateContainer was called. Found {} particles",
+          getHaloCell()->numParticles());
+    }
+    for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
+      if (notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+        addHaloParticle(*iter);
+        iter.deleteCurrentParticle();
+      }
+    }
   }
 
   bool isContainerUpdateNeeded() override {
