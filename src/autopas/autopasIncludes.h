@@ -44,6 +44,7 @@
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/VerletClusterLists.h"
 #include "autopas/containers/VerletLists.h"
 #include "autopas/containers/VerletListsCells.h"
 
