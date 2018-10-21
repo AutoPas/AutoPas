@@ -36,7 +36,6 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
    * not move more than a distance of skin/2 between two rebuilds of the lists.
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
-   * @param density the estimated particles per volume
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
    * @param rebuildFrequency specifies after how many pair-wise traversals the
@@ -44,32 +43,19 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param clusterSize size of clusters
    */
-  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double density,
-                     double cutoff, double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
+  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+                     double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
       : ParticleContainer<Particle, std::vector<Particle>>(boxMin, boxMax, cutoff + skin),
+        _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _skin(skin),
         _cutoff(cutoff),
+        _cutoffSqr(cutoff * cutoff),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false),
-        _clusterSize(clusterSize) {
-    _gridSideLength = cbrt(clusterSize / density);
-    _gridSideLengthReciprocal = 1 / _gridSideLength;
-
-    index_t numCells = 1;
-    for (int d = 0; d < 2; d++) {
-      double diff = _boxMax[d] - _boxMin[d];
-      _cellsPerDim[d] = static_cast<index_t>(std::floor(diff / _gridSideLength));
-      // at least one central cell
-      _cellsPerDim[d] = std::max(_cellsPerDim[d], 1ul);
-
-      numCells *= _cellsPerDim[d];
-    }
-    _cellsPerDim[2] = 1ul;
-
-    _clusters.resize(numCells);
+        _neighborListIsValid(false) {
+    rebuild();
   }
 
   ContainerOptions getContainerType() override { return ContainerOptions::verletListsCells; }
@@ -86,7 +72,7 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {  // if rebuild needed
-      this->updateVerletLists();
+      this->rebuild();
     }
     traverseVerletLists(f, useNewton3);
 
@@ -113,8 +99,18 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
   void addParticle(Particle& p) override {
     _neighborListIsValid = false;
     // add particle somewhere, because lists will be rebuild anyways
-    _clusters[0].push_back(&p);
+    _clusters[0].push_back(p);
   }
+
+  /**
+   * @copydoc VerletLists::addHaloParticle()
+   */
+  void addHaloParticle(Particle& haloParticle) override { throw "VerletClusterLists.addHaloParticle not implemented"; }
+
+  /**
+   * @copydoc VerletLists::deleteHaloParticles
+   */
+  void deleteHaloParticles() override {}
 
   /**
    * @copydoc VerletLists::updateContainer()
@@ -122,6 +118,14 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
   void updateContainer() override {
     AutoPasLogger->debug("updating container");
     _neighborListIsValid = false;
+  }
+
+  bool isContainerUpdateNeeded() override { throw "VerletClusterLists.isContainerUpdateNeeded not implemented"; }
+
+  TraversalSelector<std::vector<Particle>> generateTraversalSelector(
+      std::vector<TraversalOptions> traversalOptions) override {
+    // at the moment this is just a dummy
+    return TraversalSelector<std::vector<Particle>>({0, 0, 0}, traversalOptions);
   }
 
   /**
@@ -135,13 +139,25 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
            or (_traversalsSinceLastRebuild >= _rebuildFrequency);  // rebuild with frequency
   }
 
+  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    throw "VerletClusterLists.begin not implemented";
+  }
+
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    throw "VerletClusterLists.getRegionIterator ot implemented";
+  }
+
  protected:
-  /*
-   * recalculate clusters
+  /**
+   * recalculate grids and clusters,
+   * build verlet lists and
+   * pad clusters
    */
   void rebuild() {
+    // get all particles and clear clusters
     std::vector<Particle> invalidParticles;
-
     for (auto& cluster : _clusters) {
       for (auto& particle : cluster) {
         invalidParticles.push_back(particle);
@@ -149,6 +165,41 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
 
       cluster.clear();
     }
+
+    // get the dimensions and volumes of the box
+    double boxSize[3]{};
+    double volume = 1.0;
+    for (int d = 0; d < 3; d++) {
+      boxSize[d] = _boxMax[d] - _boxMin[d];
+      ;
+      volume *= boxSize[d];
+    }
+
+    if (invalidParticles.size() > 0) {
+      // estimate particle density
+      double density = invalidParticles.size() / volume;
+
+      // guess optimal grid side length
+      _gridSideLength = std::cbrt(_clusterSize / density);
+    } else {
+      _gridSideLength = std::max(boxSize[0], boxSize[1]);
+    }
+    _gridSideLengthReciprocal = 1 / _gridSideLength;
+
+    // get cells per dimension
+    index_t numCells = 1;
+    for (int d = 0; d < 2; d++) {
+      _cellsPerDim[d] = static_cast<index_t>(std::floor(boxSize[d] / _gridSideLength));
+      // at least one cell
+      _cellsPerDim[d] = std::max(_cellsPerDim[d], 1ul);
+
+      numCells *= _cellsPerDim[d];
+    }
+    _cellsPerDim[2] = 1ul;
+
+    // resize to number of grids
+    _clusters.resize(numCells);
+    _neighborLists.resize(numCells);
 
     // put particles into grids
     for (auto& particle : invalidParticles) {
@@ -158,11 +209,23 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
       }
     }
 
-    // sort by last dimension
+    // sort by last dimension and reserve space for dummy particles
     for (auto& cluster : _clusters) {
       std::sort(cluster.begin(), cluster.end(),
-                [](const Particle& a, const Particle& b) -> bool { return a.GetR()[2] < b.GetR()[2]; });
+                [](const Particle& a, const Particle& b) -> bool { return a.getR()[2] < b.getR()[2]; });
+
+      size_t size = cluster.size();
+      size_t rest = size % _clusterSize;
+      if (rest > 0) cluster.reserve(size + (_clusterSize - rest));
     }
+
+    // clear neighbor lists
+    for (auto& verlet : _neighborLists) {
+      verlet.clear();
+    }
+
+    updateVerletLists();
+    padClusters();
   }
 
   /**
@@ -173,36 +236,194 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
     _neighborListIsValid = true;
     _traversalsSinceLastRebuild = 0;
 
-    rebuild();
-
-    const int boxRange = static_cast<int>(ceil((_cutoff + _skin) / _gridSideLength));
+    const int boxRange = static_cast<int>(std::ceil((_cutoff + _skin) * _gridSideLengthReciprocal));
 
     const int gridMaxX = _cellsPerDim[0] - 1;
     const int gridMaxY = _cellsPerDim[1] - 1;
     for (int yi = 0; yi <= gridMaxY; yi++) {
       for (int xi = 0; xi <= gridMaxX; xi++) {
-        auto ci = _clusters[index1D(xi, yi)];
+        auto& iGrid = _clusters[index1D(xi, yi)];
+        // calculate number of full clusters and rest
+        index_t iRest = iGrid.size() % _clusterSize;
+        index_t iSize = iGrid.size() / _clusterSize;
+
         const int minX = std::max(xi - boxRange, 0);
         const int minY = std::max(yi - boxRange, 0);
         const int maxX = std::min(xi + boxRange, gridMaxX);
         const int maxY = std::min(yi + boxRange, gridMaxY);
 
+        auto& iNeighbors = _neighborLists[index1D(xi, yi)];
+        if (iRest > 0)
+          iNeighbors.resize(iSize + 1);
+        else
+          iNeighbors.resize(iSize);
         for (int yj = minY; yj <= maxY; yj++) {
+          double distY = std::max(0, std::abs(yi - yj) - 1) * _gridSideLength;
           for (int xj = minX; xj <= maxX; xj++) {
-            auto cj = _clusters[index1D(xj, yj)];
+            auto& jGrid = _clusters[index1D(xj, yj)];
 
-            // TODO
+            // calculate number of  full clusters and rest
+            index_t jRest = jGrid.size() % _clusterSize;
+            index_t jSize = jGrid.size() / _clusterSize;
+
+            // calculate distance in xy-plane and skip if already longer than cutoff
+            double distX = std::max(0, std::abs(xi - xj) - 1) * _gridSideLength;
+            double distXYsqr = distX * distX + distY * distY;
+            if (distXYsqr <= _cutoffSqr) {
+              for (index_t zi = 0; zi < iSize; zi++) {
+                // bbox in z of iGrid
+                float iBBoxBot = iGrid[zi * _clusterSize].getR()[2];
+                float iBBoxTop = iGrid[(zi + 1) * _clusterSize - 1].getR()[2];
+                auto& iClusterVerlet = iNeighbors[zi];
+                for (index_t zj = 0; zj < jSize; zj++) {
+                  // bbox in z of jGrid
+                  Particle* jClusterStart = &jGrid[zj * _clusterSize];
+                  float jBBoxBot = jClusterStart->getR()[2];
+                  float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
+
+                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+                    iClusterVerlet.push_back(jClusterStart);
+                  }
+                }
+                // special case: last cluster not full
+                if (jRest > 0) {
+                  // bbox in z of jGrid
+                  Particle* jClusterStart = &jGrid[jSize * _clusterSize];
+                  float jBBoxBot = jClusterStart->getR()[2];
+                  float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
+
+                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+                    iClusterVerlet.push_back(jClusterStart);
+                  }
+                }
+              }
+              // special case: last cluster not full
+              if (iRest > 0) {
+                // bbox in z of iGrid
+                float iBBoxBot = iGrid[iSize * _clusterSize].getR()[2];
+                float iBBoxTop = iGrid[iSize * _clusterSize + iRest - 1].getR()[2];
+                auto& iClusterVerlet = iNeighbors[iSize];
+                for (index_t zj = 0; zj < jSize; zj++) {
+                  // bbox in z of jGrid
+                  Particle* jClusterStart = &jGrid[zj * _clusterSize];
+                  float jBBoxBot = jClusterStart->getR()[2];
+                  float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
+
+                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+                    iClusterVerlet.push_back(jClusterStart);
+                  }
+                }
+                // special case: last cluster not full
+                if (jRest > 0) {
+                  // bbox in z of jGrid
+                  Particle* jClusterStart = &jGrid[jSize * _clusterSize];
+                  float jBBoxBot = jClusterStart->getR()[2];
+                  float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
+
+                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+                    iClusterVerlet.push_back(jClusterStart);
+                  }
+                }
+              }
+            }
           }
         }
       }
     }
   }
 
-  template <class ParticleFunctor>
-  void traverseVerletLists(ParticleFunctor* functor, bool useNewton3) {
-    // TODO
+  /**
+   * Pad clusters with dummy particles
+   */
+  void padClusters() {
+    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
+      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+        auto& grid = _clusters[index1D(x, y)];
+        index_t rest = grid.size() % _clusterSize;
+        if (rest > 0) {
+          for (int i = rest; i < _clusterSize; i++) {
+            Particle p = Particle();
+            p.setR({2 * x * _cutoff, 2 * y * _cutoff, 2 * _boxMax[2] + 2 * i * _cutoff});
+            grid.push_back(p);
+          }
+        }
+      }
+    }
   }
 
+  /**
+   * Traverse over the verlet lists
+   * @param functor Functor applied to each particle pair
+   * @param useNewton3
+   */
+  template <class ParticleFunctor>
+  void traverseVerletLists(ParticleFunctor* functor, bool useNewton3) {
+    if (needsRebuild()) {
+      rebuild();
+    }
+
+    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
+      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+        index_t index = index1D(x, y);
+        auto& grid = _clusters[index];
+        auto& gridVerlet = _neighborLists[index];
+
+        const index_t gridSize = grid.size() / 4;
+        for (index_t z = 0; z < gridSize; z++) {
+          Particle* iClusterStart = &grid[z * 4];
+          for (auto neighbor : gridVerlet[z]) {
+            if (iClusterStart == neighbor) {
+              // self pair
+              for (int i = 0; i < _clusterSize; i++) {
+                for (int j = i + 1; j < _clusterSize; j++) {
+                  Particle* iParticle = iClusterStart + i;
+                  Particle* jParticle = neighbor + j;
+                  functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
+                  if (not useNewton3) functor->AoSFunctor(*jParticle, *iParticle, useNewton3);
+                }
+              }
+            } else {
+              for (int i = 0; i < _clusterSize; i++) {
+                for (int j = 0; j < _clusterSize; j++) {
+                  Particle* iParticle = iClusterStart + i;
+                  Particle* jParticle = neighbor + j;
+                  functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Calculates the distance of two bounding boxes in one dimension
+   * @param min1 minimum coordinate of first bbox in tested dimension
+   * @param max1 maximum coordinate of first bbox in tested dimension
+   * @param min2 minimum coordinate of second bbox in tested dimension
+   * @param max2 maximum coordinate of second bbox in tested dimension
+   * @return distance
+   */
+  inline float bboxDistance(const float min1, const float max1, const float min2, const float max2) const {
+    if (max1 < min2) {
+      return min2 - max1;
+    } else if (min1 > max2) {
+      return min1 - max2;
+    } else {
+      return 0;
+    }
+  }
+
+  /**
+   * gets the grid containing a particle in given position
+   * @param pos the position of the particle
+   * @return the index of the grid
+   */
   inline index_t getIndexOfPosition(const std::array<double, 3>& pos) const {
     std::array<index_t, 2> cellIndex{};
 
@@ -225,11 +446,17 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
     /// @todo when the border and flag manager is there
   }
 
-  inline index_t index1D(const int x, const int y) { return x + y * _cellsPerDim[0]; }
+  /**
+   * converts grid position to the index in the vector
+   * @param x x-position in grid
+   * @param y y-position in grid
+   * @return index in vector
+   */
+  inline index_t index1D(const index_t x, const index_t y) { return x + y * _cellsPerDim[0]; }
 
  private:
-  // TODO
-  // std::vector<std::vector<Particle*>> _neighborLists;
+  // neighbors of clusters for each grid
+  std::vector<std::vector<std::vector<Particle*>>> _neighborLists;
 
   /// internal storage, particles are split into a grid in xy-dimension
   std::vector<std::vector<Particle>> _clusters;
@@ -250,6 +477,7 @@ class VerletClusterLists : public ParticleContainer<Particle, std::vector<Partic
 
   /// cutoff
   double _cutoff;
+  double _cutoffSqr;
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
