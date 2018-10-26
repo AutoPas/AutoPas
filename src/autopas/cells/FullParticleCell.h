@@ -22,13 +22,19 @@ class FullParticleCell : public ParticleCell<Particle> {
  public:
   FullParticleCell() {}
 
-  void addParticle(Particle &m) override { _particles.push_back(m); }
+  void addParticle(Particle& m) override { _particles.push_back(m); }
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
     return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }
+
+  /**
+   * Returns a reference to the element at position n in the container
+   * @param Position of an element in the container
+   */
+  Particle& operator[](size_t idx) { return _particles[idx]; }
 
   bool isNotEmpty() const override { return numParticles() > 0; }
 
@@ -42,6 +48,26 @@ class FullParticleCell : public ParticleCell<Particle> {
     }
     _particles.pop_back();
   }
+
+  /**
+   * Resizes the container so that it contains n elements.
+   * @param n New container size
+   */
+  void resize(size_t n) { _particles.resize(n); }
+
+  /**
+   * Sort the particles in the cell by their z-dimension
+   */
+  void sortByZ() {
+    std::sort(_particles.begin(), _particles.end(),
+              [](const Particle& a, const Particle& b) -> bool { return a.getR()[2] < b.getR()[2]; });
+  }
+
+  /**
+   * Requests that the vector capacity be at least enough to contain n elements.
+   * @param n Minimum capacity for the vector.
+   */
+  void reserve(size_t n) { _particles.reserve(n); }
 
   /**
    * storage of the molecules of the cell

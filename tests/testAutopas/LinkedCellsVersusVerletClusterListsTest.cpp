@@ -26,7 +26,36 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
     _verletLists.addParticle(*it);
   }
 
-  // TODO tolerance test
+  autopas::LJFunctor<Molecule, FMCell> func;
+  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, false> dummyTraversal({0, 0, 0}, &func);
+  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, false> traversalLinkedLJ(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  _verletLists.iteratePairwiseAoS(&func, &dummyTraversal, false);
+  _linkedCells.iteratePairwiseAoS(&func, &traversalLinkedLJ, false);
+
+  std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
+  // get and sort by id, skip id=0 to avoid dummy particles
+  for (auto it = _verletLists.begin(); it.isValid(); ++it) {
+    autopas::MoleculeLJ &m = *it;
+    if (m.getID() != 0) forcesVerlet.at(m.getID()) = m.getF();
+  }
+  forcesVerlet.at(0) = {0.0, 0.0, 0.0};
+
+  for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
+    autopas::MoleculeLJ &m = *it;
+    if (m.getID() != 0) forcesLinked.at(m.getID()) = m.getF();
+  }
+  forcesLinked.at(0) = {0.0, 0.0, 0.0};
+
+  for (unsigned long i = 0; i < numMolecules; ++i) {
+    for (int d = 0; d < 3; ++d) {
+      double f1 = forcesVerlet[i][d];
+      double f2 = forcesLinked[i][d];
+      double abs_err = std::abs(f1 - f2);
+      double rel_err = std::abs(abs_err / f1);
+      EXPECT_LT(rel_err, rel_err_tolerance);
+    }
+  }
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
   autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalFLOPS(

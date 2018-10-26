@@ -35,11 +35,8 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   _verletListsCells.iteratePairwiseAoS(&func, &traversalVerletLJ);
   _linkedCells.iteratePairwiseAoS(&func, &traversalLinkedLJ);
 
-  auto itDirect = _verletListsCells.begin();
-  auto itLinked = _linkedCells.begin();
-
   std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
-  // get and sort by id, the
+  // get and sort by id
   for (auto it = _verletListsCells.begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
     forcesDirect.at(m.getID()) = m.getF();
