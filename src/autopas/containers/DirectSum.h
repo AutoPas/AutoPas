@@ -109,7 +109,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
           getHaloCell()->numParticles());
     }
     for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
-      if (notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         addHaloParticle(*iter);
         iter.deleteCurrentParticle();
       }
