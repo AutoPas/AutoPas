@@ -26,6 +26,15 @@ namespace internal {
  */
 template <class Particle, class ParticleCell>
 class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
+ protected:
+  explicit ParticleIterator(std::vector<ParticleCell>* cont, CellBorderAndFlagManager* flagManager,
+                            IteratorBehavior behavior)
+      : _vectorOfCells(cont),
+        _iteratorAcrossCells(cont->begin()),
+        _iteratorWithinOneCell(cont->begin()->begin()),
+        _flagManager(flagManager),
+        _behavior(behavior) {}
+
  public:
   /**
    * Constructor of the ParticleIterator class.
@@ -170,7 +179,6 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    */
   SingleCellIteratorWrapper<Particle> _iteratorWithinOneCell;
 
- private:
   CellBorderAndFlagManager* _flagManager;
   IteratorBehavior _behavior;
 };

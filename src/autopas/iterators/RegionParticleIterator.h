@@ -37,30 +37,35 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit RegionParticleIterator(std::vector<ParticleCell> *cont, const std::array<size_t, 3> cellsPerDimension,
-                                  std::array<double, 3> startRegion, std::array<double, 3> endRegion, size_t startIndex,
-                                  size_t endIndex, CellBorderAndFlagManager *flagManager = nullptr,
+  explicit RegionParticleIterator(std::vector<ParticleCell> *cont, std::array<double, 3> startRegion,
+                                  std::array<double, 3> endRegion, std::vector<size_t> &indicesInRegion,
+                                  CellBorderAndFlagManager *flagManager = nullptr,
                                   IteratorBehavior behavior = haloAndOwned)
-      : ParticleIterator<Particle, ParticleCell>(cont, startIndex, flagManager, behavior),
-        _cellsPerDim(cellsPerDimension),
+      : ParticleIterator<Particle, ParticleCell>(cont, flagManager, behavior),
         _startRegion(startRegion),
         _endRegion(endRegion),
-        _startIndex(startIndex),
-        _endIndex(endIndex) {
-    _startIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(_startIndex, _cellsPerDim);
-    _endIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(_endIndex, _cellsPerDim);
+        _indicesInRegion(indicesInRegion),
+        _currentRegionIndex(autopas_get_thread_num()) {
+    this->_vectorOfCells = cont;
+    if (_indicesInRegion.size() >= (size_t)autopas_get_num_threads()) {
+      this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[autopas_get_thread_num()];
+      this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
+    } else {
+      this->_iteratorAcrossCells = cont->end();
+    }
 
-    _shortJump = _cellsPerDim[0] - (_endIndex3D[0] - _startIndex3D[0]) - 1;
-    _longJump = _cellsPerDim[0] * (_cellsPerDim[1] - (_endIndex3D[1] - _startIndex3D[1]) - 1);
-
+    this->_flagManager = flagManager;
+    this->_behavior = behavior;
     // ParticleIterator's constructor will initialize the Iterator, such that it
     // points to the first particle if one is found, otherwise the pointer is
     // not valid
-    if (ParticleIterator<Particle, ParticleCell>::isValid()) {  // if there is NO particle, we can not dereference it,
-                                                                // so we need a check.
+    if (ParticleIterator<Particle, ParticleCell>::isValid()) {  // if there is NO particle, we can not dereference
+                                                                // it, so we need a check.
       if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
         operator++();
       }
+    } else if (this->_iteratorAcrossCells != cont->end()) {
+      operator++();
     }
   }
 
@@ -71,7 +76,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     do {
       ParticleIterator<Particle, ParticleCell>::operator++();
     } while (ParticleIterator<Particle, ParticleCell>::isValid() &&
-             utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) && this->getCurrentCellId() <= _endIndex);
+             utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) &&
+             this->getCurrentCellId() <= *(_indicesInRegion.end() - 1));
     return *this;
   }
 
@@ -93,42 +99,36 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
   void next_non_empty_cell() override {
     // find the next non-empty cell
     const int stride = autopas_get_num_threads();  // num threads
-    for (this->_iteratorAcrossCells += stride; this->getCurrentCellId() <= _endIndex;
-         this->_iteratorAcrossCells += stride) {
-      auto posDim0 = this->getCurrentCellId() % _cellsPerDim[0];
-      if (posDim0 > _endIndex3D[0] || posDim0 < _startIndex3D[0]) {
-        this->_iteratorAcrossCells += _shortJump;
-      }
-      auto posDim1 = (this->getCurrentCellId() / _cellsPerDim[0]) % _cellsPerDim[1];
-      if (posDim1 > _endIndex3D[1] || posDim1 < _startIndex3D[1]) {
-        this->_iteratorAcrossCells += _longJump;
-      }
+    if (_currentRegionIndex + stride >= _indicesInRegion.size()) {
+      return;
+    }
+    size_t iteratorInc = _indicesInRegion[_currentRegionIndex + stride] - _indicesInRegion[_currentRegionIndex];
+
+    for (this->_iteratorAcrossCells += iteratorInc; this->getCurrentCellId() <= *(_indicesInRegion.end() - 1);
+         this->_iteratorAcrossCells += iteratorInc) {
+      //#pragma omp critical
+      //      std::cout << "Thread [" << autopas_get_thread_num() << "] currentCellIndex= " <<
+      //      (this->getCurrentCellId())
+      //      << " currentRegionIndex= " << _currentRegionIndex
+      //      << " iteratorInc= " << iteratorInc << std::endl;
+      _currentRegionIndex += stride;
 
       if (this->_iteratorAcrossCells < this->_vectorOfCells->end() and this->_iteratorAcrossCells->isNotEmpty() and
           this->isCellTypeBehaviorCorrect()) {
         this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
         break;
       }
+      if (_currentRegionIndex + stride >= _indicesInRegion.size()) {
+        break;
+      }
+      iteratorInc = _indicesInRegion[_currentRegionIndex + stride] - _indicesInRegion[_currentRegionIndex];
     }
   }
 
-  std::array<size_t, 3> _cellsPerDim;
   std::array<double, 3> _startRegion;
   std::array<double, 3> _endRegion;
-  std::array<size_t, 3> _startIndex3D;
-  std::array<size_t, 3> _endIndex3D;
-  size_t _startIndex;
-  size_t _endIndex;
-  /**
-   * When the iterator passes _endIndex3D[0] this is the jump distance to increase y by 1 and setting x to
-   * _startIndex3D[0] (or behind this depending on the stride).
-   */
-  size_t _shortJump;
-  /**
-   * When the iterator passes _endIndex3D[1] this is the jump distance to increase z by 1 and setting y to
-   * _startIndex3D[1] (or behind this depending on the stride).
-   */
-  size_t _longJump;
+  std::vector<size_t> _indicesInRegion;
+  size_t _currentRegionIndex;
 };
 }  // namespace internal
 }  // namespace autopas

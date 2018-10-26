@@ -196,13 +196,30 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    auto cellsPerDim = this->_cellBlock.getCellsPerDimensionWithHalo();
-
     auto startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
     auto stopIndex = this->_cellBlock.get1DIndexOfPosition(higherCorner);
 
+    auto startIndex3D =
+        utils::ThreeDimensionalMapping::oneToThreeD(startIndex, this->_cellBlock.getCellsPerDimensionWithHalo());
+    auto stopIndex3D =
+        utils::ThreeDimensionalMapping::oneToThreeD(stopIndex, this->_cellBlock.getCellsPerDimensionWithHalo());
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] =
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+        }
+      }
+    }
+
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
-        &this->_cells, cellsPerDim, lowerCorner, higherCorner, startIndex, stopIndex, &_cellBlock, behavior));
+        &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
   }
 
   /**
