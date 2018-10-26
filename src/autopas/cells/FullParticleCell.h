@@ -33,6 +33,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Returns a reference to the element at position n in the container
    * @param Position of an element in the container
+   * @return Reference to the element
    */
   Particle& operator[](size_t idx) { return _particles[idx]; }
 
