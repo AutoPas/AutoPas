@@ -42,20 +42,21 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
   lcContainer.addHaloParticle(part);
 
   // touch them using the regionIterator
-  for (auto iterator = lcContainer.getRegionIterator(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+  auto testBoxMin = ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
+  for (auto iterator = lcContainer.getRegionIterator(testBoxMin, _regionMax,
                                                      autopas::IteratorBehavior::ownedOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
   }
 
-  // check the touch using the normal iterator
-  for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
-    //  std::cout << "id: " << iterator->getID() << " at [" <<
-    //  iterator->getR()[0]
-    //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
-    //              << "] touched:" << iterator->getNumTouched() << std::endl;
-
-    ASSERT_EQ(utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched());
+  // check the touch. Iterating over cells provides more debug info than normal iterator.
+  for (size_t cellId = 0; cellId < lcContainer.getCells().size(); ++cellId) {
+    auto cellId3D = utils::ThreeDimensionalMapping::oneToThreeD(cellId, {7, 7, 7});
+    for (auto pIter = lcContainer.getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
+      EXPECT_EQ(utils::inBox(pIter->getR(), testBoxMin, _regionMax) ? 1 : 0, pIter->getNumTouched())
+                << "at: [" << pIter->getR()[0] << ", " << pIter->getR()[1] << ", " << pIter->getR()[2] << "]" << std::endl
+                << "in cell: " << cellId << " [" << cellId3D[0] << " | " << cellId3D[1] << " | " << cellId3D[2] << "]";
+    }
   }
 }
 
@@ -82,7 +83,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    ASSERT_EQ(utils::inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
+    EXPECT_EQ(utils::inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
                   ? (utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
                   : 0,
               iterator->getNumTouched());
