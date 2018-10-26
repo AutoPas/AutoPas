@@ -27,6 +27,15 @@ namespace internal {
 template <class Particle, class ParticleCell>
 class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
  protected:
+  /**
+   * Simple constructor without major calculation overhead for internal use.
+   * ATTENTION: This Iterator might be invalid after construction!
+   *
+   * @param cont Linear data vector of ParticleCells.
+   * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
+   * Can be nullptr if the behavior is haloAndOwned.
+   * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
+   */
   explicit ParticleIterator(std::vector<ParticleCell>* cont, CellBorderAndFlagManager* flagManager,
                             IteratorBehavior behavior)
       : _vectorOfCells(cont),
@@ -179,7 +188,14 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    */
   SingleCellIteratorWrapper<Particle> _iteratorWithinOneCell;
 
+  /**
+   * Manager providing info if cell is in halo.
+   */
   CellBorderAndFlagManager* _flagManager;
+
+  /**
+   * The behavior of the iterator.
+   */
   IteratorBehavior _behavior;
 };
 }  // namespace internal
