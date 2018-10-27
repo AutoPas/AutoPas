@@ -122,6 +122,7 @@ int main(int argc, char *argv[]) {
   for (auto it = lcCont.begin(); it.isValid(); ++it) {
     verletCellContc08.addParticle(*it);
     verletCellContc18.addParticle(*it);
+    verletClusterCont.addParticle(*it);
   }
 
   if (containerType == linkedCells) {

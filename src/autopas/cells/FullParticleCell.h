@@ -35,7 +35,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  Particle& operator[](size_t idx) { return _particles[idx]; }
+  Particle& operator[](size_t n) { return _particles[n]; }
 
   bool isNotEmpty() const override { return numParticles() > 0; }
 
