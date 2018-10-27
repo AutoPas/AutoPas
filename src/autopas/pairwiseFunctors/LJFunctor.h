@@ -41,7 +41,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
     auto f = ArrayMath::mulScalar(dr, fac);
     i.addF(f);
-    j.subF(f);
+    if (newton3) j.subF(f);
   }
 
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
