@@ -5,7 +5,10 @@ if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.1)
 endif ()
 
 # needed for GCC to vectorize LJFunctor.SoAFunctor
-option(ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize efficiently" ON)
+option(ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize efficiently" OFF)
+if (ENABLE_FAST_MATH)
+    message(WARNING "Fast-Math might cause particle loss! Only use this if you know what you are doing!")
+endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if (ENABLE_FAST_MATH)
         message(STATUS "fast-math enabled using -ffast-math (gcc, clang)")

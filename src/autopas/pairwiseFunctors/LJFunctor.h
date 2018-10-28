@@ -15,7 +15,7 @@
 
 namespace autopas {
 
-/// @todo can we do this without a template? Maybe. But we want to inline it
+// @todo can we do this without a template? Maybe. But we want to inline it
 // anyway :)
 /**
  * A functor to handle lennard-jones interactions between two particles
@@ -184,7 +184,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
     auto numParts = soa.getNumParticles();
-    AutoPasLogger->debug("LJFunctor::SoAFunctorVerlet: {}", soa.getNumParticles());
+    AutoPasLog(debug, "SoAFunctorVerlet: {}", soa.getNumParticles());
 
     if (numParts == 0) return;
 
@@ -340,7 +340,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
    */
   AUTOPAS_FUNCTOR_SOALOADER(
       cell, soa, offset,
-      // todo it is probably better to resize the soa only once, before calling
+      // @todo it is probably better to resize the soa only once, before calling
       // SoALoader (verlet-list only)
       soa.resizeArrays(offset + cell.numParticles());
 

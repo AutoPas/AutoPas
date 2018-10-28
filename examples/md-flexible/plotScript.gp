@@ -61,6 +61,9 @@ set key font ",". fontsize
 set xlabel font ",". fontsize
 set ylabel font ",". fontsize
 
+set xrange [] writeback
+set yrange [] writeback
+
 plot for [i=1:words(datafiles)] \
     word(datafiles, i) \
     index dataBlock \
@@ -101,3 +104,8 @@ plot for [i=1:words(datafiles)] \
                             ;; \
                          esac") + 0) \
     title word(titles, i)
+
+# save margins
+set xrange restore
+set yrange restore
+replot 28000 / x linecolor 'gray'

@@ -109,7 +109,7 @@ typedef int autopas_lock_t;
  * @param l Pointer to lock to be set.
  */
 inline void autopas_set_lock(autopas_lock_t *l) {
-  assert(*l == 0);  // TODO: customize asserts
+  assert(*l == 0);  // @todo: customize asserts
   *l = 1;
 }
 
@@ -118,7 +118,8 @@ inline void autopas_set_lock(autopas_lock_t *l) {
  * @param l Pointer to lock to be initialized.
  */
 inline void autopas_init_lock(autopas_lock_t *l) {
-  assert(l != nullptr);  // TODO: customize asserts
+  assert(l != nullptr);  // @todo: customize asserts
+  *l = 0;
 }
 
 /**
@@ -126,7 +127,7 @@ inline void autopas_init_lock(autopas_lock_t *l) {
  * @param l Pointer to lock to be unset.
  */
 inline void autopas_unset_lock(autopas_lock_t *l) {
-  assert(*l == 1);  // TODO: customize asserts
+  assert(*l == 1);  // @todo: customize asserts
   *l = 0;
 }
 
@@ -135,7 +136,7 @@ inline void autopas_unset_lock(autopas_lock_t *l) {
  * @param l Pointer to lock to be destroyed.
  */
 inline void autopas_destroy_lock(autopas_lock_t *l) {
-  assert(l != nullptr);  // TODO: customize asserts
+  assert(l != nullptr);  // @todo: customize asserts
 }
 
 #endif

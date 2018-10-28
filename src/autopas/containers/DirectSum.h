@@ -47,7 +47,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (inBox) {
       getCell()->addParticle(p);
     } else {
-      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box");
+      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box.\n" +
+                                         p.toString());
     }
   }
 
@@ -58,7 +59,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     } else {  // particle is not outside of own box
       utils::ExceptionHandler::exception(
           "DirectSum: trying to add particle that is not OUTSIDE of the "
-          "bounding box");
+          "bounding box.\n" +
+          p.toString());
     }
   }
 
@@ -103,13 +105,23 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void updateContainer() override {
-    /// @todo might need to do sth. if particles move outside of the box?
+    if (getHaloCell()->isNotEmpty()) {
+      utils::ExceptionHandler::exception(
+          "DirectSum: Halo particles still present when updateContainer was called. Found {} particles",
+          getHaloCell()->numParticles());
+    }
+    for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
+      if (notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+        addHaloParticle(*iter);
+        iter.deleteCurrentParticle();
+      }
+    }
   }
 
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
-    // TODO: find a sensible value for ???
+    // @todo: find a sensible value for ???
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (auto iter = this->begin(); iter.isValid() && (not outlierFound); ++iter) {

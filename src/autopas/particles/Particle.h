@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include <sstream>
 #include <tuple>
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoAStorage.h"
@@ -96,7 +97,7 @@ class Particle {
    * @param rmax higher corner of the box
    * @return true if the particle is in the box, false otherwise
    */
-  bool inBox(const std::array<double, 3> &rmin, const std::array<double, 3> rmax) {
+  bool inBox(const std::array<double, 3> &rmin, const std::array<double, 3> &rmax) const {
     bool in = true;
     for (int d = 0; d < 3; ++d) {
       in &= (_r[d] >= rmin[d] and _r[d] < rmax[d]);
@@ -123,6 +124,25 @@ class Particle {
   void addV(const std::array<double, 3> &v) { _v = ArrayMath::add(_v, v); }
 
   /**
+   * Creates a string containing all data of the particle.
+   * @return String representation.
+   */
+  virtual std::string toString() {
+    std::ostringstream text;
+    // clang-format off
+    text << "Particle"
+         << "\nID      : " << _id
+         << "\nPosition: "
+         << _r[0] << " | " << _r[1] << " | " << _r[2]
+         << "\nVelocity: "
+         << _v[0] << " | " << _v[1] << " | " << _v[2]
+         << "\nForce   : "
+         << _f[0] << " | " << _f[1] << " | " << _f[2];
+    // clang-format on
+    return text.str();
+  }
+
+  /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
@@ -132,10 +152,22 @@ class Particle {
    */
   typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
- private:
+ protected:
+  /**
+   * Particle position as 3D coordinates.
+   */
   std::array<double, 3> _r;
+  /**
+   * Particle velocity as 3D vector.
+   */
   std::array<double, 3> _v;
+  /**
+   * Force the particle experiences as 3D vector.
+   */
   std::array<double, 3> _f;
+  /**
+   * Particle id.
+   */
   unsigned long _id;
 };
 

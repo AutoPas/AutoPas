@@ -12,6 +12,10 @@
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 
+#ifdef AUTOPAS_OPENMP
+#include <omp.h>
+#endif
+
 namespace autopas {
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor
@@ -52,14 +56,14 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   ~ParticleContainer() override = default;
 
   /**
-   * delete the copy constructor to prevent unwanted copies.
+   * Delete the copy constructor to prevent unwanted copies.
    * No particle container should ever be copied.
    * @param obj
    */
   ParticleContainer(const ParticleContainer &obj) = delete;
 
   /**
-   * delete the copy assignment operator to prevent unwanted copies
+   * Delete the copy assignment operator to prevent unwanted copies
    * No particle container should ever be copied.
    * @param other
    * @return
@@ -67,37 +71,37 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   ParticleContainer &operator=(const ParticleContainer &other) = delete;
 
   /**
-   * get the upper corner of the container
+   * Get the upper corner of the container
    * @return upper corner of the container
    */
   const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
 
   /**
-   * set the upper corner of the container
+   * Set the upper corner of the container
    * @param boxMax upper corner to be set
    */
   void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
 
   /**
-   * get the lower corner of the container
+   * Get the lower corner of the container
    * @return lower corner of the container
    */
   const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
 
   /**
-   * set the lower corner of the container
+   * Set the lower corner of the container
    * @param boxMin lower corner to be set
    */
   void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
   /**
-   * return the cutoff of the container
+   * Return the cutoff of the container
    * @return
    */
   double getCutoff() const override final { return _cutoff; }
 
   /**
-   * set the cutoff of the container
+   * Set the cutoff of the container
    * @param cutoff
    */
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
@@ -115,9 +119,44 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
     return true;
   }
 
+  /**
+   * Deletes all particles from the container.
+   */
+  void deleteAllParticles() override {
+#ifdef AUTOPAS_OPENMP
+    // @todo: find a sensible value for magic number
+    // numThreads should be at least 1 and maximal max_threads
+    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
+    AutoPasLog(trace, "Using {} threads", numThreads);
+#pragma omp parallel for num_threads(numThreads)
+#endif
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      this->_cells[i].clear();
+    }
+  }
+
+  /**
+   * Get the number of particles saved in the container.
+   * @return Number of particles in the container.
+   */
+  unsigned long getNumParticles() override {
+    size_t numParticles = 0ul;
+#ifdef AUTOPAS_OPENMP
+    // @todo: find a sensible value for magic number
+    // numThreads should be at least 1 and maximal max_threads
+    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
+    AutoPasLog(trace, "Using {} threads", numThreads);
+#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
+#endif
+    for (size_t index = 0; index < _cells.size(); ++index) {
+      numParticles += _cells[index].numParticles();
+    }
+    return numParticles;
+  }
+
  protected:
   /**
-   * vector of particle cells.
+   * Vector of particle cells.
    * All particle containers store their particles in ParticleCells. This is the
    * common vector for this purpose.
    */

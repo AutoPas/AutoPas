@@ -10,28 +10,28 @@
 // or VerletLists<Particle>
 // or DirectSum<Particle, ParticleCell>
 /**
- * Will execute the passed body with the static container type of container, i.e. either
- * LinkedCells, VerletLists or DirectSum
+ * Will execute the passed body (=variadic argument) with the static container type of container, i.e. either
+ * LinkedCells, VerletLists or DirectSum.
  * @param container the container to be used
- * @param body the function body to be executed
+ * @note The second Argument is variadic such that commas pose no problem.
  */
-#define WithStaticContainerType(container, body)                                                                    \
+#define WithStaticContainerType(container, ...)                                                                     \
   {                                                                                                                 \
     auto container_ptr = container.get();                                                                           \
     if (auto container = dynamic_cast<                                                                              \
             autopas::LinkedCells<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,             \
                                  typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType>*>(      \
             container_ptr)) {                                                                                       \
-      body                                                                                                          \
+      __VA_ARGS__                                                                                                   \
     } else if (auto container = dynamic_cast<                                                                       \
                    autopas::VerletLists<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType>*>(   \
                    container_ptr)) {                                                                                \
-      body                                                                                                          \
+      __VA_ARGS__                                                                                                   \
     } else if (auto container = dynamic_cast<                                                                       \
                    autopas::DirectSum<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,        \
                                       typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType>*>( \
                    container_ptr)) {                                                                                \
-      body                                                                                                          \
+      __VA_ARGS__                                                                                                   \
     } else {                                                                                                        \
       autopas::utils::ExceptionHandler::exception("wrong type of container in StaticSelectorMacros.h");             \
     }                                                                                                               \

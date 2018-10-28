@@ -41,8 +41,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     rebuild(vec, bMin, bMax, interactionLength);
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
-        AutoPasLogger->error("CellBlock3D: interaction length too large is {}, bmin {}, bmax {}", interactionLength,
-                             bMin[i], bMax[i]);
+        AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
         utils::ExceptionHandler::exception("Error in CellBlock3D: interaction Length too large!");
       }
     }
@@ -237,6 +236,18 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return closeHaloCells;
   }
 
+  /**
+   * Get the lower corner of the halo region.
+   * @return Coordinates of the lower corner.
+   */
+  std::array<double, 3> getHaloBoxMin() { return _haloBoxMin; }
+
+  /**
+   * Get the upper corner of the halo region.
+   * @return Coordinates of the upper corner.
+   */
+  std::array<double, 3> getHaloBoxMax() { return _haloBoxMax; }
+
  private:
   std::array<index_t, 3> index3D(index_t index1d) const;
   index_t index1D(const std::array<index_t, 3> &index3d) const;
@@ -277,7 +288,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
     const index_t nonnegativeValue = static_cast<index_t>(std::max(value, 0l));
     const index_t nonLargerValue = std::min(nonnegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
-    /// @todo this is a sanity check to prevent doubling of particles, but
+    // @todo this is a sanity check to prevent doubling of particles, but
     /// could be done better!
     if (pos[dim] >= _boxMax[dim]) {
       cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - 1;
@@ -288,7 +299,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
 
   return cellIndex;
   // in very rare cases rounding is stupid, thus we need a check...
-  /// @todo when the border and flag manager is there
+  // @todo when the border and flag manager is there
 }
 
 template <class ParticleCell>
@@ -317,7 +328,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 
     _numCells *= _cellsPerDimensionWithHalo[d];
 
-    AutoPasLogger->debug("CellBlock3D: _cellsPerDimensionWithHalo[{}]={}", d, _cellsPerDimensionWithHalo[d]);
+    AutoPasLog(debug, "CellsPerDimensionWithHalo[{}]={}", d, _cellsPerDimensionWithHalo[d]);
   }
 
   _vec1D->resize(_numCells);

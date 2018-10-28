@@ -26,6 +26,9 @@ class AutoPas {
   AutoPas() {
     // initialize the Logger
     autopas::Logger::create();
+    // The logger is normally only flushed on successful program termination.
+    // This line ensures flushing when log messages of level warning or more severe are created.
+    autopas::Logger::get()->flush_on(spdlog::level::warn);
   }
 
   ~AutoPas() {
@@ -58,24 +61,18 @@ class AutoPas {
   }
 
   /**
-   * @overload
-   *
+   * Updates the internal container.
+   * This is needed e.g. for linked-cells if particles move from one cell to another.
+   * It resorts particles into appropriate cells and moves them to the halo, if necessary.
    */
-  void init(std::array<double, 3> boxSize, double cutoff, double verletSkin = 0,
-            unsigned int verletRebuildFrequency = 1,
-            const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
-            const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
-            unsigned int tuningInterval = 100) {
-    init({0, 0, 0}, boxSize, cutoff, verletSkin, verletRebuildFrequency, allowedContainers, allowedTraversals,
-         tuningInterval);
-  }
+  void updateContainer() { _autoTuner->getContainer()->updateContainer(); }
 
   /**
    * Returns a pointer to the actual container.
    * @todo do we need the whole container functionality available to the outside
    * @return container
    */
-  // TODO: remove this once we are convinced all necessary container functions are wrapped
+  // @todo: remove this once we are convinced all necessary container functions are wrapped
   autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _autoTuner->getContainer().get(); }
 
   /**
@@ -89,12 +86,17 @@ class AutoPas {
    * container
    * @param haloParticle particle to be added
    */
-  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); };
+  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); }
 
   /**
    * deletes all halo particles
    */
-  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); };
+  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); }
+
+  /**
+   * deletes all particles
+   */
+  void deleteAllParticles() { _autoTuner->getContainer()->deleteAllParticles(); }
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -109,11 +111,15 @@ class AutoPas {
   }
 
   /**
-   * iterate over all particles by using
+   * Iterate over all particles by using
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
+   * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
+   * particles, or both.
    * @return iterator to the first particle
    */
-  autopas::ParticleIteratorWrapper<Particle> begin() { return _autoTuner->getContainer()->begin(); }
+  autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    return _autoTuner->getContainer()->begin(behavior);
+  }
 
   /**
    * iterate over all particles in a specified region
@@ -121,12 +127,22 @@ class AutoPas {
    * highCorner);iter.isValid();++iter)
    * @param lowerCorner lower corner of the region
    * @param higherCorner higher corner of the region
+   * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
+   * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                               std::array<double, 3> higherCorner) {
-    return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner);
+  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
+
+  /**
+   * Returns the number of particles in this container.
+   * @return the number of particles in this container.
+   */
+  unsigned long getNumberOfParticles() { return _autoTuner->getContainer()->getNumParticles(); }
+
   /**
    * Get the lower corner of the container.
    * @return lower corner of the container.

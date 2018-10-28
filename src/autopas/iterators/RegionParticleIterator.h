@@ -61,7 +61,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     return *this;
   }
 
-  // todo add test of clone
+  // @todo add test of clone
   inline ParticleIteratorInterfaceImpl<Particle> *clone() const override {
     return new RegionParticleIterator<Particle, ParticleCell>(*this);
   }

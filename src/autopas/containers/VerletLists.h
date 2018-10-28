@@ -32,7 +32,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
  private:
   static const std::vector<TraversalOptions>& VLApplicableTraversals() {
-    // TODO: implement some traversals for this
+    // @todo: implement some traversals for this
     static const std::vector<TraversalOptions> v{};
     return v;
   }
@@ -76,16 +76,24 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
 
   /**
+   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
+   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @param useNewton3
+   */
+  void rebuild(bool useNewton3 = true) {
+    this->updateVerletListsAoS(useNewton3);
+    // the neighbor list is now valid
+    _neighborListIsValid = true;
+    _traversalsSinceLastRebuild = 0;
+  }
+
+  /**
    * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild
-                           // it!
-      this->updateVerletListsAoS(useNewton3);
-      // the neighbor list is now valid
-      _neighborListIsValid = true;
-      _traversalsSinceLastRebuild = 0;
+    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild it!
+      rebuild(useNewton3);
     }
     this->iterateVerletListsAoS(f, useNewton3);
     // we iterated, so increase traversal counter
@@ -98,10 +106,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {
-      this->updateVerletListsAoS(useNewton3);
-      // the neighbor list is now valid
-      _neighborListIsValid = true;
-      _traversalsSinceLastRebuild = 0;
+      rebuild(useNewton3);
       generateSoAListFromAoSVerletLists();
     } else if (not _soaListIsValid) {
       generateSoAListFromAoSVerletLists();
@@ -118,7 +123,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc LinkedCells::addParticle()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void addParticle(Particle& p) override {
     _neighborListIsValid = false;
@@ -127,16 +132,18 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * @copydoc LinkedCells::addHaloParticle()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void addHaloParticle(Particle& haloParticle) override {
     _neighborListIsValid = false;
     _linkedCells.addHaloParticle(haloParticle);
   }
 
+  unsigned long getNumParticles() override { return _linkedCells.getNumParticles(); }
+
   /**
    * @copydoc LinkedCells::deleteHaloParticles
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void deleteHaloParticles() override {
     _neighborListIsValid = false;
@@ -144,11 +151,20 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   }
 
   /**
+   * @copydoc ParticleContainerInterface::deleteAllParticles
+   * @note This function invalidates the neighbor lists.
+   */
+  void deleteAllParticles() override {
+    _neighborListIsValid = false;
+    _linkedCells.deleteAllParticles();
+  }
+
+  /**
    * @copydoc LinkedCells::updateContainer()
-   * @note this function invalidates the neighbor lists
+   * @note This function invalidates the neighbor lists.
    */
   void updateContainer() override {
-    AutoPasLogger->debug("updating container");
+    AutoPasLog(debug, "Updating container");
     _neighborListIsValid = false;
     _linkedCells.updateContainer();
   }
@@ -159,7 +175,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    * be calculated are represented in the neighbor lists.
    * @param useNewton3 specified whether newton 3 should be used
    * @return whether the list is valid
-   * @note this check involves pair-wise interaction checks and is thus
+   * @note This check involves pair-wise interaction checks and is thus
    * relatively costly.
    */
   bool checkNeighborListsAreValid(bool useNewton3 = true) {
@@ -189,7 +205,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
-    // TODO: find a sensible value for ???
+    // @todo: find a sensible value for ???
 #pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getCells().size(); ++cellIndex1d) {
@@ -206,15 +222,16 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
       }
       if (outlierFound) cellIndex1d = _linkedCells.getCells().size();
     }
-    if (outlierFound)
-      AutoPasLogger->debug(
-          "VerletLists: containerUpdate needed! Particles are fast. You "
-          "might want to increase the skin radius or decrease the rebuild "
-          "frequency.");
-    else
-      AutoPasLogger->debug(
-          "VerletLists: containerUpdate not yet needed. Particles are slow "
-          "enough.");
+    if (outlierFound) {
+      AutoPasLog(debug,
+                 "VerletLists: containerUpdate needed! Particles are fast. You "
+                 "might want to increase the skin radius or decrease the rebuild "
+                 "frequency.");
+    } else {
+      AutoPasLog(debug,
+                 "VerletLists: containerUpdate not yet needed. Particles are slow "
+                 "enough.");
+    }
     return outlierFound;
   }
 
@@ -228,7 +245,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild() {
-    AutoPasLogger->debug("VerletLists: neighborlist is valid: {}", _neighborListIsValid);
+    AutoPasLog(debug, "Neighborlist is valid: {}", _neighborListIsValid);
     return (not _neighborListIsValid)                              // if the neighborlist is NOT valid a
                                                                    // rebuild is needed
            or (_traversalsSinceLastRebuild >= _rebuildFrequency);  // rebuild with frequency
@@ -250,10 +267,10 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
       }
     }
     if (not updated) {
-      AutoPasLogger->error(
-          "VerletLists: updateHaloParticle was not able to update particle at "
-          "[{}, {}, {}]",
-          particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+      AutoPasLog(error,
+                 "VerletLists: updateHaloParticle was not able to update particle at "
+                 "[{}, {}, {}]",
+                 particle.getR()[0], particle.getR()[1], particle.getR()[2]);
       utils::ExceptionHandler::exception("VerletLists: updateHaloParticle could not find any particle");
     }
   }
@@ -290,7 +307,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
   /**
    * update the verlet lists for AoS usage
-   * @param useNewton3
+   * @param useNewton3 CURRENTLY NOT USED!
+   * @todo Build verlet lists according to newton 3.
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
@@ -328,7 +346,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    */
   template <class ParticleFunctor>
   void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
-    /// @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
+    // @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
     /// traversals
 
 #if defined(AUTOPAS_OPENMP)
@@ -365,13 +383,13 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
    */
   template <class ParticleFunctor>
   void iterateVerletListsSoA(ParticleFunctor* f, const bool useNewton3) {
-    /// @todo optimize iterateVerletListsSoA, e.g. by using traversals with
+    // @todo optimize iterateVerletListsSoA, e.g. by using traversals with
     /// openmp possibilities
 
     // load data from cells into soa
     loadVerletSoA(f);
 
-    /// @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
+    // @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
     size_t iFrom = 0;
     size_t iTo = _soaNeighborLists.size();
 
@@ -471,10 +489,10 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
       }
       i++;
     }
-    AutoPasLogger->debug(
-        "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
-        "size is {}",
-        static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
+    AutoPasLog(debug,
+               "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
+               "size is {}",
+               static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
     _soaListIsValid = true;
   }
 
@@ -490,10 +508,6 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
   std::unordered_map<Particle*, size_t> _aos2soaMap;
-
-  /// map converting from the continuous soa type index (size_t) to the aos type
-  /// index (Particle *)
-  std::vector<Particle*> _soa2aosmap;
 
   /// verlet list for SoA:
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;

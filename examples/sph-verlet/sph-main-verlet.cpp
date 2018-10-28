@@ -325,8 +325,8 @@ int main() {
   unsigned int rebuildFrequency = 6;
   double skintocutoff = 0.04;
 
-  AutoPasLogger->set_level(spdlog::level::level_enum::debug);
-  AutoPasLogger->set_pattern("[%n] [%l] %v");
+  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+  autopas::Logger::get()->set_pattern("[%n] [%l] %v");
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 1.;
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;

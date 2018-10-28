@@ -116,7 +116,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @copydoc VerletLists::updateContainer()
    */
   void updateContainer() override {
-    AutoPasLogger->debug("updating container");
+    AutoPasLog(debug, "updating container");
     _neighborListIsValid = false;
   }
 
@@ -133,7 +133,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild() {
-    AutoPasLogger->debug("VerletLists: neighborlist is valid: {}", _neighborListIsValid);
+    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
     return (not _neighborListIsValid)                              // if the neighborlist is NOT valid a
                                                                    // rebuild is needed
            or (_traversalsSinceLastRebuild >= _rebuildFrequency);  // rebuild with frequency
@@ -211,7 +211,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     // sort by last dimension and reserve space for dummy particles
     for (auto& cluster : _clusters) {
-      cluster.sortByZ();
+      cluster.sortByDim(2);
 
       size_t size = cluster.numParticles();
       size_t rest = size % _clusterSize;
@@ -366,7 +366,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     // TODO
-    if (useNewton3) AutoPasLogger->error("Newton3 not implemented yet");
+    if (useNewton3) {
+      AutoPasLog(error, "Newton3 not implemented yet");
+    }
 
     const index_t end_x = _cellsPerDim[0];
     const index_t end_y = _cellsPerDim[1];

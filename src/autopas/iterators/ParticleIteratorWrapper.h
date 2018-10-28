@@ -23,6 +23,8 @@ namespace autopas {
 template <class Particle>
 class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
  public:
+  ParticleIteratorWrapper() : _particleIterator(nullptr) {}
+
   /**
    * Constructor of the ParticleIteratorWrapper
    * @param particleIteratorInterface
@@ -59,7 +61,13 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
 
   inline void deleteCurrentParticle() override final { _particleIterator->deleteCurrentParticle(); }
 
-  inline bool isValid() const override final { return _particleIterator->isValid(); }
+  inline bool isValid() const override final {
+    if (_particleIterator) {
+      return _particleIterator->isValid();
+    } else {
+      return false;
+    }
+  }
 
  private:
   std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle>> _particleIterator;

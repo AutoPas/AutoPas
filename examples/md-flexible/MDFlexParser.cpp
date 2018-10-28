@@ -197,7 +197,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (strArg.find("c08") != string::npos) {
           traversalOptions.push_back(autopas::TraversalOptions::c08);
         }
-        if (strArg.find("slice") != string::npos) {
+        if (strArg.find("sli") != string::npos) {
           traversalOptions.push_back(autopas::TraversalOptions::sliced);
         }
         if (traversalOptions.empty()) {
@@ -410,4 +410,5 @@ bool MDFlexParser::getMeasureFlops() const { return measureFlops; }
 
 unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
 
-spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }
+autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
+// spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }

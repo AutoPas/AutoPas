@@ -4,6 +4,7 @@
  * @author F. Gratl
  */
 
+#include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -44,10 +45,11 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                        size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
                        unsigned int verletRebuildFrequency, unsigned int tuningInterval) {
+  std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
                tuningInterval);
 
   PrintableMolecule dummyParticle;
@@ -62,9 +64,10 @@ void initContainerGauss(autopas::ContainerOptions containerOption,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
                         double cutoff, double verletSkinRadius, int verletRebuildFrequency,
                         unsigned int tuningInterval) {
+  std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
                tuningInterval);
 
   PrintableMolecule dummyParticle;
@@ -124,7 +127,8 @@ int main(int argc, char **argv) {
 
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
-  AutoPasLogger->set_level(logLevel);
+  //  AutoPasLogger->set_level(logLevel);
+  autopas::Logger::get()->set_level(logLevel);
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
       initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,
@@ -175,8 +179,9 @@ int main(int argc, char **argv) {
   startCalc = std::chrono::high_resolution_clock::now();
   // Calculation
   for (unsigned int i = 0; i < numIterations; ++i) {
-    if (AutoPasLogger->level() <= spdlog::level::debug) {
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       cout << "Iteration " << i << endl;
+      cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
     }
     autopas.iteratePairwise(&functor, dataLayoutChoice);
   }

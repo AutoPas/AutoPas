@@ -10,6 +10,7 @@
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/SoA.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -20,9 +21,15 @@ namespace autopas {
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-  FullParticleCell() {}
+  FullParticleCell() { autopas_init_lock(&particlesLock); }
 
-  void addParticle(Particle& m) override { _particles.push_back(m); }
+  ~FullParticleCell() { autopas_destroy_lock(&particlesLock); }
+
+  void addParticle(Particle& m) override {
+    autopas_set_lock(&particlesLock);
+    _particles.push_back(m);
+    autopas_unset_lock(&particlesLock);
+  }
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
     return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
@@ -42,12 +49,14 @@ class FullParticleCell : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteByIndex(size_t index) override {
+    autopas_set_lock(&particlesLock);
     assert(index < numParticles());
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
     }
     _particles.pop_back();
+    autopas_unset_lock(&particlesLock);
   }
 
   /**
@@ -57,11 +66,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   void resize(size_t n) { _particles.resize(n); }
 
   /**
-   * Sort the particles in the cell by their z-dimension
+   * Sort the particles in the cell by a dimension
+   * @param dim dimension to sort
    */
-  void sortByZ() {
+  void sortByDim(const size_t dim) {
     std::sort(_particles.begin(), _particles.end(),
-              [](const Particle& a, const Particle& b) -> bool { return a.getR()[2] < b.getR()[2]; });
+              [dim](const Particle& a, const Particle& b) -> bool { return a.getR()[dim] < b.getR()[dim]; });
   }
 
   /**
@@ -81,17 +91,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   SoA<SoAArraysType> _particleSoABuffer;
 
   /**
-   * friend class iterator
-   * @tparam ParticleType
-   * @tparam ParticleCellType
-   */
-  template <class ParticleType, class ParticleCellType>
-  friend class SingleCellIterator;
-
-  /**
    * type of the internal iterator
    */
   typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
+
+ private:
+  autopas_lock_t particlesLock;
 };
 
 }  // namespace autopas

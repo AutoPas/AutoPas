@@ -138,7 +138,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    * @copydoc VerletLists::updateContainer()
    */
   void updateContainer() override {
-    AutoPasLogger->debug("updating container");
+    AutoPasLog(debug, "updating container");
     _neighborListIsValid = false;
     _linkedCells.updateContainer();
   }
@@ -163,15 +163,16 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
       }
       if (outlierFound) cellIndex1d = _linkedCells.getCells().size();
     }
-    if (outlierFound)
-      AutoPasLogger->debug(
-          "VerletLists: containerUpdate needed! Particles are fast. You "
-          "might want to increase the skin radius or decrease the rebuild "
-          "frequency.");
-    else
-      AutoPasLogger->debug(
-          "VerletLists: containerUpdate not yet needed. Particles are slow "
-          "enough.");
+    if (outlierFound) {
+      AutoPasLog(debug,
+                 "VerletLists: containerUpdate needed! Particles are fast. You "
+                 "might want to increase the skin radius or decrease the rebuild "
+                 "frequency.");
+    } else {
+      AutoPasLog(debug,
+                 "VerletLists: containerUpdate not yet needed. Particles are slow "
+                 "enough.");
+    }
     return outlierFound;
   }
 
@@ -186,7 +187,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild(bool useNewton3) {
-    AutoPasLogger->debug("VerletLists: neighborlist is valid: {}", _neighborListIsValid);
+    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
     return (not _neighborListIsValid)                             // if the neighborlist is NOT valid a
                                                                   // rebuild is needed
            or (_traversalsSinceLastRebuild >= _rebuildFrequency)  // rebuild with frequency
@@ -206,10 +207,10 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
       }
     }
     if (not updated) {
-      AutoPasLogger->error(
-          "VerletLists: updateHaloParticle was not able to update particle at "
-          "[{}, {}, {}]",
-          particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+      AutoPasLog(error,
+                 "VerletLists: updateHaloParticle was not able to update particle at "
+                 "[{}, {}, {}]",
+                 particle.getR()[0], particle.getR()[1], particle.getR()[2]);
       utils::ExceptionHandler::exception("VerletLists: updateHaloParticle could not find any particle");
     }
   }

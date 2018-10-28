@@ -16,6 +16,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
+#include <bitset>
+
 namespace autopas {
 
 /**
@@ -59,9 +61,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      utils::ExceptionHandler::exception(
-          "LinkedCells: trying to add particle that is not inside the bounding "
-          "box");
+      utils::ExceptionHandler::exception("LinkedCells: trying to add particle that is not inside the bounding box.\n" +
+                                         p.toString());
     }
   }
 
@@ -71,9 +72,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
       cell.addParticle(haloParticle);
     } else {
-      utils::ExceptionHandler::exception(
-          "LinkedCells: trying to add halo particle that is not in the halo "
-          "box");
+      utils::ExceptionHandler::exception("LinkedCells: trying to add halo particle that is not in the halo box.\n" +
+                                         haloParticle.toString());
     }
   }
 
@@ -90,7 +90,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLogger->debug("LinkedCells: using traversal {} with AoS", traversal->getTraversalType());
+    AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
     traversal->traverseCellPairs(this->_cells);
   }
 
@@ -105,7 +105,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLogger->debug("LinkedCells: using traversal {} with SoA ", traversal->getTraversalType());
+    AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
     loadSoAs(f);
 
     traversal->traverseCellPairs(this->_cells);
@@ -114,42 +114,56 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void updateContainer() override {
-    /// @todo optimize
-    std::vector<Particle> invalidParticles;
-// custom reduction with templates not supported
-//#pragma omp parallel reduction(vecMerge: invalidParticles)
+    auto haloIter = this->begin(IteratorBehavior::haloOnly);
+    if (haloIter.isValid()) {
+      utils::ExceptionHandler::exception(
+          "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
+          haloIter->toString());
+    }
+
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif  // AUTOPAS_OPENMP
     {
       std::vector<Particle> myInvalidParticles;
-      for (auto iter = this->begin(); iter.isValid(); ++iter) {
-        myInvalidParticles.push_back(*iter);
-      }
 #ifdef AUTOPAS_OPENMP
-#pragma omp critical
+#pragma omp for
 #endif  // AUTOPAS_OPENMP
-      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
-    }
-    for (auto &cell : this->_cells) {
-      cell.clear();
-    }
-    for (auto &particle : invalidParticles) {
-      if (inBox(particle.getR(), this->getBoxMin(), this->getBoxMax())) {
-        addParticle(particle);
-      } else {
-        addHaloParticle(particle);
+      for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
+        // if empty
+        if (not this->getCells()[cellId].isNotEmpty()) continue;
+
+        std::array<double, 3> cellLowerCorner, cellUpperCorner;
+        this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
+
+        for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
+          // if not in cell
+          if (notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
+            myInvalidParticles.push_back(*pIter);
+            pIter.deleteCurrentParticle();
+          }
+        }
       }
+      // implicit barrier here
+      // the barrier is needed because iterators are not threadsafe w.r.t. addParticle()
+
+      // this loop is executed for every thread
+      for (auto &&p : myInvalidParticles)
+        // if not in halo
+        if (inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
+          addParticle(p);
+        else
+          addHaloParticle(p);
     }
   }
 
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
-    // TODO: find a sensible value for magic number
+    // @todo: find a sensible value for magic number
     // numThreads should be at least 1 and maximal max_threads
     int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 500)));
-    std::cout << numThreads << std::endl;
+    AutoPasLog(trace, "Using {} threads", numThreads);
 #pragma omp parallel for shared(outlierFound) num_threads(numThreads)
 #endif
     for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
@@ -213,7 +227,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor>
   void loadSoAs(ParticleFunctor *functor) {
 #ifdef AUTOPAS_OPENMP
-    // TODO find a condition on when to use omp or when it is just overhead
+    // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < this->_cells.size(); ++i) {
@@ -229,7 +243,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor>
   void extractSoAs(ParticleFunctor *functor) {
 #ifdef AUTOPAS_OPENMP
-    // TODO find a condition on when to use omp or when it is just overhead
+    // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < this->_cells.size(); ++i) {
