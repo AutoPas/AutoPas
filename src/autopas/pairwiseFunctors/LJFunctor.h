@@ -124,9 +124,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-    unsigned long *const __restrict__ id1ptr = soa1.template begin<Particle::AttributeNames::id>();
-    unsigned long *const __restrict__ id2ptr = soa2.template begin<Particle::AttributeNames::id>();
-
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
@@ -136,7 +133,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        // if (id1ptr[i] == id2ptr[j]) continue;
 
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
