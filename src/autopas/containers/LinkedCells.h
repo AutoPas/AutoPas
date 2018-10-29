@@ -193,10 +193,22 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    auto startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                      std::array<double, 3> higherCorner,
+                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                      bool incSearchRegion = false) override {
+    size_t startIndex;
+    // this is needed when used through verlet lists since particles can move over cell borders.
+    // only lower corner needed since we increase the upper corner anyways.
+    if (incSearchRegion) {
+      startIndex = this->_cellBlock.get1DIndexOfPosition({
+          lowerCorner[0] - 1,
+          lowerCorner[1] - 1,
+          lowerCorner[2] - 1,
+      });
+    } else {
+      startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
+    }
     auto stopIndex = this->_cellBlock.get1DIndexOfPosition(higherCorner);
 
     auto startIndex3D =

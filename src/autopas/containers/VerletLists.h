@@ -279,10 +279,11 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     return _linkedCells.begin(behavior);
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                      std::array<double, 3> higherCorner,
+                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                      bool incSearchRegion = false) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, true);
   }
 
  protected:
