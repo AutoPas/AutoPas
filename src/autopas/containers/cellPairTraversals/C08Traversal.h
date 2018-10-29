@@ -59,7 +59,7 @@ inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
 #endif
   {
     for (unsigned long col = 0; col < 8; ++col) {
-      std::array<unsigned long, 3> start = ThreeDimensionalMapping::oneToThreeD(col, stride);
+      std::array<unsigned long, 3> start = utils::ThreeDimensionalMapping::oneToThreeD(col, stride);
 
       // intel compiler demands following:
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
@@ -72,7 +72,7 @@ inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
       for (unsigned long z = start_z; z < end_z; z += stride_z) {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
           for (unsigned long x = start_x; x < end_x; x += stride_x) {
-            unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+            unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
             this->processBaseCell(cells, baseIndex);
           }
         }

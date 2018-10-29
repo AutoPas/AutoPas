@@ -137,7 +137,7 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
           idArray[_dimsPerLength[0]] = dimSlice;
           idArray[_dimsPerLength[1]] = dimMedium;
           idArray[_dimsPerLength[2]] = dimShort;
-          auto id = ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
+          auto id = utils::ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
           this->processBaseCell(cells, id);
         }
       }
