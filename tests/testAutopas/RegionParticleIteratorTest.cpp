@@ -417,6 +417,63 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssign
   }
 }
 
+/*********************************** VerletList Tests ***********************************/
+
+TEST_F(RegionParticleIteratorTest, testVerletRegionParticleIteratorSparseDomain) {
+  // box goes from {0,0,0} to {5,5,5} + one halo layer
+  VerletLists<TouchableParticle> vlContainer(_boxMin, _boxMax, _cutoff, _cutoff / 3);
+
+  size_t idShouldTouch = 0;
+  TouchableParticle p({0, 0, 0}, idShouldTouch);
+  p.setR({2, 2, 1});
+  p.setID(idShouldTouch++);
+  vlContainer.addParticle(p);
+  p.setR({2, 2, 2});
+  p.setID(idShouldTouch++);
+  vlContainer.addParticle(p);
+
+  size_t idOffset = 1000;
+  size_t idShouldNotTouch = idOffset;
+  p.setR({2, 2, 2});
+  p.setID(idShouldNotTouch++);
+  vlContainer.addParticle(p);
+
+  // move stuff
+  for (auto pIter = vlContainer.begin(); pIter.isValid(); ++pIter) {
+    switch (pIter->getID()) {
+      case 0: {
+        // move particle 0 into region
+        pIter->setR({2, 2, 1.6});
+        break;
+      }
+      case 1000: {
+        // move particle 1000 out of region
+        pIter->setR({2, 2, 3});
+        break;
+      }
+    }
+  }
+
+  std::array<double, 3> regionOfInterstMin = {1.5, 1.5, 1.5};
+  std::array<double, 3> regionOfInterstMax = {2.5, 2.5, 2.5};
+
+  int particlesTouched = 0;
+  for (auto iterator = vlContainer.getRegionIterator(regionOfInterstMin, regionOfInterstMax); iterator.isValid();
+       ++iterator) {
+    iterator->touch();
+    ++particlesTouched;
+  }
+  EXPECT_EQ(particlesTouched, idShouldTouch);
+
+  int particlesChecked = 0;
+  for (auto iterator = vlContainer.begin(); iterator.isValid(); ++iterator) {
+    EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0,
+              iterator->getNumTouched());
+    ++particlesChecked;
+  }
+  EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
+}
+
 void RegionParticleIteratorTest::checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin,
                                               std::array<double, 3> &regionMax) {
   int numTouches = 0;
