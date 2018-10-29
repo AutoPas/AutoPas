@@ -12,6 +12,7 @@
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
@@ -38,12 +39,23 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @param epsilon
    * @param sigma
    * @param shift
+   * @param lowCorner lower corner of the local simulation domain
+   * @param highCorner upper corner of the local simulation domain
+   * @param duplicatedCalculation defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true
    */
-  explicit LJFunctor(double cutoff, double epsilon, double sigma, double shift) {
+  explicit LJFunctor(double cutoff, double epsilon, double sigma, double shift,
+                     std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
+                     bool duplicatedCalculation = true)
+      : _virialSum{0., 0., 0.} {
     _cutoffsquare = cutoff * cutoff;
     _epsilon24 = epsilon * 24.0;
     _sigmasquare = sigma * sigma;
     _shift6 = shift * 6.0;
+    _upotSum = 0.;
+    _duplicatedCalculations = duplicatedCalculation;
+    _lowCorner = lowCorner;
+    _highCorner = highCorner;
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
@@ -63,6 +75,27 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     if (newton3) {
       // only if we use newton 3 here, we want to
       j.subF(f);
+    }
+    if (calculateGlobals) {
+      auto virial = ArrayMath::mul(dr, f);
+      double upot = _epsilon24 * lj12m6 + _shift6;
+
+      if (newton3 and _duplicatedCalculations) {
+        double upot_half = upot * 0.5;
+        auto virial_half = ArrayMath::mulScalar(virial, 0.5);
+
+        if (autopas::inBox(i.getR(), _lowCorner, _highCorner)) {
+          _upotSum += upot_half;
+          _virialSum = ArrayMath::add(_virialSum, virial_half);
+        }
+        if (autopas::inBox(j.getR(), _lowCorner, _highCorner)) {
+          _upotSum += upot_half;
+          _virialSum = ArrayMath::add(_virialSum, virial_half);
+        }
+      } else {
+        _upotSum += upot;
+        _virialSum = ArrayMath::add(_virialSum, virial);
+      }
     }
   }
 
@@ -215,7 +248,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    for (unsigned int i = iFrom; i < iTo; ++i) {
+    for (size_t i = iFrom; i < iTo; ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
@@ -428,6 +461,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
  private:
   double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
+
+  // sum of the potential energy, only calculated if calculateGlobals is true
+  double _upotSum;
+  // sum of the virial, only calculated if calculateGlobals is true
+  std::array<double, 3> _virialSum;
+
+  // bool that defines whether duplicate calculations are happening
+  bool _duplicatedCalculations;
+  // lower and upper corner of the domain of the current process
+  std::array<double, 3> _lowCorner, _highCorner;
 
 };  // class LJFunctor
 }  // namespace autopas
