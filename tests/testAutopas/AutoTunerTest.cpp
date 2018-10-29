@@ -15,7 +15,9 @@ TEST_F(AutoTunerTest, testTune) {
   std::vector<autopas::TraversalOptions> traversals = {autopas::TraversalOptions::sliced,
                                                        autopas::TraversalOptions::c08};
 
-  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 100};
+  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 42};
+  // adaptive domain size so sliced is always applicable.
+  bBoxMax[2] = autopas::autopas_get_max_threads() * 2;
   const double cutoff = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
