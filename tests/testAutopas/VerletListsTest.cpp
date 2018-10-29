@@ -575,7 +575,7 @@ TEST_F(VerletListsTest, LoadExtractSoALJ) {
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
 
-  autopas::LJFunctor<Particle, FPCell> ljFunctor;
+  autopas::LJFunctor<Particle, FPCell> ljFunctor(2., 1, 1, 0);
   autopas::C08Traversal<FPCell, autopas::LJFunctor<Particle, FPCell>, false, true> dummyTraversal({0, 0, 0},
                                                                                                   &ljFunctor);
   verletLists.iteratePairwiseSoA(&ljFunctor, &dummyTraversal, true);
@@ -590,8 +590,7 @@ TEST_F(VerletListsTest, SoAvsAoSLJ) {
   RandomGenerator::fillWithParticles(verletLists1, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
   RandomGenerator::fillWithParticles(verletLists2, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
 
-  autopas::LJFunctor<Particle, FPCell> ljFunctor;
-  ljFunctor.setGlobals(cutoff, 1, 1, 0);
+  autopas::LJFunctor<Particle, FPCell> ljFunctor(cutoff, 1, 1, 0);
   autopas::C08Traversal<FPCell, autopas::LJFunctor<Particle, FPCell>, false, true> dummyTraversal({0, 0, 0},
                                                                                                   &ljFunctor);
 

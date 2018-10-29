@@ -9,13 +9,7 @@
 LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest()
     : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),
       _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {
-  double eps = 1.0;
-  double sig = 1.0;
-  double shift = 0.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(getCutoff(), eps,
-                                                                                                      sig, shift);
+
 }
 
 void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
@@ -26,7 +20,14 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
     _linkedCells.addParticle(*it);
   }
 
-  autopas::LJFunctor<Molecule, FMCell> func;
+  double eps = 1.0;
+  double sig = 1.0;
+  double shift = 0.0;
+  autopas::MoleculeLJ::setEpsilon(eps);
+  autopas::MoleculeLJ::setSigma(sig);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps,
+                                            sig, shift);
+
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   _verletLists.iteratePairwiseAoS(&func, &traversalLJ);

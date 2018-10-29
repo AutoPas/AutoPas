@@ -20,24 +20,44 @@ namespace autopas {
  * (molecules).
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
+ * @tparam calculateGlobals defines whether the global values are to be calculated (energy, virial)
  */
-template <class Particle, class ParticleCell>
+template <class Particle, class ParticleCell, bool calculateGlobals = false>
 class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
+  /**
+   * Deleted default constructor
+   */
+  LJFunctor() = delete;
+
+  /**
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift
+   * @param cutoff
+   * @param epsilon
+   * @param sigma
+   * @param shift
+   */
+  explicit LJFunctor(double cutoff, double epsilon, double sigma, double shift) {
+    _cutoffsquare = cutoff * cutoff;
+    _epsilon24 = epsilon * 24.0;
+    _sigmasquare = sigma * sigma;
+    _shift6 = shift * 6.0;
+  }
+
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     double dr2 = ArrayMath::dot(dr, dr);
 
-    if (dr2 > CUTOFFSQUARE) return;
+    if (dr2 > _cutoffsquare) return;
 
     double invdr2 = 1. / dr2;
-    double lj6 = SIGMASQUARE * invdr2;
+    double lj6 = _sigmasquare * invdr2;
     lj6 = lj6 * lj6 * lj6;
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
-    double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+    double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = ArrayMath::mulScalar(dr, fac);
     i.addF(f);
     if (newton3) {
@@ -78,14 +98,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > CUTOFFSQUARE) ? 0. : 1.;
+        const double mask = (dr2 > _cutoffsquare) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj2 = _sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2 * mask;
+        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -133,7 +153,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
         const double drz = z1ptr[i] - z2ptr[j];
@@ -144,14 +163,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > CUTOFFSQUARE) ? 0. : 1.;
+        const double mask = (dr2 > _cutoffsquare) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj2 = _sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2 * mask;
+        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -258,14 +277,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
             const double dr2 = drx2 + dry2 + drz2;
 
-            const double mask = (dr2 <= CUTOFFSQUARE) ? 1. : 0.;
+            const double mask = (dr2 <= _cutoffsquare) ? 1. : 0.;
 
             const double invdr2 = 1. / dr2 * mask;
-            const double lj2 = SIGMASQUARE * invdr2;
+            const double lj2 = _sigmasquare * invdr2;
             const double lj6 = lj2 * lj2 * lj2;
             const double lj12 = lj6 * lj6;
             const double lj12m6 = lj12 - lj6;
-            const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+            const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
 
             const double fx = drx * fac;
             const double fy = dry * fac;
@@ -307,14 +326,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE) continue;
+        if (dr2 > _cutoffsquare) continue;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj2 = _sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -396,20 +415,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       })
 
   /**
-   * Set the global values, i.e. cutoff, epsilon, sigma and shift
-   * @param cutoff
-   * @param epsilon
-   * @param sigma
-   * @param shift
-   */
-  static void setGlobals(double cutoff, double epsilon, double sigma, double shift) {
-    CUTOFFSQUARE = cutoff * cutoff;
-    EPSILON24 = epsilon * 24.0;
-    SIGMASQUARE = sigma * sigma;
-    SHIFT6 = shift * 6.0;
-  }
-
-  /**
    * get the number of flops used per kernel call. This should count the
    * floating point operations needed for two particles that lie within a cutoff
    * radius.
@@ -422,20 +427,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
  private:
-  static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
+  double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
-};  // namespace autopas
-
-template <class T, class U>
-double LJFunctor<T, U>::CUTOFFSQUARE;
-
-template <class T, class U>
-double LJFunctor<T, U>::EPSILON24;
-
-template <class T, class U>
-double LJFunctor<T, U>::SIGMASQUARE;
-
-template <class T, class U>
-double LJFunctor<T, U>::SHIFT6;
-
+};  // class LJFunctor
 }  // namespace autopas
