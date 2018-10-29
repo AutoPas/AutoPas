@@ -15,17 +15,16 @@
 
 namespace autopas {
 
-// @todo can we do this without a template? Maybe. But we want to inline it
-// anyway :)
 /**
  * A functor to handle lennard-jones interactions between two particles
  * (molecules).
- * @todo add macroscopic quantities
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
+template <class Particle, class ParticleCell>
+class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
+  using SoAArraysType = typename Particle::SoAArraysType;
+
  public:
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
@@ -41,7 +40,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
     auto f = ArrayMath::mulScalar(dr, fac);
     i.addF(f);
-    j.subF(f);
+    if (newton3) {
+      // only if we use newton 3 here, we want to
+      j.subF(f);
+    }
   }
 
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
@@ -92,10 +94,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-
-        fxptr[j] -= fx;
-        fyptr[j] -= fy;
-        fzptr[j] -= fz;
+        if (newton3) {
+          fxptr[j] -= fx;
+          fyptr[j] -= fy;
+          fzptr[j] -= fz;
+        }
       }
 
       fxptr[i] += fxacc;
@@ -161,10 +164,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-
-        fx2ptr[j] -= fx;
-        fy2ptr[j] -= fy;
-        fz2ptr[j] -= fz;
+        if (newton3) {
+          fx2ptr[j] -= fx;
+          fy2ptr[j] -= fy;
+          fz2ptr[j] -= fz;
+        }
       }
 
       fx1ptr[i] += fxacc;
@@ -274,18 +278,21 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
             fxacc += fx;
             fyacc += fy;
             fzacc += fz;
-
-            fxArr[j] = fx;
-            fyArr[j] = fy;
-            fzArr[j] = fz;
+            if (newton3) {
+              fxArr[j] = fx;
+              fyArr[j] = fy;
+              fzArr[j] = fz;
+            }
           }
-          // scatter the forces to where they belong
+          // scatter the forces to where they belong, this is only needed for newton3
+          if (newton3) {
 #pragma omp simd safelen(vecsize)
-          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-            const size_t j = currentList[joff + tmpj];
-            fxptr[j] -= fxArr[tmpj];
-            fyptr[j] -= fyArr[tmpj];
-            fzptr[j] -= fzArr[tmpj];
+            for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+              const size_t j = currentList[joff + tmpj];
+              fxptr[j] -= fxArr[tmpj];
+              fyptr[j] -= fyArr[tmpj];
+              fzptr[j] -= fzArr[tmpj];
+            }
           }
         }
       }
@@ -320,10 +327,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-
-        fxptr[j] -= fx;
-        fyptr[j] -= fy;
-        fzptr[j] -= fz;
+        if (newton3) {
+          fxptr[j] -= fx;
+          fyptr[j] -= fy;
+          fzptr[j] -= fz;
+        }
       }
 
       fxptr[i] += fxacc;
@@ -422,16 +430,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
 
 };  // namespace autopas
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::CUTOFFSQUARE;
+template <class T, class U>
+double LJFunctor<T, U>::CUTOFFSQUARE;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::EPSILON24;
+template <class T, class U>
+double LJFunctor<T, U>::EPSILON24;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::SIGMASQUARE;
+template <class T, class U>
+double LJFunctor<T, U>::SIGMASQUARE;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::SHIFT6;
+template <class T, class U>
+double LJFunctor<T, U>::SHIFT6;
 
 }  // namespace autopas
