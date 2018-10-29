@@ -373,9 +373,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     const index_t end_x = _cellsPerDim[0];
     const index_t end_y = _cellsPerDim[1];
 
-    //#if defined(AUTOPAS_OPENMP)
-    //#pragma omp parallel for schedule(dynamic, 1) collapse(2)
-    //#endif
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel for schedule(dynamic, 1) collapse(2)
+#endif
     for (index_t x = 0; x < end_x; x++) {
       for (index_t y = 0; y < end_y; y++) {
         index_t index = index1D(x, y);
