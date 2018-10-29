@@ -56,6 +56,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     _duplicatedCalculations = duplicatedCalculation;
     _lowCorner = lowCorner;
     _highCorner = highCorner;
+    _postProcessed = false;
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
@@ -459,6 +460,51 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     return 18ul;
   }
 
+  /**
+   * Reset the global values.
+   * Will set the global values to zero to prepare for the next iteration.
+   */
+  void resetGlobalValues() {
+    _upotSum = 0.;
+    _virialSum = {0., 0., 0.};
+    _postProcessed = false;
+  }
+
+  /**
+   * postprocesses global values, e.g. upot and virial
+   * @param newton3
+   */
+  void postProcessGlobalValues(bool newton3) {
+    if (not newton3) {
+      _upotSum *= 0.5;
+      _virialSum = ArrayMath::mulScalar(0.5, _virialSum);
+    }
+  }
+
+  /**
+   * Get the potential Energy
+   * @return the potential Energy
+   */
+  double getUpot() {
+    if (not _postProcessed) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "not yet postprocessed, please call postProcessGlobalValues first.");
+    }
+    return _upotSum;
+  }
+
+  /**
+   * Get the virial
+   * @return the virial
+   */
+  double getVirial() {
+    if (not _postProcessed) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "not yet postprocessed, please call postProcessGlobalValues first.");
+    }
+    return _virialSum[0] + _virialSum[1] + _virialSum[2];
+  }
+
  private:
   double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
@@ -471,6 +517,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   bool _duplicatedCalculations;
   // lower and upper corner of the domain of the current process
   std::array<double, 3> _lowCorner, _highCorner;
+
+  //
+  bool _postProcessed;
 
 };  // class LJFunctor
 }  // namespace autopas
