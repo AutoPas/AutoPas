@@ -85,11 +85,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         double upot_half = upot * 0.5;
         auto virial_half = ArrayMath::mulScalar(virial, 0.5);
 
-        if (autopas::inBox(i.getR(), _lowCorner, _highCorner)) {
+        if (autopas::utils::inBox(i.getR(), _lowCorner, _highCorner)) {
           _upotSum += upot_half;
           _virialSum = ArrayMath::add(_virialSum, virial_half);
         }
-        if (autopas::inBox(j.getR(), _lowCorner, _highCorner)) {
+        if (autopas::utils::inBox(j.getR(), _lowCorner, _highCorner)) {
           _upotSum += upot_half;
           _virialSum = ArrayMath::add(_virialSum, virial_half);
         }
