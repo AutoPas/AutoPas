@@ -46,15 +46,20 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'c': {
+        // delete default argument
+        containerOptions.clear();
         if (strArg.find("direct") != string::npos) {
-          containerOption = autopas::directSum;
-        } else if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
-          containerOption = autopas::linkedCells;
-        } else if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
-          containerOption = autopas::verletLists;
-        } else {
+          containerOptions.push_back(autopas::directSum);
+        }
+        if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
+          containerOptions.push_back(autopas::linkedCells);
+        }
+        if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
+          containerOptions.push_back(autopas::verletLists);
+        }
+        if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSum' or 'LinkedCells'!" << endl;
+          cerr << "Please use 'DirectSum', 'LinkedCells' or VerletLists!" << endl;
           displayHelp = true;
         }
         break;
@@ -261,22 +266,28 @@ void MDFlexParser::printConfig() {
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
        << ":  ";
-  switch (containerOption) {
-    case autopas::ContainerOptions::directSum: {
-      cout << "DirectSum" << endl;
-      break;
-    }
-    case autopas::ContainerOptions::linkedCells: {
-      cout << "LinkedCells" << endl;
-      break;
-    }
-    case autopas::ContainerOptions::verletLists: {
-      cout << "VerletLists" << endl;
-      break;
+  for (auto &op : containerOptions) {
+    switch (op) {
+      case autopas::ContainerOptions::directSum: {
+        cout << "DirectSum, ";
+        break;
+      }
+      case autopas::ContainerOptions::linkedCells: {
+        cout << "LinkedCells, ";
+        break;
+      }
+      case autopas::ContainerOptions::verletLists: {
+        cout << "VerletLists, ";
+        break;
+      }
     }
   }
+  // deletes last comma
+  cout << "\b\b  " << endl;
 
-  if (containerOption == autopas::ContainerOptions::verletLists) {
+  // if verlet lists are in the container options print verlet config data
+  if (find(containerOptions.begin(), containerOptions.end(), autopas::ContainerOptions::verletLists) !=
+      containerOptions.end()) {
     cout << setw(valueOffset) << left << "Verlet rebuild frequency"
          << ":  " << verletRebuildFrequency << endl;
 
@@ -361,7 +372,7 @@ void MDFlexParser::printConfig() {
        << ":  " << tuningInterval << endl;
 }
 
-autopas::ContainerOptions MDFlexParser::getContainerOption() const { return containerOption; }
+std::vector<autopas::ContainerOptions> MDFlexParser::getContainerOptions() const { return containerOptions; }
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 

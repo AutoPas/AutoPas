@@ -22,7 +22,7 @@ class MDFlexParser {
   MDFlexParser() = default;
 
   double getBoxLength() const;
-  autopas::ContainerOptions getContainerOption() const;
+  std::vector<autopas::ContainerOptions> getContainerOptions() const;
   double getCutoff() const;
   autopas::DataLayoutOption getDataLayoutOption() const;
   double getDistributionMean() const;
@@ -46,7 +46,7 @@ class MDFlexParser {
   static constexpr size_t valueOffset = 32;
 
   // defaults:
-  autopas::ContainerOptions containerOption = autopas::ContainerOptions::verletLists;
+  std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists};
   autopas::DataLayoutOption dataLayoutOption = autopas::DataLayoutOption::soa;
   std::vector<autopas::TraversalOptions> traversalOptions;
 

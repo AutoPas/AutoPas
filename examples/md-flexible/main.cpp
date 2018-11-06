@@ -34,13 +34,13 @@ void printMolecules(autopas::AutoPas<PrintableMolecule, FullParticleCell<Printab
  * built. It consists of %`FullParticleCells` and is filled with
  * `PrintableMolecules`. The particles are aligned on a cuboid grid.
  *
- * @param containerOption Which container type should be built.
+ * @param containerOptions Which container type should be built.
  * @param container Pointer to where the container should be built.
  * @param particlesPerDim Number of desired particles per dimension.
  * @param cutoff Cutoff radius to use. Affects number and size of cells for e.g.
  * LinkedCells.
  */
-void initContainerGrid(autopas::ContainerOptions containerOption,
+void initContainerGrid(std::vector<autopas::ContainerOptions> containerOptions,
                        std::vector<autopas::TraversalOptions> traversalOptions,
                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                        size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
@@ -49,7 +49,7 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
                tuningInterval);
 
   PrintableMolecule dummyParticle;
@@ -58,7 +58,7 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
                                    {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
 }
 
-void initContainerGauss(autopas::ContainerOptions containerOption,
+void initContainerGauss(std::vector<autopas::ContainerOptions> containerOptions,
                         std::vector<autopas::TraversalOptions> traversalOptions,
                         autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
@@ -67,7 +67,7 @@ void initContainerGauss(autopas::ContainerOptions containerOption,
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
                tuningInterval);
 
   PrintableMolecule dummyParticle;
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
   }
 
   auto boxLength(parser.getBoxLength());
-  auto containerChoice(parser.getContainerOption());
+  auto containerChoice(parser.getContainerOptions());
   auto cutoff(parser.getCutoff());
   auto dataLayoutChoice(parser.getDataLayoutOption());
   auto distributionMean(parser.getDistributionMean());
@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
   if (not vtkFilename.empty()) wirteVTKFile(vtkFilename, particlesPerDim * particlesPerDim * particlesPerDim, autopas);
 
   // statistics for linked cells
-  if (containerChoice == autopas::ContainerOptions::linkedCells) {
+  if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::linkedCells) {
     auto lcContainer = dynamic_cast<autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> *>(
         autopas.getContainer());
     auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
 
     auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
     // approximation for flops of verlet list generation
-    if (containerChoice == autopas::ContainerOptions::verletLists)
+    if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
