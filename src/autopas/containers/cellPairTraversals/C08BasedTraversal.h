@@ -99,16 +99,17 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets() {
   using std::make_pair;
-  typedef ThreeDimensionalMapping TDM;
 
-  unsigned long o = TDM::threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);  // origin
-  unsigned long x = TDM::threeToOneD(1ul, 0ul, 0ul, this->_cellsPerDimension);  // displacement to the right
-  unsigned long y = TDM::threeToOneD(0ul, 1ul, 0ul, this->_cellsPerDimension);  // displacement ...
-  unsigned long z = TDM::threeToOneD(0ul, 0ul, 1ul, this->_cellsPerDimension);
-  unsigned long xy = TDM::threeToOneD(1ul, 1ul, 0ul, this->_cellsPerDimension);
-  unsigned long yz = TDM::threeToOneD(0ul, 1ul, 1ul, this->_cellsPerDimension);
-  unsigned long xz = TDM::threeToOneD(1ul, 0ul, 1ul, this->_cellsPerDimension);
-  unsigned long xyz = TDM::threeToOneD(1ul, 1ul, 1ul, this->_cellsPerDimension);
+  // origin
+  unsigned long o = utils::ThreeDimensionalMapping::threeToOneD(0ul, 0ul, 0ul, this->_cellsPerDimension);
+  // displacement to right ...
+  unsigned long x = utils::ThreeDimensionalMapping::threeToOneD(1ul, 0ul, 0ul, this->_cellsPerDimension);
+  unsigned long y = utils::ThreeDimensionalMapping::threeToOneD(0ul, 1ul, 0ul, this->_cellsPerDimension);
+  unsigned long z = utils::ThreeDimensionalMapping::threeToOneD(0ul, 0ul, 1ul, this->_cellsPerDimension);
+  unsigned long xy = utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 0ul, this->_cellsPerDimension);
+  unsigned long yz = utils::ThreeDimensionalMapping::threeToOneD(0ul, 1ul, 1ul, this->_cellsPerDimension);
+  unsigned long xz = utils::ThreeDimensionalMapping::threeToOneD(1ul, 0ul, 1ul, this->_cellsPerDimension);
+  unsigned long xyz = utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, this->_cellsPerDimension);
 
   int i = 0;
   // if incrementing along X, the following order will be more cache-efficient:
@@ -139,5 +140,4 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
   _cellOffsets[i++] = xz;
   _cellOffsets[i++] = xyz;
 }
-
 }  // namespace autopas
