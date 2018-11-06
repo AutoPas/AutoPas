@@ -392,17 +392,18 @@ inline ParticleCell &CellBlock3D<ParticleCell>::getCell(const std::array<index_t
 template <class ParticleCell>
 inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::index3D(
     index_t index1d) const {
-  return ThreeDimensionalMapping::oneToThreeD(index1d, _cellsPerDimensionWithHalo);
+  return utils::ThreeDimensionalMapping::oneToThreeD(index1d, _cellsPerDimensionWithHalo);
 }
 
 template <class ParticleCell>
 inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::index1D(
     const std::array<index_t, 3> &index3d) const {
-  return ThreeDimensionalMapping::threeToOneD(index3d, _cellsPerDimensionWithHalo);
+  return utils::ThreeDimensionalMapping::threeToOneD(index3d, _cellsPerDimensionWithHalo);
 }
 
 template <class ParticleCell>
 bool CellBlock3D<ParticleCell>::checkInHalo(std::array<double, 3> position) const {
-  return autopas::inBox(position, _haloBoxMin, _haloBoxMax) && autopas::notInBox(position, _boxMin, _boxMax);
+  return autopas::utils::inBox(position, _haloBoxMin, _haloBoxMax) &&
+         autopas::utils::notInBox(position, _boxMin, _boxMax);
 }
 }  // namespace autopas

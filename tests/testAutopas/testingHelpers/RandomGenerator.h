@@ -60,7 +60,7 @@ class RandomGenerator {
       Particle particle = defaultParticle;
       auto pos = randomPosition(haloBoxMax, haloBoxMax);
       // we only want  to add particles not in the actual box
-      if (autopas::inBox(pos, container.getBoxMin(), container.getBoxMax())) continue;
+      if (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) continue;
       particle.setR(pos);
       particle.setID(i);
       container.addHaloParticle(particle);
