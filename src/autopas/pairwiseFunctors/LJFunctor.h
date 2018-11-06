@@ -477,7 +477,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   void postProcessGlobalValues(bool newton3) {
     if (not newton3) {
       _upotSum *= 0.5;
-      _virialSum = ArrayMath::mulScalar(0.5, _virialSum);
+      _virialSum = ArrayMath::mulScalar(_virialSum, 0.5);
     }
   }
 
