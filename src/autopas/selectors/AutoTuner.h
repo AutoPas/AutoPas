@@ -113,14 +113,14 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
   // @todo: WANT one single iteratePairwise(CellFunctor) for containers
   // @todo: CellFunctor for iteration should be build here using selectors for SoA and N3
   bool isTuning = false;
+  // large case differentiation for data layout and newton 3
+  // check if currently in tuning phase, execute iteration and take time measurement if necessary
   switch (dataLayoutOption) {
     case autopas::soa: {
-      if (useNewton3) {
-        if (_iterationsSinceTuning >= _tuningInterval) {
+      if (_iterationsSinceTuning >= _tuningInterval) {
+        if (useNewton3) {
           isTuning = tune<ParticleFunctor, true, true>(*f);
-        }
-      } else {
-        if (_iterationsSinceTuning >= _tuningInterval) {
+        } else {
           isTuning = tune<ParticleFunctor, true, false>(*f);
         }
       }
@@ -165,12 +165,10 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
       break;
     }
     case autopas::aos: {
-      if (useNewton3) {
-        if (_iterationsSinceTuning >= _tuningInterval) {
+      if (_iterationsSinceTuning >= _tuningInterval) {
+        if (useNewton3) {
           isTuning = tune<ParticleFunctor, false, true>(*f);
-        }
-      } else {
-        if (_iterationsSinceTuning >= _tuningInterval) {
+        } else {
           isTuning = tune<ParticleFunctor, false, false>(*f);
         }
       }
