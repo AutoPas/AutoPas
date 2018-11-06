@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
         autopas.getContainer());
     auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
     std::array<size_t, 3> cellsPerDim{cellsPerDimHalo[0] - 2, cellsPerDimHalo[1] - 2, cellsPerDimHalo[2] - 2};
-//    auto numCellsHalo = lcContainer->getCells().size();
+    //    auto numCellsHalo = lcContainer->getCells().size();
     auto numCells = cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2];
 
     cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
