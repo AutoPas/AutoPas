@@ -143,7 +143,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   size_t bestTraversal = 0;
   // Test all options to find the fastest
   // If functor is unknown or no measurements were made by now we start with the first traversal
-  if (_traversalTimes.empty() || _optimalTraversalOptions.find(functorHash) == _optimalTraversalOptions.end()) {
+  if (_traversalTimes.empty() or _optimalTraversalOptions.find(functorHash) == _optimalTraversalOptions.end()) {
     bestTraversal = 0;
   } else if (_currentlyTuning) {
     // if we are in tuning state just select next traversal
