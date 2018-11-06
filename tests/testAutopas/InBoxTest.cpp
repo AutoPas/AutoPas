@@ -18,7 +18,7 @@ TEST(InBoxTest, testInBox) {
         inside &= y >= 0. and y < 2. / 3.;
         inside &= z >= 2. / 3. and z < 1.;
         const std::array<double, 3> position{x, y, z};
-        EXPECT_EQ(inside, autopas::inBox(position, lowCorner, highCorner));
+        EXPECT_EQ(inside, autopas::utils::inBox(position, lowCorner, highCorner));
       }
     }
   }
@@ -35,7 +35,7 @@ TEST(InBoxTest, testNotInBox) {
         inside &= y >= 0. and y < 2. / 3.;
         inside &= z >= 2. / 3. and z < 1.;
         const std::array<double, 3> position{x, y, z};
-        EXPECT_EQ(not inside, autopas::notInBox(position, lowCorner, highCorner));
+        EXPECT_EQ(not inside, autopas::utils::notInBox(position, lowCorner, highCorner));
       }
     }
   }

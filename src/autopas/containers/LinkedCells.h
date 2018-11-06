@@ -23,7 +23,7 @@ namespace autopas {
 /**
  * LinkedCells class.
  * This class uses a list of neighboring cells to store the particles.
- * These cells dimensions at least as large as the given cutoff radius,
+ * These cells dimensions are at least as large as the given cutoff radius,
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
  * @tparam Particle type of the particles that need to be stored
@@ -56,7 +56,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   ContainerOptions getContainerType() override { return ContainerOptions::linkedCells; }
 
   void addParticle(Particle &p) override {
-    bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
+    bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
     if (inBox) {
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
@@ -138,7 +138,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
         for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
           // if not in cell
-          if (notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
+          if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(*pIter);
             pIter.deleteCurrentParticle();
           }
@@ -150,7 +150,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       // this loop is executed for every thread
       for (auto &&p : myInvalidParticles)
         // if not in halo
-        if (inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
+        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
           addParticle(p);
         else
           addHaloParticle(p);
@@ -172,7 +172,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
 
       for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (not inBox(iter->getR(), boxmin, boxmax)) {
+        if (not utils::inBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update
           break;
         }
@@ -190,14 +190,48 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, &_cellBlock, behavior));
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                      std::array<double, 3> higherCorner,
+                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                      bool incSearchRegion = false) override {
+    size_t startIndex;
+    // this is needed when used through verlet lists since particles can move over cell borders.
+    // only lower corner needed since we increase the upper corner anyways.
+    if (incSearchRegion) {
+      startIndex = this->_cellBlock.get1DIndexOfPosition({
+          lowerCorner[0] - 1,
+          lowerCorner[1] - 1,
+          lowerCorner[2] - 1,
+      });
+    } else {
+      startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
+    }
+    auto stopIndex = this->_cellBlock.get1DIndexOfPosition(higherCorner);
+
+    auto startIndex3D =
+        utils::ThreeDimensionalMapping::oneToThreeD(startIndex, this->_cellBlock.getCellsPerDimensionWithHalo());
+    auto stopIndex3D =
+        utils::ThreeDimensionalMapping::oneToThreeD(stopIndex, this->_cellBlock.getCellsPerDimensionWithHalo());
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] =
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+        }
+      }
+    }
+
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
-        &this->_cells, lowerCorner, higherCorner, &_cellBlock, behavior));
+        &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
   }
 
   /**

@@ -20,13 +20,30 @@ namespace internal {
 /**
  * ParticleIterator class to access particles inside of a container.
  * The particles can be accessed using "iterator->" or "*iterator". The next
- * particle using the ++operator, e.g. "++iterator"
- * @tparam Particle type of the particle that is accessed
- * @tparam ParticleCell type of the cell of the underlying data structure of the
- * container
+ * particle using the ++operator, e.g. "++iterator".
+ * @tparam Particle Type of the particle that is accessed.
+ * @tparam ParticleCell Type of the cell of the underlying data structure of the container.
  */
 template <class Particle, class ParticleCell>
 class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
+ protected:
+  /**
+   * Simple constructor without major calculation overhead for internal use.
+   * ATTENTION: This Iterator might be invalid after construction!
+   *
+   * @param cont Linear data vector of ParticleCells.
+   * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
+   * Can be nullptr if the behavior is haloAndOwned.
+   * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
+   */
+  explicit ParticleIterator(std::vector<ParticleCell>* cont, CellBorderAndFlagManager* flagManager,
+                            IteratorBehavior behavior)
+      : _vectorOfCells(cont),
+        _iteratorAcrossCells(cont->begin()),
+        _iteratorWithinOneCell(cont->begin()->begin()),
+        _flagManager(flagManager),
+        _behavior(behavior) {}
+
  public:
   /**
    * Constructor of the ParticleIterator class.
@@ -35,22 +52,23 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * and iterate in a round robin fashion. If there are more threads than cells
    * surplus iterators are directly set to cont->end().
    *
-   * @param cont linear data vector of ParticleCells
-   * @param flagManager the CellBorderAndFlagManager that shall be used to
-   * query the cell types. Can be nullptr if the behavior is haloAndOwned
-   * @param behavior the IteratorBehavior that specifies which type of cells
-   * shall be iterated through.
+   * @param cont Linear data vector of ParticleCells.
+   * @param offset Number of cells to skip before starting to iterate.
+   * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
+   * Can be nullptr if the behavior is haloAndOwned.
+   * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell>* cont, CellBorderAndFlagManager* flagManager = nullptr,
-                            IteratorBehavior behavior = haloAndOwned)
+  explicit ParticleIterator(std::vector<ParticleCell>* cont, size_t offset = 0,
+                            CellBorderAndFlagManager* flagManager = nullptr, IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
         _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
         _behavior(behavior) {
-    size_t myThreadId = autopas_get_thread_num();
-    if (myThreadId < cont->size()) {
-      _iteratorAcrossCells += myThreadId;
+    auto myThreadId = autopas_get_thread_num();
+    offset += myThreadId;
+    if (offset < cont->size()) {
+      _iteratorAcrossCells += offset;
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
     } else {
       _iteratorAcrossCells = cont->end();
@@ -106,7 +124,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   }
 
   /**
-   * Check whether the iterator is valid
+   * Check whether the iterator currently points to a valid particle.
    * @return returns whether the iterator is valid
    */
   bool isValid() const override {
@@ -120,9 +138,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
 
  protected:
   /**
-   * the next non-empty cell is selected
+   * Moves the iterator to the next non-empty cell with respect to the stride.
    */
-  void next_non_empty_cell() {
+  virtual void next_non_empty_cell() {
     // find the next non-empty cell
     const int stride = autopas_get_num_threads();  // num threads
     for (_iteratorAcrossCells += stride; _iteratorAcrossCells < _vectorOfCells->end(); _iteratorAcrossCells += stride) {
@@ -151,11 +169,33 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
     }
   }
 
- private:
+  /**
+   * Get the 1D index of the cell the iterator currently is in.
+   * @return Index of current cell.
+   */
+  size_t getCurrentCellId() { return _iteratorAcrossCells - _vectorOfCells->begin(); }
+
+  /**
+   * Pointer to the cell vector.
+   */
   std::vector<ParticleCell>* _vectorOfCells;
+  /**
+   * Iterator for traversing the cell vector.
+   */
   typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
+  /**
+   * Particle iterator for a single cell.
+   */
   SingleCellIteratorWrapper<Particle> _iteratorWithinOneCell;
+
+  /**
+   * Manager providing info if cell is in halo.
+   */
   CellBorderAndFlagManager* _flagManager;
+
+  /**
+   * The behavior of the iterator.
+   */
   IteratorBehavior _behavior;
 };
 }  // namespace internal

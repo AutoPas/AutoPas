@@ -215,7 +215,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
       boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
       for (auto iter = _linkedCells.getCells()[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (not iter->inBox(boxmin, boxmax)) {
+        if (utils::notInBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update
           break;
         }
@@ -279,10 +279,11 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     return _linkedCells.begin(behavior);
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                      std::array<double, 3> higherCorner,
+                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                      bool incSearchRegion = false) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, true);
   }
 
  protected:
