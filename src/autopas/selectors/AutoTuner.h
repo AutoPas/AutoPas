@@ -105,7 +105,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
   if (newton3Allowed and nonNewton3Allowed) {
     // @todo auto-tune (far off future)
   } else if (not newton3Allowed and not nonNewton3Allowed) {
-    // @todo throw exception
+    utils::ExceptionHandler::exception("Functor::iteratePairwise() Functor neither allows Newton 3 nor not.");
   } else {
     useNewton3 = newton3Allowed;
   }
