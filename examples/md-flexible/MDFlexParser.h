@@ -22,7 +22,7 @@ class MDFlexParser {
   MDFlexParser() = default;
 
   double getBoxLength() const;
-  autopas::ContainerOptions getContainerOption() const;
+  std::vector<autopas::ContainerOptions> getContainerOptions() const;
   double getCutoff() const;
   autopas::DataLayoutOption getDataLayoutOption() const;
   double getDistributionMean() const;
@@ -37,7 +37,7 @@ class MDFlexParser {
   unsigned int getTuningInterval() const;
   string getWriteVTK() const;
   const vector<autopas::TraversalOptions> &getTraversalOptions() const;
-  size_t getVerletRebuildFrequency() const;
+  unsigned int getVerletRebuildFrequency() const;
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
   void printConfig();
@@ -46,7 +46,7 @@ class MDFlexParser {
   static constexpr size_t valueOffset = 32;
 
   // defaults:
-  autopas::ContainerOptions containerOption = autopas::ContainerOptions::verletLists;
+  std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists};
   autopas::DataLayoutOption dataLayoutOption = autopas::DataLayoutOption::soa;
   std::vector<autopas::TraversalOptions> traversalOptions;
 
@@ -63,6 +63,6 @@ class MDFlexParser {
   double particleSpacing = .4;
   unsigned int tuningInterval = 100;
   string writeVTK = "";
-  size_t verletRebuildFrequency = 5;
+  unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
 };
