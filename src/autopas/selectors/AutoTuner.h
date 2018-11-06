@@ -94,6 +94,11 @@ class AutoTuner {
   std::vector<TraversalOptions> _allowedTraversalOptions;
   // one selector per possible container
   std::map<ContainerOptions, TraversalSelector<ParticleCell>> _traversalSelectors;
+
+  // how many times one configurations should be tested
+  const size_t _maxSamples = 3;
+  // how many times this configurations has already been tested
+  size_t _numSamples = 0;
 };
 
 template <class Particle, class ParticleCell>
@@ -117,13 +122,17 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
   // check if currently in tuning phase, execute iteration and take time measurement if necessary
   switch (dataLayoutOption) {
     case autopas::soa: {
-      if (_iterationsSinceTuning >= _tuningInterval) {
+      if (_iterationsSinceTuning >= _tuningInterval and _numSamples >= _maxSamples) {
+        _numSamples = 1;
         if (useNewton3) {
           isTuning = tune<ParticleFunctor, true, true>(*f);
         } else {
           isTuning = tune<ParticleFunctor, true, false>(*f);
         }
+      } else {
+        ++_numSamples;
       }
+
       auto container = getContainer();
       AutoPasLog(debug, "Using container {}", container->getContainerType());
 
@@ -165,13 +174,17 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
       break;
     }
     case autopas::aos: {
-      if (_iterationsSinceTuning >= _tuningInterval) {
+      if (_iterationsSinceTuning >= _tuningInterval && _numSamples >= _maxSamples) {
+        _numSamples = 1;
         if (useNewton3) {
           isTuning = tune<ParticleFunctor, false, true>(*f);
         } else {
           isTuning = tune<ParticleFunctor, false, false>(*f);
         }
+      } else {
+        ++_numSamples;
       }
+
       auto container = getContainer();
       AutoPasLog(debug, "Using container {}", container->getContainerType());
 
