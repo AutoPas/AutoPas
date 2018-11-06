@@ -92,13 +92,20 @@ class AutoTuner {
   bool _isTuningTraversals = false;
   bool _isTuningContainers = false;
   std::vector<TraversalOptions> _allowedTraversalOptions;
-  // one selector per possible container
+  /**
+   * One selector per possible container.
+   */
   std::map<ContainerOptions, TraversalSelector<ParticleCell>> _traversalSelectors;
 
-  // how many times one configurations should be tested
+  /**
+   * How many times one configurations should be tested.
+   */
   const size_t _maxSamples = 3;
-  // how many times this configurations has already been tested
-  size_t _numSamples = 0;
+  /**
+   * How many times this configurations has already been tested.
+   * Initialize with max value to start tuning at start of simulation.
+   */
+  size_t _numSamples = _maxSamples;
 };
 
 template <class Particle, class ParticleCell>
@@ -174,7 +181,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
       break;
     }
     case autopas::aos: {
-      if (_iterationsSinceTuning >= _tuningInterval && _numSamples >= _maxSamples) {
+      if (_iterationsSinceTuning >= _tuningInterval and _numSamples >= _maxSamples) {
         _numSamples = 1;
         if (useNewton3) {
           isTuning = tune<ParticleFunctor, false, true>(*f);
