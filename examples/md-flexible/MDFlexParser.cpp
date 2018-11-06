@@ -214,7 +214,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'v': {
         try {
-          verletRebuildFrequency = stoul(strArg);
+          verletRebuildFrequency = (unsigned int)stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
@@ -388,7 +388,7 @@ double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
 
 const vector<autopas::TraversalOptions> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
 
-size_t MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
+unsigned int MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
 double MDFlexParser::getVerletSkinRadius() const { return verletSkinRadius; }
 
