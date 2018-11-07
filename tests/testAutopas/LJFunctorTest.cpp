@@ -6,19 +6,17 @@
 
 #include "LJFunctorTest.h"
 #include <autopas/particles/MoleculeLJ.h>
-
-typedef autopas::MoleculeLJ MolType;
-typedef autopas::FullParticleCell<MolType> CellType;
+#include "testingHelpers/commonTypedefs.h"
 
 TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsNoN3) {
   double cutoff = 1.;
   double epsilon = 1.;
   double sigma = 1.;
   double shift = 0.1;
-  autopas::LJFunctor<MolType, CellType> functor(cutoff, epsilon, sigma, shift);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, epsilon, sigma, shift);
 
-  MolType p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  MolType p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
 
   functor.AoSFunctor(p1, p2, false);
 
@@ -49,10 +47,10 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   double epsilon = 1.;
   double sigma = 1.;
   double shift = 0.1;
-  autopas::LJFunctor<MolType, CellType> functor(cutoff, epsilon, sigma, shift);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, epsilon, sigma, shift);
 
-  MolType p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  MolType p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
 
   functor.AoSFunctor(p1, p2, true);
 
@@ -78,7 +76,7 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   EXPECT_NEAR(f2two[2], 2 * +13641746.696893783, 1e-9);
 }
 
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsThrowBad) {
+TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   double cutoff = 1.;
   double epsilon = 1.;
   double sigma = 1.;
@@ -89,13 +87,13 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsThrowBad) {
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
   {
     // throw if lowcorner == highcorner, but calculateglobals and duplicatedCalculation are true
-    typedef autopas::LJFunctor<MolType, CellType, true> functortype;
+    typedef autopas::LJFunctor<Molecule, FMCell, true> functortype;
     EXPECT_THROW(functortype functor(cutoff, epsilon, sigma, shift, lowCorner, {0., 0., 0.}, duplicatedCalculation),
                  exception_type);
   }
 
-  autopas::LJFunctor<MolType, CellType, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
-                                                      duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+                                                     duplicatedCalculation);
 
   // getupot without postprocessing is not allowed
   EXPECT_THROW(functor.getUpot(), exception_type);
@@ -122,11 +120,11 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsInsideDuplicated) {
   std::array<double, 3> highCorner = {5., 5., 5.};
   bool duplicatedCalculation = true;
 
-  autopas::LJFunctor<MolType, CellType, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
-                                                      duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+                                                     duplicatedCalculation);
 
-  MolType p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  MolType p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
   {
     // no newton 3
     functor.resetGlobalValues();
@@ -167,11 +165,11 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsBoundaryDuplicated) {
   std::array<double, 3> highCorner = {5., 5., 5.};
   bool duplicatedCalculation = true;
 
-  autopas::LJFunctor<MolType, CellType, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
-                                                      duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+                                                     duplicatedCalculation);
 
-  MolType p1({4.9, 0., 0.}, {0., 0., 0.}, 0);
-  MolType p2({5.0, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({4.9, 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({5.0, 0.2, 0.3}, {0., 0., 0.}, 1);
   {
     // no newton 3
     functor.resetGlobalValues();
@@ -212,11 +210,11 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsInsideNonDuplicated) {
   std::array<double, 3> highCorner = {5., 5., 5.};
   bool duplicatedCalculation = false;
 
-  autopas::LJFunctor<MolType, CellType, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
-                                                      duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+                                                     duplicatedCalculation);
 
-  MolType p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  MolType p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
   {
     // no newton 3
     functor.resetGlobalValues();
@@ -257,11 +255,11 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsBoundaryNonDuplicated) {
   std::array<double, 3> highCorner = {5., 5., 5.};
   bool duplicatedCalculation = false;
 
-  autopas::LJFunctor<MolType, CellType, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
-                                                      duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+                                                     duplicatedCalculation);
 
-  MolType p1({4.9, 0., 0.}, {0., 0., 0.}, 0);
-  MolType p2({5.0, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({4.9, 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({5.0, 0.2, 0.3}, {0., 0., 0.}, 1);
   {
     // no newton 3
     functor.resetGlobalValues();
