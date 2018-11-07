@@ -8,7 +8,7 @@
 #include <autopas/selectors/AutoTuner.h>
 
 TEST_F(AutoTunerTest, testTune) {
-  autopas::LJFunctor<Particle, FPCell> functor;
+  autopas::LJFunctor<Particle, FPCell> functor(1., 1., 1., 0.);
   std::vector<autopas::ContainerOptions> containers = {autopas::ContainerOptions::verletLists,
                                                        autopas::ContainerOptions::directSum,
                                                        autopas::ContainerOptions::linkedCells};

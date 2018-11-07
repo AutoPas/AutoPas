@@ -12,38 +12,108 @@
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
-// @todo can we do this without a template? Maybe. But we want to inline it
-// anyway :)
 /**
  * A functor to handle lennard-jones interactions between two particles
  * (molecules).
- * @todo add macroscopic quantities
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
+ * @tparam calculateGlobals defines whether the global values are to be calculated (energy, virial)
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
+template <class Particle, class ParticleCell, bool calculateGlobals = false>
+class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
+  using SoAArraysType = typename Particle::SoAArraysType;
+
  public:
+  /**
+   * Deleted default constructor
+   */
+  LJFunctor() = delete;
+
+  /**
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * @param cutoff
+   * @param epsilon
+   * @param sigma
+   * @param shift
+   * @param lowCorner lower corner of the local simulation domain
+   * @param highCorner upper corner of the local simulation domain
+   * @param duplicatedCalculation defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true
+   */
+  explicit LJFunctor(double cutoff, double epsilon, double sigma, double shift,
+                     std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
+                     bool duplicatedCalculation = true)
+      : _cutoffsquare{cutoff * cutoff},
+        _epsilon24{epsilon * 24.0},
+        _sigmasquare{sigma * sigma},
+        _shift6{shift * 6.0},
+        _upotSum{0.},
+        _virialSum{0., 0., 0.},
+        _duplicatedCalculations{duplicatedCalculation},
+        _lowCorner{lowCorner},
+        _highCorner{highCorner},
+        _postProcessed{false} {
+    if (calculateGlobals and duplicatedCalculation) {
+      if (lowCorner == highCorner) {
+        throw utils::ExceptionHandler::AutoPasException(
+            "Please specify the lowCorner and highCorner properly if calculateGlobals and duplicatedCalculation are "
+            "set to true.");
+      }
+    }
+  }
+
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     double dr2 = ArrayMath::dot(dr, dr);
 
-    if (dr2 > CUTOFFSQUARE) return;
+    if (dr2 > _cutoffsquare) return;
 
     double invdr2 = 1. / dr2;
-    double lj6 = SIGMASQUARE * invdr2;
+    double lj6 = _sigmasquare * invdr2;
     lj6 = lj6 * lj6 * lj6;
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
-    double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+    double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = ArrayMath::mulScalar(dr, fac);
     i.addF(f);
-    j.subF(f);
+    if (newton3) {
+      // only if we use newton 3 here, we want to
+      j.subF(f);
+    }
+    if (calculateGlobals) {
+      auto virial = ArrayMath::mul(dr, f);
+      double upot = _epsilon24 * lj12m6 + _shift6;
+
+      if (_duplicatedCalculations) {
+        // for non-newton3 the division is in the post-processing step.
+        if (newton3) {
+          upot *= 0.5;
+          virial = ArrayMath::mulScalar(virial, 0.5);
+        }
+        if (autopas::utils::inBox(i.getR(), _lowCorner, _highCorner)) {
+          _upotSum += upot;
+          _virialSum = ArrayMath::add(_virialSum, virial);
+        }
+        // for non-newton3 the second particle will be considered in a separate calculation
+        if (newton3 and autopas::utils::inBox(j.getR(), _lowCorner, _highCorner)) {
+          _upotSum += upot;
+          _virialSum = ArrayMath::add(_virialSum, virial);
+        }
+      } else {
+        // for non-newton3 we divide by 2 only in the postprocess step!
+        _upotSum += upot;
+        _virialSum = ArrayMath::add(_virialSum, virial);
+      }
+    }
   }
 
+  /**
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
+   */
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
@@ -76,14 +146,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > CUTOFFSQUARE) ? 0. : 1.;
+        const double mask = (dr2 > _cutoffsquare) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj2 = _sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2 * mask;
+        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -92,10 +162,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-
-        fxptr[j] -= fx;
-        fyptr[j] -= fy;
-        fzptr[j] -= fz;
+        if (newton3) {
+          fxptr[j] -= fx;
+          fyptr[j] -= fy;
+          fzptr[j] -= fz;
+        }
       }
 
       fxptr[i] += fxacc;
@@ -104,6 +175,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     }
   }
 
+  /**
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
+   */
   void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -121,9 +195,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-    unsigned long *const __restrict__ id1ptr = soa1.template begin<Particle::AttributeNames::id>();
-    unsigned long *const __restrict__ id2ptr = soa2.template begin<Particle::AttributeNames::id>();
-
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
@@ -133,8 +204,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        // if (id1ptr[i] == id2ptr[j]) continue;
-
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
         const double drz = z1ptr[i] - z2ptr[j];
@@ -145,14 +214,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > CUTOFFSQUARE) ? 0. : 1.;
+        const double mask = (dr2 > _cutoffsquare) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj2 = _sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2 * mask;
+        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -161,10 +230,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-
-        fx2ptr[j] -= fx;
-        fy2ptr[j] -= fy;
-        fz2ptr[j] -= fz;
+        if (newton3) {
+          fx2ptr[j] -= fx;
+          fy2ptr[j] -= fy;
+          fz2ptr[j] -= fz;
+        }
       }
 
       fx1ptr[i] += fxacc;
@@ -196,7 +266,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    for (unsigned int i = iFrom; i < iTo; ++i) {
+    for (size_t i = iFrom; i < iTo; ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
@@ -258,14 +328,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
 
             const double dr2 = drx2 + dry2 + drz2;
 
-            const double mask = (dr2 <= CUTOFFSQUARE) ? 1. : 0.;
+            const double mask = (dr2 <= _cutoffsquare) ? 1. : 0.;
 
             const double invdr2 = 1. / dr2 * mask;
-            const double lj2 = SIGMASQUARE * invdr2;
+            const double lj2 = _sigmasquare * invdr2;
             const double lj6 = lj2 * lj2 * lj2;
             const double lj12 = lj6 * lj6;
             const double lj12m6 = lj12 - lj6;
-            const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+            const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
 
             const double fx = drx * fac;
             const double fy = dry * fac;
@@ -274,18 +344,21 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
             fxacc += fx;
             fyacc += fy;
             fzacc += fz;
-
-            fxArr[j] = fx;
-            fyArr[j] = fy;
-            fzArr[j] = fz;
+            if (newton3) {
+              fxArr[j] = fx;
+              fyArr[j] = fy;
+              fzArr[j] = fz;
+            }
           }
-          // scatter the forces to where they belong
+          // scatter the forces to where they belong, this is only needed for newton3
+          if (newton3) {
 #pragma omp simd safelen(vecsize)
-          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-            const size_t j = currentList[joff + tmpj];
-            fxptr[j] -= fxArr[tmpj];
-            fyptr[j] -= fyArr[tmpj];
-            fzptr[j] -= fzArr[tmpj];
+            for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+              const size_t j = currentList[joff + tmpj];
+              fxptr[j] -= fxArr[tmpj];
+              fyptr[j] -= fyArr[tmpj];
+              fzptr[j] -= fzArr[tmpj];
+            }
           }
         }
       }
@@ -304,14 +377,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 > CUTOFFSQUARE) continue;
+        if (dr2 > _cutoffsquare) continue;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = SIGMASQUARE * invdr2;
+        const double lj2 = _sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = EPSILON24 * (lj12 + lj12m6) * invdr2;
+        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -320,10 +393,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-
-        fxptr[j] -= fx;
-        fyptr[j] -= fy;
-        fzptr[j] -= fz;
+        if (newton3) {
+          fxptr[j] -= fx;
+          fyptr[j] -= fy;
+          fzptr[j] -= fz;
+        }
       }
 
       fxptr[i] += fxacc;
@@ -392,20 +466,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
       })
 
   /**
-   * Set the global values, i.e. cutoff, epsilon, sigma and shift
-   * @param cutoff
-   * @param epsilon
-   * @param sigma
-   * @param shift
-   */
-  static void setGlobals(double cutoff, double epsilon, double sigma, double shift) {
-    CUTOFFSQUARE = cutoff * cutoff;
-    EPSILON24 = epsilon * 24.0;
-    SIGMASQUARE = sigma * sigma;
-    SHIFT6 = shift * 6.0;
-  }
-
-  /**
    * get the number of flops used per kernel call. This should count the
    * floating point operations needed for two particles that lie within a cutoff
    * radius.
@@ -417,21 +477,83 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
     return 18ul;
   }
 
+  /**
+   * Reset the global values.
+   * Will set the global values to zero to prepare for the next iteration.
+   */
+  void resetGlobalValues() {
+    _upotSum = 0.;
+    _virialSum = {0., 0., 0.};
+    _postProcessed = false;
+  }
+
+  /**
+   * postprocesses global values, e.g. upot and virial
+   * @param newton3
+   */
+  void postProcessGlobalValues(bool newton3) {
+    if (_postProcessed) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "Already postprocessed, please don't call postProcessGlobalValues(bool newton3) twice without calling "
+          "resetGlobalValues().");
+    }
+    if (not newton3) {
+      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide be 2 here.
+      _upotSum *= 0.5;
+      _virialSum = ArrayMath::mulScalar(_virialSum, 0.5);
+    }
+    _postProcessed = true;
+  }
+
+  /**
+   * Get the potential Energy
+   * @return the potential Energy
+   */
+  double getUpot() {
+    if (not calculateGlobals) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
+    if (not _postProcessed) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "Not yet postprocessed, please call postProcessGlobalValues first.");
+    }
+    return _upotSum;
+  }
+
+  /**
+   * Get the virial
+   * @return the virial
+   */
+  double getVirial() {
+    if (not calculateGlobals) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
+    if (not _postProcessed) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "Not yet postprocessed, please call postProcessGlobalValues first.");
+    }
+    return _virialSum[0] + _virialSum[1] + _virialSum[2];
+  }
+
  private:
-  static double CUTOFFSQUARE, EPSILON24, SIGMASQUARE, SHIFT6;
+  double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
-};  // namespace autopas
+  // sum of the potential energy, only calculated if calculateGlobals is true
+  double _upotSum;
+  // sum of the virial, only calculated if calculateGlobals is true
+  std::array<double, 3> _virialSum;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::CUTOFFSQUARE;
+  // bool that defines whether duplicate calculations are happening
+  bool _duplicatedCalculations;
+  // lower and upper corner of the domain of the current process
+  std::array<double, 3> _lowCorner, _highCorner;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::EPSILON24;
+  // defines whether or whether not the global values are already preprocessed
+  bool _postProcessed;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::SIGMASQUARE;
-
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::SHIFT6;
-
+};  // class LJFunctor
 }  // namespace autopas
