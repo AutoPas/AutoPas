@@ -47,16 +47,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   explicit LJFunctor(double cutoff, double epsilon, double sigma, double shift,
                      std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
                      bool duplicatedCalculation = true)
-      : _virialSum{0., 0., 0.} {
-    _cutoffsquare = cutoff * cutoff;
-    _epsilon24 = epsilon * 24.0;
-    _sigmasquare = sigma * sigma;
-    _shift6 = shift * 6.0;
-    _upotSum = 0.;
-    _duplicatedCalculations = duplicatedCalculation;
-    _lowCorner = lowCorner;
-    _highCorner = highCorner;
-    _postProcessed = false;
+      : _cutoffsquare{cutoff * cutoff},
+        _epsilon24{epsilon * 24.0},
+        _sigmasquare{sigma * sigma},
+        _shift6{shift * 6.0},
+        _upotSum{0.},
+        _virialSum{0., 0., 0.},
+        _duplicatedCalculations{duplicatedCalculation},
+        _lowCorner{lowCorner},
+        _highCorner{highCorner},
+        _postProcessed{false} {
     if (calculateGlobals and duplicatedCalculation) {
       if (lowCorner == highCorner) {
         throw utils::ExceptionHandler::AutoPasException(
@@ -494,7 +494,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   void postProcessGlobalValues(bool newton3) {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "already postprocessed, please don't call postProcessGlobalValues(bool newton3) twice without calling "
+          "Already postprocessed, please don't call postProcessGlobalValues(bool newton3) twice without calling "
           "resetGlobalValues().");
     }
     if (not newton3) {
@@ -534,7 +534,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
     if (not _postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "not yet postprocessed, please call postProcessGlobalValues first.");
+          "Not yet postprocessed, please call postProcessGlobalValues first.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
@@ -552,7 +552,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   // lower and upper corner of the domain of the current process
   std::array<double, 3> _lowCorner, _highCorner;
 
-  //
+  // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 
 };  // class LJFunctor
