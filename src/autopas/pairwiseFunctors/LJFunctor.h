@@ -57,6 +57,13 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     _lowCorner = lowCorner;
     _highCorner = highCorner;
     _postProcessed = false;
+    if (calculateGlobals and duplicatedCalculation) {
+      if (lowCorner == highCorner) {
+        throw utils::ExceptionHandler::AutoPasException(
+            "Please specify the lowCorner and highCorner properly if calculateGlobals and duplicatedCalculation are "
+            "set to true.");
+      }
+    }
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
@@ -81,19 +88,23 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       auto virial = ArrayMath::mul(dr, f);
       double upot = _epsilon24 * lj12m6 + _shift6;
 
-      if (newton3 and _duplicatedCalculations) {
-        double upot_half = upot * 0.5;
-        auto virial_half = ArrayMath::mulScalar(virial, 0.5);
-
-        if (autopas::utils::inBox(i.getR(), _lowCorner, _highCorner)) {
-          _upotSum += upot_half;
-          _virialSum = ArrayMath::add(_virialSum, virial_half);
+      if (_duplicatedCalculations) {
+        // for non-newton3 the division is in the post-processing step.
+        if (newton3){
+          upot *= 0.5;
+          virial = ArrayMath::mulScalar(virial, 0.5);
         }
-        if (autopas::utils::inBox(j.getR(), _lowCorner, _highCorner)) {
-          _upotSum += upot_half;
-          _virialSum = ArrayMath::add(_virialSum, virial_half);
+        if (autopas::utils::inBox(i.getR(), _lowCorner, _highCorner)) {
+          _upotSum += upot;
+          _virialSum = ArrayMath::add(_virialSum, virial);
+        }
+        // for non-newton3 the second particle will be considered in a separate calculation
+        if (newton3 and autopas::utils::inBox(j.getR(), _lowCorner, _highCorner)) {
+          _upotSum += upot;
+          _virialSum = ArrayMath::add(_virialSum, virial);
         }
       } else {
+        // we divide by 2 only in the postprocess step!
         _upotSum += upot;
         _virialSum = ArrayMath::add(_virialSum, virial);
       }
@@ -481,10 +492,17 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @param newton3
    */
   void postProcessGlobalValues(bool newton3) {
+    if (_postProcessed) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "already postprocessed, please don't call postProcessGlobalValues(bool newton3) twice without calling "
+          "resetGlobalValues().");
+    }
     if (not newton3) {
+      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide be 2 here.
       _upotSum *= 0.5;
       _virialSum = ArrayMath::mulScalar(_virialSum, 0.5);
     }
+    _postProcessed = true;
   }
 
   /**
@@ -492,9 +510,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @return the potential Energy
    */
   double getUpot() {
+    if (not calculateGlobals) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
     if (not _postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "not yet postprocessed, please call postProcessGlobalValues first.");
+          "Not yet postprocessed, please call postProcessGlobalValues first.");
     }
     return _upotSum;
   }
@@ -504,6 +527,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @return the virial
    */
   double getVirial() {
+    if (not calculateGlobals) {
+      throw utils::ExceptionHandler::AutoPasException(
+          "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
     if (not _postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
           "not yet postprocessed, please call postProcessGlobalValues first.");
