@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
   cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
 
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor(cutoff, MoleculeLJ::getEpsilon(),
-                                                                                MoleculeLJ::getSigma(), 0.0);
+                                                                            MoleculeLJ::getSigma(), 0.0);
 
   if (not vtkFilename.empty()) wirteVTKFile(vtkFilename, particlesPerDim * particlesPerDim * particlesPerDim, autopas);
 

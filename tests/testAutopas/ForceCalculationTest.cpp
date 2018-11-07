@@ -27,7 +27,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autopas::MoleculeLJ::setSigma(sigma);
 
   autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor(cutoff, epsilon,
-                                                                                                      sigma, 0.0);
+                                                                                                  sigma, 0.0);
 
   autoPas.iteratePairwise(&functor, dataLayoutOption);
 

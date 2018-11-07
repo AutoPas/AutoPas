@@ -80,7 +80,6 @@ int main(int argc, char *argv[]) {
 
 template <class Container>
 void measureContainer(Container *cont, int numMolecules, int numIterations, double cutoff, bool soa) {
-
   FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopFunctor(cutoff);
 
   utils::Timer t;
