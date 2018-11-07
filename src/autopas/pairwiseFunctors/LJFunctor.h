@@ -104,7 +104,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           _virialSum = ArrayMath::add(_virialSum, virial);
         }
       } else {
-        // we divide by 2 only in the postprocess step!
+        // for non-newton3 we divide by 2 only in the postprocess step!
         _upotSum += upot;
         _virialSum = ArrayMath::add(_virialSum, virial);
       }
