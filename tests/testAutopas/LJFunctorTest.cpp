@@ -92,10 +92,12 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
                                                      duplicatedCalculation);
   double xOffset;
   double whereFactor;
+  std::string where_str;
   switch (where) {
     case inside:
       xOffset = 0.;
       whereFactor = 1.;
+      where_str = "inside";
       break;
     case boundary:
       xOffset = 4.9;
@@ -103,6 +105,7 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
       // if there are duplicated calculations there shouldn't be only a partial (factor 0.5) contribution to the energy
       // if one particle is inside and one outside
       whereFactor = duplicatedCalculation ? 0.5 : 1;
+      where_str = "boundary";
       break;
     case outside:
       xOffset = 5.0;
@@ -110,6 +113,7 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
       // if there are duplicated calculations there shouldn't be any contribution to the energy if both particles are
       // outside
       whereFactor = duplicatedCalculation ? 0. : 1;
+      where_str = "outside";
   }
   Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
@@ -125,42 +129,18 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
   double upot = functor.getUpot();
   double virial = functor.getVirial();
 
-  EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta);
-  EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta);
+  EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
+  EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
 }
 
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsInsideDuplicated) {
-  bool duplicatedCalculation = true;
-  testAoSGlobals(inside, /*newton3*/ false, duplicatedCalculation);
-  testAoSGlobals(inside, /*newton3*/ true, duplicatedCalculation);
-}
-
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsBoundaryDuplicated) {
-  bool duplicatedCalculation = true;
-  testAoSGlobals(boundary, /*newton3*/ false, duplicatedCalculation);
-  testAoSGlobals(boundary, /*newton3*/ true, duplicatedCalculation);
-}
-
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsOutsideDuplicated) {
-  bool duplicatedCalculation = true;
-  testAoSGlobals(outside, /*newton3*/ false, duplicatedCalculation);
-  testAoSGlobals(outside, /*newton3*/ true, duplicatedCalculation);
-}
-
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsInsideNonDuplicated) {
-  bool duplicatedCalculation = false;
-  testAoSGlobals(inside, /*newton3*/ false, duplicatedCalculation);
-  testAoSGlobals(inside, /*newton3*/ true, duplicatedCalculation);
-}
-
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsBoundaryNonDuplicated) {
-  bool duplicatedCalculation = false;
-  testAoSGlobals(boundary, /*newton3*/ false, duplicatedCalculation);
-  testAoSGlobals(boundary, /*newton3*/ true, duplicatedCalculation);
-}
-
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsOutsideNonDuplicated) {
-  bool duplicatedCalculation = false;
-  testAoSGlobals(outside, /*newton3*/ false, duplicatedCalculation);
-  testAoSGlobals(outside, /*newton3*/ true, duplicatedCalculation);
+TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
+  for (bool duplicatedCalculation : {false, true}) {
+    for (where_type where : {inside, boundary, outside}) {
+      for (bool newton3 : {false, true}) {
+        testAoSGlobals(where, newton3, duplicatedCalculation);
+      }
+    }
+  }
 }
