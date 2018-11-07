@@ -90,7 +90,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
       if (_duplicatedCalculations) {
         // for non-newton3 the division is in the post-processing step.
-        if (newton3){
+        if (newton3) {
           upot *= 0.5;
           virial = ArrayMath::mulScalar(virial, 0.5);
         }
