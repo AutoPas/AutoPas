@@ -114,6 +114,8 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
       // outside
       whereFactor = duplicatedCalculation ? 0. : 1;
       where_str = "outside";
+    default:
+      throw "not in enum where_type";
   }
   Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
