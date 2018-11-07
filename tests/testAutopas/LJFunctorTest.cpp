@@ -8,81 +8,57 @@
 #include <autopas/particles/MoleculeLJ.h>
 #include "testingHelpers/commonTypedefs.h"
 
-TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsNoN3) {
-  double cutoff = 1.;
-  double epsilon = 1.;
-  double sigma = 1.;
-  double shift = 0.1;
+void LJFunctorTest::testAoSNoGlobals(bool newton3) {
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, epsilon, sigma, shift);
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
 
-  functor.AoSFunctor(p1, p2, false);
+  functor.AoSFunctor(p1, p2, newton3);
 
   auto f1one = p1.getF();
   auto f2one = p2.getF();
-  EXPECT_NEAR(f1one[0], -4547248.8989645941, 1e-9);
-  EXPECT_NEAR(f1one[1], -9094497.7979291882, 1e-9);
-  EXPECT_NEAR(f1one[2], -13641746.696893783, 1e-9);
+  EXPECT_NEAR(f1one[0], expectedForce[0], absDelta);
+  EXPECT_NEAR(f1one[1], expectedForce[1], absDelta);
+  EXPECT_NEAR(f1one[2], expectedForce[2], absDelta);
 
-  EXPECT_DOUBLE_EQ(f2one[0], 0);
-  EXPECT_DOUBLE_EQ(f2one[1], 0);
-  EXPECT_DOUBLE_EQ(f2one[2], 0);
+  if (newton3) {
+    EXPECT_NEAR(f2one[0], -expectedForce[0], absDelta);
+    EXPECT_NEAR(f2one[1], -expectedForce[1], absDelta);
+    EXPECT_NEAR(f2one[2], -expectedForce[2], absDelta);
+  } else {
+    EXPECT_DOUBLE_EQ(f2one[0], 0);
+    EXPECT_DOUBLE_EQ(f2one[1], 0);
+    EXPECT_DOUBLE_EQ(f2one[2], 0);
+  }
 
-  functor.AoSFunctor(p2, p1, false);
+  functor.AoSFunctor(p2, p1, newton3);
+
   auto f1two = p1.getF();
   auto f2two = p2.getF();
-  EXPECT_NEAR(f1two[0], -4547248.8989645941, 1e-9);
-  EXPECT_NEAR(f1two[1], -9094497.7979291882, 1e-9);
-  EXPECT_NEAR(f1two[2], -13641746.696893783, 1e-9);
 
-  EXPECT_NEAR(f2two[0], +4547248.8989645941, 1e-9);
-  EXPECT_NEAR(f2two[1], +9094497.7979291882, 1e-9);
-  EXPECT_NEAR(f2two[2], +13641746.696893783, 1e-9);
+  double factor = newton3 ? 2. : 1.;
+
+  EXPECT_NEAR(f1two[0], factor * expectedForce[0], absDelta);
+  EXPECT_NEAR(f1two[1], factor * expectedForce[1], absDelta);
+  EXPECT_NEAR(f1two[2], factor * expectedForce[2], absDelta);
+
+  EXPECT_NEAR(f2two[0], -factor * expectedForce[0], absDelta);
+  EXPECT_NEAR(f2two[1], -factor * expectedForce[1], absDelta);
+  EXPECT_NEAR(f2two[2], -factor * expectedForce[2], absDelta);
+}
+
+TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsNoN3) {
+  bool newton3 = false;
+  testAoSNoGlobals(false);
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
-  double cutoff = 1.;
-  double epsilon = 1.;
-  double sigma = 1.;
-  double shift = 0.1;
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, epsilon, sigma, shift);
-
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
-
-  functor.AoSFunctor(p1, p2, true);
-
-  auto f1one = p1.getF();
-  auto f2one = p2.getF();
-  EXPECT_NEAR(f1one[0], -4547248.8989645941, 1e-9);
-  EXPECT_NEAR(f1one[1], -9094497.7979291882, 1e-9);
-  EXPECT_NEAR(f1one[2], -13641746.696893783, 1e-9);
-
-  EXPECT_NEAR(f2one[0], +4547248.8989645941, 1e-9);
-  EXPECT_NEAR(f2one[1], +9094497.7979291882, 1e-9);
-  EXPECT_NEAR(f2one[2], +13641746.696893783, 1e-9);
-
-  functor.AoSFunctor(p2, p1, true);
-  auto f1two = p1.getF();
-  auto f2two = p2.getF();
-  EXPECT_NEAR(f1two[0], 2 * -4547248.8989645941, 1e-9);
-  EXPECT_NEAR(f1two[1], 2 * -9094497.7979291882, 1e-9);
-  EXPECT_NEAR(f1two[2], 2 * -13641746.696893783, 1e-9);
-
-  EXPECT_NEAR(f2two[0], 2 * +4547248.8989645941, 1e-9);
-  EXPECT_NEAR(f2two[1], 2 * +9094497.7979291882, 1e-9);
-  EXPECT_NEAR(f2two[2], 2 * +13641746.696893783, 1e-9);
+  bool newton3 = true;
+  testAoSNoGlobals(false);
 }
 
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
-  double cutoff = 1.;
-  double epsilon = 1.;
-  double sigma = 1.;
-  double shift = 0.1;
-  std::array<double, 3> lowCorner = {0., 0., 0.};
-  std::array<double, 3> highCorner = {5., 5., 5.};
   bool duplicatedCalculation = true;
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
   {
@@ -111,182 +87,80 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   EXPECT_NO_THROW(functor.postProcessGlobalValues(true));
 }
 
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsInsideDuplicated) {
-  double cutoff = 1.;
-  double epsilon = 1.;
-  double sigma = 1.;
-  double shift = 0.1;
-  std::array<double, 3> lowCorner = {0., 0., 0.};
-  std::array<double, 3> highCorner = {5., 5., 5.};
-  bool duplicatedCalculation = true;
-
+void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
   autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
                                                      duplicatedCalculation);
-
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
-  {
-    // no newton 3
-    functor.resetGlobalValues();
-
-    functor.AoSFunctor(p1, p2, /*newton3*/ false);
-    functor.AoSFunctor(p2, p1, /*newton3*/ false);
-
-    functor.postProcessGlobalValues(/*newton3*/ false);
-
-    double upot = functor.getUpot();
-    double virial = functor.getVirial();
-
-    EXPECT_NEAR(upot, 3178701.6514326506, 1.e-10);
-    EXPECT_NEAR(virial, 6366148.4585504318, 1.e-10);
+  double xOffset;
+  double whereFactor;
+  switch (where) {
+    case inside:
+      xOffset = 0.;
+      whereFactor = 1.;
+      break;
+    case boundary:
+      xOffset = 4.9;
+      // if there are no duplicated calculations all calculations count, therefore factor = 1
+      // if there are duplicated calculations there shouldn't be only a partial (factor 0.5) contribution to the energy
+      // if one particle is inside and one outside
+      whereFactor = duplicatedCalculation ? 0.5 : 1;
+      break;
+    case outside:
+      xOffset = 5.0;
+      // if there are no duplicated calculations all calculations count, therefore factor = 1
+      // if there are duplicated calculations there shouldn't be any contribution to the energy if both particles are
+      // outside
+      whereFactor = duplicatedCalculation ? 0. : 1;
   }
-  {
-    // with newton 3
-    functor.resetGlobalValues();
+  Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
 
-    functor.AoSFunctor(p1, p2, /*newton3*/ true);
+  functor.resetGlobalValues();
 
-    functor.postProcessGlobalValues(/*newton3*/ true);
-
-    double upot = functor.getUpot();
-    double virial = functor.getVirial();
-
-    EXPECT_NEAR(upot, 3178701.6514326506, 1.e-10);
-    EXPECT_NEAR(virial, 6366148.4585504318, 1.e-10);
+  functor.AoSFunctor(p1, p2, newton3);
+  if (not newton3) {
+    functor.AoSFunctor(p2, p1, newton3);
   }
+  functor.postProcessGlobalValues(newton3);
+
+  double upot = functor.getUpot();
+  double virial = functor.getVirial();
+
+  EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta);
+  EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta);
+}
+
+TEST_F(LJFunctorTest, testAoSFunctorGlobalsInsideDuplicated) {
+  bool duplicatedCalculation = true;
+  testAoSGlobals(inside, /*newton3*/ false, duplicatedCalculation);
+  testAoSGlobals(inside, /*newton3*/ true, duplicatedCalculation);
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorGlobalsBoundaryDuplicated) {
-  double cutoff = 1.;
-  double epsilon = 1.;
-  double sigma = 1.;
-  double shift = 0.1;
-  std::array<double, 3> lowCorner = {0., 0., 0.};
-  std::array<double, 3> highCorner = {5., 5., 5.};
   bool duplicatedCalculation = true;
+  testAoSGlobals(boundary, /*newton3*/ false, duplicatedCalculation);
+  testAoSGlobals(boundary, /*newton3*/ true, duplicatedCalculation);
+}
 
-  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
-                                                     duplicatedCalculation);
-
-  Molecule p1({4.9, 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({5.0, 0.2, 0.3}, {0., 0., 0.}, 1);
-  {
-    // no newton 3
-    functor.resetGlobalValues();
-
-    functor.AoSFunctor(p1, p2, /*newton3*/ false);
-    functor.AoSFunctor(p2, p1, /*newton3*/ false);
-
-    functor.postProcessGlobalValues(/*newton3*/ false);
-
-    double upot = functor.getUpot();
-    double virial = functor.getVirial();
-
-    EXPECT_NEAR(upot, 3178701.65143265 * 0.5, 1.e-8);
-    EXPECT_NEAR(virial, 6366148.4585504 * 0.5, 1.e-7);
-  }
-  {
-    // with newton 3
-    functor.resetGlobalValues();
-
-    functor.AoSFunctor(p1, p2, /*newton3*/ true);
-
-    functor.postProcessGlobalValues(/*newton3*/ true);
-
-    double upot = functor.getUpot();
-    double virial = functor.getVirial();
-
-    EXPECT_NEAR(upot, 3178701.65143265 * 0.5, 1.e-8);
-    EXPECT_NEAR(virial, 6366148.4585504 * 0.5, 1.e-7);
-  }
+TEST_F(LJFunctorTest, testAoSFunctorGlobalsOutsideDuplicated) {
+  bool duplicatedCalculation = true;
+  testAoSGlobals(outside, /*newton3*/ false, duplicatedCalculation);
+  testAoSGlobals(outside, /*newton3*/ true, duplicatedCalculation);
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorGlobalsInsideNonDuplicated) {
-  double cutoff = 1.;
-  double epsilon = 1.;
-  double sigma = 1.;
-  double shift = 0.1;
-  std::array<double, 3> lowCorner = {0., 0., 0.};
-  std::array<double, 3> highCorner = {5., 5., 5.};
   bool duplicatedCalculation = false;
-
-  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
-                                                     duplicatedCalculation);
-
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
-  {
-    // no newton 3
-    functor.resetGlobalValues();
-
-    functor.AoSFunctor(p1, p2, /*newton3*/ false);
-    functor.AoSFunctor(p2, p1, /*newton3*/ false);
-
-    functor.postProcessGlobalValues(/*newton3*/ false);
-
-    double upot = functor.getUpot();
-    double virial = functor.getVirial();
-
-    EXPECT_NEAR(upot, 3178701.6514326506, 1.e-10);
-    EXPECT_NEAR(virial, 6366148.4585504318, 1.e-10);
-  }
-  {
-    // with newton 3
-    functor.resetGlobalValues();
-
-    functor.AoSFunctor(p1, p2, /*newton3*/ true);
-
-    functor.postProcessGlobalValues(/*newton3*/ true);
-
-    double upot = functor.getUpot();
-    double virial = functor.getVirial();
-
-    EXPECT_NEAR(upot, 3178701.6514326506, 1.e-10);
-    EXPECT_NEAR(virial, 6366148.4585504318, 1.e-10);
-  }
+  testAoSGlobals(inside, /*newton3*/ false, duplicatedCalculation);
+  testAoSGlobals(inside, /*newton3*/ true, duplicatedCalculation);
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorGlobalsBoundaryNonDuplicated) {
-  double cutoff = 1.;
-  double epsilon = 1.;
-  double sigma = 1.;
-  double shift = 0.1;
-  std::array<double, 3> lowCorner = {0., 0., 0.};
-  std::array<double, 3> highCorner = {5., 5., 5.};
   bool duplicatedCalculation = false;
+  testAoSGlobals(boundary, /*newton3*/ false, duplicatedCalculation);
+  testAoSGlobals(boundary, /*newton3*/ true, duplicatedCalculation);
+}
 
-  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
-                                                     duplicatedCalculation);
-
-  Molecule p1({4.9, 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({5.0, 0.2, 0.3}, {0., 0., 0.}, 1);
-  {
-    // no newton 3
-    functor.resetGlobalValues();
-
-    functor.AoSFunctor(p1, p2, /*newton3*/ false);
-    functor.AoSFunctor(p2, p1, /*newton3*/ false);
-
-    functor.postProcessGlobalValues(/*newton3*/ false);
-
-    double upot = functor.getUpot();
-    double virial = functor.getVirial();
-
-    EXPECT_NEAR(upot, 3178701.65143265, 1.e-7);
-    EXPECT_NEAR(virial, 6366148.4585504, 1.e-7);
-  }
-  {
-    // with newton 3
-    functor.resetGlobalValues();
-
-    functor.AoSFunctor(p1, p2, /*newton3*/ true);
-
-    functor.postProcessGlobalValues(/*newton3*/ true);
-
-    double upot = functor.getUpot();
-    double virial = functor.getVirial();
-
-    EXPECT_NEAR(upot, 3178701.65143265, 1.e-7);
-    EXPECT_NEAR(virial, 6366148.4585504, 1.e-7);
-  }
+TEST_F(LJFunctorTest, testAoSFunctorGlobalsOutsideNonDuplicated) {
+  bool duplicatedCalculation = false;
+  testAoSGlobals(outside, /*newton3*/ false, duplicatedCalculation);
+  testAoSGlobals(outside, /*newton3*/ true, duplicatedCalculation);
 }
