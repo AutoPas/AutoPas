@@ -34,7 +34,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   LJFunctor() = delete;
 
   /**
-   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
    * @param cutoff
    * @param epsilon
    * @param sigma
