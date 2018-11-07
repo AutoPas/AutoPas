@@ -114,6 +114,7 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
       // outside
       whereFactor = duplicatedCalculation ? 0. : 1;
       where_str = "outside";
+      break;
     default:
       throw "not in enum where_type";
   }
