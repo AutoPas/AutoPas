@@ -149,7 +149,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
-  bool duplicatedCalculation=false;
+  bool duplicatedCalculation = false;
   bool newton3 = true;
   double whereFactor = 2.;
   std::string where_str = "inside";
@@ -188,7 +188,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   double virial = functor.getVirial();
 
   EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta)
-            << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
+      << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
   EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta)
-            << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
+      << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
 }
