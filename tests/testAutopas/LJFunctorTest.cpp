@@ -61,13 +61,12 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   bool duplicatedCalculation = true;
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
-  {
-    // throw if lowcorner == highcorner, but calculateglobals and duplicatedCalculation are true
-    typedef autopas::LJFunctor<Molecule, FMCell, true> functortype;
-    EXPECT_THROW(functortype functor(cutoff, epsilon, sigma, shift, lowCorner, {0., 0., 0.}, duplicatedCalculation),
-                 exception_type);
-  }
-
+  
+  // throw if lowcorner == highcorner, but calculateglobals and duplicatedCalculation are true
+  EXPECT_THROW((autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner,
+                                                                   {0., 0., 0.}, duplicatedCalculation)),
+               exception_type);
+  
   autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
                                                      duplicatedCalculation);
 
