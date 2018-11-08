@@ -98,3 +98,48 @@ TEST_F(TraversalSelectorTest, testTune) {
   EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())))
       << "tune() returned the wrong traversal tuning phase";
 }
+
+TEST_F(TraversalSelectorTest, testNextTraversal) {
+  MFunctor functor;
+
+  std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
+                                                         autopas::TraversalOptions::c08};
+
+  constexpr size_t domainSize = 1000;
+  autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
+
+  auto traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
+  EXPECT_EQ(autopas::TraversalOptions::sliced, traversal->getTraversalType());
+
+  traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
+  EXPECT_EQ(autopas::TraversalOptions::c08, traversal->getTraversalType());
+
+  traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
+  EXPECT_EQ(nullptr, traversal);
+
+  traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
+  EXPECT_EQ(nullptr, traversal);
+}
+
+TEST_F(TraversalSelectorTest, testSelectOptimalTraversal) {
+  MFunctor functor;
+
+  std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
+                                                         autopas::TraversalOptions::c08};
+
+  constexpr size_t domainSize = 1000;
+  autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
+
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(functor)), std::exception);
+
+  traversalSelector.addTimeMeasurement(functor, optionVector[0], 20);
+  traversalSelector.addTimeMeasurement(functor, optionVector[0], 22);
+  traversalSelector.addTimeMeasurement(functor, optionVector[1], 30);
+  traversalSelector.addTimeMeasurement(functor, optionVector[1], 10);
+
+  auto traversal = traversalSelector.selectOptimalTraversal<MFunctor, true, true>(functor);
+  EXPECT_EQ(optionVector[1], traversal->getTraversalType());
+
+  // select optimal traversal should delete all measurements
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(functor)), std::exception);
+}
