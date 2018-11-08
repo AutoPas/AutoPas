@@ -72,7 +72,7 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
     double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
-    size_t numParticles =  soa.getNumParticles();
+    size_t numParticles = soa.getNumParticles();
     for (unsigned int i = 0; i < numParticles; ++i) {
       double densacc = 0.;
 
@@ -126,10 +126,10 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     double *const __restrict__ smthptr2 = soa2.begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr2 = soa2.begin<Particle::AttributeNames::mass>();
 
-    size_t numParticlesi =  soa1.getNumParticles();
+    size_t numParticlesi = soa1.getNumParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
       double densacc = 0.;
-      size_t numParticlesj =  soa2.getNumParticles();
+      size_t numParticlesj = soa2.getNumParticles();
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : densacc)
@@ -176,7 +176,7 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
 
-    size_t numParticlesi =  soa.getNumParticles();
+    size_t numParticlesi = soa.getNumParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
       double densacc = 0;
       auto &currentList = neighborList[i];
