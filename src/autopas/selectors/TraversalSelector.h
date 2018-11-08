@@ -80,7 +80,12 @@ class TraversalSelector {
 
  private:
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  std::vector<std::unique_ptr<CellPairTraversalInterface>> generateTraversals(PairwiseFunctor &pairwiseFunctor);
+  std::vector<std::unique_ptr<CellPairTraversalInterface>> generateAllAllowedTraversals(
+      PairwiseFunctor &pairwiseFunctor);
+
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  std::unique_ptr<CellPairTraversalInterface> generateTraversal(TraversalOptions traversalType,
+                                                                PairwiseFunctor &pairwiseFunctor);
 
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> chooseOptimalTraversal(
@@ -103,29 +108,38 @@ class TraversalSelector {
 
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<ParticleCell>::generateTraversals(
+std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<ParticleCell>::generateAllAllowedTraversals(
     PairwiseFunctor &pairwiseFunctor) {
   std::vector<std::unique_ptr<CellPairTraversalInterface>> traversals;
 
   for (auto &option : _allowedTraversalOptions) {
-    switch (option) {
-      case TraversalOptions::c08: {
-        traversals.push_back(
-            std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor));
-        break;
-      }
-      case TraversalOptions::sliced: {
-        traversals.push_back(std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
-            _dims, &pairwiseFunctor));
-        break;
-      }
-      default: { AutoPasLog(warn, "Traversal type {} is not a known type!", option); }
-    }
+    traversals.push_back(generateTraversal<PairwiseFunctor, useSoA, useNewton3>(option, pairwiseFunctor));
   }
 
   if (traversals.empty()) utils::ExceptionHandler::exception("TraversalSelector: No traversals were generated.");
 
   return traversals;
+}
+
+template <class ParticleCell>
+template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+std::unique_ptr<CellPairTraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
+    TraversalOptions traversalType, PairwiseFunctor &pairwiseFunctor) {
+  std::unique_ptr<CellPairTraversalInterface> traversal;
+  switch (traversalType) {
+    case TraversalOptions::c08: {
+      traversal =
+          std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::sliced: {
+      traversal =
+          std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    default: { AutoPasLog(warn, "Traversal type {} is not a known type!", traversalType); }
+  }
+  return traversal;
 }
 
 template <class ParticleCell>
@@ -206,7 +220,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   auto functorHash = typeid(PairwiseFunctor).hash_code();
 
   if (_optimalTraversalOptions.find(functorHash) == _optimalTraversalOptions.end()) {
-    auto generatedTraversals = generateTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+    auto generatedTraversals = generateAllAllowedTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
     traversal = chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
   } else {
     switch (_optimalTraversalOptions[functorHash]) {
@@ -232,7 +246,7 @@ bool TraversalSelector<ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   _currentlyTuning = true;
   // Workaround for Containers that do not use traversals. If there are no traversals there is nothing to tune.
   if (_allowedTraversalOptions.empty()) return false;
-  auto generatedTraversals = generateTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+  auto generatedTraversals = generateAllAllowedTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
   chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
 
   return _currentlyTuning;
