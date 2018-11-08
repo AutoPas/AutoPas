@@ -1,3 +1,6 @@
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-math-errno")
+message(STATUS "fno-math-errno set. This is needed to vectorize, e.g., sqrt().")
+
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weffc++")
 if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.1)
     #Wsuggest-override only exists for g++ starting at version 5.1
@@ -21,6 +24,8 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         message(STATUS "fast-math disabled using -fp-model precise (intel)")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fp-model precise")
     endif ()
+else()
+    message(WARNING "for this compiler fast math is unknown")
 endif ()
 
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
