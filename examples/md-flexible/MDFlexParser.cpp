@@ -48,7 +48,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       case 'c': {
         // delete default argument
         containerOptions.clear();
-        if (strArg.find("direct") != string::npos) {
+        if (strArg.find("direct") != string::npos or strArg.find("ds") != string::npos) {
           containerOptions.push_back(autopas::directSum);
         }
         if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
