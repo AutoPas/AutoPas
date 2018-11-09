@@ -210,6 +210,7 @@ pipeline{
                         container('autopas-archer'){
                             dir("build-archer"){
                                 sh './tests/testAutopas/runTests'
+                                sh 'sleep 86400'
                             }
                         }
                     },
