@@ -84,6 +84,9 @@ class AutoTuner {
   bool iteratePairwise(ParticleFunctor *f, DataLayoutOption dataLayoutOption);
 
  private:
+  template <class ParticleFunctor, bool useSoA, bool useNewton3>
+  bool iteratePairwiseTemplateHelper(ParticleFunctor *f);
+
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
@@ -122,118 +125,67 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
     useNewton3 = newton3Allowed;
   }
 
+  bool isTuning = false;
+
+  switch (dataLayoutOption) {
+    case DataLayoutOption::aos : {
+      if (useNewton3) {
+        isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, false, true>(f);
+      } else {
+        isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, false, false>(f);
+      }
+      break;
+    }
+    case DataLayoutOption::soa : {
+      if (useNewton3) {
+        isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, true, true>(f);
+      } else {
+        isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, true, false>(f);
+      }
+      break;
+    }
+  }
+  return isTuning;
+}
+
+template <class Particle, class ParticleCell>
+template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f) {
   // @todo: WANT one single iteratePairwise(CellFunctor) for containers
   // @todo: CellFunctor for iteration should be build here using selectors for SoA and N3
   bool isTuning = false;
   // large case differentiation for data layout and newton 3
   // check if currently in tuning phase, execute iteration and take time measurement if necessary
-  switch (dataLayoutOption) {
-    case autopas::soa: {
-      if (_iterationsSinceTuning >= _tuningInterval and _numSamples >= _maxSamples) {
-        _numSamples = 1;
-        if (useNewton3) {
-          isTuning = tune<ParticleFunctor, true, true>(*f);
-        } else {
-          isTuning = tune<ParticleFunctor, true, false>(*f);
-        }
-      } else {
-        isTuning = true;
-        ++_numSamples;
+  if (_iterationsSinceTuning >= _tuningInterval) {
+    if (_numSamples < _maxSamples) {
+      isTuning = true;
+    } else {
+      _numSamples = 0;
+      if (useNewton3) {
+        isTuning = tune<PairwiseFunctor, useSoA, useNewton3>(*f);
       }
-
-      auto container = getContainer();
-      AutoPasLog(debug, "Using container {}", container->getContainerType());
-
-      std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
-      if (container->getContainerType() == ContainerOptions::linkedCells) {
-        TraversalSelector<ParticleCell> &traversalSelector = _traversalSelectors[container->getContainerType()];
-        if (useNewton3) {
-          traversal = traversalSelector.template getOptimalTraversal<ParticleFunctor, true, true>(*f);
-        } else {
-          traversal = traversalSelector.template getOptimalTraversal<ParticleFunctor, true, false>(*f);
-        }
-
-        if (isTuning) {
-          auto start = std::chrono::high_resolution_clock::now();
-          // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
-          WithStaticContainerType(container, container->iteratePairwiseSoA(f, traversal.get(), useNewton3););
-          auto stop = std::chrono::high_resolution_clock::now();
-          auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-          _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
-          traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
-        } else {
-          WithStaticContainerType(container, container->iteratePairwiseSoA(f, traversal.get(), useNewton3););
-        }
-      } else {
-        // TODO: is this branch still needed?
-        // dummy traversal
-        traversal = std::unique_ptr<DummyTraversal<ParticleCell>>(new DummyTraversal<ParticleCell>({0, 0, 0}));
-
-        if (isTuning) {
-          auto start = std::chrono::high_resolution_clock::now();
-          WithStaticContainerType(container, container->iteratePairwiseSoA(f, traversal.get(), useNewton3););
-          auto stop = std::chrono::high_resolution_clock::now();
-          auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-          _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
-        } else {
-          WithStaticContainerType(container, container->iteratePairwiseSoA(f, traversal.get(), useNewton3););
-        }
-      }
-      break;
-    }
-    case autopas::aos: {
-      if (_iterationsSinceTuning >= _tuningInterval and _numSamples >= _maxSamples) {
-        _numSamples = 1;
-        if (useNewton3) {
-          isTuning = tune<ParticleFunctor, false, true>(*f);
-        } else {
-          isTuning = tune<ParticleFunctor, false, false>(*f);
-        }
-      } else {
-        isTuning = true;
-        ++_numSamples;
-      }
-
-      auto container = getContainer();
-      AutoPasLog(debug, "Using container {}", container->getContainerType());
-
-      std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
-      if (container->getContainerType() == ContainerOptions::linkedCells) {
-        TraversalSelector<ParticleCell> &traversalSelector = _traversalSelectors[container->getContainerType()];
-        if (useNewton3) {
-          traversal = traversalSelector.template getOptimalTraversal<ParticleFunctor, false, true>(*f);
-        } else {
-          traversal = traversalSelector.template getOptimalTraversal<ParticleFunctor, false, false>(*f);
-        }
-
-        if (isTuning) {
-          auto start = std::chrono::high_resolution_clock::now();
-          WithStaticContainerType(container, container->iteratePairwiseAoS(f, traversal.get(), useNewton3););
-          auto stop = std::chrono::high_resolution_clock::now();
-          auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-          _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
-          traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
-        } else {
-          WithStaticContainerType(container, container->iteratePairwiseAoS(f, traversal.get(), useNewton3););
-        }
-      } else {
-        // dummy traversal
-        traversal = std::unique_ptr<DummyTraversal<ParticleCell>>(new DummyTraversal<ParticleCell>({0, 0, 0}));
-
-        if (isTuning) {
-          auto start = std::chrono::high_resolution_clock::now();
-          WithStaticContainerType(container, container->iteratePairwiseAoS(f, traversal.get(), useNewton3););
-          auto stop = std::chrono::high_resolution_clock::now();
-          auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-          _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
-        } else {
-          WithStaticContainerType(container, container->iteratePairwiseAoS(f, traversal.get(), useNewton3););
-        }
-      }
-      break;
     }
   }
+
+  auto container = getContainer();
+  AutoPasLog(debug, "Using container {}", container->getContainerType());
+
+  TraversalSelector<ParticleCell> &traversalSelector = _traversalSelectors[container->getContainerType()];
+  auto traversal = traversalSelector.template getOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(*f);
+
+  if (isTuning) {
+    auto start = std::chrono::high_resolution_clock::now();
+    // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
+    WithStaticContainerType(container, container->iteratePairwiseSoA(f, traversal.get(), useNewton3););
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+    _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
+    traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
+  } else {
+    WithStaticContainerType(container, container->iteratePairwiseSoA(f, traversal.get(), useNewton3););
+  }
   ++_iterationsSinceTuning;
+  ++_numSamples;
   return isTuning;
 }
 
