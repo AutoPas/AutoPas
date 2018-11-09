@@ -163,7 +163,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
                                                      duplicatedCalculation);
 
   functor.resetGlobalValues();
-
+  // This is a basic check for the global calculations, by checking the handling of two particle interactions in
+  // parallel. If interactions are dangerous, archer will complain.
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
