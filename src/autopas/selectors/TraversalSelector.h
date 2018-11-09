@@ -67,13 +67,17 @@ class TraversalSelector {
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
   /**
-   * Save the runtime of a given traversal with a given functor.
+   * Save the runtime of a given traversal if the functor is relevant for tuning.
+   * @param pairwiseFunctor
    * @param traversal
    * @param time
    */
-  void addTimeMeasurement(TraversalOptions traversal, long time) {
-    struct TimeMeasurement measurement = {traversal, time};
-    _traversalTimes.push_back(measurement);
+  template <class PairwiseFunctor>
+  void addTimeMeasurement(PairwiseFunctor &pairwiseFunctor, TraversalOptions traversal, long time) {
+    if (pairwiseFunctor.isRelevantForTuning()) {
+      struct TimeMeasurement measurement = {traversal, time};
+      _traversalTimes.push_back(measurement);
+    }
   }
 
   /**
@@ -113,7 +117,7 @@ class TraversalSelector {
 
   // for each encountered cell processor save the optimal traversal. The cell processor is saved through its hash
   TraversalOptions _optimalTraversalOptions;
-  // indicating weather or not the optimalTraversalOption is already initialized
+  // indicating whether or not the optimalTraversalOption is already initialized
   bool isInitialized = false;
   const std::array<unsigned long, 3> _dims;
   const std::vector<TraversalOptions> _allowedTraversalOptions;

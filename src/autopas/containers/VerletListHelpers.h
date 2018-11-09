@@ -48,6 +48,8 @@ class VerletListHelpers {
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
         : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
+    bool isRelevantForTuning() override { return false; }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);

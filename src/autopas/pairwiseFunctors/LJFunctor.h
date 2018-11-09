@@ -24,9 +24,11 @@ namespace autopas {
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType, bool relevantForTuning = true>
 class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
  public:
+  bool isRelevantForTuning() override { return relevantForTuning; }
+
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     double dr2 = ArrayMath::dot(dr, dr);
@@ -422,16 +424,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
 
 };  // namespace autopas
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::CUTOFFSQUARE;
+template <class T, class U, class V, bool B>
+double LJFunctor<T, U, V, B>::CUTOFFSQUARE;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::EPSILON24;
+template <class T, class U, class V, bool B>
+double LJFunctor<T, U, V, B>::EPSILON24;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::SIGMASQUARE;
+template <class T, class U, class V, bool B>
+double LJFunctor<T, U, V, B>::SIGMASQUARE;
 
-template <class T, class U, class V>
-double LJFunctor<T, U, V>::SHIFT6;
+template <class T, class U, class V, bool B>
+double LJFunctor<T, U, V, B>::SHIFT6;
 
 }  // namespace autopas
