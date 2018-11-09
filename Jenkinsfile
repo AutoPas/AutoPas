@@ -95,7 +95,6 @@ pipeline{
                             dir("build-archer"){
                                 sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                                sh "cat buildlog_clang.txt"
                             }
                         }
                     },
