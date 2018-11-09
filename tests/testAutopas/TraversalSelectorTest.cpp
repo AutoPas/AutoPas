@@ -73,12 +73,12 @@ TEST_F(TraversalSelectorTest, testTune) {
     switch (i) {
       case 0: {
         EXPECT_TRUE((dynamic_cast<autopas::SlicedTraversal<FPCell, MFunctor, false, true> *>(traversal.get())));
-        traversalSelector.addTimeMeasurement(functor, autopas::TraversalOptions::sliced, 20);
+        traversalSelector.addTimeMeasurement(autopas::TraversalOptions::sliced, 20);
         break;
       }
       case 1: {
         EXPECT_TRUE((dynamic_cast<autopas::C08Traversal<FPCell, MFunctor, false, true> *>(traversal.get())));
-        traversalSelector.addTimeMeasurement(functor, autopas::TraversalOptions::c08, 10);
+        traversalSelector.addTimeMeasurement(autopas::TraversalOptions::c08, 10);
         break;
       }
       case 2: {
@@ -132,10 +132,10 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversal) {
 
   EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(functor)), std::exception);
 
-  traversalSelector.addTimeMeasurement(functor, optionVector[0], 20);
-  traversalSelector.addTimeMeasurement(functor, optionVector[0], 22);
-  traversalSelector.addTimeMeasurement(functor, optionVector[1], 30);
-  traversalSelector.addTimeMeasurement(functor, optionVector[1], 10);
+  traversalSelector.addTimeMeasurement(optionVector[0], 20);
+  traversalSelector.addTimeMeasurement(optionVector[0], 22);
+  traversalSelector.addTimeMeasurement(optionVector[1], 30);
+  traversalSelector.addTimeMeasurement(optionVector[1], 10);
 
   auto traversal = traversalSelector.selectOptimalTraversal<MFunctor, true, true>(functor);
   EXPECT_EQ(optionVector[1], traversal->getTraversalType());

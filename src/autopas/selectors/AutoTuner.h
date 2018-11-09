@@ -160,14 +160,14 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
           auto stop = std::chrono::high_resolution_clock::now();
           auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
           _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
-          traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
+          traversalSelector.addTimeMeasurement(traversal->getTraversalType(), runtime);
         } else {
           WithStaticContainerType(container, container->iteratePairwiseSoA(f, traversal.get(), useNewton3););
         }
       } else {
+        // TODO: is this branch still needed?
         // dummy traversal
-        traversal = std::unique_ptr<C08Traversal<ParticleCell, ParticleFunctor, false, false>>(
-            new C08Traversal<ParticleCell, ParticleFunctor, false, false>({0, 0, 0}, f));
+        traversal = std::unique_ptr<DummyTraversal<ParticleCell>>(new DummyTraversal<ParticleCell>({0, 0, 0}));
 
         if (isTuning) {
           auto start = std::chrono::high_resolution_clock::now();
@@ -212,14 +212,13 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
           auto stop = std::chrono::high_resolution_clock::now();
           auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
           _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
-          traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
+          traversalSelector.addTimeMeasurement(traversal->getTraversalType(), runtime);
         } else {
           WithStaticContainerType(container, container->iteratePairwiseAoS(f, traversal.get(), useNewton3););
         }
       } else {
         // dummy traversal
-        traversal = std::unique_ptr<C08Traversal<ParticleCell, ParticleFunctor, false, false>>(
-            new C08Traversal<ParticleCell, ParticleFunctor, false, false>({0, 0, 0}, f));
+        traversal = std::unique_ptr<DummyTraversal<ParticleCell>>(new DummyTraversal<ParticleCell>({0, 0, 0}));
 
         if (isTuning) {
           auto start = std::chrono::high_resolution_clock::now();
@@ -257,7 +256,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     } else {
       _containerSelector.selectOptimalContainer();
       _traversalSelectors[getContainer()->getContainerType()]
-          .template getOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+          .template selectOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
       _iterationsSinceTuning = 0;
       return false;
     }
