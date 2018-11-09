@@ -53,7 +53,10 @@ class ContainerSelector {
         _verletRebuildFrequency(verletRebuildFrequency),
         _allowedContainerOptions(std::move(allowedContainerOptions)),
         _allowedTraversalOptions(std::move(allowedTraversalOptions)),
-        _optimalContainer(nullptr) {}
+        _optimalContainer(nullptr) {
+    // @FIXME This is a workaround because this container does not yet use traversals like it should
+    _allowedTraversalOptions.push_back(TraversalOptions::dummyTraversal);
+  }
 
   /**
    * Selects the next allowed container.

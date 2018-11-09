@@ -36,8 +36,18 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff), _cellBorderFlagManager() {
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allLCApplicableTraversals()), _cellBorderFlagManager() {
     this->_cells.resize(2);
+  }
+
+  /**
+   * Lists all traversal options applicable for the Linked Cells container.
+   * @return Vector of all applicable traversal options.
+   */
+  static const std::vector<TraversalOptions> &allLCApplicableTraversals() {
+    // @FIXME This is a workaround because this container does not yet use traversals like it should
+    static const std::vector<TraversalOptions> v{TraversalOptions::dummyTraversal};
+    return v;
   }
 
   ContainerOptions getContainerType() override { return ContainerOptions::directSum; }
@@ -132,7 +142,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelector<ParticleCell>({2, 0, 0}, traversalOptions);
+    // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
+    return TraversalSelector<ParticleCell>({2, 0, 0}, {dummyTraversal});
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

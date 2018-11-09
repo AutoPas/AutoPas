@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <autopas/containers/cellPairTraversals/DummyTraversal.h>
 #include <array>
 #include <vector>
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
@@ -157,6 +158,10 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     case TraversalOptions::sliced: {
       traversal =
           std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::dummyTraversal: {
+      traversal = std::make_unique<DummyTraversal<ParticleCell>>(_dims);
       break;
     }
     default: { AutoPasLog(warn, "Traversal type {} is not a known type!", traversalType); }
@@ -322,22 +327,10 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   auto functorHash = typeid(PairwiseFunctor).hash_code();
 
   if (_optimalTraversalOptions.find(functorHash) == _optimalTraversalOptions.end()) {
-    auto generatedTraversals = generateAllAllowedTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
-    traversal = chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
+    utils::ExceptionHandler::exception("TraversalSelector: Traversal not yet selected!");
   } else {
-    switch (_optimalTraversalOptions[functorHash]) {
-      case TraversalOptions::c08: {
-        traversal =
-            std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
-        break;
-      }
-      case TraversalOptions::sliced: {
-        traversal = std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
-            _dims, &pairwiseFunctor);
-        break;
-      }
-      default: { utils::ExceptionHandler::exception("Invalid saved optimal traversal option for this CellFunctor!"); }
-    }
+    traversal =
+        generateTraversal<PairwiseFunctor, useSoA, useNewton3>(_optimalTraversalOptions[functorHash], pairwiseFunctor);
   }
   return traversal;
 }

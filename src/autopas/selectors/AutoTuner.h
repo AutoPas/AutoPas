@@ -62,12 +62,12 @@ class AutoTuner {
     // if the container is new create a new traversal selector for it
     if (_traversalSelectors.find(container->getContainerType()) == _traversalSelectors.end()) {
       // @todo as soon as all containers work with traversalselectors this if can be removed
-      if (container->getContainerType() == ContainerOptions::linkedCells) {
-        _traversalSelectors.insert(std::make_pair(container->getContainerType(),
-                                                  container->generateTraversalSelector(_allowedTraversalOptions)));
-        // @todo think about how to handle traversal selectors for other containers (dedicated selector types?)
-        //      } else {
-      }
+      //      if (container->getContainerType() == ContainerOptions::linkedCells) {
+      _traversalSelectors.insert(std::make_pair(container->getContainerType(),
+                                                container->generateTraversalSelector(_allowedTraversalOptions)));
+      // @todo think about how to handle traversal selectors for other containers (dedicated selector types?)
+      //      } else {
+      //      }
     }
     return container;
   };
@@ -137,6 +137,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
           isTuning = tune<ParticleFunctor, true, false>(*f);
         }
       } else {
+        isTuning = true;
         ++_numSamples;
       }
 
@@ -189,6 +190,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
           isTuning = tune<ParticleFunctor, false, false>(*f);
         }
       } else {
+        isTuning = true;
         ++_numSamples;
       }
 
@@ -239,24 +241,26 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
-  if (not _isTuningTraversals) {
-    _isTuningContainers = _containerSelector.tune();
-  };
-
-  // only tune traversals for containers that actually have a tuner
-  if (_traversalSelectors.find(getContainer()->getContainerType()) != _traversalSelectors.end()) {
-    _isTuningTraversals =
-        _traversalSelectors[getContainer()->getContainerType()].template tune<PairwiseFunctor, useSoA, useNewton3>(
-            pairwiseFunctor);
+  auto traversal = _traversalSelectors[getContainer()->getContainerType()]
+                       .template selectNextTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+  // if there is no next traversal take next container
+  if (traversal) {
+    return true;
   } else {
-    _isTuningTraversals = false;
-  }
+    auto container = _containerSelector.selectNextContainer();
 
-  // reset counter only if all tuning phases are done
-  if (not _isTuningTraversals and not _isTuningContainers) {
-    _iterationsSinceTuning = 0;
-    return false;
+    // if there is no next container everything is tested and the optimum can be chosen
+    if (container) {
+      _traversalSelectors[getContainer()->getContainerType()]
+          .template selectNextTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+      return true;
+    } else {
+      _containerSelector.selectOptimalContainer();
+      _traversalSelectors[getContainer()->getContainerType()]
+          .template getOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+      _iterationsSinceTuning = 0;
+      return false;
+    }
   }
-  return true;
 }
 }  // namespace autopas

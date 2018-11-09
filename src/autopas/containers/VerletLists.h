@@ -63,7 +63,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
               unsigned int rebuildFrequency = 1,
               BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin, allLCApplicableTraversals()),
         _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
@@ -72,6 +72,16 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
         _soaListIsValid(false),
         _soa(),
         _buildVerletListType(buildVerletListType) {}
+
+  /**
+   * Lists all traversal options applicable for the Linked Cells container.
+   * @return Vector of all applicable traversal options.
+   */
+  static const std::vector<TraversalOptions>& allLCApplicableTraversals() {
+    // @FIXME This is a workaround because this container does not yet use traversals like it should
+    static const std::vector<TraversalOptions> v{TraversalOptions::dummyTraversal};
+    return v;
+  }
 
   ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
 
@@ -236,8 +246,8 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    // at the moment this is just a dummy
-    return TraversalSelector<ParticleCell>({0, 0, 0}, traversalOptions);
+    // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
+    return TraversalSelector<ParticleCell>({0, 0, 0}, {dummyTraversal});
   }
 
   /**

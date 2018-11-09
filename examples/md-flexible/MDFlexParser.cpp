@@ -361,6 +361,8 @@ void MDFlexParser::printConfig() {
         cout << "sliced, ";
         break;
       }
+      default:
+        break;
     }
   }
   // deletes last comma
