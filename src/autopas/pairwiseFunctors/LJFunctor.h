@@ -66,7 +66,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
             "set to true.");
       }
     }
-    if(calculateGlobals){
+    if (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
   }

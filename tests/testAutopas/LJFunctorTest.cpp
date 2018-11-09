@@ -152,7 +152,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   bool duplicatedCalculation = false;
   bool newton3 = true;
   double multiparticlefactor = 2.;  // two particles, so factor 2
-  double whereFactor = 1.;  // all inside, so factor 1
+  double whereFactor = 1.;          // all inside, so factor 1
   std::string where_str = "inside";
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
