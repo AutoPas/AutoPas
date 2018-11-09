@@ -567,7 +567,13 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     // variables
     std::array<double, 3> virialSum;
     double upotSum;
+
+   private:
+    // dummy parameter to get the right size (64 bytes)
+    double __remainingTo64[4];
   };
+  // make sure of the size of AoSThreadData
+  static_assert(sizeof(AoSThreadData) % 64 == 0);
 
   double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
