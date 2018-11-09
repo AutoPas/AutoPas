@@ -573,7 +573,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double __remainingTo64[4];
   };
   // make sure of the size of AoSThreadData
-  static_assert(sizeof(AoSThreadData) % 64 == 0);
+  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
