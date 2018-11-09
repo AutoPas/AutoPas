@@ -208,7 +208,9 @@ pipeline{
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer"){
-                                sh './tests/testAutopas/runTests'
+                                // needed to properly check all test cases (also just single ones)
+                                // I suspect that archer breaks when death tests are used
+                                sh 'ctest --verbose'
                             }
                         }
                     },
