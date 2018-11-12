@@ -167,7 +167,8 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   }
 
   // choose the fastest traversal and reset timings
-  TraversalOptions optimalTraversalOption;
+  // Initialize with something. This will be overridden.
+  TraversalOptions optimalTraversalOption = TraversalOptions::c08;
   long optimalTraversalTime = std::numeric_limits<long>::max();
   AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
   for (auto &&t : _traversalTimes) {

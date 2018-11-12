@@ -179,7 +179,8 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
   }
 
   // choose the fastest container and reset timings
-  ContainerOptions optimalContainerOption;
+  // Initialize with something. This will be overridden.
+  ContainerOptions optimalContainerOption = ContainerOptions::directSum;
   long optimalContainerTime = std::numeric_limits<long>::max();
   AutoPasLog(debug, "ContainerSelector: Collected container times:");
   for (auto &&c : _containerTimes) {
