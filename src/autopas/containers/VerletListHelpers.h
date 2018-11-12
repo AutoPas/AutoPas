@@ -208,6 +208,8 @@ class VerletListHelpers {
     VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
         : _verletListsAoS(verletListsAoS), _cutoffsquared(cutoffsquared), _valid(true) {}
 
+    bool isRelevantForTuning() override { return true; }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);
