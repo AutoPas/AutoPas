@@ -147,3 +147,50 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
     }
   }
 }
+
+TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
+  bool duplicatedCalculation = false;
+  bool newton3 = true;
+  double multiparticlefactor = 2.;  // two particles, so factor 2
+  double whereFactor = 1.;          // all inside, so factor 1
+  std::string where_str = "inside";
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+
+  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
+  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
+
+  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+                                                     duplicatedCalculation);
+
+  functor.resetGlobalValues();
+  // This is a basic check for the global calculations, by checking the handling of two particle interactions in
+  // parallel. If interactions are dangerous, archer will complain.
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel
+#endif
+  {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp sections
+#endif
+    {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.AoSFunctor(p1, p2, newton3);
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.AoSFunctor(p3, p4, newton3);
+    }
+  }
+  functor.postProcessGlobalValues(newton3);
+
+  double upot = functor.getUpot();
+  double virial = functor.getVirial();
+
+  EXPECT_NEAR(upot, whereFactor * multiparticlefactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
+  EXPECT_NEAR(virial, whereFactor * multiparticlefactor * expectedVirial, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
+}

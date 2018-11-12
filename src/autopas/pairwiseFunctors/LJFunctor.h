@@ -12,6 +12,7 @@
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -53,6 +54,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         _shift6{shift * 6.0},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
+        _aosThreadData(),
         _duplicatedCalculations{duplicatedCalculation},
         _lowCorner{lowCorner},
         _highCorner{highCorner},
@@ -63,6 +65,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
             "Please specify the lowCorner and highCorner properly if calculateGlobals and duplicatedCalculation are "
             "set to true.");
       }
+    }
+    if (calculateGlobals) {
+      _aosThreadData.resize(autopas_get_max_threads());
     }
   }
 
@@ -88,6 +93,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       auto virial = ArrayMath::mul(dr, f);
       double upot = _epsilon24 * lj12m6 + _shift6;
 
+      const int threadnum = autopas_get_thread_num();
       if (_duplicatedCalculations) {
         // for non-newton3 the division is in the post-processing step.
         if (newton3) {
@@ -95,18 +101,18 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           virial = ArrayMath::mulScalar(virial, 0.5);
         }
         if (autopas::utils::inBox(i.getR(), _lowCorner, _highCorner)) {
-          _upotSum += upot;
-          _virialSum = ArrayMath::add(_virialSum, virial);
+          _aosThreadData[threadnum].upotSum += upot;
+          _aosThreadData[threadnum].virialSum = ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
         }
         // for non-newton3 the second particle will be considered in a separate calculation
         if (newton3 and autopas::utils::inBox(j.getR(), _lowCorner, _highCorner)) {
-          _upotSum += upot;
-          _virialSum = ArrayMath::add(_virialSum, virial);
+          _aosThreadData[threadnum].upotSum += upot;
+          _aosThreadData[threadnum].virialSum = ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
         }
       } else {
         // for non-newton3 we divide by 2 only in the postprocess step!
-        _upotSum += upot;
-        _virialSum = ArrayMath::add(_virialSum, virial);
+        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].virialSum = ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
     }
   }
@@ -485,6 +491,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     _upotSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
+    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
+      _aosThreadData[i].setZero();
+    }
   }
 
   /**
@@ -496,6 +505,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, please don't call postProcessGlobalValues(bool newton3) twice without calling "
           "resetGlobalValues().");
+    }
+    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
+      _upotSum += _aosThreadData[i].upotSum;
+      _virialSum = ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
     }
     if (not newton3) {
       // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide be 2 here.
@@ -540,12 +553,37 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
  private:
+  /**
+   * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
+   */
+  class AoSThreadData {
+   public:
+    AoSThreadData() : virialSum{0., 0., 0.}, upotSum{0.} {}
+    void setZero() {
+      virialSum = {0., 0., 0.};
+      upotSum = 0.;
+    }
+
+    // variables
+    std::array<double, 3> virialSum;
+    double upotSum;
+
+   private:
+    // dummy parameter to get the right size (64 bytes)
+    double __remainingTo64[4];
+  };
+  // make sure of the size of AoSThreadData
+  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
+
   double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;
+
+  // thread buffer for aos
+  std::vector<AoSThreadData> _aosThreadData;
 
   // bool that defines whether duplicate calculations are happening
   bool _duplicatedCalculations;
