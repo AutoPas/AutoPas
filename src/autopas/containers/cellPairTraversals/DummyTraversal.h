@@ -13,7 +13,7 @@ namespace autopas {
 /**
  * Dummy traversal doing nothing.
  *
- * This traversal can be used as a workaround for container which do not yet use traversals.
+ * This traversal can be used as a workaround for containers which do not yet use traversals.
  *
  * @tparam ParticleCell
  */
