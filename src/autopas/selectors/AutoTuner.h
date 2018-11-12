@@ -148,8 +148,6 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, Data
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f) {
-  // @todo: WANT one single iteratePairwise(CellFunctor) for containers
-  // @todo: CellFunctor for iteration should be build here using selectors for SoA and N3
   bool isTuning = false;
   // large case differentiation for data layout and newton 3
   // check if currently in tuning phase, execute iteration and take time measurement if necessary
