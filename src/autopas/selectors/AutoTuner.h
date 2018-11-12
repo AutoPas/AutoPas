@@ -98,7 +98,7 @@ class AutoTuner {
   std::map<ContainerOptions, TraversalSelector<ParticleCell>> _traversalSelectors;
 
   /**
-   * How many times one configurations should be tested.
+   * How many times each configuration should be tested.
    */
   const size_t _maxSamples;
   /**
