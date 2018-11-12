@@ -10,8 +10,8 @@
 TEST_F(AutoTunerTest, testTune) {
   autopas::LJFunctor<Particle, FPCell> functor;
   std::vector<autopas::ContainerOptions> containers = {autopas::ContainerOptions::verletLists,
-                                                       autopas::ContainerOptions::directSum,
-                                                       autopas::ContainerOptions::linkedCells};
+                                                       autopas::ContainerOptions::linkedCells,
+                                                       autopas::ContainerOptions::directSum};
   std::vector<autopas::TraversalOptions> traversals = {autopas::TraversalOptions::sliced,
                                                        autopas::TraversalOptions::c08};
 
@@ -21,44 +21,41 @@ TEST_F(AutoTunerTest, testTune) {
   const double cutoff = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
+  const unsigned int numSamples = 2;
   autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency,
-                                                 containers, traversals, 100);
+                                                 containers, traversals, 100, numSamples);
 
   std::shared_ptr<autopas::ParticleContainer<Particle, FPCell>> fastestContainer;
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
   int i = 0;
   for (; stillTuning; ++i) {
-    // AutoPasLog(debug, "Iteration {}", i);
     stillTuning = autoTuner.iteratePairwise(&functor, autopas::DataLayoutOption::aos);
 
     auto container = autoTuner.getContainer();
 
     // tuning phases:
     // 0 -> test verlet
-    // 1 -> test directSum
-    // 2 -> test linked with sliced
-    // 3 -> test linked with c08
-    // 4 -> choose best lc traversal -> traversal tuning finished
-    // 5 -> choose best container -> tuning finished
-    // 6 -> normal iteration using optimal combination
-    switch (i) {
+    // 1 -> test linked with sliced
+    // 2 -> test linked with c08
+    // 3 -> test directSum
+    // 4 -> choose best combination -> tuning finished and  normal iteration using optimal combination
+    switch (i / numSamples) {
       case 0: {
-        EXPECT_TRUE((dynamic_cast<autopas::VerletLists<Particle>*>(container.get())));
-        break;
-      }
-      case 1: {
-        EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())));
+        EXPECT_EQ(containers[0], container->getContainerType());
         break;
       }
       // only here both traversals are checked
-      case 2:
-      case 3:
-      case 4: {
-        EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())));
+      case 1:
+      case 2: {
+        EXPECT_EQ(containers[1], container->getContainerType());
         break;
       }
-      case 5: {
+      case 3: {
+        EXPECT_EQ(containers[2], container->getContainerType());
+        break;
+      }
+      case 4: {
         // the fastest container might be nondeterministic here due to hardware constrains so just remember it
         // and check if the selector returns the same later
         fastestContainer = container;
@@ -70,7 +67,7 @@ TEST_F(AutoTunerTest, testTune) {
     }
   }
 
-  EXPECT_EQ(i, 6) << "Unexpected number of tuning iterations!";
+  EXPECT_EQ(i, 4 * numSamples + 1) << "Unexpected number of tuning iterations!";
 
   auto container = autoTuner.getContainer();
   EXPECT_EQ(fastestContainer->getContainerType(), container->getContainerType())

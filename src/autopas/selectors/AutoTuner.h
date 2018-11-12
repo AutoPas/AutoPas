@@ -45,12 +45,15 @@ class AutoTuner {
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
-            std::vector<TraversalOptions> allowedTraversalOptions, unsigned int tuningInterval)
+            std::vector<TraversalOptions> allowedTraversalOptions, unsigned int tuningInterval,
+            unsigned int maxSamples = 3)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainerOptions,
                            allowedTraversalOptions),
-        _allowedTraversalOptions(allowedTraversalOptions) {}
+        _allowedTraversalOptions(allowedTraversalOptions),
+        _maxSamples(maxSamples),
+        _numSamples(maxSamples) {}
 
   /**
    * Getter for the optimal container.
@@ -96,12 +99,12 @@ class AutoTuner {
   /**
    * How many times one configurations should be tested.
    */
-  const size_t _maxSamples = 3;
+  const size_t _maxSamples;
   /**
    * How many times this configurations has already been tested.
    * Initialize with max value to start tuning at start of simulation.
    */
-  size_t _numSamples = _maxSamples;
+  size_t _numSamples;
 };
 
 template <class Particle, class ParticleCell>
