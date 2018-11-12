@@ -21,6 +21,9 @@ void measure(int which, int numMolecules, int numIterations, int rebuildFrequenc
 template <class Container>
 void measureContainer(Container *cont, int numMolecules, int numIterations, bool soa);
 
+static LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func(1., MoleculeLJ::getEpsilon(),
+                                                                              MoleculeLJ::getSigma(), 0.0);
+
 int main(int argc, char *argv[]) {
   autopas::Logger::create();
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::info);
@@ -31,14 +34,9 @@ int main(int argc, char *argv[]) {
 
   double cutoff = 1.;
 
-  //  cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
-  //  cout << "sigma: " << PrintableMolecule::getSigma() << endl;
-
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(cutoff, MoleculeLJ::getEpsilon(),
-                                                                                MoleculeLJ::getSigma(), 0.0);
   PrintableMolecule p1({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0);
   PrintableMolecule p2({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 1);
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
+
   func.AoSFunctor(p1, p2, true);
   //	p1.print();
   //	p2.print();
@@ -82,7 +80,6 @@ int main(int argc, char *argv[]) {
 
 template <class Container>
 void measureContainer(Container *cont, int numMolecules, int numIterations, double cutoff, bool soa) {
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
   FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopFunctor(cutoff);
 
   utils::Timer t;
@@ -180,7 +177,6 @@ void testForceLJ() {
   container.addParticle(p3);
   container.addParticle(p4);
 
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
   C08Traversal<FullParticleCell<PrintableMolecule>, LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>,
                false, false>
       dummyTraversal({0, 0, 0}, &func);
