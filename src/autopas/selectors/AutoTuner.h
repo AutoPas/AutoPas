@@ -158,9 +158,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
       isTuning = true;
     } else {
       _numSamples = 0;
-      if (useNewton3) {
-        isTuning = tune<PairwiseFunctor, useSoA, useNewton3>(*f);
-      }
+      isTuning = tune<PairwiseFunctor, useSoA, useNewton3>(*f);
     }
   }
 
