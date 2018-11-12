@@ -168,6 +168,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   TraversalSelector<ParticleCell> &traversalSelector = _traversalSelectors[container->getContainerType()];
   auto traversal = traversalSelector.template getOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(*f);
 
+  // if tuning execute with time measurements
   if (isTuning) {
     auto start = std::chrono::high_resolution_clock::now();
     // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
