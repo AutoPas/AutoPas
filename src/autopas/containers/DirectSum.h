@@ -36,16 +36,16 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 
   /**
-   * Lists all traversal options applicable for the Linked Cells container.
+   * Lists all traversal options applicable for the Direct Sum container.
    * @return Vector of all applicable traversal options.
    */
-  static const std::vector<TraversalOptions> &allLCApplicableTraversals() {
+  static const std::vector<TraversalOptions> &allDSApplicableTraversals() {
     // @FIXME This is a workaround because this container does not yet use traversals like it should
     static const std::vector<TraversalOptions> v{TraversalOptions::dummyTraversal};
     return v;
