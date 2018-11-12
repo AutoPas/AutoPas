@@ -42,6 +42,7 @@ class AutoTuner {
    * @param allowedContainerOptions Vector of container types AutoPas can choose from.
    * @param allowedTraversalOptions Vector of traversals AutoPas can choose from.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
+   * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
@@ -57,7 +58,7 @@ class AutoTuner {
 
   /**
    * Getter for the optimal container.
-   * Also checks if the container was already encountered and if not creates a new traversal selector for it
+   * Also checks if the container was already encountered and if not creates a new traversal selector for it.
    * @return Smartpointer to the optimal container.
    */
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getContainer() {
@@ -73,17 +74,17 @@ class AutoTuner {
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
-   * @tparam ParticleFunctor
-   * @param f Functor that describes the pair-potential
-   * @param dataLayoutOption if true SoA data structure is used otherwise AoS
-   * @return true if this was a tuning iteration
+   * @tparam PairwiseFunctor
+   * @param f Functor that describes the pair-potential.
+   * @param dataLayoutOption if true SoA data structure is used otherwise AoS.
+   * @return true if this was a tuning iteration.
    */
-  template <class ParticleFunctor>
-  bool iteratePairwise(ParticleFunctor *f, DataLayoutOption dataLayoutOption);
+  template <class PairwiseFunctor>
+  bool iteratePairwise(PairwiseFunctor *f, DataLayoutOption dataLayoutOption);
 
  private:
-  template <class ParticleFunctor, bool useSoA, bool useNewton3>
-  bool iteratePairwiseTemplateHelper(ParticleFunctor *f);
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  bool iteratePairwiseTemplateHelper(PairwiseFunctor *f);
 
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   bool tune(PairwiseFunctor &pairwiseFunctor);
@@ -108,8 +109,8 @@ class AutoTuner {
 };
 
 template <class Particle, class ParticleCell>
-template <class ParticleFunctor>
-bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, DataLayoutOption dataLayoutOption) {
+template <class PairwiseFunctor>
+bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, DataLayoutOption dataLayoutOption) {
   bool newton3Allowed = f->allowsNewton3();
   bool nonNewton3Allowed = f->allowsNonNewton3();
   bool useNewton3 = false;
@@ -126,17 +127,17 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
   switch (dataLayoutOption) {
     case DataLayoutOption::aos: {
       if (useNewton3) {
-        isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, false, true>(f);
+        isTuning = iteratePairwiseTemplateHelper<PairwiseFunctor, false, true>(f);
       } else {
-        isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, false, false>(f);
+        isTuning = iteratePairwiseTemplateHelper<PairwiseFunctor, false, false>(f);
       }
       break;
     }
     case DataLayoutOption::soa: {
       if (useNewton3) {
-        isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, true, true>(f);
+        isTuning = iteratePairwiseTemplateHelper<PairwiseFunctor, true, true>(f);
       } else {
-        isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, true, false>(f);
+        isTuning = iteratePairwiseTemplateHelper<PairwiseFunctor, true, false>(f);
       }
       break;
     }

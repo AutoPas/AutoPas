@@ -208,9 +208,8 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getOptimalContainer() {
-  if (_optimalContainer == nullptr)
-    selectNextContainer();
-//    utils::ExceptionHandler::exception("ContainerSelector::getOptimalContainer(): No Container selected yet!");
+  if (_optimalContainer == nullptr) selectNextContainer();
+  //    utils::ExceptionHandler::exception("ContainerSelector::getOptimalContainer(): No Container selected yet!");
   return _optimalContainer;
 }
 

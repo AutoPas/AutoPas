@@ -27,7 +27,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   typedef typename Particle::SoAArraysType SoAArraysType;
 
  public:
-
   bool isRelevantForTuning() override { return false; }
 
   /**

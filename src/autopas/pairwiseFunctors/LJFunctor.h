@@ -24,7 +24,8 @@ namespace autopas {
  * @tparam Particle the type of particle
  * @tparam ParticleCell the type of particlecell
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType, bool relevantForTuning = true>
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType,
+          bool relevantForTuning = true>
 class LJFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
  public:
   bool isRelevantForTuning() override { return relevantForTuning; }

@@ -76,7 +76,7 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   // virtual bool allowsNonNewton3() { return false; }
   MOCK_METHOD0(allowsNonNewton3, bool());
 
-//  bool isRelevantForTuning() { return true; }
+  //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD0(isRelevantForTuning, bool());
 };
 

@@ -9,15 +9,27 @@
 #include "CellPairTraversal.h"
 
 namespace autopas {
+
+/**
+ * Dummy traversal doing nothing.
+ *
+ * This traversal can be used as a workaround for container which do not yet use traversals.
+ *
+ * @tparam ParticleCell
+ */
 template <class ParticleCell>
 class DummyTraversal : public CellPairTraversal<ParticleCell> {
-
  public:
-  DummyTraversal(const std::array<unsigned long, 3> &dims) : CellPairTraversal<ParticleCell>(dims) {};
+  /**
+   * Constructor
+   * @param dims
+   */
+  DummyTraversal(const std::array<unsigned long, 3> &dims) : CellPairTraversal<ParticleCell>(dims){};
 
   ~DummyTraversal() = default;
 
   TraversalOptions getTraversalType() override;
+
   bool isApplicable() override;
 
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
@@ -32,8 +44,7 @@ template <class ParticleCell>
 bool DummyTraversal<ParticleCell>::isApplicable() {
   return true;
 }
-template<class ParticleCell>
-void DummyTraversal<ParticleCell>::traverseCellPairs(std::vector<ParticleCell> &cells) {
-}
+template <class ParticleCell>
+void DummyTraversal<ParticleCell>::traverseCellPairs(std::vector<ParticleCell> &cells) {}
 
 }  // namespace autopas
