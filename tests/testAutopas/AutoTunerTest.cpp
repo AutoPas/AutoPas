@@ -7,7 +7,7 @@
 #include "AutoTunerTest.h"
 #include <autopas/selectors/AutoTuner.h>
 
-TEST_F(AutoTunerTest, testTune) {
+void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   autopas::LJFunctor<Particle, FPCell> functor(1., 1., 1., 0.);
   std::vector<autopas::ContainerOptions> containers = {autopas::ContainerOptions::verletLists,
                                                        autopas::ContainerOptions::linkedCells,
@@ -30,7 +30,7 @@ TEST_F(AutoTunerTest, testTune) {
   bool stillTuning = true;
   int i = 0;
   for (; stillTuning; ++i) {
-    stillTuning = autoTuner.iteratePairwise(&functor, autopas::DataLayoutOption::aos);
+    stillTuning = autoTuner.iteratePairwise(&functor, dataLayoutOption);
 
     auto container = autoTuner.getContainer();
 
@@ -72,4 +72,12 @@ TEST_F(AutoTunerTest, testTune) {
   auto container = autoTuner.getContainer();
   EXPECT_EQ(fastestContainer->getContainerType(), container->getContainerType())
       << "tune() returned the wrong container after tuning phase";
+}
+
+TEST_F(AutoTunerTest, testTuneAoS) {
+  testTune(autopas::DataLayoutOption::aos);
+}
+
+TEST_F(AutoTunerTest, testTuneSoA) {
+  testTune(autopas::DataLayoutOption::soa);
 }
