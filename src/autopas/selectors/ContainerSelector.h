@@ -223,6 +223,8 @@ ContainerSelector<Particle, ParticleCell>::selectNextContainer() {
     nextContainerType = *containerTypeIter;
   }
   _optimalContainer = std::move(generateContainer(nextContainerType));
+  AutoPasLog(debug, "Testing Container {}", nextContainerType);
+
   return _optimalContainer;
 }
 
@@ -275,15 +277,6 @@ bool ContainerSelector<Particle, ParticleCell>::tune() {
 
 template <class Particle, class ParticleCell>
 void ContainerSelector<Particle, ParticleCell>::addTimeMeasurement(ContainerOptions container, long time) {
-  bool found = false;
-  for (auto &&p : _containerTimes) {
-    if (p.first == container && p.second > time) {
-      found = true;
-      p.second = time;
-    }
-  }
-  if (not found) {
-    _containerTimes.push_back(std::make_pair(container, time));
-  }
+  _containerTimes.push_back(std::make_pair(container, time));
 }
 }  // namespace autopas
