@@ -71,16 +71,10 @@ class ContainerSelector {
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> selectOptimalContainer();
 
   /**
-   * Getter for the optimal container.
+   * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getOptimalContainer();
-
-  /**
-   * Evaluates the optimal container option.
-   * @return true if still in tuning phase
-   */
-  bool tune();
 
   /**
    * Save the runtime of a given container.
@@ -100,12 +94,6 @@ class ContainerSelector {
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
       ContainerOptions containerChoice);
 
-  /**
-   * Chooses the optimal container from a given list.
-   * @return true if still in tuning phase
-   */
-  bool chooseOptimalContainer();
-
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
   double _verletSkin;
@@ -114,7 +102,6 @@ class ContainerSelector {
   std::vector<TraversalOptions> _allowedTraversalOptions;
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _optimalContainer;
   std::vector<std::pair<ContainerOptions, long>> _containerTimes;
-  bool _currentlyTuning = false;
 };
 
 template <class Particle, class ParticleCell>
@@ -156,51 +143,6 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
   if (containerChoice == verletLists) ((VerletLists<Particle> *)container.get())->rebuild();
 
   return container;
-}
-
-template <class Particle, class ParticleCell>
-bool ContainerSelector<Particle, ParticleCell>::chooseOptimalContainer() {
-  size_t bestContainerID = 0;
-
-  // Test all options to find the fastest
-  // If there is no container chosen yet or no measurements were made by now choose the first
-  if (_optimalContainer == nullptr or (_containerTimes.size() == 0 and _allowedContainerOptions.size() > 1)) {
-    _optimalContainer = std::move(generateContainer(_allowedContainerOptions.front()));
-  } else if (_currentlyTuning and _allowedContainerOptions.size() > 1) {
-    // if we are in tuning state just select next container
-    bestContainerID = std::find(_allowedContainerOptions.begin(), _allowedContainerOptions.end(),
-                                _optimalContainer->getContainerType()) -
-                      _allowedContainerOptions.begin();
-    ++bestContainerID;
-    // if the last possible traversal has already been tested choose fastest one and reset timings
-    if (bestContainerID >= _allowedContainerOptions.size()) {
-      _currentlyTuning = false;
-      ContainerOptions fastestContainer;
-      long fastestTime = std::numeric_limits<long>::max();
-      AutoPasLog(debug, "ContainerSelector: Collected containers:");
-      for (auto &&c : _containerTimes) {
-        AutoPasLog(debug, "Container {} took {} nanoseconds:", c.first, c.second);
-        if (c.second < fastestTime) {
-          fastestContainer = c.first;
-          fastestTime = c.second;
-        }
-      }
-      // sanity check
-      if (fastestTime == std::numeric_limits<long>::max()) {
-        utils::ExceptionHandler::exception("Nothing was faster than max long! o_O");
-      }
-
-      // find id of fastest container in passed container list
-      bestContainerID = std::find(_allowedContainerOptions.begin(), _allowedContainerOptions.end(), fastestContainer) -
-                        _allowedContainerOptions.begin();
-      _containerTimes.clear();
-    }
-
-    _optimalContainer = std::move(generateContainer(_allowedContainerOptions[bestContainerID]));
-  }
-  AutoPasLog(debug, "{} container {}", _currentlyTuning ? "Testing" : "Selected",
-             _optimalContainer->getContainerType());
-  return _currentlyTuning;
 }
 
 template <class Particle, class ParticleCell>
@@ -266,13 +208,10 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getOptimalContainer() {
-  if (_optimalContainer == nullptr) tune();
+  if (_optimalContainer == nullptr)
+    selectNextContainer();
+//    utils::ExceptionHandler::exception("ContainerSelector::getOptimalContainer(): No Container selected yet!");
   return _optimalContainer;
-}
-template <class Particle, class ParticleCell>
-bool ContainerSelector<Particle, ParticleCell>::tune() {
-  _currentlyTuning = true;
-  return chooseOptimalContainer();
 }
 
 template <class Particle, class ParticleCell>

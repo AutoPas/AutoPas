@@ -61,13 +61,8 @@ class AutoTuner {
     auto container = _containerSelector.getOptimalContainer();
     // if the container is new create a new traversal selector for it
     if (_traversalSelectors.find(container->getContainerType()) == _traversalSelectors.end()) {
-      // @todo as soon as all containers work with traversalselectors this if can be removed
-      //      if (container->getContainerType() == ContainerOptions::linkedCells) {
       _traversalSelectors.insert(std::make_pair(container->getContainerType(),
                                                 container->generateTraversalSelector(_allowedTraversalOptions)));
-      // @todo think about how to handle traversal selectors for other containers (dedicated selector types?)
-      //      } else {
-      //      }
     }
     return container;
   };
@@ -92,8 +87,6 @@ class AutoTuner {
 
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
-  bool _isTuningTraversals = false;
-  bool _isTuningContainers = false;
   std::vector<TraversalOptions> _allowedTraversalOptions;
   /**
    * One selector per possible container.
@@ -128,7 +121,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
   bool isTuning = false;
 
   switch (dataLayoutOption) {
-    case DataLayoutOption::aos : {
+    case DataLayoutOption::aos: {
       if (useNewton3) {
         isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, false, true>(f);
       } else {
@@ -136,7 +129,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(ParticleFunctor *f, Data
       }
       break;
     }
-    case DataLayoutOption::soa : {
+    case DataLayoutOption::soa: {
       if (useNewton3) {
         isTuning = iteratePairwiseTemplateHelper<ParticleFunctor, true, true>(f);
       } else {
