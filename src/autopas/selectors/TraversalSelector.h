@@ -105,7 +105,7 @@ class TraversalSelector {
   // indicating whether or not the optimalTraversalOption is already initialized
   bool _isInitialized = false;
   // indicating whether we are currently testing through all options
-  bool _isRotating = false;
+  bool _isTuning = false;
   const std::array<unsigned long, 3> _dims;
   const std::vector<TraversalOptions> _allowedTraversalOptions;
 
@@ -205,9 +205,9 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   // choose new traversals
   while (not traversalIsApplicable) {
     // if no measurements are in yet _optimalTraversalOption is not initialized
-    if (not _isRotating) {
+    if (not _isTuning) {
       _optimalTraversalOptions = _allowedTraversalOptions.begin().operator*();
-      _isRotating = true;
+      _isTuning = true;
     } else {
       auto selectedTraversalIter =
           std::find(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end(), _optimalTraversalOptions);
@@ -215,7 +215,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 
       // if there is no next return null
       if (selectedTraversalIter >= _allowedTraversalOptions.end()) {
-        _isRotating = false;
+        _isTuning = false;
         return std::unique_ptr<CellPairTraversal<ParticleCell>>(nullptr);
       }
       _optimalTraversalOptions = *selectedTraversalIter;
