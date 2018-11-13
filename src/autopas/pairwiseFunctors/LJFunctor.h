@@ -532,7 +532,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       throw utils::ExceptionHandler::AutoPasException(
           "Not yet postprocessed, please call postProcessGlobalValues first.");
     }
-    return _upotSum;
+    // we have always calculated 6*upot, so we divide by 6 here!
+    return _upotSum / 6.;
   }
 
   /**
