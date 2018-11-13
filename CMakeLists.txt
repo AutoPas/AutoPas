@@ -23,18 +23,9 @@ if(NOT CMAKE_BUILD_TYPE)
             "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
-
 ENABLE_TESTING()
-#autopas
-ADD_SUBDIRECTORY(src)
 
-#libraries
-ADD_SUBDIRECTORY(libs)
-
-#tests and examples
-ADD_SUBDIRECTORY(examples)
-ADD_SUBDIRECTORY(tests)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
 include(clang-format)
 include(clang-sanitizers)
@@ -46,3 +37,15 @@ include(OpenMP)
 include(other-compileroptions)
 include(vectorization)
 include(version.cmake)
+
+#autopas
+ADD_SUBDIRECTORY(src)
+
+#libraries
+ADD_SUBDIRECTORY(libs)
+
+#tests and examples
+ADD_SUBDIRECTORY(examples)
+ADD_SUBDIRECTORY(tests)
+
+
