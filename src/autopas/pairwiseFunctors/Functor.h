@@ -145,6 +145,12 @@ class Functor {
    * that do not utilize Newton3.
    */
   virtual bool allowsNonNewton3() { return false; }
+
+  /**
+   * Specifies whether the functor should be considered for the auto-tuning process.
+   * @return true if and only if this functor is relevant for auto-tuning.
+   */
+  virtual bool isRelevantForTuning() = 0;
 };
 
 /**

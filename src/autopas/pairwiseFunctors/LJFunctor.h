@@ -18,13 +18,13 @@
 namespace autopas {
 
 /**
- * A functor to handle lennard-jones interactions between two particles
- * (molecules).
- * @tparam Particle the type of particle
- * @tparam ParticleCell the type of particlecell
- * @tparam calculateGlobals defines whether the global values are to be calculated (energy, virial)
+ * A functor to handle lennard-jones interactions between two particles (molecules).
+ * @tparam Particle The type of particle.
+ * @tparam ParticleCell The type of particlecell.
+ * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
+ * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, bool calculateGlobals = false>
+template <class Particle, class ParticleCell, bool calculateGlobals = false, bool relevantForTuning = true>
 class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -40,10 +40,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @param epsilon
    * @param sigma
    * @param shift
-   * @param lowCorner lower corner of the local simulation domain
-   * @param highCorner upper corner of the local simulation domain
-   * @param duplicatedCalculation defines whether duplicated calculations are happening across processes / over the
-   * simulation boundary. e.g. eightShell: false, fullShell: true
+   * @param lowCorner Lower corner of the local simulation domain.
+   * @param highCorner Upper corner of the local simulation domain.
+   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
   explicit LJFunctor(double cutoff, double epsilon, double sigma, double shift,
                      std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
@@ -70,6 +70,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       _aosThreadData.resize(autopas_get_max_threads());
     }
   }
+
+  bool isRelevantForTuning() override { return relevantForTuning; }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
@@ -252,8 +254,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   // clang-format off
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
-   * @note if you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly
+   * @note If you want to parallelize this by openmp, please ensure that there
+   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
   void SoAFunctor(SoA<SoAArraysType> &soa,

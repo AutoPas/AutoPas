@@ -49,12 +49,12 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, 
 
  private:
   /**
-   * store ids of dimensions ordered by number of cells per dimensions
+   * Store ids of dimensions ordered by number of cells per dimensions.
    */
   std::array<int, 3> _dimsPerLength;
 
   /**
-   * the number of cells per slice in the dimension that was slicedFjjkj
+   * The number of cells per slice in the dimension that was sliced.
    */
   std::vector<unsigned long> _sliceThickness;
   std::vector<autopas_lock_t *> locks;

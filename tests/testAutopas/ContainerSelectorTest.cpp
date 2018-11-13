@@ -34,57 +34,58 @@ TEST_F(ContainerSelectorTest, testGetOptimalContainerOneOption) {
   EXPECT_TRUE((dynamic_cast<autopas::VerletLists<Particle>*>(containerVerlet.get())));
 }
 
-TEST_F(ContainerSelectorTest, testTune) {
-  std::vector<autopas::ContainerOptions> containers = {autopas::ContainerOptions::directSum,
-                                                       autopas::ContainerOptions::verletLists,
-                                                       autopas::ContainerOptions::linkedCells};
-  std::vector<autopas::TraversalOptions> traversals = {autopas::TraversalOptions::c08,
-                                                       autopas::TraversalOptions::sliced};
-
+TEST_F(ContainerSelectorTest, testNextContainer) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
   const double cutoff = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, verletSkin,
-                                                                 verletRebuildFrequency, containers, traversals);
 
-  bool stillTuning = true;
-  int i = 0;
-  for (; stillTuning; ++i) {
-    stillTuning = containerSelector.tune();
+  std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists,
+                                                             autopas::ContainerOptions::directSum,
+                                                             autopas::ContainerOptions::linkedCells};
+  std::vector<autopas::TraversalOptions> traversalOptions = {autopas::TraversalOptions::c08};
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, containerOptions, traversalOptions);
 
-    auto container = containerSelector.getOptimalContainer();
+  auto container = containerSelector.selectNextContainer();
+  EXPECT_EQ(autopas::ContainerOptions::verletLists, container->getContainerType());
 
-    switch (i) {
-      case 0: {
-        EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(container.get())));
-        containerSelector.addTimeMeasurement(autopas::ContainerOptions::directSum, 20);
-        break;
-      }
-      case 1: {
-        EXPECT_TRUE((dynamic_cast<autopas::VerletLists<Particle>*>(container.get())));
-        containerSelector.addTimeMeasurement(autopas::ContainerOptions::verletLists, 30);
-        break;
-      }
-      case 2: {
-        EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())));
-        containerSelector.addTimeMeasurement(autopas::ContainerOptions::linkedCells, 10);
-        break;
-      }
-      case 3: {
-        EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())))
-            << "tune() selected the wrong container after collecting all timings";
-        EXPECT_FALSE(stillTuning) << "tune() returns true(=still tuning) after checking all options!";
-        break;
-      }
-      default:
-        FAIL() << "Tuning took more turns than expected!";
-    }
-  }
+  container = containerSelector.selectNextContainer();
+  EXPECT_EQ(autopas::ContainerOptions::directSum, container->getContainerType());
 
-  EXPECT_EQ(i, 4) << "Too unexpected number of tuning iterations!";
+  container = containerSelector.selectNextContainer();
+  EXPECT_EQ(autopas::ContainerOptions::linkedCells, container->getContainerType());
 
-  auto container = containerSelector.getOptimalContainer();
-  EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(container.get())))
-      << "tune() returned the wrong container after tuning phase";
+  container = containerSelector.selectNextContainer();
+  EXPECT_EQ(nullptr, container);
+
+  container = containerSelector.selectNextContainer();
+  EXPECT_EQ(nullptr, container);
+}
+
+TEST_F(ContainerSelectorTest, testSelectOptimalContainer) {
+  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
+  const double cutoff = 1;
+  const double verletSkin = 0;
+  const unsigned int verletRebuildFrequency = 1;
+
+  std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists,
+                                                             autopas::ContainerOptions::directSum,
+                                                             autopas::ContainerOptions::linkedCells};
+  std::vector<autopas::TraversalOptions> traversalOptions = {autopas::TraversalOptions::c08};
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, containerOptions, traversalOptions);
+
+  EXPECT_THROW(containerSelector.selectOptimalContainer(), std::exception);
+
+  containerSelector.addTimeMeasurement(containerOptions[2], 20);
+  containerSelector.addTimeMeasurement(containerOptions[1], 10);
+  containerSelector.addTimeMeasurement(containerOptions[0], 30);
+  containerSelector.addTimeMeasurement(containerOptions[1], 22);
+
+  auto container = containerSelector.selectOptimalContainer();
+  EXPECT_EQ(containerOptions[1], container->getContainerType());
+
+  // select optimal container should delete all measurements
+  EXPECT_THROW(containerSelector.selectOptimalContainer(), std::exception);
 }

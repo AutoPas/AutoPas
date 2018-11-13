@@ -106,7 +106,7 @@ class AutoPas {
    */
   template <class Functor>
   void iteratePairwise(Functor *f, autopas::DataLayoutOption dataLayoutOption) {
-    // @todo remove this and let is be handled via a selector
+    // @todo remove dataLayoutOption and let it be handled via a selector
     _autoTuner->iteratePairwise(f, dataLayoutOption);
   }
 

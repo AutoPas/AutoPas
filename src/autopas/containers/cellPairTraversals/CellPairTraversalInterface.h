@@ -12,6 +12,7 @@ namespace autopas {
  * Possible choices for the cell pair traversal.
  */
 enum TraversalOptions {
+  dummyTraversal = -1,
   c08 = 0,
   sliced = 1,
 };
