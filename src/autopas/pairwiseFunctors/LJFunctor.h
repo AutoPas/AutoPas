@@ -515,6 +515,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       _upotSum *= 0.5;
       _virialSum = ArrayMath::mulScalar(_virialSum, 0.5);
     }
+    // we have always calculated 6*upot, so we divide by 6 here!
+    _upotSum /= 6.;
     _postProcessed = true;
   }
 
@@ -532,8 +534,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       throw utils::ExceptionHandler::AutoPasException(
           "Not yet postprocessed, please call postProcessGlobalValues first.");
     }
-    // we have always calculated 6*upot, so we divide by 6 here!
-    return _upotSum / 6.;
+    return _upotSum;
   }
 
   /**
