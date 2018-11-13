@@ -21,7 +21,7 @@ class LJFunctorTest : public AutoPasTestBase {
     lowCorner = {0., 0., 0.};
     highCorner = {5., 5., 5.};
     expectedForce = {-4547248.8989645941, -9094497.7979291882, -13641746.696893783};
-    expectedEnergy = 3178701.6514326506;
+    expectedEnergy = 3178701.6514326506 / 6.;
     expectedVirial = 6366148.4585504318;
     absDelta = 1e-7;
   }
