@@ -23,27 +23,9 @@ if(NOT CMAKE_BUILD_TYPE)
             "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-# option for more verbose log messages.
-option(VERBOSE_LOGGING "Print Filename and line in every log line." OFF)
-if (VERBOSE_LOGGING)
-    add_definitions(-DAUTOPAS_VERBOSE_LOG)
-endif ()
-
-ENABLE_TESTING()
-
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
-include(other-compileroptions)
-include(vectorization)
-include(clang-sanitizers)
-include(version.cmake)
-include(clang-tidy)
-include(clang-format)
-include(doxygen)
-include(OpenMP)
-include(CodeCoverageAutopas)
-
-
+ENABLE_TESTING()
 #autopas
 ADD_SUBDIRECTORY(src)
 
@@ -53,3 +35,14 @@ ADD_SUBDIRECTORY(libs)
 #tests and examples
 ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
+
+include(clang-format)
+include(clang-sanitizers)
+include(clang-tidy)
+include(CodeCoverageAutopas)
+include(doxygen)
+include(logging)
+include(OpenMP)
+include(other-compileroptions)
+include(vectorization)
+include(version.cmake)
