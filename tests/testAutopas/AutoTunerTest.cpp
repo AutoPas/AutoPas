@@ -74,10 +74,6 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
       << "tune() returned the wrong container after tuning phase";
 }
 
-TEST_F(AutoTunerTest, testTuneAoS) {
-  testTune(autopas::DataLayoutOption::aos);
-}
+TEST_F(AutoTunerTest, testTuneAoS) { testTune(autopas::DataLayoutOption::aos); }
 
-TEST_F(AutoTunerTest, testTuneSoA) {
-  testTune(autopas::DataLayoutOption::soa);
-}
+TEST_F(AutoTunerTest, testTuneSoA) { testTune(autopas::DataLayoutOption::soa); }

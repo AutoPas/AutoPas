@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <gtest/gtest.h>
 #include <autopas/selectors/AutoTuner.h>
+#include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
