@@ -97,7 +97,7 @@ void wirteVTKFile(string &filename, size_t numParticles,
 int main(int argc, char **argv) {
   // Parsing
   MDFlexParser parser;
-  if (!parser.parseInput(argc, argv)) {
+  if (not parser.parseInput(argc, argv)) {
     exit(-1);
   }
 
