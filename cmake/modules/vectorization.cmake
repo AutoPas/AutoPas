@@ -8,12 +8,6 @@ if (USE_VECTORIZATION)
     # let ccmake and cmake-gui offer the options
     set_property(CACHE VECTOR_INSTRUCTIONS PROPERTY STRINGS ${VECTOR_INSTRUCTIONS_OPTIONS})
 
-    set(SUPPORTED_COMPILERS "GNU;Intel;Clang")
-
-    if (NOT CMAKE_CXX_COMPILER_ID IN_LIST SUPPORTED_COMPILERS)
-        message(WARNING "Compiler " ${CMAKE_CXX_COMPILER_ID} " not supported for vectorization!")
-    endif ()
-
     target_compile_options(autopas
             PUBLIC
             # openmp simd

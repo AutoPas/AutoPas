@@ -11,6 +11,11 @@ if (CMAKE_VERSION VERSION_LESS "3.6" AND CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 endif ()
 
+set(SUPPORTED_COMPILERS "GNU;Intel;Clang")
+
+if (NOT CMAKE_CXX_COMPILER_ID IN_LIST SUPPORTED_COMPILERS)
+    message(WARNING "Compiler " ${CMAKE_CXX_COMPILER_ID} " not supported!")
+endif ()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -34,7 +39,6 @@ include(CodeCoverageAutopas)
 include(doxygen)
 include(logging)
 include(OpenMP)
-include(other-compileroptions)
 
 include(version.cmake)
 
@@ -49,3 +53,4 @@ ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
 
 include(vectorization)
+include(other-compileroptions)
