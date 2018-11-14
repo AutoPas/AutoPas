@@ -35,7 +35,7 @@ include(doxygen)
 include(logging)
 include(OpenMP)
 include(other-compileroptions)
-include(vectorization)
+
 include(version.cmake)
 
 #autopas
@@ -48,4 +48,4 @@ ADD_SUBDIRECTORY(libs)
 ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
 
-
+include(vectorization)
