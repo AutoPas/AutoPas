@@ -1,32 +1,21 @@
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-math-errno")
-message(STATUS "fno-math-errno set. This is needed to vectorize, e.g., sqrt().")
-
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weffc++")
-if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.1)
-    #Wsuggest-override only exists for g++ starting at version 5.1
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function")
-endif ()
-
 # needed for GCC to vectorize LJFunctor.SoAFunctor
 option(ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize efficiently" OFF)
 if (ENABLE_FAST_MATH)
     message(WARNING "Fast-Math might cause particle loss! Only use this if you know what you are doing!")
 endif()
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if (ENABLE_FAST_MATH)
-        message(STATUS "fast-math enabled using -ffast-math (gcc, clang)")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
-    else()
-        message(STATUS "fast-math not enabled (gcc, clang)")
-    endif ()
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-    if (NOT ENABLE_FAST_MATH)
-        message(STATUS "fast-math disabled using -fp-model precise (intel)")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fp-model precise")
-    endif ()
-else()
-    message(WARNING "for this compiler fast math is unknown")
-endif ()
 
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
-SET(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
+target_compile_options(autopas
+        PUBLIC
+        # Needed to vectorize sqrt()
+        -fno-math-errno
+        # fast math for better vectorization
+        $<$<AND:$<BOOL:${ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-ffast-math>
+        # INTEL: per default fast math is on. Disable via fp-model precise
+        $<$<AND:$<BOOL:${ENABLE_FAST_MATH}>,$<CXX_COMPILER_ID:Intel>>:-fp-model precise>
+        # Wsuggest-override only exists for g++ starting at version 5.1
+        $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,5.1>>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
+        # @TODO clean up code with -Weffc++
+        # -Weffc++
+)
+
+message(STATUS "fno-math-errno set. This is needed to vectorize, e.g., sqrt().")
