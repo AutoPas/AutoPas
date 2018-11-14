@@ -52,5 +52,6 @@ ADD_SUBDIRECTORY(libs)
 ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
 
+# modules needing targets:
 include(vectorization)
 include(other-compileroptions)
