@@ -12,8 +12,10 @@ target_compile_options(autopas
         $<$<AND:$<BOOL:${ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-ffast-math>
         # INTEL: per default fast math is on. Disable via fp-model precise
         $<$<AND:$<BOOL:${ENABLE_FAST_MATH}>,$<CXX_COMPILER_ID:Intel>>:-fp-model precise>
-        # Wsuggest-override only exists for g++ starting at version 5.1
-        $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,5.1>>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
+        # Warnings:
+        # no warnings for intel because its mainly spam
+        $<$<CXX_COMPILER_ID:GNU>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
+        $<$<CXX_COMPILER_ID:Clang>:-Wall>
         # @TODO clean up code with -Weffc++
         # -Weffc++
 )
