@@ -11,7 +11,7 @@ target_compile_options(autopas
         # fast math for better vectorization
         $<$<AND:$<BOOL:${ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-ffast-math>
         # INTEL: per default fast math is on. Disable via fp-model precise
-        $<$<AND:$<BOOL:${ENABLE_FAST_MATH}>,$<CXX_COMPILER_ID:Intel>>:-fp-model precise>
+        $<$<AND:$<NOT:$<BOOL:${ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:-fp-model precise>
         # Warnings:
         # no warnings for intel because its mainly spam
         $<$<CXX_COMPILER_ID:GNU>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
