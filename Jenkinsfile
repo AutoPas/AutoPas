@@ -315,7 +315,7 @@ pipeline{
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest -C checkExamples -j8'
                             }
                         }
                     },
