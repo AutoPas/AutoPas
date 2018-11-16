@@ -260,7 +260,8 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
     ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
     for (; iter.isValid(); ++iter) {
       double newPos = (iter->getR()[0]) + 1;
-      iter->setR({newPos, newPos, newPos});
+      std::array<double, 3> newPosArr = {newPos, newPos, newPos};
+      iter->setR(newPosArr);
     }
   }
 
