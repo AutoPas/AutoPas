@@ -210,7 +210,7 @@ pipeline{
                             dir("build-archer"){
                                 // needed to properly check all test cases (also just single ones)
                                 // I suspect that archer breaks when death tests are used
-                                sh 'ctest --verbose'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose'
                             }
                         }
                     },
