@@ -105,7 +105,7 @@ class ParticleContainerInterface {
    * @param lowerCorner Lower corner of the region
    * @param higherCorner Higher corner of the region
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
-   * @param incSearchRegion Weather to increase the search space (e.g. include more cells)
+   * @param incSearchRegion Whether to increase the search space (e.g. include more cells)
    * @return Iterator to iterate over all particles in a specific region.
    */
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(

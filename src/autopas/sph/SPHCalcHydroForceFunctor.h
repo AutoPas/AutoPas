@@ -26,6 +26,8 @@ class SPHCalcHydroForceFunctor
   /// particle cell type
   typedef FullParticleCell<Particle> ParticleCell;
 
+  bool isRelevantForTuning() override { return true; }
+
   /**
    * Calculates the contribution of the interaction of particle i and j to the
    * hydrodynamic force.

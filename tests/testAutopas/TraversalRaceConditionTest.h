@@ -32,6 +32,8 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
     typedef PrintableMolecule::SoAArraysType SoAArraysType;
     typedef autopas::FullParticleCell<PrintableMolecule> ParticleCell;
 
+    bool isRelevantForTuning() override { return true; }
+
     void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j, bool newton3) override {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
