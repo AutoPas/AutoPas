@@ -20,6 +20,6 @@ target_link_libraries(autopas
 target_compile_definitions(autopas
         PUBLIC
         $<$<BOOL:${OPENMP}>:AUTOPAS_OPENMP>
-)
+        )
 
 TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC ../.)

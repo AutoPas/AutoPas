@@ -17,7 +17,6 @@ target_compile_options(autopas
         $<$<CXX_COMPILER_ID:GNU>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
         $<$<CXX_COMPILER_ID:Clang>:-Wall>
         # @TODO clean up code with -Weffc++
-        # -Weffc++
-)
+        )
 
 message(STATUS "fno-math-errno set. This is needed to vectorize, e.g., sqrt().")

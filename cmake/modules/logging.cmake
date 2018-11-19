@@ -8,6 +8,6 @@ endif ()
 target_compile_definitions(autopas
         PUBLIC
         AUTOPAS_VERBOSE_LOG
-)
+        )
 
 message(STATUS "Verbose log messages enabled.")

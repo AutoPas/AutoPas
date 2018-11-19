@@ -22,7 +22,7 @@ if (USE_VECTORIZATION)
             $<$<AND:$<STREQUAL:${VECTOR_INSTRUCTIONS},AVX2>,$<CXX_COMPILER_ID:Intel>>:-march=core-avx2 -fma>
             $<$<AND:$<STREQUAL:${VECTOR_INSTRUCTIONS},KNL>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-march=knl>
             $<$<AND:$<STREQUAL:${VECTOR_INSTRUCTIONS},KNL>,$<CXX_COMPILER_ID:Intel>>:-xMIC-AVX512>
-    )
+            )
 
 else()
 	MESSAGE(STATUS "Vectorization disabled.")
@@ -32,5 +32,5 @@ else()
             $<$<CXX_COMPILER_ID:GNU>:-fno-tree-vectorize>
             $<$<CXX_COMPILER_ID:Clang>:-fno-vectorize>
             $<$<CXX_COMPILER_ID:Intel>:-no-vec>
-    )
+            )
 endif ()
