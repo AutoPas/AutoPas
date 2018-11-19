@@ -172,6 +172,4 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
       functor.SoAFunctor(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
     }
   }
-
-
 }
