@@ -50,12 +50,12 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3) {
 
 TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsNoN3) {
   bool newton3 = false;
-  testAoSNoGlobals(false);
+  testAoSNoGlobals(newton3);
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   bool newton3 = true;
-  testAoSNoGlobals(false);
+  testAoSNoGlobals(newton3);
 }
 
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {

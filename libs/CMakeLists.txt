@@ -1,4 +1,3 @@
-
 #spdlog
 find_package(spdlog CONFIG QUIET)
 if (spdlog_FOUND)

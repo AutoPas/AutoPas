@@ -15,8 +15,8 @@ using namespace autopas;
 
 void testForceLJ();
 
-void measure(int which, int numMolecules, int numIterations, int rebuildFrequency, double skinRadiusToCutoffRatio,
-             double cutoff, bool soa);
+void measure(int which, std::array<double, 3> boxMin, std::array<double, 3> boxMax, int numMolecules, int numIterations,
+             int rebuildFrequency, double skinRadiusToCutoffRatio, double cutoff, bool soa);
 
 template <class Container>
 void measureContainer(Container *cont, int numMolecules, int numIterations, bool soa);
@@ -27,7 +27,7 @@ static LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func(1.
 int main(int argc, char *argv[]) {
   autopas::Logger::create();
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::info);
-  std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+  std::array<double, 3> boxMin({0., 0., 0.}), boxMax({5., 5., 5.});
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     cout << "running: 0(linked cells), 100, 100, 1, 0." << endl << endl;
   }
 
-  measure(which, numMols, numIts, rebuildFrequency, skinRadius, cutoff, soa);
+  measure(which, boxMin, boxMax, numMols, numIts, rebuildFrequency, skinRadius, cutoff, soa);
 
   return EXIT_SUCCESS;
 }
@@ -131,10 +131,9 @@ void measureContainer(Container *cont, int numMolecules, int numIterations, doub
   cout << endl;
 }
 
-void measure(int which, int numMolecules, int numIterations, int rebuildFrequency, double skinRadiusToCutoffRatio,
-             double cutoff, bool soa) {
+void measure(int which, std::array<double, 3> boxMin, std::array<double, 3> boxMax, int numMolecules, int numIterations,
+             int rebuildFrequency, double skinRadiusToCutoffRatio, double cutoff, bool soa) {
   //  cout << "measuring" << endl;
-  std::array<double, 3> boxMin({0., 0., 0.}), boxMax({5., 5., 5.});
 
   LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> lcCont(boxMin, boxMax, cutoff);
   DirectSum<PrintableMolecule, FullParticleCell<PrintableMolecule>> dirCont(boxMin, boxMax, cutoff);

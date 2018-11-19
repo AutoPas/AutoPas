@@ -11,6 +11,18 @@ if (CMAKE_VERSION VERSION_LESS "3.6" AND CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 endif ()
 
+set(SUPPORTED_COMPILERS "GNU;Intel;Clang")
+
+if (NOT CMAKE_CXX_COMPILER_ID IN_LIST SUPPORTED_COMPILERS)
+    message(WARNING "Compiler " ${CMAKE_CXX_COMPILER_ID} " not supported!")
+endif ()
+
+# Check if the compiler command is archer
+# CMAKE_CXX_COMPILER contains the whole path. "archer" must be after the last "/"
+if (CMAKE_CXX_COMPILER MATCHES ".*archer[^/]*")
+    message(STATUS "Archer detected!")
+    set(ARCHER true)
+endif ()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -23,26 +35,18 @@ if(NOT CMAKE_BUILD_TYPE)
             "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-# option for more verbose log messages.
-option(VERBOSE_LOGGING "Print Filename and line in every log line." OFF)
-if (VERBOSE_LOGGING)
-    add_definitions(-DAUTOPAS_VERBOSE_LOG)
-endif ()
-
 ENABLE_TESTING()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
-include(other-compileroptions)
-include(vectorization)
-include(clang-sanitizers)
-include(version.cmake)
-include(clang-tidy)
 include(clang-format)
+include(clang-sanitizers)
+include(clang-tidy)
+include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
-include(CodeCoverageAutopas)
 
+include(version.cmake)
 
 #autopas
 ADD_SUBDIRECTORY(src)
@@ -53,3 +57,8 @@ ADD_SUBDIRECTORY(libs)
 #tests and examples
 ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
+
+# modules needing targets:
+include(logging)
+include(other-compileroptions)
+include(vectorization)
