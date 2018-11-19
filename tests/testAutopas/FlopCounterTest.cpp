@@ -46,3 +46,132 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
 TEST_F(FlopCounterTest, testFlopCounterAoS4Mol) { test(autopas::DataLayoutOption::aos); }
 
 TEST_F(FlopCounterTest, testFlopCounterSoA4Mol) { test(autopas::DataLayoutOption::soa); }
+
+TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
+  bool newton3 = true;
+  std::string where_str = "inside";
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+
+  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
+  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
+
+  double cutoff = 1.;
+
+  autopas::FlopCounterFunctor<Particle, FPCell> functor(cutoff);
+
+  // This is a basic check for the global calculations, by checking the handling of two particle interactions in
+  // parallel. If interactions are dangerous, archer will complain.
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel
+#endif
+  {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp sections
+#endif
+    {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.AoSFunctor(p1, p2, newton3);
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.AoSFunctor(p3, p4, newton3);
+    }
+  }
+}
+
+TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
+  bool newton3 = true;
+  std::string where_str = "inside";
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+
+  Molecule p3({0., 1., 0.}, {0., 0., 0.}, 0);
+  Molecule p4({0.1, 1.2, 0.3}, {0., 0., 0.}, 1);
+
+  Molecule p5({1., 1., 0.}, {0., 0., 0.}, 0);
+  Molecule p6({1.1, 1.2, 0.3}, {0., 0., 0.}, 1);
+
+  Molecule p7({1., 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p8({1.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+
+  double cutoff = 1.;
+
+  autopas::FlopCounterFunctor<Particle, FPCell> functor(cutoff);
+
+  autopas::FullParticleCell<Particle> cell1;
+  cell1.addParticle(p1);
+  cell1.addParticle(p2);
+
+  autopas::FullParticleCell<Particle> cell2;
+  cell2.addParticle(p3);
+  cell2.addParticle(p4);
+
+  autopas::FullParticleCell<Particle> cell3;
+  cell3.addParticle(p5);
+  cell3.addParticle(p6);
+
+  autopas::FullParticleCell<Particle> cell4;
+  cell3.addParticle(p7);
+  cell3.addParticle(p8);
+
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0);
+  functor.SoALoader(cell3, cell3._particleSoABuffer, 0);
+  functor.SoALoader(cell4, cell4._particleSoABuffer, 0);
+
+  // This is a basic check for the accumulated values, by checking the handling of two particle interactions in
+  // parallel. If interactions are dangerous, archer will complain.
+
+  // first functors on one cell
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel
+#endif
+  {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp sections
+#endif
+    {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.SoAFunctor(cell1._particleSoABuffer, newton3);
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.SoAFunctor(cell2._particleSoABuffer, newton3);
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.SoAFunctor(cell3._particleSoABuffer, newton3);
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.SoAFunctor(cell4._particleSoABuffer, newton3);
+    }
+  }
+
+  // functors on two cells
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel
+#endif
+  {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp sections
+#endif
+    {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
+      functor.SoAFunctor(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
+    }
+  }
+
+
+}
