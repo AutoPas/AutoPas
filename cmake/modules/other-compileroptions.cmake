@@ -13,7 +13,7 @@ target_compile_options(autopas
         # INTEL: per default fast math is on. Disable via fp-model precise
         $<$<AND:$<NOT:$<BOOL:${ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:-fp-model precise>
         # Warnings:
-        # no warnings for intel because its mainly spam
+        # no warnings for intel because it's mainly spam
         $<$<CXX_COMPILER_ID:GNU>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
         $<$<CXX_COMPILER_ID:Clang>:-Wall>
         # @TODO clean up code with -Weffc++
