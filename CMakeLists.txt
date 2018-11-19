@@ -44,7 +44,6 @@ include(clang-sanitizers)
 include(clang-tidy)
 include(CodeCoverageAutopas)
 include(doxygen)
-include(logging)
 include(OpenMP)
 
 include(version.cmake)
@@ -60,5 +59,6 @@ ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
 
 # modules needing targets:
-include(vectorization)
+include(logging)
 include(other-compileroptions)
+include(vectorization)

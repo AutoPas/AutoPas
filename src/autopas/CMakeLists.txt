@@ -15,10 +15,11 @@ target_link_libraries(autopas
         $<$<AND:$<BOOL:${OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
         )
 
+# Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP target.
+# this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
 target_compile_definitions(autopas
         PUBLIC
         $<$<BOOL:${OPENMP}>:AUTOPAS_OPENMP>
-        $<$<BOOL:${VERBOSE_LOGGING}>:AUTOPAS_VERBOSE_LOG>
 )
 
 TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC ../.)
