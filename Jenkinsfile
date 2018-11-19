@@ -252,14 +252,14 @@ pipeline{
                         githubNotify context: 'checkExamples', description: 'checking examples in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                         container('autopas-gcc7-cmake-make') {
                             dir("build/examples") {
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
                     "gcc openmp": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp/examples") {
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
@@ -273,63 +273,63 @@ pipeline{
                     /*"address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },*/
                     /*"address sanitizer release": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },*/
                     /*"thread sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-threadsanitizer/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },*/
                     "clang openmp": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-openmp/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
                     /*"clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },*/
                     "clang ninja address sanitizer release": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer/examples"){
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest -C checkExamples -j8'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
                     "intel": {
                         container('autopas-intel18'){
                             dir("build-intel/examples"){
-                                sh "bash -i -c 'ctest -C checkExamples -j8'"
+                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
                             }
                         }
                     },
                     "intel openmp": {
                         container('autopas-intel18'){
                             dir("build-intel-ninja-openmp/examples"){
-                                sh "bash -i -c 'ctest -C checkExamples -j8'"
+                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
                             }
                         }
                     }
