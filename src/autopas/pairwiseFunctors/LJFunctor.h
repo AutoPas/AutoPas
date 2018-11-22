@@ -122,7 +122,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -142,8 +142,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        // if (i == j) continue;
-
         const double drx = xptr[i] - xptr[j];
         const double dry = yptr[i] - yptr[j];
         const double drz = zptr[i] - zptr[j];
@@ -170,11 +168,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-        if (newton3) {
-          fxptr[j] -= fx;
-          fyptr[j] -= fy;
-          fzptr[j] -= fz;
-        }
+
+        // newton 3
+        fxptr[j] -= fx;
+        fyptr[j] -= fy;
+        fzptr[j] -= fz;
       }
 
       fxptr[i] += fxacc;

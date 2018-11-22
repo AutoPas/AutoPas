@@ -96,8 +96,9 @@ class SPHCalcHydroForceFunctor
 
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, bool)
+   * This functor ignores the newton3  
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
@@ -154,11 +155,10 @@ class SPHCalcHydroForceFunctor
         // const PS::F64 v_sig = ep_i[i].snds + ep_j[j].snds - 3.0 * w_ij;
 
         localvsigmax = std::max(localvsigmax, v_sig);
-        if (newton3) {
-          // vsigmaxptr[j] = std::max(vsigmaxptr[j], v_sig);  // Newton 3
-          vsigmaxptr[j] = vsigmaxptr[j] > v_sig ? vsigmaxptr[j] : v_sig;  // Newton 3
-          // v_sig_max = std::max(v_sig_max, v_sig);
-        }
+        // vsigmaxptr[j] = std::max(vsigmaxptr[j], v_sig);  // Newton 3
+        vsigmaxptr[j] = vsigmaxptr[j] > v_sig ? vsigmaxptr[j] : v_sig;  // Newton 3
+        // v_sig_max = std::max(v_sig_max, v_sig);
+
         const double AV = -0.5 * v_sig * w_ij / (0.5 * (densityptr[i] + densityptr[j]));
         // const PS::F64 AV = - 0.5 * v_sig * w_ij / (0.5 * (ep_i[i].dens +
         // ep_j[j].dens));
@@ -179,23 +179,21 @@ class SPHCalcHydroForceFunctor
         // hydro[i].acc     -= ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
         // ep_i[i].dens) + ep_j[j].pres / (ep_j[j].dens * ep_j[j].dens) + AV) *
         // gradW_ij;
-        if (newton3) {
-          const double massscale = scale * massptr[i];
-          accXptr[j] += gradW_ij[0] * massscale;
-          accYptr[j] += gradW_ij[1] * massscale;
-          accZptr[j] += gradW_ij[2] * massscale;
-          // Newton3, gradW_ij = -gradW_ji
-        }
+
+        const double massscale2 = scale * massptr[i];
+        accXptr[j] += gradW_ij[0] * massscale;
+        accYptr[j] += gradW_ij[1] * massscale;
+        accZptr[j] += gradW_ij[2] * massscale;
+        // Newton3, gradW_ij = -gradW_ji
+
         double scale2i = massptr[j] * (pressureptr[i] / (densityptr[i] * densityptr[i]) + 0.5 * AV);
         localengdotsum += (gradW_ij[0] * dvX + gradW_ij[1] * dvY + gradW_ij[2] * dvZ) * scale2i;
         // hydro[i].eng_dot += ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
         // ep_i[i].dens) + 0.5 * AV) * dv * gradW_ij;
 
-        if (newton3) {
-          double scale2j = massptr[i] * (pressureptr[j] / (densityptr[j] * densityptr[j]) + 0.5 * AV);
-          engDotptr[j] += (gradW_ij[0] * dvX + gradW_ij[1] * dvY + gradW_ij[2] * dvZ) * scale2j;
-          // Newton 3
-        }
+        double scale2j = massptr[i] * (pressureptr[j] / (densityptr[j] * densityptr[j]) + 0.5 * AV);
+        engDotptr[j] += (gradW_ij[0] * dvX + gradW_ij[1] * dvY + gradW_ij[2] * dvZ) * scale2j;
+        // Newton 3
       }
 
       engDotptr[i] += localengdotsum;

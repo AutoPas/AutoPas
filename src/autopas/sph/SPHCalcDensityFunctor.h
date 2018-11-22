@@ -64,7 +64,7 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, bool)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -77,7 +77,6 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     size_t numParticles = soa.getNumParticles();
     for (unsigned int i = 0; i < numParticles; ++i) {
       double densacc = 0.;
-
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : densacc)
@@ -94,12 +93,11 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
 
         const double density = massptr[j] * SPHKernels::W(dr2, smthptr[i]);
         densacc += density;
-        if (newton3) {
-          // Newton 3:
-          // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
-          const double density2 = massptr[i] * SPHKernels::W(dr2, smthptr[j]);
-          densityptr[j] += density2;
-        }
+
+        // Newton 3:
+        // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
+        const double density2 = massptr[i] * SPHKernels::W(dr2, smthptr[j]);
+        densityptr[j] += density2;
       }
 
       densityptr[i] += densacc;
