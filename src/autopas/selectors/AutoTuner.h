@@ -16,9 +16,21 @@
 namespace autopas {
 
 /**
- * Possible Choices for the particle data layout.
+ * Possible choices for the particle data layout.
  */
 enum DataLayoutOption { aos, soa };
+
+/**
+ * Possible choices for the auto tuner.
+ * @TODO: implement more options and then use this enum! :D
+ */
+enum TuningStrategy {
+  /**
+   * Test all allowed configurations and select the best.
+   */
+  timeMeasuring
+};
+
 
 /**
  * Automated tuner for optimal iteration performance.
@@ -54,7 +66,9 @@ class AutoTuner {
                            allowedTraversalOptions),
         _allowedTraversalOptions(allowedTraversalOptions),
         _maxSamples(maxSamples),
-        _numSamples(maxSamples) {}
+        _numSamples(maxSamples),
+        _containerSelectorStrategy(SelectorStrategy::fastestAbs),
+        _traversalSelectorStrategy(SelectorStrategy::fastestAbs) {}
 
   /**
    * Getter for the optimal container.
@@ -106,6 +120,9 @@ class AutoTuner {
    * Initialize with max value to start tuning at start of simulation.
    */
   size_t _numSamples;
+
+  SelectorStrategy _containerSelectorStrategy;
+  SelectorStrategy _traversalSelectorStrategy;
 };
 
 template <class Particle, class ParticleCell>
@@ -211,7 +228,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     } else {
       _containerSelector.selectOptimalContainer();
       _traversalSelectors[getContainer()->getContainerType()]
-          .template selectOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+          .template selectOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(_traversalSelectorStrategy,
+                                                                                pairwiseFunctor);
       _iterationsSinceTuning = 0;
       return false;
     }
