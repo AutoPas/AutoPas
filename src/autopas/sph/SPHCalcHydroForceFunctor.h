@@ -96,7 +96,7 @@ class SPHCalcHydroForceFunctor
 
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, bool)
-   * This functor ignores the newton3  
+   * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctor(SoA<SoAArraysType> &soa, bool /*newton3*/) override {
     if (soa.getNumParticles() == 0) return;
