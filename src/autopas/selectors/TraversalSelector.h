@@ -296,7 +296,7 @@ void TraversalSelector<ParticleCell>::findFastestMeanTraversal() {
   // choose the fastest traversal and reset timings
   // reorder measurements
   // TODO: maybe directly save measurements in this way?
-  std::unordered_map<TraversalOptions, std::vector<long>> measurementsMap;
+  std::map<TraversalOptions, std::vector<long>> measurementsMap;
   for (auto &&t : _traversalTimes) {
     measurementsMap[t.traversal].push_back(t.time);
   }
