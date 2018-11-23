@@ -294,13 +294,14 @@ template <class ParticleCell>
 void TraversalSelector<ParticleCell>::findFastestMeanTraversal() {
   // choose the fastest traversal and reset timings
   // reorder measurements
-  // TODO: maybe directly save measurements in this way?
+  // @todo: maybe directly save measurements in this way?
   std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
   for (auto &&t : _traversalTimes) {
     measurementsMap[t.traversal].push_back(t.time);
   }
 
   long optimalTraversalTime = std::numeric_limits<long>::max();
+  // @todo: when verlet list traversals are here apply weights to measurement w/ or w/o vl rebuild
   for (auto &&m : measurementsMap) {
     long meanTime = std::accumulate(m.second.begin(), m.second.end(), 0l) / m.second.size();
     if (meanTime < optimalTraversalTime) {
@@ -319,7 +320,7 @@ template <class ParticleCell>
 void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
   // choose the fastest traversal and reset timings
   // reorder measurements
-  // TODO: maybe directly save measurements in this way?
+  // todo: maybe directly save measurements in this way?
   std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
   for (auto &&t : _traversalTimes) {
     measurementsMap[t.traversal].push_back(t.time);
