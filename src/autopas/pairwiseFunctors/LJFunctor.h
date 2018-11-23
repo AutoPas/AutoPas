@@ -242,14 +242,36 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
+    bool isHaloCell1 = false;
+    bool isHaloCell2 = false;
+    if (calculateGlobals) {
+      // Checks if the cell is a halo cell, if it is, we skip it.
+      // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
+      // set. (as of 23.11.2018)
+      isHaloCell1 |= x1ptr[0] < _lowCorner[0] || x1ptr[0] >= _highCorner[0];
+      isHaloCell1 |= y1ptr[0] < _lowCorner[1] || y1ptr[0] >= _highCorner[1];
+      isHaloCell1 |= z1ptr[0] < _lowCorner[2] || z1ptr[0] >= _highCorner[2];
+      isHaloCell2 |= x2ptr[0] < _lowCorner[0] || x2ptr[0] >= _highCorner[0];
+      isHaloCell2 |= y2ptr[0] < _lowCorner[1] || y2ptr[0] >= _highCorner[1];
+      isHaloCell2 |= z2ptr[0] < _lowCorner[2] || z2ptr[0] >= _highCorner[2];
+      /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
+        return;
+      }*/
+    }
+
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
 
+      double upotSum = 0.;
+      double virialSumX = 0.;
+      double virialSumY = 0.;
+      double virialSumZ = 0.;
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -282,11 +304,57 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           fy2ptr[j] -= fy;
           fz2ptr[j] -= fz;
         }
+
+        if (calculateGlobals) {
+          double virialx = drx * fx;
+          double virialy = dry * fy;
+          double virialz = drz * fz;
+          double upot = _epsilon24 * lj12m6 + _shift6;
+
+          if (_duplicatedCalculations) {
+            // for non-newton3 this division is in the post-processing step.
+            if (newton3) {
+              upot *= 0.5;
+              virialx *= 0.5;
+              virialy *= 0.5;
+              virialz *= 0.5;
+            }
+            if (not isHaloCell1) {
+              upotSum += upot;
+              virialSumX += virialx;
+              virialSumY += virialy;
+              virialSumZ += virialz;
+            }
+            // for non-newton3 the cell interaction in the other direction will be considered in a separate calculation
+            if (newton3 and not isHaloCell2) {
+              upotSum += upot;
+              virialSumX += virialx;
+              virialSumY += virialy;
+              virialSumZ += virialz;
+            }
+          } else {
+            // for non-newton3 we divide by 2 only in the postprocess step!
+            upotSum += upot;
+            virialSumX += virialx;
+            virialSumY += virialy;
+            virialSumZ += virialz;
+          }
+        }
       }
 
       fx1ptr[i] += fxacc;
       fy1ptr[i] += fyacc;
       fz1ptr[i] += fzacc;
+
+      if (calculateGlobals) {
+        const int threadnum = autopas_get_thread_num();
+        // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
+        // AoS)
+        _aosThreadData[threadnum].upotSum += upotSum;
+        _aosThreadData[threadnum].virialSum[0] += virialSumX;
+        _aosThreadData[threadnum].virialSum[1] += virialSumY;
+        _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+      }
     }
   }
 
