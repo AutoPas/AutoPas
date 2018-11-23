@@ -8,6 +8,7 @@
 
 #include <autopas/containers/cellPairTraversals/DummyTraversal.h>
 #include <array>
+#include <numeric>
 #include <vector>
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
@@ -104,6 +105,7 @@ class TraversalSelector {
    * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
    * @tparam useSoA
    * @tparam useNewton3
+   * @param strategy Strategy the selector should employ to choose the best traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @return Smartpointer to the selected traversal.
    */
@@ -114,6 +116,12 @@ class TraversalSelector {
  private:
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> findFastestAbsTraversal(PairwiseFunctor &pairwiseFunctor);
+
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  std::unique_ptr<CellPairTraversal<ParticleCell>> findFastestMeanTraversal(PairwiseFunctor &pairwiseFunctor);
+
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  std::unique_ptr<CellPairTraversal<ParticleCell>> findFastestMedianTraversal(PairwiseFunctor &pairwiseFunctor);
 
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   std::vector<std::unique_ptr<CellPairTraversalInterface>> generateAllAllowedTraversals(
@@ -191,11 +199,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       break;
     }
     case SelectorStrategy::fastestMean: {
-      //      TODO
+      traversal = findFastestMeanTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
       break;
     }
     case SelectorStrategy::fastestMedian: {
-      //      TODO
+      traversal = findFastestMedianTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
       break;
     }
     default:
@@ -291,4 +299,96 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 
   return optimalTraversal;
 }
+
+template <class ParticleCell>
+template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::findFastestMeanTraversal(
+    PairwiseFunctor &pairwiseFunctor) {
+  // Time measure strategy
+  if (_traversalTimes.empty()) {
+    utils::ExceptionHandler::exception("TraversalSelector: Trying to determine fastest traversal before measuring!");
+  }
+
+  // choose the fastest traversal and reset timings
+  // reorder measurements
+  // TODO: maybe directly save measurements in this way?
+  std::unordered_map<TraversalOptions, std::vector<long>> measurementsMap;
+  for (auto &&t : _traversalTimes) {
+    measurementsMap[t.traversal].push_back(t.time);
+  }
+
+  // measurements are not needed anymore
+  _traversalTimes.clear();
+
+  TraversalOptions optimalTraversalOption = TraversalOptions::c08;
+  long optimalTraversalTime = std::numeric_limits<long>::max();
+  for (auto &&m : measurementsMap) {
+    long meanTime = std::accumulate(m.second.begin(), m.second.end(), 0l) / m.second.size();
+    if (meanTime < optimalTraversalTime) {
+      optimalTraversalTime = meanTime;
+      optimalTraversalOption = m.first;
+    }
+  }
+
+  // sanity check
+  if (optimalTraversalTime == std::numeric_limits<long>::max()) {
+    utils::ExceptionHandler::exception("TraversalSelector: Nothing was faster than max long! o_O");
+  }
+
+  // Assumption: the fastest traversal is applicable :O
+  auto optimalTraversal =
+      generateTraversal<PairwiseFunctor, useSoA, useNewton3>(optimalTraversalOption, pairwiseFunctor);
+
+  _optimalTraversalOptions = optimalTraversal->getTraversalType();
+  AutoPasLog(debug, "Selected traversal {}", _optimalTraversalOptions);
+
+  return optimalTraversal;
+}
+
+template <class ParticleCell>
+template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::findFastestMedianTraversal(
+    PairwiseFunctor &pairwiseFunctor) {
+  // Time measure strategy
+  if (_traversalTimes.empty()) {
+    utils::ExceptionHandler::exception("TraversalSelector: Trying to determine fastest traversal before measuring!");
+  }
+
+  // choose the fastest traversal and reset timings
+  // reorder measurements
+  // TODO: maybe directly save measurements in this way?
+  std::unordered_map<TraversalOptions, std::vector<long>> measurementsMap;
+  for (auto &&t : _traversalTimes) {
+    measurementsMap[t.traversal].push_back(t.time);
+  }
+
+  // measurements are not needed anymore
+  _traversalTimes.clear();
+
+  TraversalOptions optimalTraversalOption = TraversalOptions::c08;
+  long optimalTraversalTime = std::numeric_limits<long>::max();
+  for (auto &&m : measurementsMap) {
+    std::sort(m.second.begin(), m.second.end());
+    long medianTime = m.second[m.second.size() / 2];
+    if (medianTime < optimalTraversalTime) {
+      optimalTraversalTime = medianTime;
+      optimalTraversalOption = m.first;
+    }
+  }
+
+  // sanity check
+  if (optimalTraversalTime == std::numeric_limits<long>::max()) {
+    utils::ExceptionHandler::exception("TraversalSelector: Nothing was faster than max long! o_O");
+  }
+
+  // Assumption: the fastest traversal is applicable :O
+  auto optimalTraversal =
+      generateTraversal<PairwiseFunctor, useSoA, useNewton3>(optimalTraversalOption, pairwiseFunctor);
+
+  _optimalTraversalOptions = optimalTraversal->getTraversalType();
+  AutoPasLog(debug, "Selected traversal {}", _optimalTraversalOptions);
+
+  return optimalTraversal;
+}
+
 }  // namespace autopas

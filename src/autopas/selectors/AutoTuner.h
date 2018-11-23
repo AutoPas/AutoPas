@@ -22,7 +22,7 @@ enum DataLayoutOption { aos, soa };
 
 /**
  * Possible choices for the auto tuner.
- * @TODO: implement more options and then use this enum! :D
+ * @todo: implement more options and then use this enum! :D
  */
 enum TuningStrategy {
   /**
@@ -30,7 +30,6 @@ enum TuningStrategy {
    */
   timeMeasuring
 };
-
 
 /**
  * Automated tuner for optimal iteration performance.
