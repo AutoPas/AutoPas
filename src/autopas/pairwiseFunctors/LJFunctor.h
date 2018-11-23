@@ -199,7 +199,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           double upot = _epsilon24 * lj12m6 + _shift6;
 
           // these calculations assume that this functor is not called for halo cells!
-          upotSum += upot;
+          upotSum += upot * mask;
           virialSumX += virialx;
           virialSumY += virialy;
           virialSumZ += virialz;
@@ -309,7 +309,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           double virialx = drx * fx;
           double virialy = dry * fy;
           double virialz = drz * fz;
-          double upot = _epsilon24 * lj12m6 + _shift6;
+          double upot = (_epsilon24 * lj12m6 + _shift6) * mask;
 
           if (_duplicatedCalculations) {
             // for non-newton3 this division is in the post-processing step.
