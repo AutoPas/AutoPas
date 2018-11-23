@@ -196,10 +196,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           double virialx = drx * fx;
           double virialy = dry * fy;
           double virialz = drz * fz;
-          double upot = _epsilon24 * lj12m6 + _shift6;
+          double upot = (_epsilon24 * lj12m6 + _shift6) * mask;
 
           // these calculations assume that this functor is not called for halo cells!
-          upotSum += upot * mask;
+          upotSum += upot;
           virialSumX += virialx;
           virialSumY += virialy;
           virialSumZ += virialz;
