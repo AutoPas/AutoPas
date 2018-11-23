@@ -18,7 +18,7 @@ namespace autopas {
  * Possible choices for the particle container type.
  */
 enum ContainerOptions {
-  directSum = 0,
+  directSumContainer = 0,
   linkedCells = 1,
   verletLists = 2,
 };

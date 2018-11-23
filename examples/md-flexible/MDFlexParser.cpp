@@ -49,7 +49,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         // delete default argument
         containerOptions.clear();
         if (strArg.find("direct") != string::npos or strArg.find("ds") != string::npos) {
-          containerOptions.push_back(autopas::directSum);
+          containerOptions.push_back(autopas::directSumContainer);
         }
         if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
           containerOptions.push_back(autopas::linkedCells);
@@ -268,7 +268,7 @@ void MDFlexParser::printConfig() {
        << ":  ";
   for (auto &op : containerOptions) {
     switch (op) {
-      case autopas::ContainerOptions::directSum: {
+      case autopas::ContainerOptions::directSumContainer: {
         cout << "DirectSum, ";
         break;
       }

@@ -8,7 +8,7 @@
 
 // must be TEST_F because the logger which is called in the LC constructor is part of the fixture
 TEST_F(ContainerSelectorTest, testGetOptimalContainerOneOption) {
-  std::vector<autopas::ContainerOptions> optionVectorDir = {autopas::ContainerOptions::directSum};
+  std::vector<autopas::ContainerOptions> optionVectorDir = {autopas::ContainerOptions::directSumContainer};
   std::vector<autopas::ContainerOptions> optionVectorLC = {autopas::ContainerOptions::linkedCells};
   std::vector<autopas::ContainerOptions> optionVectorVerlet = {autopas::ContainerOptions::verletLists};
 
@@ -41,7 +41,7 @@ TEST_F(ContainerSelectorTest, testNextContainer) {
   const unsigned int verletRebuildFrequency = 1;
 
   std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists,
-                                                             autopas::ContainerOptions::directSum,
+                                                             autopas::ContainerOptions::directSumContainer,
                                                              autopas::ContainerOptions::linkedCells};
   std::vector<autopas::TraversalOptions> traversalOptions = {autopas::TraversalOptions::c08};
   autopas::ContainerSelector<Particle, FPCell> containerSelector(
@@ -51,7 +51,7 @@ TEST_F(ContainerSelectorTest, testNextContainer) {
   EXPECT_EQ(autopas::ContainerOptions::verletLists, container->getContainerType());
 
   container = containerSelector.selectNextContainer();
-  EXPECT_EQ(autopas::ContainerOptions::directSum, container->getContainerType());
+  EXPECT_EQ(autopas::ContainerOptions::directSumContainer, container->getContainerType());
 
   container = containerSelector.selectNextContainer();
   EXPECT_EQ(autopas::ContainerOptions::linkedCells, container->getContainerType());
@@ -70,7 +70,7 @@ TEST_F(ContainerSelectorTest, testSelectOptimalContainer) {
   const unsigned int verletRebuildFrequency = 1;
 
   std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists,
-                                                             autopas::ContainerOptions::directSum,
+                                                             autopas::ContainerOptions::directSumContainer,
                                                              autopas::ContainerOptions::linkedCells};
   std::vector<autopas::TraversalOptions> traversalOptions = {autopas::TraversalOptions::c08};
   autopas::ContainerSelector<Particle, FPCell> containerSelector(

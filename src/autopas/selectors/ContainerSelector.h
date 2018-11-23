@@ -18,7 +18,7 @@ namespace autopas {
 /**
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
-static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::directSum, ContainerOptions::linkedCells,
+static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::directSumContainer, ContainerOptions::linkedCells,
                                                             ContainerOptions::verletLists};
 
 /**
@@ -110,7 +110,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> container;
 
   switch (containerChoice) {
-    case directSum: {
+    case directSumContainer: {
       container = std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
       break;
     }
@@ -180,7 +180,7 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
 
   // choose the fastest container and reset timings
   // Initialize with something. This will be overridden.
-  ContainerOptions optimalContainerOption = ContainerOptions::directSum;
+  ContainerOptions optimalContainerOption = ContainerOptions::directSumContainer;
   long optimalContainerTime = std::numeric_limits<long>::max();
   AutoPasLog(debug, "ContainerSelector: Collected container times:");
   for (auto &&c : _containerTimes) {
