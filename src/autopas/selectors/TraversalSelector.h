@@ -9,6 +9,7 @@
 #include <autopas/containers/cellPairTraversals/DummyTraversal.h>
 #include <array>
 #include <vector>
+#include <autopas/containers/cellPairTraversals/DirectSumTraversal.h>
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
@@ -22,7 +23,7 @@ namespace autopas {
 /**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
-static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced};
+static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced, TraversalOptions::directSum};
 
 /**
  * Selector for a container traversal.
@@ -138,6 +139,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     TraversalOptions traversalType, PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
   switch (traversalType) {
+    case TraversalOptions::directSum: {
+      traversal =
+          std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);
+      break;
+    }
     case TraversalOptions::c08: {
       traversal =
           std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);

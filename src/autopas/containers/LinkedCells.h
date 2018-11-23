@@ -185,7 +185,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), traversalOptions);
+    std::vector<TraversalOptions> allowedAndApplicable;
+
+    std::sort(traversalOptions.begin(), traversalOptions.end());
+    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(), traversalOptions.begin(),
+                          traversalOptions.end(), std::back_inserter(allowedAndApplicable));
+    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), allowedAndApplicable);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

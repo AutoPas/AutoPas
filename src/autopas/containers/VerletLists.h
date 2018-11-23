@@ -246,6 +246,11 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
+//    std::vector<TraversalOptions> allowedAndApplicable;
+//
+//    std::sort(traversalOptions.begin(), traversalOptions.end());
+//    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(), traversalOptions.begin(),
+//                          traversalOptions.end(), std::back_inserter(allowedAndApplicable));
     // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
     return TraversalSelector<ParticleCell>({0, 0, 0}, {dummyTraversal});
   }
