@@ -83,12 +83,12 @@ TEST_F(TraversalSelectorTest, testNextTraversal) {
 TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestAbs) {
   auto strategy = autopas::SelectorStrategy::fastestAbs;
 
-  std::unordered_map<autopas::TraversalOptions, std::vector<long>> measurements;
+  mapOptionsTime measurements;
 
   measurements[autopas::TraversalOptions::c08] = {22, 14};
   measurements[autopas::TraversalOptions::sliced] = {30, 10};
 
-  std::unordered_map<autopas::TraversalOptions, std::vector<long>> ignoredMeasurements;
+  mapOptionsTime ignoredMeasurements;
   ignoredMeasurements[autopas::TraversalOptions::c08] = {1};
 
   testFastest(strategy, measurements, autopas::TraversalOptions::sliced, ignoredMeasurements);
@@ -97,7 +97,7 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestAbs) {
 TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMean) {
   auto strategy = autopas::SelectorStrategy::fastestMean;
 
-  std::unordered_map<autopas::TraversalOptions, std::vector<long>> measurements;
+  mapOptionsTime measurements;
 
   measurements[autopas::TraversalOptions::c08] = {2, 20};
   measurements[autopas::TraversalOptions::sliced] = {5, 7};
@@ -108,7 +108,7 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMean) {
 TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMedian) {
   auto strategy = autopas::SelectorStrategy::fastestMedian;
 
-  std::unordered_map<autopas::TraversalOptions, std::vector<long>> measurements;
+  mapOptionsTime measurements;
 
   measurements[autopas::TraversalOptions::c08] = {4, 1, 5};
   measurements[autopas::TraversalOptions::sliced] = {2, 3, 3, 100};
@@ -116,10 +116,8 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMedian) {
   testFastest(strategy, measurements, autopas::TraversalOptions::sliced);
 }
 
-void TraversalSelectorTest::testFastest(
-    autopas::SelectorStrategy strategy, std::unordered_map<autopas::TraversalOptions, std::vector<long>> measurements,
-    autopas::TraversalOptions expectedBest,
-    std::unordered_map<autopas::TraversalOptions, std::vector<long>> ignoredMeasurements) {
+void TraversalSelectorTest::testFastest(autopas::SelectorStrategy strategy, mapOptionsTime measurements,
+                                        autopas::TraversalOptions expectedBest, mapOptionsTime ignoredMeasurements) {
   MFunctor functor;
 
   std::vector<autopas::TraversalOptions> optionVector;

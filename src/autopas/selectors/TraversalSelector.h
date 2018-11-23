@@ -6,18 +6,19 @@
 
 #pragma once
 
-#include <autopas/containers/cellPairTraversals/DummyTraversal.h>
 #include <array>
 #include <numeric>
+#include <unordered_map>
 #include <vector>
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
+#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
-//#include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Logger.h"
+#include "autopas/utils/TrivialHash.h"
 
 namespace autopas {
 
@@ -189,7 +190,6 @@ template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::selectOptimalTraversal(
     SelectorStrategy strategy, PairwiseFunctor &pairwiseFunctor) {
-
   // Time measure strategy
   if (_traversalTimes.empty()) {
     utils::ExceptionHandler::exception("TraversalSelector: Trying to determine fastest traversal before measuring!");
@@ -292,11 +292,10 @@ void TraversalSelector<ParticleCell>::findFastestAbsTraversal() {
 
 template <class ParticleCell>
 void TraversalSelector<ParticleCell>::findFastestMeanTraversal() {
-
   // choose the fastest traversal and reset timings
   // reorder measurements
   // TODO: maybe directly save measurements in this way?
-  std::map<TraversalOptions, std::vector<long>> measurementsMap;
+  std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
   for (auto &&t : _traversalTimes) {
     measurementsMap[t.traversal].push_back(t.time);
   }
@@ -321,7 +320,7 @@ void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
   // choose the fastest traversal and reset timings
   // reorder measurements
   // TODO: maybe directly save measurements in this way?
-  std::unordered_map<TraversalOptions, std::vector<long>> measurementsMap;
+  std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
   for (auto &&t : _traversalTimes) {
     measurementsMap[t.traversal].push_back(t.time);
   }

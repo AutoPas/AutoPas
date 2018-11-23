@@ -18,8 +18,8 @@ class TraversalSelectorTest : public AutoPasTestBase {
   TraversalSelectorTest() = default;
   ~TraversalSelectorTest() override = default;
 
-  void testFastest(autopas::SelectorStrategy strategy,
-                   std::unordered_map<autopas::TraversalOptions, std::vector<long>> measurements,
-                   autopas::TraversalOptions expectedBest,
-                   std::unordered_map<autopas::TraversalOptions, std::vector<long>> ignoredMeasurements = {});
+  using mapOptionsTime = std::unordered_map<autopas::TraversalOptions, std::vector<long>, autopas::TrivialHash>;
+
+  void testFastest(autopas::SelectorStrategy strategy, mapOptionsTime measurements,
+                   autopas::TraversalOptions expectedBest, mapOptionsTime ignoredMeasurements = {});
 };
