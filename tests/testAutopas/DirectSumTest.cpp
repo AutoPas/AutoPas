@@ -7,7 +7,7 @@
 #include "DirectSumTest.h"
 
 TEST_F(DirectSumTest, testParticleAdding) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
+  autopas::DirectSumContainer<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
                                                                                                 {10., 10., 10.}, 1.);
   int id = 1;
   for (double x : {-.5, 0., 5., 9.999, 10., 10.5}) {
@@ -28,7 +28,7 @@ TEST_F(DirectSumTest, testParticleAdding) {
 }
 
 TEST_F(DirectSumTest, testGetNumParticles) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
+  autopas::DirectSumContainer<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
                                                                                                 {10., 10., 10.}, 1.);
   EXPECT_EQ(directSum.getNumParticles(), 0);
 
@@ -44,7 +44,7 @@ TEST_F(DirectSumTest, testGetNumParticles) {
 }
 
 TEST_F(DirectSumTest, testDeleteAllParticles) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
+  autopas::DirectSumContainer<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
                                                                                                 {10., 10., 10.}, 1.);
   EXPECT_EQ(directSum.getNumParticles(), 0);
 
@@ -66,7 +66,7 @@ TEST_F(DirectSumTest, testIsContainerUpdateNeeded) {
   std::array<double, 3> boxMin{0, 0, 0};
   std::array<double, 3> boxMax{10, 10, 10};
   double cutoff = 1.;
-  autopas::DirectSum<Particle, FPCell> container(boxMin, boxMax, cutoff);
+  autopas::DirectSumContainer<Particle, FPCell> container(boxMin, boxMax, cutoff);
 
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 
@@ -84,7 +84,7 @@ TEST_F(DirectSumTest, testIsContainerUpdateNeeded) {
 }
 
 TEST_F(DirectSumTest, testUpdateContainerCloseToBoundary) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
+  autopas::DirectSumContainer<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
                                                                                                 {10., 10., 10.}, 1.);
   int id = 1;
   for (double x : {0., 5., 9.999}) {
@@ -125,7 +125,7 @@ TEST_F(DirectSumTest, testUpdateContainerCloseToBoundary) {
 }
 
 TEST_F(DirectSumTest, testUpdateContainerHalo) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
+  autopas::DirectSumContainer<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
                                                                                                 {3., 3., 3.}, 1.);
 
   autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);

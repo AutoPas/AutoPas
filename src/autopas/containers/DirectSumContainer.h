@@ -27,7 +27,7 @@ namespace autopas {
  * @tparam ParticleCell type of the cell that stores the particle
  */
 template <class Particle, class ParticleCell>
-class DirectSum : public ParticleContainer<Particle, ParticleCell> {
+class DirectSumContainer : public ParticleContainer<Particle, ParticleCell> {
  public:
   /**
    * Constructor of the DirectSum class
@@ -35,7 +35,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param boxMax
    * @param cutoff
    */
-  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
+  DirectSumContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
@@ -56,7 +56,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getCell()->addParticle(p);
     } else {
-      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box.\n" +
+      utils::ExceptionHandler::exception("DirectSumContainer: trying to add particle that is not in the bounding box.\n" +
                                          p.toString());
     }
   }
@@ -66,7 +66,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
       getHaloCell()->addParticle(p);
     } else {  // particle is not outside of own box
       utils::ExceptionHandler::exception(
-          "DirectSum: trying to add particle that is not OUTSIDE of the "
+          "DirectSumContainer: trying to add particle that is not OUTSIDE of the "
           "bounding box.\n" +
           p.toString());
     }
@@ -101,7 +101,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void updateContainer() override {
     if (getHaloCell()->isNotEmpty()) {
       utils::ExceptionHandler::exception(
-          "DirectSum: Halo particles still present when updateContainer was called. Found {} particles",
+          "DirectSumContainer: Halo particles still present when updateContainer was called. Found {} particles",
           getHaloCell()->numParticles());
     }
     for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {

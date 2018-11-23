@@ -23,7 +23,7 @@ typedef autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticl
 //    autopas::FullParticleCell<autopas::sph::SPHParticle>>
 //    Container;
 
-// typedef autopas::DirectSum<
+// typedef autopas::DirectSumContainer<
 //    autopas::sph::SPHParticle,
 //    autopas::FullParticleCell<autopas::sph::SPHParticle>>
 //    Container;

@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
       boxMin, boxMax, cutoff);
 
-  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
+  autopas::DirectSumContainer<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
       boxMin, boxMax, cutoff);
 
   autopas::sph::SPHCalcDensityFunctor densfunc;

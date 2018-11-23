@@ -8,7 +8,7 @@
 
 #include <array>
 #include <vector>
-#include "autopas/containers/DirectSum.h"
+#include "autopas/containers/DirectSumContainer.h"
 #include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/VerletLists.h"
@@ -111,7 +111,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
 
   switch (containerChoice) {
     case directSumContainer: {
-      container = std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
+      container = std::make_unique<DirectSumContainer<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
       break;
     }
     case linkedCells: {
