@@ -80,8 +80,10 @@ TEST_F(TraversalSelectorTest, testNextTraversal) {
   }
 }
 
-TEST_F(TraversalSelectorTest, testSelectOptimalTraversal) {
+TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestAbs) {
   MFunctor functor;
+
+  auto strategy = autopas::SelectorStrategy::fastestAbs;
 
   std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
                                                          autopas::TraversalOptions::c08};
@@ -89,9 +91,7 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversal) {
   constexpr size_t domainSize = 1000;
   autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
 
-  EXPECT_THROW(
-      (traversalSelector.selectOptimalTraversal<MFunctor, true, true>(autopas::SelectorStrategy::fastestAbs, functor)),
-      std::exception);
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
 
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
   traversalSelector.addTimeMeasurement(functor, optionVector[0], 20);
@@ -103,12 +103,64 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversal) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillOnce(Return(false));
   traversalSelector.addTimeMeasurement(functor, optionVector[0], 1);
 
-  auto traversal =
-      traversalSelector.selectOptimalTraversal<MFunctor, true, true>(autopas::SelectorStrategy::fastestAbs, functor);
+  auto traversal = traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor);
   EXPECT_EQ(optionVector[1], traversal->getTraversalType());
 
   // select optimal traversal should delete all measurements
-  EXPECT_THROW(
-      (traversalSelector.selectOptimalTraversal<MFunctor, true, true>(autopas::SelectorStrategy::fastestAbs, functor)),
-      std::exception);
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
+}
+
+TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMean) {
+  MFunctor functor;
+
+  auto strategy = autopas::SelectorStrategy::fastestMean;
+
+  std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
+                                                         autopas::TraversalOptions::c08};
+
+  constexpr size_t domainSize = 1000;
+  autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
+
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
+
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
+  traversalSelector.addTimeMeasurement(functor, optionVector[0], 2);
+  traversalSelector.addTimeMeasurement(functor, optionVector[0], 20);
+  traversalSelector.addTimeMeasurement(functor, optionVector[1], 5);
+  traversalSelector.addTimeMeasurement(functor, optionVector[1], 7);
+
+  auto traversal = traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor);
+  EXPECT_EQ(optionVector[1], traversal->getTraversalType());
+
+  // select optimal traversal should delete all measurements
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
+}
+
+TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMedian) {
+  MFunctor functor;
+
+  auto strategy = autopas::SelectorStrategy::fastestMedian;
+
+  std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
+                                                         autopas::TraversalOptions::c08};
+
+  constexpr size_t domainSize = 1000;
+  autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
+
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
+
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
+  traversalSelector.addTimeMeasurement(functor, optionVector[0], 1);
+  traversalSelector.addTimeMeasurement(functor, optionVector[0], 4);
+  traversalSelector.addTimeMeasurement(functor, optionVector[0], 5);
+  traversalSelector.addTimeMeasurement(functor, optionVector[1], 2);
+  traversalSelector.addTimeMeasurement(functor, optionVector[1], 3);
+  traversalSelector.addTimeMeasurement(functor, optionVector[1], 4);
+  traversalSelector.addTimeMeasurement(functor, optionVector[1], 100);
+
+  auto traversal = traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor);
+  EXPECT_EQ(optionVector[1], traversal->getTraversalType());
+
+  // select optimal traversal should delete all measurements
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
 }
