@@ -46,12 +46,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @return Vector of all applicable traversal options.
    */
   static const std::vector<TraversalOptions> &allDSApplicableTraversals() {
-    // @FIXME This is a workaround because this container does not yet use traversals like it should
-    static const std::vector<TraversalOptions> v{TraversalOptions::dummyTraversal};
+    static const std::vector<TraversalOptions> v{TraversalOptions::directSum};
     return v;
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::directSum; }
+  ContainerOptions getContainerType() override { return ContainerOptions::directSumContainer; }
 
   void addParticle(Particle &p) override {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
@@ -80,15 +79,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-      cellFunctor.processCell(*getCell());
-      cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
-      cellFunctor.processCell(*getCell());
-      cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    }
+    AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
+    traversal->traverseCellPairs(this->_cells);
   }
 
   /**
@@ -96,18 +88,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+    AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
     f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 
-    if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
-      cellFunctor.processCell(*getCell());
-      cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-      cellFunctor.processCell(*getCell());
-      cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    }
+    traversal->traverseCellPairs(this->_cells);
 
     f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
     f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
@@ -143,8 +128,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
   TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
     // direct sum technically consists of two cells (owned + halo)
-    // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
-    return TraversalSelector<ParticleCell>({2, 0, 0}, {dummyTraversal});
+    return TraversalSelector<ParticleCell>({2, 0, 0}, traversalOptions);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
