@@ -181,9 +181,9 @@ class SPHCalcHydroForceFunctor
         // gradW_ij;
 
         const double massscale2 = scale * massptr[i];
-        accXptr[j] += gradW_ij[0] * massscale;
-        accYptr[j] += gradW_ij[1] * massscale;
-        accZptr[j] += gradW_ij[2] * massscale;
+        accXptr[j] += gradW_ij[0] * massscale2;
+        accYptr[j] += gradW_ij[1] * massscale2;
+        accZptr[j] += gradW_ij[2] * massscale2;
         // Newton3, gradW_ij = -gradW_ji
 
         double scale2i = massptr[j] * (pressureptr[i] / (densityptr[i] * densityptr[i]) + 0.5 * AV);
