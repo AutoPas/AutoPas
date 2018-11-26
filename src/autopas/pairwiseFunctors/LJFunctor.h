@@ -334,8 +334,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           }
         }
         const int threadnum = autopas_get_thread_num();
-        // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
-        // AoS)
+        
         _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
         _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
         _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
