@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include <autopas/containers/cellPairTraversals/DirectSumTraversal.h>
 #include <autopas/containers/cellPairTraversals/DummyTraversal.h>
 #include <array>
 #include <vector>
-#include <autopas/containers/cellPairTraversals/DirectSumTraversal.h>
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
@@ -23,7 +23,8 @@ namespace autopas {
 /**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
-static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced, TraversalOptions::directSum};
+static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced,
+                                                            TraversalOptions::directSum};
 
 /**
  * Selector for a container traversal.

@@ -12,9 +12,8 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   std::vector<autopas::ContainerOptions> containers = {autopas::ContainerOptions::verletLists,
                                                        autopas::ContainerOptions::linkedCells,
                                                        autopas::ContainerOptions::directSumContainer};
-  std::vector<autopas::TraversalOptions> traversals = {autopas::TraversalOptions::sliced,
-                                                       autopas::TraversalOptions::c08,
-                                                       autopas::TraversalOptions::directSum};
+  std::vector<autopas::TraversalOptions> traversals = {
+      autopas::TraversalOptions::sliced, autopas::TraversalOptions::c08, autopas::TraversalOptions::directSum};
 
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 42};
   // adaptive domain size so sliced is always applicable.
@@ -31,6 +30,7 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   bool stillTuning = true;
   int i = 0;
   for (; stillTuning; ++i) {
+    std::cout << "ITERATION " << i << std::endl;
     stillTuning = autoTuner.iteratePairwise(&functor, dataLayoutOption);
 
     auto container = autoTuner.getContainer();
@@ -43,24 +43,24 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
     // 4 -> choose best combination -> tuning finished and  normal iteration using optimal combination
     switch (i / numSamples) {
       case 0: {
-        EXPECT_EQ(containers[0], container->getContainerType());
+        ASSERT_EQ(containers[0], container->getContainerType());
         break;
       }
       // only here both traversals are checked
       case 1:
       case 2: {
-        EXPECT_EQ(containers[1], container->getContainerType());
+        ASSERT_EQ(containers[1], container->getContainerType());
         break;
       }
       case 3: {
-        EXPECT_EQ(containers[2], container->getContainerType());
+        ASSERT_EQ(containers[2], container->getContainerType());
         break;
       }
       case 4: {
         // the fastest container might be nondeterministic here due to hardware constrains so just remember it
         // and check if the selector returns the same later
         fastestContainer = container;
-        EXPECT_FALSE(stillTuning) << "tune() returns true(=still tuning) after checking all options!";
+        ASSERT_FALSE(stillTuning) << "tune() returns true(=still tuning) after checking all options!";
         break;
       }
       default:

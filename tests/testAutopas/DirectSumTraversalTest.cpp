@@ -11,13 +11,9 @@
 using ::testing::_;
 using ::testing::AtLeast;
 
-TEST_F(DirectSumTraversalTest, testTraversalAoS) {
-  testTraversal(false);
-}
+TEST_F(DirectSumTraversalTest, testTraversalAoS) { testTraversal(false); }
 
-TEST_F(DirectSumTraversalTest, testTraversalSoA) {
-  testTraversal(true);
-}
+TEST_F(DirectSumTraversalTest, testTraversalSoA) { testTraversal(true); }
 
 void DirectSumTraversalTest::testTraversal(bool useSoA) {
   size_t numParticles = 20;
@@ -48,8 +44,7 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
     // domain SoA with halo
     EXPECT_CALL(functor, SoAFunctor(_, _, true)).Times(1);
     traversal.traverseCellPairs(cells);
-  }
-  else {
+  } else {
     autopas::DirectSumTraversal<FPCell, MFunctor, false, true> traversal(&functor);
     // interactions in main cell + interactions with halo.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;

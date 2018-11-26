@@ -15,24 +15,23 @@
  * @param container the container to be used
  * @note The second Argument is variadic such that commas pose no problem.
  */
-#define WithStaticContainerType(container, ...)                                                                     \
-  {                                                                                                                 \
-    auto container_ptr = container.get();                                                                           \
-    if (auto container = dynamic_cast<                                                                              \
-            autopas::LinkedCells<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,             \
-                                 typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType>*>(      \
-            container_ptr)) {                                                                                       \
-      __VA_ARGS__                                                                                                   \
-    } else if (auto container = dynamic_cast<                                                                       \
-                   autopas::VerletLists<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType>*>(   \
-                   container_ptr)) {                                                                                \
-      __VA_ARGS__                                                                                                   \
-    } else if (auto container = dynamic_cast<                                                                       \
-                   autopas::DirectSumContainer<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,        \
-                                      typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType>*>( \
-                   container_ptr)) {                                                                                \
-      __VA_ARGS__                                                                                                   \
-    } else {                                                                                                        \
-      autopas::utils::ExceptionHandler::exception("wrong type of container in StaticSelectorMacros.h");             \
-    }                                                                                                               \
+#define WithStaticContainerType(container, ...)                                                                   \
+  {                                                                                                               \
+    auto container_ptr = container.get();                                                                         \
+    if (auto container = dynamic_cast<                                                                            \
+            autopas::LinkedCells<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,           \
+                                 typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType>*>(    \
+            container_ptr)) {                                                                                     \
+      __VA_ARGS__                                                                                                 \
+    } else if (auto container = dynamic_cast<                                                                     \
+                   autopas::VerletLists<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType>*>( \
+                   container_ptr)) {                                                                              \
+      __VA_ARGS__                                                                                                 \
+    } else if (auto container = dynamic_cast<autopas::DirectSumContainer<                                         \
+                   typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,                         \
+                   typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType>*>(container_ptr)) { \
+      __VA_ARGS__                                                                                                 \
+    } else {                                                                                                      \
+      autopas::utils::ExceptionHandler::exception("wrong type of container in StaticSelectorMacros.h");           \
+    }                                                                                                             \
   }

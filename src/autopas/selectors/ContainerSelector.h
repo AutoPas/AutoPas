@@ -18,8 +18,8 @@ namespace autopas {
 /**
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
-static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::directSumContainer, ContainerOptions::linkedCells,
-                                                            ContainerOptions::verletLists};
+static std::vector<ContainerOptions> allContainerOptions = {
+    ContainerOptions::directSumContainer, ContainerOptions::linkedCells, ContainerOptions::verletLists};
 
 /**
  * Selector for a particle container.

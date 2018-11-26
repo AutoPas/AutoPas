@@ -10,9 +10,6 @@
 #include "testingHelpers/commonTypedefs.h"
 
 class DirectSumTraversalTest : public AutoPasTestBase {
-
  public:
   void testTraversal(bool useSoA);
 };
-
-

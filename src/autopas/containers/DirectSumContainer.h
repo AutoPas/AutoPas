@@ -56,8 +56,8 @@ class DirectSumContainer : public ParticleContainer<Particle, ParticleCell> {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getCell()->addParticle(p);
     } else {
-      utils::ExceptionHandler::exception("DirectSumContainer: trying to add particle that is not in the bounding box.\n" +
-                                         p.toString());
+      utils::ExceptionHandler::exception(
+          "DirectSumContainer: trying to add particle that is not in the bounding box.\n" + p.toString());
     }
   }
 
@@ -130,8 +130,8 @@ class DirectSumContainer : public ParticleContainer<Particle, ParticleCell> {
     std::vector<TraversalOptions> allowedAndApplicable;
 
     std::sort(traversalOptions.begin(), traversalOptions.end());
-    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(), traversalOptions.begin(),
-                          traversalOptions.end(), std::back_inserter(allowedAndApplicable));
+    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
+                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelector<ParticleCell>({2, 0, 0}, allowedAndApplicable);
   }
