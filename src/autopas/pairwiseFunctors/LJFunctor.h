@@ -324,17 +324,17 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
       if (calculateGlobals) {
         double energyfactor = 1.;
-        if(_duplicatedCalculations){
+        if (_duplicatedCalculations) {
           // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
           // that we do not add the energy multiple times!
           energyfactor = isHaloCell1 ? 0. : 1.;
-          if(newton3){
+          if (newton3) {
             energyfactor += isHaloCell2 ? 0. : 1.;
             energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
           }
         }
         const int threadnum = autopas_get_thread_num();
-        
+
         _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
         _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
         _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
