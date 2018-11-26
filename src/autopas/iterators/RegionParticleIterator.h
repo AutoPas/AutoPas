@@ -45,7 +45,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
         _indicesInRegion(indicesInRegion),
         _currentRegionIndex(autopas_get_thread_num()) {
     this->_vectorOfCells = cont;
-    if (_indicesInRegion.size() >= (size_t)autopas_get_num_threads()) {
+    if (_indicesInRegion.size() > (size_t)autopas_get_thread_num()) {
       this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[autopas_get_thread_num()];
       this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
     } else {
