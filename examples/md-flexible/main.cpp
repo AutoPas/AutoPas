@@ -10,7 +10,7 @@
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../md/mdutils.h"  // includes autopas.h
+#include "PrintableMolecule.h"  // includes autopas.h
 #include "MDFlexParser.h"
 #include "autopas/AutoPas.h"
 
