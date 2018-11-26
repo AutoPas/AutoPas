@@ -205,6 +205,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (strArg.find("sli") != string::npos) {
           traversalOptions.push_back(autopas::TraversalOptions::sliced);
         }
+        if (strArg.find("dir") != string::npos) {
+          traversalOptions.push_back(autopas::TraversalOptions::directSum);
+        }
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
           cerr << "Please use 'c08' or 'sliced'!" << endl;
