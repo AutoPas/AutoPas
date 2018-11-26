@@ -197,7 +197,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDo
 
   int particlesTouched = 0;
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+: particlesTouched)
+#pragma omp parallel reduction(+ : particlesTouched)
 #endif
   for (auto iterator = lcContainer.getRegionIterator(regionOfInterstMin, regionOfInterstMax); iterator.isValid();
        ++iterator) {
@@ -251,7 +251,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDoma
 
   int particlesTouched = 0;
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+: particlesTouched)
+#pragma omp parallel reduction(+ : particlesTouched)
 #endif
   for (auto iterator = dsContainer.getRegionIterator(regionOfInterstMin, regionOfInterstMax); iterator.isValid();
        ++iterator) {
@@ -367,7 +367,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
   int i = 0;
   // touch them using the regionIterator
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+: i)
+#pragma omp parallel reduction(+ : i)
 #endif
   for (auto iterator = container.getRegionIterator(_regionMin, _regionMax); iterator.isValid(); ++iterator) {
     iterator->touch();
@@ -492,7 +492,7 @@ TEST_F(RegionParticleIteratorTest, testVerletRegionParticleIteratorSparseDomain)
 
   int particlesTouched = 0;
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+: particlesTouched)
+#pragma omp parallel reduction(+ : particlesTouched)
 #endif
   for (auto iterator = vlContainer.getRegionIterator(regionOfInterstMin, regionOfInterstMax); iterator.isValid();
        ++iterator) {
