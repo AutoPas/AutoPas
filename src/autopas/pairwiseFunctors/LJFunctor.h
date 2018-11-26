@@ -258,10 +258,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         return;
       }*/
     }
-    const double energyfactor =
-        _duplicatedCalculations
-            ? (((isHaloCell1 ? 0. : 1.) + (isHaloCell2 or not newton3 ? 0. : 1.)) * (newton3 ? 0.5 : 1.))
-            : 1.;
     const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
@@ -327,6 +323,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       fz1ptr[i] += fzacc;
 
       if (calculateGlobals) {
+        double energyfactor = 1.;
+        if(_duplicatedCalculations){
+          // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
+          // that we do not add the energy multiple times!
+          energyfactor = isHaloCell1 ? 0. : 1.;
+          if(newton3){
+            energyfactor += isHaloCell2 ? 0. : 1.;
+            energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
+          }
+        }
         const int threadnum = autopas_get_thread_num();
         // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
         // AoS)
