@@ -225,7 +225,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -258,7 +258,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         return;
       }*/
     }
-
+    const double energyfactor =
+        _duplicatedCalculations ? (((isHaloCell1 ? 0. : 1.) + (isHaloCell2 ? 0. : 1.)) * (newton3 ? 0.5 : 1.)) : 1.;
+    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
@@ -283,14 +285,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > _cutoffsquare) ? 0. : 1.;
+        const double mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = _sigmasquare * invdr2;
+        const double lj2 = sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -309,36 +311,12 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           double virialx = drx * fx;
           double virialy = dry * fy;
           double virialz = drz * fz;
-          double upot = (_epsilon24 * lj12m6 + _shift6) * mask;
+          double upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          if (_duplicatedCalculations) {
-            // for non-newton3 this division is in the post-processing step.
-            if (newton3) {
-              upot *= 0.5;
-              virialx *= 0.5;
-              virialy *= 0.5;
-              virialz *= 0.5;
-            }
-            if (not isHaloCell1) {
-              upotSum += upot;
-              virialSumX += virialx;
-              virialSumY += virialy;
-              virialSumZ += virialz;
-            }
-            // for non-newton3 the cell interaction in the other direction will be considered in a separate calculation
-            if (newton3 and not isHaloCell2) {
-              upotSum += upot;
-              virialSumX += virialx;
-              virialSumY += virialy;
-              virialSumZ += virialz;
-            }
-          } else {
-            // for non-newton3 we divide by 2 only in the postprocess step!
-            upotSum += upot;
-            virialSumX += virialx;
-            virialSumY += virialy;
-            virialSumZ += virialz;
-          }
+          upotSum += upot * energyfactor;
+          virialSumX += virialx * energyfactor;
+          virialSumY += virialy * energyfactor;
+          virialSumZ += virialz * energyfactor;
         }
       }
 
