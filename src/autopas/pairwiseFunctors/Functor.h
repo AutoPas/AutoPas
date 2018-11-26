@@ -163,14 +163,14 @@ class Functor {
  * @note generates two loaders, one for verlet lists, one for the normal case.
  * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
  */
-#define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, ...)                                                         \
-  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override { __VA_ARGS__ }         \
-  /** @copydoc SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) */                           \
-  template <typename = std::enable_if_t<not std::is_same<                                                         \
-                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>          \
-  void SoALoader(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa, \
-                 size_t offset = 0) {                                                                             \
-    __VA_ARGS__                                                                                                   \
+#define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, ...)                                                            \
+  void SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { __VA_ARGS__ } \
+  /** @copydoc SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) */                              \
+  template <typename = std::enable_if_t<not std::is_same<                                                            \
+                typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>  \
+  void SoALoader(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,                  \
+                 ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {                                            \
+    __VA_ARGS__                                                                                                      \
   }
 
 /**
@@ -179,20 +179,21 @@ class Functor {
  * @param soa name for soa
  * @param offset name for offset
  *
+ * @note ParticleCell and SoAArraysType need defined via typedefs in the functor.
  * @note The last Argument is variadic such that commas pose no problem.
  * @note generates two extractors, one for verlet lists, one for the normal case.
  * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
  */
-#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, ...)                                                         \
-  void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override {            \
-    __VA_ARGS__                                                                                                      \
-  }                                                                                                                  \
-  /** @copydoc SoAExtractor(ParticleCell &, ::autopas::SoA<SoAArraysType> &, size_t) */                              \
-  template <typename = std::enable_if_t<not std::is_same<                                                            \
-                typename VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>             \
-  void SoAExtractor(typename VerletListHelpers<Particle>::VerletListParticleCellType &cell, SoA<SoAArraysType> &soa, \
-                    size_t offset = 0) {                                                                             \
-    __VA_ARGS__                                                                                                      \
+#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, ...)                                                        \
+  void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override {           \
+    __VA_ARGS__                                                                                                     \
+  }                                                                                                                 \
+  /** @copydoc SoAExtractor(ParticleCell &, ::autopas::SoA<SoAArraysType> &, size_t) */                             \
+  template <typename = std::enable_if_t<not std::is_same<                                                           \
+                typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>> \
+  void SoAExtractor(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,              \
+                    ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {                                        \
+    __VA_ARGS__                                                                                                     \
   }
 
 }  // namespace autopas
