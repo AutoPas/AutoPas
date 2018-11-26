@@ -419,8 +419,8 @@ double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; 
 
 string MDFlexParser::getWriteVTK() const { return writeVTK; }
 
-double MDFlexParser::getBoxLength() const {
-  if (boxLength == -1) return ceil(2 * distributionMean);
+double MDFlexParser::getBoxLength() {
+  if (boxLength == -1) boxLength = ceil(2 * distributionMean);
   return boxLength;
 }
 

@@ -21,7 +21,7 @@ class MDFlexParser {
 
   MDFlexParser() = default;
 
-  double getBoxLength() const;
+  double getBoxLength();
   std::vector<autopas::ContainerOptions> getContainerOptions() const;
   double getCutoff() const;
   autopas::DataLayoutOption getDataLayoutOption() const;
