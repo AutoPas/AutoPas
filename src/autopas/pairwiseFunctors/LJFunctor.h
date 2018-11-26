@@ -133,7 +133,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
+    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
       // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
@@ -170,14 +170,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > _cutoffsquare) ? 0. : 1.;
+        const double mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = _sigmasquare * invdr2;
+        const double lj2 = sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -193,10 +193,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         fzptr[j] -= fz;
 
         if (calculateGlobals) {
-          double virialx = drx * fx;
-          double virialy = dry * fy;
-          double virialz = drz * fz;
-          double upot = (_epsilon24 * lj12m6 + _shift6) * mask;
+          const double virialx = drx * fx;
+          const double virialy = dry * fy;
+          const double virialz = drz * fz;
+          const double upot = (epsilon24 * lj12m6 + shift6) * mask;
 
           // these calculations assume that this functor is not called for halo cells!
           upotSum += upot;
