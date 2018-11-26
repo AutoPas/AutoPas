@@ -23,6 +23,10 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class DirectSumTraversal : public CellPairTraversal<ParticleCell> {
  public:
+  /**
+   * Constructor for the DirectSum traversal.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   */
   DirectSumTraversal(PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(
@@ -34,7 +38,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell> {
   bool isApplicable() override;
 
   /**
-   * @copydoc LinkedCells::iteratePairwiseSoA
+   * @copydoc CellPairTraversal::traverseCellPairs()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
