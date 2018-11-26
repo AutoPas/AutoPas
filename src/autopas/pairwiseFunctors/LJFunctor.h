@@ -259,7 +259,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       }*/
     }
     const double energyfactor =
-        _duplicatedCalculations ? (((isHaloCell1 ? 0. : 1.) + (isHaloCell2 ? 0. : 1.)) * (newton3 ? 0.5 : 1.)) : 1.;
+        _duplicatedCalculations
+            ? (((isHaloCell1 ? 0. : 1.) + (isHaloCell2 or not newton3 ? 0. : 1.)) * (newton3 ? 0.5 : 1.))
+            : 1.;
     const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
@@ -313,10 +315,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           double virialz = drz * fz;
           double upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          upotSum += upot * energyfactor;
-          virialSumX += virialx * energyfactor;
-          virialSumY += virialy * energyfactor;
-          virialSumZ += virialz * energyfactor;
+          upotSum += upot;
+          virialSumX += virialx;
+          virialSumY += virialy;
+          virialSumZ += virialz;
         }
       }
 
@@ -328,10 +330,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         const int threadnum = autopas_get_thread_num();
         // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
         // AoS)
-        _aosThreadData[threadnum].upotSum += upotSum;
-        _aosThreadData[threadnum].virialSum[0] += virialSumX;
-        _aosThreadData[threadnum].virialSum[1] += virialSumY;
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+        _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
+        _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
+        _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
+        _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
       }
     }
   }
