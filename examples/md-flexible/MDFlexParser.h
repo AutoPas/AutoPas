@@ -33,6 +33,7 @@ class MDFlexParser {
   bool getMeasureFlops() const;
   spdlog::level::level_enum getLogLevel() const;
   double getParticleSpacing() const;
+  size_t getParticlesTotal() const;
   size_t getParticlesPerDim() const;
   unsigned int getTuningInterval() const;
   string getWriteVTK() const;
@@ -60,6 +61,7 @@ class MDFlexParser {
   spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
   size_t particlesPerDim = 20;
+  size_t particlesTotal = 1000;
   double particleSpacing = .4;
   unsigned int tuningInterval = 100;
   string writeVTK = "";
