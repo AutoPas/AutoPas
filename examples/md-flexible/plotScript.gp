@@ -1,21 +1,21 @@
 #!/usr/bin/gnuplot -p
 
 datafiles = "\
-runtimes_VerletLists_AoS_20_0.3.csv                 \
-runtimes_VerletLists_SoA_20_0.3.csv                 \
 runtimes_DirectSumContainer_AoS.csv                 \
 runtimes_DirectSumContainer_SoA.csv                 \
 runtimes_Linked-Cells_AoS.csv                       \
 runtimes_Linked-Cells_SoA.csv                       \
+runtimes_VerletLists_AoS_20_0.3.csv                 \
+runtimes_VerletLists_SoA_20_0.3.csv                 \
 "
 
 titles = "\
-'Verlet Lists AoS rebuild rate 20, skin 0.3*cutoff' \
-'Verlet Lists SoA rebuild rate 20, skin 0.3*cutoff' \
 'Direct Sum AoS'                                    \
 'Direct Sum SoA'                                    \
 'Linked Cells AoS'                                  \
 'Linked Cells SoA'                                  \
+'Verlet Lists AoS rebuild rate 20, skin 0.3*cutoff' \
+'Verlet Lists SoA rebuild rate 20, skin 0.3*cutoff' \
 "
 
 # list of keywords used for coloring (same keyword in title = same color)
@@ -33,9 +33,9 @@ AoS \
 
 # Names of the columns to be used for plotting and axis labels
 xData = "NumParticles"
-#yData = "MFUPs/s"
+yData = "MFUPs/s"
 #yData = "Time[micros]"
-yData = "SingleIteration[micros]"
+#yData = "SingleIteration[micros]"
 
 # if your data file has no header (shame on you) this would be 0 else the number of header blocks
 dataBlock = 1
@@ -54,7 +54,8 @@ set ylabel yData
 
 set key autotitle columnheader
 #set key bottom right
-set key top left
+set key bottom left
+#set key top left
 set key Left reverse
 
 fontsize="12"
