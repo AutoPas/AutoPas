@@ -376,6 +376,10 @@ void MDFlexParser::printConfig() {
         cout << "sliced, ";
         break;
       }
+      case autopas::TraversalOptions::directSum: {
+        cout << "direct sum, ";
+        break;
+      }
       default:
         break;
     }
