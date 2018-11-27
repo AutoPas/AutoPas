@@ -163,21 +163,32 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   // cont->iteratePairwiseAoS(&flopFunctor);
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
-  autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false> dummyTraversal(
-      {0, 0, 0}, func);
-  if (cont->getContainerType() == autopas::ContainerOptions::linkedCells) {
-    dummyTraversal = autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-        dynamic_cast<
-            autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(
-            cont)
-            ->getCellBlock()
-            .getCellsPerDimensionWithHalo(),
-        func);
+  autopas::CellPairTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>> *traversal;
+
+  switch (cont->getContainerType()) {
+    case autopas::ContainerOptions::linkedCells: {
+      traversal =
+          new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
+              dynamic_cast<autopas::LinkedCells<autopas::sph::SPHParticle,
+                                                autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
+                  ->getCellBlock()
+                  .getCellsPerDimensionWithHalo(),
+              func);
+      break;
+    }
+    case autopas::ContainerOptions::directSumContainer: {
+      traversal =
+          new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
+              func);
+      break;
+    }
+    default:
+      traversal = new autopas::DummyTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>>({0, 0, 0});
   }
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS(func, &dummyTraversal);
+    cont->iteratePairwiseAoS(func, traversal);
   }
   double elapsedTime = t.stop();
 
@@ -187,9 +198,11 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseSoA(func, &dummyTraversal);
+    cont->iteratePairwiseSoA(func, traversal);
   }
   elapsedTime = t.stop();
+
+  delete traversal;
 
   // double flops = flopsPerIteration * numIterations;
 
