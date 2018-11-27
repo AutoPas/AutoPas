@@ -136,9 +136,8 @@ int main(int argc, char **argv) {
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
-      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength,
-                         particleTotal, distributionMean, distributionStdDev,
-                         cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
+      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength, particleTotal, distributionMean,
+                         distributionStdDev, cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
     default:
