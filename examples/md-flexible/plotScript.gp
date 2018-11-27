@@ -1,21 +1,21 @@
 #!/usr/bin/gnuplot -p
 
 datafiles = "\
-output-0-soa.txt \
-output-0.txt \
-output-1-soa.txt \
-output-1.txt \
-output-2-verlet-10-0.2-soa.txt \
-output-2-verlet-10-0.2.txt \
+runtimes_VerletLists_AoS_20_0.3.csv                 \
+runtimes_VerletLists_SoA_20_0.3.csv                 \
+runtimes_DirectSumContainer_AoS.csv                 \
+runtimes_DirectSumContainer_SoA.csv                 \
+runtimes_Linked-Cells_AoS.csv                       \
+runtimes_Linked-Cells_SoA.csv                       \
 "
 
 titles = "\
-'Linked Cells SoA' \
-'Linked Cells AoS' \
-'Direct Sum SoA' \
-'Direct Sum AoS' \
-'Verlet Lists SoA rebuild rate 10, skin 0.2*cutoff' \
-'Verlet Lists AoS rebuild rate 10, skin 0.2*cutoff' \
+'Verlet Lists AoS rebuild rate 20, skin 0.3*cutoff' \
+'Verlet Lists SoA rebuild rate 20, skin 0.3*cutoff' \
+'Direct Sum AoS'                                    \
+'Direct Sum SoA'                                    \
+'Linked Cells AoS'                                  \
+'Linked Cells SoA'                                  \
 "
 
 # list of keywords used for coloring (same keyword in title = same color)
@@ -32,18 +32,20 @@ AoS \
 "
 
 # Names of the columns to be used for plotting and axis labels
-xData = "Number of Molecules"
-yData = "MFUPS"
+xData = "NumParticles"
+#yData = "MFUPs/s"
+#yData = "Time[micros]"
+yData = "SingleIteration[micros]"
 
 # if your data file has no header (shame on you) this would be 0 else the number of header blocks
-dataBlock = 0
+dataBlock = 1
 
 # use this if you are not satisfied with the automatically chosen size
 #set xrange [30:11000]
 #set yrange [0.001:100]
 
-set logscale x 10
-set logscale y 10
+set logscale x 2
+set logscale y 2
 set grid
 
 
@@ -51,8 +53,8 @@ set xlabel xData
 set ylabel yData
 
 set key autotitle columnheader
-set key bottom right
-set key bottom left
+#set key bottom right
+set key top left
 set key Left reverse
 
 fontsize="12"
@@ -106,6 +108,6 @@ plot for [i=1:words(datafiles)] \
     title word(titles, i)
 
 # save margins
-set xrange restore
-set yrange restore
-replot 28000 / x linecolor 'gray'
+#set xrange restore
+#set yrange restore
+#replot 28000 / x linecolor 'gray'
