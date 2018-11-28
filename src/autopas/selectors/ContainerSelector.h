@@ -139,9 +139,6 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
     }
   }
 
-  // Build verlet lists now such that the rebuild time does not count into the measured traversal time.
-  if (containerChoice == verletLists) ((VerletLists<Particle> *)container.get())->rebuild();
-
   return container;
 }
 
