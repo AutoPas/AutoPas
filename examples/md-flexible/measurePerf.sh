@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export LC_NUMERIC=en_US.UTF-8
+
 if [ "$#" -ne 1 ]; then
     echo "Illegal number of parameters"
     echo "Usage: $0 PATH_TO_MD-Flexible"
@@ -44,8 +46,6 @@ do
     for dataLayout in AoS SoA ;
     do
         separate "${dataLayout}"
-
-
 
         for iVL in `seq 0 $(( ${#VLRebuild[@]} - 1 ))` ;
         do
