@@ -60,7 +60,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSumContainer', 'LinkedCells' or VerletLists!" << endl;
+          cerr << "Please use 'DirectSum', 'LinkedCells' or VerletLists!" << endl;
           displayHelp = true;
         }
         break;
@@ -282,7 +282,7 @@ void MDFlexParser::printConfig() {
   for (auto &op : containerOptions) {
     switch (op) {
       case autopas::ContainerOptions::directSumContainer: {
-        cout << "DirectSumContainer, ";
+        cout << "DirectSum, ";
         break;
       }
       case autopas::ContainerOptions::linkedCells: {

@@ -29,7 +29,7 @@ TEST_F(ContainerSelectorTest, testGetOptimalContainerOneOption) {
   auto containerLC = containerSelectorLC.getOptimalContainer();
   auto containerVerlet = containerSelectorVerlet.getOptimalContainer();
 
-  EXPECT_TRUE((dynamic_cast<autopas::DirectSumContainer<Particle, FPCell>*>(containerDir.get())));
+  EXPECT_TRUE((dynamic_cast<autopas::DirectSum<Particle, FPCell>*>(containerDir.get())));
   EXPECT_TRUE((dynamic_cast<autopas::LinkedCells<Particle, FPCell>*>(containerLC.get())));
   EXPECT_TRUE((dynamic_cast<autopas::VerletLists<Particle>*>(containerVerlet.get())));
 }
