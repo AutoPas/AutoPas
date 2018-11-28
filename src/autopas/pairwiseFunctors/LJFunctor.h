@@ -133,6 +133,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    // the local redeclaration of the following values helps the auto-generation of various compilers.
     const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
@@ -244,16 +245,18 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
+    // Checks whether the cells are halo cells.
+    // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
+    // defined. (as of 23.11.2018)
     if (calculateGlobals) {
-      // Checks if the cell is a halo cell, if it is, we skip it.
-      // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
-      // set. (as of 23.11.2018)
       isHaloCell1 |= x1ptr[0] < _lowCorner[0] || x1ptr[0] >= _highCorner[0];
       isHaloCell1 |= y1ptr[0] < _lowCorner[1] || y1ptr[0] >= _highCorner[1];
       isHaloCell1 |= z1ptr[0] < _lowCorner[2] || z1ptr[0] >= _highCorner[2];
       isHaloCell2 |= x2ptr[0] < _lowCorner[0] || x2ptr[0] >= _highCorner[0];
       isHaloCell2 |= y2ptr[0] < _lowCorner[1] || y2ptr[0] >= _highCorner[1];
       isHaloCell2 |= z2ptr[0] < _lowCorner[2] || z2ptr[0] >= _highCorner[2];
+
+      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically correct!
       /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
         return;
       }*/
