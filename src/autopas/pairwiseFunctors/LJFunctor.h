@@ -256,7 +256,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       isHaloCell2 |= y2ptr[0] < _lowCorner[1] || y2ptr[0] >= _highCorner[1];
       isHaloCell2 |= z2ptr[0] < _lowCorner[2] || z2ptr[0] >= _highCorner[2];
 
-      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically correct!
+      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
+      // correct!
       /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
         return;
       }*/
