@@ -165,7 +165,7 @@ class Functor {
  */
 #define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, ...)                                                            \
   void SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { __VA_ARGS__ } \
-  /** @copydoc SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) */                              \
+  /** @copydoc SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) */                   \
   template <typename = std::enable_if_t<not std::is_same<                                                            \
                 typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>  \
   void SoALoader(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,                  \
