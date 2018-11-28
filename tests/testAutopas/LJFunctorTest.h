@@ -33,8 +33,12 @@ class LJFunctorTest : public AutoPasTestBase {
  protected:
   void testAoSNoGlobals(bool newton3);
 
+  enum CellInteractionType { own, pair };
+  void testSoANoGlobals(bool newton3, CellInteractionType interactionType);
+
   enum where_type { inside, boundary, outside };
   void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);
+  void testSoAGlobals(where_type where, bool newton3, bool duplicatedCalculation, CellInteractionType interactionType);
 
   double cutoff;
   double epsilon;

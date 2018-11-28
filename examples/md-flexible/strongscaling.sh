@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export LC_NUMERIC=en_US.UTF-8
 if [ "$#" -ne 1 ]; then
     echo "Illegal number of parameters"
     echo "Usage: $0 PATH_TO_MD-Flexible"

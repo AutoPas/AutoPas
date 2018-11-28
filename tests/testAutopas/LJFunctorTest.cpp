@@ -58,6 +58,122 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   testAoSNoGlobals(newton3);
 }
 
+void LJFunctorTest::testSoANoGlobals(bool newton3, CellInteractionType interactionType) {
+  // test is for the soa functors the forces are calculated correctly
+
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, epsilon, sigma, shift);
+
+  FMCell cell1, cell2;
+  {
+    // particle 1 is always in cell1
+    Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+    cell1.addParticle(p1);
+
+    // The cell of particle 2 depends on the CellInteractionType.
+    Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+    switch (interactionType) {
+      case CellInteractionType::own:
+        // If we interact one cell with itself, it should be in cell1 as well.
+        cell1.addParticle(p2);
+        break;
+      case CellInteractionType::pair:
+        // If we interact a cell pair, it should be in cell2.
+        cell2.addParticle(p2);
+        break;
+      default:
+        FAIL();
+    }
+  }
+
+  // Load the particles into the soa.
+  functor.SoALoader(cell1, cell1._particleSoABuffer);
+  functor.SoALoader(cell2, cell2._particleSoABuffer);
+
+  switch (interactionType) {
+    case CellInteractionType::own:
+      // Interation of one cell with itself
+      functor.SoAFunctor(cell1._particleSoABuffer, newton3);
+      break;
+    case CellInteractionType::pair:
+      // Interation of a cell pair
+      functor.SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+      break;
+  }
+
+  // Extract the particles from the soa
+  functor.SoAExtractor(cell1, cell1._particleSoABuffer);
+  functor.SoAExtractor(cell2, cell2._particleSoABuffer);
+
+  // force of particle 1
+  auto f1 = cell1.begin()->getF();
+
+  EXPECT_NEAR(f1[0], expectedForce[0], absDelta);
+  EXPECT_NEAR(f1[1], expectedForce[1], absDelta);
+  EXPECT_NEAR(f1[2], expectedForce[2], absDelta);
+
+  // force of particle 2
+  std::array<double, 3> f2 = {0., 0., 0.};
+  switch (interactionType) {
+    case CellInteractionType::own:
+      f2 = (++cell1.begin())->getF();
+      break;
+    case CellInteractionType::pair:
+      f2 = cell2.begin()->getF();
+      break;
+  }
+  // if the interactiontype is own, then the forces of the second particle should always be calculated!
+  if (newton3 or interactionType == CellInteractionType::own) {
+    EXPECT_NEAR(f2[0], -expectedForce[0], absDelta);
+    EXPECT_NEAR(f2[1], -expectedForce[1], absDelta);
+    EXPECT_NEAR(f2[2], -expectedForce[2], absDelta);
+  } else {
+    EXPECT_DOUBLE_EQ(f2[0], 0);
+    EXPECT_DOUBLE_EQ(f2[1], 0);
+    EXPECT_DOUBLE_EQ(f2[2], 0);
+  }
+
+  if (interactionType == CellInteractionType::pair) {
+    functor.SoALoader(cell1, cell1._particleSoABuffer);
+    functor.SoALoader(cell2, cell2._particleSoABuffer);
+    functor.SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer);
+
+    f1 = cell1.begin()->getF();
+    f2 = cell2.begin()->getF();
+
+    double factor = newton3 ? 2. : 1.;
+
+    EXPECT_NEAR(f1[0], factor * expectedForce[0], absDelta);
+    EXPECT_NEAR(f1[1], factor * expectedForce[1], absDelta);
+    EXPECT_NEAR(f1[2], factor * expectedForce[2], absDelta);
+
+    EXPECT_NEAR(f2[0], -factor * expectedForce[0], absDelta);
+    EXPECT_NEAR(f2[1], -factor * expectedForce[1], absDelta);
+    EXPECT_NEAR(f2[2], -factor * expectedForce[2], absDelta);
+  }
+}
+
+TEST_F(LJFunctorTest, testSoAFunctorNoGlobalsNoN3Own) {
+  bool newton3 = false;
+  testSoANoGlobals(newton3, own);
+}
+
+TEST_F(LJFunctorTest, testSoAFunctorNoGlobalsN3Own) {
+  bool newton3 = true;
+  testSoANoGlobals(newton3, own);
+}
+
+TEST_F(LJFunctorTest, testSoAFunctorNoGlobalsNoN3Pair) {
+  bool newton3 = false;
+  testSoANoGlobals(newton3, pair);
+}
+
+TEST_F(LJFunctorTest, testSoAFunctorNoGlobalsN3Pair) {
+  bool newton3 = true;
+  testSoANoGlobals(newton3, pair);
+}
+
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   bool duplicatedCalculation = true;
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
@@ -143,6 +259,113 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
     for (where_type where : {inside, boundary, outside}) {
       for (bool newton3 : {false, true}) {
         testAoSGlobals(where, newton3, duplicatedCalculation);
+      }
+    }
+  }
+}
+
+void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
+                                   CellInteractionType interactionType) {
+  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+                                                     duplicatedCalculation);
+  double xOffset;
+  double whereFactor;
+  std::string where_str;
+  switch (where) {
+    case inside:
+      xOffset = 0.;
+      whereFactor = 1.;
+      where_str = "inside";
+      break;
+    case boundary:
+      xOffset = 4.9;
+      // if there are no duplicated calculations all calculations count, therefore factor = 1
+      // if there are duplicated calculations there shouldn't be only a partial (factor 0.5) contribution to the energy
+      // if one particle is inside and one outside
+      whereFactor = duplicatedCalculation ? 0.5 : 1;
+      where_str = "boundary";
+      break;
+    case outside:
+      xOffset = 5.0;
+      // if there are no duplicated calculations all calculations count, therefore factor = 1
+      // if there are duplicated calculations there shouldn't be any contribution to the energy if both particles are
+      // outside
+      whereFactor = duplicatedCalculation ? 0. : 1;
+      where_str = "outside";
+      break;
+    default:
+      throw "not in enum where_type";
+  }
+  FMCell cell1, cell2;
+  {
+    Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
+    cell1.addParticle(p1);
+    Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
+    switch (interactionType) {
+      case CellInteractionType::own:
+        cell1.addParticle(p2);
+        break;
+      case CellInteractionType::pair:
+        cell2.addParticle(p2);
+        break;
+      default:
+        FAIL();
+    }
+  }
+
+  functor.resetGlobalValues();
+
+  functor.SoALoader(cell1, cell1._particleSoABuffer);
+  functor.SoALoader(cell2, cell2._particleSoABuffer);
+
+  switch (interactionType) {
+    case CellInteractionType::own:
+      functor.SoAFunctor(cell1._particleSoABuffer, newton3);
+      break;
+    case CellInteractionType::pair:
+      functor.SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+      if (not newton3) {
+        functor.SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+      }
+      break;
+  }
+  functor.SoAExtractor(cell1, cell1._particleSoABuffer);
+  functor.SoAExtractor(cell2, cell2._particleSoABuffer);
+
+  functor.postProcessGlobalValues(newton3);
+
+  double upot = functor.getUpot();
+  double virial = functor.getVirial();
+
+  EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation
+      << ", interactionType: " << (interactionType == pair ? "pair" : "own");
+  EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation
+      << ", interactionType: " << (interactionType == pair ? "pair" : "own");
+}
+
+TEST_F(LJFunctorTest, testSoAFunctorGlobalsOwn) {
+  for (bool duplicatedCalculation : {false, true}) {
+    // the own functor can only be called for inner or outside pairs! (if two particles lie in one cell they can be
+    // either both inside the process or neither of them is)
+    for (where_type where : {inside, outside}) {
+      for (bool newton3 : {false, true}) {
+        if (where == outside && not duplicatedCalculation) {
+          // this case does not happen and it is expected to fail.
+          continue;
+        }
+        testSoAGlobals(where, newton3, duplicatedCalculation, own);
+      }
+    }
+  }
+}
+
+TEST_F(LJFunctorTest, testSoAFunctorGlobalsPair) {
+  for (bool duplicatedCalculation : {false, true}) {
+    for (where_type where : {inside, boundary, outside}) {
+      for (bool newton3 : {false, true}) {
+        testSoAGlobals(where, newton3, duplicatedCalculation, pair);
       }
     }
   }
