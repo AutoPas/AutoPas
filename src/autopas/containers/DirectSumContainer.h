@@ -46,7 +46,7 @@ class DirectSumContainer : public ParticleContainer<Particle, ParticleCell> {
    * @return Vector of all applicable traversal options.
    */
   static const std::vector<TraversalOptions> &allDSApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::directSum};
+    static const std::vector<TraversalOptions> v{TraversalOptions::directSumTraversal};
     return v;
   }
 

@@ -216,7 +216,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           traversalOptions.push_back(autopas::TraversalOptions::sliced);
         }
         if (strArg.find("dir") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::directSum);
+          traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
         }
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
@@ -376,7 +376,7 @@ void MDFlexParser::printConfig() {
         cout << "sliced, ";
         break;
       }
-      case autopas::TraversalOptions::directSum: {
+      case autopas::TraversalOptions::directSumTraversal: {
         cout << "direct sum, ";
         break;
       }

@@ -49,7 +49,7 @@ class MDFlexParser {
   // defaults:
   std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists};
   autopas::DataLayoutOption dataLayoutOption = autopas::DataLayoutOption::soa;
-  std::vector<autopas::TraversalOptions> traversalOptions = {autopas::c08, autopas::directSum};
+  std::vector<autopas::TraversalOptions> traversalOptions = {autopas::c08, autopas::directSumTraversal};
 
   double boxLength = -1;
   double cutoff = 1.;

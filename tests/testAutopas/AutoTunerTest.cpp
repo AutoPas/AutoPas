@@ -13,7 +13,7 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
                                                        autopas::ContainerOptions::linkedCells,
                                                        autopas::ContainerOptions::directSumContainer};
   std::vector<autopas::TraversalOptions> traversals = {
-      autopas::TraversalOptions::sliced, autopas::TraversalOptions::c08, autopas::TraversalOptions::directSum};
+      autopas::TraversalOptions::sliced, autopas::TraversalOptions::c08, autopas::TraversalOptions::directSumTraversal};
 
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 42};
   // adaptive domain size so sliced is always applicable.
