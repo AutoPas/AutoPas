@@ -30,7 +30,7 @@ function separate {
 }
 
 # iterate over containers
-for container in DirectSumContainer Linked-Cells VerletLists ;
+for container in DirectSum Linked-Cells VerletLists ;
 do
     separate "Container: ${container}"
     # only set verlet options if needed
