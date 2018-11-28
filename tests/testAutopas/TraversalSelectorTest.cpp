@@ -80,30 +80,75 @@ TEST_F(TraversalSelectorTest, testNextTraversal) {
   }
 }
 
-TEST_F(TraversalSelectorTest, testSelectOptimalTraversal) {
+TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestAbs) {
+  auto strategy = autopas::SelectorStrategy::fastestAbs;
+
+  mapOptionsTime measurements;
+
+  measurements[autopas::TraversalOptions::c08] = {22, 14};
+  measurements[autopas::TraversalOptions::sliced] = {30, 10};
+
+  mapOptionsTime ignoredMeasurements;
+  ignoredMeasurements[autopas::TraversalOptions::c08] = {1};
+
+  testFastest(strategy, measurements, autopas::TraversalOptions::sliced, ignoredMeasurements);
+}
+
+TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMean) {
+  auto strategy = autopas::SelectorStrategy::fastestMean;
+
+  mapOptionsTime measurements;
+
+  measurements[autopas::TraversalOptions::c08] = {2, 20};
+  measurements[autopas::TraversalOptions::sliced] = {5, 7};
+
+  testFastest(strategy, measurements, autopas::TraversalOptions::sliced);
+}
+
+TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMedian) {
+  auto strategy = autopas::SelectorStrategy::fastestMedian;
+
+  mapOptionsTime measurements;
+
+  measurements[autopas::TraversalOptions::c08] = {4, 1, 5};
+  measurements[autopas::TraversalOptions::sliced] = {2, 3, 3, 100};
+
+  testFastest(strategy, measurements, autopas::TraversalOptions::sliced);
+}
+
+void TraversalSelectorTest::testFastest(autopas::SelectorStrategy strategy, mapOptionsTime measurements,
+                                        autopas::TraversalOptions expectedBest, mapOptionsTime ignoredMeasurements) {
   MFunctor functor;
 
-  std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
-                                                         autopas::TraversalOptions::c08};
+  std::vector<autopas::TraversalOptions> optionVector;
+  optionVector.reserve(measurements.size());
+
+  for (auto &&m : measurements) {
+    optionVector.push_back(m.first);
+  }
 
   constexpr size_t domainSize = 1000;
   autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
 
-  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(functor)), std::exception);
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
 
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
-  traversalSelector.addTimeMeasurement(functor, optionVector[0], 20);
-  traversalSelector.addTimeMeasurement(functor, optionVector[0], 22);
-  traversalSelector.addTimeMeasurement(functor, optionVector[1], 30);
-  traversalSelector.addTimeMeasurement(functor, optionVector[1], 10);
+  for (auto &&m : measurements) {
+    for (auto &&t : m.second) {
+      EXPECT_CALL(functor, isRelevantForTuning()).WillOnce(Return(true));
+      traversalSelector.addTimeMeasurement(functor, m.first, t);
+    }
+  }
 
-  // add one really fast time which is ignored
-  EXPECT_CALL(functor, isRelevantForTuning()).WillOnce(Return(false));
-  traversalSelector.addTimeMeasurement(functor, optionVector[0], 1);
+  for (auto &&m : ignoredMeasurements) {
+    for (auto &&t : m.second) {
+      EXPECT_CALL(functor, isRelevantForTuning()).WillOnce(Return(false));
+      traversalSelector.addTimeMeasurement(functor, m.first, t);
+    }
+  }
 
-  auto traversal = traversalSelector.selectOptimalTraversal<MFunctor, true, true>(functor);
-  EXPECT_EQ(optionVector[1], traversal->getTraversalType());
+  auto traversal = traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor);
+  EXPECT_EQ(expectedBest, traversal->getTraversalType());
 
   // select optimal traversal should delete all measurements
-  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(functor)), std::exception);
+  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
 }
