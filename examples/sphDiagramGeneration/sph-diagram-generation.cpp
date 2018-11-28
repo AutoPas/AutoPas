@@ -176,7 +176,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
               func);
       break;
     }
-    case autopas::ContainerOptions::directSumContainer: {
+    case autopas::ContainerOptions::directSum: {
       traversal =
           new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
               func);

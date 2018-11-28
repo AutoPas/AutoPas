@@ -50,7 +50,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return v;
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::directSumContainer; }
+  ContainerOptions getContainerType() override { return ContainerOptions::directSum; }
 
   void addParticle(Particle &p) override {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
