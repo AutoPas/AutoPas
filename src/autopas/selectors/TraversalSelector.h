@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/containers/cellPairTraversals/DirectSumTraversal.h>
+#include <autopas/containers/cellPairTraversals/DummyTraversal.h>
 #include <array>
 #include <numeric>
 #include <unordered_map>
@@ -43,7 +45,8 @@ enum SelectorStrategy {
 /**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
-static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced};
+static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced,
+                                                            TraversalOptions::directSumTraversal};
 
 /**
  * Selector for a container traversal.
@@ -167,6 +170,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     TraversalOptions traversalType, PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
   switch (traversalType) {
+    case TraversalOptions::directSumTraversal: {
+      traversal =
+          std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);
+      break;
+    }
     case TraversalOptions::c08: {
       traversal =
           std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);

@@ -13,9 +13,9 @@ class RandomGenerator {
  private:
   static double fRand(double fMin, double fMax);
 
+ public:
   static std::array<double, 3> randomPosition(const std::array<double, 3>& boxMin, const std::array<double, 3>& boxMax);
 
- public:
   template <class Container, class Particle>
   static void fillWithParticles(Container& container, Particle defaultParticle, unsigned long numParticles = 100) {
     srand(42);  // fixed seedpoint

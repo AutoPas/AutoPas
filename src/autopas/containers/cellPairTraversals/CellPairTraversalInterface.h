@@ -15,6 +15,7 @@ enum TraversalOptions {
   dummyTraversal = -1,
   c08 = 0,
   sliced = 1,
+  directSumTraversal = 2,
 };
 
 /**

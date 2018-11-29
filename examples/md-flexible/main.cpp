@@ -10,8 +10,8 @@
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
+#include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
 
 using namespace std;
@@ -112,6 +112,7 @@ int main(int argc, char **argv) {
   auto measureFlops(parser.getMeasureFlops());
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
+  auto particleTotal(parser.getParticlesTotal());
   auto particlesPerDim(parser.getParticlesPerDim());
   auto traversalOptions(parser.getTraversalOptions());
   auto tuningInterval(parser.getTuningInterval());
@@ -135,9 +136,8 @@ int main(int argc, char **argv) {
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
-      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength,
-                         particlesPerDim * particlesPerDim * particlesPerDim, distributionMean, distributionStdDev,
-                         cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
+      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength, particleTotal, distributionMean,
+                         distributionStdDev, cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
     default:

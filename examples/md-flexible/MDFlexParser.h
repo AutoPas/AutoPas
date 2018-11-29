@@ -21,7 +21,7 @@ class MDFlexParser {
 
   MDFlexParser() = default;
 
-  double getBoxLength() const;
+  double getBoxLength();
   std::vector<autopas::ContainerOptions> getContainerOptions() const;
   double getCutoff() const;
   autopas::DataLayoutOption getDataLayoutOption() const;
@@ -33,6 +33,7 @@ class MDFlexParser {
   bool getMeasureFlops() const;
   spdlog::level::level_enum getLogLevel() const;
   double getParticleSpacing() const;
+  size_t getParticlesTotal() const;
   size_t getParticlesPerDim() const;
   unsigned int getTuningInterval() const;
   string getWriteVTK() const;
@@ -48,7 +49,7 @@ class MDFlexParser {
   // defaults:
   std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists};
   autopas::DataLayoutOption dataLayoutOption = autopas::DataLayoutOption::soa;
-  std::vector<autopas::TraversalOptions> traversalOptions;
+  std::vector<autopas::TraversalOptions> traversalOptions = {autopas::c08, autopas::directSumTraversal};
 
   double boxLength = -1;
   double cutoff = 1.;
@@ -60,6 +61,7 @@ class MDFlexParser {
   spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
   size_t particlesPerDim = 20;
+  size_t particlesTotal = 1000;
   double particleSpacing = .4;
   unsigned int tuningInterval = 100;
   string writeVTK = "";

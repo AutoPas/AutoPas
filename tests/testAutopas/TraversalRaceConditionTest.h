@@ -8,10 +8,11 @@
 
 #include <gtest/gtest.h>
 #include <vector>
-#include "../../examples/md/mdutils.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
+#include "autopas/utils/ArrayMath.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class TraversalRaceConditionTest : public AutoPasTestBase {
  public:
@@ -19,27 +20,25 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
   ~TraversalRaceConditionTest() override = default;
 
-  void fillWithParticles(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autoPas,
-                         std::array<size_t, 3> particlesPerDim);
+  void fillWithParticles(autopas::AutoPas<Particle, FPCell> &autoPas, std::array<size_t, 3> particlesPerDim);
 
   /*
    * Simple AoS only functor which repulses paritcles from each other with a
    * constant force of 1.
    */
-  class SimpleFunctor : public autopas::Functor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> {
+  class SimpleFunctor : public autopas::Functor<Particle, FPCell> {
    public:
-    typedef PrintableMolecule Particle;
-    typedef PrintableMolecule::SoAArraysType SoAArraysType;
-    typedef autopas::FullParticleCell<PrintableMolecule> ParticleCell;
+    using SoAArraysType = Particle::SoAArraysType;
+    using ParticleCell = FPCell;
 
     bool isRelevantForTuning() override { return true; }
 
-    void AoSFunctor(PrintableMolecule &i, PrintableMolecule &j, bool newton3) override {
+    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
 
-      std::array<double, 3> dr = ArrayMath::sub(coordsI, coordsJ);
-      double dr2 = ArrayMath::dot(dr, dr);
+      std::array<double, 3> dr = autopas::ArrayMath::sub(coordsI, coordsJ);
+      double dr2 = autopas::ArrayMath::dot(dr, dr);
 
       if (dr2 > CUTOFFSQUARE) return;
 

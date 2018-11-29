@@ -6,7 +6,7 @@
 
 #include <array>
 #include <iostream>
-#include "../md/mdutils.h"
+#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
@@ -25,7 +25,8 @@ void addParticles(
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::sph::SPHParticle particle(randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012, 0.);
+    autopas::sph::SPHParticle particle(RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012,
+                                       0.);
     // autopas::sph::SPHParticle ith(randomPosition(boxMin, boxMax), {0, 0, 0},
     // i++, 0.75, 0.012, 0. );
     sph_system.addParticle(particle);
@@ -162,19 +163,32 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   // cont->iteratePairwiseAoS(&flopFunctor);
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
-  autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false> dummyTraversal(
-      {0, 0, 0}, func);
-  if (cont->getContainerType() == ContainerOptions::linkedCells) {
-    dummyTraversal = C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-        dynamic_cast<LinkedCells<autopas::sph::SPHParticle, FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
-            ->getCellBlock()
-            .getCellsPerDimensionWithHalo(),
-        func);
+  autopas::CellPairTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>> *traversal;
+
+  switch (cont->getContainerType()) {
+    case autopas::ContainerOptions::linkedCells: {
+      traversal =
+          new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
+              dynamic_cast<autopas::LinkedCells<autopas::sph::SPHParticle,
+                                                autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
+                  ->getCellBlock()
+                  .getCellsPerDimensionWithHalo(),
+              func);
+      break;
+    }
+    case autopas::ContainerOptions::directSum: {
+      traversal =
+          new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
+              func);
+      break;
+    }
+    default:
+      traversal = new autopas::DummyTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>>({0, 0, 0});
   }
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS(func, &dummyTraversal);
+    cont->iteratePairwiseAoS(func, traversal);
   }
   double elapsedTime = t.stop();
 
@@ -184,9 +198,11 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseSoA(func, &dummyTraversal);
+    cont->iteratePairwiseSoA(func, traversal);
   }
   elapsedTime = t.stop();
+
+  delete traversal;
 
   // double flops = flopsPerIteration * numIterations;
 

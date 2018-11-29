@@ -21,6 +21,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"no-flops", no_argument, nullptr, 'F'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
+                                         {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
@@ -189,6 +190,15 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'N': {
+        try {
+          particlesTotal = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing total number of particles: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 's': {
         try {
           particleSpacing = stod(strArg);
@@ -204,6 +214,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         if (strArg.find("sli") != string::npos) {
           traversalOptions.push_back(autopas::TraversalOptions::sliced);
+        }
+        if (strArg.find("dir") != string::npos) {
+          traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
         }
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
@@ -327,6 +340,12 @@ void MDFlexParser::printConfig() {
       cout << "Grid generator" << endl;
       cout << setw(valueOffset) << left << "Particle spacing"
            << ":  " << particleSpacing << endl;
+
+      cout << "Particles" << endl;
+      cout << setw(valueOffset) << left << "  per dimension"
+           << ":  " << particlesPerDim << endl;
+      cout << setw(valueOffset) << left << "  total"
+           << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
       break;
     }
     case GeneratorOption::gaussian: {
@@ -337,17 +356,13 @@ void MDFlexParser::printConfig() {
            << ":  " << distributionMean << endl;
       cout << setw(valueOffset) << left << "Distribution standard deviation"
            << ":  " << distributionStdDev << endl;
+
+      cout << "Particles" << endl;
+      cout << setw(valueOffset) << left << "  total"
+           << ":  " << particlesTotal << endl;
       break;
     }
   }
-
-  cout << "Particles" << endl;
-  cout << setw(valueOffset) << left << "  per dimension"
-       << ":  " << particlesPerDim;
-  if (generatorOption != grid) cout << " (approximately)";
-  cout << endl;
-  cout << setw(valueOffset) << left << "  total"
-       << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
 
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  ";
@@ -359,6 +374,10 @@ void MDFlexParser::printConfig() {
       }
       case autopas::TraversalOptions::sliced: {
         cout << "sliced, ";
+        break;
+      }
+      case autopas::TraversalOptions::directSumTraversal: {
+        cout << "direct sum, ";
         break;
       }
       default:
@@ -388,6 +407,8 @@ size_t MDFlexParser::getParticlesPerDim() const { return particlesPerDim; }
 
 double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
 
+size_t MDFlexParser::getParticlesTotal() const { return particlesTotal; }
+
 const vector<autopas::TraversalOptions> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
 
 unsigned int MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
@@ -402,8 +423,8 @@ double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; 
 
 string MDFlexParser::getWriteVTK() const { return writeVTK; }
 
-double MDFlexParser::getBoxLength() const {
-  if (boxLength == -1) return ceil(2 * distributionMean);
+double MDFlexParser::getBoxLength() {
+  if (boxLength == -1) boxLength = ceil(2 * distributionMean);
   return boxLength;
 }
 
