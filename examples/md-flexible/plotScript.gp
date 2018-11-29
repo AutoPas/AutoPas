@@ -1,8 +1,8 @@
 #!/usr/bin/gnuplot -p
 
 datafiles = "\
-runtimes_DirectSumContainer_AoS.csv                 \
-runtimes_DirectSumContainer_SoA.csv                 \
+runtimes_DirectSum_AoS.csv                          \
+runtimes_DirectSum_SoA.csv                          \
 runtimes_Linked-Cells_AoS.csv                       \
 runtimes_Linked-Cells_SoA.csv                       \
 runtimes_VerletLists_AoS_20_0.3.csv                 \
