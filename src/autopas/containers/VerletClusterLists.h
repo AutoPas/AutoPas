@@ -189,7 +189,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     // get cells per dimension
     index_t numCells = 1;
     for (int d = 0; d < 2; d++) {
-      _cellsPerDim[d] = static_cast<index_t>(std::floor(boxSize[d] * _gridSideLengthReciprocal));
+      //_cellsPerDim[d] = static_cast<index_t>(std::floor(boxSize[d] * _gridSideLengthReciprocal));
+      _cellsPerDim[d] = static_cast<index_t>(std::ceil(boxSize[d] * _gridSideLengthReciprocal));
       // at least one cell
       _cellsPerDim[d] = std::max(_cellsPerDim[d], 1ul);
 
