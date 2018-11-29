@@ -56,8 +56,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getCell()->addParticle(p);
     } else {
-      utils::ExceptionHandler::exception(
-          "DirectSum: trying to add particle that is not in the bounding box.\n" + p.toString());
+      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box.\n" +
+                                         p.toString());
     }
   }
 
