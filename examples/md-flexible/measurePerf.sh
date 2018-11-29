@@ -64,6 +64,7 @@ do
             for i in `seq 0 $(( ${#Mols[@]} - 1 ))` ;
             do
                 thisReps=${Reps[$i]}
+                # Direct sum is slow for huge number of particles -> limit number of iterations
                 if [[ ${container} = 'DirectSum' && ${Mols[$i]} -ge 2048 ]];
                 then
                     thisReps=3
