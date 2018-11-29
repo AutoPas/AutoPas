@@ -189,8 +189,7 @@ int main(int argc, char **argv) {
 
     cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
          << cellsPerDimHalo[2] << " (Total: " << numCells << ")" << endl;
-    cout << "Average Particles per cell: " << (particlesTotal) / (double)numCells
-         << endl;
+    cout << "Average Particles per cell: " << (particlesTotal) / (double)numCells << endl;
     cout << endl;
   }
 
