@@ -121,6 +121,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
+   * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
@@ -132,18 +133,34 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    // the local redeclaration of the following values helps the auto-generation of various compilers.
+    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    if (calculateGlobals) {
+      // Checks if the cell is a halo cell, if it is, we skip it.
+      // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
+      // set. (as of 23.11.2018)
+      bool isHaloCell = false;
+      isHaloCell |= xptr[0] < _lowCorner[0] || xptr[0] >= _highCorner[0];
+      isHaloCell |= yptr[0] < _lowCorner[1] || yptr[0] >= _highCorner[1];
+      isHaloCell |= zptr[0] < _lowCorner[2] || zptr[0] >= _highCorner[2];
+      if (isHaloCell) {
+        return;
+      }
+    }
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
-      double fxacc = 0;
-      double fyacc = 0;
-      double fzacc = 0;
+      double fxacc = 0.;
+      double fyacc = 0.;
+      double fzacc = 0.;
 
+      double upotSum = 0.;
+      double virialSumX = 0.;
+      double virialSumY = 0.;
+      double virialSumZ = 0.;
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        // if (i == j) continue;
-
         const double drx = xptr[i] - xptr[j];
         const double dry = yptr[i] - yptr[j];
         const double drz = zptr[i] - zptr[j];
@@ -154,14 +171,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > _cutoffsquare) ? 0. : 1.;
+        const double mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = _sigmasquare * invdr2;
+        const double lj2 = sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -170,23 +187,46 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-        if (newton3) {
-          fxptr[j] -= fx;
-          fyptr[j] -= fy;
-          fzptr[j] -= fz;
+
+        // newton 3
+        fxptr[j] -= fx;
+        fyptr[j] -= fy;
+        fzptr[j] -= fz;
+
+        if (calculateGlobals) {
+          const double virialx = drx * fx;
+          const double virialy = dry * fy;
+          const double virialz = drz * fz;
+          const double upot = (epsilon24 * lj12m6 + shift6) * mask;
+
+          // these calculations assume that this functor is not called for halo cells!
+          upotSum += upot;
+          virialSumX += virialx;
+          virialSumY += virialy;
+          virialSumZ += virialz;
         }
       }
 
       fxptr[i] += fxacc;
       fyptr[i] += fyacc;
       fzptr[i] += fzacc;
+
+      if (calculateGlobals) {
+        const int threadnum = autopas_get_thread_num();
+        // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
+        // AoS)
+        _aosThreadData[threadnum].upotSum += upotSum * (newton3 ? 1 : 2);
+        _aosThreadData[threadnum].virialSum[0] += virialSumX * (newton3 ? 1 : 2);
+        _aosThreadData[threadnum].virialSum[1] += virialSumY * (newton3 ? 1 : 2);
+        _aosThreadData[threadnum].virialSum[2] += virialSumZ * (newton3 ? 1 : 2);
+      }
     }
   }
 
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -203,14 +243,39 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
+    bool isHaloCell1 = false;
+    bool isHaloCell2 = false;
+    // Checks whether the cells are halo cells.
+    // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
+    // defined. (as of 23.11.2018)
+    if (calculateGlobals) {
+      isHaloCell1 |= x1ptr[0] < _lowCorner[0] || x1ptr[0] >= _highCorner[0];
+      isHaloCell1 |= y1ptr[0] < _lowCorner[1] || y1ptr[0] >= _highCorner[1];
+      isHaloCell1 |= z1ptr[0] < _lowCorner[2] || z1ptr[0] >= _highCorner[2];
+      isHaloCell2 |= x2ptr[0] < _lowCorner[0] || x2ptr[0] >= _highCorner[0];
+      isHaloCell2 |= y2ptr[0] < _lowCorner[1] || y2ptr[0] >= _highCorner[1];
+      isHaloCell2 |= z2ptr[0] < _lowCorner[2] || z2ptr[0] >= _highCorner[2];
+
+      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
+      // correct!
+      /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
+        return;
+      }*/
+    }
+    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
 
+      double upotSum = 0.;
+      double virialSumX = 0.;
+      double virialSumY = 0.;
+      double virialSumZ = 0.;
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -222,14 +287,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > _cutoffsquare) ? 0. : 1.;
+        const double mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
         const double invdr2 = 1. / dr2;
-        const double lj2 = _sigmasquare * invdr2;
+        const double lj2 = sigmasquare * invdr2;
         const double lj6 = lj2 * lj2 * lj2;
         const double lj12 = lj6 * lj6;
         const double lj12m6 = lj12 - lj6;
-        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
         const double fx = drx * fac;
         const double fy = dry * fac;
@@ -243,11 +308,42 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           fy2ptr[j] -= fy;
           fz2ptr[j] -= fz;
         }
+
+        if (calculateGlobals) {
+          double virialx = drx * fx;
+          double virialy = dry * fy;
+          double virialz = drz * fz;
+          double upot = (epsilon24 * lj12m6 + shift6) * mask;
+
+          upotSum += upot;
+          virialSumX += virialx;
+          virialSumY += virialy;
+          virialSumZ += virialz;
+        }
       }
 
       fx1ptr[i] += fxacc;
       fy1ptr[i] += fyacc;
       fz1ptr[i] += fzacc;
+
+      if (calculateGlobals) {
+        double energyfactor = 1.;
+        if (_duplicatedCalculations) {
+          // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
+          // that we do not add the energy multiple times!
+          energyfactor = isHaloCell1 ? 0. : 1.;
+          if (newton3) {
+            energyfactor += isHaloCell2 ? 0. : 1.;
+            energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
+          }
+        }
+        const int threadnum = autopas_get_thread_num();
+
+        _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
+        _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
+        _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
+        _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
+      }
     }
   }
 
@@ -513,7 +609,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       _virialSum = ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
     }
     if (not newton3) {
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide be 2 here.
+      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2 here.
       _upotSum *= 0.5;
       _virialSum = ArrayMath::mulScalar(_virialSum, 0.5);
     }

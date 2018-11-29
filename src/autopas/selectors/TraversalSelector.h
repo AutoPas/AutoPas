@@ -46,7 +46,7 @@ enum SelectorStrategy {
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
 static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced,
-                                                            TraversalOptions::directSum};
+                                                            TraversalOptions::directSumTraversal};
 
 /**
  * Selector for a container traversal.
@@ -170,7 +170,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     TraversalOptions traversalType, PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
   switch (traversalType) {
-    case TraversalOptions::directSum: {
+    case TraversalOptions::directSumTraversal: {
       traversal =
           std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);
       break;

@@ -50,7 +50,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         // delete default argument
         containerOptions.clear();
         if (strArg.find("direct") != string::npos or strArg.find("ds") != string::npos) {
-          containerOptions.push_back(autopas::directSumContainer);
+          containerOptions.push_back(autopas::directSum);
         }
         if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
           containerOptions.push_back(autopas::linkedCells);
@@ -60,7 +60,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSumContainer', 'LinkedCells' or VerletLists!" << endl;
+          cerr << "Please use 'DirectSum', 'LinkedCells' or VerletLists!" << endl;
           displayHelp = true;
         }
         break;
@@ -218,7 +218,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           traversalOptions.push_back(autopas::TraversalOptions::sliced);
         }
         if (strArg.find("dir") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::directSum);
+          traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
         }
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
@@ -283,8 +283,8 @@ void MDFlexParser::printConfig() {
        << ":  ";
   for (auto &op : containerOptions) {
     switch (op) {
-      case autopas::ContainerOptions::directSumContainer: {
-        cout << "DirectSumContainer, ";
+      case autopas::ContainerOptions::directSum: {
+        cout << "DirectSum, ";
         break;
       }
       case autopas::ContainerOptions::linkedCells: {
@@ -387,7 +387,7 @@ void MDFlexParser::printConfig() {
         cout << "sliced, ";
         break;
       }
-      case autopas::TraversalOptions::directSum: {
+      case autopas::TraversalOptions::directSumTraversal: {
         cout << "direct sum, ";
         break;
       }

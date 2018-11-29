@@ -11,9 +11,9 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   autopas::LJFunctor<Particle, FPCell> functor(1., 1., 1., 0.);
   std::vector<autopas::ContainerOptions> containers = {autopas::ContainerOptions::verletLists,
                                                        autopas::ContainerOptions::linkedCells,
-                                                       autopas::ContainerOptions::directSumContainer};
+                                                       autopas::ContainerOptions::directSum};
   std::vector<autopas::TraversalOptions> traversals = {
-      autopas::TraversalOptions::sliced, autopas::TraversalOptions::c08, autopas::TraversalOptions::directSum};
+      autopas::TraversalOptions::sliced, autopas::TraversalOptions::c08, autopas::TraversalOptions::directSumTraversal};
 
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 42};
   // adaptive domain size so sliced is always applicable.
@@ -39,7 +39,7 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
     // 0 -> test verlet
     // 1 -> test linked with sliced
     // 2 -> test linked with c08
-    // 3 -> test directSumContainer
+    // 3 -> test directSum
     // 4 -> choose best combination -> tuning finished and  normal iteration using optimal combination
     switch (i / numSamples) {
       case 0: {

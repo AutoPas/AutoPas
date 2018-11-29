@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
       boxMin, boxMax, cutoff);
 
-  autopas::DirectSumContainer<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
+  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
       boxMin, boxMax, cutoff);
 
   autopas::sph::SPHCalcDensityFunctor densfunc;
@@ -176,7 +176,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
               func);
       break;
     }
-    case autopas::ContainerOptions::directSumContainer: {
+    case autopas::ContainerOptions::directSum: {
       traversal =
           new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
               func);

@@ -8,7 +8,7 @@
 
 #include <array>
 #include <vector>
-#include "autopas/containers/DirectSumContainer.h"
+#include "autopas/containers/DirectSum.h"
 #include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/VerletLists.h"
@@ -18,8 +18,8 @@ namespace autopas {
 /**
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
-static std::vector<ContainerOptions> allContainerOptions = {
-    ContainerOptions::directSumContainer, ContainerOptions::linkedCells, ContainerOptions::verletLists};
+static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::directSum, ContainerOptions::linkedCells,
+                                                            ContainerOptions::verletLists};
 
 /**
  * Selector for a particle container.
@@ -110,8 +110,8 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> container;
 
   switch (containerChoice) {
-    case directSumContainer: {
-      container = std::make_unique<DirectSumContainer<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
+    case directSum: {
+      container = std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
       break;
     }
     case linkedCells: {
@@ -177,7 +177,7 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
 
   // choose the fastest container and reset timings
   // Initialize with something. This will be overridden.
-  ContainerOptions optimalContainerOption = ContainerOptions::directSumContainer;
+  ContainerOptions optimalContainerOption = ContainerOptions::directSum;
   long optimalContainerTime = std::numeric_limits<long>::max();
   AutoPasLog(debug, "ContainerSelector: Collected container times:");
   for (auto &&c : _containerTimes) {
