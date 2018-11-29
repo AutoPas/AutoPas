@@ -73,7 +73,7 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
-  unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
   unsigned int xArray;
   if (x == 0) {

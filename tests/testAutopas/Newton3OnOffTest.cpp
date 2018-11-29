@@ -12,11 +12,13 @@ using ::testing::Return;  // anything is ok
 TEST_F(Newton3OnOffTest, testAoS) {
   for (auto containerOption : autopas::allContainerOptions) {
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(), {containerOption},
-                 {autopas::TraversalOptions::c08}, 1);
+                 {autopas::TraversalOptions::c08, autopas::TraversalOptions::directSumTraversal}, 1);
     autopas::MoleculeLJ defaultParticle;
     RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
     RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
                                            autoPas.getContainer()->getCutoff(), 10);
+
+    EXPECT_CALL(mockFunctor, isRelevantForTuning()).Times(testing::AtLeast(1));
 
     // with newton 3:
     int callsNewton3 = 0;

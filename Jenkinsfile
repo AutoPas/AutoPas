@@ -21,7 +21,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build"){
                                 sh "cmake .."
-                                sh "make -j 4 &> buildlog.txt || (cat buildlog.txt && exit 1)"
+                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                             }
                         }
                     },
@@ -29,7 +29,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp"){
                                 sh "cmake -DOPENMP=ON .."
-                                sh "make -j 4 &> buildlog.txt || (cat buildlog.txt && exit 1)"
+                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                             }
                         }
                     },
@@ -37,7 +37,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp-address-sanitizer"){
                                 sh "cmake -DOPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4 &> buildlog.txt || (cat buildlog.txt && exit 1)"
+                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                             }
                         }
                     },
@@ -45,7 +45,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
                                 sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4 &> buildlog.txt || (cat buildlog.txt && exit 1)"
+                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                             }
                         }
                     },
@@ -53,7 +53,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release"){
                                 sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4 &> buildlog.txt || (cat buildlog.txt && exit 1)"
+                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                             }
                         }
                     },
@@ -62,7 +62,7 @@ pipeline{
                             dir("build-threadsanitizer"){
                                 // this is for simple testing of our threading libraries.
                                 sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
-                                sh "make -j 4 &> buildlog.txt || (cat buildlog.txt && exit 1)"
+                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                             }
                         }
                     },
@@ -70,31 +70,31 @@ pipeline{
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-openmp"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
-                                sh "ninja -j 4 &> buildlog_clang.txt || (cat buildlog_clang.txt && exit 1)"
+                                sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                             }
                         }
                     },
                     "clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
-                                sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "ninja -j 4 &> buildlog_clang.txt || (cat buildlog_clang.txt && exit 1)"
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                             }
                         }
                     },
                     "clang ninja address sanitizer release": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
-                                sh "CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "ninja -j 4 &> buildlog_clang.txt || (cat buildlog_clang.txt && exit 1)"
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                             }
                         }
                     },
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer"){
-                                sh "CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
-                                sh "ninja -j 4 &> buildlog_clang.txt || (cat buildlog_clang.txt && exit 1)"
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
+                                sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                             }
                         }
                     },
@@ -102,7 +102,7 @@ pipeline{
                         container('autopas-intel18'){
                             dir("build-intel"){
                                 sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DOPENMP=OFF ..'"
-                                sh "bash -i -c 'make -j 4 &> buildlog_intel.txt || (cat buildlog_intel.txt && exit 1)'"
+                                sh "bash -i -c 'make -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
                             }
                         }
                     },
@@ -110,7 +110,7 @@ pipeline{
                         container('autopas-intel18'){
                             dir("build-intel-ninja-openmp"){
                                 sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DOPENMP=ON ..'"
-                                sh "bash -i -c 'ninja -j 4 &> buildlog_intel.txt || (cat buildlog_intel.txt && exit 1)'"
+                                sh "bash -i -c 'ninja -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
                             }
                         }
                     }
@@ -208,7 +208,9 @@ pipeline{
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer"){
-                                sh './tests/testAutopas/runTests'
+                                // needed to properly check all test cases (also just single ones)
+                                // I suspect that archer breaks when death tests are used
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose'
                             }
                         }
                     },
@@ -250,14 +252,14 @@ pipeline{
                         githubNotify context: 'checkExamples', description: 'checking examples in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                         container('autopas-gcc7-cmake-make') {
                             dir("build/examples") {
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
                     "gcc openmp": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp/examples") {
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
@@ -271,63 +273,63 @@ pipeline{
                     /*"address sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },*/
                     /*"address sanitizer release": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },*/
                     /*"thread sanitizer": {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-threadsanitizer/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },*/
                     "clang openmp": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-openmp/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
                     /*"clang ninja address sanitizer": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },*/
                     "clang ninja address sanitizer release": {
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer/examples"){
-                                sh 'ctest -C checkExamples -j8'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
                     "intel": {
                         container('autopas-intel18'){
                             dir("build-intel/examples"){
-                                sh "bash -i -c 'ctest -C checkExamples -j8'"
+                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
                             }
                         }
                     },
                     "intel openmp": {
                         container('autopas-intel18'){
                             dir("build-intel-ninja-openmp/examples"){
-                                sh "bash -i -c 'ctest -C checkExamples -j8'"
+                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
                             }
                         }
                     }

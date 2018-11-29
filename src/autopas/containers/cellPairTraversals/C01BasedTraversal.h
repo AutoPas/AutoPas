@@ -72,7 +72,7 @@ template <class ParticleCell, class PairwiseFunctor, bool useSoA>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::processBaseCell(std::vector<ParticleCell> &cells,
                                                                                       unsigned long x, unsigned long y,
                                                                                       unsigned long z) {
-  unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
 
   const int num_pairs = _cellOffsets.size();

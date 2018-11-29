@@ -6,14 +6,13 @@
 
 #include "TraversalRaceConditionTest.h"
 
-void TraversalRaceConditionTest::fillWithParticles(
-    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autoPas,
-    std::array<size_t, 3> particlesPerDim) {
+void TraversalRaceConditionTest::fillWithParticles(autopas::AutoPas<Particle, FPCell> &autoPas,
+                                                   std::array<size_t, 3> particlesPerDim) {
   size_t id = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        auto p = PrintableMolecule({x + .5, y + .5, z + .5}, {0, 0, 0}, id++);
+        auto p = Particle({x + .5, y + .5, z + .5}, {0, 0, 0}, id++);
         autoPas.addParticle(p);
       }
     }
@@ -46,9 +45,8 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
 #endif
 
   /// @todo: test all containers
-  for (auto &traversalLC :
-       autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>>::allLCApplicableTraversals()) {
-    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autoPas;
+  for (auto &traversalLC : autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals()) {
+    autopas::AutoPas<Particle, FPCell> autoPas;
 
     // generates one cell per particle + 1 halo layer
     auto containerList = {autopas::ContainerOptions::linkedCells};

@@ -10,8 +10,8 @@
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../md/mdutils.h"  // includes autopas.h
 #include "MDFlexParser.h"
+#include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
 
 using namespace std;
@@ -34,14 +34,14 @@ void printMolecules(autopas::AutoPas<PrintableMolecule, FullParticleCell<Printab
  * built. It consists of %`FullParticleCells` and is filled with
  * `PrintableMolecules`. The particles are aligned on a cuboid grid.
  *
- * @param containerOption Which container type should be built.
+ * @param containerOptions Which container type should be built.
  * @param container Pointer to where the container should be built.
  * @param particlesPerDim Number of desired particles per dimension.
  * @param cutoff Cutoff radius to use. Affects number and size of cells for e.g.
  * LinkedCells.
  */
-void initContainerGrid(autopas::ContainerOptions containerOption,
-                       std::vector<autopas::TraversalOptions> traversalOptions,
+void initContainerGrid(std::vector<autopas::ContainerOptions> &containerOptions,
+                       std::vector<autopas::TraversalOptions> &traversalOptions,
                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                        size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
                        unsigned int verletRebuildFrequency, unsigned int tuningInterval) {
@@ -49,7 +49,7 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
                tuningInterval);
 
   PrintableMolecule dummyParticle;
@@ -58,23 +58,23 @@ void initContainerGrid(autopas::ContainerOptions containerOption,
                                    {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
 }
 
-void initContainerGauss(autopas::ContainerOptions containerOption,
-                        std::vector<autopas::TraversalOptions> traversalOptions,
+void initContainerGauss(std::vector<autopas::ContainerOptions> &containerOptions,
+                        std::vector<autopas::TraversalOptions> &traversalOptions,
                         autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
-                        double cutoff, double verletSkinRadius, int verletRebuildFrequency,
+                        double cutoff, double verletSkinRadius, unsigned int verletRebuildFrequency,
                         unsigned int tuningInterval) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, {containerOption}, traversalOptions,
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
                tuningInterval);
 
   PrintableMolecule dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
 
-void wirteVTKFile(string filename, size_t numParticles,
+void wirteVTKFile(string &filename, size_t numParticles,
                   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas) {
   std::ofstream vtkFile;
   vtkFile.open(filename);
@@ -97,12 +97,12 @@ void wirteVTKFile(string filename, size_t numParticles,
 int main(int argc, char **argv) {
   // Parsing
   MDFlexParser parser;
-  if (!parser.parseInput(argc, argv)) {
+  if (not parser.parseInput(argc, argv)) {
     exit(-1);
   }
 
   auto boxLength(parser.getBoxLength());
-  auto containerChoice(parser.getContainerOption());
+  auto containerChoice(parser.getContainerOptions());
   auto cutoff(parser.getCutoff());
   auto dataLayoutChoice(parser.getDataLayoutOption());
   auto distributionMean(parser.getDistributionMean());
@@ -112,6 +112,7 @@ int main(int argc, char **argv) {
   auto measureFlops(parser.getMeasureFlops());
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
+  auto particleTotal(parser.getParticlesTotal());
   auto particlesPerDim(parser.getParticlesPerDim());
   auto traversalOptions(parser.getTraversalOptions());
   auto tuningInterval(parser.getTuningInterval());
@@ -127,7 +128,6 @@ int main(int argc, char **argv) {
 
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
-  //  AutoPasLogger->set_level(logLevel);
   autopas::Logger::get()->set_level(logLevel);
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
@@ -136,9 +136,8 @@ int main(int argc, char **argv) {
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
-      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength,
-                         particlesPerDim * particlesPerDim * particlesPerDim, distributionMean, distributionStdDev,
-                         cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
+      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength, particleTotal, distributionMean,
+                         distributionStdDev, cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
     default:
@@ -152,19 +151,18 @@ int main(int argc, char **argv) {
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
   cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
 
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::setGlobals(cutoff, MoleculeLJ::getEpsilon(),
-                                                                                MoleculeLJ::getSigma(), 0.0);
-  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor;
+  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor(cutoff, MoleculeLJ::getEpsilon(),
+                                                                            MoleculeLJ::getSigma(), 0.0);
 
   if (not vtkFilename.empty()) wirteVTKFile(vtkFilename, particlesPerDim * particlesPerDim * particlesPerDim, autopas);
 
   // statistics for linked cells
-  if (containerChoice == autopas::ContainerOptions::linkedCells) {
+  if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::linkedCells) {
     auto lcContainer = dynamic_cast<autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> *>(
         autopas.getContainer());
     auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
     std::array<size_t, 3> cellsPerDim{cellsPerDimHalo[0] - 2, cellsPerDimHalo[1] - 2, cellsPerDimHalo[2] - 2};
-    auto numCellsHalo = lcContainer->getCells().size();
+    //    auto numCellsHalo = lcContainer->getCells().size();
     auto numCells = cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2];
 
     cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
@@ -211,7 +209,7 @@ int main(int argc, char **argv) {
 
     auto flops = flopCounterFunctor.getFlops(functor.getNumFlopsPerKernelCall()) * numIterations;
     // approximation for flops of verlet list generation
-    if (containerChoice == autopas::ContainerOptions::verletLists)
+    if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *

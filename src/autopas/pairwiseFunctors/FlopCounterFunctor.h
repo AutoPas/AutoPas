@@ -27,6 +27,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   typedef typename Particle::SoAArraysType SoAArraysType;
 
  public:
+  bool isRelevantForTuning() override { return false; }
+
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
@@ -79,9 +81,13 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
         if (dr2 <= _cutoffSquare) ++kernelCallsAcc;
       }
-
-      _distanceCalculations += distanceCalculationsAcc;
-      _kernelCalls += kernelCallsAcc;
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      {
+        _distanceCalculations += distanceCalculationsAcc;
+        _kernelCalls += kernelCallsAcc;
+      }
     }
   }
 
@@ -117,8 +123,13 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
           ++kernelCallsAcc;
         }
       }
-      _distanceCalculations += distanceCalculationsAcc;
-      _kernelCalls += kernelCallsAcc;
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      {
+        _distanceCalculations += distanceCalculationsAcc;
+        _kernelCalls += kernelCallsAcc;
+      }
     }
   }
 
@@ -197,9 +208,13 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
             kernelCallsAcc += mask;
           }
-
-          _distanceCalculations += distanceCalculationsAcc;
-          _kernelCalls += kernelCallsAcc;
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+          {
+            _distanceCalculations += distanceCalculationsAcc;
+            _kernelCalls += kernelCallsAcc;
+          }
         }
       }
       unsigned long distanceCalculationsAcc = 0;
@@ -224,8 +239,13 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
           ++kernelCallsAcc;
         }
       }
-      _distanceCalculations += distanceCalculationsAcc;
-      _kernelCalls += kernelCallsAcc;
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      {
+        _distanceCalculations += distanceCalculationsAcc;
+        _kernelCalls += kernelCallsAcc;
+      }
     }
   }
 

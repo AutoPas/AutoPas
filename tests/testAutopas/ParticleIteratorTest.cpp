@@ -132,7 +132,8 @@ TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
     ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
     for (; iter.isValid(); ++iter) {
       double newVel = iter->getID() + 1;
-      iter->setV({newVel, newVel, newVel});
+      std::array<double, 3> newVelArr = {newVel, newVel, newVel};
+      iter->setV(newVelArr);
     }
   }
 
@@ -259,7 +260,8 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
     ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
     for (; iter.isValid(); ++iter) {
       double newPos = (iter->getR()[0]) + 1;
-      iter->setR({newPos, newPos, newPos});
+      std::array<double, 3> newPosArr = {newPos, newPos, newPos};
+      iter->setR(newPosArr);
     }
   }
 

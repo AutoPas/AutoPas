@@ -11,15 +11,15 @@ ExternalProject_Add(
         gtest
         URL #https://github.com/google/googletest/archive/master.zip
         ${CMAKE_SOURCE_DIR}/libs/googletest-master.zip
-        URL_HASH MD5=4560d4993f33dd5b072ae7849e578229
+        URL_HASH MD5=ad6868782b5952b7476a7c1c72d5a714
         BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/gtest/src/gtest-build/googlemock/gtest/libgtest.a
         BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/gtest/src/gtest-build/googlemock/libgmock.a
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest
         # Disable install step
         INSTALL_COMMAND ""
-	CMAKE_ARGS
-		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        CMAKE_ARGS
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 )
 
 # Get GTest source and binary directories from CMake project

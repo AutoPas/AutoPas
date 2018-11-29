@@ -40,7 +40,7 @@ void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>
         // ith.eng = 2.5;
         // ith.id = i++;
         // ith.smth = 0.012;
-        if (autopas::inBox(ith.getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
+        if (autopas::utils::inBox(ith.getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
           sphSystem.addParticle(ith);
         }
       }
@@ -62,7 +62,7 @@ void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>
         // ith.eng = 2.5;
         // ith.id = i++;
         // ith.smth = 0.012;
-        if (autopas::inBox(ith.getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
+        if (autopas::utils::inBox(ith.getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
           sphSystem.addParticle(ith);
         }
       }

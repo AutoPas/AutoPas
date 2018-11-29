@@ -6,22 +6,47 @@
 
 #pragma once
 
+#include <autopas/containers/cellPairTraversals/DirectSumTraversal.h>
+#include <autopas/containers/cellPairTraversals/DummyTraversal.h>
 #include <array>
+#include <numeric>
+#include <unordered_map>
 #include <vector>
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
+#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Logger.h"
+#include "autopas/utils/TrivialHash.h"
 
 namespace autopas {
 
 /**
+ * Possible choices for the employed selectors.
+ */
+enum SelectorStrategy {
+  /**
+   * Fastest absolute value.
+   */
+  fastestAbs,
+  /**
+   * Fastest mean value.
+   */
+  fastestMean,
+  /**
+   * Fastest median value
+   */
+  fastestMedian
+};
+
+/**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
-static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced};
+static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced,
+                                                            TraversalOptions::directSumTraversal};
 
 /**
  * Selector for a container traversal.
@@ -55,72 +80,83 @@ class TraversalSelector {
   std::unique_ptr<CellPairTraversal<ParticleCell>> getOptimalTraversal(PairwiseFunctor &pairwiseFunctor);
 
   /**
-   * Evaluates to optimal traversal based on a given functor.
-   * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
-   * @tparam useSoA
-   * @tparam useNewton3
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @return true if still in tuning phase
-   */
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  bool tune(PairwiseFunctor &pairwiseFunctor);
-
-  /**
-   * Save the runtime of a given traversal with a given functor.
-   * @param functor
+   * Save the runtime of a given traversal if the functor is relevant for tuning.
+   * @param pairwiseFunctor
    * @param traversal
    * @param time
    */
   template <class PairwiseFunctor>
-  void addTimeMeasurement(PairwiseFunctor &functor, TraversalOptions traversal, long time) {
-    auto functorHash = typeid(PairwiseFunctor).hash_code();
-    struct TimeMeasurement measurement = {functorHash, traversal, time};
-    _traversalTimes.push_back(measurement);
+  void addTimeMeasurement(PairwiseFunctor &pairwiseFunctor, TraversalOptions traversal, long time) {
+    if (pairwiseFunctor.isRelevantForTuning()) {
+      struct TimeMeasurement measurement = {traversal, time};
+      _traversalTimes.push_back(measurement);
+    }
   }
 
+  /**
+   * Selects the next allowed and applicable traversal.
+   * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+   * @tparam useSoA
+   * @tparam useNewton3
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @return Smartpointer to the selected traversal.
+   */
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  std::unique_ptr<CellPairTraversal<ParticleCell>> selectNextTraversal(PairwiseFunctor &pairwiseFunctor);
+
+  /**
+   * Selects the optimal traversal based on saved measurements.
+   * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+   * @tparam useSoA
+   * @tparam useNewton3
+   * @param strategy Strategy the selector should employ to choose the best traversal.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @return Smartpointer to the selected traversal.
+   */
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  std::unique_ptr<CellPairTraversal<ParticleCell>> selectOptimalTraversal(SelectorStrategy strategy,
+                                                                          PairwiseFunctor &pairwiseFunctor);
+
  private:
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  std::vector<std::unique_ptr<CellPairTraversalInterface>> generateTraversals(PairwiseFunctor &pairwiseFunctor);
+  void findFastestAbsTraversal();
+
+  void findFastestMeanTraversal();
+
+  void findFastestMedianTraversal();
 
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  std::unique_ptr<CellPairTraversal<ParticleCell>> chooseOptimalTraversal(
-      std::vector<std::unique_ptr<CellPairTraversalInterface>> &traversals);
+  std::vector<std::unique_ptr<CellPairTraversalInterface>> generateAllAllowedTraversals(
+      PairwiseFunctor &pairwiseFunctor);
 
-  // for each encountered cell processor save the optimal traversal. The cell processor is saved through its hash
-  std::unordered_map<size_t, TraversalOptions> _optimalTraversalOptions;
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  std::unique_ptr<CellPairTraversal<ParticleCell>> generateTraversal(TraversalOptions traversalType,
+                                                                     PairwiseFunctor &pairwiseFunctor);
+
+  // The optimal traversal for all functors that are marked relevant.
+  TraversalOptions _optimalTraversalOption;
+  // indicating whether or not the optimalTraversalOption is already initialized
+  bool _isInitialized = false;
+  // indicating whether we are currently testing through all options
+  bool _isTuning = false;
   const std::array<unsigned long, 3> _dims;
   const std::vector<TraversalOptions> _allowedTraversalOptions;
 
   struct TimeMeasurement {
-    size_t functorHash;
     TraversalOptions traversal;
     long time;
   };
-  // vector of (functor hash, traversal type, execution time)
+  // vector of (traversal type, execution time)
   std::vector<TraversalSelector::TimeMeasurement> _traversalTimes;
-  bool _currentlyTuning = false;
 };
 
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<ParticleCell>::generateTraversals(
+std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<ParticleCell>::generateAllAllowedTraversals(
     PairwiseFunctor &pairwiseFunctor) {
   std::vector<std::unique_ptr<CellPairTraversalInterface>> traversals;
 
   for (auto &option : _allowedTraversalOptions) {
-    switch (option) {
-      case TraversalOptions::c08: {
-        traversals.push_back(
-            std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor));
-        break;
-      }
-      case TraversalOptions::sliced: {
-        traversals.push_back(std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
-            _dims, &pairwiseFunctor));
-        break;
-      }
-      default: { AutoPasLog(warn, "Traversal type {} is not a known type!", option); }
-    }
+    traversals.push_back(generateTraversal<PairwiseFunctor, useSoA, useNewton3>(option, pairwiseFunctor));
   }
 
   if (traversals.empty()) utils::ExceptionHandler::exception("TraversalSelector: No traversals were generated.");
@@ -130,71 +166,103 @@ std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<Parti
 
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::chooseOptimalTraversal(
-    std::vector<std::unique_ptr<CellPairTraversalInterface>> &traversals) {
-  // remove traversals which are not applicable to the current domain size
-  traversals.erase(
-      std::remove_if(traversals.begin(), traversals.end(), [](auto const &t) { return not t->isApplicable(); }),
-      traversals.end());
-  if (traversals.empty())
-    utils::ExceptionHandler::exception("TraversalSelector: None of the allowed traversals were applicable.");
-
-  auto functorHash = typeid(PairwiseFunctor).hash_code();
-  size_t bestTraversal = 0;
-  // Test all options to find the fastest
-  // If functor is unknown or no measurements were made by now we start with the first traversal
-  if (_traversalTimes.empty() || _optimalTraversalOptions.find(functorHash) == _optimalTraversalOptions.end()) {
-    bestTraversal = 0;
-  } else if (_currentlyTuning) {
-    // if we are in tuning state just select next traversal
-    bestTraversal = std::find_if(traversals.begin(), traversals.end(),
-                                 [&](const std::unique_ptr<CellPairTraversalInterface> &a) {
-                                   return a->getTraversalType() == _optimalTraversalOptions[functorHash];
-                                 }) -
-                    traversals.begin();
-    ++bestTraversal;
-    // if the last possible traversal has already been tested choose fastest one and reset timings
-    if (bestTraversal >= traversals.size()) {
-      _currentlyTuning = false;
-      TraversalOptions fastestTraversal;
-      long fastestTime = std::numeric_limits<long>::max();
-      AutoPasLog(debug, "TraversalSelector: Collected traversals:");
-      for (auto t = _traversalTimes.begin(); t != _traversalTimes.end();) {
-        // only look at times from the correct functor
-        if (t->functorHash != functorHash) {
-          ++t;
-          continue;
-        }
-        AutoPasLog(debug, "Traversal {} took {} nanoseconds:", t->traversal, t->time);
-        if (t->time < fastestTime) {
-          fastestTraversal = t->traversal;
-          fastestTime = t->time;
-        }
-        // when a measurement was used delete it
-        t = _traversalTimes.erase(t);
-      }
-      // sanity check
-      if (fastestTime == std::numeric_limits<long>::max()) {
-        utils::ExceptionHandler::exception("TraversalSelector: nothing was faster than max long oO");
-      }
-
-      // find id of fastest traversal in passed traversal list
-      bestTraversal = std::find_if(traversals.begin(), traversals.end(),
-                                   [&](const std::unique_ptr<CellPairTraversalInterface> &a) {
-                                     return a->getTraversalType() == fastestTraversal;
-                                   }) -
-                      traversals.begin();
+std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::generateTraversal(
+    TraversalOptions traversalType, PairwiseFunctor &pairwiseFunctor) {
+  std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
+  switch (traversalType) {
+    case TraversalOptions::directSumTraversal: {
+      traversal =
+          std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);
+      break;
     }
+    case TraversalOptions::c08: {
+      traversal =
+          std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::sliced: {
+      traversal =
+          std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::dummyTraversal: {
+      traversal = std::make_unique<DummyTraversal<ParticleCell>>(_dims);
+      break;
+    }
+    default: { AutoPasLog(warn, "Traversal type {} is not a known type!", traversalType); }
+  }
+  return traversal;
+}
+
+template <class ParticleCell>
+template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::selectOptimalTraversal(
+    SelectorStrategy strategy, PairwiseFunctor &pairwiseFunctor) {
+  // Time measure strategy
+  if (_traversalTimes.empty()) {
+    utils::ExceptionHandler::exception("TraversalSelector: Trying to determine fastest traversal before measuring!");
   }
 
-  // Tedious downcast
-  std::unique_ptr<CellPairTraversal<ParticleCell>> optimalTraversal(
-      dynamic_cast<CellPairTraversal<ParticleCell> *>(traversals[bestTraversal].release()));
+  switch (strategy) {
+    case SelectorStrategy::fastestAbs: {
+      findFastestAbsTraversal();
+      break;
+    }
+    case SelectorStrategy::fastestMean: {
+      findFastestMeanTraversal();
+      break;
+    }
+    case SelectorStrategy::fastestMedian: {
+      findFastestMedianTraversal();
+      break;
+    }
+    default:
+      utils::ExceptionHandler::exception("TraversalSelector: Unknown selector strategy {}", strategy);
+  }
 
-  _optimalTraversalOptions[functorHash] = optimalTraversal->getTraversalType();
-  AutoPasLog(debug, "{} traversal {}", _currentlyTuning ? "Testing" : "Selected", optimalTraversal->getTraversalType());
+  // measurements are not needed anymore
+  _traversalTimes.clear();
 
-  return optimalTraversal;
+  // Assumption: the fastest traversal is applicable :O
+  auto traversal = generateTraversal<PairwiseFunctor, useSoA, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
+
+  AutoPasLog(debug, "Selected traversal {}", _optimalTraversalOption);
+  return traversal;
+}
+
+template <class ParticleCell>
+template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::selectNextTraversal(
+    PairwiseFunctor &pairwiseFunctor) {
+  std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
+  bool traversalIsApplicable = false;
+
+  // choose new traversals
+  while (not traversalIsApplicable) {
+    // if no measurements are in yet _optimalTraversalOption is not initialized
+    if (not _isTuning) {
+      _optimalTraversalOption = _allowedTraversalOptions.begin().operator*();
+      _isTuning = true;
+    } else {
+      auto selectedTraversalIter =
+          std::find(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end(), _optimalTraversalOption);
+      ++selectedTraversalIter;
+
+      // if there is no next return null
+      if (selectedTraversalIter >= _allowedTraversalOptions.end()) {
+        _isTuning = false;
+        return std::unique_ptr<CellPairTraversal<ParticleCell>>(nullptr);
+      }
+      _optimalTraversalOption = *selectedTraversalIter;
+    }
+
+    traversal = generateTraversal<PairwiseFunctor, useSoA, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
+    traversalIsApplicable = traversal->isApplicable();
+  }
+  AutoPasLog(debug, "Testing traversal {}", _optimalTraversalOption);
+
+  _isInitialized = true;
+  return traversal;
 }
 
 template <class ParticleCell>
@@ -203,38 +271,83 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
 
-  auto functorHash = typeid(PairwiseFunctor).hash_code();
+  if (not _isInitialized)
+    utils::ExceptionHandler::exception("TraversalSelector::getOptimalTraversal(): No Traversal selected yet!");
 
-  if (_optimalTraversalOptions.find(functorHash) == _optimalTraversalOptions.end()) {
-    auto generatedTraversals = generateTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
-    traversal = chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
-  } else {
-    switch (_optimalTraversalOptions[functorHash]) {
-      case TraversalOptions::c08: {
-        traversal =
-            std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
-        break;
-      }
-      case TraversalOptions::sliced: {
-        traversal = std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
-            _dims, &pairwiseFunctor);
-        break;
-      }
-      default: { utils::ExceptionHandler::exception("Invalid saved optimal traversal option for this CellFunctor!"); }
-    }
-  }
+  traversal = generateTraversal<PairwiseFunctor, useSoA, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
   return traversal;
 }
 
 template <class ParticleCell>
-template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-bool TraversalSelector<ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
-  _currentlyTuning = true;
-  // Workaround for Containers that do not use traversals. If there are no traversals there is nothing to tune.
-  if (_allowedTraversalOptions.empty()) return false;
-  auto generatedTraversals = generateTraversals<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
-  chooseOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(generatedTraversals);
+void TraversalSelector<ParticleCell>::findFastestAbsTraversal() {
+  // choose the fastest traversal and reset timings
+  // Initialize with something. This will be overridden.
+  long optimalTraversalTime = std::numeric_limits<long>::max();
+  AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
+  for (auto &&t : _traversalTimes) {
+    AutoPasLog(debug, "Traversal {} took {} nanoseconds:", t.traversal, t.time);
+    if (t.time < optimalTraversalTime) {
+      _optimalTraversalOption = t.traversal;
+      optimalTraversalTime = t.time;
+    }
+  }
 
-  return _currentlyTuning;
+  // sanity check
+  if (optimalTraversalTime == std::numeric_limits<long>::max()) {
+    utils::ExceptionHandler::exception("TraversalSelector: Nothing was faster than max long! o_O");
+  }
 }
+
+template <class ParticleCell>
+void TraversalSelector<ParticleCell>::findFastestMeanTraversal() {
+  // choose the fastest traversal and reset timings
+  // reorder measurements
+  // @todo: maybe directly save measurements in this way?
+  std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
+  for (auto &&t : _traversalTimes) {
+    measurementsMap[t.traversal].push_back(t.time);
+  }
+
+  long optimalTraversalTime = std::numeric_limits<long>::max();
+  // @todo: when verlet list traversals are here apply weights to measurement w/ or w/o vl rebuild
+  for (auto &&m : measurementsMap) {
+    long meanTime = std::accumulate(m.second.begin(), m.second.end(), 0l) / m.second.size();
+    if (meanTime < optimalTraversalTime) {
+      optimalTraversalTime = meanTime;
+      _optimalTraversalOption = m.first;
+    }
+  }
+
+  // sanity check
+  if (optimalTraversalTime == std::numeric_limits<long>::max()) {
+    utils::ExceptionHandler::exception("TraversalSelector: Nothing was faster than max long! o_O");
+  }
+}
+
+template <class ParticleCell>
+void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
+  // choose the fastest traversal and reset timings
+  // reorder measurements
+  // todo: maybe directly save measurements in this way?
+  std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
+  for (auto &&t : _traversalTimes) {
+    measurementsMap[t.traversal].push_back(t.time);
+  }
+
+  long optimalTraversalTime = std::numeric_limits<long>::max();
+  for (auto &&m : measurementsMap) {
+    std::sort(m.second.begin(), m.second.end());
+    long medianTime = m.second[m.second.size() / 2];
+    if (medianTime < optimalTraversalTime) {
+      optimalTraversalTime = medianTime;
+      _optimalTraversalOption = m.first;
+    }
+  }
+
+  // sanity check
+  if (optimalTraversalTime == std::numeric_limits<long>::max()) {
+    utils::ExceptionHandler::exception("TraversalSelector: Nothing was faster than max long! o_O");
+  }
+}
+
 }  // namespace autopas

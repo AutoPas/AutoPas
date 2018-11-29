@@ -24,6 +24,8 @@ class TouchableParticle : public autopas::Particle {
 
 class RegionParticleIteratorTest : public AutoPasTestBase {
  public:
+  typedef autopas::LinkedCells<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> LCTouch;
+
   RegionParticleIteratorTest()
       : _boxMin{0., 0., 0.}, _boxMax{5., 5., 5.}, _regionMin{1., 1., 1.}, _regionMax{3., 3., 3.}, _cutoff{.9} {}
 
@@ -32,6 +34,15 @@ class RegionParticleIteratorTest : public AutoPasTestBase {
   void TearDown() override{};
 
   ~RegionParticleIteratorTest() override = default;
+
+  /**
+   * Checks if all particles in the given region of a Lined Cells container are touched exactly once and provides debug
+   * output.
+   * @param lcContainer
+   * @param regionMin
+   * @param regionMax
+   */
+  void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
 
  protected:
   // needs to be protected, because the test fixtures generate a derived class

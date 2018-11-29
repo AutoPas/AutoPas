@@ -267,7 +267,7 @@ void densityPressureHydroForce(Container& sphSystem) {
   std::cout << "haloparticles... ";
   int haloparts = 0, innerparts = 0;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
+    if (not autopas::utils::inBox(part->getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
       haloparts++;
     } else {
       innerparts++;
@@ -301,7 +301,7 @@ void densityPressureHydroForce(Container& sphSystem) {
   std::cout << "haloparticles... ";
   haloparts = 0, innerparts = 0;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    if (not autopas::inBox(part->getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
+    if (not autopas::utils::inBox(part->getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
       haloparts++;
     } else {
       innerparts++;

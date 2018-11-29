@@ -144,9 +144,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(&this->_clusters));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                      std::array<double, 3> higherCorner,
+                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                      bool incSearchRegion = false) override {
     throw "VerletClusterLists.getRegionIterator not implemented";
   }
 
@@ -204,7 +205,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     // put particles into grids
     for (auto& particle : invalidParticles) {
-      if (inBox(particle.getR(), _boxMin, _boxMax)) {
+      if (utils::inBox(particle.getR(), _boxMin, _boxMax)) {
         auto index = getIndexOfPosition(particle.getR());
         _clusters[index].addParticle(particle);
       }

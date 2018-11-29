@@ -21,6 +21,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"no-flops", no_argument, nullptr, 'F'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
+                                         {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
@@ -46,15 +47,20 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'c': {
-        if (strArg.find("direct") != string::npos) {
-          containerOption = autopas::directSum;
-        } else if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
-          containerOption = autopas::linkedCells;
-        } else if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
-          containerOption = autopas::verletLists;
-        } else {
+        // delete default argument
+        containerOptions.clear();
+        if (strArg.find("direct") != string::npos or strArg.find("ds") != string::npos) {
+          containerOptions.push_back(autopas::directSum);
+        }
+        if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
+          containerOptions.push_back(autopas::linkedCells);
+        }
+        if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
+          containerOptions.push_back(autopas::verletLists);
+        }
+        if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSum' or 'LinkedCells'!" << endl;
+          cerr << "Please use 'DirectSum', 'LinkedCells' or VerletLists!" << endl;
           displayHelp = true;
         }
         break;
@@ -184,6 +190,15 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'N': {
+        try {
+          particlesTotal = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing total number of particles: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 's': {
         try {
           particleSpacing = stod(strArg);
@@ -200,6 +215,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (strArg.find("sli") != string::npos) {
           traversalOptions.push_back(autopas::TraversalOptions::sliced);
         }
+        if (strArg.find("dir") != string::npos) {
+          traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
+        }
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
           cerr << "Please use 'c08' or 'sliced'!" << endl;
@@ -209,7 +227,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'v': {
         try {
-          verletRebuildFrequency = stoul(strArg);
+          verletRebuildFrequency = (unsigned int)stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
@@ -261,26 +279,32 @@ void MDFlexParser::printConfig() {
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
        << ":  ";
-  switch (containerOption) {
-    case autopas::ContainerOptions::directSum: {
-      cout << "DirectSum" << endl;
-      break;
-    }
-    case autopas::ContainerOptions::linkedCells: {
-      cout << "LinkedCells" << endl;
-      break;
-    }
-    case autopas::ContainerOptions::verletLists: {
-      cout << "VerletLists" << endl;
-      break;
-    }
-    case autopas::ContainerOptions::verletListsCells: {
-      cout << "VerletListsCells" << endl;
-      break;
+  for (auto &op : containerOptions) {
+    switch (op) {
+      case autopas::ContainerOptions::directSum: {
+        cout << "DirectSum, ";
+        break;
+      }
+      case autopas::ContainerOptions::linkedCells: {
+        cout << "LinkedCells, ";
+        break;
+      }
+      case autopas::ContainerOptions::verletLists: {
+        cout << "VerletLists, ";
+        break;
+      }
+      case autopas::ContainerOptions::verletListsCells: {
+        cout << "VerletListsCells, ";
+        break;
+      }
     }
   }
+  // deletes last comma
+  cout << "\b\b  " << endl;
 
-  if (containerOption == autopas::ContainerOptions::verletLists) {
+  // if verlet lists are in the container options print verlet config data
+  if (find(containerOptions.begin(), containerOptions.end(), autopas::ContainerOptions::verletLists) !=
+      containerOptions.end()) {
     cout << setw(valueOffset) << left << "Verlet rebuild frequency"
          << ":  " << verletRebuildFrequency << endl;
 
@@ -320,6 +344,12 @@ void MDFlexParser::printConfig() {
       cout << "Grid generator" << endl;
       cout << setw(valueOffset) << left << "Particle spacing"
            << ":  " << particleSpacing << endl;
+
+      cout << "Particles" << endl;
+      cout << setw(valueOffset) << left << "  per dimension"
+           << ":  " << particlesPerDim << endl;
+      cout << setw(valueOffset) << left << "  total"
+           << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
       break;
     }
     case GeneratorOption::gaussian: {
@@ -330,17 +360,13 @@ void MDFlexParser::printConfig() {
            << ":  " << distributionMean << endl;
       cout << setw(valueOffset) << left << "Distribution standard deviation"
            << ":  " << distributionStdDev << endl;
+
+      cout << "Particles" << endl;
+      cout << setw(valueOffset) << left << "  total"
+           << ":  " << particlesTotal << endl;
       break;
     }
   }
-
-  cout << "Particles" << endl;
-  cout << setw(valueOffset) << left << "  per dimension"
-       << ":  " << particlesPerDim;
-  if (generatorOption != grid) cout << " (approximately)";
-  cout << endl;
-  cout << setw(valueOffset) << left << "  total"
-       << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
 
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  ";
@@ -362,6 +388,12 @@ void MDFlexParser::printConfig() {
         cout << "c01, ";
         break;
       }
+      case autopas::TraversalOptions::directSumTraversal: {
+        cout << "direct sum, ";
+        break;
+      }
+      default:
+        break;
     }
   }
   // deletes last comma
@@ -373,7 +405,7 @@ void MDFlexParser::printConfig() {
        << ":  " << tuningInterval << endl;
 }
 
-autopas::ContainerOptions MDFlexParser::getContainerOption() const { return containerOption; }
+std::vector<autopas::ContainerOptions> MDFlexParser::getContainerOptions() const { return containerOptions; }
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 
@@ -387,9 +419,11 @@ size_t MDFlexParser::getParticlesPerDim() const { return particlesPerDim; }
 
 double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
 
+size_t MDFlexParser::getParticlesTotal() const { return particlesTotal; }
+
 const vector<autopas::TraversalOptions> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
 
-size_t MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
+unsigned int MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
 double MDFlexParser::getVerletSkinRadius() const { return verletSkinRadius; }
 
@@ -401,8 +435,8 @@ double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; 
 
 string MDFlexParser::getWriteVTK() const { return writeVTK; }
 
-double MDFlexParser::getBoxLength() const {
-  if (boxLength == -1) return ceil(2 * distributionMean);
+double MDFlexParser::getBoxLength() {
+  if (boxLength == -1) boxLength = ceil(2 * distributionMean);
   return boxLength;
 }
 

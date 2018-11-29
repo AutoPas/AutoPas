@@ -36,15 +36,24 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff), _cellBorderFlagManager() {
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
+        _cellBorderFlagManager() {
     this->_cells.resize(2);
+  }
+
+  /**
+   * Lists all traversal options applicable for the Direct Sum container.
+   * @return Vector of all applicable traversal options.
+   */
+  static const std::vector<TraversalOptions> &allDSApplicableTraversals() {
+    static const std::vector<TraversalOptions> v{TraversalOptions::directSumTraversal};
+    return v;
   }
 
   ContainerOptions getContainerType() override { return ContainerOptions::directSum; }
 
   void addParticle(Particle &p) override {
-    bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
-    if (inBox) {
+    if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getCell()->addParticle(p);
     } else {
       utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box.\n" +
@@ -53,8 +62,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void addHaloParticle(Particle &p) override {
-    bool inBox = autopas::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
-    if (not inBox) {
+    if (utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getHaloCell()->addParticle(p);
     } else {  // particle is not outside of own box
       utils::ExceptionHandler::exception(
@@ -71,15 +79,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, true> cellFunctor(f);
-      cellFunctor.processCell(*getCell());
-      cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, false, false> cellFunctor(f);
-      cellFunctor.processCell(*getCell());
-      cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    }
+    AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
+    traversal->traverseCellPairs(this->_cells);
   }
 
   /**
@@ -87,18 +88,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+    AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
     f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 
-    if (useNewton3) {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, true> cellFunctor(f);
-      cellFunctor.processCell(*getCell());
-      cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    } else {
-      CellFunctor<Particle, ParticleCell, ParticleFunctor, true, false> cellFunctor(f);
-      cellFunctor.processCell(*getCell());
-      cellFunctor.processCellPair(*getCell(), *getHaloCell());
-    }
+    traversal->traverseCellPairs(this->_cells);
 
     f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
     f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
@@ -111,7 +105,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
           getHaloCell()->numParticles());
     }
     for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
-      if (notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         addHaloParticle(*iter);
         iter.deleteCurrentParticle();
       }
@@ -125,7 +119,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (auto iter = this->begin(); iter.isValid() && (not outlierFound); ++iter) {
-      if (not iter->inBox(this->getBoxMin(), this->getBoxMax())) {
+      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         outlierFound = true;
       }
     }
@@ -133,20 +127,41 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
+    std::vector<TraversalOptions> allowedAndApplicable;
+
+    std::sort(traversalOptions.begin(), traversalOptions.end());
+    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
+                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelector<ParticleCell>({2, 0, 0}, traversalOptions);
+    return TraversalSelector<ParticleCell>({2, 0, 0}, allowedAndApplicable);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, &_cellBorderFlagManager, behavior));
+        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                      std::array<double, 3> higherCorner,
+                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                      bool incSearchRegion = false) override {
+    std::vector<size_t> cellsOfInterest;
+
+    switch (behavior) {
+      case IteratorBehavior::haloOnly:
+        cellsOfInterest.push_back(1);
+        break;
+      case IteratorBehavior::ownedOnly:
+        cellsOfInterest.push_back(0);
+        break;
+      case IteratorBehavior::haloAndOwned:
+        cellsOfInterest.push_back(0);
+        cellsOfInterest.push_back(1);
+        break;
+    }
+
     return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
-        &this->_cells, lowerCorner, higherCorner, &_cellBorderFlagManager, behavior));
+        &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
   }
 
  private:

@@ -6,17 +6,17 @@
 
 #include <array>
 #include <iostream>
-#include "../md/mdutils.h"
+#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/Timer.h"
 
 template <class Container, class Traversal>
-void measureContainer(Container *cont, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> *func, Traversal *traversal,
-                      int numParticles, int numIterations, bool useNewton3);
+void measureContainer(Container *cont,
+                      autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> *func,
+                      Traversal *traversal, int numParticles, int numIterations, bool useNewton3);
 
-void addParticles(
-    autopas::LinkedCells<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &lj_system,
-    int numParticles) {
+void addParticles(autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &lj_system,
+                  int numParticles) {
   // Place LJ particles
 
   srand(10032);  // fixed seedpoint
@@ -25,8 +25,8 @@ void addParticles(
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    PrintableMolecule particle(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
-    // PrintableMolecule ith(randomPosition(boxMin, boxMax), {0, 0, 0},
+    autopas::MoleculeLJ particle(RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
+    // autopas::MoleculeLJ ith(randomPosition(boxMin, boxMax), {0, 0, 0},
     // i++, 0.75, 0.012, 0. );
     lj_system.addParticle(particle);
   }
@@ -43,15 +43,13 @@ void addParticles(
 int main(int argc, char *argv[]) {
   autopas::Logger::create();
 
-  PrintableMolecule::setEpsilon(1.0);
-  PrintableMolecule::setSigma(1.0);
+  autopas::MoleculeLJ::setEpsilon(1.0);
+  autopas::MoleculeLJ::setSigma(1.0);
 
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 0.15;
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
-
-  autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> func;
 
   int numParticles = 16;
   int numIterations = 100000;
@@ -108,14 +106,17 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
-  autopas::LinkedCells<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> lcCont(
-      boxMin, boxMax, cutoff);
-  autopas::VerletListsCells<PrintableMolecule> verletCellContc08(
+  autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> lcCont(boxMin, boxMax,
+                                                                                                   cutoff);
+  autopas::VerletListsCells<autopas::MoleculeLJ> verletCellContc08(
       boxMin, boxMax, cutoff, autopas::TraversalOptions::c08, skin * cutoff, rebuildFrequency);
-  autopas::VerletListsCells<PrintableMolecule> verletCellContc18(
+  autopas::VerletListsCells<autopas::MoleculeLJ> verletCellContc18(
       boxMin, boxMax, cutoff, autopas::TraversalOptions::c18, skin * cutoff, rebuildFrequency);
-  autopas::VerletClusterLists<PrintableMolecule> verletClusterCont(boxMin, boxMax, cutoff, skin * cutoff,
-                                                                           rebuildFrequency);
+  autopas::VerletClusterLists<autopas::MoleculeLJ> verletClusterCont(boxMin, boxMax, cutoff, skin * cutoff,
+                                                                     rebuildFrequency);
+
+  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func(
+      cutoff, autopas::MoleculeLJ::getEpsilon(), autopas::MoleculeLJ::getSigma(), 0.0);
 
   addParticles(lcCont, numParticles);
 
@@ -131,8 +132,10 @@ int main(int argc, char *argv[]) {
 
     if (traversalType == c01) {
       if (not useNewton3) {
-        C01Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false> traversal(
-            dims, &func);
+        autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false>
+            traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
         std::cout << "c01 does not support newton3" << std::endl;
@@ -140,31 +143,43 @@ int main(int argc, char *argv[]) {
       }
     } else if (traversalType == c08) {
       if (useNewton3) {
-        C08Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, true>
+        autopas::C08Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false, true>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        C08Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, false>
+        autopas::C08Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false, false>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       }
     } else if (traversalType == c18) {
       if (useNewton3) {
-        C18Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, true>
+        autopas::C18Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false, true>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        C18Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, false>
+        autopas::C18Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false, false>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       }
     } else if (traversalType == sliced) {
       if (useNewton3) {
-        SlicedTraversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, true>
+        autopas::SlicedTraversal<
+            autopas::FullParticleCell<autopas::MoleculeLJ>,
+            autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>, false, true>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        SlicedTraversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, false>
+        autopas::SlicedTraversal<
+            autopas::FullParticleCell<autopas::MoleculeLJ>,
+            autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>, false, false>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       }
@@ -178,8 +193,10 @@ int main(int argc, char *argv[]) {
 
     if (traversalType == c01) {
       if (not useNewton3) {
-        C01Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false> traversal(
-            dims, &func);
+        autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false>
+            traversal(dims, &func);
         measureContainer(&verletCellContc08, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
         std::cout << "c01 does not support newton3" << std::endl;
@@ -190,21 +207,29 @@ int main(int argc, char *argv[]) {
       exit(3);
     } else if (traversalType == c18) {
       if (useNewton3) {
-        C18Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, true>
+        autopas::C18Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false, true>
             traversal(dims, &func);
         measureContainer(&verletCellContc18, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        C18Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, false>
+        autopas::C18Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false, false>
             traversal(dims, &func);
         measureContainer(&verletCellContc18, &func, &traversal, numParticles, numIterations, useNewton3);
       }
     } else if (traversalType == sliced) {
       if (useNewton3) {
-        SlicedTraversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, true>
+        autopas::SlicedTraversal<
+            autopas::FullParticleCell<autopas::MoleculeLJ>,
+            autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>, false, true>
             traversal(dims, &func);
         measureContainer(&verletCellContc08, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        SlicedTraversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false, false>
+        autopas::SlicedTraversal<
+            autopas::FullParticleCell<autopas::MoleculeLJ>,
+            autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>, false, false>
             traversal(dims, &func);
         measureContainer(&verletCellContc08, &func, &traversal, numParticles, numIterations, useNewton3);
       }
@@ -215,7 +240,9 @@ int main(int argc, char *argv[]) {
   } else if (containerType == verletCluster) {
     if (traversalType == c01) {
       if (not useNewton3) {
-        C01Traversal<FullParticleCell<PrintableMolecule>, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>, false>
+        autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
+                              autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                              false>
             dummyTraversal({0, 0, 0}, &func);
         measureContainer(&verletClusterCont, &func, &dummyTraversal, numParticles, numIterations, useNewton3);
       } else {
@@ -233,8 +260,9 @@ int main(int argc, char *argv[]) {
 }
 
 template <class Container, class Traversal>
-void measureContainer(Container *cont, autopas::LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> *func, Traversal *traversal,
-                      int numParticles, int numIterations, bool useNewton3) {
+void measureContainer(Container *cont,
+                      autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> *func,
+                      Traversal *traversal, int numParticles, int numIterations, bool useNewton3) {
   autopas::utils::Timer t;
 
   t.start();

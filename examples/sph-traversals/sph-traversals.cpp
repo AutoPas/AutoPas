@@ -6,7 +6,7 @@
 
 #include <array>
 #include <iostream>
-#include "../md/mdutils.h"
+#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
@@ -26,7 +26,8 @@ void addParticles(
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::sph::SPHParticle particle(randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012, 0.);
+    autopas::sph::SPHParticle particle(RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012,
+                                       0.);
     // autopas::sph::SPHParticle ith(randomPosition(boxMin, boxMax), {0, 0, 0},
     // i++, 0.75, 0.012, 0. );
     sph_system.addParticle(particle);
@@ -131,8 +132,9 @@ int main(int argc, char *argv[]) {
 
     if (traversalType == c01) {
       if (not useNewton3) {
-        C01Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false> traversal(
-            dims, &func);
+        autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false>
+            traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
         std::cout << "c01 does not support newton3" << std::endl;
@@ -140,31 +142,37 @@ int main(int argc, char *argv[]) {
       }
     } else if (traversalType == c08) {
       if (useNewton3) {
-        C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, true>
+        autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false, true>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        C08Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, false>
+        autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false, false>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       }
     } else if (traversalType == c18) {
       if (useNewton3) {
-        C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, true>
+        autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false, true>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, false>
+        autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false, false>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       }
     } else if (traversalType == sliced) {
       if (useNewton3) {
-        SlicedTraversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, true>
+        autopas::SlicedTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                 autopas::sph::SPHCalcDensityFunctor, false, true>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        SlicedTraversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, false>
+        autopas::SlicedTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                 autopas::sph::SPHCalcDensityFunctor, false, false>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       }
@@ -178,8 +186,9 @@ int main(int argc, char *argv[]) {
 
     if (traversalType == c01) {
       if (not useNewton3) {
-        C01Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false> traversal(
-            dims, &func);
+        autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false>
+            traversal(dims, &func);
         measureContainer(&verletCellContc08, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
         std::cout << "c01 does not support newton3" << std::endl;
@@ -190,21 +199,25 @@ int main(int argc, char *argv[]) {
       exit(3);
     } else if (traversalType == c18) {
       if (useNewton3) {
-        C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, true>
+        autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false, true>
             traversal(dims, &func);
         measureContainer(&verletCellContc18, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        C18Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, false>
+        autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false, false>
             traversal(dims, &func);
         measureContainer(&verletCellContc18, &func, &traversal, numParticles, numIterations, useNewton3);
       }
     } else if (traversalType == sliced) {
       if (useNewton3) {
-        SlicedTraversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, true>
+        autopas::SlicedTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                 autopas::sph::SPHCalcDensityFunctor, false, true>
             traversal(dims, &func);
         measureContainer(&verletCellContc08, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
-        SlicedTraversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false, false>
+        autopas::SlicedTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                 autopas::sph::SPHCalcDensityFunctor, false, false>
             traversal(dims, &func);
         measureContainer(&verletCellContc08, &func, &traversal, numParticles, numIterations, useNewton3);
       }
@@ -215,7 +228,8 @@ int main(int argc, char *argv[]) {
   } else if (containerType == verletCluster) {
     if (traversalType == c01) {
       if (not useNewton3) {
-        C01Traversal<FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor, false>
+        autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                              false>
             dummyTraversal({0, 0, 0}, &func);
         measureContainer(&verletClusterCont, &func, &dummyTraversal, numParticles, numIterations, useNewton3);
       } else {

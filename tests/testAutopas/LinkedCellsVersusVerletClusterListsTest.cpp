@@ -8,15 +8,7 @@
 
 LinkedCellsVersusVerletClusterListsTest::LinkedCellsVersusVerletClusterListsTest()
     : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),
-      _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {
-  double eps = 1.0;
-  double sig = 1.0;
-  double shift = 0.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>::setGlobals(getCutoff(), eps,
-                                                                                                      sig, shift);
-}
+      _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
 
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
@@ -26,7 +18,13 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
     _verletLists.addParticle(*it);
   }
 
-  autopas::LJFunctor<Molecule, FMCell> func;
+  double eps = 1.0;
+  double sig = 1.0;
+  double shift = 0.0;
+  autopas::MoleculeLJ::setEpsilon(eps);
+  autopas::MoleculeLJ::setSigma(sig);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
+
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, false> dummyTraversal({0, 0, 0}, &func);
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, false> traversalLinkedLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);

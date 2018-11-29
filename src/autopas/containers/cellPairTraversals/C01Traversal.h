@@ -86,7 +86,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellVer
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {
       for (unsigned long x = 1; x < end_x; ++x) {
-        unsigned long baseIndex = ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+        unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
         this->iterateVerletListsCell(verlet, baseIndex);
       }
     }

@@ -59,12 +59,12 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, 
 
  private:
   /**
-   * store ids of dimensions ordered by number of cells per dimensions
+   * Store ids of dimensions ordered by number of cells per dimensions.
    */
   std::array<int, 3> _dimsPerLength;
 
   /**
-   * the number of cells per slice in the dimension that was slicedFjjkj
+   * The number of cells per slice in the dimension that was sliced.
    */
   std::vector<unsigned long> _sliceThickness;
   std::vector<autopas_lock_t *> locks;
@@ -147,7 +147,7 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
           idArray[_dimsPerLength[0]] = dimSlice;
           idArray[_dimsPerLength[1]] = dimMedium;
           idArray[_dimsPerLength[2]] = dimShort;
-          auto id = ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
+          auto id = utils::ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
           this->processBaseCell(cells, id);
         }
       }
@@ -208,7 +208,7 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
           idArray[_dimsPerLength[0]] = dimSlice;
           idArray[_dimsPerLength[1]] = dimMedium;
           idArray[_dimsPerLength[2]] = dimShort;
-          auto baseIndex = ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
+          auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
           this->iterateVerletListsCell(verlet, baseIndex);
         }
       }

@@ -44,6 +44,8 @@ class VerletListsCellsHelpers {
                                std::unordered_map<Particle*, std::pair<size_t, size_t>>& cellMap, double cutoffskin)
         : _verletLists(verletLists), _cellMap(cellMap), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
+    bool isRelevantForTuning() override { return false; }
+
     void AoSFunctor(Particle& i, Particle& j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);

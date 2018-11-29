@@ -90,7 +90,6 @@ class SoA {
   template <int... attributes>
   std::array<double, sizeof...(attributes)> readMultiple(size_t particleId) {
     std::array<double, sizeof...(attributes)> retArray;
-    int i = 0;
     if (particleId >= getNumParticles()) {
       autopas::utils::ExceptionHandler::exception(
           "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId,

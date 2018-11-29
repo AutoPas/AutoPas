@@ -91,21 +91,6 @@ class Particle {
   void addR(const std::array<double, 3> &r) { _r = ArrayMath::add(_r, r); }
 
   /**
-   * Checks whether the particle is within a cuboidal box specified by rmin and
-   * rmax
-   * @param rmin lower corner of the box
-   * @param rmax higher corner of the box
-   * @return true if the particle is in the box, false otherwise
-   */
-  bool inBox(const std::array<double, 3> &rmin, const std::array<double, 3> &rmax) const {
-    bool in = true;
-    for (int d = 0; d < 3; ++d) {
-      in &= (_r[d] >= rmin[d] and _r[d] < rmax[d]);
-    }
-    return in;
-  }
-
-  /**
    * Get the velocity of the particle
    * @return current velocity
    */
