@@ -86,9 +86,9 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
   auto numSlices = (size_t)autopas_get_max_threads();
   auto minSliceThickness = this->_cellsPerDimension[_dimsPerLength[0]] / numSlices;
   if (minSliceThickness < 2) {
-    AutoPasLog(debug, "Sliced travesal only using {} threads because number of cells is too small.", numSlices)
-        minSliceThickness = 2;
+    minSliceThickness = 2;
     numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+    AutoPasLog(debug, "Sliced traversal only using {} threads because the number of cells is too small.", numSlices);
   }
 
   _sliceThickness.clear();
