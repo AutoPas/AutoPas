@@ -103,6 +103,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       case 'g': {
         if (strArg.find("grid") != string::npos) {
           generatorOption = GeneratorOption::grid;
+        } else if (strArg.find("uni") != string::npos) {
+          generatorOption = GeneratorOption::uniform;
         } else if (strArg.find("gaus") != string::npos) {
           generatorOption = GeneratorOption::gaussian;
         } else {
@@ -361,6 +363,15 @@ void MDFlexParser::printConfig() {
       cout << setw(valueOffset) << left << "Distribution standard deviation"
            << ":  " << distributionStdDev << endl;
 
+      cout << "Particles" << endl;
+      cout << setw(valueOffset) << left << "  total"
+           << ":  " << particlesTotal << endl;
+      break;
+    }
+    case GeneratorOption::uniform: {
+      cout << "Uniform generator" << endl;
+      cout << setw(valueOffset) << left << "Box length"
+           << ":  " << boxLength << endl;
       cout << "Particles" << endl;
       cout << setw(valueOffset) << left << "  total"
            << ":  " << particlesTotal << endl;

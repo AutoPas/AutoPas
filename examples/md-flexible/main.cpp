@@ -10,6 +10,7 @@
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
+#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "MDFlexParser.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
@@ -74,6 +75,21 @@ void initContainerGauss(std::vector<autopas::ContainerOptions> &containerOptions
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
 
+void initContainerUniform(std::vector<autopas::ContainerOptions> &containerOptions,
+                          std::vector<autopas::TraversalOptions> &traversalOptions,
+                          autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                          double boxLength, size_t numParticles, double cutoff, double verletSkinRadius,
+                          unsigned int verletRebuildFrequency, unsigned int tuningInterval) {
+  std::array<double, 3> boxMin({0., 0., 0.});
+  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
+
+  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
+               tuningInterval);
+
+  PrintableMolecule dummyParticle;
+  RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
+}
+
 void wirteVTKFile(string &filename, size_t numParticles,
                   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas) {
   std::ofstream vtkFile;
@@ -112,7 +128,7 @@ int main(int argc, char **argv) {
   auto measureFlops(parser.getMeasureFlops());
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
-  auto particleTotal(parser.getParticlesTotal());
+  auto particlesTotal(parser.getParticlesTotal());
   auto particlesPerDim(parser.getParticlesPerDim());
   auto traversalOptions(parser.getTraversalOptions());
   auto tuningInterval(parser.getTuningInterval());
@@ -133,10 +149,16 @@ int main(int argc, char **argv) {
     case MDFlexParser::GeneratorOption::grid: {
       initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,
                         verletSkinRadius, verletRebuildFrequency, tuningInterval);
+      particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
+      break;
+    }
+    case MDFlexParser::GeneratorOption::uniform: {
+      initContainerUniform(containerChoice, traversalOptions, autopas, boxLength, particlesTotal, cutoff,
+                           verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
-      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength, particleTotal, distributionMean,
+      initContainerGauss(containerChoice, traversalOptions, autopas, boxLength, particlesTotal, distributionMean,
                          distributionStdDev, cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
       break;
     }
@@ -154,7 +176,7 @@ int main(int argc, char **argv) {
   LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> functor(cutoff, MoleculeLJ::getEpsilon(),
                                                                             MoleculeLJ::getSigma(), 0.0);
 
-  if (not vtkFilename.empty()) wirteVTKFile(vtkFilename, particlesPerDim * particlesPerDim * particlesPerDim, autopas);
+  if (not vtkFilename.empty()) wirteVTKFile(vtkFilename, particlesTotal, autopas);
 
   // statistics for linked cells
   if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::linkedCells) {
@@ -167,8 +189,7 @@ int main(int argc, char **argv) {
 
     cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
          << cellsPerDimHalo[2] << " (Total: " << numCells << ")" << endl;
-    cout << "Average Particles per cell: " << (particlesPerDim * particlesPerDim * particlesPerDim) / (double)numCells
-         << endl;
+    cout << "Average Particles per cell: " << (particlesTotal) / (double)numCells << endl;
     cout << endl;
   }
 
@@ -214,7 +235,7 @@ int main(int argc, char **argv) {
           flopCounterFunctor.getDistanceCalculations() *
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
           floor(numIterations / verletRebuildFrequency);
-    auto mfups = particlesPerDim * particlesPerDim * particlesPerDim * numIterations / durationApplySec * 1e-6;
+    auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
