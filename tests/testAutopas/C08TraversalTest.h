@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 #include <testingHelpers/commonTypedefs.h>
+#include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/GridGenerator.h"
@@ -16,9 +17,9 @@
 #include <omp.h>
 #endif
 
-class C08TraversalTest : public testing::Test {
+class C08TraversalTest : public AutoPasTestBase {
  public:
   C08TraversalTest() = default;
 
-  ~C08TraversalTest() = default;
+  ~C08TraversalTest() override = default;
 };
