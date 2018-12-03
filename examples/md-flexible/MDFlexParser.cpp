@@ -25,6 +25,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
+                                         {"tuning-samples", required_argument, nullptr, 'S'},
                                          {"log-level", required_argument, nullptr, 'l'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
@@ -206,6 +207,19 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           particleSpacing = stod(strArg);
         } catch (const exception &) {
           cerr << "Error parsing separation of particles: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'S': {
+        try {
+          tuningSamples = (unsigned int)stoul(strArg);
+          if (tuningSamples < 1) {
+            cerr << "Tuning samples has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing number of tuning samples: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -442,6 +456,8 @@ double MDFlexParser::getBoxLength() {
 bool MDFlexParser::getMeasureFlops() const { return measureFlops; }
 
 unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
+
+unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 // spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }

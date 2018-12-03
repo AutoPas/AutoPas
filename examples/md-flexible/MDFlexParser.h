@@ -36,6 +36,7 @@ class MDFlexParser {
   size_t getParticlesTotal() const;
   size_t getParticlesPerDim() const;
   unsigned int getTuningInterval() const;
+  unsigned int getTuningSamples() const;
   string getWriteVTK() const;
   const vector<autopas::TraversalOptions> &getTraversalOptions() const;
   unsigned int getVerletRebuildFrequency() const;
@@ -64,6 +65,7 @@ class MDFlexParser {
   size_t particlesTotal = 1000;
   double particleSpacing = .4;
   unsigned int tuningInterval = 100;
+  unsigned int tuningSamples = 3;
   string writeVTK = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;

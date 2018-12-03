@@ -45,13 +45,13 @@ void initContainerGrid(std::vector<autopas::ContainerOptions> &containerOptions,
                        std::vector<autopas::TraversalOptions> &traversalOptions,
                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                        size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
-                       unsigned int verletRebuildFrequency, unsigned int tuningInterval) {
+                       unsigned int verletRebuildFrequency, unsigned int tuningInterval, unsigned int tuningSamples) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
   autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
-               tuningInterval);
+               tuningInterval, tuningSamples);
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
@@ -64,12 +64,12 @@ void initContainerGauss(std::vector<autopas::ContainerOptions> &containerOptions
                         autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
                         double cutoff, double verletSkinRadius, unsigned int verletRebuildFrequency,
-                        unsigned int tuningInterval) {
+                        unsigned int tuningInterval, unsigned int tuningSamples) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
   autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
-               tuningInterval);
+               tuningInterval, tuningSamples);
 
   PrintableMolecule dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
@@ -79,12 +79,13 @@ void initContainerUniform(std::vector<autopas::ContainerOptions> &containerOptio
                           std::vector<autopas::TraversalOptions> &traversalOptions,
                           autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                           double boxLength, size_t numParticles, double cutoff, double verletSkinRadius,
-                          unsigned int verletRebuildFrequency, unsigned int tuningInterval) {
+                          unsigned int verletRebuildFrequency, unsigned int tuningInterval,
+                          unsigned int tuningSamples) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
   autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
-               tuningInterval);
+               tuningInterval, tuningSamples);
 
   PrintableMolecule dummyParticle;
   RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
@@ -132,6 +133,7 @@ int main(int argc, char **argv) {
   auto particlesPerDim(parser.getParticlesPerDim());
   auto traversalOptions(parser.getTraversalOptions());
   auto tuningInterval(parser.getTuningInterval());
+  auto tuningSamples(parser.getTuningSamples());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
   auto verletSkinRadius(parser.getVerletSkinRadius());
   auto vtkFilename(parser.getWriteVTK());
@@ -148,18 +150,19 @@ int main(int argc, char **argv) {
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
       initContainerGrid(containerChoice, traversalOptions, autopas, particlesPerDim, particleSpacing, cutoff,
-                        verletSkinRadius, verletRebuildFrequency, tuningInterval);
+                        verletSkinRadius, verletRebuildFrequency, tuningInterval, tuningSamples);
       particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
       break;
     }
     case MDFlexParser::GeneratorOption::uniform: {
       initContainerUniform(containerChoice, traversalOptions, autopas, boxLength, particlesTotal, cutoff,
-                           verletSkinRadius, verletRebuildFrequency, tuningInterval);
+                           verletSkinRadius, verletRebuildFrequency, tuningInterval, tuningSamples);
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
       initContainerGauss(containerChoice, traversalOptions, autopas, boxLength, particlesTotal, distributionMean,
-                         distributionStdDev, cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval);
+                         distributionStdDev, cutoff, verletSkinRadius, verletRebuildFrequency, tuningInterval,
+                         tuningSamples);
       break;
     }
     default:
