@@ -302,7 +302,6 @@ template <class ParticleCell>
 void TraversalSelector<ParticleCell>::findFastestMeanTraversal() {
   // choose the fastest traversal and reset timings
   // reorder measurements
-  // @todo: maybe directly save measurements in this way?
   std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
   AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
   for (auto &&t : _traversalTimes) {
@@ -331,7 +330,6 @@ template <class ParticleCell>
 void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
   // choose the fastest traversal and reset timings
   // reorder measurements
-  // todo: maybe directly save measurements in this way?
   std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
   AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
   for (auto &&t : _traversalTimes) {
