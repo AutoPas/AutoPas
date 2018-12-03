@@ -23,7 +23,8 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   const unsigned int verletRebuildFrequency = 1;
   const unsigned int numSamples = 2;
   autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency,
-                                                 containers, traversals, 100, numSamples);
+                                                 containers, traversals, autopas::SelectorStrategy::fastestAbs,
+                                                 autopas::SelectorStrategy::fastestAbs, 100, numSamples);
 
   std::shared_ptr<autopas::ParticleContainer<Particle, FPCell>> fastestContainer;
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
