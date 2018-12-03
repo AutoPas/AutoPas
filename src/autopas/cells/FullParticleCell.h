@@ -25,6 +25,38 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   ~FullParticleCell() { autopas_destroy_lock(&particlesLock); }
 
+  /**
+   * Move Constructor
+   * @param other
+   */
+  FullParticleCell(FullParticleCell&& other) {
+    _particles = std::move(other._particles);
+    _particleSoABuffer = std::move(other._particleSoABuffer);
+    autopas_init_lock(&particlesLock);
+  }
+
+  /**
+   * Copy constructor
+   * @param other
+   */
+  FullParticleCell(const FullParticleCell& other) {
+    _particles = other._particles;
+    _particleSoABuffer = other._particleSoABuffer;
+    autopas_init_lock(&particlesLock);
+  }
+
+  /**
+   * Assignment operator
+   * @param other
+   * @return
+   */
+  FullParticleCell& operator=(FullParticleCell&& other) {
+    _particles = std::move(other._particles);
+    _particleSoABuffer = std::move(other._particleSoABuffer);
+    autopas_init_lock(&particlesLock);
+    return *this;
+  }
+
   void addParticle(Particle& m) override {
     autopas_set_lock(&particlesLock);
     _particles.push_back(m);
@@ -98,5 +130,4 @@ class FullParticleCell : public ParticleCell<Particle> {
  private:
   autopas_lock_t particlesLock;
 };
-
 }  // namespace autopas
