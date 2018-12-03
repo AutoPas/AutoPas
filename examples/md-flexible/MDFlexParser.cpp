@@ -122,6 +122,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       case 'i': {
         try {
           iterations = stoul(strArg);
+          if (iterations < 1) {
+            cerr << "IterationNumber of iterations has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
         } catch (const exception &) {
           cerr << "Error parsing number of iterations: " << optarg << endl;
           displayHelp = true;
@@ -131,6 +135,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       case 'I': {
         try {
           tuningInterval = (unsigned int)stoul(strArg);
+          if (tuningInterval < 1) {
+            cerr << "Tuning interval has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
         } catch (const exception &) {
           cerr << "Error parsing tuning interval: " << optarg << endl;
           displayHelp = true;
