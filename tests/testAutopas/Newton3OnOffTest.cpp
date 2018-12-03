@@ -20,7 +20,7 @@ TEST_F(Newton3OnOffTest, testAoS) {
     RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
                                            autoPas.getContainer()->getCutoff(), 10);
 
-    EXPECT_CALL(mockFunctor, isRelevantForTuning()).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, isRelevantForTuning()).Times(testing::AtLeast(1)).WillRepeatedly(Return(true));
 
     // with newton 3:
     int callsNewton3 = 0;
