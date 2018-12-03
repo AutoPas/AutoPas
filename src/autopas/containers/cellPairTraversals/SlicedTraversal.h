@@ -77,7 +77,7 @@ inline TraversalOptions SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, u
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline bool SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
-  return this->_cellsPerDimension[_dimsPerLength[0]] / this->_sliceThickness.size() >= 2;
+  return this->_sliceThickness.size() > 0;
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
@@ -93,14 +93,23 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
 
   // split domain across its longest dimension
 
-  auto numSlices = autopas_get_max_threads();
-  // find dimension with most cells
+  auto numSlices = (size_t)autopas_get_max_threads();
+  auto minSliceThickness = this->_cellsPerDimension[_dimsPerLength[0]] / numSlices;
+  if (minSliceThickness < 2) {
+    minSliceThickness = 2;
+    numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+    AutoPasLog(debug, "Sliced traversal only using {} threads because the number of cells is too small.", numSlices);
+  }
+
   _sliceThickness.clear();
-  _sliceThickness.insert(_sliceThickness.begin(), numSlices, this->_cellsPerDimension[_dimsPerLength[0]] / numSlices);
+
+  // abort if domain is too small -> cleared _sliceThickness array indicates non applicability
+  if (numSlices < 1) return;
+
+  _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
   auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
   for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
-  // decreases last _sliceThickness by one to account for the way we handle base
-  // cells
+  // decreases last _sliceThickness by one to account for the way we handle base cells
   --*--_sliceThickness.end();
 
   locks.resize(numSlices);
@@ -120,9 +129,8 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
   }
 
 #ifdef AUTOPAS_OPENMP
-// although every thread gets exactly one iteration (=slice) this is faster than
-// a normal parallel region
-#pragma omp parallel for schedule(static, 1)
+// although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
+#pragma omp parallel for schedule(static, 1) num_threads(numSlices)
 #endif
   for (size_t slice = 0; slice < numSlices; ++slice) {
     array<unsigned long, 3> myStartArray{0, 0, 0};

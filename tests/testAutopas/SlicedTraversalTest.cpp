@@ -23,12 +23,37 @@ void SlicedTraversalTest::fillWithParticles(std::vector<FPCell> &cells, std::arr
 }
 
 TEST_F(SlicedTraversalTest, testTraversalCube) {
-  /// @todo: more propper way to do this would be through a mock of the
-  /// cellFunctor
   size_t edgeLength = 10;
 
   MFunctor functor;
-  CellFunctorAoSN3 cellFunctor(&functor);
+  std::vector<FPCell> cells;
+  cells.resize(edgeLength * edgeLength * edgeLength);
+
+  fillWithParticles(cells, {edgeLength, edgeLength, edgeLength});
+#ifdef AUTOPAS_OPENMP
+  int numThreadsBefore = omp_get_max_threads();
+  omp_set_num_threads(4);
+#endif
+  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({edgeLength, edgeLength, edgeLength},
+                                                                          &functor);
+
+  // every particle interacts with 13 others. Last layer of each dim is covered
+  // by previous interactions
+  EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
+  slicedTraversal.traverseCellPairs(cells);
+#ifdef AUTOPAS_OPENMP
+  omp_set_num_threads(numThreadsBefore);
+#endif
+}
+
+/**
+ * This test is the same as testTraversalCube except that the domain is too small for 4 threads.
+ * It expects the sliced traversal to start less threads but still work.
+ */
+TEST_F(SlicedTraversalTest, testTraversalCubeShrink) {
+  size_t edgeLength = 3;
+
+  MFunctor functor;
   std::vector<FPCell> cells;
   cells.resize(edgeLength * edgeLength * edgeLength);
 
@@ -50,12 +75,9 @@ TEST_F(SlicedTraversalTest, testTraversalCube) {
 }
 
 TEST_F(SlicedTraversalTest, testTraversalCuboid) {
-  /// @todo: more propper way to do this would be through a mock of the
-  /// cellFunctor
   std::array<size_t, 3> edgeLength = {5, 7, 10};
 
   MFunctor functor;
-  CellFunctorAoSN3 cellFunctor(&functor);
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
@@ -90,6 +112,21 @@ TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
 #endif
 
   EXPECT_FALSE(slicedTraversal.isApplicable());
+}
+
+TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
+  std::vector<FPCell> cells;
+
+#ifdef AUTOPAS_OPENMP
+  int numThreadsBefore = omp_get_max_threads();
+  omp_set_num_threads(4);
+#endif
+  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({5, 5, 5}, nullptr);
+#ifdef AUTOPAS_OPENMP
+  omp_set_num_threads(numThreadsBefore);
+#endif
+
+  EXPECT_TRUE(slicedTraversal.isApplicable());
 }
 
 TEST_F(SlicedTraversalTest, testIsApplicableOk) {
