@@ -23,6 +23,7 @@ class MDFlexParser {
 
   double getBoxLength();
   std::vector<autopas::ContainerOptions> getContainerOptions() const;
+  autopas::SelectorStrategy getContainerSelectorStrategy() const;
   double getCutoff() const;
   autopas::DataLayoutOption getDataLayoutOption() const;
   double getDistributionMean() const;
@@ -39,6 +40,7 @@ class MDFlexParser {
   unsigned int getTuningSamples() const;
   string getWriteVTK() const;
   const vector<autopas::TraversalOptions> &getTraversalOptions() const;
+  autopas::SelectorStrategy getTraversalSelectorStrategy() const;
   unsigned int getVerletRebuildFrequency() const;
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
@@ -49,9 +51,12 @@ class MDFlexParser {
 
   // defaults:
   std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists};
+  autopas::SelectorStrategy containerSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
   autopas::DataLayoutOption dataLayoutOption = autopas::DataLayoutOption::soa;
   std::vector<autopas::TraversalOptions> traversalOptions = {autopas::c08, autopas::directSumTraversal};
+  autopas::SelectorStrategy traversalSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
 
+ private:
   double boxLength = -1;
   double cutoff = 1.;
   double distributionMean = 5.;

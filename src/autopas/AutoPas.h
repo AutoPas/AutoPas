@@ -54,10 +54,12 @@ class AutoPas {
             unsigned int verletRebuildFrequency,
             const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
+            SelectorStrategy containerSelectorStrategy = SelectorStrategy::fastestAbs,
+            SelectorStrategy traversalSelectorStrategy = SelectorStrategy::fastestAbs,
             unsigned int tuningInterval = 100, unsigned int numSamples = 3) {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainers, allowedTraversals,
-        tuningInterval, numSamples);
+        tuningInterval, numSamples, containerSelectorStrategy, traversalSelectorStrategy);
   }
 
   /**

@@ -57,7 +57,8 @@ class AutoTuner {
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
-            std::vector<TraversalOptions> allowedTraversalOptions, unsigned int tuningInterval, unsigned int maxSamples)
+            std::vector<TraversalOptions> allowedTraversalOptions, unsigned int tuningInterval, unsigned int maxSamples,
+            SelectorStrategy containerSelectorStrategy, SelectorStrategy traversalSelectorStrategy)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainerOptions,
@@ -65,8 +66,8 @@ class AutoTuner {
         _allowedTraversalOptions(allowedTraversalOptions),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
-        _containerSelectorStrategy(SelectorStrategy::fastestAbs),
-        _traversalSelectorStrategy(SelectorStrategy::fastestAbs) {}
+        _containerSelectorStrategy(containerSelectorStrategy),
+        _traversalSelectorStrategy(traversalSelectorStrategy) {}
 
   /**
    * Getter for the optimal container.
