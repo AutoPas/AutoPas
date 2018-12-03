@@ -10,7 +10,6 @@ VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
     : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOptions::c18, 0.1 * getCutoff(), 2) {
   double eps = 1.0;
   double sig = 1.0;
-  double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
 }

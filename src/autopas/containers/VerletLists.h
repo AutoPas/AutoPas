@@ -369,7 +369,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
       size_t buckets = _aosNeighborLists.bucket_count();
-      //#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
       for (size_t b = 0; b < buckets; b++) {
         for (auto it = _aosNeighborLists.begin(b); it != _aosNeighborLists.end(b); it++) {
           Particle& i = *it->first;
@@ -412,7 +412,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
-      //#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
       for (size_t i = iFrom; i < iTo; i++) {
         f->SoAFunctor(_soa, _soaNeighborLists, i, i + 1, useNewton3);
       }

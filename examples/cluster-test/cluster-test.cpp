@@ -1,6 +1,6 @@
 /**
- * @file lj-traversals.cpp
- * @date 04.11.18
+ * @file cluster-test.cpp
+ * @date 29.11.18
  * @author nguyen
  */
 
@@ -75,7 +75,6 @@ int main(int argc, char *argv[]) {
   double cutoff = .03;
 
   int numParticles = 16;
-  int numIterations = 1;
   bool useNewton3 = false;
   double skin = 0.;
   int rebuildFrequency = 1;
