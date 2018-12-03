@@ -314,7 +314,7 @@ void TraversalSelector<ParticleCell>::findFastestMeanTraversal() {
   // @todo: when verlet list traversals are here apply weights to measurement w/ or w/o vl rebuild
   for (auto &&m : measurementsMap) {
     long meanTime = std::accumulate(m.second.begin(), m.second.end(), 0l) / m.second.size();
-    AutoPasLog(debug, "Traversal {} mean: {} nanoseconds", m.first, meanTime)
+    AutoPasLog(debug, "Traversal {} mean: {} nanoseconds", m.first, meanTime);
     if (meanTime < optimalTraversalTime) {
       optimalTraversalTime = meanTime;
       _optimalTraversalOption = m.first;
