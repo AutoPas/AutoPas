@@ -285,7 +285,7 @@ void TraversalSelector<ParticleCell>::findFastestAbsTraversal() {
   long optimalTraversalTime = std::numeric_limits<long>::max();
   AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
   for (auto &&t : _traversalTimes) {
-    AutoPasLog(debug, "Traversal {} took {} nanoseconds:", t.traversal, t.time);
+    AutoPasLog(debug, "Traversal {} took {} nanoseconds", t.traversal, t.time);
     if (t.time < optimalTraversalTime) {
       _optimalTraversalOption = t.traversal;
       optimalTraversalTime = t.time;
@@ -304,7 +304,9 @@ void TraversalSelector<ParticleCell>::findFastestMeanTraversal() {
   // reorder measurements
   // @todo: maybe directly save measurements in this way?
   std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
+  AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
   for (auto &&t : _traversalTimes) {
+    AutoPasLog(debug, "Traversal {} took {} nanoseconds", t.traversal, t.time);
     measurementsMap[t.traversal].push_back(t.time);
   }
 
@@ -312,6 +314,7 @@ void TraversalSelector<ParticleCell>::findFastestMeanTraversal() {
   // @todo: when verlet list traversals are here apply weights to measurement w/ or w/o vl rebuild
   for (auto &&m : measurementsMap) {
     long meanTime = std::accumulate(m.second.begin(), m.second.end(), 0l) / m.second.size();
+    AutoPasLog(debug, "Traversal {} mean: {} nanoseconds", m.first, meanTime)
     if (meanTime < optimalTraversalTime) {
       optimalTraversalTime = meanTime;
       _optimalTraversalOption = m.first;
@@ -330,7 +333,9 @@ void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
   // reorder measurements
   // todo: maybe directly save measurements in this way?
   std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
+  AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
   for (auto &&t : _traversalTimes) {
+    AutoPasLog(debug, "Traversal {} took {} nanoseconds", t.traversal, t.time);
     measurementsMap[t.traversal].push_back(t.time);
   }
 
@@ -338,6 +343,7 @@ void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
   for (auto &&m : measurementsMap) {
     std::sort(m.second.begin(), m.second.end());
     long medianTime = m.second[m.second.size() / 2];
+    AutoPasLog(debug, "Traversal {} median: {} nanoseconds", m.first, medianTime);
     if (medianTime < optimalTraversalTime) {
       optimalTraversalTime = medianTime;
       _optimalTraversalOption = m.first;
