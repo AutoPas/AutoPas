@@ -264,6 +264,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
 
   /**
    * update the verlet lists
+   * @param useNewton3 use newton3?
    */
   void updateVerletLists(bool useNewton3) {
     // the neighbor list is now valid
