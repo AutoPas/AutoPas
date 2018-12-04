@@ -61,6 +61,8 @@ TEST_F(Newton3OnOffTest, testSoA) {
     RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
                                            autoPas.getContainer()->getCutoff(), 10);
 
+    EXPECT_CALL(mockFunctor, isRelevantForTuning()).Times(testing::AtLeast(1));
+
     // loader and extractor will be called, we don't care how often.
     EXPECT_CALL(mockFunctor, SoALoader(_, _)).Times(testing::AtLeast(1));
     EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
