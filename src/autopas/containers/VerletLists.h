@@ -373,7 +373,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
       for (size_t b = 0; b < buckets; b++) {
         auto endIter = _aosNeighborLists.end(b);
         for (auto it = _aosNeighborLists.begin(b); it != endIter; ++it) {
-          Particle& i = *it->first;
+          Particle& i = *(it->first);
           for (auto j_ptr : it->second) {
             Particle& j = *j_ptr;
             f->AoSFunctor(i, j, false);
