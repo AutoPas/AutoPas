@@ -108,8 +108,8 @@ TEST_F(Newton3OnOffTest, testSoA) {
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
 
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
-    ;  // should be called exactly two times
+    // should be called exactly two times
     EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
-    ;  // should be called exactly two times
+    // should be called exactly two times
   }
 }
