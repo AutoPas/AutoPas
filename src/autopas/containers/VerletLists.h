@@ -369,13 +369,13 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
       size_t buckets = _aosNeighborLists.bucket_count();
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic) shared(_aosNeighborLists)
       for (size_t b = 0; b < buckets; b++) {
-        for (auto it = _aosNeighborLists.begin(b); it != _aosNeighborLists.end(b); it++) {
+        for (auto it = _aosNeighborLists.begin(b); it != _aosNeighborLists.end(b); ++it) {
           Particle& i = *it->first;
           for (auto j_ptr : it->second) {
             Particle& j = *j_ptr;
-            f->AoSFunctor(i, j, useNewton3);
+            f->AoSFunctor(i, j, false);
           }
         }
       }
