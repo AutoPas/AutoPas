@@ -285,7 +285,7 @@ void TraversalSelector<ParticleCell>::findFastestAbsTraversal() {
   long optimalTraversalTime = std::numeric_limits<long>::max();
   AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
   for (auto &&t : _traversalTimes) {
-    AutoPasLog(debug, "Traversal {} took {} nanoseconds", t.traversal, t.time);
+    AutoPasLog(debug, "Traversal {} took {} nanoseconds.", t.traversal, t.time);
     if (t.time < optimalTraversalTime) {
       _optimalTraversalOption = t.traversal;
       optimalTraversalTime = t.time;
