@@ -48,16 +48,21 @@ class AutoPas {
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainers List of container types AutoPas can choose from.
    * @param allowedTraversals List of traversals AutoPas can choose from.
+   * @param containerSelectorStrategy Strategy for the container selector.
+   * @param traversalSelectorStrategy Strategy for the traversal selector.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
+   * @param numSamples Number of samples the tuner should collect for each combination.
    */
   void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency,
             const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
-            unsigned int tuningInterval = 100) {
-    _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(boxMin, boxMax, cutoff, verletSkin,
-                                                                              verletRebuildFrequency, allowedContainers,
-                                                                              allowedTraversals, tuningInterval);
+            SelectorStrategy containerSelectorStrategy = SelectorStrategy::fastestAbs,
+            SelectorStrategy traversalSelectorStrategy = SelectorStrategy::fastestAbs,
+            unsigned int tuningInterval = 100, unsigned int numSamples = 3) {
+    _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
+        boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainers, allowedTraversals,
+        containerSelectorStrategy, traversalSelectorStrategy, tuningInterval, numSamples);
   }
 
   /**
