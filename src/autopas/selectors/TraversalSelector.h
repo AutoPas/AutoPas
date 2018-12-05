@@ -333,7 +333,7 @@ void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
   std::unordered_map<TraversalOptions, std::vector<long>, TrivialHash> measurementsMap;
   AutoPasLog(debug, "TraversalSelector: Collected traversal times:");
   for (auto &&t : _traversalTimes) {
-    AutoPasLog(debug, "Traversal {} took {} nanoseconds", t.traversal, t.time);
+    AutoPasLog(debug, "Traversal {} took {} nanoseconds.", t.traversal, t.time);
     measurementsMap[t.traversal].push_back(t.time);
   }
 
