@@ -11,6 +11,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   int option, option_index;
   static struct option long_options[] = {{"box-length", required_argument, nullptr, 'b'},
                                          {"container", required_argument, nullptr, 'c'},
+                                         {"container-selector-strategy", required_argument, nullptr, 'k'},
                                          {"cutoff", required_argument, nullptr, 'C'},
                                          {"distribution-mean", required_argument, nullptr, 'm'},
                                          {"distribution-stddeviation", required_argument, nullptr, 'z'},
@@ -24,7 +25,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
+                                         {"traversal-selector-strategy", required_argument, nullptr, 'T'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
+                                         {"tuning-samples", required_argument, nullptr, 'S'},
                                          {"log-level", required_argument, nullptr, 'l'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
@@ -121,6 +124,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       case 'i': {
         try {
           iterations = stoul(strArg);
+          if (iterations < 1) {
+            cerr << "IterationNumber of iterations has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
         } catch (const exception &) {
           cerr << "Error parsing number of iterations: " << optarg << endl;
           displayHelp = true;
@@ -130,8 +137,26 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       case 'I': {
         try {
           tuningInterval = (unsigned int)stoul(strArg);
+          if (tuningInterval < 1) {
+            cerr << "Tuning interval has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
         } catch (const exception &) {
           cerr << "Error parsing tuning interval: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'k': {
+        if (strArg.find("abs") != string::npos) {
+          containerSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
+        } else if (strArg.find("mea") != string::npos) {
+          containerSelectorStrategy = autopas::SelectorStrategy::fastestMean;
+        } else if (strArg.find("med") != string::npos) {
+          containerSelectorStrategy = autopas::SelectorStrategy::fastestMedian;
+        } else {
+          cerr << "Unknown Container Selector Strategy: " << strArg << endl;
+          cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
         }
         break;
@@ -210,7 +235,21 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'S': {
+        try {
+          tuningSamples = (unsigned int)stoul(strArg);
+          if (tuningSamples < 1) {
+            cerr << "Tuning samples has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing number of tuning samples: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 't': {
+        traversalOptions.clear();
         if (strArg.find("c08") != string::npos) {
           traversalOptions.push_back(autopas::TraversalOptions::c08);
         }
@@ -223,6 +262,20 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
           cerr << "Please use 'c08' or 'sliced'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'T': {
+        if (strArg.find("abs") != string::npos) {
+          traversalSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
+        } else if (strArg.find("mea") != string::npos) {
+          traversalSelectorStrategy = autopas::SelectorStrategy::fastestMean;
+        } else if (strArg.find("med") != string::npos) {
+          traversalSelectorStrategy = autopas::SelectorStrategy::fastestMedian;
+        } else {
+          cerr << "Unknown Traversal Selector Strategy: " << strArg << endl;
+          cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
         }
         break;
@@ -277,6 +330,25 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
+std::string selectorStrategyToString(autopas::SelectorStrategy selectorStrategy) {
+  std::string retString;
+  switch (selectorStrategy) {
+    case autopas::SelectorStrategy::fastestAbs: {
+      retString = "Fastest Absolute Value";
+      break;
+    }
+    case autopas::SelectorStrategy::fastestMean: {
+      retString = "Fastest Mean Value";
+      break;
+    }
+    case autopas::SelectorStrategy::fastestMedian: {
+      retString = "Fastest Median Value";
+      break;
+    }
+  }
+  return retString;
+}
+
 void MDFlexParser::printConfig() {
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
@@ -312,6 +384,11 @@ void MDFlexParser::printConfig() {
 
     cout << setw(valueOffset) << left << "Verlet skin radius"
          << ":  " << verletSkinRadius << endl;
+  }
+
+  if (containerOptions.size() > 1) {
+    cout << setw(valueOffset) << left << "Container Selector Strategy"
+         << ":  " << selectorStrategyToString(containerSelectorStrategy) << endl;
   }
 
   cout << setw(valueOffset) << left << "Data Layout"
@@ -410,10 +487,17 @@ void MDFlexParser::printConfig() {
   // deletes last comma
   cout << "\b\b  " << endl;
 
+  if (traversalOptions.size() > 1) {
+    cout << setw(valueOffset) << left << "Traversal Selector Strategy"
+         << ":  " << selectorStrategyToString(traversalSelectorStrategy) << endl;
+  }
+
   cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
   cout << setw(valueOffset) << left << "Tuning Interval"
        << ":  " << tuningInterval << endl;
+  cout << setw(valueOffset) << left << "Tuning Samples"
+       << ":  " << tuningSamples << endl;
 }
 
 std::vector<autopas::ContainerOptions> MDFlexParser::getContainerOptions() const { return containerOptions; }
@@ -455,5 +539,11 @@ bool MDFlexParser::getMeasureFlops() const { return measureFlops; }
 
 unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
 
+unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
+
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
+
+autopas::SelectorStrategy MDFlexParser::getTraversalSelectorStrategy() const { return traversalSelectorStrategy; }
+
+autopas::SelectorStrategy MDFlexParser::getContainerSelectorStrategy() const { return containerSelectorStrategy; }
 // spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }

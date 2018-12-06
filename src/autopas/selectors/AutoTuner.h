@@ -52,13 +52,15 @@ class AutoTuner {
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainerOptions Vector of container types AutoPas can choose from.
    * @param allowedTraversalOptions Vector of traversals AutoPas can choose from.
+   * @param containerSelectorStrategy Strategy for the container selector.
+   * @param traversalSelectorStrategy Strategy for the traversal selector.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
-            std::vector<TraversalOptions> allowedTraversalOptions, unsigned int tuningInterval,
-            unsigned int maxSamples = 3)
+            std::vector<TraversalOptions> allowedTraversalOptions, SelectorStrategy containerSelectorStrategy,
+            SelectorStrategy traversalSelectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainerOptions,
@@ -66,8 +68,8 @@ class AutoTuner {
         _allowedTraversalOptions(allowedTraversalOptions),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
-        _containerSelectorStrategy(SelectorStrategy::fastestAbs),
-        _traversalSelectorStrategy(SelectorStrategy::fastestAbs) {}
+        _containerSelectorStrategy(containerSelectorStrategy),
+        _traversalSelectorStrategy(traversalSelectorStrategy) {}
 
   /**
    * Getter for the optimal container.
@@ -120,6 +122,7 @@ class AutoTuner {
    */
   size_t _numSamples;
 
+  // TODO: _containerSelectorStrategy currently unused
   SelectorStrategy _containerSelectorStrategy;
   SelectorStrategy _traversalSelectorStrategy;
 };

@@ -11,14 +11,16 @@ using ::testing::Return;  // anything is ok
 
 TEST_F(Newton3OnOffTest, testAoS) {
   for (auto containerOption : autopas::allContainerOptions) {
+    // needs two samples per container because we test with and without newton 3 and never take time measurements
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(), {containerOption},
-                 {autopas::TraversalOptions::c08, autopas::TraversalOptions::directSumTraversal}, 1);
+                 {autopas::TraversalOptions::c08, autopas::TraversalOptions::directSumTraversal},
+                 autopas::SelectorStrategy::fastestAbs, autopas::SelectorStrategy::fastestAbs, 100, 1);
     autopas::MoleculeLJ defaultParticle;
     RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
     RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
                                            autoPas.getContainer()->getCutoff(), 10);
 
-    EXPECT_CALL(mockFunctor, isRelevantForTuning()).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, isRelevantForTuning()).Times(testing::AtLeast(1)).WillRepeatedly(Return(true));
 
     // with newton 3:
     int callsNewton3 = 0;
@@ -42,9 +44,11 @@ TEST_F(Newton3OnOffTest, testAoS) {
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(0);  // disables newton3 variant
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
 
-    EXPECT_EQ(callsNewton3 * 2,
-              callsNonNewton3)
-        << "for containeroption: " << containerOption;  // should be called exactly two times
+    EXPECT_EQ(callsNewton3 * 2, callsNonNewton3);  // should be called exactly two times
+
+    if (::testing::Test::HasFailure()) {
+      std::cerr << "Failures for containeroption: " << containerOption << std::endl;
+    }
   }
 }
 
