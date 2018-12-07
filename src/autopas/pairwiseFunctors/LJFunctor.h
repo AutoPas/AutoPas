@@ -148,15 +148,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       }
     }
 
+    double upotSum = 0.;
+    double virialSumX = 0.;
+    double virialSumY = 0.;
+    double virialSumZ = 0.;
+
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       double fxacc = 0.;
       double fyacc = 0.;
       double fzacc = 0.;
 
-      double upotSum = 0.;
-      double virialSumX = 0.;
-      double virialSumY = 0.;
-      double virialSumZ = 0.;
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
@@ -210,16 +211,15 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       fxptr[i] += fxacc;
       fyptr[i] += fyacc;
       fzptr[i] += fzacc;
-
-      if (calculateGlobals) {
-        const int threadnum = autopas_get_thread_num();
-        // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
-        // AoS)
-        _aosThreadData[threadnum].upotSum += upotSum * (newton3 ? 1 : 2);
-        _aosThreadData[threadnum].virialSum[0] += virialSumX * (newton3 ? 1 : 2);
-        _aosThreadData[threadnum].virialSum[1] += virialSumY * (newton3 ? 1 : 2);
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ * (newton3 ? 1 : 2);
-      }
+    }
+    if (calculateGlobals) {
+      const int threadnum = autopas_get_thread_num();
+      // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
+      // AoS)
+      _aosThreadData[threadnum].upotSum += upotSum * (newton3 ? 1 : 2);
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * (newton3 ? 1 : 2);
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * (newton3 ? 1 : 2);
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * (newton3 ? 1 : 2);
     }
   }
 
@@ -262,16 +262,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         return;
       }*/
     }
+    double upotSum = 0.;
+    double virialSumX = 0.;
+    double virialSumY = 0.;
+    double virialSumZ = 0.;
+
     const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
-
-      double upotSum = 0.;
-      double virialSumX = 0.;
-      double virialSumY = 0.;
-      double virialSumZ = 0.;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -321,29 +321,27 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           virialSumZ += virialz;
         }
       }
-
       fx1ptr[i] += fxacc;
       fy1ptr[i] += fyacc;
       fz1ptr[i] += fzacc;
-
-      if (calculateGlobals) {
-        double energyfactor = 1.;
-        if (_duplicatedCalculations) {
-          // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
-          // that we do not add the energy multiple times!
-          energyfactor = isHaloCell1 ? 0. : 1.;
-          if (newton3) {
-            energyfactor += isHaloCell2 ? 0. : 1.;
-            energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-          }
+    }
+    if (calculateGlobals) {
+      double energyfactor = 1.;
+      if (_duplicatedCalculations) {
+        // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
+        // that we do not add the energy multiple times!
+        energyfactor = isHaloCell1 ? 0. : 1.;
+        if (newton3) {
+          energyfactor += isHaloCell2 ? 0. : 1.;
+          energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
         }
-        const int threadnum = autopas_get_thread_num();
-
-        _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
-        _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
-        _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
       }
+      const int threadnum = autopas_get_thread_num();
+
+      _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
     }
   }
 
