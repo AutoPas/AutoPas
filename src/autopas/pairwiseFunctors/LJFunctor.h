@@ -224,9 +224,13 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
+   * Implementation for two cell SoA functor to test vectorization for gcc.
+   * @tparam newton3
+   * @param soa1
+   * @param soa2
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
+  template <bool newton3>
+  void SoAFunctor_impl(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2) {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -344,6 +348,17 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
         _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
       }
+    }
+  }
+
+  /**
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
+   */
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
+    if (newton3) {
+      SoAFunctor_impl<true>(soa1, soa2);
+    } else {
+      SoAFunctor_impl<false>(soa1, soa2);
     }
   }
 
