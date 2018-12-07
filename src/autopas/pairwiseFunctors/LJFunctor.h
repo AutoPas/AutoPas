@@ -368,12 +368,25 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
+    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+
+    double upotSum = 0.;
+    double virialSumX = 0.;
+    double virialSumY = 0.;
+    double virialSumZ = 0.;
+
     for (size_t i = iFrom; i < iTo; ++i) {
       double fxacc = 0;
       double fyacc = 0;
       double fzacc = 0;
       const size_t listSizeI = neighborList[i].size();
       const size_t *const __restrict__ currentList = neighborList[i].data();
+
+      // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
+      bool inbox1 = false;
+      if (_duplicatedCalculations) {  // only for duplicated calculations we need this value
+        inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, _lowCorner, _highCorner);
+      }
 
       // this is a magic number, that should correspond to at least
       // vectorization width*N have testet multiple sizes:
@@ -430,14 +443,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
             const double dr2 = drx2 + dry2 + drz2;
 
-            const double mask = (dr2 <= _cutoffsquare) ? 1. : 0.;
+            const double mask = (dr2 <= cutoffsquare) ? 1. : 0.;
 
             const double invdr2 = 1. / dr2 * mask;
-            const double lj2 = _sigmasquare * invdr2;
+            const double lj2 = sigmasquare * invdr2;
             const double lj6 = lj2 * lj2 * lj2;
             const double lj12 = lj6 * lj6;
             const double lj12m6 = lj12 - lj6;
-            const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
+            const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
 
             const double fx = drx * fac;
             const double fy = dry * fac;
@@ -450,6 +463,46 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
               fxArr[j] = fx;
               fyArr[j] = fy;
               fzArr[j] = fz;
+            }
+            if (calculateGlobals) {
+              double virialx = drx * fx;
+              double virialy = dry * fy;
+              double virialz = drz * fz;
+              double upot = (epsilon24 * lj12m6 + shift6) * mask;
+
+              upotSum += upot;
+              virialSumX += virialx;
+              virialSumY += virialy;
+              virialSumZ += virialz;
+
+              if (_duplicatedCalculations) {
+                // for non-newton3 the division is in the post-processing step.
+                if (newton3) {
+                  upot *= 0.5;
+                  virialx *= 0.5;
+                  virialy *= 0.5;
+                  virialz *= 0.5;
+                }
+                if (inbox1) {
+                  upotSum += upot;
+                  virialSumX += virialx;
+                  virialSumY += virialy;
+                  virialSumZ += virialz;
+                }
+                // for non-newton3 the second particle will be considered in a separate calculation
+                if (newton3 and autopas::utils::inBox({xArr[j], yArr[j], zArr[j]}, _lowCorner, _highCorner)) {
+                  upotSum += upot;
+                  virialSumX += virialx;
+                  virialSumY += virialy;
+                  virialSumZ += virialz;
+                }
+              } else {
+                // for non-newton3 we divide by 2 only in the postprocess step!
+                upotSum += upot;
+                virialSumX += virialx;
+                virialSumY += virialy;
+                virialSumZ += virialz;
+              }
             }
           }
           // scatter the forces to where they belong, this is only needed for newton3
@@ -500,11 +553,60 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           fyptr[j] -= fy;
           fzptr[j] -= fz;
         }
+        if (calculateGlobals) {
+          double virialx = drx * fx;
+          double virialy = dry * fy;
+          double virialz = drz * fz;
+          double upot = (epsilon24 * lj12m6 + shift6);
+
+          upotSum += upot;
+          virialSumX += virialx;
+          virialSumY += virialy;
+          virialSumZ += virialz;
+
+          if (_duplicatedCalculations) {
+            // for non-newton3 the division is in the post-processing step.
+            if (newton3) {
+              upot *= 0.5;
+              virialx *= 0.5;
+              virialy *= 0.5;
+              virialz *= 0.5;
+            }
+            if (inbox1) {
+              upotSum += upot;
+              virialSumX += virialx;
+              virialSumY += virialy;
+              virialSumZ += virialz;
+            }
+            // for non-newton3 the second particle will be considered in a separate calculation
+            if (newton3 and autopas::utils::inBox({xptr[j], xptr[j], xptr[j]}, _lowCorner, _highCorner)) {
+              upotSum += upot;
+              virialSumX += virialx;
+              virialSumY += virialy;
+              virialSumZ += virialz;
+            }
+          } else {
+            // for non-newton3 we divide by 2 only in the postprocess step!
+            upotSum += upot;
+            virialSumX += virialx;
+            virialSumY += virialy;
+            virialSumZ += virialz;
+          }
+        }
       }
 
       fxptr[i] += fxacc;
       fyptr[i] += fyacc;
       fzptr[i] += fzacc;
+    }
+
+    if (calculateGlobals) {
+      const int threadnum = autopas_get_thread_num();
+
+      _aosThreadData[threadnum].upotSum += upotSum;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
