@@ -15,7 +15,7 @@ TARGET_LINK_LIBRARIES(sph-main
 # add check for current target
 add_test(
         NAME sph-main.test
-        COMMAND sph-main | grep "time step" | tail -2 | head -1 | grep -q "time step 50"
+        COMMAND sph-main | grep "time step" | tail -2 | head -1 | grep -q "time step 8"
         CONFIGURATIONS checkExamples
 )
 
