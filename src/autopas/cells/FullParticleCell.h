@@ -50,9 +50,9 @@ class FullParticleCell : public ParticleCell<Particle> {
    * @param other
    * @return
    */
-  FullParticleCell& operator=(FullParticleCell&& other) {
-    _particles = std::move(other._particles);
-    _particleSoABuffer = std::move(other._particleSoABuffer);
+  FullParticleCell& operator=(FullParticleCell& other) {
+    _particles = other._particles;
+    _particleSoABuffer = other._particleSoABuffer;
     autopas_init_lock(&particlesLock);
     return *this;
   }
