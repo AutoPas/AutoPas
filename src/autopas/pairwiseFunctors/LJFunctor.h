@@ -579,7 +579,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
               virialSumZ += virialz;
             }
             // for non-newton3 the second particle will be considered in a separate calculation
-            if (newton3 and autopas::utils::inBox({xptr[j], xptr[j], xptr[j]}, _lowCorner, _highCorner)) {
+            if (newton3 and autopas::utils::inBox({xptr[j], yptr[j], zptr[j]}, _lowCorner, _highCorner)) {
               upotSum += upot;
               virialSumX += virialx;
               virialSumY += virialy;
