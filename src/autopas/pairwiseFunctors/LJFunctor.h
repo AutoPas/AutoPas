@@ -429,7 +429,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           }
 
           // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
             // const size_t j = currentList[jNeighIndex];
 
