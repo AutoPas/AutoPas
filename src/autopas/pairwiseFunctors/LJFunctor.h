@@ -470,11 +470,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
               double virialz = drz * fz;
               double upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-              upotSum += upot;
-              virialSumX += virialx;
-              virialSumY += virialy;
-              virialSumZ += virialz;
-
               if (_duplicatedCalculations) {
                 // for non-newton3 the division is in the post-processing step.
                 if (newton3) {
@@ -558,11 +553,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           double virialy = dry * fy;
           double virialz = drz * fz;
           double upot = (epsilon24 * lj12m6 + shift6);
-
-          upotSum += upot;
-          virialSumX += virialx;
-          virialSumY += virialy;
-          virialSumZ += virialz;
 
           if (_duplicatedCalculations) {
             // for non-newton3 the division is in the post-processing step.
