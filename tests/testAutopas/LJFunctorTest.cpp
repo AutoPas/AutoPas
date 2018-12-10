@@ -382,10 +382,6 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsVerlet) {
     // either both inside the process or neither of them is)
     for (where_type where : {inside, boundary, outside}) {
       for (bool newton3 : {false, true}) {
-        if (where == outside && not duplicatedCalculation) {
-          // this case does not happen and the test is not made to check this, i.e., it will fail.
-          continue;
-        }
         testSoAGlobals(where, newton3, duplicatedCalculation, verlet);
       }
     }
