@@ -369,6 +369,7 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
       size_t buckets = _aosNeighborLists.bucket_count();
+      // @todo find a sensible chunk size
 #pragma omp parallel for schedule(dynamic)
       for (size_t b = 0; b < buckets; b++) {
         auto endIter = _aosNeighborLists.end(b);
@@ -408,12 +409,14 @@ class VerletLists : public ParticleContainer<Particle, autopas::FullParticleCell
     loadVerletSoA(f);
 
     // @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
-    size_t iFrom = 0;
-    size_t iTo = _soaNeighborLists.size();
+    const size_t iFrom = 0;
+    const size_t iTo = _soaNeighborLists.size();
 
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
-#pragma omp parallel for schedule(dynamic)
+      // @todo find a sensible chunk size
+      const size_t chunkSize = std::max((iTo - iFrom) / (omp_get_max_threads() * 10), 1ul);
+#pragma omp parallel for schedule(dynamic, chunkSize)
       for (size_t i = iFrom; i < iTo; i++) {
         f->SoAFunctor(_soa, _soaNeighborLists, i, i + 1, useNewton3);
       }

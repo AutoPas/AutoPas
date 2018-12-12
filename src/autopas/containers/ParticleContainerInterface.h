@@ -22,6 +22,7 @@ enum ContainerOptions {
   linkedCells = 1,
   verletLists = 2,
   verletListsCells = 3,
+  verletClusterList = 4,
 };
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor

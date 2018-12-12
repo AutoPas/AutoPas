@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
-#include "autopas/containers/cellPairTraversals/VerletListsTraversal.h"
+#include "autopas/containers/cellPairTraversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -31,7 +31,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
-                        public VerletListsTraversal<PairwiseFunctor, useNewton3> {
+                        public VerletListsCellsTraversal<PairwiseFunctor, useNewton3> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -41,14 +41,15 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, 
    */
   explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
-        VerletListsTraversal<PairwiseFunctor, useNewton3>(pairwiseFunctor) {
+        VerletListsCellsTraversal<PairwiseFunctor, useNewton3>(pairwiseFunctor) {
     rebuild(dims);
   }
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   /**
-   * Traverse verlet lists of all cells
+   * Traverse verlet lists of all cells.
+   * This function needs to be implemented by derived classes.
    * @param verlet verlet lists for each cell
    */
   template <class Particle>

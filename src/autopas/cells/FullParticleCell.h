@@ -48,7 +48,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Assignment operator
    * @param other
-   * @return
+   * @return reference to this object after copy
    */
   FullParticleCell& operator=(FullParticleCell& other) {
     _particles = other._particles;
@@ -70,7 +70,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   unsigned long numParticles() const override { return _particles.size(); }
 
   /**
-   * Returns a reference to the element at position n in the container
+   * Returns a reference to the element at position n in the cell.
    * @param n Position of an element in the container
    * @return Reference to the element
    */
@@ -98,7 +98,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   void resize(size_t n) { _particles.resize(n); }
 
   /**
-   * Sort the particles in the cell by a dimension
+   * Sort the particles in the cell by a dimension.
    * @param dim dimension to sort
    */
   void sortByDim(const size_t dim) {

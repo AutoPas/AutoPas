@@ -1,5 +1,5 @@
 /**
- * @file VerletListsTraversal.h
+ * @file VerletListsCellsTraversal.h
  * @author nguyen
  * @date 16.09.18
  */
@@ -18,17 +18,17 @@ namespace autopas {
  * Derived classes handle the order through which the cells are traversed.
  */
 template <class PairwiseFunctor, bool useNewton3>
-class VerletListsTraversal {
+class VerletListsCellsTraversal {
  public:
   /**
    * Constructor of the verlet traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  VerletListsTraversal(PairwiseFunctor *pairwiseFunctor) : _pairwiseFunctor(pairwiseFunctor) {}
+  VerletListsCellsTraversal(PairwiseFunctor *pairwiseFunctor) : _pairwiseFunctor(pairwiseFunctor) {}
 
  protected:
   /**
-   * iterate over the verlet list of a given cell
+   * Iterate over the verlet list of a given cell.
    * @param verlet
    * @param cellIndex
    */

@@ -227,7 +227,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   }
 
   /**
-   * get the dimension of the used cellblock including the haloboxes
+   * get the dimension of the used cellblock including the haloboxes.
    * @return the dimensions of the used cellblock
    */
   const std::array<std::size_t, 3>& getCellsPerDimension() {
@@ -263,7 +263,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   }
 
   /**
-   * update the verlet lists
+   * update the verlet lists.
    * @param useNewton3 use newton3?
    */
   void updateVerletLists(bool useNewton3) {

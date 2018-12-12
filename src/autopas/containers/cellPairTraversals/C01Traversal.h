@@ -8,7 +8,7 @@
 
 #include "autopas/containers/VerletListsCellsHelpers.h"
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
-#include "autopas/containers/cellPairTraversals/VerletListsTraversal.h"
+#include "autopas/containers/cellPairTraversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -25,7 +25,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA>
 class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>,
-                     public VerletListsTraversal<PairwiseFunctor, false> {
+                     public VerletListsCellsTraversal<PairwiseFunctor, false> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -35,12 +35,13 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>(dims, pairwiseFunctor),
-        VerletListsTraversal<PairwiseFunctor, false>(pairwiseFunctor) {}
+        VerletListsCellsTraversal<PairwiseFunctor, false>(pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   /**
-   * Traverse verlet lists of all cells
+   * Traverse verlet lists of all cells.
+   * This function needs to be implemented by derived classes.
    * @param verlet verlet lists for each cell
    */
   template <class Particle>
@@ -61,7 +62,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellPai
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
 
 #if defined(AUTOPAS_OPENMP)
-#pragma omp parallel for schedule(dynamic, 1) collapse(3)
+  // @todo: find optimal chunksize
+#pragma omp parallel for schedule(dynamic) collapse(3)
 #endif
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {
@@ -81,7 +83,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA>::traverseCellVer
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
 
 #if defined(AUTOPAS_OPENMP)
-#pragma omp parallel for schedule(dynamic, 1) collapse(3)
+  // @todo: find optimal chunksize
+#pragma omp parallel for schedule(dynamic) collapse(3)
 #endif
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {

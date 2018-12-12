@@ -13,7 +13,12 @@ VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
 }
-
+/**
+ * Generate a VerletListCells Container and test
+ * if different traversals generate the same number
+ * of FLOPS and kernel calls.
+ * @param numMoleculse number of molecules in the container
+ */
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
 #ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();

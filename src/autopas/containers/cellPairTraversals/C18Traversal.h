@@ -8,7 +8,7 @@
 
 #include "autopas/containers/VerletListsCellsHelpers.h"
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
-#include "autopas/containers/cellPairTraversals/VerletListsTraversal.h"
+#include "autopas/containers/cellPairTraversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -26,7 +26,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
-                     public VerletListsTraversal<PairwiseFunctor, useNewton3> {
+                     public VerletListsCellsTraversal<PairwiseFunctor, useNewton3> {
  public:
   /**
    * Constructor of the c18 traversal.
@@ -36,16 +36,17 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
-        VerletListsTraversal<PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
+        VerletListsCellsTraversal<PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   /**
-   * Traverse verlet lists of all cells
+   * Traverse verlet lists of all cells.
+   * This function needs to be implemented by derived classes.
    * @param verlet verlet lists for each cell
    */
   template <class Particle>
-  void traverseCellVerlet(std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet);
+  void traverseCellVerlet(std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verletOverride);
   TraversalOptions getTraversalType() override;
   bool isApplicable() override;
 };
@@ -78,7 +79,8 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
 #if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3)
+      // @todo: find optimal chunksize
+#pragma omp for schedule(dynamic) collapse(3)
 #endif
       for (unsigned long z = start_z; z < end_z; z += stride_z) {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
@@ -115,7 +117,8 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
 #if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3)
+      // @todo: find optimal chunksize
+#pragma omp for schedule(dynamic) collapse(3)
 #endif
       for (unsigned long z = start_z; z < end_z; z += stride_z) {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
