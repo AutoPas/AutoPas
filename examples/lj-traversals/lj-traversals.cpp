@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
       if (not useNewton3) {
         autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
                               autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
-                              false>
+                              false, false>
             traversal(dims, &func);
         measureContainer(&lcCont, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
       if (not useNewton3) {
         autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
                               autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
-                              false>
+                              false, false>
             traversal(dims, &func);
         measureContainer(&verletCellContc08, &func, &traversal, numParticles, numIterations, useNewton3);
       } else {
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
       if (not useNewton3) {
         autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
                               autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
-                              false>
+                              false, false>
             dummyTraversal({0, 0, 0}, &func);
         measureContainer(&verletClusterCont, &func, &dummyTraversal, numParticles, numIterations, useNewton3);
       } else {

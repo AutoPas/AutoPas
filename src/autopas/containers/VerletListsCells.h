@@ -9,6 +9,9 @@
 #include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/VerletListsCellsHelpers.h"
+#include "autopas/containers/cellPairTraversals/C01Traversal.h"
+#include "autopas/containers/cellPairTraversals/C08Traversal.h"
+#include "autopas/containers/cellPairTraversals/C18Traversal.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -28,10 +31,11 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   typedef typename verlet_internal::VerletListParticleCellType ParticleCell;
 
  private:
-  const std::vector<TraversalOptions>& VLApplicableTraversals() {
+  const std::vector<TraversalOptions>& VLCApplicableTraversals() {
     switch (_buildTraversal) {
       case c08: {
-        static const std::vector<TraversalOptions> v{TraversalOptions::sliced, TraversalOptions::c01};
+        static const std::vector<TraversalOptions> v{TraversalOptions::sliced, TraversalOptions::c18,
+                                                     TraversalOptions::c01};
         return v;
       }
       case c18: {
@@ -66,7 +70,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                    TraversalOptions buildTraversal, double skin = 0, unsigned int rebuildFrequency = 1)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin),
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff + skin, VLCApplicableTraversals()),
         _linkedCells(boxMin, boxMax, cutoff + skin),
         _buildTraversal(buildTraversal),
         _skin(skin),
@@ -88,10 +92,23 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild(useNewton3)) {  // if rebuild needed
+    if (needsRebuild(useNewton3)) {
       this->updateVerletLists(useNewton3);
     }
-    traversal->traverseCellVerlet(_neighborLists);
+
+    if (useNewton3) {
+      if (auto vTraversal =
+              dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, true>*>(traversal))
+        vTraversal->traverseCellVerlet(_neighborLists);
+      else
+        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h");
+    } else {
+      if (auto vTraversal =
+              dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, false>*>(traversal))
+        vTraversal->traverseCellVerlet(_neighborLists);
+      else
+        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h");
+    }
 
     // we iterated, so increase traversal counter
     _traversalsSinceLastRebuild++;
@@ -177,8 +194,12 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    // at the moment this is just a dummy
-    return TraversalSelector<ParticleCell>({0, 0, 0}, traversalOptions);
+    std::vector<TraversalOptions> allowedAndApplicable;
+
+    std::sort(traversalOptions.begin(), traversalOptions.end());
+    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
+                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
+    return TraversalSelector<ParticleCell>(this->getCellsPerDimension(), allowedAndApplicable);
   }
 
   /**
@@ -321,7 +342,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
       case c01: {
         if (not useNewton3) {
           auto traversal = C01Traversal<typename verlet_internal::VerletListParticleCellType,
-                                        typename verlet_internal::VerletListGeneratorFunctor, false>(
+                                        typename verlet_internal::VerletListGeneratorFunctor, false, false>(
               _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           _linkedCells.iteratePairwiseAoS(&f, &traversal);
         } else {

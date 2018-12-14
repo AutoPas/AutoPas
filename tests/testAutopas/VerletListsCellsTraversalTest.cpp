@@ -16,7 +16,7 @@ VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
 /**
  * Generate a VerletListCells Container and test
  * if different traversals generate the same number
- * of FLOPS and kernel calls.
+ * of kernel calls.
  * @param numMoleculse number of molecules in the container
  */
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
@@ -32,7 +32,8 @@ void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC01(getCutoff()), flopsC18(getCutoff()), flopsSli(getCutoff());
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC18N3(getCutoff()), flopsSliN3(getCutoff());
-  autopas::C01Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false> traversalC01FLOPS(dim, &flopsC01);
+  autopas::C01Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalC01FLOPS(
+      dim, &flopsC01);
   autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalC18FLOPS(
       dim, &flopsC18);
   autopas::SlicedTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalSliFLOPS(

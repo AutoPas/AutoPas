@@ -25,8 +25,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
-                     public VerletListsCellsTraversal<PairwiseFunctor, useNewton3> {
+class C18Traversal
+    : public C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
+      public VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3> {
  public:
   /**
    * Constructor of the c18 traversal.
@@ -36,17 +37,11 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
-        VerletListsCellsTraversal<PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
-  // documentation in base class
+        VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
+  // documentation in base classes
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-
-  /**
-   * Traverse verlet lists of all cells.
-   * This function needs to be implemented by derived classes.
-   * @param verlet verlet lists for each cell
-   */
-  template <class Particle>
-  void traverseCellVerlet(std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verletOverride);
+  void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
+                                                             useNewton3>::verlet_storage_type &verlet) override;
   TraversalOptions getTraversalType() override;
   bool isApplicable() override;
 };
@@ -94,9 +89,9 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-template <class Particle>
 inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellVerlet(
-    std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet) {
+    typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
+                                       useNewton3>::verlet_storage_type &verlet) {
   using std::array;
   const array<unsigned long, 3> stride = {3, 3, 2};
   array<unsigned long, 3> end;

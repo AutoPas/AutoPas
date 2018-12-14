@@ -65,7 +65,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           containerOptions.push_back(autopas::verletListsCells);
         }
         if (strArg.find("vcluster") != string::npos) {
-          containerOptions.push_back(autopas::verletClusterList);
+          containerOptions.push_back(autopas::verletClusterLists);
         }
         if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
@@ -383,7 +383,7 @@ void MDFlexParser::printConfig() {
         cout << "VerletListsCells, ";
         break;
       }
-      case autopas::ContainerOptions::verletClusterList: {
+      case autopas::ContainerOptions::verletClusterLists: {
         cout << "VerletClusterLists, ";
         break;
       }

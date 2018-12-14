@@ -11,15 +11,18 @@
 #include "autopas/containers/DirectSum.h"
 #include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/VerletClusterLists.h"
 #include "autopas/containers/VerletLists.h"
+#include "autopas/containers/VerletListsCells.h"
 
 namespace autopas {
 
 /**
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
-static std::vector<ContainerOptions> allContainerOptions = {ContainerOptions::directSum, ContainerOptions::linkedCells,
-                                                            ContainerOptions::verletLists};
+static std::vector<ContainerOptions> allContainerOptions = {
+    ContainerOptions::directSum, ContainerOptions::linkedCells, ContainerOptions::verletLists,
+    ContainerOptions::verletListsCells, ContainerOptions::verletClusterLists};
 
 /**
  * Selector for a particle container.
@@ -122,6 +125,18 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
       // @todo determine verletSkin and verletRebuildFrequency via tuning
       container =
           std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
+      break;
+    }
+    case verletListsCells: {
+      // @todo determine verletSkin and verletRebuildFrequency via tuning
+      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOptions::c08,
+                                                               _verletSkin, _verletRebuildFrequency);
+      break;
+    }
+    case verletClusterLists: {
+      // @todo determine verletSkin and verletRebuildFrequency via tuning
+      container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin,
+                                                                 _verletRebuildFrequency);
       break;
     }
     default: { AutoPasLog(warn, "Container type {} is not a known type!", containerChoice); }

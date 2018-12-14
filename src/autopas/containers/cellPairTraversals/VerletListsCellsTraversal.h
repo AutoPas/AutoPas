@@ -17,14 +17,23 @@ namespace autopas {
  * This class handles traversals through the cell structures with neighbor lists.
  * Derived classes handle the order through which the cells are traversed.
  */
-template <class PairwiseFunctor, bool useNewton3>
+template <class Particle, class PairwiseFunctor, bool useNewton3>
 class VerletListsCellsTraversal {
  public:
+  typedef std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> verlet_storage_type;
+
   /**
    * Constructor of the verlet traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   VerletListsCellsTraversal(PairwiseFunctor *pairwiseFunctor) : _pairwiseFunctor(pairwiseFunctor) {}
+
+  /**
+   * Traverse verlet lists of all cells.
+   * This function needs to be implemented by derived classes.
+   * @param verlet verlet lists for each cell
+   */
+  virtual void traverseCellVerlet(verlet_storage_type &verlet) = 0;
 
  protected:
   /**
@@ -32,7 +41,6 @@ class VerletListsCellsTraversal {
    * @param verlet
    * @param cellIndex
    */
-  template <class Particle>
   inline void iterateVerletListsCell(std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &verlet,
                                      unsigned long cellIndex) {
     for (auto &list : verlet[cellIndex]) {

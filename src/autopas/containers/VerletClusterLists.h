@@ -27,6 +27,13 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   typedef std::size_t index_t;
 
+ private:
+  const std::vector<TraversalOptions>& VCLApplicableTraversals() {
+    // traversal not used but prevents usage of newton3
+    static const std::vector<TraversalOptions> v{TraversalOptions::c01};
+    return v;
+  }
+
  public:
   /**
    * Constructor of the VerletClusterLists class.
@@ -45,7 +52,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
+                                                                VCLApplicableTraversals()),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -124,8 +132,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector(
       std::vector<TraversalOptions> traversalOptions) override {
-    // at the moment this is just a dummy
-    return TraversalSelector<FullParticleCell<Particle>>({0, 0, 0}, traversalOptions);
+    std::vector<TraversalOptions> allowedAndApplicable;
+
+    std::sort(traversalOptions.begin(), traversalOptions.end());
+    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
+                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
+    return TraversalSelector<FullParticleCell<Particle>>(_cellsPerDim, allowedAndApplicable);
   }
 
   /**
