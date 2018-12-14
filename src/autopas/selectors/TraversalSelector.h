@@ -254,6 +254,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   while (not traversalIsApplicable) {
     // if no measurements are in yet _optimalTraversalOption is not initialized
     if (not _isTuning) {
+      // no traversals are allowed
+      if (_allowedTraversalOptions.size() == 0) {
+        return std::unique_ptr<CellPairTraversal<ParticleCell>>(nullptr);
+      }
+
       _optimalTraversalOption = _allowedTraversalOptions.begin().operator*();
       _isTuning = true;
     } else {

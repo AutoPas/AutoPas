@@ -32,25 +32,9 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
 
  private:
   const std::vector<TraversalOptions>& VLCApplicableTraversals() {
-    switch (_buildTraversal) {
-      case c08: {
-        static const std::vector<TraversalOptions> v{TraversalOptions::sliced, TraversalOptions::c18,
-                                                     TraversalOptions::c01};
-        return v;
-      }
-      case c18: {
-        static const std::vector<TraversalOptions> v{TraversalOptions::c18, TraversalOptions::c01};
-        return v;
-      }
-      case c01: {
-        static const std::vector<TraversalOptions> v{TraversalOptions::c01};
-        return v;
-      }
-      default: {
-        static const std::vector<TraversalOptions> v{};
-        return v;
-      }
-    }
+    static const std::vector<TraversalOptions> v{TraversalOptions::sliced, TraversalOptions::c18,
+                                                 TraversalOptions::c01};
+    return v;
   }
 
  public:
