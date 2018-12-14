@@ -16,7 +16,7 @@ using namespace std;
 
 class MDFlexParser {
  public:
-  enum FunctorOption { lj12_6 };
+  enum FunctorOption { lj12_6, lj12_6_AVX2 };
   enum GeneratorOption { grid, uniform, gaussian };
 
   MDFlexParser() = default;
