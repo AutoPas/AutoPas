@@ -345,7 +345,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
   }
 
-  template <bool newton3>
+  template <bool newton3, bool duplicatedCalculations>
   void SoAFunctorImpl(SoA<SoAArraysType> &soa,
                       const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                       size_t iFrom, size_t iTo) {
@@ -363,7 +363,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
     const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
-    const bool duplicatedCalculations = _duplicatedCalculations;
 
     const std::array<double, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
     const std::array<double, 3> highCorner = {_highCorner[0], _highCorner[1], _highCorner[2]};
@@ -609,9 +608,17 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, const bool newton3) override {
     if (newton3) {
-      SoAFunctorImpl<true>(soa, neighborList, iFrom, iTo);
+      if (_duplicatedCalculations) {
+        SoAFunctorImpl<true, true>(soa, neighborList, iFrom, iTo);
+      } else {
+        SoAFunctorImpl<true, false>(soa, neighborList, iFrom, iTo);
+      }
     } else {
-      SoAFunctorImpl<false>(soa, neighborList, iFrom, iTo);
+      if (_duplicatedCalculations) {
+        SoAFunctorImpl<false, true>(soa, neighborList, iFrom, iTo);
+      } else {
+        SoAFunctorImpl<false, false>(soa, neighborList, iFrom, iTo);
+      }
     }
   }
 
