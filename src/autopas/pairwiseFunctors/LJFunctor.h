@@ -380,9 +380,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       const size_t *const __restrict__ currentList = neighborList[i].data();
 
       // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
+      bool inbox1;
       double inbox1Mul = 0.;
       if (duplicatedCalculations) {  // only for duplicated calculations we need this value
-        inbox1Mul = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, lowCorner, highCorner) ? 1. : 0.;
+        inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, lowCorner, highCorner);
+        inbox1Mul = inbox1 ? 1. : 0.;
         if (newton3) {
           inbox1Mul *= 0.5;
         }
