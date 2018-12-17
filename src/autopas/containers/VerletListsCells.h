@@ -187,7 +187,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   }
 
   /**
-   * specifies whether the neighbor lists need to be rebuild
+   * Specifies whether the neighbor lists need to be rebuild.
    * @param useNewton3 if newton3 is gonna be used to traverse
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
@@ -240,13 +240,13 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   }
 
   /**
-   * get the neighbors list of a particle
+   * Get the neighbors list of a particle.
    * @param particle
    * @param useNewton3
    * @return the neighbor list of the particle
    */
   std::vector<Particle*>& getVerletList(Particle* particle, bool useNewton3 = true) {
-    if (needsRebuild(useNewton3)) {  // if rebuild needed
+    if (needsRebuild(useNewton3)) {
       this->updateVerletLists(useNewton3);
     }
     auto indices = _cellMap[particle];
@@ -268,7 +268,7 @@ class VerletListsCells : public ParticleContainer<Particle, FullParticleCell<Par
   }
 
   /**
-   * update the verlet lists.
+   * Update the verlet lists.
    * @param useNewton3 use newton3?
    */
   void updateVerletLists(bool useNewton3) {

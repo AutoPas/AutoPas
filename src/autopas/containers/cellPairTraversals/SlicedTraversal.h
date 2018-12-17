@@ -159,6 +159,7 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
       if (slice > 0 && dimSlice == myStartArray[_dimsPerLength[0]]) {
         autopas_unset_lock(locks[slice - 1]);
       } else if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
+        // clearing of the lock set on the last layer of each slice
         autopas_unset_lock(locks[slice]);
       }
     }
@@ -220,6 +221,7 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
       if (slice > 0 && dimSlice == myStartArray[_dimsPerLength[0]]) {
         autopas_unset_lock(locks[slice - 1]);
       } else if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
+        // clearing of the lock set on the last layer of each slice
         autopas_unset_lock(locks[slice]);
       }
     }

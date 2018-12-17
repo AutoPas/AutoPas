@@ -141,7 +141,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * specifies whether the neighbor lists need to be rebuild
+   * Specifies whether the neighbor lists need to be rebuild.
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild() {
@@ -159,12 +159,13 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                                                       std::array<double, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
+    // @todo implement this if bounding boxes are here
     throw "VerletClusterLists.getRegionIterator not implemented";
   }
 
  protected:
   /**
-   * recalculate grids and clusters,
+   * Recalculate grids and clusters,
    * build verlet lists and
    * pad clusters.
    */
@@ -215,7 +216,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     // put particles into grids
     for (auto& particle : invalidParticles) {
       if (utils::inBox(particle.getR(), _boxMin, _boxMax)) {
-        auto index = getIndexOfPosition(particle.getR());
+        auto index = get1DIndexOfPosition(particle.getR());
         _clusters[index].addParticle(particle);
       }
     }
@@ -240,7 +241,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * update the verlet lists.
+   * Update the verlet lists.
    */
   void updateVerletLists() {
     const int boxRange = static_cast<int>(std::ceil((_cutoff + _skin) * _gridSideLengthReciprocal));
@@ -446,11 +447,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * gets the 1d grid index containing a particle in given position.
+   * Gets the 1d grid index containing a particle in given position.
    * @param pos the position of the particle
    * @return the index of the grid
    */
-  inline index_t getIndexOfPosition(const std::array<double, 3>& pos) const {
+  inline index_t get1DIndexOfPosition(const std::array<double, 3>& pos) const {
     std::array<index_t, 2> cellIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
@@ -467,18 +468,18 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       }
     }
 
-    return cellIndex[0] + cellIndex[1] * _cellsPerDim[0];
+    return index1D(cellIndex[0], cellIndex[1]);
     // in very rare cases rounding is stupid, thus we need a check...
     /// @todo when the border and flag manager is there
   }
 
   /**
-   * converts grid position to the index in the vector
+   * Converts 2d grid position to the index in the vector.
    * @param x x-position in grid
    * @param y y-position in grid
    * @return index in vector
    */
-  inline index_t index1D(const index_t x, const index_t y) { return x + y * _cellsPerDim[0]; }
+  inline index_t index1D(const index_t x, const index_t y) const { return x + y * _cellsPerDim[0]; }
 
  private:
   // neighbors of clusters for each grid
