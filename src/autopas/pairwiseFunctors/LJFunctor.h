@@ -345,16 +345,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
   }
 
-  // clang-format off
-  /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
-   * @note If you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
-   */
-  // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa,
-                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
-                  size_t iTo, bool newton3) override {
+  template <bool newton3>
+  void SoAFunctorImpl(SoA<SoAArraysType> &soa,
+                      const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
+                      size_t iFrom, size_t iTo) {
     auto numParts = soa.getNumParticles();
     AutoPasLog(debug, "SoAFunctorVerlet: {}", soa.getNumParticles());
 
@@ -371,6 +365,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     const bool duplicatedCalculations = _duplicatedCalculations;
 
+    const std::array<double, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
+    const std::array<double, 3> highCorner = {_highCorner[0], _highCorner[1], _highCorner[2]};
+
     double upotSum = 0.;
     double virialSumX = 0.;
     double virialSumY = 0.;
@@ -386,7 +383,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
       bool inbox1 = false;
       if (duplicatedCalculations) {  // only for duplicated calculations we need this value
-        inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, _lowCorner, _highCorner);
+        inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, lowCorner, highCorner);
       }
 
       // this is a magic number, that should correspond to at least
@@ -428,7 +425,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
             yArr[tmpj] = yptr[currentList[joff + tmpj]];
             zArr[tmpj] = zptr[currentList[joff + tmpj]];
           }
-
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
@@ -473,20 +469,22 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
               if (duplicatedCalculations) {
                 // for non-newton3 the division is in the post-processing step.
+
                 if (newton3) {
                   upot *= 0.5;
                   virialx *= 0.5;
                   virialy *= 0.5;
                   virialz *= 0.5;
+                  bool inbox2 = xArr[j] >= lowCorner[0] and xArr[j] < highCorner[0] and yArr[j] >= lowCorner[1] and
+                                yArr[j] < highCorner[1] and zArr[j] >= lowCorner[2] and zArr[j] < highCorner[2];
+                  if (inbox2) {
+                    upotSum += upot;
+                    virialSumX += virialx;
+                    virialSumY += virialy;
+                    virialSumZ += virialz;
+                  }
                 }
                 if (inbox1) {
-                  upotSum += upot;
-                  virialSumX += virialx;
-                  virialSumY += virialy;
-                  virialSumZ += virialz;
-                }
-                // for non-newton3 the second particle will be considered in a separate calculation
-                if (newton3 and autopas::utils::inBox({xArr[j], yArr[j], zArr[j]}, _lowCorner, _highCorner)) {
                   upotSum += upot;
                   virialSumX += virialx;
                   virialSumY += virialy;
@@ -555,7 +553,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           double virialz = drz * fz;
           double upot = (epsilon24 * lj12m6 + shift6);
 
-          if (_duplicatedCalculations) {
+          if (duplicatedCalculations) {
             // for non-newton3 the division is in the post-processing step.
             if (newton3) {
               upot *= 0.5;
@@ -570,7 +568,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
               virialSumZ += virialz;
             }
             // for non-newton3 the second particle will be considered in a separate calculation
-            if (newton3 and autopas::utils::inBox({xptr[j], yptr[j], zptr[j]}, _lowCorner, _highCorner)) {
+            if (newton3 and autopas::utils::inBox({xptr[j], yptr[j], zptr[j]}, lowCorner, highCorner)) {
               upotSum += upot;
               virialSumX += virialx;
               virialSumY += virialy;
@@ -598,6 +596,22 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       _aosThreadData[threadnum].virialSum[0] += virialSumX;
       _aosThreadData[threadnum].virialSum[1] += virialSumY;
       _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+    }
+  }
+  // clang-format off
+  /**
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
+   * @note If you want to parallelize this by openmp, please ensure that there
+   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
+   */
+  // clang-format on
+  void SoAFunctor(SoA<SoAArraysType> &soa,
+                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
+                  size_t iTo, const bool newton3) override {
+    if (newton3) {
+      SoAFunctorImpl<true>(soa, neighborList, iFrom, iTo);
+    } else {
+      SoAFunctorImpl<false>(soa, neighborList, iFrom, iTo);
     }
   }
 
