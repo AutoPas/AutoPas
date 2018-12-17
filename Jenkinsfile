@@ -13,6 +13,71 @@ pipeline{
                 githubNotify context: 'test', description: 'test pending...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
             }
         }
+        stage("style check") {
+            steps{
+                parallel(
+                    "build documentation": {
+                        container('autopas-cmake-doxygen-make'){
+                            dir("build-doxygen") {
+                                sh 'cmake ..'
+                                sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
+                            }
+                        }
+                        stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
+
+                        // get doxygen warnings
+                        warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build-doxygen/DoxygenWarningLog.txt']], unHealthy: '', failedTotalAll: '0'
+                    },
+                    "clang format": {
+                        dir("clang-format"){
+                            container('autopas-clang6-cmake-ninja-make'){
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
+                                sh "ninja clangformat"
+                            }
+                            script{
+                                // return 2 if files have been modified by clang-format, 0 otherwise
+                                try{
+                                    // if files were modified, return 2
+                                    sh "git status | grep -q modified && exit 2 || exit 0"
+                                } catch (Exception e) {
+                                    // change detected
+                                    echo 'clang format errors detected. please format the code properly. Affected files:'
+                                    sh "git status | grep modified"
+                                    sh "exit 1"
+                                }
+                            }
+                        }
+                    },
+                    "custom checks": {
+                        dir("src"){
+                            script{
+                                // check if all header files have a #pragma once
+                                try{
+                                    // if header files do not contain #pragma once, make build unstable
+                                    sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 2 || exit 0'
+                                } catch (Exception e) {
+                                    // change detected
+                                    echo 'all header include guards should be implemented using "#pragma once". Affected files:'
+                                    sh 'grep -L "#pragma once" -r . | grep "\\.h"'
+                                    sh "exit 1"
+                                }
+
+                                // check if all files are documented with @file or \file doxygen comments
+                                try{
+                                    // if .cpp or .h files do not contain a file comment, return 2
+                                    sh "grep '\\\\file\\|\\@file' -Lr . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
+                                } catch (Exception e) {
+                                    // change detected
+                                    echo 'all .h and .cpp files should be documented with doxygen comments (@file)". Affected files:'
+                                    sh "grep '\\\\file\\|\\@file' -Lr . | grep '\\.cpp\\|\\.h'"
+                                    sh "exit 1"
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+        }
         stage("build") {
             steps{
                 parallel(
@@ -350,36 +415,11 @@ pipeline{
                 }
             }
         }
-        stage("build documentation"){
-            steps{
-                container('autopas-cmake-doxygen-make'){
-                    dir("build-doxygen") {
-                        sh 'cmake ..'
-                        sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
-                    }
-                }
-                stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
-            }
-        }
-        stage("update documentation"){
-            when{ branch 'master' }
-            agent{ label 'atsccs11_prio' }
-            steps{
-                unstash 'doxydocs'
-                dir("build-doxygen"){
-                    sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
-                    sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
-                    sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
-                }
-            }
-        }
+
         stage("generate reports"){
             steps{
                 // get test results -- mainly to get number of tests
                 junit 'build/test.xml'
-
-                // get doxygen warnings
-                warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build-doxygen/DoxygenWarningLog.txt']], unHealthy: '', unstableTotalAll: '0'
 
                 // generate coverage
                 dir("coverage"){
@@ -391,54 +431,16 @@ pipeline{
                 }
             }
         }
-        stage("clang format"){
-            steps{
-                dir("clang-format"){
-                    container('autopas-clang6-cmake-ninja-make'){
-                        sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
-                        sh "ninja clangformat"
-                    }
-                    script{
-                        // return 2 if files have been modified by clang-format, 0 otherwise
-                        try{
-                            // if files were modified, return 2
-                            sh "git status | grep -q modified && exit 2 || exit 0"
-                        } catch (Exception e) {
-                            // change detected
-                            currentBuild.result = 'UNSTABLE'
-                            echo 'clang format errors detected. please format the code properly. Affected files:'
-                            sh "git status | grep modified"
-                        }
-                    }
-                }
-            }
-        }
-        stage("custom checks"){
-            steps{
-                dir("src"){
-                    script{
-                        // check if all header files have a #pragma once
-                        try{
-                            // if header files do not contain #pragma once, make build unstable
-                            sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 2 || exit 0'
-                        } catch (Exception e) {
-                            // change detected
-                            currentBuild.result = 'UNSTABLE'
-                            echo 'all header include guards should be implemented using "#pragma once". Affected files:'
-                            sh 'grep -L "#pragma once" -r . | grep "\\.h"'
-                        }
 
-                        // check if all files are documented with @file or \file doxygen comments
-                        try{
-                            // if .cpp or .h files do not contain a file comment, return 2
-                            sh "grep '\\\\file\\|\\@file' -Lr . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
-                        } catch (Exception e) {
-                            // change detected
-                            currentBuild.result = 'UNSTABLE'
-                            echo 'all .h and .cpp files should be documented with doxygen comments (@file)". Affected files:'
-                            sh "grep '\\\\file\\|\\@file' -Lr . | grep '\\.cpp\\|\\.h'"
-                        }
-                    }
+        stage("publish documentation"){
+            when{ branch 'master' }
+            agent{ label 'atsccs11_prio' }
+            steps{
+                unstash 'doxydocs'
+                dir("build-doxygen"){
+                    sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
+                    sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
+                    sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
                 }
             }
         }

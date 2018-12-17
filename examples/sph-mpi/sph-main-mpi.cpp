@@ -27,19 +27,9 @@ void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>
   for (double x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
     for (double y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
       for (double z = 0; z < bBoxMax[2]; z += dx) {    // NOLINT
-        // std::array<double, 3> r, std::array<double, 3> v, unsigned long id,
-        // double mass, double smth, double snds
         autopas::sph::SPHParticle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(1.0);
         ith.setEnergy(2.5);
-        // ith.pos.x = x;
-        // ith.pos.y = y;
-        // ith.pos.z = z;
-        // ith.dens = 1.0;
-        // ith.mass = 0.75;
-        // ith.eng = 2.5;
-        // ith.id = i++;
-        // ith.smth = 0.012;
         if (autopas::utils::inBox(ith.getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
           sphSystem.addParticle(ith);
         }
@@ -49,19 +39,9 @@ void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>
   for (double x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.; x += dx * 2.0) {  // NOLINT
     for (double y = 0; y < bBoxMax[1]; y += dx) {                          // NOLINT
       for (double z = 0; z < bBoxMax[2]; z += dx) {                        // NOLINT
-        // std::array<double, 3> r, std::array<double, 3> v, unsigned long id,
-        // double mass, double smth, double snds
         autopas::sph::SPHParticle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(0.5);
         ith.setEnergy(2.5);
-        // ith.pos.x = x;
-        // ith.pos.y = y;
-        // ith.pos.z = z;
-        // ith.dens = 0.5;
-        // ith.mass = 0.75;
-        // ith.eng = 2.5;
-        // ith.id = i++;
-        // ith.smth = 0.012;
         if (autopas::utils::inBox(ith.getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
           sphSystem.addParticle(ith);
         }
@@ -77,7 +57,9 @@ void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>
   std::cout << "total # of particles is... " << i << std::endl;
 
   // Set the end time
-  *end_time = 0.12;
+  *end_time = .018;
+  // end_time for original example: (expects 50 timesteps)
+  // *end_time = .12;
   // Fin.
   std::cout << "setup... completed" << std::endl;
 }

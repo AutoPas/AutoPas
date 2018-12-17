@@ -34,9 +34,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"vtk", required_argument, nullptr, 'w'},
                                          {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   string strArg;
-  int bla = 0;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
-    ++bla;
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
