@@ -3,8 +3,14 @@ file(GLOB_RECURSE MY_SRC
         "*.h"
         )
 
+file(GLOB_RECURSE CU_SRC
+        "*.cu"
+        "*.cuh"
+        )
+        
 ADD_LIBRARY(autopas STATIC
         ${MY_SRC}
+        $<$<BOOL:${CUDA}>:${CU_SRC}>
         )
 
 target_link_libraries(autopas

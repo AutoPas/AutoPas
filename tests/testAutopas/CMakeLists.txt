@@ -2,9 +2,14 @@ FILE(GLOB_RECURSE MY_SRC
         "*.cpp"
         "*.h"
         )
-
+        
+FILE(GLOB_RECURSE CU_SRC
+        "*.cu"
+        "*.cuh"
+        )
 ADD_EXECUTABLE(runTests
         ${MY_SRC}
+        $<$<BOOL:${CUDA}>:${CU_SRC}>
         )
 
 TARGET_LINK_LIBRARIES(runTests
@@ -19,6 +24,7 @@ if(CMAKE_VERSION VERSION_LESS "3.10")
     GTEST_ADD_TESTS(runTests
         ""
         ${MY_SRC}
+        $<$<BOOL:${CUDA}>:${CU_SRC}>
         )
 else()
     # this cmake module was only introduced in 3.10

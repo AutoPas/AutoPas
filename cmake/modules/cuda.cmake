@@ -1,0 +1,11 @@
+# CUDA options
+option(CUDA "Activates Cuda Components" OFF)
+if(CUDA)
+    message(STATUS "Cuda enabled.")
+    enable_language(CUDA)
+    set(CUDA_SEPARABLE_COMPILATION ON)
+    set(CUDAHOSTCXX=clang)
+    set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+else()
+    message(STATUS "Cuda disabled.")
+endif()

@@ -45,6 +45,7 @@ include(clang-tidy)
 include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
+include(cuda)
 
 include(version.cmake)
 
