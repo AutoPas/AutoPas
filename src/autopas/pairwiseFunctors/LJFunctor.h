@@ -369,6 +369,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
     const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    const bool duplicatedCalculations = _duplicatedCalculations;
 
     double upotSum = 0.;
     double virialSumX = 0.;
@@ -384,7 +385,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
       // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
       bool inbox1 = false;
-      if (_duplicatedCalculations) {  // only for duplicated calculations we need this value
+      if (duplicatedCalculations) {  // only for duplicated calculations we need this value
         inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, _lowCorner, _highCorner);
       }
 
@@ -470,7 +471,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
               double virialz = drz * fz;
               double upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-              if (_duplicatedCalculations) {
+              if (duplicatedCalculations) {
                 // for non-newton3 the division is in the post-processing step.
                 if (newton3) {
                   upot *= 0.5;
