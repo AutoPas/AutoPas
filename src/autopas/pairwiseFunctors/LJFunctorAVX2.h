@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <immintrin.h>
 #include <array>
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
@@ -67,9 +68,9 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
             "set to true.");
       }
     }
-    if (calculateGlobals) {
-      _aosThreadData.resize(autopas_get_max_threads());
-    }
+    //    if (calculateglobals) {
+    //      _aosthreaddata.resize(autopas_get_max_threads());
+    //    }
   }
 
   bool isRelevantForTuning() override { return relevantForTuning; }
@@ -204,105 +205,102 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
-    // Checks whether the cells are halo cells.
-    // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
-    // defined. (as of 23.11.2018)
-    if (calculateGlobals) {
-      isHaloCell1 |= x1ptr[0] < _lowCorner[0] || x1ptr[0] >= _highCorner[0];
-      isHaloCell1 |= y1ptr[0] < _lowCorner[1] || y1ptr[0] >= _highCorner[1];
-      isHaloCell1 |= z1ptr[0] < _lowCorner[2] || z1ptr[0] >= _highCorner[2];
-      isHaloCell2 |= x2ptr[0] < _lowCorner[0] || x2ptr[0] >= _highCorner[0];
-      isHaloCell2 |= y2ptr[0] < _lowCorner[1] || y2ptr[0] >= _highCorner[1];
-      isHaloCell2 |= z2ptr[0] < _lowCorner[2] || z2ptr[0] >= _highCorner[2];
 
-      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
-      // correct!
-      /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
-        return;
-      }*/
-    }
-    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    const __m256d one = _mm256_set1_pd(1.);
+    const __m256d cutoffsquare = _mm256_broadcast_sd(&_cutoffsquare);
+    const __m256d epsilon24 = _mm256_broadcast_sd(&_epsilon24);
+    const __m256d sigmasquare = _mm256_broadcast_sd(&_sigmasquare);
+
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
-      double fxacc = 0;
-      double fyacc = 0;
-      double fzacc = 0;
+      __m256d fxacc = _mm256_setzero_pd();
+      __m256d fyacc = _mm256_setzero_pd();
+      __m256d fzacc = _mm256_setzero_pd();
 
-      double upotSum = 0.;
-      double virialSumX = 0.;
-      double virialSumY = 0.;
-      double virialSumZ = 0.;
+      const __m256d x1 = _mm256_broadcast_sd(&x1ptr[i]);
+      const __m256d y1 = _mm256_broadcast_sd(&y1ptr[i]);
+      const __m256d z1 = _mm256_broadcast_sd(&z1ptr[i]);
 
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
-      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        const double drx = x1ptr[i] - x2ptr[j];
-        const double dry = y1ptr[i] - y2ptr[j];
-        const double drz = z1ptr[i] - z2ptr[j];
+      for (unsigned int j = 0; j < soa2.getNumParticles(); j += 4) {
+        const __m256d x2 = _mm256_load_pd(&x2ptr[j]);
+        const __m256d y2 = _mm256_load_pd(&y2ptr[j]);
+        const __m256d z2 = _mm256_load_pd(&z2ptr[j]);
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const __m256d drx = _mm256_sub_pd(x1, x2);
+        const __m256d dry = _mm256_sub_pd(y1, y2);
+        const __m256d drz = _mm256_sub_pd(z1, z2);
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const __m256d drx2 = _mm256_mul_pd(drx, drx);
+        const __m256d dry2 = _mm256_mul_pd(dry, dry);
+        const __m256d drz2 = _mm256_mul_pd(drz, drz);
 
-        const double mask = (dr2 > cutoffsquare) ? 0. : 1.;
+        const __m256d dr2PART = _mm256_add_pd(drx2, dry2);
+        const __m256d dr2 = _mm256_add_pd(dr2PART, drz2);
 
-        const double invdr2 = 1. / dr2;
-        const double lj2 = sigmasquare * invdr2;
-        const double lj6 = lj2 * lj2 * lj2;
-        const double lj12 = lj6 * lj6;
-        const double lj12m6 = lj12 - lj6;
-        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        // _CMP_GT_OS == Greater-than (ordered, signaling)
+        // signaling = throw error if NaN is encountered
+        const __m256d cutoffMask = _mm256_cmp_pd(dr2, cutoffsquare, _CMP_GT_OS);
 
-        const double fx = drx * fac;
-        const double fy = dry * fac;
-        const double fz = drz * fac;
+        const __m256d invdr2 = _mm256_div_pd(one, dr2);
+        const __m256d lj2 = _mm256_mul_pd(sigmasquare, invdr2);
+        const __m256d lj4 = _mm256_mul_pd(lj2, lj2);
+        const __m256d lj6 = _mm256_mul_pd(lj2, lj4);
+        const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
+        const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
+        const __m256d lj12m6alj12 = _mm256_add_pd(lj12m6, lj12);
+        const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, epsilon24);
+        const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
 
-        fxacc += fx;
-        fyacc += fy;
-        fzacc += fz;
+        const __m256d facMasked = _mm256_and_pd(fac, cutoffMask);
+
+        const __m256d fx = _mm256_mul_pd(drx, facMasked);
+        const __m256d fy = _mm256_mul_pd(dry, facMasked);
+        const __m256d fz = _mm256_mul_pd(drz, facMasked);
+
+
+        fxacc = _mm256_add_pd(fxacc, fx);
+        fyacc = _mm256_add_pd(fyacc, fy);
+        fzacc = _mm256_add_pd(fzacc, fz);
+
+        // if newton 3 is used subtract fD from particle j
         if (newton3) {
-          fx2ptr[j] -= fx;
-          fy2ptr[j] -= fy;
-          fz2ptr[j] -= fz;
-        }
+          const __m256d fx2 = _mm256_broadcast_sd(&fx2ptr[j]);
+          const __m256d fy2 = _mm256_broadcast_sd(&fy2ptr[j]);
+          const __m256d fz2 = _mm256_broadcast_sd(&fz2ptr[j]);
 
-        if (calculateGlobals) {
-          double virialx = drx * fx;
-          double virialy = dry * fy;
-          double virialz = drz * fz;
-          double upot = (epsilon24 * lj12m6 + shift6) * mask;
+          const __m256d fx2new = _mm256_sub_pd(fx2, fx);
+          const __m256d fy2new = _mm256_sub_pd(fy2, fy);
+          const __m256d fz2new = _mm256_sub_pd(fz2, fz);
 
-          upotSum += upot;
-          virialSumX += virialx;
-          virialSumY += virialy;
-          virialSumZ += virialz;
+          _mm256_store_pd(&fx2ptr[j], fx2new);
+          _mm256_store_pd(&fy2ptr[j], fy2new);
+          _mm256_store_pd(&fz2ptr[j], fz2new);
         }
       }
 
-      fx1ptr[i] += fxacc;
-      fy1ptr[i] += fyacc;
-      fz1ptr[i] += fzacc;
+      // horizontally reduce fDacc to sumfD
+      const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
+      const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
 
-      if (calculateGlobals) {
-        double energyfactor = 1.;
-        if (_duplicatedCalculations) {
-          // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
-          // that we do not add the energy multiple times!
-          energyfactor = isHaloCell1 ? 0. : 1.;
-          if (newton3) {
-            energyfactor += isHaloCell2 ? 0. : 1.;
-            energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-          }
-        }
-        const int threadnum = autopas_get_thread_num();
+      const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
+      const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
 
-        _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
-        _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
-        _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
-      }
+      const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
+      const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
+
+      const union {
+        __m128d reg;
+        double[2] arr;
+      } sumfxfyVEC;
+      sumfxfyVEC.reg = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
+      const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
+
+      const double sumfx = sumfxfyVEC.arr[0];
+      const double sumfy = sumfxfyVEC.arr[1];
+      const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+
+      fx1ptr[i] += sumfx;
+      fy1ptr[i] += sumfy;
+      fz1ptr[i] += sumfz;
     }
   }
 
