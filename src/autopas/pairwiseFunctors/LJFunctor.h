@@ -380,9 +380,12 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       const size_t *const __restrict__ currentList = neighborList[i].data();
 
       // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
-      bool inbox1 = false;
+      double inbox1Mul = 0.;
       if (duplicatedCalculations) {  // only for duplicated calculations we need this value
-        inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, lowCorner, highCorner);
+        inbox1Mul = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, lowCorner, highCorner) ? 1. : 0.;
+        if (newton3) {
+          inbox1Mul *= 0.5;
+        }
       }
 
       // this is a magic number, that should correspond to at least
@@ -468,7 +471,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
               if (duplicatedCalculations) {
                 // for non-newton3 the division is in the post-processing step.
-
+                double inbox2Mul = 0.;
                 if (newton3) {
                   upot *= 0.5;
                   virialx *= 0.5;
@@ -476,19 +479,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
                   virialz *= 0.5;
                   bool inbox2 = xArr[j] >= lowCorner[0] and xArr[j] < highCorner[0] and yArr[j] >= lowCorner[1] and
                                 yArr[j] < highCorner[1] and zArr[j] >= lowCorner[2] and zArr[j] < highCorner[2];
-                  if (inbox2) {
-                    upotSum += upot;
-                    virialSumX += virialx;
-                    virialSumY += virialy;
-                    virialSumZ += virialz;
-                  }
+                  inbox2Mul = inbox2 ? 0.5 : 0.;
                 }
-                if (inbox1) {
-                  upotSum += upot;
-                  virialSumX += virialx;
-                  virialSumY += virialy;
-                  virialSumZ += virialz;
-                }
+                double inboxMul = inbox1Mul + inbox2Mul;
+                upotSum += upot * inboxMul;
+                virialSumX += virialx * inboxMul;
+                virialSumY += virialy * inboxMul;
+                virialSumZ += virialz * inboxMul;
+
               } else {
                 // for non-newton3 we divide by 2 only in the postprocess step!
                 upotSum += upot;
