@@ -45,8 +45,9 @@ class SlicedTraversal
         VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {
     rebuild(dims);
   }
-  // documentation in base classes
+  // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  // documentation in base class
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
   TraversalOptions getTraversalType() override;

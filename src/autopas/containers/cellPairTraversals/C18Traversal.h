@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/VerletListsCellsHelpers.h"
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
 #include "autopas/containers/cellPairTraversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -38,8 +37,9 @@ class C18Traversal
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
         VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
-  // documentation in base classes
+  // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  // documentation in base class
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
   TraversalOptions getTraversalType() override;

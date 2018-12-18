@@ -9,7 +9,6 @@
 #include <array>
 #include <utility>
 #include <vector>
-#include "autopas/containers/VerletListsCellsHelpers.h"
 
 namespace autopas {
 
@@ -21,7 +20,8 @@ namespace autopas {
 template <class Particle, class PairwiseFunctor, bool useNewton3>
 class VerletListsCellsTraversal {
  public:
-  typedef typename VerletListsCellsHelpers<Particle>::VerletList_storage_type verlet_storage_type;
+  /// Verlet list storage
+  typedef std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> verlet_storage_type;
 
   /**
    * Constructor of the verlet traversal.
