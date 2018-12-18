@@ -6,9 +6,8 @@
 
 #pragma once
 
-
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/LinkedCells.h"
+#include "autopas/containers/ParticleContainer.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -26,7 +25,6 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   typedef FullParticleCell<Particle> ParticleCell;
 
  public:
-
   /**
    * Constructor of the VerletListsLinkedBase class.
    * The neighbor lists are build using a search radius of cutoff + skin.
@@ -41,7 +39,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param applicableTraversals all applicable traversals
    */
-  VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff, const double skin, const unsigned int rebuildFrequency, const std::vector<TraversalOptions> &applicableTraversals)
+  VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+                        const double skin, const unsigned int rebuildFrequency,
+                        const std::vector<TraversalOptions>& applicableTraversals)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
         _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),
@@ -172,7 +172,6 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   const std::array<std::size_t, 3>& getCellsPerDimension() {
     return _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
   }
-
 
  protected:
   /**
