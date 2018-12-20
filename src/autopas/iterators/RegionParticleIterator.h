@@ -54,12 +54,20 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
 
     this->_flagManager = flagManager;
     this->_behavior = behavior;
+
+    if (not this->isCellTypeBehaviorCorrect()) {
+      if (omp_get_thread_num() == 32) {
+        std::cout << "next_non_empty_cell at constructor" << std::endl;
+      }
+      this->next_non_empty_cell();
+    }
+
     // ParticleIterator's constructor will initialize the Iterator, such that it
     // points to the first particle if one is found, otherwise the pointer is
     // not valid
     if (ParticleIterator<Particle, ParticleCell>::isValid()) {  // if there is NO particle, we can not dereference
                                                                 // it, so we need a check.
-      if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) or not this->isCellTypeBehaviorCorrect()) {
+      if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
         operator++();
       }
     } else if (this->_iteratorAcrossCells != cont->end()) {
@@ -112,6 +120,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
         break;
       }
       if (_currentRegionIndex + stride >= _indicesInRegion.size()) {
+        // make the iterator invalid!
+        this->_iteratorAcrossCells = this->_vectorOfCells->end();
         break;
       }
       iteratorInc = _indicesInRegion[_currentRegionIndex + stride] - _indicesInRegion[_currentRegionIndex];
