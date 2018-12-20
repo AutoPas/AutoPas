@@ -104,11 +104,6 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
 
     for (this->_iteratorAcrossCells += iteratorInc; this->getCurrentCellId() <= *(_indicesInRegion.end() - 1);
          this->_iteratorAcrossCells += iteratorInc) {
-      //#pragma omp critical
-      //      std::cout << "Thread [" << autopas_get_thread_num() << "] currentCellIndex= " <<
-      //      (this->getCurrentCellId())
-      //      << " currentRegionIndex= " << _currentRegionIndex
-      //      << " iteratorInc= " << iteratorInc << std::endl;
       _currentRegionIndex += stride;
 
       if (this->_iteratorAcrossCells < this->_vectorOfCells->end() and this->_iteratorAcrossCells->isNotEmpty() and
