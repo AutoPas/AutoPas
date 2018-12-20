@@ -46,6 +46,8 @@ class RegionParticleIteratorTest : public AutoPasTestBase {
 
  protected:
 
+  void testLinkedCellsRegionParticleIteratorBehaviorOwned();
+
   void testLinkedCellsRegionParticleIteratorBehaviorHalo();
 
   // needs to be protected, because the test fixtures generate a derived class

@@ -26,7 +26,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
   checkTouches(lcContainer, _regionMin, _regionMax);
 }
 
-TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned) {
+void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOwned(){
   LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
@@ -47,6 +47,43 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
 
   checkTouches(lcContainer, testRegionMin, _regionMax);
 }
+
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned1Thread) {
+#ifdef AUTOPAS_OPENMP
+  int before = omp_get_max_threads();
+  omp_set_num_threads(1);
+#endif
+  testLinkedCellsRegionParticleIteratorBehaviorOwned();
+#ifdef AUTOPAS_OPENMP
+  omp_set_num_threads(before);
+#endif
+}
+#ifdef AUTOPAS_OPENMP
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned16Thread) {
+  int before = omp_get_max_threads();
+  omp_set_num_threads(16);
+  testLinkedCellsRegionParticleIteratorBehaviorOwned();
+  omp_set_num_threads(before);
+}
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned32Thread) {
+  int before = omp_get_max_threads();
+  omp_set_num_threads(32);
+  testLinkedCellsRegionParticleIteratorBehaviorOwned();
+  omp_set_num_threads(before);
+}
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned50Thread) {
+  int before = omp_get_max_threads();
+  omp_set_num_threads(50);
+  testLinkedCellsRegionParticleIteratorBehaviorOwned();
+  omp_set_num_threads(before);
+}
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned240Thread) {
+  int before = omp_get_max_threads();
+  omp_set_num_threads(240);
+  testLinkedCellsRegionParticleIteratorBehaviorOwned();
+  omp_set_num_threads(before);
+}
+#endif
 
 void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHalo(){
   LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
@@ -85,23 +122,43 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
   }
 }
 
-TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo) {
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo1Thread) {
+#ifdef AUTOPAS_OPENMP
+  int before = omp_get_max_threads();
+  omp_set_num_threads(1);
+#endif
   testLinkedCellsRegionParticleIteratorBehaviorHalo();
+#ifdef AUTOPAS_OPENMP
+  omp_set_num_threads(before);
+#endif
 }
 
 #ifdef AUTOPAS_OPENMP
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo16Threads) {
+  int before = omp_get_max_threads();
+  omp_set_num_threads(16);
+  testLinkedCellsRegionParticleIteratorBehaviorHalo();
+  omp_set_num_threads(before);
+}
+
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo32Threads) {
+  int before = omp_get_max_threads();
   omp_set_num_threads(32);
   testLinkedCellsRegionParticleIteratorBehaviorHalo();
+  omp_set_num_threads(before);
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo50Threads) {
+  int before = omp_get_max_threads();
   omp_set_num_threads(50);
   testLinkedCellsRegionParticleIteratorBehaviorHalo();
+  omp_set_num_threads(before);
 }
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo240Threads) {
+  int before = omp_get_max_threads();
   omp_set_num_threads(240);
   testLinkedCellsRegionParticleIteratorBehaviorHalo();
+  omp_set_num_threads(before);
 }
 #endif
 
