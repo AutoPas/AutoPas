@@ -65,6 +65,11 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
   for (auto iterator = lcContainer.getRegionIterator(testRegionMin, _regionMax, autopas::IteratorBehavior::haloOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
+    EXPECT_TRUE(utils::inBox(iterator->getR(), testRegionMin, _regionMax)
+              ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
+              : 0)
+              << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
+              << std::endl;
   }
 
   // check the touch using the normal iterator
