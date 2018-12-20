@@ -59,7 +59,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     // not valid
     if (ParticleIterator<Particle, ParticleCell>::isValid()) {  // if there is NO particle, we can not dereference
                                                                 // it, so we need a check.
-      if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
+      if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) or not this->isCellTypeBehaviorCorrect()) {
         operator++();
       }
     } else if (this->_iteratorAcrossCells != cont->end()) {
