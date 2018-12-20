@@ -3,6 +3,9 @@
  * @author seckler
  * @date 03.04.18
  */
+#ifdef AUTOPAS_OPENMP
+#include <omp.h>
+#endif
 
 #include "RegionParticleIteratorTest.h"
 
@@ -66,10 +69,13 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
        iterator.isValid(); ++iterator) {
     iterator->touch();
     EXPECT_TRUE(utils::inBox(iterator->getR(), testRegionMin, _regionMax)
-              ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
-              : 0)
-              << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-              << std::endl;
+                    ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
+                    : 0)
+        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
+#ifdef AUTOPAS_OPENMP
+        << " in thread: " << omp_get_thread_num()
+#endif
+        << std::endl;
   }
 
   // check the touch using the normal iterator
