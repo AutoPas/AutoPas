@@ -103,6 +103,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     // find the next non-empty cell
     const int stride = autopas_get_num_threads();  // num threads
     if (_currentRegionIndex + stride >= _indicesInRegion.size()) {
+      // make the iterator invalid!
+      this->_iteratorAcrossCells = this->_vectorOfCells->end();
       return;
     }
     size_t iteratorInc = _indicesInRegion[_currentRegionIndex + stride] - _indicesInRegion[_currentRegionIndex];
