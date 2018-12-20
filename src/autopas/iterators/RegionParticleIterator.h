@@ -56,9 +56,6 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     this->_behavior = behavior;
 
     if (not this->isCellTypeBehaviorCorrect()) {
-      if (omp_get_thread_num() == 32) {
-        std::cout << "next_non_empty_cell at constructor" << std::endl;
-      }
       this->next_non_empty_cell();
     }
 
