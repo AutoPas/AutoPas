@@ -26,7 +26,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
   checkTouches(lcContainer, _regionMin, _regionMax);
 }
 
-void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOwned(){
+void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOwned() {
   LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
@@ -86,7 +86,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
 }
 #endif
 
-void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHalo(){
+void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHalo() {
   LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
@@ -104,10 +104,10 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
        iterator.isValid(); ++iterator) {
     iterator->touch();
     EXPECT_TRUE(utils::inBox(iterator->getR(), testRegionMin, _regionMax)
-                ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
-                : 0)
-              << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-              << " in thread: " << autopas_get_thread_num() << std::endl;
+                    ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
+                    : 0)
+        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
+        << " in thread: " << autopas_get_thread_num() << std::endl;
   }
 
   // check the touch using the normal iterator
@@ -115,11 +115,11 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
     // this is a test for halo only! so we first check whether it's within our region of interest and then whether it's
     // not in the halo
     EXPECT_EQ(utils::inBox(iterator->getR(), testRegionMin, _regionMax)
-              ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
-              : 0,
+                  ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
+                  : 0,
               iterator->getNumTouched())
-              << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-              << std::endl;
+        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
+        << std::endl;
   }
 }
 
