@@ -48,7 +48,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
   checkTouches(lcContainer, testRegionMin, _regionMax);
 }
 
-TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo) {
+void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHalo(){
   LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
 
   // add a number of particles
@@ -66,10 +66,10 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
        iterator.isValid(); ++iterator) {
     iterator->touch();
     EXPECT_TRUE(utils::inBox(iterator->getR(), testRegionMin, _regionMax)
-                    ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
-                    : 0)
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << " in thread: " << autopas_get_thread_num() << std::endl;
+                ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
+                : 0)
+              << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
+              << " in thread: " << autopas_get_thread_num() << std::endl;
   }
 
   // check the touch using the normal iterator
@@ -77,13 +77,33 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
     // this is a test for halo only! so we first check whether it's within our region of interest and then whether it's
     // not in the halo
     EXPECT_EQ(utils::inBox(iterator->getR(), testRegionMin, _regionMax)
-                  ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
-                  : 0,
+              ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
+              : 0,
               iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+              << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
+              << std::endl;
   }
 }
+
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo) {
+  testLinkedCellsRegionParticleIteratorBehaviorHalo();
+}
+
+#ifdef AUTOPAS_OPENMP
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo32Threads) {
+  omp_set_num_threads(32);
+  testLinkedCellsRegionParticleIteratorBehaviorHalo();
+}
+
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo50Threads) {
+  omp_set_num_threads(50);
+  testLinkedCellsRegionParticleIteratorBehaviorHalo();
+}
+TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorHalo240Threads) {
+  omp_set_num_threads(240);
+  testLinkedCellsRegionParticleIteratorBehaviorHalo();
+}
+#endif
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
   LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);

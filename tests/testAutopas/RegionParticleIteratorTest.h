@@ -45,6 +45,9 @@ class RegionParticleIteratorTest : public AutoPasTestBase {
   void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
 
  protected:
+
+  void testLinkedCellsRegionParticleIteratorBehaviorHalo();
+
   // needs to be protected, because the test fixtures generate a derived class
   // for each unit test.
 
