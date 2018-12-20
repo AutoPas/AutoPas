@@ -44,8 +44,9 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOw
        iterator.isValid(); ++iterator) {
     iterator->touch();
   }
-
-  checkTouches(lcContainer, testRegionMin, _regionMax);
+  // owned cells only start at [0, 0, 0]!
+  std::array<double, 3> realMin = {0, 0, 0};
+  checkTouches(lcContainer, realMin, _regionMax);
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehaviorOwned1Thread) {
