@@ -103,21 +103,20 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
   for (auto iterator = lcContainer.getRegionIterator(testRegionMin, _regionMax, autopas::IteratorBehavior::haloOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
-    EXPECT_TRUE(utils::inBox(iterator->getR(), testRegionMin, _regionMax)
-                    ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
-                    : 0)
+    bool isInRegionOfInterest = utils::inBox(iterator->getR(), testRegionMin, _regionMax);
+    bool isInHalo = not utils::inBox(iterator->getR(), _boxMin, _boxMax);
+    EXPECT_TRUE(isInRegionOfInterest and isInHalo)
         << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
         << " in thread: " << autopas_get_thread_num() << std::endl;
   }
 
-  // check the touch using the normal iterator
+  // check the touch using the normal iterator (needed to check whether no particle was forgotten)
   for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
     // this is a test for halo only! so we first check whether it's within our region of interest and then whether it's
     // not in the halo
-    EXPECT_EQ(utils::inBox(iterator->getR(), testRegionMin, _regionMax)
-                  ? (utils::inBox(iterator->getR(), _boxMin, _boxMax) ? 0 : 1)
-                  : 0,
-              iterator->getNumTouched())
+    bool isInRegionOfInterest = utils::inBox(iterator->getR(), testRegionMin, _regionMax);
+    bool isInHalo = not utils::inBox(iterator->getR(), _boxMin, _boxMax);
+    EXPECT_EQ(isInRegionOfInterest and isInHalo ? 1 : 0, iterator->getNumTouched())
         << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
         << std::endl;
   }
