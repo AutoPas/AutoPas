@@ -10,7 +10,6 @@
 #include <array>
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 
 #ifdef AUTOPAS_OPENMP
 #include <omp.h>

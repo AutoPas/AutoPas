@@ -12,7 +12,9 @@
 #include <numeric>
 #include <unordered_map>
 #include <vector>
+#include "autopas/containers/cellPairTraversals/C01Traversal.h"
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
+#include "autopas/containers/cellPairTraversals/C18Traversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/DummyTraversal.h"
@@ -46,6 +48,7 @@ enum SelectorStrategy {
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
 static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced,
+                                                            TraversalOptions::c18, TraversalOptions::c01,
                                                             TraversalOptions::directSumTraversal};
 
 /**
@@ -185,6 +188,16 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
           std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
       break;
     }
+    case TraversalOptions::c18: {
+      traversal =
+          std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::c01: {
+      traversal =
+          std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
     case TraversalOptions::dummyTraversal: {
       traversal = std::make_unique<DummyTraversal<ParticleCell>>(_dims);
       break;
@@ -241,6 +254,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   while (not traversalIsApplicable) {
     // if no measurements are in yet _optimalTraversalOption is not initialized
     if (not _isTuning) {
+      // no traversals are allowed
+      if (_allowedTraversalOptions.size() == 0) {
+        return std::unique_ptr<CellPairTraversal<ParticleCell>>(nullptr);
+      }
+
       _optimalTraversalOption = _allowedTraversalOptions.begin().operator*();
       _isTuning = true;
     } else {

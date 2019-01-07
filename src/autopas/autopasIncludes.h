@@ -35,14 +35,18 @@
 #include "autopas/iterators/SingleCellIterator.h"
 
 // traversals
+#include "autopas/containers/cellPairTraversals/C01Traversal.h"
 #include "autopas/containers/cellPairTraversals/C08Traversal.h"
+#include "autopas/containers/cellPairTraversals/C18Traversal.h"
 #include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
 
 // containers
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/VerletClusterLists.h"
 #include "autopas/containers/VerletLists.h"
+#include "autopas/containers/VerletListsCells.h"
 
 // pairwise functors
 #include "autopas/pairwiseFunctors/CellFunctor.h"

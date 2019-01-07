@@ -9,8 +9,6 @@
 
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/ParticleContainer.h"
-#include "autopas/containers/cellPairTraversals/C08Traversal.h"
-#include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/WrapOpenMP.h"

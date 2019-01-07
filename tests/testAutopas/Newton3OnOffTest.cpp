@@ -11,10 +11,15 @@ using ::testing::Return;  // anything is ok
 
 TEST_F(Newton3OnOffTest, testAoS) {
   for (auto containerOption : autopas::allContainerOptions) {
+    // @todo remove this when cluster list can iterate with newton3 active
+    if (containerOption == autopas::ContainerOptions::verletClusterLists) {
+      continue;
+    }
+
     // needs two samples per container because we test with and without newton 3 and never take time measurements
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(), {containerOption},
-                 {autopas::TraversalOptions::c08, autopas::TraversalOptions::directSumTraversal},
-                 autopas::SelectorStrategy::fastestAbs, autopas::SelectorStrategy::fastestAbs, 100, 1);
+                 autopas::allTraversalOptions, autopas::SelectorStrategy::fastestAbs,
+                 autopas::SelectorStrategy::fastestAbs, 100, 1);
     autopas::MoleculeLJ defaultParticle;
     RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
     RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
@@ -53,9 +58,10 @@ TEST_F(Newton3OnOffTest, testAoS) {
 }
 
 TEST_F(Newton3OnOffTest, testSoA) {
-  //  for (auto containerOption : autopas::allContainerOptions) {
   for (auto containerOption : autopas::allContainerOptions) {
-    if (containerOption == autopas::ContainerOptions::verletLists) {
+    if (containerOption == autopas::ContainerOptions::verletLists ||
+        containerOption == autopas::ContainerOptions::verletListsCells ||
+        containerOption == autopas::ContainerOptions::verletClusterLists) {
       continue;
     }
     autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(),
@@ -112,8 +118,8 @@ TEST_F(Newton3OnOffTest, testSoA) {
     autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
 
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
-    ;  // should be called exactly two times
+    // should be called exactly two times
     EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
-    ;  // should be called exactly two times
+    // should be called exactly two times
   }
 }
