@@ -36,7 +36,10 @@ enum ContainerOptions {
 template <class Particle, class ParticleCell>
 class ParticleContainerInterface {
  public:
-  ParticleContainerInterface() {}
+  /**
+   * Default constructor
+   */
+  ParticleContainerInterface() = default;
 
   /**
    * Destructor of ParticleContainerInterface.

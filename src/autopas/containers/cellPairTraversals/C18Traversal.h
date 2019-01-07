@@ -39,7 +39,9 @@ class C18Traversal
         VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-  // documentation in base class
+  /**
+   * @copydoc VerletListsCellsTraversal::traverseCellVerlet
+   */
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
   TraversalOptions getTraversalType() override;

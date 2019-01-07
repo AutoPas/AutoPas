@@ -50,7 +50,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
         _neighborListIsValid(false) {}
 
   /**
-   * @copydoc LinkedCells::addParticle()
+   * @copydoc autopas::ParticleContainerInterface::addParticle
    * @note This function invalidates the neighbor lists.
    */
   void addParticle(Particle& p) override {
@@ -59,7 +59,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   }
 
   /**
-   * @copydoc LinkedCells::addHaloParticle()
+   * @copydoc autopas::ParticleContainerInterface::addHaloParticle
    * @note This function invalidates the neighbor lists.
    */
   void addHaloParticle(Particle& haloParticle) override {
@@ -67,10 +67,13 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
     _linkedCells.addHaloParticle(haloParticle);
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getNumParticles()
+   */
   unsigned long getNumParticles() override { return _linkedCells.getNumParticles(); }
 
   /**
-   * @copydoc LinkedCells::deleteHaloParticles
+   * @copydoc autopas::ParticleContainerInterface::deleteHaloParticles
    * @note This function invalidates the neighbor lists.
    */
   void deleteHaloParticles() override {
@@ -79,7 +82,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   }
 
   /**
-   * @copydoc ParticleContainerInterface::deleteAllParticles
+   * @copydoc autopas::ParticleContainerInterface::deleteAllParticles
    * @note This function invalidates the neighbor lists.
    */
   void deleteAllParticles() override {
@@ -88,7 +91,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   }
 
   /**
-   * @copydoc LinkedCells::updateContainer()
+   * @copydoc autopas::ParticleContainerInterface::updateContainer()
    * @note This function invalidates the neighbor lists.
    */
   void updateContainer() override {
@@ -97,6 +100,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
     _linkedCells.updateContainer();
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::isContainerUpdateNeeded()
+   */
   bool isContainerUpdateNeeded() override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
@@ -154,10 +160,16 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
     }
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::begin()
+   */
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return _linkedCells.begin(behavior);
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
+   */
   ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
                                                       std::array<double, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
@@ -205,7 +217,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /// rebuild
   unsigned int _rebuildFrequency;
 
-  // specifies if the neighbor list is currently valid
+  /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid;
 };
 
