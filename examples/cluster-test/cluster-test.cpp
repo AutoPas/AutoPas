@@ -1,4 +1,6 @@
 /**
+ * This is just a quick and dirty implementation to visualize Verlet cluster. A VerletClusterLists container is filled
+ * and the generated clusters are printed into a vtu files.
  * @file cluster-test.cpp
  * @date 29.11.18
  * @author nguyen

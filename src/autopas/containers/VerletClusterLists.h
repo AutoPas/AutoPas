@@ -461,7 +461,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       const index_t nonLargerValue = std::min(nonnegativeValue, _cellsPerDim[dim] - 1);
       cellIndex[dim] = nonLargerValue;
       /// @todo this is a sanity check to prevent doubling of particles, but
-      /// could be done better!
+      /// could be done better! e.g. by border and flag manager
       if (pos[dim] >= _boxMax[dim]) {
         cellIndex[dim] = _cellsPerDim[dim] - 1;
       } else if (pos[dim] < _boxMin[dim]) {
@@ -470,8 +470,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     return index1D(cellIndex[0], cellIndex[1]);
-    // in very rare cases rounding is stupid, thus we need a check...
-    /// @todo when the border and flag manager is there
   }
 
   /**
