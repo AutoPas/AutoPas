@@ -2,11 +2,13 @@ FILE(GLOB_RECURSE MY_SRC
         "*.cpp"
         "*.h"
         )
-        
+if(CUDA)        
 FILE(GLOB_RECURSE CU_SRC
         "*.cu"
         "*.cuh"
         )
+endif()
+
 ADD_EXECUTABLE(runTests
         ${MY_SRC}
         $<$<BOOL:${CUDA}>:${CU_SRC}>
@@ -24,9 +26,7 @@ if(CMAKE_VERSION VERSION_LESS "3.10")
     GTEST_ADD_TESTS(runTests
         ""
         ${MY_SRC}
-        if(CUDA)
-            ${CU_SRC}
-        endif()
+        ${CU_SRC}
         )
 else()
     # this cmake module was only introduced in 3.10
