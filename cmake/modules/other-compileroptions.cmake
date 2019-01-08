@@ -7,14 +7,14 @@ endif()
 target_compile_options(autopas
         PUBLIC
         # Needed to vectorize sqrt()
-        -fno-math-errno
+        $<$<NOT:$<BOOL:CUDA>>:-fno-math-errno>
         # fast math for better vectorization
         $<$<AND:$<BOOL:${ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-ffast-math>
         # INTEL: per default fast math is on. Disable via fp-model precise
         $<$<AND:$<NOT:$<BOOL:${ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:-fp-model precise>
         # Warnings:
         # no warnings for intel because it's mainly spam
-        $<$<CXX_COMPILER_ID:GNU>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
+        $<$<AND:$<NOT:$<BOOL:${CUDA}>>,$<CXX_COMPILER_ID:GNU>>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
         $<$<CXX_COMPILER_ID:Clang>:-Wall>
         # @TODO clean up code with -Weffc++
         )

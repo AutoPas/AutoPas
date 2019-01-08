@@ -63,6 +63,16 @@ class FullParticleCell : public ParticleCell<Particle> {
   SoA<SoAArraysType> _particleSoABuffer;
 
   /**
+   * device AoS Buffer
+   */
+  double * _particlesDevice;
+
+  /**
+   * device particle SoABuffer
+   */
+  typename Particle::SoADevice _particleSoABufferDevice;
+
+  /**
    * type of the internal iterator
    */
   typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;

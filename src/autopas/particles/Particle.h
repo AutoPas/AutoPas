@@ -137,6 +137,19 @@ class Particle {
    */
   typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
+  /*
+   * The Storage Arrays for Cuda
+   */
+  struct SoADevice{
+	  size_t* ids;
+	  double* posX;
+	  double* posY;
+	  double* posZ;
+	  double* forceX;
+	  double* forceY;
+	  double* forceZ;
+  };
+
  protected:
   /**
    * Particle position as 3D coordinates.

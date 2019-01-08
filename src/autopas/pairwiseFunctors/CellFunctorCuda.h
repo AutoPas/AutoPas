@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "LJFunctorCuda.h"
 #include "cuda_runtime.h"
 
 namespace autopas {
@@ -61,34 +62,13 @@ void CellFunctorCuda<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3
 		ParticleCell &cell) {
 	static_assert(not useNewton3, "Newton3 not available for Cuda Cell Functor");
 
-	if (not useSoA) {
-		const size_t c0_size = cell._particles.size();
+	if (useSoA) {
 
-		double3* cell0_r = new double3[c0_size];
-		double3* cell0_f = new double3[c0_size];
-		double3* d_cell0_r, d_cell0_f;
-
-		for (size_t i = 0; i < c0_size; ++i) {
-			cell0_r[i] = _functor.serializePosition(cell._particles[i]);
-			cell0_f[i] = {0,0,0};
-		}
-		cudaError_t e;
-		e = cudaMalloc((void **) &d_cell0_r, sizeof(double3) * c0_size);
-		e = cudaMalloc((void **) &d_cell0_f, sizeof(double3) * c0_size);
-
-		e = cudaMemcpy(d_cell0_r, cell0_r, c0_size, cudaMemcpyHostToDevice);
-
-		_functor->CudaFunctor(c0_size, d_cell0_r, d_cell0_f, useNewton3);
-
-		e = cudaMemcpy(cell0_f, d_cell0_f, c0_size, cudaMemcpyDeviceToHost);
-		cudaFree(d_cell0_r);
-		cudaFree(d_cell0_f);
-
-		for (size_t i = 0; i < c0_size; ++i) {
-			updateForce(cell._particles[i], cell0_f[i]);;
-		}
+		_functor->SoAFunctorNoN3(cell._particleSoABuffer.getNumParticles(), cell._particleSoABufferDevice);
 
 		return;
+	}else{
+		_functor->AoSFunctorNoN3(cell.numParticles(), cell._particlesDevice);
 	}
 }
 
@@ -96,6 +76,12 @@ template<class Particle, class ParticleCell, class ParticleFunctor, bool useSoA,
 		bool useNewton3>
 void CellFunctorCuda<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3>::processCellPair(
 		ParticleCell &cell1, ParticleCell &cell2) {
+	if (useSoA) {
+
+		return;
+	}else{
+		_functor->AoSFunctorNoN3(cell1.numParticles(), cell2.numParticles(), cell1._particlesDevice, cell2._particlesDevice);
+	}
 }
 
 } // namespace autopas

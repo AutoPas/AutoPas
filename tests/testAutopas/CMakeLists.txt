@@ -24,7 +24,9 @@ if(CMAKE_VERSION VERSION_LESS "3.10")
     GTEST_ADD_TESTS(runTests
         ""
         ${MY_SRC}
-        $<$<BOOL:${CUDA}>:${CU_SRC}>
+        if(CUDA)
+            ${CU_SRC}
+        endif()
         )
 else()
     # this cmake module was only introduced in 3.10

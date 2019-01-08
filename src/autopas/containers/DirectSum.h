@@ -98,6 +98,35 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
   }
 
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseAoSCuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+	AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
+
+	f->deviceAoSLoader(*getCell(), getCell()->_particlesDevice);
+	traversal->traverseCellPairs(this->_cells);
+
+	f->deviceAoSExtractor(*getCell(), getCell()->_particlesDevice);
+
+  }
+
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoACuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+    AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
+    f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
+    f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
+
+    f->deviceSoALoader((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
+    f->deviceSoALoader((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
+
+    traversal->traverseCellPairs(this->_cells);
+
+    f->deviceSoAExtractor((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
+    f->deviceSoAExtractor((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
+
+    f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
+    f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
+  }
+
   void updateContainer() override {
     if (getHaloCell()->isNotEmpty()) {
       utils::ExceptionHandler::exception(

@@ -35,6 +35,18 @@ if(NOT CMAKE_BUILD_TYPE)
             "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+# CUDA options
+option(CUDA "Activates Cuda Components" OFF)
+if(CUDA)
+    message(STATUS "Cuda enabled.")
+    enable_language(CUDA)
+    set(CUDA_SEPARABLE_COMPILATION ON)
+    set(CUDAHOSTCXX=clang)
+    set(CUDA_PROPAGATE_HOST_FLAGS ON)
+else()
+    message(STATUS "Cuda disabled.")
+endif()
+
 ENABLE_TESTING()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
@@ -45,7 +57,6 @@ include(clang-tidy)
 include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
-include(cuda)
 
 include(version.cmake)
 
@@ -62,4 +73,6 @@ ADD_SUBDIRECTORY(tests)
 # modules needing targets:
 include(logging)
 include(other-compileroptions)
-include(vectorization)
+if(NOT CUDA)
+    include(vectorization)
+endif()
