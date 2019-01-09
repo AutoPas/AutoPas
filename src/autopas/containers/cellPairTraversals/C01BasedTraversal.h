@@ -33,7 +33,7 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+  explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims),
         _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false>(

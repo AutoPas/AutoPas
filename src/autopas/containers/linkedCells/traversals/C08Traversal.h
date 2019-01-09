@@ -37,8 +37,8 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-  TraversalOptions getTraversalType() override {return TraversalOptions::c08;}
-  bool isApplicable() override {return true;}
+  TraversalOptions getTraversalType() override { return TraversalOptions::c08; }
+  bool isApplicable() override { return true; }
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>

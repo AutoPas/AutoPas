@@ -38,7 +38,9 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
       : CellPairTraversal<ParticleCell>(dims),
         _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
-                pairwiseFunctor)) {
+                pairwiseFunctor)),
+        _cellPairOffsets{},
+        _cellOffsets{} {
     computeOffsets();
   }
 

@@ -35,8 +35,8 @@ class VerletListsCells
 
  private:
   const std::vector<TraversalOptions>& VLCApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::sliced, TraversalOptions::c18,
-                                                 TraversalOptions::c01};
+    static const std::vector<TraversalOptions> v{TraversalOptions::slicedVerlet, TraversalOptions::c18Verlet,
+                                                 TraversalOptions::c01Verlet};
     return v;
   }
 

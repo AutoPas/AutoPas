@@ -37,16 +37,14 @@ class C01TraversalVerlet
   explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>(dims, pairwiseFunctor),
         VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
-  // documentation in base class
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   /**
    * @copydoc VerletListsCellsTraversal::traverseCellVerlet
    */
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
-  TraversalOptions getTraversalType() override {return TraversalOptions::c01;}
-  bool isApplicable() override {return not useNewton3;}
+  TraversalOptions getTraversalType() override { return TraversalOptions::c01Verlet; }
+  bool isApplicable() override { return not useNewton3; }
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>

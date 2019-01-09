@@ -37,7 +37,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
-  TraversalOptions getTraversalType() override {return TraversalOptions::c01;}
+  TraversalOptions getTraversalType() override { return TraversalOptions::c01; }
   bool isApplicable() override { return not useNewton3; }
 
  private:

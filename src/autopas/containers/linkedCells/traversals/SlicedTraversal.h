@@ -48,8 +48,8 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, 
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
-  TraversalOptions getTraversalType() override {return TraversalOptions::sliced;}
-  bool isApplicable() override {return this->_sliceThickness.size() > 0;}
+  TraversalOptions getTraversalType() override { return TraversalOptions::sliced; }
+  bool isApplicable() override { return this->_sliceThickness.size() > 0; }
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  private:

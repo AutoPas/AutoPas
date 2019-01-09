@@ -45,15 +45,14 @@ class SlicedTraversalVerlet
         VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {
     rebuild(dims);
   }
-  // documentation in base class
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+
   /**
    * @copydoc VerletListsCellsTraversal::traverseCellVerlet
    */
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
-  TraversalOptions getTraversalType() override {return TraversalOptions::sliced;}
-  bool isApplicable() override {return this->_sliceThickness.size() > 0;}
+  TraversalOptions getTraversalType() override { return TraversalOptions::slicedVerlet; }
+  bool isApplicable() override { return this->_sliceThickness.size() > 0; }
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  private:
@@ -102,66 +101,6 @@ inline void SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewt
   --*--_sliceThickness.end();
 
   locks.resize(numSlices);
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
-  using std::array;
-
-  auto numSlices = _sliceThickness.size();
-  // 0) check if applicable
-
-  for (size_t i = 0; i < numSlices - 1; ++i) {
-    locks[i] = new autopas_lock_t;
-    autopas_init_lock(locks[i]);
-  }
-
-#ifdef AUTOPAS_OPENMP
-// although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-#pragma omp parallel for schedule(static, 1) num_threads(numSlices)
-#endif
-  for (size_t slice = 0; slice < numSlices; ++slice) {
-    array<unsigned long, 3> myStartArray{0, 0, 0};
-    for (size_t i = 0; i < slice; ++i) {
-      myStartArray[_dimsPerLength[0]] += _sliceThickness[i];
-    }
-
-    // all but the first slice need to lock their starting layer.
-    if (slice > 0) {
-      autopas_set_lock(locks[slice - 1]);
-    }
-    for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]];
-         dimSlice < myStartArray[_dimsPerLength[0]] + _sliceThickness[slice]; ++dimSlice) {
-      // at the last layer request lock for the starting layer of the next
-      // slice. Does not apply for the last slice.
-      if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
-        autopas_set_lock(locks[slice]);
-      }
-      for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[_dimsPerLength[1]] - 1; ++dimMedium) {
-        for (unsigned long dimShort = 0; dimShort < this->_cellsPerDimension[_dimsPerLength[2]] - 1; ++dimShort) {
-          array<unsigned long, 3> idArray;
-          idArray[_dimsPerLength[0]] = dimSlice;
-          idArray[_dimsPerLength[1]] = dimMedium;
-          idArray[_dimsPerLength[2]] = dimShort;
-          auto id = utils::ThreeDimensionalMapping::threeToOneD(idArray, this->_cellsPerDimension);
-          this->processBaseCell(cells, id);
-        }
-      }
-      // at the end of the first layer release the lock
-      if (slice > 0 && dimSlice == myStartArray[_dimsPerLength[0]]) {
-        autopas_unset_lock(locks[slice - 1]);
-      } else if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
-        // clearing of the lock set on the last layer of each slice
-        autopas_unset_lock(locks[slice]);
-      }
-    }
-  }
-
-  for (size_t i = 0; i < numSlices - 1; ++i) {
-    autopas_destroy_lock(locks[i]);
-    delete locks[i];
-  }
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
