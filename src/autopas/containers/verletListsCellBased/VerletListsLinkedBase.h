@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {

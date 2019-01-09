@@ -95,8 +95,8 @@ inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
 
   ParticleCell &baseCell = cells[baseIndex];
   std::vector<unsigned long> &offsets = _cellOffsets[yArray][xArray];
-  const int num_pairs = offsets.size();
-  for (int j = 0; j < num_pairs; ++j) {
+  const size_t num_pairs = offsets.size();
+  for (size_t j = 0; j < num_pairs; ++j) {
     unsigned long otherIndex = baseIndex + offsets[j];
     ParticleCell &otherCell = cells[otherIndex];
 
@@ -116,7 +116,7 @@ inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
         int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
 
         if (offset >= 0) {
-          unsigned long uoffset = (unsigned long)offset;
+          auto uoffset = static_cast<unsigned long>(offset);
           // add to each applicable special case
           for (int yArray = -1; yArray <= 1; ++yArray) {
             if (std::abs(yArray + y) <= 1) {

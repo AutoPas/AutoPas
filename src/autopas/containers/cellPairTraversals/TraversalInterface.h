@@ -23,12 +23,12 @@ enum TraversalOptions {
 /**
  * This interface serves as a common parent class for all cell pair traversals.
  */
-class CellPairTraversalInterface {
+class TraversalInterface {
  public:
   /**
    * Destructor of CellPairTraversal.
    */
-  virtual ~CellPairTraversalInterface() = default;
+  virtual ~TraversalInterface() = default;
 
   /**
    * Return a enum representing the name of the traversal class.

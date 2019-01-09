@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include "autopas/containers/LinkedCells.h"
+#include "VerletListsCellsHelpers.h"
 #include "autopas/containers/ParticleContainer.h"
-#include "autopas/containers/VerletListsCellsHelpers.h"
-#include "autopas/containers/VerletListsLinkedBase.h"
-#include "autopas/containers/cellPairTraversals/C01Traversal.h"
-#include "autopas/containers/cellPairTraversals/C08Traversal.h"
-#include "autopas/containers/cellPairTraversals/C18Traversal.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/C01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C18Traversal.h"
+#include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {

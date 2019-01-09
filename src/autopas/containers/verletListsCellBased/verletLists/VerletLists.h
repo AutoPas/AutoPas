@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "autopas/containers/LinkedCells.h"
+#include "VerletListHelpers.h"
 #include "autopas/containers/ParticleContainer.h"
-#include "autopas/containers/VerletListHelpers.h"
-#include "autopas/containers/VerletListsLinkedBase.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {

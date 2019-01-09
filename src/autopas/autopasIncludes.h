@@ -27,7 +27,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/cells/RMMParticleCell2T.h"
-#include "autopas/containers/DirectSum.h"
+#include "autopas/containers/directSum/DirectSum.h"
 
 // iterators
 #include "autopas/iterators/ParticleIterator.h"
@@ -35,18 +35,18 @@
 #include "autopas/iterators/SingleCellIterator.h"
 
 // traversals
-#include "autopas/containers/cellPairTraversals/C01Traversal.h"
-#include "autopas/containers/cellPairTraversals/C08Traversal.h"
-#include "autopas/containers/cellPairTraversals/C18Traversal.h"
 #include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
+#include "autopas/containers/linkedCells/traversals/C01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 
 // containers
 #include "autopas/containers/CellBlock3D.h"
-#include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
-#include "autopas/containers/VerletClusterLists.h"
-#include "autopas/containers/VerletLists.h"
-#include "autopas/containers/VerletListsCells.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
 // pairwise functors
 #include "autopas/pairwiseFunctors/CellFunctor.h"

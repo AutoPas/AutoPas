@@ -42,6 +42,9 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
  protected:
+  template <class ContainerT, typename LoopBody>
+  inline void c01Traversal(ContainerT &container, LoopBody loopBody);
+
   /**
    * Computes all interactions between the base
    * cell and adjacent cells.
@@ -95,6 +98,27 @@ inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::computeOff
       for (int x = -1; x <= 1; ++x) {
         int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
         _cellOffsets.push_back(offset);
+      }
+    }
+  }
+}
+
+template <class ParticleCell, class PairwiseFunctor, bool useSoA>
+template <class ContainerT, typename LoopBody>
+inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::c01Traversal(ContainerT &container,
+                                                                                   LoopBody loopBody) {
+  const unsigned long end_x = this->_cellsPerDimension[0] - 1;
+  const unsigned long end_y = this->_cellsPerDimension[1] - 1;
+  const unsigned long end_z = this->_cellsPerDimension[2] - 1;
+
+#if defined(AUTOPAS_OPENMP)
+  // @todo: find optimal chunksize
+#pragma omp parallel for schedule(dynamic) collapse(3)
+#endif
+  for (unsigned long z = 1; z < end_z; ++z) {
+    for (unsigned long y = 1; y < end_y; ++y) {
+      for (unsigned long x = 1; x < end_x; ++x) {
+        loopBody();
       }
     }
   }
