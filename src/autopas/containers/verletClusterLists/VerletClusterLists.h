@@ -80,6 +80,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
+    // @todo
+    if (useNewton3) {
+      AutoPasLog(error, "Newton3 not implemented yet");
+      autopas::utils::ExceptionHandler::exception("VerletClusterLists does not support newton3.");
+    }
     if (needsRebuild()) {
       this->rebuild();
     }
@@ -380,11 +385,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void traverseVerletLists(ParticleFunctor* functor, bool useNewton3) {
     if (needsRebuild()) {
       rebuild();
-    }
-
-    // @todo
-    if (useNewton3) {
-      AutoPasLog(error, "Newton3 not implemented yet");
     }
 
     const index_t end_x = _cellsPerDim[0];
