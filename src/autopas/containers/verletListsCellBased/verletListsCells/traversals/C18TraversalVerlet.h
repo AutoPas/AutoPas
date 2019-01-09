@@ -1,7 +1,7 @@
 /**
  * @file C18TraversalVerlet.h
- * @author nguyen
- * @date 06.09.2018
+ * @date 09 Jan 2019
+ * @author seckler
  */
 
 #pragma once

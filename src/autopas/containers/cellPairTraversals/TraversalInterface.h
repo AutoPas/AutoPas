@@ -1,5 +1,5 @@
 /**
- * @file CellPairTraversalInterface.h
+ * @file TraversalInterface.h
  * @author F. Gratl
  * @date 7/3/18
  */

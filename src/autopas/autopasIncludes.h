@@ -35,10 +35,10 @@
 #include "autopas/iterators/SingleCellIterator.h"
 
 // traversals
-#include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
+#include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
 
 // containers
 #include "autopas/containers/CellBlock3D.h"

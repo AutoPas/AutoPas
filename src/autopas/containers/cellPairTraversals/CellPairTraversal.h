@@ -31,7 +31,7 @@ class CellPairTraversal : public TraversalInterface {
   /**
    * Destructor of CellPairTraversal.
    */
-  virtual ~CellPairTraversal() = default;
+  ~CellPairTraversal() override = default;
 
   /**
    * Resets the cell structure of the traversal.

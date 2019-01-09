@@ -1,7 +1,7 @@
 /**
- * @file C01Traversal.h
- * @author nguyen
- * @date 16.09.2018
+ * @file C01TraversalVerlet.h
+ * @date 09 Jan 2019
+ * @author seckler
  */
 
 #pragma once
@@ -24,7 +24,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C01Traversal
+class C01TraversalVerlet
     : public C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>,
       public VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3> {
  public:
@@ -34,7 +34,7 @@ class C01Traversal
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+  explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>(dims, pairwiseFunctor),
         VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
   // documentation in base class
@@ -50,12 +50,12 @@ class C01Traversal
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline bool C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
+inline bool C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
   return not useNewton3;
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   const unsigned long end_x = this->_cellsPerDimension[0] - 1;
   const unsigned long end_y = this->_cellsPerDimension[1] - 1;
@@ -75,7 +75,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellVerlet(
+inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellVerlet(
     typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                        useNewton3>::verlet_storage_type &verlet) {
   const unsigned long end_x = this->_cellsPerDimension[0] - 1;
@@ -97,7 +97,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-TraversalOptions C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
+TraversalOptions C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
   return TraversalOptions::c01;
 };
 

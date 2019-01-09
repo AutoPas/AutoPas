@@ -1,8 +1,8 @@
 /**
  * @file SlicedTraversalVerlet.h
  *
- * @date 20 Apr 2018
- * @author gratl
+ * @date 09 Jan 2019
+ * @author seckler
  */
 
 #pragma once
