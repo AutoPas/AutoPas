@@ -38,7 +38,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   TraversalOptions getTraversalType() override;
-  bool isApplicable() override;
+  bool isApplicable() override { return not useNewton3; }
 
  private:
   /**
@@ -49,7 +49,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param y y of base cell
    * @param z z of base cell
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  inline void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
@@ -58,8 +58,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::pro
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
 
-  const int num_pairs = this->_cellOffsets.size();
-  for (int j = 0; j < num_pairs; ++j) {
+  const size_t num_pairs = this->_cellOffsets.size();
+  for (size_t j = 0; j < num_pairs; ++j) {
     unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
     ParticleCell &otherCell = cells[otherIndex];
 
@@ -72,33 +72,14 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::pro
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline bool C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
-  return not useNewton3;
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
-  const unsigned long end_x = this->_cellsPerDimension[0] - 1;
-  const unsigned long end_y = this->_cellsPerDimension[1] - 1;
-  const unsigned long end_z = this->_cellsPerDimension[2] - 1;
-
-#if defined(AUTOPAS_OPENMP)
-  // @todo: find optimal chunksize
-#pragma omp parallel for schedule(dynamic) collapse(3)
-#endif
-  for (unsigned long z = 1; z < end_z; ++z) {
-    for (unsigned long y = 1; y < end_y; ++y) {
-      for (unsigned long x = 1; x < end_x; ++x) {
-        this->processBaseCell(cells, x, y, z);
-      }
-    }
-  }
+  this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 TraversalOptions C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
   return TraversalOptions::c01;
-};
+}
 
 }  // namespace autopas

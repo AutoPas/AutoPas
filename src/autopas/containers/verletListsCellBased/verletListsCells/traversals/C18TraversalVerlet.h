@@ -56,39 +56,10 @@ template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton
 inline void C18TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellVerlet(
     typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                        useNewton3>::verlet_storage_type &verlet) {
-  using std::array;
-  const array<unsigned long, 3> stride = {3, 3, 2};
-  array<unsigned long, 3> end;
-  end[0] = this->_cellsPerDimension[0];
-  end[1] = this->_cellsPerDimension[1];
-  end[2] = this->_cellsPerDimension[2] - 1;
-
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
-    for (unsigned long col = 0; col < 18; ++col) {
-      std::array<unsigned long, 3> start = utils::ThreeDimensionalMapping::oneToThreeD(col, stride);
-
-      // intel compiler demands following:
-      const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
-      const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
-      const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-
-#if defined(AUTOPAS_OPENMP)
-      // @todo: find optimal chunksize
-#pragma omp for schedule(dynamic) collapse(3)
-#endif
-      for (unsigned long z = start_z; z < end_z; z += stride_z) {
-        for (unsigned long y = start_y; y < end_y; y += stride_y) {
-          for (unsigned long x = start_x; x < end_x; x += stride_x) {
-            unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-            this->iterateVerletListsCell(verlet, baseIndex);
-          }
-        }
-      }
-    }
-  }
+  this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
+    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+    this->iterateVerletListsCell(verlet, baseIndex);
+  });
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>

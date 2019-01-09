@@ -55,45 +55,13 @@ inline bool C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
-  const unsigned long end_x = this->_cellsPerDimension[0] - 1;
-  const unsigned long end_y = this->_cellsPerDimension[1] - 1;
-  const unsigned long end_z = this->_cellsPerDimension[2] - 1;
-
-#if defined(AUTOPAS_OPENMP)
-  // @todo: find optimal chunksize
-#pragma omp parallel for schedule(dynamic) collapse(3)
-#endif
-  for (unsigned long z = 1; z < end_z; ++z) {
-    for (unsigned long y = 1; y < end_y; ++y) {
-      for (unsigned long x = 1; x < end_x; ++x) {
-        this->processBaseCell(cells, x, y, z);
-      }
-    }
-  }
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellVerlet(
     typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                        useNewton3>::verlet_storage_type &verlet) {
-  const unsigned long end_x = this->_cellsPerDimension[0] - 1;
-  const unsigned long end_y = this->_cellsPerDimension[1] - 1;
-  const unsigned long end_z = this->_cellsPerDimension[2] - 1;
-
-#if defined(AUTOPAS_OPENMP)
-  // @todo: find optimal chunksize
-#pragma omp parallel for schedule(dynamic) collapse(3)
-#endif
-  for (unsigned long z = 1; z < end_z; ++z) {
-    for (unsigned long y = 1; y < end_y; ++y) {
-      for (unsigned long x = 1; x < end_x; ++x) {
-        unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-        this->iterateVerletListsCell(verlet, baseIndex);
-      }
-    }
-  }
+  this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
+    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+    this->iterateVerletListsCell(verlet, baseIndex);
+  });
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>

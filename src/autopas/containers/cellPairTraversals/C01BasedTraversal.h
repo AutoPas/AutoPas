@@ -42,8 +42,8 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
  protected:
-  template <class ContainerT, typename LoopBody>
-  inline void c01Traversal(ContainerT &container, LoopBody loopBody);
+  template <typename LoopBody>
+  inline void c01Traversal(LoopBody&& loopBody);
 
   /**
    * Computes pairs used in processBaseCell()
@@ -74,9 +74,8 @@ inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::computeOff
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-template <class ContainerT, typename LoopBody>
-inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::c01Traversal(ContainerT &container,
-                                                                                   LoopBody loopBody) {
+template <typename LoopBody>
+inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::c01Traversal(LoopBody&& loopBody) {
   const unsigned long end_x = this->_cellsPerDimension[0] - 1;
   const unsigned long end_y = this->_cellsPerDimension[1] - 1;
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
@@ -88,7 +87,7 @@ inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::c01Travers
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {
       for (unsigned long x = 1; x < end_x; ++x) {
-        loopBody();
+        loopBody(x, y, z);
       }
     }
   }
