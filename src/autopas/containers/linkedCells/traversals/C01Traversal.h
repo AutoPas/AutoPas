@@ -34,7 +34,10 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>(dims, pairwiseFunctor) {}
-  // documentation in base class
+
+  /**
+   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
+   */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   TraversalOptions getTraversalType() override { return TraversalOptions::c01; }

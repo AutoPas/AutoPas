@@ -42,6 +42,12 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
  protected:
+  /**
+   * The main traversal of the C01Traversal. This provides the structure of the loops and its parallelization.
+   * @tparam LoopBody
+   * @param loopBody the loop body. Normally a lambda function, that takes as as parameters (x,y,z). If you need
+   * additional input from outside, please use captures (by reference).
+   */
   template <typename LoopBody>
   inline void c01Traversal(LoopBody&& loopBody);
 

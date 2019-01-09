@@ -35,7 +35,10 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
-  // documentation in base class
+
+  /**
+   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
+   */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
   TraversalOptions getTraversalType() override { return TraversalOptions::c08; }
   bool isApplicable() override { return true; }

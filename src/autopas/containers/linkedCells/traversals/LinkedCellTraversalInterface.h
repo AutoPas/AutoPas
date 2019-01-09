@@ -8,6 +8,10 @@
 
 #include <vector>
 
+/**
+ * Interface for traversals used by the LinkedCell class.
+ * @tparam ParticleCell
+ */
 template <class ParticleCell>
 class LinkedCellTraversalInterface {
  public:

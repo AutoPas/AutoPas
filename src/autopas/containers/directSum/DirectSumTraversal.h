@@ -39,7 +39,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   bool isApplicable() override { return true; }
 
   /**
-   * @copydoc CellPairTraversal::traverseCellPairs()
+   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;

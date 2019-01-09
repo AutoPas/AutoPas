@@ -45,7 +45,10 @@ class SlicedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, 
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {
     rebuild(dims);
   }
-  // documentation in base class
+
+  /**
+   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
+   */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   TraversalOptions getTraversalType() override { return TraversalOptions::sliced; }

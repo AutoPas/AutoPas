@@ -35,7 +35,10 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
-  // documentation in base class
+
+  /**
+   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
+   */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   /**
