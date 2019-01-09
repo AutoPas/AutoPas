@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -23,7 +24,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3> {
+class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
+                     public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c18 traversal.
@@ -35,6 +37,16 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+
+  /**
+   * Computes all interactions between the base
+   * cell and adjacent cells with greater a ID.
+   * @param cells vector of all cells.
+   * @param x x of base cell
+   * @param y y of base cell
+   * @param z z of base cell
+   */
+  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
   TraversalOptions getTraversalType() override;
   bool isApplicable() override;
@@ -85,6 +97,44 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 TraversalOptions C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
   return TraversalOptions::c18;
+}
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(std::vector<ParticleCell> &cells,
+                                                                                      unsigned long x, unsigned long y,
+                                                                                      unsigned long z) {
+  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+
+  unsigned int xArray;
+  if (x == 0) {
+    xArray = 0;
+  } else if (x < this->_cellsPerDimension[0] - 1) {
+    xArray = 1;
+  } else {
+    xArray = 2;
+  }
+
+  unsigned int yArray;
+  if (y == 0) {
+    yArray = 0;
+  } else if (y < this->_cellsPerDimension[1] - 1) {
+    yArray = 1;
+  } else {
+    yArray = 2;
+  }
+
+  ParticleCell &baseCell = cells[baseIndex];
+  std::vector<unsigned long> &offsets = this->_cellOffsets[yArray][xArray];
+  const size_t num_pairs = offsets.size();
+  for (size_t j = 0; j < num_pairs; ++j) {
+    unsigned long otherIndex = baseIndex + offsets[j];
+    ParticleCell &otherCell = cells[otherIndex];
+
+    if (baseIndex == otherIndex) {
+      this->_cellFunctor.processCell(baseCell);
+    } else {
+      this->_cellFunctor.processCellPair(baseCell, otherCell);
+    }
+  }
 };
 
 }  // namespace autopas

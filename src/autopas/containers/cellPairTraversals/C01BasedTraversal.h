@@ -46,16 +46,6 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
   inline void c01Traversal(ContainerT &container, LoopBody loopBody);
 
   /**
-   * Computes all interactions between the base
-   * cell and adjacent cells.
-   * @param cells vector of all cells.
-   * @param x x of base cell
-   * @param y y of base cell
-   * @param z z of base cell
-   */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
-
-  /**
    * Computes pairs used in processBaseCell()
    */
   void computeOffsets();
@@ -70,26 +60,6 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::vector<int> _cellOffsets;
 };
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                                      unsigned long x, unsigned long y,
-                                                                                      unsigned long z) {
-  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-  ParticleCell &baseCell = cells[baseIndex];
-
-  const int num_pairs = _cellOffsets.size();
-  for (int j = 0; j < num_pairs; ++j) {
-    unsigned long otherIndex = baseIndex + _cellOffsets[j];
-    ParticleCell &otherCell = cells[otherIndex];
-
-    if (baseIndex == otherIndex) {
-      this->_cellFunctor.processCell(baseCell);
-    } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell);
-    }
-  }
-}
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::computeOffsets() {

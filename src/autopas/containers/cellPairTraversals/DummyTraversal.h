@@ -32,7 +32,6 @@ class DummyTraversal : public CellPairTraversal<ParticleCell> {
 
   bool isApplicable() override;
 
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 };
 
 template <class ParticleCell>
@@ -44,7 +43,5 @@ template <class ParticleCell>
 bool DummyTraversal<ParticleCell>::isApplicable() {
   return true;
 }
-template <class ParticleCell>
-void DummyTraversal<ParticleCell>::traverseCellPairs(std::vector<ParticleCell> &cells) {}
 
 }  // namespace autopas

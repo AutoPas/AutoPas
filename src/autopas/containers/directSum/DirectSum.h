@@ -78,7 +78,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
-    traversal->traverseCellPairs(this->_cells);
+    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in DirectSum::iteratePairwiseAoS");
+    }
   }
 
   /**
@@ -90,7 +95,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 
-    traversal->traverseCellPairs(this->_cells);
+    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in DirectSum::iteratePairwiseSoA");
+    }
 
     f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
     f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);

@@ -39,14 +39,6 @@ class CellPairTraversal : public TraversalInterface {
    */
   virtual void rebuild(const std::array<unsigned long, 3> &dims) { _cellsPerDimension = dims; };
 
-  /**
-   * Traverse all pairs of cells.
-   * This function needs to be implemented by derived classes and handles to
-   * order in which the cells are traversed.
-   * @param cells Vector of cells to traverse
-   */
-  virtual void traverseCellPairs(std::vector<ParticleCell> &cells) = 0;
-
  protected:
   /**
    * The dimensions of the cellblock.

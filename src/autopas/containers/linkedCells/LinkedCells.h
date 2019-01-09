@@ -89,7 +89,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
-    traversal->traverseCellPairs(this->_cells);
+    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS");
+    }
   }
 
   /**
@@ -105,8 +110,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
     loadSoAs(f);
-
-    traversal->traverseCellPairs(this->_cells);
+    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoA");
+    }
 
     extractSoAs(f);
   }

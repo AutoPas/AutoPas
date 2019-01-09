@@ -44,16 +44,6 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
 
  protected:
   /**
-   * Computes all interactions between the base
-   * cell and adjacent cells with greater a ID.
-   * @param cells vector of all cells.
-   * @param x x of base cell
-   * @param y y of base cell
-   * @param z z of base cell
-   */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
-
-  /**
    * Computes pairs used in processBaseCell()
    */
   void computeOffsets();
@@ -69,44 +59,6 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::array<std::array<std::vector<unsigned long>, 3>, 3> _cellOffsets;
 };
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
-  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-
-  unsigned int xArray;
-  if (x == 0) {
-    xArray = 0;
-  } else if (x < this->_cellsPerDimension[0] - 1) {
-    xArray = 1;
-  } else {
-    xArray = 2;
-  }
-
-  unsigned int yArray;
-  if (y == 0) {
-    yArray = 0;
-  } else if (y < this->_cellsPerDimension[1] - 1) {
-    yArray = 1;
-  } else {
-    yArray = 2;
-  }
-
-  ParticleCell &baseCell = cells[baseIndex];
-  std::vector<unsigned long> &offsets = _cellOffsets[yArray][xArray];
-  const size_t num_pairs = offsets.size();
-  for (size_t j = 0; j < num_pairs; ++j) {
-    unsigned long otherIndex = baseIndex + offsets[j];
-    ParticleCell &otherCell = cells[otherIndex];
-
-    if (baseIndex == otherIndex) {
-      this->_cellFunctor.processCell(baseCell);
-    } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell);
-    }
-  }
-}
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets() {

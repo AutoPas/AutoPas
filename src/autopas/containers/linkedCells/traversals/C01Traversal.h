@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
-
 namespace autopas {
 
 /**
@@ -23,7 +23,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA> {
+class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>,
+                     public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -38,7 +39,37 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
 
   TraversalOptions getTraversalType() override;
   bool isApplicable() override;
+
+ private:
+  /**
+   * Computes all interactions between the base
+   * cell and adjacent cells.
+   * @param cells vector of all cells.
+   * @param x x of base cell
+   * @param y y of base cell
+   * @param z z of base cell
+   */
+  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 };
+
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(
+    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
+  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+  ParticleCell &baseCell = cells[baseIndex];
+
+  const int num_pairs = this->_cellOffsets.size();
+  for (int j = 0; j < num_pairs; ++j) {
+    unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
+    ParticleCell &otherCell = cells[otherIndex];
+
+    if (baseIndex == otherIndex) {
+      this->_cellFunctor.processCell(baseCell);
+    } else {
+      this->_cellFunctor.processCellPair(baseCell, otherCell);
+    }
+  }
+}
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline bool C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
