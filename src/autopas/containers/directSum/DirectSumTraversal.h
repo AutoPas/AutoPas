@@ -34,9 +34,9 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)) {}
 
-  TraversalOptions getTraversalType() override;
+  TraversalOptions getTraversalType() override { return TraversalOptions::directSumTraversal; }
 
-  bool isApplicable() override;
+  bool isApplicable() override { return true; }
 
   /**
    * @copydoc CellPairTraversal::traverseCellPairs()
@@ -52,20 +52,11 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-TraversalOptions DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
-  return TraversalOptions::directSumTraversal;
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-bool DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
-  return true;
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 void DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);
   _cellFunctor.processCellPair(cells[0], cells[1]);
 }
+
 }  // namespace autopas

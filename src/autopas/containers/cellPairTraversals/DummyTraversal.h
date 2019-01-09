@@ -28,20 +28,10 @@ class DummyTraversal : public CellPairTraversal<ParticleCell> {
 
   ~DummyTraversal() = default;
 
-  TraversalOptions getTraversalType() override;
+  TraversalOptions getTraversalType() override {return TraversalOptions::dummyTraversal;}
 
-  bool isApplicable() override;
+  bool isApplicable() override {return true;}
 
 };
-
-template <class ParticleCell>
-TraversalOptions DummyTraversal<ParticleCell>::getTraversalType() {
-  return TraversalOptions::dummyTraversal;
-}
-
-template <class ParticleCell>
-bool DummyTraversal<ParticleCell>::isApplicable() {
-  return true;
-}
 
 }  // namespace autopas

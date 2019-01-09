@@ -45,14 +45,9 @@ class C01TraversalVerlet
    */
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
-  TraversalOptions getTraversalType() override;
-  bool isApplicable() override;
+  TraversalOptions getTraversalType() override {return TraversalOptions::c01;}
+  bool isApplicable() override {return not useNewton3;}
 };
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline bool C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
-  return not useNewton3;
-}
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellVerlet(
@@ -63,10 +58,5 @@ inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3
     this->iterateVerletListsCell(verlet, baseIndex);
   });
 }
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-TraversalOptions C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
-  return TraversalOptions::c01;
-};
 
 }  // namespace autopas

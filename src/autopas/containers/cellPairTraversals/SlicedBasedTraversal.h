@@ -52,8 +52,7 @@ class SlicedBasedTraversal
    */
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
-  TraversalOptions getTraversalType() override;
-  bool isApplicable() override;
+
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  private:
@@ -68,16 +67,6 @@ class SlicedBasedTraversal
   std::vector<unsigned long> _sliceThickness;
   std::vector<autopas_lock_t *> locks;
 };
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline TraversalOptions SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
-  return TraversalOptions::sliced;
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline bool SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
-  return this->_sliceThickness.size() > 0;
-}
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::rebuild(

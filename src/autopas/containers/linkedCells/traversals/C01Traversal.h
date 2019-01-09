@@ -37,7 +37,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
   // documentation in base class
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
-  TraversalOptions getTraversalType() override;
+  TraversalOptions getTraversalType() override {return TraversalOptions::c01;}
   bool isApplicable() override { return not useNewton3; }
 
  private:
@@ -75,11 +75,6 @@ template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton
 inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-TraversalOptions C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
-  return TraversalOptions::c01;
 }
 
 }  // namespace autopas
