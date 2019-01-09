@@ -35,14 +35,19 @@
 #include "autopas/iterators/SingleCellIterator.h"
 
 // traversals
+#include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
 
 // containers
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
