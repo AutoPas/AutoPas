@@ -20,18 +20,18 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
 
     autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, {traversalOption});
 
-    EXPECT_THROW((traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor)), std::exception);
+    EXPECT_THROW((traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor)), std::exception);
 
-    traversalSelector.selectNextTraversal<MFunctor, false, true>(functor);
+    traversalSelector.selectNextTraversal<MFunctor, false, false>(functor);
 
-    auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor);
+    auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor);
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())
         << "Is the domain size large enough for the processors' thread count?";
 
     // now that the functor is known check if still the same is returned
-    traversal = traversalSelector.getOptimalTraversal<MFunctor, false, true>(functor);
+    traversal = traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor);
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())
         << "Repeated call for traversal " << traversalOption << " failed";

@@ -54,6 +54,11 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
 
     this->_flagManager = flagManager;
     this->_behavior = behavior;
+
+    if (not this->isCellTypeBehaviorCorrect()) {
+      this->next_non_empty_cell();
+    }
+
     // ParticleIterator's constructor will initialize the Iterator, such that it
     // points to the first particle if one is found, otherwise the pointer is
     // not valid
@@ -98,17 +103,14 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     // find the next non-empty cell
     const int stride = autopas_get_num_threads();  // num threads
     if (_currentRegionIndex + stride >= _indicesInRegion.size()) {
+      // make the iterator invalid!
+      this->_iteratorAcrossCells = this->_vectorOfCells->end();
       return;
     }
     size_t iteratorInc = _indicesInRegion[_currentRegionIndex + stride] - _indicesInRegion[_currentRegionIndex];
 
     for (this->_iteratorAcrossCells += iteratorInc; this->getCurrentCellId() <= *(_indicesInRegion.end() - 1);
          this->_iteratorAcrossCells += iteratorInc) {
-      //#pragma omp critical
-      //      std::cout << "Thread [" << autopas_get_thread_num() << "] currentCellIndex= " <<
-      //      (this->getCurrentCellId())
-      //      << " currentRegionIndex= " << _currentRegionIndex
-      //      << " iteratorInc= " << iteratorInc << std::endl;
       _currentRegionIndex += stride;
 
       if (this->_iteratorAcrossCells < this->_vectorOfCells->end() and this->_iteratorAcrossCells->isNotEmpty() and
@@ -117,6 +119,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
         break;
       }
       if (_currentRegionIndex + stride >= _indicesInRegion.size()) {
+        // make the iterator invalid!
+        this->_iteratorAcrossCells = this->_vectorOfCells->end();
         break;
       }
       iteratorInc = _indicesInRegion[_currentRegionIndex + stride] - _indicesInRegion[_currentRegionIndex];

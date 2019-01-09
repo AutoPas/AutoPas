@@ -21,6 +21,8 @@ enum ContainerOptions {
   directSum = 0,
   linkedCells = 1,
   verletLists = 2,
+  verletListsCells = 3,
+  verletClusterLists = 4,
 };
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor
@@ -34,7 +36,10 @@ enum ContainerOptions {
 template <class Particle, class ParticleCell>
 class ParticleContainerInterface {
  public:
-  ParticleContainerInterface() {}
+  /**
+   * Default constructor
+   */
+  ParticleContainerInterface() = default;
 
   /**
    * Destructor of ParticleContainerInterface.

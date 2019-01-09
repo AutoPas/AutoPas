@@ -34,9 +34,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"vtk", required_argument, nullptr, 'w'},
                                          {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   string strArg;
-  int bla = 0;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
-    ++bla;
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
@@ -61,9 +59,15 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
           containerOptions.push_back(autopas::verletLists);
         }
+        if (strArg.find("vcells") != string::npos) {
+          containerOptions.push_back(autopas::verletListsCells);
+        }
+        if (strArg.find("vcluster") != string::npos) {
+          containerOptions.push_back(autopas::verletClusterLists);
+        }
         if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSum', 'LinkedCells' or VerletLists!" << endl;
+          cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'vcells' or 'vcluster'!" << endl;
           displayHelp = true;
         }
         break;
@@ -253,6 +257,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (strArg.find("c08") != string::npos) {
           traversalOptions.push_back(autopas::TraversalOptions::c08);
         }
+        if (strArg.find("c01") != string::npos) {
+          traversalOptions.push_back(autopas::TraversalOptions::c01);
+        }
+        if (strArg.find("c18") != string::npos) {
+          traversalOptions.push_back(autopas::TraversalOptions::c18);
+        }
         if (strArg.find("sli") != string::npos) {
           traversalOptions.push_back(autopas::TraversalOptions::sliced);
         }
@@ -261,7 +271,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
-          cerr << "Please use 'c08' or 'sliced'!" << endl;
+          cerr << "Please use 'c08', 'c01', 'c18' or 'sliced'!" << endl;
           displayHelp = true;
         }
         break;
@@ -367,6 +377,14 @@ void MDFlexParser::printConfig() {
         cout << "VerletLists, ";
         break;
       }
+      case autopas::ContainerOptions::verletListsCells: {
+        cout << "VerletListsCells, ";
+        break;
+      }
+      case autopas::ContainerOptions::verletClusterLists: {
+        cout << "VerletClusterLists, ";
+        break;
+      }
     }
   }
   // deletes last comma
@@ -462,6 +480,14 @@ void MDFlexParser::printConfig() {
       }
       case autopas::TraversalOptions::sliced: {
         cout << "sliced, ";
+        break;
+      }
+      case autopas::TraversalOptions::c18: {
+        cout << "c18, ";
+        break;
+      }
+      case autopas::TraversalOptions::c01: {
+        cout << "c01, ";
         break;
       }
       case autopas::TraversalOptions::directSumTraversal: {

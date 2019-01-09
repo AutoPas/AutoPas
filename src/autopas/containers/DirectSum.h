@@ -11,8 +11,6 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
-#include "autopas/pairwiseFunctors/LJFunctor.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/inBox.h"
 

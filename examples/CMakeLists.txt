@@ -15,6 +15,7 @@ ADD_SUBDIRECTORY(sph)
 ADD_SUBDIRECTORY(sph-mpi)
 ADD_SUBDIRECTORY(sph-verlet)
 ADD_SUBDIRECTORY(sphDiagramGeneration)
+ADD_SUBDIRECTORY(sph-traversals)
+ADD_SUBDIRECTORY(cluster-test)
 
 ADD_SUBDIRECTORY(basic-cuda)
-#ADD_SUBDIRECTORY(md-flexible-cuda)
