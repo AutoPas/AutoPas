@@ -80,10 +80,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    // @todo
     if (useNewton3) {
-      AutoPasLog(error, "Newton3 not implemented yet");
-      autopas::utils::ExceptionHandler::exception("VerletClusterLists does not support newton3.");
+      /// @todo implement newton3 for VerletClusterLists
+      AutoPasLog(error, "Newton3 not implemented yet.");
+      autopas::utils::ExceptionHandler::exception("VerletClusterLists does not support newton3 yet.");
     }
     if (needsRebuild()) {
       this->rebuild();
@@ -119,7 +119,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
-  void addHaloParticle(Particle& haloParticle) override { throw "VerletClusterLists.addHaloParticle not implemented"; }
+  void addHaloParticle(Particle& haloParticle) override { autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented."); }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles
@@ -134,7 +134,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     _neighborListIsValid = false;
   }
 
-  bool isContainerUpdateNeeded() override { throw "VerletClusterLists.isContainerUpdateNeeded not implemented"; }
+  bool isContainerUpdateNeeded() override { autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");}
 
   TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector(
       std::vector<TraversalOptions> traversalOptions) override {
@@ -166,7 +166,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     // @todo implement this if bounding boxes are here
-    throw "VerletClusterLists.getRegionIterator not implemented";
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
   }
 
  protected:
