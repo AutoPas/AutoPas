@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -34,12 +33,7 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims),
-        _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false>(
-                pairwiseFunctor)) {
-    computeOffsets();
-  }
+      : CellPairTraversal<ParticleCell>(dims) {}
 
  protected:
   /**
@@ -50,34 +44,7 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   template <typename LoopBody>
   inline void c01Traversal(LoopBody&& loopBody);
-
-  /**
-   * Computes pairs used in processBaseCell()
-   */
-  void computeOffsets();
-
-  /**
-   * CellFunctor to be used for the traversal defining the interaction between two cells.
-   */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false> _cellFunctor;
-
-  /**
-   * Pairs for processBaseCell().
-   */
-  std::vector<int> _cellOffsets;
 };
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::computeOffsets() {
-  for (int z = -1; z <= 1; ++z) {
-    for (int y = -1; y <= 1; ++y) {
-      for (int x = -1; x <= 1; ++x) {
-        int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
-        _cellOffsets.push_back(offset);
-      }
-    }
-  }
-}
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA>
 template <typename LoopBody>

@@ -8,6 +8,7 @@
 
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
+#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 namespace autopas {
 
@@ -33,7 +34,17 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>(dims, pairwiseFunctor) {}
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>(dims, pairwiseFunctor),
+        _cellFunctor(
+            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false>(
+                pairwiseFunctor)) {
+    computeOffsets();
+  }
+
+  /**
+   * Computes pairs used in processBaseCell()
+   */
+  void computeOffsets();
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -53,7 +64,29 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param z z of base cell
    */
   inline void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+
+  /**
+   * Pairs for processBaseCell().
+   */
+  std::vector<int> _cellOffsets;
+
+  /**
+   * CellFunctor to be used for the traversal defining the interaction between two cells.
+   */
+  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false> _cellFunctor;
 };
+
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets() {
+  for (int z = -1; z <= 1; ++z) {
+    for (int y = -1; y <= 1; ++y) {
+      for (int x = -1; x <= 1; ++x) {
+        int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
+        _cellOffsets.push_back(offset);
+      }
+    }
+  }
+}
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(
