@@ -93,7 +93,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: " + traversal->getTraversalType());
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: " +
+          traversal->getTraversalType());
     }
   }
 
@@ -114,7 +115,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoA. TraversalID: " + traversal->getTraversalType());
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoA. TraversalID: " +
+          traversal->getTraversalType());
     }
 
     extractSoAs(f);

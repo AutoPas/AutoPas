@@ -85,13 +85,15 @@ class VerletListsCells
               dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, true>*>(traversal))
         vTraversal->traverseCellVerlet(_neighborLists);
       else
-        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: " + traversal->getTraversalType());
+        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: " +
+                                                    traversal->getTraversalType());
     } else {
       if (auto vTraversal =
               dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, false>*>(traversal))
         vTraversal->traverseCellVerlet(_neighborLists);
       else
-        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: " + traversal->getTraversalType());
+        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: " +
+                                                    traversal->getTraversalType());
     }
 
     // we iterated, so increase traversal counter
@@ -132,7 +134,7 @@ class VerletListsCells
     return (not this->_neighborListIsValid) or (this->_traversalsSinceLastRebuild >= this->_rebuildFrequency) or
            (useNewton3 != this->_verletBuiltNewton3);
   }
-  
+
   /**
    * Get the neighbors list of a particle.
    * @param particle

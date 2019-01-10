@@ -71,8 +71,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
   CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellFunctor;
 
   /**
-   * Pairs for processBaseCell(). 3x3 Array for each
-   * special case in x and y direction.
+   * Pairs for processBaseCell(). 3x3 Array for each special case in x and y direction.
    */
   std::array<std::array<std::vector<unsigned long>, 3>, 3> _cellOffsets;
 };
