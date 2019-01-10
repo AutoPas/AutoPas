@@ -42,9 +42,7 @@ class SlicedTraversalVerlet
    */
   explicit SlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
-        VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {
-    this->rebuild(dims);
-  }
+        VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
 
   /**
    * @copydoc VerletListsCellsTraversal::traverseCellVerlet
@@ -53,19 +51,6 @@ class SlicedTraversalVerlet
                                                              useNewton3>::verlet_storage_type &verlet) override;
 
   TraversalOptions getTraversalType() override { return TraversalOptions::slicedVerlet; }
-
-
- private:
-  /**
-   * Store ids of dimensions ordered by number of cells per dimensions.
-   */
-  std::array<int, 3> _dimsPerLength;
-
-  /**
-   * The number of cells per slice in the dimension that was sliced.
-   */
-  std::vector<unsigned long> _sliceThickness;
-  std::vector<autopas_lock_t *> locks;
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
