@@ -94,7 +94,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: {}",
-              traversal->getTraversalType());
+          traversal->getTraversalType());
     }
   }
 
