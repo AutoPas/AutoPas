@@ -26,14 +26,14 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C08LikeBaseCellProcessor {
+class C08CellHandler {
  public:
   /**
    * Constructor of the c08 traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
    */
-  explicit C08LikeBaseCellProcessor(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension)
+  explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension)
       : _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)),
@@ -73,7 +73,7 @@ class C08LikeBaseCellProcessor {
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C08LikeBaseCellProcessor<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(
+inline void C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
   using std::pair;
 
@@ -99,7 +99,7 @@ inline void C08LikeBaseCellProcessor<ParticleCell, PairwiseFunctor, useSoA, useN
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C08LikeBaseCellProcessor<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets(
+inline void C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets(
     std::array<unsigned long, 3> cellsPerDimension) {
   using std::make_pair;
 

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "C08LikeBaseCellProcessor.h"
+#include "C08CellHandler.h"
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
@@ -37,7 +37,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
-        _baseCellProcessor(pairwiseFunctor, this->_cellsPerDimension) {}
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -46,7 +46,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
   TraversalOptions getTraversalType() override { return TraversalOptions::c08; }
 
  private:
-  C08LikeBaseCellProcessor<ParticleCell, PairwiseFunctor, useSoA, useNewton3> _baseCellProcessor;
+  C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
@@ -54,7 +54,7 @@ inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::tra
     std::vector<ParticleCell> &cells) {
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    _baseCellProcessor.processBaseCell(cells, baseIndex);
+    _cellHandler.processBaseCell(cells, baseIndex);
   });
 }
 
