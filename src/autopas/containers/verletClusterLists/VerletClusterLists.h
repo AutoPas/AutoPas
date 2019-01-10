@@ -119,7 +119,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
-  void addHaloParticle(Particle& haloParticle) override { autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented."); }
+  void addHaloParticle(Particle& haloParticle) override {
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
+  }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles
@@ -134,7 +136,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     _neighborListIsValid = false;
   }
 
-  bool isContainerUpdateNeeded() override { autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");}
+  bool isContainerUpdateNeeded() override {
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");
+  }
 
   TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector(
       std::vector<TraversalOptions> traversalOptions) override {
