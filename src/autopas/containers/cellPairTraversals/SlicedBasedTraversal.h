@@ -8,7 +8,7 @@
 #pragma once
 
 #include <algorithm>
-#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -30,7 +30,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class SlicedBasedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3> {
+class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -39,7 +39,7 @@ class SlicedBasedTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunc
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {
+      : CellPairTraversal<ParticleCell>(dims) {
     rebuild(dims);
   }
 
