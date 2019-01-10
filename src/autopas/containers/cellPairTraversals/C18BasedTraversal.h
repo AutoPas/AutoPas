@@ -13,11 +13,8 @@ namespace autopas {
 
 /**
  * This class provides the base for traversals using the c18 base step.
- *
- * The base step processBaseCell() computes all interactions
- * between the base cell and adjacent cells with greater a ID.
- * After executing the base step on all cells all pairwise interactions for
- * all cells are done.
+ * The traversal is defined in the function c18Traversal and uses 18 colors, such that interactions between the base
+ * cell and all adjacent cells with greater ID are safe, even when using newton3 optimizations.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -44,10 +41,8 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
 
  protected:
   /**
-   * The main traversal of the C18Traversal. This provides the structure of the loops and its parallelization.
-   * @tparam LoopBody
-   * @param loopBody the loop body. Normally a lambda function, that takes as as parameters (x,y,z). If you need
-   * additional input from outside, please use captures (by reference).
+   * The main traversal of the C18Traversal.
+   * @copydetails C01BasedTraversal::c01Traversal()
    */
   template <typename LoopBody>
   inline void c18Traversal(LoopBody&& loopBody);

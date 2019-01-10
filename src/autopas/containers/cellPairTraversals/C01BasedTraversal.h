@@ -14,10 +14,8 @@ namespace autopas {
 /**
  * This class provides the base for traversals using the c01 base step.
  *
- * The base step processBaseCell() computes all interactions
- * between the base cell and adjacent cells.
- * After executing the base step on all cells all pairwise interactions for
- * all cells are done.
+ * The traversal is defined in the function c01Traversal and uses 1 color. Interactions between two cells are allowed
+ * only if particles of the first cell are modified. This means that newton3 optimizations are NOT allowed.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -43,10 +41,11 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
 
  protected:
   /**
-   * The main traversal of the C01Traversal. This provides the structure of the loops and its parallelization.
+   * The main traversal of the C01Traversal.
+   * This provides the structure of the loops and its parallelization.
    * @tparam LoopBody
-   * @param loopBody the loop body. Normally a lambda function, that takes as as parameters (x,y,z). If you need
-   * additional input from outside, please use captures (by reference).
+   * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as as parameters (x,y,z). If you
+   * need additional input from outside, please use captures (by reference).
    */
   template <typename LoopBody>
   inline void c01Traversal(LoopBody&& loopBody);

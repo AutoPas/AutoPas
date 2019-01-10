@@ -23,7 +23,7 @@ namespace autopas {
  * on the boundary wall to the previous slice with one lock. This lock is lifted
  * as soon the boundary wall is fully processed.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  * @tparam useNewton3
@@ -48,10 +48,8 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
 
  protected:
   /**
-   * The main traversal of the C01Traversal. This provides the structure of the loops and its parallelization.
-   * @tparam LoopBody
-   * @param loopBody the loop body. Normally a lambda function, that takes as as parameters (x,y,z). If you need
-   * additional input from outside, please use captures (by reference).
+   * The main traversal of the C01Traversal.
+   * @copydetails C01BasedTraversal::c01Traversal()
    */
   template <typename LoopBody>
   inline void slicedTraversal(LoopBody &&loopBody);

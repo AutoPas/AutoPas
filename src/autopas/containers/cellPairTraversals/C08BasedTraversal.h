@@ -14,10 +14,8 @@ namespace autopas {
 /**
  * This class provides the base for traversals using the c08 base step.
  *
- * The base step processBaseCell() computes one set of pairwise interactions
- * between two cells for each spatial direction based on the baseIndex.
- * After executing the base step on all cells all pairwise interactions for
- * all cells are done.
+ * The traversal is defined in the function c08Traversal and uses 8 colors, such that interactions between the base
+ * cell and all adjacent cells with greater ID in each direction are safe, even when using newton3 optimizations.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -44,10 +42,8 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
 
  protected:
   /**
-   * The main traversal of the C08Traversal. This provides the structure of the loops and its parallelization.
-   * @tparam LoopBody
-   * @param loopBody the loop body. Normally a lambda function, that takes as as parameters (x,y,z). If you need
-   * additional input from outside, please use captures (by reference).
+   * The main traversal of the C08Traversal.
+   * @copydetails C01BasedTraversal::c01Traversal()
    */
   template <typename LoopBody>
   inline void c08Traversal(LoopBody&& loopBody);
