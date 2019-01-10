@@ -31,6 +31,7 @@ class C08LikeBaseCellProcessor {
   /**
    * Constructor of the c08 traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cellsPerDimension The number of cells per dimension.
    */
   explicit C08LikeBaseCellProcessor(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension)
       : _cellFunctor(
