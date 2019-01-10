@@ -10,7 +10,7 @@
 
 // this test is here just to test if archer is working.
 // and is thus currently disabled.
-// remove the "DISABLED_" part to enable is again.
+// remove the "DISABLED_" part to enable it again.
 #ifdef AUTOPAS_OPENMP
 TEST(DISABLED_ArcherShouldReportThis, test) {
   int a[N];
