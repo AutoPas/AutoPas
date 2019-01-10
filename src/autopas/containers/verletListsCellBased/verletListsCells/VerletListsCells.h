@@ -132,15 +132,7 @@ class VerletListsCells
     return (not this->_neighborListIsValid) or (this->_traversalsSinceLastRebuild >= this->_rebuildFrequency) or
            (useNewton3 != this->_verletBuiltNewton3);
   }
-
-  /**
-   * get the dimension of the used cellblock including the haloboxes.
-   * @return the dimensions of the used cellblock
-   */
-  const std::array<std::size_t, 3>& getCellsPerDimension() {
-    return this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
-  }
-
+  
   /**
    * Get the neighbors list of a particle.
    * @param particle
