@@ -93,7 +93,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS");
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: " + traversal->getTraversalType());
     }
   }
 
@@ -114,7 +114,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoA");
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoA. TraversalID: " + traversal->getTraversalType());
     }
 
     extractSoAs(f);
@@ -140,7 +140,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 
-        std::array<double, 3> cellLowerCorner, cellUpperCorner;
+        std::array<double, 3> cellLowerCorner = {}, cellUpperCorner = {};
         this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
 
         for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
