@@ -42,9 +42,8 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {
-    this->rebuild(dims);
-  }
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+        _baseCellProcessor(pairwiseFunctor, this->_cellsPerDimension) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -52,6 +51,9 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   TraversalOptions getTraversalType() override { return TraversalOptions::sliced; }
+
+ private:
+  C08LikeBaseCellProcessor<ParticleCell, PairwiseFunctor, useSoA, useNewton3> _baseCellProcessor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
@@ -59,7 +61,7 @@ inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::
     std::vector<ParticleCell> &cells) {
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->processBaseCell(cells, id);
+    _baseCellProcessor.processBaseCell(cells, id);
   });
 }
 

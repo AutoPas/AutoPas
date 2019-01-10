@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "C08LikeBaseCellProcessor.h"
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -34,7 +35,8 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor) {}
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+        _baseCellProcessor(pairwiseFunctor, this->_cellsPerDimension) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -42,43 +44,18 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
   TraversalOptions getTraversalType() override { return TraversalOptions::c08; }
   bool isApplicable() override { return true; }
+
+ private:
+  C08LikeBaseCellProcessor<ParticleCell, PairwiseFunctor, useSoA, useNewton3> _baseCellProcessor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
-  using std::array;
-  const array<unsigned long, 3> stride = {2, 2, 2};
-  array<unsigned long, 3> end;
-  for (int d = 0; d < 3; ++d) {
-    end[d] = this->_cellsPerDimension[d] - 1;
-  }
-
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
-    for (unsigned long col = 0; col < 8; ++col) {
-      std::array<unsigned long, 3> start = utils::ThreeDimensionalMapping::oneToThreeD(col, stride);
-
-      // intel compiler demands following:
-      const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
-      const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
-      const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3)
-#endif
-      for (unsigned long z = start_z; z < end_z; z += stride_z) {
-        for (unsigned long y = start_y; y < end_y; y += stride_y) {
-          for (unsigned long x = start_x; x < end_x; x += stride_x) {
-            unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-            this->processBaseCell(cells, baseIndex);
-          }
-        }
-      }
-    }
-  }
+  this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
+    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+    _baseCellProcessor.processBaseCell(cells, baseIndex);
+  });
 }
 
 }  // namespace autopas
