@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -36,6 +35,11 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims) {}
+  /**
+   * C18 traversals are always usable.
+   * @return
+   */
+  bool isApplicable() final { return true; }
 
  protected:
   /**
@@ -53,7 +57,7 @@ template <typename LoopBody>
 inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c18Traversal(LoopBody&& loopBody) {
   using std::array;
   const array<unsigned long, 3> stride = {3, 3, 2};
-  array<unsigned long, 3> end;
+  array<unsigned long, 3> end = {};
   end[0] = this->_cellsPerDimension[0];
   end[1] = this->_cellsPerDimension[1];
   end[2] = this->_cellsPerDimension[2] - 1;

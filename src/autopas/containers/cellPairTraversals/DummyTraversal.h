@@ -24,7 +24,7 @@ class DummyTraversal : public CellPairTraversal<ParticleCell> {
    * Constructor
    * @param dims
    */
-  DummyTraversal(const std::array<unsigned long, 3> &dims) : CellPairTraversal<ParticleCell>(dims){};
+  explicit DummyTraversal(const std::array<unsigned long, 3> &dims) : CellPairTraversal<ParticleCell>(dims){};
 
   ~DummyTraversal() = default;
 

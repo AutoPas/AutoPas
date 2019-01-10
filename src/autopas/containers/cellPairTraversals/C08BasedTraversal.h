@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -37,6 +36,12 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
   explicit C08BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims) {}
 
+  /**
+   * C08 traversals are always usable.
+   * @return
+   */
+  bool isApplicable() final { return true; }
+
  protected:
   /**
    * The main traversal of the C08Traversal. This provides the structure of the loops and its parallelization.
@@ -53,7 +58,7 @@ template <typename LoopBody>
 inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c08Traversal(LoopBody&& loopBody) {
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
-  array<unsigned long, 3> end;
+  array<unsigned long, 3> end = {};
   for (int d = 0; d < 3; ++d) {
     end[d] = this->_cellsPerDimension[d] - 1;
   }

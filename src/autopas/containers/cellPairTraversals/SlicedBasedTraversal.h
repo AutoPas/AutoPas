@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -39,11 +38,11 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {
+      : CellPairTraversal<ParticleCell>(dims), _dimsPerLength{}, _sliceThickness{}, locks{nullptr} {
     rebuild(dims);
   }
 
-  bool isApplicable() override { return this->_sliceThickness.size() > 0; }
+  bool isApplicable() final { return this->_sliceThickness.size() > 0; }
 
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 

@@ -9,6 +9,7 @@
 #include "C08LikeBaseCellProcessor.h"
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
+#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -43,7 +44,6 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
   TraversalOptions getTraversalType() override { return TraversalOptions::c08; }
-  bool isApplicable() override { return true; }
 
  private:
   C08LikeBaseCellProcessor<ParticleCell, PairwiseFunctor, useSoA, useNewton3> _baseCellProcessor;
