@@ -14,85 +14,35 @@ TARGET_LINK_LIBRARIES(sph-traversals
 
 #-----------------test-----------------
 # add check for current target
-add_test(
-        NAME sph-traversals.test-LC-C01-NoN3
-        COMMAND sph-traversals 2000 10 0 0.15 0 0
-        CONFIGURATIONS checkExamples
-)
 
-add_test(
-        NAME sph-traversals.test-LC-C08-NoN3
-        COMMAND sph-traversals 2000 10 0 0.15 1 0
-        CONFIGURATIONS checkExamples
-)
 
-add_test(
-        NAME sph-traversals.test-LC-C08-N3
-        COMMAND sph-traversals 2000 10 0 0.15 1 1
-        CONFIGURATIONS checkExamples
-)
+set(ContainerList "LinkedCells" "VerletListsCells" "VerletClusterLists")
 
-add_test(
-        NAME sph-traversals.test-LC-C18-NoN3
-        COMMAND sph-traversals 2000 10 0 0.15 2 0
-        CONFIGURATIONS checkExamples
-)
+set(LinkedCellsTraversals        "C01" "C08" "C18" "SLI")
+set(VerletListsCellsTraversals   "C01" ""    "C18" "SLI")
+set(VerletClusterListsTraversals "C01" )
 
-add_test(
-        NAME sph-traversals.test-LC-C18-N3
-        COMMAND sph-traversals 2000 10 0 0.15 2 1
-        CONFIGURATIONS checkExamples
-)
+set(C01NewtonModes "OFF")
+set(C08NewtonModes "OFF" "ON")
+set(C18NewtonModes "OFF" "ON")
+set(SLINewtonModes "OFF" "ON")
 
-add_test(
-        NAME sph-traversals.test-LC-sli-NoN3
-        COMMAND sph-traversals 2000 10 0 0.15 3 0
-        CONFIGURATIONS checkExamples
-)
+foreach(container_type IN LISTS ContainerList)
+    list(FIND ContainerList "${container_type}" containerid)
+    foreach(traversal IN LISTS ${container_type}Traversals)
+        list(FIND ${container_type}Traversals "${traversal}" traversalid)
+        foreach(newton3 IN LISTS ${traversal}NewtonModes)
+            list(FIND ${traversal}NewtonModes "${newton3}" newton3id)
+            message("${container_type}=${containerid} ${traversal}=${traversalid} ${newton3}=${newton3id}")
+            add_test(
+                    NAME sph-traversals.test${container_type}-${traversal}-N3${newton3}
+                    COMMAND sph-traversals 2000 10 ${containerid} 0.15 ${traversalid} ${newton3id} 0.1 5
+                    CONFIGURATIONS checkExamples
+            )
+        endforeach()
+    endforeach()
+endforeach()
 
-add_test(
-        NAME sph-traversals.test-LC-sli-N3
-        COMMAND sph-traversals 2000 10 0 0.15 3 1
-        CONFIGURATIONS checkExamples
-)
-
-# verlet lists cells tests
-add_test(
-        NAME sph-traversals.test-VLC-C01-NoN3
-        COMMAND sph-traversals 2000 10 1 0.15 0 0 0.1 5
-        CONFIGURATIONS checkExamples
-)
-
-add_test(
-        NAME sph-traversals.test-VLC-C18-NoN3
-        COMMAND sph-traversals 2000 10 1 0.15 2 0 0.1 5
-        CONFIGURATIONS checkExamples
-)
-
-add_test(
-        NAME sph-traversals.test-VLC-C18-N3
-        COMMAND sph-traversals 2000 10 1 0.15 2 1 0.1 5
-        CONFIGURATIONS checkExamples
-)
-
-add_test(
-        NAME sph-traversals.test-VLC-sli-NoN3
-        COMMAND sph-traversals 2000 10 1 0.15 3 0 0.1 5
-        CONFIGURATIONS checkExamples
-)
-
-add_test(
-        NAME sph-traversals.test-VLC-sli-N3
-        COMMAND sph-traversals 2000 10 1 0.15 3 1 0.1 5
-        CONFIGURATIONS checkExamples
-)
-
-# verlet cluster container
-add_test(
-        NAME sph-traversals.test-VerletCluster-NoN3
-        COMMAND sph-traversals 2000 10 2 0.15 0 0 0.1 5
-        CONFIGURATIONS checkExamples
-)
 
 # add the test to checkExamples
 add_dependencies(checkExamples sph-traversals)
