@@ -40,7 +40,7 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
    * C08 traversals are always usable.
    * @return
    */
-  bool isApplicable() final { return true; }
+  bool isApplicable() override { return true; }
 
  protected:
   /**

@@ -35,11 +35,12 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims) {}
+
   /**
    * C18 traversals are always usable.
    * @return
    */
-  bool isApplicable() final { return true; }
+  bool isApplicable() override { return true; }
 
  protected:
   /**
