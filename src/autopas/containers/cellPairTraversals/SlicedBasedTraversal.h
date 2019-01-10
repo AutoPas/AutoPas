@@ -42,7 +42,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
     rebuild(dims);
   }
 
-  bool isApplicable() final { return this->_sliceThickness.size() > 0; }
+  bool isApplicable() override { return this->_sliceThickness.size() > 0; }
 
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 

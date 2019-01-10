@@ -138,6 +138,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   bool isContainerUpdateNeeded() override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");
+    return false;
   }
 
   TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector(
@@ -171,6 +172,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                                                       bool incSearchRegion = false) override {
     // @todo implement this if bounding boxes are here
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
+    return ParticleIteratorWrapper<Particle>();
   }
 
  protected:

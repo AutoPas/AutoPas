@@ -85,14 +85,14 @@ class VerletListsCells
               dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, true>*>(traversal))
         vTraversal->traverseCellVerlet(_neighborLists);
       else
-        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: " +
+        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
                                                     traversal->getTraversalType());
     } else {
       if (auto vTraversal =
               dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, false>*>(traversal))
         vTraversal->traverseCellVerlet(_neighborLists);
       else
-        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: " +
+        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
                                                     traversal->getTraversalType());
     }
 
