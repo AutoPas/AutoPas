@@ -51,9 +51,9 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
    * Computes all interactions between the base
    * cell and adjacent cells with greater a ID.
    * @param cells vector of all cells.
-   * @param x x of base cell
-   * @param y y of base cell
-   * @param z z of base cell
+   * @param x X-index of base cell.
+   * @param y Y-index of base cell.
+   * @param z Z-index of base cell.
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
