@@ -13,9 +13,11 @@ TARGET_LINK_LIBRARIES(cluster-test
 
 #-----------------test-----------------
 # add check for current target
+
 add_test(
         NAME cluster-test.test
-        COMMAND cluster-test 2000 0.10 0.1
+        # 2000 particles, box size is 0.12, skin is 0.1 * r_c
+        COMMAND cluster-test 2000 0.12 0.1
         CONFIGURATIONS checkExamples
 )
 

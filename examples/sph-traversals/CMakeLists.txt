@@ -33,7 +33,6 @@ foreach(container_type IN LISTS ContainerList)
         list(FIND ${container_type}Traversals "${traversal}" traversalid)
         foreach(newton3 IN LISTS ${traversal}NewtonModes)
             list(FIND ${traversal}NewtonModes "${newton3}" newton3id)
-            message("${container_type}=${containerid} ${traversal}=${traversalid} ${newton3}=${newton3id}")
             add_test(
                     NAME sph-traversals.test${container_type}-${traversal}-N3${newton3}
                     COMMAND sph-traversals 2000 10 ${containerid} 0.15 ${traversalid} ${newton3id} 0.1 5
