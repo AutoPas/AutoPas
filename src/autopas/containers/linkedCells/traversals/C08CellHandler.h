@@ -1,5 +1,5 @@
 /**
- * @file C08LikeBaseCellProcessor.h
+ * @file C08CellHandler.h
  * @author S. Seckler
  * @date 10.01.2019
  */
