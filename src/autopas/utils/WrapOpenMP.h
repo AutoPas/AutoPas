@@ -56,16 +56,12 @@ class AutoPasLock {
   /**
    * Move Constructor
    */
-  AutoPasLock(AutoPasLock&&) noexcept {
-    omp_init_lock(&_lock);
-  }
+  AutoPasLock(AutoPasLock&&) noexcept { omp_init_lock(&_lock); }
 
   /**
    * Copy constructor
    */
-  AutoPasLock(const AutoPasLock&) {
-    omp_init_lock(&_lock);
-  }
+  AutoPasLock(const AutoPasLock&) { omp_init_lock(&_lock); }
 
   /**
    * Assignment operator
@@ -132,16 +128,12 @@ class AutoPasLock {
   /**
    * Move Constructor
    */
-  AutoPasLock(AutoPasLock&&) noexcept {
-    _lock = unlocked;
-  }
+  AutoPasLock(AutoPasLock&&) noexcept { _lock = unlocked; }
 
   /**
    * Copy constructor
    */
-  AutoPasLock(AutoPasLock&) {
-    _lock = unlocked;
-  }
+  AutoPasLock(AutoPasLock&) { _lock = unlocked; }
 
   /**
    * Assignment operator
@@ -152,9 +144,7 @@ class AutoPasLock {
   /**
    * Destructor
    */
-  ~AutoPasLock() {
-    assert(_lock == unlocked);
-  }
+  ~AutoPasLock() { assert(_lock == unlocked); }
 
   /**
    * Acquire the lock.
@@ -174,7 +164,7 @@ class AutoPasLock {
 
  private:
   // lock: 0 means unlocked, 1 locked.
-  enum {unlocked, locked} _lock;
+  enum { unlocked, locked } _lock;
 };
 
 #endif
