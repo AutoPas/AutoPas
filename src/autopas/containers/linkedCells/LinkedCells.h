@@ -89,7 +89,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
-    traversal->traverseCellPairs(this->_cells);
+    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: {}",
+          traversal->getTraversalType());
+    }
   }
 
   /**
@@ -105,8 +111,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
     loadSoAs(f);
-
-    traversal->traverseCellPairs(this->_cells);
+    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoA. TraversalID: {}",
+          traversal->getTraversalType());
+    }
 
     extractSoAs(f);
   }
@@ -131,7 +142,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 
-        std::array<double, 3> cellLowerCorner, cellUpperCorner;
+        std::array<double, 3> cellLowerCorner = {}, cellUpperCorner = {};
         this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
 
         for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {

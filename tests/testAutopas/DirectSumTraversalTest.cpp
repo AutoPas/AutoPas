@@ -5,7 +5,7 @@
  */
 
 #include "DirectSumTraversalTest.h"
-#include "autopas/containers/cellPairTraversals/DirectSumTraversal.h"
+#include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "testingHelpers/RandomGenerator.h"
 
 using ::testing::_;

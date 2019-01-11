@@ -17,7 +17,7 @@ VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
  * Generate a VerletListCells Container and test
  * if different traversals generate the same number
  * of kernel calls.
- * @param numMoleculse number of molecules in the container
+ * @param numMolecules number of molecules in the container
  */
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
 #ifdef AUTOPAS_OPENMP
@@ -32,16 +32,16 @@ void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC01(getCutoff()), flopsC18(getCutoff()), flopsSli(getCutoff());
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC18N3(getCutoff()), flopsSliN3(getCutoff());
-  autopas::C01Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalC01FLOPS(
+  autopas::C01TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalC01FLOPS(
       dim, &flopsC01);
-  autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalC18FLOPS(
+  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalC18FLOPS(
       dim, &flopsC18);
-  autopas::SlicedTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalSliFLOPS(
+  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalSliFLOPS(
       dim, &flopsSli);
-  autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalC18N3FLOPS(
+  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalC18N3FLOPS(
       dim, &flopsC18N3);
-  autopas::SlicedTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalSliN3FLOPS(
-      dim, &flopsSliN3);
+  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true>
+      traversalSliN3FLOPS(dim, &flopsSliN3);
   _verletListsCells.iteratePairwiseAoS(&flopsC01, &traversalC01FLOPS, false);
   _verletListsCells.iteratePairwiseAoS(&flopsC18, &traversalC18FLOPS, false);
   _verletListsCells.iteratePairwiseAoS(&flopsSli, &traversalSliFLOPS, false);

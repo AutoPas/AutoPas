@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include "autopas/containers/LinkedCells.h"
+#include "VerletListsCellsHelpers.h"
 #include "autopas/containers/ParticleContainer.h"
-#include "autopas/containers/VerletListsCellsHelpers.h"
-#include "autopas/containers/VerletListsLinkedBase.h"
-#include "autopas/containers/cellPairTraversals/C01Traversal.h"
-#include "autopas/containers/cellPairTraversals/C08Traversal.h"
-#include "autopas/containers/cellPairTraversals/C18Traversal.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/C01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C18Traversal.h"
+#include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -35,8 +35,8 @@ class VerletListsCells
 
  private:
   const std::vector<TraversalOptions>& VLCApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::sliced, TraversalOptions::c18,
-                                                 TraversalOptions::c01};
+    static const std::vector<TraversalOptions> v{TraversalOptions::slicedVerlet, TraversalOptions::c18Verlet,
+                                                 TraversalOptions::c01Verlet};
     return v;
   }
 
@@ -85,13 +85,15 @@ class VerletListsCells
               dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, true>*>(traversal))
         vTraversal->traverseCellVerlet(_neighborLists);
       else
-        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h");
+        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
+                                                    traversal->getTraversalType());
     } else {
       if (auto vTraversal =
               dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, false>*>(traversal))
         vTraversal->traverseCellVerlet(_neighborLists);
       else
-        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h");
+        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
+                                                    traversal->getTraversalType());
     }
 
     // we iterated, so increase traversal counter
@@ -131,14 +133,6 @@ class VerletListsCells
     // if the neighbor list is NOT valid, we have not rebuild for _rebuildFrequency steps or useNewton3 changed
     return (not this->_neighborListIsValid) or (this->_traversalsSinceLastRebuild >= this->_rebuildFrequency) or
            (useNewton3 != this->_verletBuiltNewton3);
-  }
-
-  /**
-   * get the dimension of the used cellblock including the haloboxes.
-   * @return the dimensions of the used cellblock
-   */
-  const std::array<std::size_t, 3>& getCellsPerDimension() {
-    return this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
   }
 
   /**

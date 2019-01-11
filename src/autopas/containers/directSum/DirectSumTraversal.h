@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+#include "DirectSumTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 
@@ -21,7 +22,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class DirectSumTraversal : public CellPairTraversal<ParticleCell> {
+class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.
@@ -33,12 +34,12 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell> {
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)) {}
 
-  TraversalOptions getTraversalType() override;
+  TraversalOptions getTraversalType() override { return TraversalOptions::directSumTraversal; }
 
-  bool isApplicable() override;
+  bool isApplicable() override { return true; }
 
   /**
-   * @copydoc CellPairTraversal::traverseCellPairs()
+   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
@@ -51,20 +52,11 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell> {
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-TraversalOptions DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
-  return TraversalOptions::directSumTraversal;
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-bool DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::isApplicable() {
-  return true;
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 void DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);
   _cellFunctor.processCellPair(cells[0], cells[1]);
 }
+
 }  // namespace autopas

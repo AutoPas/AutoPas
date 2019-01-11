@@ -10,7 +10,7 @@
 #include <vector>
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
-#include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
+#include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
 #include "autopas/utils/ArrayMath.h"
 #include "testingHelpers/commonTypedefs.h"
 

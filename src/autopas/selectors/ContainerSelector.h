@@ -8,12 +8,12 @@
 
 #include <array>
 #include <vector>
-#include "autopas/containers/DirectSum.h"
-#include "autopas/containers/LinkedCells.h"
 #include "autopas/containers/ParticleContainer.h"
-#include "autopas/containers/VerletClusterLists.h"
-#include "autopas/containers/VerletLists.h"
-#include "autopas/containers/VerletListsCells.h"
+#include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
 namespace autopas {
 

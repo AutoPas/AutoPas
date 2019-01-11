@@ -26,7 +26,7 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalVerletLJ(
+  autopas::C18TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalVerletLJ(
       _verletListsCells.getCellsPerDimension(), &func);
   autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalLinkedLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
@@ -56,7 +56,7 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   }
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
-  autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalVerletFLOPS(
+  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalVerletFLOPS(
       _verletListsCells.getCellsPerDimension(), &flopsVerlet);
   autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalLinkedFLOPS(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);

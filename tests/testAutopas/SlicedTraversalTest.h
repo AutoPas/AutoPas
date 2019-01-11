@@ -21,6 +21,4 @@ class SlicedTraversalTest : public AutoPasTestBase {
   SlicedTraversalTest() = default;
 
   ~SlicedTraversalTest() override = default;
-
-  void fillWithParticles(std::vector<FPCell> &cells, std::array<size_t, 3> particlesPerDim);
 };
