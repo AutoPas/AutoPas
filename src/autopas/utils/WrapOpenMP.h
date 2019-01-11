@@ -19,6 +19,8 @@
 #include <cassert>
 #if defined(AUTOPAS_OPENMP)
 #include <omp.h>
+#else
+#include "ExceptionHandler.h"
 #endif
 
 namespace autopas {
@@ -144,13 +146,19 @@ class AutoPasLock {
   /**
    * Destructor
    */
-  ~AutoPasLock() { assert(not _locked); }
+  ~AutoPasLock() {
+    if (_locked) {
+      utils::ExceptionHandler::exception("AutoPasLocked destroyed in locked state.");
+    }
+  }
 
   /**
    * Acquire the lock.
    */
   void lock() {
-    assert(not _locked);
+    if (_locked) {
+      utils::ExceptionHandler::exception("Tried to acquire a locked lock.");
+    }
     _locked = true;
   }
 
@@ -158,7 +166,9 @@ class AutoPasLock {
    * Release the lock.
    */
   void unlock() {
-    assert(_locked);
+    if (not _locked) {
+      utils::ExceptionHandler::exception("Tried to release an unlocked lock.");
+    }
     _locked = false;
   }
 
