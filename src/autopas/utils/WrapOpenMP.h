@@ -116,24 +116,24 @@ inline int autopas_get_num_threads() { return 1; }
 inline int autopas_get_max_threads() { return 1; }
 
 /**
- * AutoPasLock for the sequential case, that uses an enum for checking the base functionality.
+ * AutoPasLock for the sequential case.
  */
 class AutoPasLock {
  public:
   /**
    * Default constructor
    */
-  AutoPasLock() { _lock = unlocked; }
+  AutoPasLock() { _locked = false; }
 
   /**
    * Move Constructor
    */
-  AutoPasLock(AutoPasLock&&) noexcept { _lock = unlocked; }
+  AutoPasLock(AutoPasLock&&) noexcept { _locked = false; }
 
   /**
    * Copy constructor
    */
-  AutoPasLock(AutoPasLock&) { _lock = unlocked; }
+  AutoPasLock(AutoPasLock&) { _locked = false; }
 
   /**
    * Assignment operator
@@ -144,27 +144,27 @@ class AutoPasLock {
   /**
    * Destructor
    */
-  ~AutoPasLock() { assert(_lock == unlocked); }
+  ~AutoPasLock() { assert(not _locked); }
 
   /**
    * Acquire the lock.
    */
   void lock() {
-    assert(_lock == unlocked);
-    _lock = locked;
+    assert(not _locked);
+    _locked = true;
   }
 
   /**
    * Release the lock.
    */
   void unlock() {
-    assert(_lock == locked);
-    _lock = unlocked;
+    assert(_locked);
+    _locked = false;
   }
 
  private:
-  // lock: 0 means unlocked, 1 locked.
-  enum { unlocked, locked } _lock;
+  // true if locked, false if unlocked
+  bool _locked;
 };
 
 #endif
