@@ -44,33 +44,53 @@ inline int autopas_get_num_threads() { return omp_get_num_threads(); }
 inline int autopas_get_max_threads() { return omp_get_max_threads(); }
 
 /**
- * Wrapper for omp_lock_t.
+ * AutoPasLock for the openmp case, this wraps a omp_lock_t object. To make it copyable, etc.
  */
-typedef omp_lock_t autopas_lock_t;
+class AutoPasLock {
+ public:
+  /**
+   * Default constructor
+   */
+  AutoPasLock() { omp_init_lock(&_lock); }
 
-/**
- * Wrapper for omp_set_lock().
- * @param l Pointer to lock to be set.
- */
-inline void autopas_set_lock(autopas_lock_t *l) { omp_set_lock(l); }
+  /**
+   * Move Constructor
+   */
+  AutoPasLock(AutoPasLock&&) noexcept {
+    omp_init_lock(&_lock);
+  }
 
-/**
- * Wrapper for omp_init_lock().
- * @param l Pointer to lock to be initialized.
- */
-inline void autopas_init_lock(autopas_lock_t *l) { omp_init_lock(l); }
+  /**
+   * Copy constructor
+   */
+  AutoPasLock(const AutoPasLock&) {
+    omp_init_lock(&_lock);
+  }
 
-/**
- * Wrapper for omp_unset_lock().
- * @param l Pointer to lock to be unset.
- */
-inline void autopas_unset_lock(autopas_lock_t *l) { omp_unset_lock(l); }
+  /**
+   * Assignment operator
+   * @return reference to this object after copy
+   */
+  AutoPasLock& operator=(AutoPasLock) = delete;
 
-/**
- * Wrapper for omp_destroy_lock().
- * @param l Pointer to lock to be destroyed.
- */
-inline void autopas_destroy_lock(autopas_lock_t *l) { omp_destroy_lock(l); }
+  /**
+   * Destructor
+   */
+  ~AutoPasLock() { omp_destroy_lock(&_lock); }
+
+  /**
+   * Acquire the lock.
+   */
+  void lock() { omp_set_lock(&_lock); }
+
+  /**
+   * Release the lock.
+   */
+  void unlock() { omp_unset_lock(&_lock); }
+
+ private:
+  omp_lock_t _lock;
+};
 
 /**
  * Custom reductions:
@@ -100,44 +120,62 @@ inline int autopas_get_num_threads() { return 1; }
 inline int autopas_get_max_threads() { return 1; }
 
 /**
- * Dummy for omp_lock_t when no OpenMP is available.
+ * AutoPasLock for the sequential case, that uses an enum for checking the base functionality.
  */
-typedef int autopas_lock_t;
+class AutoPasLock {
+ public:
+  /**
+   * Default constructor
+   */
+  AutoPasLock() { _lock = unlocked; }
 
-/**
- * Dummy for omp_set_lock() when no OpenMP is available.
- * @param l Pointer to lock to be set.
- */
-inline void autopas_set_lock(autopas_lock_t *l) {
-  assert(*l == 0);  // @todo: customize asserts
-  *l = 1;
-}
+  /**
+   * Move Constructor
+   */
+  AutoPasLock(AutoPasLock&&) noexcept {
+    _lock = unlocked;
+  }
 
-/**
- * Dummy for omp_init_lock() when no OpenMP is available.
- * @param l Pointer to lock to be initialized.
- */
-inline void autopas_init_lock(autopas_lock_t *l) {
-  assert(l != nullptr);  // @todo: customize asserts
-  *l = 0;
-}
+  /**
+   * Copy constructor
+   */
+  AutoPasLock(AutoPasLock&) {
+    _lock = unlocked;
+  }
 
-/**
- * Dummy for omp_unset_lock() when no OpenMP is available.
- * @param l Pointer to lock to be unset.
- */
-inline void autopas_unset_lock(autopas_lock_t *l) {
-  assert(*l == 1);  // @todo: customize asserts
-  *l = 0;
-}
+  /**
+   * Assignment operator
+   * @return reference to this object after copy
+   */
+  AutoPasLock& operator=(AutoPasLock) = delete;
 
-/**
- * Dummy for omp_destroy_lock() when no OpenMP is available.
- * @param l Pointer to lock to be destroyed.
- */
-inline void autopas_destroy_lock(autopas_lock_t *l) {
-  assert(l != nullptr);  // @todo: customize asserts
-}
+  /**
+   * Destructor
+   */
+  ~AutoPasLock() {
+    assert(_lock == unlocked);
+  }
+
+  /**
+   * Acquire the lock.
+   */
+  void lock() {
+    assert(_lock == unlocked);
+    _lock = locked;
+  }
+
+  /**
+   * Release the lock.
+   */
+  void unlock() {
+    assert(_lock == locked);
+    _lock = unlocked;
+  }
+
+ private:
+  // lock: 0 means unlocked, 1 locked.
+  enum {unlocked, locked} _lock;
+};
 
 #endif
 
