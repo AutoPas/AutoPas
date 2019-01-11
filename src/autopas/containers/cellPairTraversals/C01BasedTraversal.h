@@ -32,7 +32,7 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims) {
-    if(useNewton3){
+    if (useNewton3) {
       utils::ExceptionHandler::exception("The C01 traversal cannot work with enabled newton3!");
     }
   }
