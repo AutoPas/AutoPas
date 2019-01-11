@@ -31,7 +31,11 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {}
+      : CellPairTraversal<ParticleCell>(dims) {
+    if(useNewton3){
+      utils::ExceptionHandler::exception("The C01 traversal cannot work with enabled newton3!");
+    }
+  }
 
   /**
    * C01 traversals are only usable if useNewton3 is disabled.

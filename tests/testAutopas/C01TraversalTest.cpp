@@ -22,11 +22,10 @@ TEST_F(C01TraversalTest, testTraversalCube) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::C01Traversal<FPCell, MFunctor, false, true> C01Traversal({edgeLength, edgeLength, edgeLength}, &functor);
+  autopas::C01Traversal<FPCell, MFunctor, false, false> C01Traversal({edgeLength, edgeLength, edgeLength}, &functor);
 
-  // every particle interacts with 13 others. Last layer of each dim is covered
-  // by previous interactions
-  EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
+  // every particle interacts with 26 others. First and last layer of each dim is covered by previous interactions
+  EXPECT_CALL(functor, AoSFunctor(_, _, false)).Times((edgeLength - 2) * (edgeLength - 2) * (edgeLength - 2) * 26);
   C01Traversal.traverseCellPairs(cells);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
@@ -46,19 +45,18 @@ TEST_F(C01TraversalTest, testTraversal2x2x2) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::C01Traversal<FPCell, MFunctor, false, true> C01Traversal({edgeLength, edgeLength, edgeLength}, &functor);
+  autopas::C01Traversal<FPCell, MFunctor, false, false> C01Traversal({edgeLength, edgeLength, edgeLength}, &functor);
 
-  // every particle interacts with 13 others. Last layer of each dim is covered
-  // by previous interactions
-  EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
+  // every particle interacts with 26 others. First and last layer of each dim is covered by previous interactions
+  EXPECT_CALL(functor, AoSFunctor(_, _, false)).Times((edgeLength - 2) * (edgeLength - 2) * (edgeLength - 2) * 26);
   C01Traversal.traverseCellPairs(cells);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
 #endif
 }
 
-TEST_F(C01TraversalTest, testTraversal2x3x4) {
-  std::array<size_t, 3> edgeLength = {2, 3, 4};
+TEST_F(C01TraversalTest, testTraversal3x3x4) {
+  std::array<size_t, 3> edgeLength = {3, 3, 4};
 
   MFunctor functor;
   std::vector<FPCell> cells;
@@ -71,13 +69,12 @@ TEST_F(C01TraversalTest, testTraversal2x3x4) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::C01Traversal<FPCell, MFunctor, false, true> C01Traversal({edgeLength[0], edgeLength[1], edgeLength[2]},
+  autopas::C01Traversal<FPCell, MFunctor, false, false> C01Traversal({edgeLength[0], edgeLength[1], edgeLength[2]},
                                                                     &functor);
 
-  // every particle interacts with 13 others. Last layer of each dim is covered
-  // by previous interactions
-  EXPECT_CALL(functor, AoSFunctor(_, _, true))
-      .Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1) * 13);
+  // every particle interacts with 26 others. First and last layer of each dim is covered by previous interactions
+  EXPECT_CALL(functor, AoSFunctor(_, _, false))
+      .Times((edgeLength[0] - 2) * (edgeLength[1] - 2) * (edgeLength[2] - 2) * 26);
   C01Traversal.traverseCellPairs(cells);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);

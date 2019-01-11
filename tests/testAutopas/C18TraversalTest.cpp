@@ -10,23 +10,32 @@ using ::testing::_;
 using ::testing::AtLeast;
 
 TEST_F(C18TraversalTest, testTraversalCube) {
-  size_t edgeLength = 10;
+  std::array<size_t, 3> edgeLength = {2, 2, 2};
 
   MFunctor functor;
   std::vector<FPCell> cells;
-  cells.resize(edgeLength * edgeLength * edgeLength);
+  cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
   autopas::Particle defaultParticle;
 
-  GridGenerator::fillWithParticles(cells, {edgeLength, edgeLength, edgeLength}, defaultParticle);
+  GridGenerator::fillWithParticles(cells, edgeLength, defaultParticle);
 #ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::C18Traversal<FPCell, MFunctor, false, true> C18Traversal({edgeLength, edgeLength, edgeLength}, &functor);
+  autopas::C18Traversal<FPCell, MFunctor, false, true> C18Traversal(edgeLength, &functor);
 
-  // every particle interacts with 13 others. Last layer of each dim is covered
-  // by previous interactions
-  EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
+  size_t boundaryXYcells = (edgeLength[2] - 1);
+  size_t boundaryXYinteractions = boundaryXYcells * (7 + 5 + 6 + 4);
+  size_t faceXcells = (edgeLength[1] - 2) * (edgeLength[2] - 1);
+  size_t boundaryXinteractions = faceXcells * (9 + 8);
+  size_t faceYcells = (edgeLength[0] - 2) * (edgeLength[2] - 1);
+  size_t boundaryYinteractions = faceYcells * (7 + 10);
+  size_t innercells = (edgeLength[0] - 2) * (edgeLength[1] - 2) * (edgeLength[2] - 2);
+  size_t innercellinteractions = innercells * 13;
+
+  EXPECT_CALL(functor, AoSFunctor(_, _, true))
+      .Times(boundaryXYinteractions + boundaryXinteractions + boundaryYinteractions + innercellinteractions);
+
   C18Traversal.traverseCellPairs(cells);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
@@ -34,23 +43,32 @@ TEST_F(C18TraversalTest, testTraversalCube) {
 }
 
 TEST_F(C18TraversalTest, testTraversal2x2x2) {
-  size_t edgeLength = 2;
+  std::array<size_t, 3> edgeLength = {2, 2, 2};
 
   MFunctor functor;
   std::vector<FPCell> cells;
-  cells.resize(edgeLength * edgeLength * edgeLength);
+  cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
   autopas::Particle defaultParticle;
 
-  GridGenerator::fillWithParticles<autopas::Particle>(cells, {edgeLength, edgeLength, edgeLength}, defaultParticle);
+  GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength, defaultParticle);
 #ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::C18Traversal<FPCell, MFunctor, false, true> C18Traversal({edgeLength, edgeLength, edgeLength}, &functor);
+  autopas::C18Traversal<FPCell, MFunctor, false, true> C18Traversal(edgeLength, &functor);
 
-  // every particle interacts with 13 others. Last layer of each dim is covered
-  // by previous interactions
-  EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((edgeLength - 1) * (edgeLength - 1) * (edgeLength - 1) * 13);
+  size_t boundaryXYcells = (edgeLength[2] - 1);
+  size_t boundaryXYinteractions = boundaryXYcells * (7 + 5 + 6 + 4);
+  size_t faceXcells = (edgeLength[1] - 2) * (edgeLength[2] - 1);
+  size_t boundaryXinteractions = faceXcells * (9 + 8);
+  size_t faceYcells = (edgeLength[0] - 2) * (edgeLength[2] - 1);
+  size_t boundaryYinteractions = faceYcells * (7 + 10);
+  size_t innercells = (edgeLength[0] - 2) * (edgeLength[1] - 2) * (edgeLength[2] - 2);
+  size_t innercellinteractions = innercells * 13;
+
+  EXPECT_CALL(functor, AoSFunctor(_, _, true))
+      .Times(boundaryXYinteractions + boundaryXinteractions + boundaryYinteractions + innercellinteractions);
+
   C18Traversal.traverseCellPairs(cells);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
@@ -74,10 +92,18 @@ TEST_F(C18TraversalTest, testTraversal2x3x4) {
   autopas::C18Traversal<FPCell, MFunctor, false, true> C18Traversal({edgeLength[0], edgeLength[1], edgeLength[2]},
                                                                     &functor);
 
-  // every particle interacts with 13 others. Last layer of each dim is covered
-  // by previous interactions
+  size_t boundaryXYcells = (edgeLength[2] - 1);
+  size_t boundaryXYinteractions = boundaryXYcells * (7 + 5 + 6 + 4);
+  size_t faceXcells = (edgeLength[1] - 2) * (edgeLength[2] - 1);
+  size_t boundaryXinteractions = faceXcells * (9 + 8);
+  size_t faceYcells = (edgeLength[0] - 2) * (edgeLength[2] - 1);
+  size_t boundaryYinteractions = faceYcells * (7 + 10);
+  size_t innercells = (edgeLength[0] - 2) * (edgeLength[1] - 2) * (edgeLength[2] - 2);
+  size_t innercellinteractions = innercells * 13;
+
   EXPECT_CALL(functor, AoSFunctor(_, _, true))
-      .Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1) * 13);
+      .Times(boundaryXYinteractions + boundaryXinteractions + boundaryYinteractions + innercellinteractions);
+
   C18Traversal.traverseCellPairs(cells);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
