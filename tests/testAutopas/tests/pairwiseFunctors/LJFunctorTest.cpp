@@ -5,7 +5,7 @@
  */
 
 #include "LJFunctorTest.h"
-#include <autopas/particles/MoleculeLJ.h>
+#include "autopas/particles/MoleculeLJ.h"
 #include "testingHelpers/commonTypedefs.h"
 
 void LJFunctorTest::testAoSNoGlobals(bool newton3) {

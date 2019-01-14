@@ -5,7 +5,7 @@
  */
 
 #include "TraversalRaceConditionTest.h"
-#include <testingHelpers/GridGenerator.h>
+#include "testingHelpers/GridGenerator.h"
 
 /**
  * Idea: create mesh of particles and iterate with the SimpleFunctor.

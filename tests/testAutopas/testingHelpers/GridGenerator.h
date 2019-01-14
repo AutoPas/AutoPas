@@ -5,6 +5,7 @@
  */
 
 #pragma once
+
 #include "autopas/AutoPas.h"
 
 /**
