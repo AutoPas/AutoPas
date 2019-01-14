@@ -5,6 +5,7 @@
  */
 
 #include "MDFlexParser.h"
+#include "autopas/utils/StringParser.h"
 
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
@@ -253,25 +254,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 't': {
-        traversalOptions.clear();
-        if (strArg.find("c08") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::c08);
-        }
-        if (strArg.find("c01") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::c01);
-        }
-        if (strArg.find("c18") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::c18);
-        }
-        if (strArg.find("sli") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::sliced);
-        }
-        if (strArg.find("dir") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
-        }
+        traversalOptions = autopas::utils::StringParser::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
-          cerr << "Please use 'c08', 'c01', 'c18' or 'sliced'!" << endl;
+          cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
           displayHelp = true;
         }
         break;
