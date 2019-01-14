@@ -126,7 +126,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * @copydoc VerletLists::deleteHaloParticles
    */
-  void deleteHaloParticles() override {}
+  void deleteHaloParticles() override {
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.deleteHaloParticles not yet implemented.");
+  }
 
   /**
    * @copydoc VerletLists::updateContainer()
