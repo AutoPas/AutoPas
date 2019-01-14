@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -15,16 +14,14 @@ namespace autopas {
 /**
  * This class provides the base for traversals using the c01 base step.
  *
- * The base step processBaseCell() computes all interactions
- * between the base cell and adjacent cells.
- * After executing the base step on all cells all pairwise interactions for
- * all cells are done.
+ * The traversal is defined in the function c01Traversal and uses 1 color. Interactions between two cells are allowed
+ * only if particles of the first cell are modified. This means that newton3 optimizations are NOT allowed.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA>
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
@@ -33,68 +30,46 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims),
-        _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false>(
-                pairwiseFunctor)) {
-    computeOffsets();
+  explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
+      : CellPairTraversal<ParticleCell>(dims) {
+    if (useNewton3) {
+      utils::ExceptionHandler::exception("The C01 traversal cannot work with enabled newton3!");
+    }
   }
+
+  /**
+   * C01 traversals are only usable if useNewton3 is disabled.
+   * @return
+   */
+  bool isApplicable() override { return not useNewton3; }
 
  protected:
   /**
-   * Computes all interactions between the base
-   * cell and adjacent cells.
-   * @param cells vector of all cells.
-   * @param x x of base cell
-   * @param y y of base cell
-   * @param z z of base cell
+   * The main traversal of the C01Traversal.
+   * This provides the structure of the loops and its parallelization.
+   * @tparam LoopBody
+   * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as as parameters
+   * (x,y,z). If you need additional input from outside, please use captures (by reference).
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
-
-  /**
-   * Computes pairs used in processBaseCell()
-   */
-  void computeOffsets();
-
-  /**
-   * CellFunctor to be used for the traversal defining the interaction between two cells.
-   */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, false, false> _cellFunctor;
-
-  /**
-   * Pairs for processBaseCell().
-   */
-  std::vector<int> _cellOffsets;
+  template <typename LoopBody>
+  inline void c01Traversal(LoopBody&& loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                                      unsigned long x, unsigned long y,
-                                                                                      unsigned long z) {
-  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-  ParticleCell &baseCell = cells[baseIndex];
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <typename LoopBody>
+inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c01Traversal(LoopBody&& loopBody) {
+  const unsigned long end_x = this->_cellsPerDimension[0] - 1;
+  const unsigned long end_y = this->_cellsPerDimension[1] - 1;
+  const unsigned long end_z = this->_cellsPerDimension[2] - 1;
 
-  const int num_pairs = _cellOffsets.size();
-  for (int j = 0; j < num_pairs; ++j) {
-    unsigned long otherIndex = baseIndex + _cellOffsets[j];
-    ParticleCell &otherCell = cells[otherIndex];
-
-    if (baseIndex == otherIndex) {
-      this->_cellFunctor.processCell(baseCell);
-    } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell);
-    }
-  }
-}
-
-template <class ParticleCell, class PairwiseFunctor, bool useSoA>
-inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA>::computeOffsets() {
-  for (int z = -1; z <= 1; ++z) {
-    for (int y = -1; y <= 1; ++y) {
-      for (int x = -1; x <= 1; ++x) {
-        int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
-        _cellOffsets.push_back(offset);
+#if defined(AUTOPAS_OPENMP)
+  // @todo: find optimal chunksize
+#pragma omp parallel for schedule(dynamic) collapse(3)
+#endif
+  for (unsigned long z = 1; z < end_z; ++z) {
+    for (unsigned long y = 1; y < end_y; ++y) {
+      for (unsigned long x = 1; x < end_x; ++x) {
+        loopBody(x, y, z);
       }
     }
   }

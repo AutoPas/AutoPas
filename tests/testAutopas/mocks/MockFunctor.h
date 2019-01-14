@@ -8,7 +8,7 @@
 
 #include <gmock/gmock.h>
 #include "autopas/autopasIncludes.h"
-#include "autopas/containers/VerletListHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 
 // gmock does not write overrides, so we suppress that warning here!
 #if __GNUC__ >= 5

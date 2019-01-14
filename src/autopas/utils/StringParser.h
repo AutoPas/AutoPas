@@ -8,7 +8,7 @@
 
 #include <string>
 #include <vector>
-#include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
+#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 
 namespace autopas {
 namespace utils {
@@ -22,7 +22,7 @@ namespace StringParser {
  * @param traversalOptionsString String containing traversal options.
  * @return Vector of TraversalOption enums.
  */
-static std::vector<autopas::TraversalOptions> parseTraversalOptions(std::string traversalOptionsString) {
+static std::vector<autopas::TraversalOptions> parseTraversalOptions(std::string &traversalOptionsString) {
   std::vector<autopas::TraversalOptions> traversalOptions;
   if (traversalOptionsString.find("c08") != std::string::npos) {
     traversalOptions.push_back(autopas::TraversalOptions::c08);
