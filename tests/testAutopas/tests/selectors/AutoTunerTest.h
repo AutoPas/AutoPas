@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <autopas/selectors/AutoTuner.h>
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
+#include "autopas/selectors/AutoTuner.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class AutoTunerTest : public AutoPasTestBase {

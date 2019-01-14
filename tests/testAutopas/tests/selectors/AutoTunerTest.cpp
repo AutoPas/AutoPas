@@ -5,7 +5,7 @@
  */
 
 #include "AutoTunerTest.h"
-#include <autopas/selectors/AutoTuner.h>
+#include "autopas/selectors/AutoTuner.h"
 
 void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   autopas::LJFunctor<Particle, FPCell> functor(1., 1., 1., 0.);
