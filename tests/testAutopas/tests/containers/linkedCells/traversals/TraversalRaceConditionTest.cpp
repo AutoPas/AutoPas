@@ -5,19 +5,7 @@
  */
 
 #include "TraversalRaceConditionTest.h"
-
-void TraversalRaceConditionTest::fillWithParticles(autopas::AutoPas<Particle, FPCell> &autoPas,
-                                                   std::array<size_t, 3> particlesPerDim) {
-  size_t id = 0;
-  for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
-    for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
-      for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        auto p = Particle({x + .5, y + .5, z + .5}, {0, 0, 0}, id++);
-        autoPas.addParticle(p);
-      }
-    }
-  }
-}
+#include <testingHelpers/GridGenerator.h>
 
 /**
  * Idea: create mesh of particles and iterate with the SimpleFunctor.
@@ -53,7 +41,8 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
     auto traversalList = {traversalLC};
     autoPas.init(boxMin, boxMax, cellLength, 0, 1, containerList, traversalList);
 
-    fillWithParticles(autoPas, particlesPerDimension);
+    auto defaultParticle = Particle({0, 0, 0}, {0, 0, 0}, 0);
+    GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
 
     SimpleFunctor functor;
 
