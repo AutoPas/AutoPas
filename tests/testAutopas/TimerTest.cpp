@@ -5,6 +5,8 @@
  */
 
 #include <gtest/gtest.h>
+#include <chrono>
+#include <thread>
 #include "autopas/utils/Timer.h"
 
 TEST(TimerTest, testTimer) {
@@ -14,8 +16,10 @@ TEST(TimerTest, testTimer) {
   ASSERT_LE(time, 0.01);
 
   timer.start();
-  // sleeping for 100ms
-  usleep(5e4);
+  // sleeping for 0.05s
+  using namespace std::chrono_literals;
+  std::this_thread::sleep_for(50ms);
+
   time = timer.stop();
   // time should be close to 10ms
   ASSERT_NEAR(time, .05, .03);
