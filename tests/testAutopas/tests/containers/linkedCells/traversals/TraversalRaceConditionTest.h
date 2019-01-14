@@ -42,7 +42,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
       if (dr2 > CUTOFFSQUARE) return;
 
-      std::array<double, 3> f;
+      std::array<double, 3> f = {};
 
       for (int dim = 0; dim < 3; ++dim) {
         if (coordsI[dim] < coordsJ[dim]) {
