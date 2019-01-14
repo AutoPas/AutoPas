@@ -64,14 +64,14 @@ class VerletListHelpers {
     }
 
     /**
-     * SoAFunctor for verlet list generation. (two cell version)
+     * SoAFunctor for verlet list generation. (single cell version)
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
     void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
-      Particle **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
+      auto **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
       double *const __restrict__ xptr = soa.begin<AttributeNames::posX>();
       double *const __restrict__ yptr = soa.begin<AttributeNames::posY>();
       double *const __restrict__ zptr = soa.begin<AttributeNames::posZ>();
@@ -102,19 +102,19 @@ class VerletListHelpers {
     }
 
     /**
-     * SoAfunctor for the verlet list generation. (two cell version)
+     * SoAFunctor for the verlet list generation. (two cell version)
      * @param soa1 soa of first cell
      * @param soa2 soa of second cell
      */
     void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-      Particle **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
+      auto **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
       double *const __restrict__ x1ptr = soa1.begin<AttributeNames::posX>();
       double *const __restrict__ y1ptr = soa1.begin<AttributeNames::posY>();
       double *const __restrict__ z1ptr = soa1.begin<AttributeNames::posZ>();
 
-      Particle **const __restrict__ id2ptr = reinterpret_cast<Particle **const>(soa2.begin<AttributeNames::id>());
+      auto **const __restrict__ id2ptr = reinterpret_cast<Particle **const>(soa2.begin<AttributeNames::id>());
       double *const __restrict__ x2ptr = soa2.begin<AttributeNames::posX>();
       double *const __restrict__ y2ptr = soa2.begin<AttributeNames::posY>();
       double *const __restrict__ z2ptr = soa2.begin<AttributeNames::posZ>();
