@@ -49,26 +49,11 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'c': {
-        // delete default argument
-        containerOptions.clear();
-        if (strArg.find("direct") != string::npos or strArg.find("ds") != string::npos) {
-          containerOptions.push_back(autopas::directSum);
-        }
-        if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
-          containerOptions.push_back(autopas::linkedCells);
-        }
-        if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
-          containerOptions.push_back(autopas::verletLists);
-        }
-        if (strArg.find("vcells") != string::npos) {
-          containerOptions.push_back(autopas::verletListsCells);
-        }
-        if (strArg.find("vcluster") != string::npos) {
-          containerOptions.push_back(autopas::verletClusterLists);
-        }
+        // overwrite default argument
+        containerOptions = autopas::utils::StringParser::parseContainerOptions(strArg);
         if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'vcells' or 'vcluster'!" << endl;
+          cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'VCells' or 'VCluster'!" << endl;
           displayHelp = true;
         }
         break;
@@ -83,11 +68,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'd': {
-        if (strArg.find("aos") != string::npos) {
-          dataLayoutOption = autopas::aos;
-        } else if (strArg.find("soa") != string::npos) {
-          dataLayoutOption = autopas::soa;
-        } else {
+        dataLayoutOption = autopas::utils::StringParser::parseDataLayout(strArg);
+        if (dataLayoutOption == autopas::DataLayoutOption(-1)) {
           cerr << "Unknown data layout : " << strArg << endl;
           cerr << "Please use 'AoS' or 'SoA'!" << endl;
           displayHelp = true;
@@ -153,13 +135,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'k': {
-        if (strArg.find("abs") != string::npos) {
-          containerSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
-        } else if (strArg.find("mea") != string::npos) {
-          containerSelectorStrategy = autopas::SelectorStrategy::fastestMean;
-        } else if (strArg.find("med") != string::npos) {
-          containerSelectorStrategy = autopas::SelectorStrategy::fastestMedian;
-        } else {
+        containerSelectorStrategy = autopas::utils::StringParser::parseSelectorStrategy(strArg);
+        if (containerSelectorStrategy == autopas::SelectorStrategy(-1)) {
           cerr << "Unknown Container Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
@@ -263,13 +240,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'T': {
-        if (strArg.find("abs") != string::npos) {
-          traversalSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
-        } else if (strArg.find("mea") != string::npos) {
-          traversalSelectorStrategy = autopas::SelectorStrategy::fastestMean;
-        } else if (strArg.find("med") != string::npos) {
-          traversalSelectorStrategy = autopas::SelectorStrategy::fastestMedian;
-        } else {
+        traversalSelectorStrategy = autopas::utils::StringParser::parseSelectorStrategy(strArg);
+        if (traversalSelectorStrategy == autopas::SelectorStrategy(-1)) {
           cerr << "Unknown Traversal Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
@@ -546,4 +518,3 @@ autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 autopas::SelectorStrategy MDFlexParser::getTraversalSelectorStrategy() const { return traversalSelectorStrategy; }
 
 autopas::SelectorStrategy MDFlexParser::getContainerSelectorStrategy() const { return containerSelectorStrategy; }
-// spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }
