@@ -8,13 +8,13 @@
 
 TEST(StringParserTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOptions>(autopas::allTraversalOptions,
-                                               "c01, c08, c18, direct, sliced, v01, v18, vsl",
+                                               "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced",
                                                autopas::utils::StringParser::parseTraversalOptions);
 }
 
 TEST(StringParserTest, parseContainerOptionsTest) {
   testParseMultiple<autopas::ContainerOptions>(autopas::allContainerOptions,
-                                               "directSum, linkedCells, verletLists, vcells, vcluster",
+                                               "directSum, linkedCells, verletLists, verlet-cells, vcluster",
                                                autopas::utils::StringParser::parseContainerOptions);
 }
 

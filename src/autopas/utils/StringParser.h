@@ -20,6 +20,30 @@ namespace utils {
 namespace StringParser {
 
 /**
+ * All accepted delimiters to split input strings.
+ */
+constexpr char delimiters[] = " ,;|/";
+
+/**
+ * Splits a string by multiple delimiters.
+ * @param searchString
+ * @param delimiters
+ * @return Vector of substrings.
+ */
+static std::vector<std::string> tokenize(std::string &searchString, std::string delimiters) {
+  std::vector<std::string> wordVector;
+
+  std::size_t prev = 0, pos;
+  while ((pos = searchString.find_first_of(delimiters, prev)) != std::string::npos) {
+    if (pos > prev) wordVector.push_back(searchString.substr(prev, pos - prev));
+    prev = pos + 1;
+  }
+  if (prev < searchString.length()) wordVector.push_back(searchString.substr(prev, std::string::npos));
+
+  return wordVector;
+}
+
+/**
  * Converts a string of options to a vector of enums. The options are expected to be lower case.
  *
  * Possible options: c01, c08, c18, direct, sliced, v01, v18, vsl
@@ -30,30 +54,29 @@ namespace StringParser {
 static std::vector<autopas::TraversalOptions> parseTraversalOptions(std::string &traversalOptionsString) {
   std::vector<autopas::TraversalOptions> traversalOptions;
 
-  // @TODO: rewrite such that sli and slicedVerlet don't crash
-  if (traversalOptionsString.find("c01") != std::string::npos) {
-    traversalOptions.push_back(autopas::TraversalOptions::c01);
-  }
-  if (traversalOptionsString.find("c08") != std::string::npos) {
-    traversalOptions.push_back(autopas::TraversalOptions::c08);
-  }
-  if (traversalOptionsString.find("c18") != std::string::npos) {
-    traversalOptions.push_back(autopas::TraversalOptions::c18);
-  }
-  if (traversalOptionsString.find("dir") != std::string::npos) {
-    traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
-  }
-  if (traversalOptionsString.find("sli") != std::string::npos) {
-    traversalOptions.push_back(autopas::TraversalOptions::sliced);
-  }
-  if (traversalOptionsString.find("v01") != std::string::npos) {
-    traversalOptions.push_back(autopas::TraversalOptions::c01Verlet);
-  }
-  if (traversalOptionsString.find("v18") != std::string::npos) {
-    traversalOptions.push_back(autopas::TraversalOptions::c18Verlet);
-  }
-  if (traversalOptionsString.find("vsl") != std::string::npos) {
-    traversalOptions.push_back(autopas::TraversalOptions::slicedVerlet);
+  auto words = tokenize(traversalOptionsString, delimiters);
+
+  for (auto &word : words) {
+    if (word.find("01") != std::string::npos) {
+      if (word.find('v') != std::string::npos)
+        traversalOptions.push_back(autopas::TraversalOptions::c01Verlet);
+      else
+        traversalOptions.push_back(autopas::TraversalOptions::c01);
+    } else if (word.find("c08") != std::string::npos) {
+      traversalOptions.push_back(autopas::TraversalOptions::c08);
+    } else if (word.find("18") != std::string::npos) {
+      if (word.find('v') != std::string::npos)
+        traversalOptions.push_back(autopas::TraversalOptions::c18Verlet);
+      else
+        traversalOptions.push_back(autopas::TraversalOptions::c18);
+    } else if (word.find("dir") != std::string::npos) {
+      traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
+    } else if (word.find("sli") != std::string::npos) {
+      if (word.find('v') != std::string::npos)
+        traversalOptions.push_back(autopas::TraversalOptions::slicedVerlet);
+      else
+        traversalOptions.push_back(autopas::TraversalOptions::sliced);
+    }
   }
   return traversalOptions;
 }
@@ -69,25 +92,25 @@ static std::vector<autopas::TraversalOptions> parseTraversalOptions(std::string 
 static std::vector<autopas::ContainerOptions> parseContainerOptions(std::string &containerOptionsString) {
   std::vector<autopas::ContainerOptions> containerOptions;
 
-  // @TODO: rewrite such that verlet stuff doesn't crash
-  if (containerOptionsString.find("direct") != std::string::npos or
-      containerOptionsString.find("ds") != std::string::npos) {
-    containerOptions.push_back(autopas::directSum);
+  auto words = tokenize(containerOptionsString, delimiters);
+
+  for (auto &word : words) {
+    if (word.find("dir") != std::string::npos or word.find("ds") != std::string::npos) {
+      containerOptions.push_back(autopas::ContainerOptions::directSum);
+    } else if (word.find("linked") != std::string::npos or
+               word.find("lc") != std::string::npos) {
+      containerOptions.push_back(autopas::ContainerOptions::linkedCells);
+    } else if (word.find('v') != std::string::npos) {
+      if (word.find("cl") != std::string::npos) {
+        containerOptions.push_back(autopas::ContainerOptions::verletClusterLists);
+      } else if (word.find("cel") != std::string::npos) {
+        containerOptions.push_back(autopas::ContainerOptions::verletListsCells);
+      } else {
+        containerOptions.push_back(autopas::ContainerOptions::verletLists);
+      }
+    }
   }
-  if (containerOptionsString.find("linked") != std::string::npos or
-      containerOptionsString.find("lc") != std::string::npos) {
-    containerOptions.push_back(autopas::linkedCells);
-  }
-  if (containerOptionsString.find("verlet") != std::string::npos or
-      containerOptionsString.find("vl") != std::string::npos) {
-    containerOptions.push_back(autopas::verletLists);
-  }
-  if (containerOptionsString.find("vcell") != std::string::npos) {
-    containerOptions.push_back(autopas::verletListsCells);
-  }
-  if (containerOptionsString.find("vcluster") != std::string::npos) {
-    containerOptions.push_back(autopas::verletClusterLists);
-  }
+
   return containerOptions;
 }
 
