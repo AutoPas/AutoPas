@@ -5,6 +5,7 @@
  */
 
 #include "AutoPasTest.h"
+#include "testingHelpers/commonTypedefs.h"
 
 /**
  * test whether the RegionIterator can be generated and something is returned.
@@ -19,27 +20,129 @@ TEST_F(AutoPasTest, getRegionParticleIterator) {
 }
 
 /**
- * Check whether an AutoPas object can be rebuild using
+ * Check whether an AutoPas object can be rebuild using the following strategy:
+ * 0. create normal AutoPas container + initialize and fill with particles
+ * 1. create additional AutoPas container + initialize
+ * 2. fill additional AutoPas container with particles
+ * 3. std::move the new container over the old one.
  */
-TEST_F(AutoPasTest, checkRebuilding) {
-
-  autoPas.addParticle();
-  // ensure some particles
-
-
+TEST_F(AutoPasTest, checkRebuildingNewMove) {
+  auto boxMax1 = autoPas.getBoxMax();
+  ASSERT_DOUBLE_EQ(boxMax1[0], 10.);
+  ASSERT_DOUBLE_EQ(boxMax1[1], 10.);
+  ASSERT_DOUBLE_EQ(boxMax1[2], 10.);
+  // 0. add some particles
+  Particle p1({1., 1., 1.}, {0., 0., 0.}, 0);
+  autoPas.addParticle(p1);
+  Particle p2({2., 2., 2.}, {0., 0., 0.}, 1);
+  autoPas.addParticle(p2);
   {
+    // 1. create new AutoPas container + initialize
     decltype(autoPas) autoPasTmp;
-    autoPasTmp.init({0., 0., 0.}, {10., 10., 10.}, 1., 0, 1, {autopas::ContainerOptions::linkedCells},
+    autoPasTmp.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 1, {autopas::ContainerOptions::linkedCells},
                     {autopas::TraversalOptions::c08});
+
     // ensure no particles
+    for (auto iter = autoPasTmp.begin(); iter.isValid(); ++iter) {
+      FAIL() << "there shouldn't already be any particles in the container, but there are." << std::endl;
+    }
 
+    // 2. copy particles
+    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+      autoPasTmp.addParticle(*iter);
+    }
 
-    // copy particles
+    {
+      auto iter = autoPasTmp.begin();
+      ASSERT_TRUE(iter.isValid());
+      auto id1 = iter->getID();
+      ++iter;
+      ASSERT_TRUE(iter.isValid());
+      ASSERT_EQ(id1 + iter->getID(), 1);
+    }
 
-
-    // move objects
+    // 3. move new container over old one. will loose information of the old one.
     autoPas = std::move(autoPasTmp);
   }
 
   // ensure same particles as before
+  {
+    auto iter = autoPas.begin();
+    ASSERT_TRUE(iter.isValid());
+    auto id1 = iter->getID();
+    ++iter;
+    ASSERT_TRUE(iter.isValid());
+    ASSERT_EQ(id1 + iter->getID(), 1);
+  }
+
+  // ensure information has changed
+  auto boxMax2 = autoPas.getBoxMax();
+  ASSERT_DOUBLE_EQ(boxMax2[0], 5.);
+  ASSERT_DOUBLE_EQ(boxMax2[1], 5.);
+  ASSERT_DOUBLE_EQ(boxMax2[2], 5.);
+
+  // ensure logger still working
+  AutoPasLog(info, "test logger working.");
+}
+
+/**
+ * Check whether an AutoPas object can be rebuild using the following strategy:
+ * 0. create normal AutoPas container + initialize and fill with particles
+ * 1. copy particles out of first container
+ * 2. recreate container by calling constructor + initialize again
+ * 3. fill container with copied particles
+ */
+TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
+  auto boxMax1 = autoPas.getBoxMax();
+  ASSERT_DOUBLE_EQ(boxMax1[0], 10.);
+  ASSERT_DOUBLE_EQ(boxMax1[1], 10.);
+  ASSERT_DOUBLE_EQ(boxMax1[2], 10.);
+
+  // 0. add some particles
+  Particle p1({1., 1., 1.}, {0., 0., 0.}, 0);
+  autoPas.addParticle(p1);
+  Particle p2({2., 2., 2.}, {0., 0., 0.}, 1);
+  autoPas.addParticle(p2);
+  {
+    std::vector<Particle> particleVector;
+    particleVector.reserve(autoPas.getNumberOfParticles());
+
+    // 1. copy particles out of first container
+    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+      particleVector.push_back(*iter);
+    }
+    // 2. recreate container by calling constructor + init
+    autoPas = decltype(autoPas)();
+    autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 1, {autopas::ContainerOptions::linkedCells},
+                 {autopas::TraversalOptions::c08});
+
+    // ensure no particles
+    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+      FAIL() << "there shouldn't already be any particles in the container, but there are." << std::endl;
+    }
+
+    // 3. copy particles from particleVector into container
+    for (auto particle : particleVector) {
+      autoPas.addParticle(particle);
+    }
+  }
+
+  // ensure same particles as before
+  {
+    auto iter = autoPas.begin();
+    ASSERT_TRUE(iter.isValid());
+    auto id1 = iter->getID();
+    ++iter;
+    ASSERT_TRUE(iter.isValid());
+    ASSERT_EQ(id1 + iter->getID(), 1);
+  }
+
+  // ensure information has changed
+  auto boxMax2 = autoPas.getBoxMax();
+  ASSERT_DOUBLE_EQ(boxMax2[0], 5.);
+  ASSERT_DOUBLE_EQ(boxMax2[1], 5.);
+  ASSERT_DOUBLE_EQ(boxMax2[2], 5.);
+
+  // ensure logger still working
+  AutoPasLog(info, "test logger working.");
 }
