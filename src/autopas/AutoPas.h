@@ -13,7 +13,9 @@
 
 namespace autopas {
 
-/// instance counter to help track the number of autopas instances. Needed for correct management of the logger.
+/**
+ * instance counter to help track the number of autopas instances. Needed for correct management of the logger.
+ */
 static unsigned int _instanceCounter = 0;
 
 /**
