@@ -97,8 +97,7 @@ static std::vector<autopas::ContainerOptions> parseContainerOptions(std::string 
   for (auto &word : words) {
     if (word.find("dir") != std::string::npos or word.find("ds") != std::string::npos) {
       containerOptions.push_back(autopas::ContainerOptions::directSum);
-    } else if (word.find("linked") != std::string::npos or
-               word.find("lc") != std::string::npos) {
+    } else if (word.find("linked") != std::string::npos or word.find("lc") != std::string::npos) {
       containerOptions.push_back(autopas::ContainerOptions::linkedCells);
     } else if (word.find('v') != std::string::npos) {
       if (word.find("cl") != std::string::npos) {
