@@ -19,6 +19,7 @@ namespace autopas {
  * Possible choices for the particle data layout.
  */
 enum DataLayoutOption { aos, soa };
+static std::vector<DataLayoutOption> allDataLayoutOptions = {DataLayoutOption::aos, DataLayoutOption::soa};
 
 /**
  * Possible choices for the auto tuner.
