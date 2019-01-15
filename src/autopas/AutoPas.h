@@ -51,6 +51,7 @@ class AutoPas {
   /**
    * Move assignment operator
    * @param other
+   * @return
    */
   AutoPas &operator=(AutoPas &&other) noexcept {
     _autoTuner = std::move(other._autoTuner);
