@@ -196,7 +196,7 @@ class VerletLists
     updateIdMapAoS();
     typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff());
 
-    // @todo autotune traversal
+    /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
         auto traversal =
