@@ -17,3 +17,29 @@ TEST_F(AutoPasTest, getRegionParticleIterator) {
     iter->setR(iter->getR());
   }
 }
+
+/**
+ * Check whether an AutoPas object can be rebuild using
+ */
+TEST_F(AutoPasTest, checkRebuilding) {
+
+  autoPas.addParticle();
+  // ensure some particles
+
+
+  {
+    decltype(autoPas) autoPasTmp;
+    autoPasTmp.init({0., 0., 0.}, {10., 10., 10.}, 1., 0, 1, {autopas::ContainerOptions::linkedCells},
+                    {autopas::TraversalOptions::c08});
+    // ensure no particles
+
+
+    // copy particles
+
+
+    // move objects
+    autoPas = std::move(autoPasTmp);
+  }
+
+  // ensure same particles as before
+}
