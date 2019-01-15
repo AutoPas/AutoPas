@@ -12,6 +12,10 @@
 #include "autopas/selectors/AutoTuner.h"
 
 namespace autopas {
+
+/// instance counter to help track the number of autopas instances. Needed for correct management of the logger.
+static unsigned int _instanceCounter = 0;
+
 /**
  * The AutoPas class is intended to be the main point of Interaction for the
  * user. It puts a layer of abstraction over the container and handles the
@@ -24,16 +28,33 @@ template <class Particle, class ParticleCell>
 class AutoPas {
  public:
   AutoPas() {
-    // initialize the Logger
-    autopas::Logger::create();
-    // The logger is normally only flushed on successful program termination.
-    // This line ensures flushing when log messages of level warning or more severe are created.
-    autopas::Logger::get()->flush_on(spdlog::level::warn);
+    // count the number of autopas instances. This is needed to ensure that the autopas logger is not unregistered while
+    // other instances are still using it.
+    _instanceCounter++;
+    if (_instanceCounter == 1) {
+      // initialize the Logger
+      autopas::Logger::create();
+      // The logger is normally only flushed on successful program termination.
+      // This line ensures flushing when log messages of level warning or more severe are created.
+      autopas::Logger::get()->flush_on(spdlog::level::warn);
+    }
   }
 
   ~AutoPas() {
-    // remove the Logger from the registry
-    autopas::Logger::unregister();
+    _instanceCounter--;
+    if (_instanceCounter == 0) {
+      // remove the Logger from the registry. Do this only if we have no other autopas instances running.
+      autopas::Logger::unregister();
+    }
+  }
+
+  /**
+   * Move assignment operator
+   * @param other
+   */
+  AutoPas &operator=(AutoPas &&other) noexcept {
+    _autoTuner = std::move(other._autoTuner);
+    return *this;
   }
 
   /**
@@ -163,5 +184,4 @@ class AutoPas {
  private:
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };
-
 }  // namespace autopas
