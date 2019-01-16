@@ -294,6 +294,10 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
       cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - 1;
     } else if (pos[dim] < _boxMin[dim]) {
       cellIndex[dim] = 0;
+    } else if (pos[dim] >= _boxMin[dim] && cellIndex[dim] == 0){
+      cellIndex[dim] = 1;
+    } else if (pos[dim] < _boxMax[dim] && cellIndex[dim] == _cellsPerDimensionWithHalo[dim] - 1){
+      cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - 2;
     }
   }
 
