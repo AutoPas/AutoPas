@@ -21,6 +21,11 @@ namespace autopas {
 enum DataLayoutOption { aos, soa };
 
 /**
+ * Provides a way to iterate over the possible choices of data layouts.
+ */
+static std::vector<DataLayoutOption> allDataLayoutOptions = {DataLayoutOption::aos, DataLayoutOption::soa};
+
+/**
  * Possible choices for the auto tuner.
  * @todo: implement more options and then use this enum! :D
  */

@@ -12,7 +12,6 @@ namespace autopas {
  * Possible choices for the cell pair traversal.
  */
 enum TraversalOptions {
-  dummyTraversal = -1,
   c08 = 0,
   sliced = 1,
   c18 = 2,
@@ -21,6 +20,7 @@ enum TraversalOptions {
   slicedVerlet = 5,
   c18Verlet = 6,
   c01Verlet = 7,
+  dummyTraversal = 666,
 };
 
 /**
