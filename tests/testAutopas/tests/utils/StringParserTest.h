@@ -23,10 +23,8 @@ class StringParserTest : public AutoPasTestBase {};
  */
 template <class T>
 void testParseMultiple(const std::vector<T> &allOptions, const std::string &optionsString,
-                       std::function<std::vector<T>(const std::string &)> &&parseFun) {
-  auto parsedOptions = parseFun(optionsString);
-
-  std::sort(parsedOptions.begin(), parsedOptions.end());
+                       std::function<std::vector<T>(const std::string &, bool)> &&parseFun) {
+  auto parsedOptions = parseFun(optionsString, false);
 
   EXPECT_THAT(parsedOptions, ::testing::ContainerEq(allOptions));
 }
