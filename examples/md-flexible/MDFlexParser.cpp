@@ -50,7 +50,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'c': {
         // overwrite default argument
-        containerOptions = autopas::utils::StringParser::parseContainerOptions(strArg);
+        containerOptions = autopas::utils::StringUtils::parseContainerOptions(strArg, false);
         if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
           cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'VCells' or 'VCluster'!" << endl;
@@ -68,7 +68,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'd': {
-        dataLayoutOption = autopas::utils::StringParser::parseDataLayout(strArg);
+        dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(strArg);
         if (dataLayoutOption == autopas::DataLayoutOption(-1)) {
           cerr << "Unknown data layout : " << strArg << endl;
           cerr << "Please use 'AoS' or 'SoA'!" << endl;
@@ -135,7 +135,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'k': {
-        containerSelectorStrategy = autopas::utils::StringParser::parseSelectorStrategy(strArg);
+        containerSelectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
         if (containerSelectorStrategy == autopas::SelectorStrategy(-1)) {
           cerr << "Unknown Container Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
@@ -231,7 +231,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 't': {
-        traversalOptions = autopas::utils::StringParser::parseTraversalOptions(strArg);
+        traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
           cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
@@ -240,7 +240,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'T': {
-        traversalSelectorStrategy = autopas::utils::StringParser::parseSelectorStrategy(strArg);
+        traversalSelectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
         if (traversalSelectorStrategy == autopas::SelectorStrategy(-1)) {
           cerr << "Unknown Traversal Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
@@ -298,52 +298,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
-std::string selectorStrategyToString(autopas::SelectorStrategy selectorStrategy) {
-  std::string retString;
-  switch (selectorStrategy) {
-    case autopas::SelectorStrategy::fastestAbs: {
-      retString = "Fastest Absolute Value";
-      break;
-    }
-    case autopas::SelectorStrategy::fastestMean: {
-      retString = "Fastest Mean Value";
-      break;
-    }
-    case autopas::SelectorStrategy::fastestMedian: {
-      retString = "Fastest Median Value";
-      break;
-    }
-  }
-  return retString;
-}
-
 void MDFlexParser::printConfig() {
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
        << ":  ";
   for (auto &op : containerOptions) {
-    switch (op) {
-      case autopas::ContainerOptions::directSum: {
-        cout << "DirectSum, ";
-        break;
-      }
-      case autopas::ContainerOptions::linkedCells: {
-        cout << "LinkedCells, ";
-        break;
-      }
-      case autopas::ContainerOptions::verletLists: {
-        cout << "VerletLists, ";
-        break;
-      }
-      case autopas::ContainerOptions::verletListsCells: {
-        cout << "VerletListsCells, ";
-        break;
-      }
-      case autopas::ContainerOptions::verletClusterLists: {
-        cout << "VerletClusterLists, ";
-        break;
-      }
-    }
+    cout << autopas::utils::StringUtils::to_string(op) << ", ";
   }
   // deletes last comma
   cout << "\b\b  " << endl;
@@ -360,21 +320,11 @@ void MDFlexParser::printConfig() {
 
   if (containerOptions.size() > 1) {
     cout << setw(valueOffset) << left << "Container Selector Strategy"
-         << ":  " << selectorStrategyToString(containerSelectorStrategy) << endl;
+         << ":  " << autopas::utils::StringUtils::to_string(containerSelectorStrategy) << endl;
   }
 
   cout << setw(valueOffset) << left << "Data Layout"
-       << ":  ";
-  switch (dataLayoutOption) {
-    case autopas::DataLayoutOption::aos: {
-      cout << "Array-of-Structures" << endl;
-      break;
-    }
-    case autopas::DataLayoutOption::soa: {
-      cout << "Structure-of-Arrays" << endl;
-      break;
-    }
-  }
+       << ":  " << autopas::utils::StringUtils::to_string(dataLayoutOption) << endl;
 
   cout << setw(valueOffset) << left << "Functor"
        << ":  ";
@@ -431,37 +381,14 @@ void MDFlexParser::printConfig() {
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  ";
   for (auto &t : traversalOptions) {
-    switch (t) {
-      case autopas::TraversalOptions::c08: {
-        cout << "c08, ";
-        break;
-      }
-      case autopas::TraversalOptions::sliced: {
-        cout << "sliced, ";
-        break;
-      }
-      case autopas::TraversalOptions::c18: {
-        cout << "c18, ";
-        break;
-      }
-      case autopas::TraversalOptions::c01: {
-        cout << "c01, ";
-        break;
-      }
-      case autopas::TraversalOptions::directSumTraversal: {
-        cout << "direct sum, ";
-        break;
-      }
-      default:
-        break;
-    }
+    cout << autopas::utils::StringUtils::to_string(t) << ", ";
   }
   // deletes last comma
   cout << "\b\b  " << endl;
 
   if (traversalOptions.size() > 1) {
     cout << setw(valueOffset) << left << "Traversal Selector Strategy"
-         << ":  " << selectorStrategyToString(traversalSelectorStrategy) << endl;
+         << ":  " << autopas::utils::StringUtils::to_string(traversalSelectorStrategy) << endl;
   }
 
   cout << setw(valueOffset) << left << "Iterations"

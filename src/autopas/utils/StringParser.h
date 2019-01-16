@@ -17,7 +17,112 @@ namespace utils {
 /**
  * Some functions to parse enums from (input-) strings.
  */
-namespace StringParser {
+namespace StringUtils {
+
+/**
+ * Converts a SelectorStrategy to its respective string representation.
+ * @param option
+ * @return The string representation or "Unknown option (<IntValue>)".
+ */
+static std::string to_string(autopas::SelectorStrategy option) {
+  switch (option) {
+    case autopas::SelectorStrategy::fastestAbs: {
+      return "Fastest-Absolute-Value";
+    }
+    case autopas::SelectorStrategy::fastestMean: {
+      return "Fastest-Mean-Value";
+    }
+    case autopas::SelectorStrategy::fastestMedian: {
+      return "Fastest-Median-Value";
+    }
+  }
+  // do not implement default case to provoke compiler warnings if new options are introduced.
+  return "Unknown option (" + std::to_string(option) + ")";
+}
+
+/**
+ * Converts a DataLayoutOption to its respective string representation.
+ * @param option
+ * @return The string representation or "Unknown option (<IntValue>)".
+ */
+static std::string to_string(DataLayoutOption option) {
+  switch (option) {
+    case autopas::DataLayoutOption::aos: {
+      return "Array-of-Structures";
+    }
+    case autopas::DataLayoutOption::soa: {
+      return "Structure-of-Arrays";
+    }
+  }
+  // do not implement default case to provoke compiler warnings if new options are introduced.
+  return "Unknown option (" + std::to_string(option) + ")";
+}
+
+/**
+ * Converts a ContainerOption to its respective string representation.
+ * @param option
+ * @return The string representation or "Unknown option (<IntValue>)".
+ */
+static std::string to_string(ContainerOptions option) {
+  switch (option) {
+    case autopas::ContainerOptions::directSum: {
+      return "DirectSum";
+    }
+    case autopas::ContainerOptions::linkedCells: {
+      return "LinkedCells";
+    }
+    case autopas::ContainerOptions::verletLists: {
+      return "VerletLists";
+    }
+    case autopas::ContainerOptions::verletListsCells: {
+      return "VerletListsCells";
+    }
+    case autopas::ContainerOptions::verletClusterLists: {
+      return "VerletClusterLists";
+    }
+  }
+  // do not implement default case to provoke compiler warnings if new options are introduced.
+  return "Unknown option (" + std::to_string(option) + ")";
+}
+
+/**
+ * Converts a TraversalOption to its respective string representation.
+ * @param option
+ * @return The string representation or "Unknown option (<IntValue>)".
+ */
+static std::string to_string(TraversalOptions option) {
+  switch (option) {
+    case autopas::TraversalOptions::dummyTraversal: {
+      return "dummyTraversal";
+    }
+    case autopas::TraversalOptions::c01: {
+      return "c01";
+    }
+    case autopas::TraversalOptions::c08: {
+      return "c08";
+    }
+    case autopas::TraversalOptions::c18: {
+      return "c18";
+    }
+    case autopas::TraversalOptions::sliced: {
+      return "sliced";
+    }
+    case autopas::TraversalOptions::directSumTraversal: {
+      return "directSum";
+    }
+    case autopas::TraversalOptions::c01Verlet: {
+      return "verlet-c01";
+    }
+    case autopas::TraversalOptions::c18Verlet: {
+      return "verlet-c18";
+    }
+    case autopas::TraversalOptions::slicedVerlet: {
+      return "verlet-sliced";
+    }
+  }
+  // do not implement default case to provoke compiler warnings if new options are introduced.
+  return "Unknown option (" + std::to_string(option) + ")";
+}
 
 /**
  * All accepted delimiters to split input strings.
@@ -46,7 +151,7 @@ static std::vector<std::string> tokenize(const std::string &searchString, const 
 /**
  * Converts a string of options to a vector of enums. The options are expected to be lower case.
  *
- * Possible options: c01, c08, c18, direct, sliced, v01, v18, vsl
+ * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced
  *
  * @param traversalOptionsString String containing traversal options.
  * @return Vector of TraversalOption enums. If no valid option was found the empty vector is returned.
@@ -147,13 +252,15 @@ static autopas::SelectorStrategy parseSelectorStrategy(const std::string &select
 static autopas::DataLayoutOption parseDataLayout(const std::string &dataLayoutSting) {
   // hack to initialize the enum out of range as an error value.
   auto dataLayout(autopas::DataLayoutOption(-1));
-  if (dataLayoutSting.find("aos") != std::string::npos) {
+  if (dataLayoutSting.find("aos") != std::string::npos or
+      dataLayoutSting.find("array-of-struct") != std::string::npos) {
     dataLayout = autopas::DataLayoutOption::aos;
-  } else if (dataLayoutSting.find("soa") != std::string::npos) {
+  } else if (dataLayoutSting.find("soa") != std::string::npos or
+             dataLayoutSting.find("-of-array") != std::string::npos) {
     dataLayout = autopas::DataLayoutOption::soa;
   }
   return dataLayout;
 }
-}  // namespace StringParser
+}  // namespace StringUtils
 }  // namespace utils
 }  // namespace autopas
