@@ -45,41 +45,66 @@ TEST_F(CellBlock3DTest, test3x3x3) {
   }
 }
 
-TEST_F(CellBlock3DTest, testBoundaries) {
-  std::array<double, 3> position{0, 0, 0};
-  for (int x_ind : {0, 1}) {
-    for (int y_ind : {0, 1}) {
-      for (int z_ind : {0, 1}) {
-        position = {x_ind * 10., y_ind * 10., z_ind * 10.};
+void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
+                  std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
+  std::array<std::array<double, 4>, 3> possibleShifts = {};
+  for (unsigned short dim = 0; dim < 3; ++dim) {
+    possibleShifts[dim] = {std::nextafter(boxMin[dim], -1.),  // slightly below boxmin (outside)
+                           boxMin[dim],                       // at boxmin (inside)
+                           std::nextafter(boxMax[dim], -1.),  // slightly below boxmax (inside)
+                           boxMax[dim]};                      // boxmax (outside)
+  }
+  std::array<size_t, 3> cellsPerDimWithHalo = cellBlock.getCellsPerDimensionWithHalo();
+  std::array<size_t, 3> ind = {};
+  for (ind[0] = 0; ind[0] < 4; ++ind[0]) {
+    for (ind[1] = 0; ind[1] < 4; ++ind[1]) {
+      for (ind[2] = 0; ind[2] < 4; ++ind[2]) {
+        std::array<double, 3> position = {possibleShifts[0][ind[0]], possibleShifts[1][ind[1]],
+                                          possibleShifts[2][ind[2]]};
+        auto pos = cellBlock.get3DIndexOfPosition(position);
 
-        auto pos = _cells_1x1x1.get3DIndexOfPosition(position);
-
-        ASSERT_EQ(pos[0], 1 * x_ind + 1);
-        ASSERT_EQ(pos[1], 1 * y_ind + 1);
-        ASSERT_EQ(pos[2], 1 * z_ind + 1);
-
-        pos = _cells_2x2x2.get3DIndexOfPosition(position);
-
-        ASSERT_EQ(pos[0], 2 * x_ind + 1);
-        ASSERT_EQ(pos[1], 2 * y_ind + 1);
-        ASSERT_EQ(pos[2], 2 * z_ind + 1);
-
-        pos = _cells_3x3x3.get3DIndexOfPosition(position);
-
-        ASSERT_EQ(pos[0], 3 * x_ind + 1);
-        ASSERT_EQ(pos[1], 3 * y_ind + 1);
-        ASSERT_EQ(pos[2], 3 * z_ind + 1);
-
-        position = {x_ind ? 1. : 2. / 3, y_ind * .125, z_ind * .125};
-
-        pos = _cells_11x4x4_nonZeroBoxMin.get3DIndexOfPosition(position);
-
-        ASSERT_EQ(pos[0], 11 * x_ind + 1);
-        ASSERT_EQ(pos[1], 4 * y_ind + 1);
-        ASSERT_EQ(pos[2], 4 * z_ind + 1);
+        for (int d = 0; d < 3; ++d) {
+          switch (ind[d]) {
+            case 0:
+              // slightly below boxmin (outside)
+              EXPECT_EQ(pos[d], 0) << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
+                                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
+              break;
+            case 1:
+              // at boxmin (inside)
+              EXPECT_EQ(pos[d], 1) << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
+                                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
+              break;
+            case 2:
+              // slightly below boxmax (inside)
+              EXPECT_EQ(pos[d], cellsPerDimWithHalo[d] - 2)
+                  << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
+                  << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
+              break;
+            case 3:
+              // boxmax (outside)
+              EXPECT_EQ(pos[d], cellsPerDimWithHalo[d] - 1)
+                  << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
+                  << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
+              break;
+            default: { FAIL(); }
+          }
+        }
       }
     }
   }
+}
+
+TEST_F(CellBlock3DTest, testBoundaries) {
+  testBoundary(_cells_1x1x1, {0., 0., 0.}, {10., 10., 10.});
+
+  testBoundary(_cells_2x2x2, {0., 0., 0.}, {10., 10., 10.});
+
+  testBoundary(_cells_3x3x3, {0., 0., 0.}, {10., 10., 10.});
+
+  testBoundary(_cells_11x4x4_nonZeroBoxMin, {2. / 3., 0., 0.}, {1., .125, .125});
+
+  testBoundary(_cells_19x19x19, {0., 0., 0.}, {58.5, 58.5, 58.5});
 }
 
 std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3> start, std::array<double, 3> dr,

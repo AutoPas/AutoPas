@@ -5,6 +5,7 @@
  */
 
 #include "MDFlexParser.h"
+#include "autopas/utils/StringUtils.h"
 
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
@@ -48,26 +49,11 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'c': {
-        // delete default argument
-        containerOptions.clear();
-        if (strArg.find("direct") != string::npos or strArg.find("ds") != string::npos) {
-          containerOptions.push_back(autopas::directSum);
-        }
-        if (strArg.find("linked") != string::npos or strArg.find("lc") != string::npos) {
-          containerOptions.push_back(autopas::linkedCells);
-        }
-        if (strArg.find("verlet") != string::npos or strArg.find("vl") != string::npos) {
-          containerOptions.push_back(autopas::verletLists);
-        }
-        if (strArg.find("vcells") != string::npos) {
-          containerOptions.push_back(autopas::verletListsCells);
-        }
-        if (strArg.find("vcluster") != string::npos) {
-          containerOptions.push_back(autopas::verletClusterLists);
-        }
+        // overwrite default argument
+        containerOptions = autopas::utils::StringUtils::parseContainerOptions(strArg, false);
         if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'vcells' or 'vcluster'!" << endl;
+          cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'VCells' or 'VCluster'!" << endl;
           displayHelp = true;
         }
         break;
@@ -82,11 +68,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'd': {
-        if (strArg.find("aos") != string::npos) {
-          dataLayoutOption = autopas::aos;
-        } else if (strArg.find("soa") != string::npos) {
-          dataLayoutOption = autopas::soa;
-        } else {
+        dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(strArg);
+        if (dataLayoutOption == autopas::DataLayoutOption(-1)) {
           cerr << "Unknown data layout : " << strArg << endl;
           cerr << "Please use 'AoS' or 'SoA'!" << endl;
           displayHelp = true;
@@ -152,13 +135,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'k': {
-        if (strArg.find("abs") != string::npos) {
-          containerSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
-        } else if (strArg.find("mea") != string::npos) {
-          containerSelectorStrategy = autopas::SelectorStrategy::fastestMean;
-        } else if (strArg.find("med") != string::npos) {
-          containerSelectorStrategy = autopas::SelectorStrategy::fastestMedian;
-        } else {
+        containerSelectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
+        if (containerSelectorStrategy == autopas::SelectorStrategy(-1)) {
           cerr << "Unknown Container Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
@@ -253,37 +231,17 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 't': {
-        traversalOptions.clear();
-        if (strArg.find("c08") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::c08);
-        }
-        if (strArg.find("c01") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::c01);
-        }
-        if (strArg.find("c18") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::c18);
-        }
-        if (strArg.find("sli") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::sliced);
-        }
-        if (strArg.find("dir") != string::npos) {
-          traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
-        }
+        traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal : " << strArg << endl;
-          cerr << "Please use 'c08', 'c01', 'c18' or 'sliced'!" << endl;
+          cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
           displayHelp = true;
         }
         break;
       }
       case 'T': {
-        if (strArg.find("abs") != string::npos) {
-          traversalSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
-        } else if (strArg.find("mea") != string::npos) {
-          traversalSelectorStrategy = autopas::SelectorStrategy::fastestMean;
-        } else if (strArg.find("med") != string::npos) {
-          traversalSelectorStrategy = autopas::SelectorStrategy::fastestMedian;
-        } else {
+        traversalSelectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
+        if (traversalSelectorStrategy == autopas::SelectorStrategy(-1)) {
           cerr << "Unknown Traversal Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
@@ -340,52 +298,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
-std::string selectorStrategyToString(autopas::SelectorStrategy selectorStrategy) {
-  std::string retString;
-  switch (selectorStrategy) {
-    case autopas::SelectorStrategy::fastestAbs: {
-      retString = "Fastest Absolute Value";
-      break;
-    }
-    case autopas::SelectorStrategy::fastestMean: {
-      retString = "Fastest Mean Value";
-      break;
-    }
-    case autopas::SelectorStrategy::fastestMedian: {
-      retString = "Fastest Median Value";
-      break;
-    }
-  }
-  return retString;
-}
-
 void MDFlexParser::printConfig() {
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
        << ":  ";
   for (auto &op : containerOptions) {
-    switch (op) {
-      case autopas::ContainerOptions::directSum: {
-        cout << "DirectSum, ";
-        break;
-      }
-      case autopas::ContainerOptions::linkedCells: {
-        cout << "LinkedCells, ";
-        break;
-      }
-      case autopas::ContainerOptions::verletLists: {
-        cout << "VerletLists, ";
-        break;
-      }
-      case autopas::ContainerOptions::verletListsCells: {
-        cout << "VerletListsCells, ";
-        break;
-      }
-      case autopas::ContainerOptions::verletClusterLists: {
-        cout << "VerletClusterLists, ";
-        break;
-      }
-    }
+    cout << autopas::utils::StringUtils::to_string(op) << ", ";
   }
   // deletes last comma
   cout << "\b\b  " << endl;
@@ -402,21 +320,11 @@ void MDFlexParser::printConfig() {
 
   if (containerOptions.size() > 1) {
     cout << setw(valueOffset) << left << "Container Selector Strategy"
-         << ":  " << selectorStrategyToString(containerSelectorStrategy) << endl;
+         << ":  " << autopas::utils::StringUtils::to_string(containerSelectorStrategy) << endl;
   }
 
   cout << setw(valueOffset) << left << "Data Layout"
-       << ":  ";
-  switch (dataLayoutOption) {
-    case autopas::DataLayoutOption::aos: {
-      cout << "Array-of-Structures" << endl;
-      break;
-    }
-    case autopas::DataLayoutOption::soa: {
-      cout << "Structure-of-Arrays" << endl;
-      break;
-    }
-  }
+       << ":  " << autopas::utils::StringUtils::to_string(dataLayoutOption) << endl;
 
   cout << setw(valueOffset) << left << "Functor"
        << ":  ";
@@ -473,37 +381,14 @@ void MDFlexParser::printConfig() {
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  ";
   for (auto &t : traversalOptions) {
-    switch (t) {
-      case autopas::TraversalOptions::c08: {
-        cout << "c08, ";
-        break;
-      }
-      case autopas::TraversalOptions::sliced: {
-        cout << "sliced, ";
-        break;
-      }
-      case autopas::TraversalOptions::c18: {
-        cout << "c18, ";
-        break;
-      }
-      case autopas::TraversalOptions::c01: {
-        cout << "c01, ";
-        break;
-      }
-      case autopas::TraversalOptions::directSumTraversal: {
-        cout << "direct sum, ";
-        break;
-      }
-      default:
-        break;
-    }
+    cout << autopas::utils::StringUtils::to_string(t) << ", ";
   }
   // deletes last comma
   cout << "\b\b  " << endl;
 
   if (traversalOptions.size() > 1) {
     cout << setw(valueOffset) << left << "Traversal Selector Strategy"
-         << ":  " << selectorStrategyToString(traversalSelectorStrategy) << endl;
+         << ":  " << autopas::utils::StringUtils::to_string(traversalSelectorStrategy) << endl;
   }
 
   cout << setw(valueOffset) << left << "Iterations"
@@ -560,4 +445,3 @@ autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 autopas::SelectorStrategy MDFlexParser::getTraversalSelectorStrategy() const { return traversalSelectorStrategy; }
 
 autopas::SelectorStrategy MDFlexParser::getContainerSelectorStrategy() const { return containerSelectorStrategy; }
-// spdlog::level::level_enum MDFlexParser::getLogLevel() const { return logLevel; }
