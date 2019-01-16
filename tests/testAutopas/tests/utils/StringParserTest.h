@@ -26,7 +26,7 @@ void testParseMultiple(const std::vector<T> &allOptions, const std::string &opti
                        std::function<std::vector<T>(const std::string &, bool)> &&parseFun) {
   auto parsedOptions = parseFun(optionsString, false);
 
-  EXPECT_THAT(parsedOptions, ::testing::ContainerEq(allOptions));
+  EXPECT_THAT(parsedOptions, ::testing::UnorderedElementsAreArray(allOptions));
 }
 
 /**
