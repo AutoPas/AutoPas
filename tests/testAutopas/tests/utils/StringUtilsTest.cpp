@@ -1,10 +1,10 @@
 /**
- * @file StringParserTest.cpp
+ * @file StringUtilsTest.cpp
  * @author F. Gratl
  * @date 1/15/19
  */
 
-#include "StringParserTest.h"
+#include "StringUtilsTest.h"
 
 TEST(StringParserTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOptions>(autopas::allTraversalOptions,

@@ -1,5 +1,5 @@
 /**
- * @file StringParser.h
+ * @file StringUtils.h
  * @author F. Gratl
  * @date 1/14/19
  */

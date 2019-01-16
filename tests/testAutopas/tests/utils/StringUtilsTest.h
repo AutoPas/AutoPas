@@ -1,5 +1,5 @@
 /**
- * @file StringParserTest.h
+ * @file StringUtilsTest.h
  * @author F. Gratl
  * @date 1/15/19
  */
@@ -12,7 +12,7 @@
 #include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 #include "autopas/utils/StringUtils.h"
 
-class StringParserTest : public AutoPasTestBase {};
+class StringUtilsTest : public AutoPasTestBase {};
 
 /**
  * Tests a parsing function which takes a string and returns a vector of values.
