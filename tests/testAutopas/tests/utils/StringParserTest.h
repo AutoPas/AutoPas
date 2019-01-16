@@ -49,3 +49,21 @@ void testParseSingle(const std::vector<T> &allOptions, const std::vector<std::st
 
   ASSERT_THAT(parsedOptions, ::testing::UnorderedElementsAreArray(allOptions));
 }
+
+/**
+ * Test to to_string function for a given list of options.
+ * @tparam T Type of the options to be tested.
+ * @param goodOptions Options expected to be printable.
+ * @param badOptions Options expected to return 'Unknown option'.
+ */
+template <class T>
+void testToString(const std::vector<T> &goodOptions, const std::vector<T> &badOptions) {
+  for (auto &op : goodOptions) {
+    std::string createdString = autopas::utils::StringUtils::to_string(op);
+    EXPECT_THAT(createdString, Not(::testing::HasSubstr("Unknown option")));
+  }
+  for (auto &op : badOptions) {
+    std::string createdString = autopas::utils::StringUtils::to_string(op);
+    EXPECT_THAT(createdString, ::testing::HasSubstr("Unknown option"));
+  }
+}
