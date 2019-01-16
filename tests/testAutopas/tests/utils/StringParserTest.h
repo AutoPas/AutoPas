@@ -10,7 +10,7 @@
 #include <functional>
 #include "AutoPasTestBase.h"
 #include "autopas/containers/cellPairTraversals/TraversalInterface.h"
-#include "autopas/utils/StringParser.h"
+#include "autopas/utils/StringUtils.h"
 
 class StringParserTest : public AutoPasTestBase {};
 

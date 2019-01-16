@@ -5,7 +5,7 @@
  */
 
 #include "MDFlexParser.h"
-#include "autopas/utils/StringParser.h"
+#include "autopas/utils/StringUtils.h"
 
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
