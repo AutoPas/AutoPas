@@ -188,7 +188,7 @@ TEST_F(CellBlock3DTest, testCloseBoundaries19) {
 
         for (int d = 0; d < 3; ++d) {
           EXPECT_EQ(pos[d], shift[d] == -1 ? 0 : 18 * shift[d] + 1)
-                    << " for d = " << d << ", shift[d] = " << shift[d] << ", position[d] = " << position[d] << ".";
+              << " for d = " << d << ", shift[d] = " << shift[d] << ", position[d] = " << position[d] << ".";
         }
       }
     }
