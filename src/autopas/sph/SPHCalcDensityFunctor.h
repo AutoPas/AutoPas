@@ -177,8 +177,7 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
 
-    size_t numParticlesi = soa.getNumParticles();
-    for (unsigned int i = 0; i < numParticlesi; ++i) {
+    for (unsigned int i = iFrom; i < iTo; ++i) {
       double densacc = 0;
       auto &currentList = neighborList[i];
       size_t listSize = currentList.size();

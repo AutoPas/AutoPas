@@ -56,8 +56,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _duplicatedCalculations{duplicatedCalculation},
-        _lowCorner{lowCorner},
-        _highCorner{highCorner},
+        _lowCorner(lowCorner),
+        _highCorner(highCorner),
         _postProcessed{false} {
     if (calculateGlobals and duplicatedCalculation) {
       if (lowCorner == highCorner) {

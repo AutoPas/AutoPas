@@ -6,17 +6,22 @@
 
 #pragma once
 
-#include <autopas/containers/cellPairTraversals/DirectSumTraversal.h>
 #include <autopas/containers/cellPairTraversals/DummyTraversal.h>
+#include <autopas/containers/directSum/DirectSumTraversal.h>
 #include <array>
 #include <numeric>
 #include <unordered_map>
 #include <vector>
-#include "autopas/containers/cellPairTraversals/C08Traversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/DummyTraversal.h"
-#include "autopas/containers/cellPairTraversals/SlicedTraversal.h"
+#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
+#include "autopas/containers/linkedCells/traversals/C01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C18Traversal.h"
+#include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Logger.h"
@@ -41,12 +46,6 @@ enum SelectorStrategy {
    */
   fastestMedian
 };
-
-/**
- * Provides a way to iterate over the possible choices of TraversalOption.
- */
-static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08, TraversalOptions::sliced,
-                                                            TraversalOptions::directSumTraversal};
 
 /**
  * Selector for a container traversal.
@@ -125,8 +124,7 @@ class TraversalSelector {
   void findFastestMedianTraversal();
 
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  std::vector<std::unique_ptr<CellPairTraversalInterface>> generateAllAllowedTraversals(
-      PairwiseFunctor &pairwiseFunctor);
+  std::vector<std::unique_ptr<TraversalInterface>> generateAllAllowedTraversals(PairwiseFunctor &pairwiseFunctor);
 
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> generateTraversal(TraversalOptions traversalType,
@@ -151,9 +149,9 @@ class TraversalSelector {
 
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-std::vector<std::unique_ptr<CellPairTraversalInterface>> TraversalSelector<ParticleCell>::generateAllAllowedTraversals(
+std::vector<std::unique_ptr<TraversalInterface>> TraversalSelector<ParticleCell>::generateAllAllowedTraversals(
     PairwiseFunctor &pairwiseFunctor) {
-  std::vector<std::unique_ptr<CellPairTraversalInterface>> traversals;
+  std::vector<std::unique_ptr<TraversalInterface>> traversals;
 
   for (auto &option : _allowedTraversalOptions) {
     traversals.push_back(generateTraversal<PairwiseFunctor, useSoA, useNewton3>(option, pairwiseFunctor));
@@ -183,6 +181,31 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     case TraversalOptions::sliced: {
       traversal =
           std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::c18: {
+      traversal =
+          std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::c01: {
+      traversal =
+          std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::slicedVerlet: {
+      traversal = std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+          _dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::c18Verlet: {
+      traversal = std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+          _dims, &pairwiseFunctor);
+      break;
+    }
+    case TraversalOptions::c01Verlet: {
+      traversal = std::make_unique<C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+          _dims, &pairwiseFunctor);
       break;
     }
     case TraversalOptions::dummyTraversal: {
@@ -241,6 +264,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   while (not traversalIsApplicable) {
     // if no measurements are in yet _optimalTraversalOption is not initialized
     if (not _isTuning) {
+      // no traversals are allowed
+      if (_allowedTraversalOptions.size() == 0) {
+        return std::unique_ptr<CellPairTraversal<ParticleCell>>(nullptr);
+      }
+
       _optimalTraversalOption = _allowedTraversalOptions.begin().operator*();
       _isTuning = true;
     } else {
