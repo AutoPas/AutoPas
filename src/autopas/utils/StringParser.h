@@ -150,6 +150,7 @@ static std::vector<std::string> tokenize(const std::string &searchString, const 
 
 /**
  * Converts a string of options to a vector of enums. The options are expected to be lower case.
+ * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
  * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced
  *
@@ -193,6 +194,7 @@ static std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::s
 
 /**
  * Converts a string of options to a vector of enums. The options are expected to be lower case.
+ * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
  * Possible options: directSum, linkedCells, verletLists, vcells, vcluster
  *
