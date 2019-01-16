@@ -154,9 +154,12 @@ static std::vector<std::string> tokenize(const std::string &searchString, const 
  * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced
  *
  * @param traversalOptionsString String containing traversal options.
+ * @param ignoreUnknownOptions If set to false, a 'autopas::TraversalOptions(-1)' will be inserted in the return vector
+ * for each not parsable word.
  * @return Vector of TraversalOption enums. If no valid option was found the empty vector is returned.
  */
-static std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::string &traversalOptionsString) {
+static std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::string &traversalOptionsString,
+                                                                    bool ignoreUnknownOptions = true) {
   std::vector<autopas::TraversalOptions> traversalOptions;
 
   auto words = tokenize(traversalOptionsString, delimiters);
@@ -164,23 +167,25 @@ static std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::s
   for (auto &word : words) {
     if (word.find("01") != std::string::npos) {
       if (word.find('v') != std::string::npos)
-        traversalOptions.push_back(autopas::TraversalOptions::c01Verlet);
+        traversalOptions.emplace_back(autopas::TraversalOptions::c01Verlet);
       else
-        traversalOptions.push_back(autopas::TraversalOptions::c01);
+        traversalOptions.emplace_back(autopas::TraversalOptions::c01);
     } else if (word.find("c08") != std::string::npos) {
-      traversalOptions.push_back(autopas::TraversalOptions::c08);
+      traversalOptions.emplace_back(autopas::TraversalOptions::c08);
     } else if (word.find("18") != std::string::npos) {
       if (word.find('v') != std::string::npos)
-        traversalOptions.push_back(autopas::TraversalOptions::c18Verlet);
+        traversalOptions.emplace_back(autopas::TraversalOptions::c18Verlet);
       else
-        traversalOptions.push_back(autopas::TraversalOptions::c18);
+        traversalOptions.emplace_back(autopas::TraversalOptions::c18);
     } else if (word.find("dir") != std::string::npos) {
-      traversalOptions.push_back(autopas::TraversalOptions::directSumTraversal);
+      traversalOptions.emplace_back(autopas::TraversalOptions::directSumTraversal);
     } else if (word.find("sli") != std::string::npos) {
       if (word.find('v') != std::string::npos)
-        traversalOptions.push_back(autopas::TraversalOptions::slicedVerlet);
+        traversalOptions.emplace_back(autopas::TraversalOptions::slicedVerlet);
       else
-        traversalOptions.push_back(autopas::TraversalOptions::sliced);
+        traversalOptions.emplace_back(autopas::TraversalOptions::sliced);
+    } else if (not ignoreUnknownOptions) {
+      traversalOptions.emplace_back(autopas::TraversalOptions(-1));
     }
   }
   return traversalOptions;
@@ -192,26 +197,31 @@ static std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::s
  * Possible options: directSum, linkedCells, verletLists, vcells, vcluster
  *
  * @param containerOptionsString String containing container options.
+ * @param ignoreUnknownOptions If set to false, a 'autopas::ContainerOptions(-1)' will be inserted in the return vector
+ * for each not parsable word.
  * @return Vector of ContainerOption enums. If no valid option was found the empty vector is returned.
  */
-static std::vector<autopas::ContainerOptions> parseContainerOptions(const std::string &containerOptionsString) {
+static std::vector<autopas::ContainerOptions> parseContainerOptions(const std::string &containerOptionsString,
+                                                                    bool ignoreUnknownOptions = true) {
   std::vector<autopas::ContainerOptions> containerOptions;
 
   auto words = tokenize(containerOptionsString, delimiters);
 
   for (auto &word : words) {
     if (word.find("dir") != std::string::npos or word.find("ds") != std::string::npos) {
-      containerOptions.push_back(autopas::ContainerOptions::directSum);
+      containerOptions.emplace_back(autopas::ContainerOptions::directSum);
     } else if (word.find("linked") != std::string::npos or word.find("lc") != std::string::npos) {
-      containerOptions.push_back(autopas::ContainerOptions::linkedCells);
+      containerOptions.emplace_back(autopas::ContainerOptions::linkedCells);
     } else if (word.find('v') != std::string::npos) {
       if (word.find("cl") != std::string::npos) {
-        containerOptions.push_back(autopas::ContainerOptions::verletClusterLists);
+        containerOptions.emplace_back(autopas::ContainerOptions::verletClusterLists);
       } else if (word.find("cel") != std::string::npos) {
-        containerOptions.push_back(autopas::ContainerOptions::verletListsCells);
+        containerOptions.emplace_back(autopas::ContainerOptions::verletListsCells);
       } else {
-        containerOptions.push_back(autopas::ContainerOptions::verletLists);
+        containerOptions.emplace_back(autopas::ContainerOptions::verletLists);
       }
+    } else if (not ignoreUnknownOptions) {
+      containerOptions.emplace_back(autopas::ContainerOptions(-1));
     }
   }
 
