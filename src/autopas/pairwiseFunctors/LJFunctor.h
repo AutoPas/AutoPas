@@ -345,258 +345,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
   }
 
-  template <bool newton3, bool duplicatedCalculations>
-  void SoAFunctorImpl(SoA<SoAArraysType> &soa,
-                      const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                      size_t iFrom, size_t iTo) {
-    auto numParts = soa.getNumParticles();
-    AutoPasLog(debug, "SoAFunctorVerlet: {}", soa.getNumParticles());
-
-    if (numParts == 0) return;
-
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
-
-    const std::array<double, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
-    const std::array<double, 3> highCorner = {_highCorner[0], _highCorner[1], _highCorner[2]};
-
-    double upotSum = 0.;
-    double virialSumX = 0.;
-    double virialSumY = 0.;
-    double virialSumZ = 0.;
-
-    for (size_t i = iFrom; i < iTo; ++i) {
-      double fxacc = 0;
-      double fyacc = 0;
-      double fzacc = 0;
-      const size_t listSizeI = neighborList[i].size();
-      const size_t *const __restrict__ currentList = neighborList[i].data();
-
-      // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
-      bool inbox1;
-      double inbox1Mul = 0.;
-      if (duplicatedCalculations) {  // only for duplicated calculations we need this value
-        inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, lowCorner, highCorner);
-        inbox1Mul = inbox1 ? 1. : 0.;
-        if (newton3) {
-          inbox1Mul *= 0.5;
-        }
-      }
-
-      // this is a magic number, that should correspond to at least
-      // vectorization width*N have testet multiple sizes:
-      // 4: does not give a speedup, slower than original AoSFunctor
-      // 8: small speedup compared to AoS
-      // 12: highest speedup compared to Aos
-      // 16: smaller speedup
-      // in theory this is a variable, we could auto-tune over...
-#ifdef __AVX512F__
-      // use a multiple of 8 for avx
-      const size_t vecsize = 16;
-#else
-      // for everything else 12 is faster
-      const size_t vecsize = 12;
-#endif
-      size_t joff = 0;
-
-      // if the size of the verlet list is larger than the given size vecsize,
-      // we will use a vectorized version.
-      if (listSizeI >= vecsize) {
-        alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
-        // broadcast of the position of particle i
-        for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-          xtmp[tmpj] = xptr[i];
-          ytmp[tmpj] = yptr[i];
-          ztmp[tmpj] = zptr[i];
-        }
-        // loop over the verlet list from 0 to x*vecsize
-        for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-          // in each iteration we calculate the interactions of particle i with
-          // vecsize particles in the neighborlist of particle i starting at
-          // particle joff
-
-          // gather position of particle j
-#pragma omp simd safelen(vecsize)
-          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-            xArr[tmpj] = xptr[currentList[joff + tmpj]];
-            yArr[tmpj] = yptr[currentList[joff + tmpj]];
-            zArr[tmpj] = zptr[currentList[joff + tmpj]];
-          }
-          // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
-          for (size_t j = 0; j < vecsize; j++) {
-            // const size_t j = currentList[jNeighIndex];
-
-            const double drx = xtmp[j] - xArr[j];
-            const double dry = ytmp[j] - yArr[j];
-            const double drz = ztmp[j] - zArr[j];
-
-            const double drx2 = drx * drx;
-            const double dry2 = dry * dry;
-            const double drz2 = drz * drz;
-
-            const double dr2 = drx2 + dry2 + drz2;
-
-            const double mask = (dr2 <= cutoffsquare) ? 1. : 0.;
-
-            const double invdr2 = 1. / dr2 * mask;
-            const double lj2 = sigmasquare * invdr2;
-            const double lj6 = lj2 * lj2 * lj2;
-            const double lj12 = lj6 * lj6;
-            const double lj12m6 = lj12 - lj6;
-            const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-
-            const double fx = drx * fac;
-            const double fy = dry * fac;
-            const double fz = drz * fac;
-
-            fxacc += fx;
-            fyacc += fy;
-            fzacc += fz;
-            if (newton3) {
-              fxArr[j] = fx;
-              fyArr[j] = fy;
-              fzArr[j] = fz;
-            }
-            if (calculateGlobals) {
-              double virialx = drx * fx;
-              double virialy = dry * fy;
-              double virialz = drz * fz;
-              double upot = (epsilon24 * lj12m6 + shift6) * mask;
-
-              if (duplicatedCalculations) {
-                // for non-newton3 the division is in the post-processing step.
-                double inbox2Mul = 0.;
-                if (newton3) {
-                  upot *= 0.5;
-                  virialx *= 0.5;
-                  virialy *= 0.5;
-                  virialz *= 0.5;
-                  bool inbox2 = xArr[j] >= lowCorner[0] and xArr[j] < highCorner[0] and yArr[j] >= lowCorner[1] and
-                                yArr[j] < highCorner[1] and zArr[j] >= lowCorner[2] and zArr[j] < highCorner[2];
-                  inbox2Mul = inbox2 ? 0.5 : 0.;
-                }
-                double inboxMul = inbox1Mul + inbox2Mul;
-                upotSum += upot * inboxMul;
-                virialSumX += virialx * inboxMul;
-                virialSumY += virialy * inboxMul;
-                virialSumZ += virialz * inboxMul;
-
-              } else {
-                // for non-newton3 we divide by 2 only in the postprocess step!
-                upotSum += upot;
-                virialSumX += virialx;
-                virialSumY += virialy;
-                virialSumZ += virialz;
-              }
-            }
-          }
-          // scatter the forces to where they belong, this is only needed for newton3
-          if (newton3) {
-#pragma omp simd safelen(vecsize)
-            for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-              const size_t j = currentList[joff + tmpj];
-              fxptr[j] -= fxArr[tmpj];
-              fyptr[j] -= fyArr[tmpj];
-              fzptr[j] -= fzArr[tmpj];
-            }
-          }
-        }
-      }
-      // this loop goes over the remainder and uses no optimizations
-      for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
-        size_t j = neighborList[i][jNeighIndex];
-        if (i == j) continue;
-
-        const double drx = xptr[i] - xptr[j];
-        const double dry = yptr[i] - yptr[j];
-        const double drz = zptr[i] - zptr[j];
-
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
-
-        const double dr2 = drx2 + dry2 + drz2;
-
-        if (dr2 > cutoffsquare) continue;
-
-        const double invdr2 = 1. / dr2;
-        const double lj2 = sigmasquare * invdr2;
-        const double lj6 = lj2 * lj2 * lj2;
-        const double lj12 = lj6 * lj6;
-        const double lj12m6 = lj12 - lj6;
-        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-
-        const double fx = drx * fac;
-        const double fy = dry * fac;
-        const double fz = drz * fac;
-
-        fxacc += fx;
-        fyacc += fy;
-        fzacc += fz;
-        if (newton3) {
-          fxptr[j] -= fx;
-          fyptr[j] -= fy;
-          fzptr[j] -= fz;
-        }
-        if (calculateGlobals) {
-          double virialx = drx * fx;
-          double virialy = dry * fy;
-          double virialz = drz * fz;
-          double upot = (epsilon24 * lj12m6 + shift6);
-
-          if (duplicatedCalculations) {
-            // for non-newton3 the division is in the post-processing step.
-            if (newton3) {
-              upot *= 0.5;
-              virialx *= 0.5;
-              virialy *= 0.5;
-              virialz *= 0.5;
-            }
-            if (inbox1) {
-              upotSum += upot;
-              virialSumX += virialx;
-              virialSumY += virialy;
-              virialSumZ += virialz;
-            }
-            // for non-newton3 the second particle will be considered in a separate calculation
-            if (newton3 and autopas::utils::inBox({xptr[j], yptr[j], zptr[j]}, lowCorner, highCorner)) {
-              upotSum += upot;
-              virialSumX += virialx;
-              virialSumY += virialy;
-              virialSumZ += virialz;
-            }
-          } else {
-            // for non-newton3 we divide by 2 only in the postprocess step!
-            upotSum += upot;
-            virialSumX += virialx;
-            virialSumY += virialy;
-            virialSumZ += virialz;
-          }
-        }
-      }
-
-      fxptr[i] += fxacc;
-      fyptr[i] += fyacc;
-      fzptr[i] += fzacc;
-    }
-
-    if (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
-
-      _aosThreadData[threadnum].upotSum += upotSum;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
-    }
-  }
   // clang-format off
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
@@ -765,6 +513,260 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
  private:
+
+  template <bool newton3, bool duplicatedCalculations>
+  void SoAFunctorImpl(SoA<SoAArraysType> &soa,
+                      const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
+                      size_t iFrom, size_t iTo) {
+    auto numParts = soa.getNumParticles();
+    AutoPasLog(debug, "SoAFunctorVerlet: {}", soa.getNumParticles());
+
+    if (numParts == 0) return;
+
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+
+    const std::array<double, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
+    const std::array<double, 3> highCorner = {_highCorner[0], _highCorner[1], _highCorner[2]};
+
+    double upotSum = 0.;
+    double virialSumX = 0.;
+    double virialSumY = 0.;
+    double virialSumZ = 0.;
+
+    for (size_t i = iFrom; i < iTo; ++i) {
+      double fxacc = 0;
+      double fyacc = 0;
+      double fzacc = 0;
+      const size_t listSizeI = neighborList[i].size();
+      const size_t *const __restrict__ currentList = neighborList[i].data();
+
+      // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
+      bool inbox1;
+      double inbox1Mul = 0.;
+      if (duplicatedCalculations) {  // only for duplicated calculations we need this value
+        inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, lowCorner, highCorner);
+        inbox1Mul = inbox1 ? 1. : 0.;
+        if (newton3) {
+          inbox1Mul *= 0.5;
+        }
+      }
+
+      // this is a magic number, that should correspond to at least
+      // vectorization width*N have testet multiple sizes:
+      // 4: does not give a speedup, slower than original AoSFunctor
+      // 8: small speedup compared to AoS
+      // 12: highest speedup compared to Aos
+      // 16: smaller speedup
+      // in theory this is a variable, we could auto-tune over...
+#ifdef __AVX512F__
+      // use a multiple of 8 for avx
+      const size_t vecsize = 16;
+#else
+      // for everything else 12 is faster
+      const size_t vecsize = 12;
+#endif
+      size_t joff = 0;
+
+      // if the size of the verlet list is larger than the given size vecsize,
+      // we will use a vectorized version.
+      if (listSizeI >= vecsize) {
+        alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
+        // broadcast of the position of particle i
+        for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+          xtmp[tmpj] = xptr[i];
+          ytmp[tmpj] = yptr[i];
+          ztmp[tmpj] = zptr[i];
+        }
+        // loop over the verlet list from 0 to x*vecsize
+        for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
+          // in each iteration we calculate the interactions of particle i with
+          // vecsize particles in the neighborlist of particle i starting at
+          // particle joff
+
+          // gather position of particle j
+#pragma omp simd safelen(vecsize)
+          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+            xArr[tmpj] = xptr[currentList[joff + tmpj]];
+            yArr[tmpj] = yptr[currentList[joff + tmpj]];
+            zArr[tmpj] = zptr[currentList[joff + tmpj]];
+          }
+          // do omp simd with reduction of the interaction
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
+          for (size_t j = 0; j < vecsize; j++) {
+            // const size_t j = currentList[jNeighIndex];
+
+            const double drx = xtmp[j] - xArr[j];
+            const double dry = ytmp[j] - yArr[j];
+            const double drz = ztmp[j] - zArr[j];
+
+            const double drx2 = drx * drx;
+            const double dry2 = dry * dry;
+            const double drz2 = drz * drz;
+
+            const double dr2 = drx2 + dry2 + drz2;
+
+            const double mask = (dr2 <= cutoffsquare) ? 1. : 0.;
+
+            const double invdr2 = 1. / dr2 * mask;
+            const double lj2 = sigmasquare * invdr2;
+            const double lj6 = lj2 * lj2 * lj2;
+            const double lj12 = lj6 * lj6;
+            const double lj12m6 = lj12 - lj6;
+            const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+
+            const double fx = drx * fac;
+            const double fy = dry * fac;
+            const double fz = drz * fac;
+
+            fxacc += fx;
+            fyacc += fy;
+            fzacc += fz;
+            if (newton3) {
+              fxArr[j] = fx;
+              fyArr[j] = fy;
+              fzArr[j] = fz;
+            }
+            if (calculateGlobals) {
+              double virialx = drx * fx;
+              double virialy = dry * fy;
+              double virialz = drz * fz;
+              double upot = (epsilon24 * lj12m6 + shift6) * mask;
+
+              if (duplicatedCalculations) {
+                // for non-newton3 the division is in the post-processing step.
+                double inbox2Mul = 0.;
+                if (newton3) {
+                  upot *= 0.5;
+                  virialx *= 0.5;
+                  virialy *= 0.5;
+                  virialz *= 0.5;
+                  bool inbox2 = xArr[j] >= lowCorner[0] and xArr[j] < highCorner[0] and yArr[j] >= lowCorner[1] and
+                      yArr[j] < highCorner[1] and zArr[j] >= lowCorner[2] and zArr[j] < highCorner[2];
+                  inbox2Mul = inbox2 ? 0.5 : 0.;
+                }
+                double inboxMul = inbox1Mul + inbox2Mul;
+                upotSum += upot * inboxMul;
+                virialSumX += virialx * inboxMul;
+                virialSumY += virialy * inboxMul;
+                virialSumZ += virialz * inboxMul;
+
+              } else {
+                // for non-newton3 we divide by 2 only in the postprocess step!
+                upotSum += upot;
+                virialSumX += virialx;
+                virialSumY += virialy;
+                virialSumZ += virialz;
+              }
+            }
+          }
+          // scatter the forces to where they belong, this is only needed for newton3
+          if (newton3) {
+#pragma omp simd safelen(vecsize)
+            for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+              const size_t j = currentList[joff + tmpj];
+              fxptr[j] -= fxArr[tmpj];
+              fyptr[j] -= fyArr[tmpj];
+              fzptr[j] -= fzArr[tmpj];
+            }
+          }
+        }
+      }
+      // this loop goes over the remainder and uses no optimizations
+      for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
+        size_t j = neighborList[i][jNeighIndex];
+        if (i == j) continue;
+
+        const double drx = xptr[i] - xptr[j];
+        const double dry = yptr[i] - yptr[j];
+        const double drz = zptr[i] - zptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 > cutoffsquare) continue;
+
+        const double invdr2 = 1. / dr2;
+        const double lj2 = sigmasquare * invdr2;
+        const double lj6 = lj2 * lj2 * lj2;
+        const double lj12 = lj6 * lj6;
+        const double lj12m6 = lj12 - lj6;
+        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+
+        const double fx = drx * fac;
+        const double fy = dry * fac;
+        const double fz = drz * fac;
+
+        fxacc += fx;
+        fyacc += fy;
+        fzacc += fz;
+        if (newton3) {
+          fxptr[j] -= fx;
+          fyptr[j] -= fy;
+          fzptr[j] -= fz;
+        }
+        if (calculateGlobals) {
+          double virialx = drx * fx;
+          double virialy = dry * fy;
+          double virialz = drz * fz;
+          double upot = (epsilon24 * lj12m6 + shift6);
+
+          if (duplicatedCalculations) {
+            // for non-newton3 the division is in the post-processing step.
+            if (newton3) {
+              upot *= 0.5;
+              virialx *= 0.5;
+              virialy *= 0.5;
+              virialz *= 0.5;
+            }
+            if (inbox1) {
+              upotSum += upot;
+              virialSumX += virialx;
+              virialSumY += virialy;
+              virialSumZ += virialz;
+            }
+            // for non-newton3 the second particle will be considered in a separate calculation
+            if (newton3 and autopas::utils::inBox({xptr[j], yptr[j], zptr[j]}, lowCorner, highCorner)) {
+              upotSum += upot;
+              virialSumX += virialx;
+              virialSumY += virialy;
+              virialSumZ += virialz;
+            }
+          } else {
+            // for non-newton3 we divide by 2 only in the postprocess step!
+            upotSum += upot;
+            virialSumX += virialx;
+            virialSumY += virialy;
+            virialSumZ += virialz;
+          }
+        }
+      }
+
+      fxptr[i] += fxacc;
+      fyptr[i] += fyacc;
+      fzptr[i] += fzacc;
+    }
+
+    if (calculateGlobals) {
+      const int threadnum = autopas_get_thread_num();
+
+      _aosThreadData[threadnum].upotSum += upotSum;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+    }
+  }
+
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
