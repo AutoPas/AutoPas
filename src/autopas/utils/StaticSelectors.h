@@ -19,14 +19,14 @@ namespace autopas {
  *
  * @tparam ContainerT
  * @tparam FunctionType
- * @param containerI The container to be used.
+ * @param container The container to be used.
  * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
  * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
  */
 template <typename ContainerT, typename FunctionType>
-void withStaticContainerType(ContainerT &containerI, FunctionType &&function) {
-  auto container_ptr = containerI.get();
-  switch (containerI->getContainerType()) {
+void withStaticContainerType(ContainerT &container, FunctionType &&function) {
+  auto container_ptr = container.get();
+  switch (container->getContainerType()) {
     case ContainerOptions::directSum:
       function(
           dynamic_cast<autopas::DirectSum<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,
