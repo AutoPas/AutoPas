@@ -141,7 +141,9 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
                                                                  _verletRebuildFrequency);
       break;
     }
-    default: { AutoPasLog(warn, "Container type {} is not a known type!", containerChoice); }
+    default: {
+      AutoPasLog(warn, "Container type {} is not a known type!", utils::StringUtils::to_string(containerChoice));
+    }
   }
 
   // copy particles so they do not get lost when container is switched
@@ -179,7 +181,7 @@ ContainerSelector<Particle, ParticleCell>::selectNextContainer() {
     nextContainerType = *containerTypeIter;
   }
   _optimalContainer = std::move(generateContainer(nextContainerType));
-  AutoPasLog(debug, "Testing Container {}", nextContainerType);
+  AutoPasLog(debug, "Testing Container {}", utils::StringUtils::to_string(nextContainerType));
 
   return _optimalContainer;
 }
@@ -198,7 +200,7 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
   long optimalContainerTime = std::numeric_limits<long>::max();
   AutoPasLog(debug, "ContainerSelector: Collected container times:");
   for (auto &&c : _containerTimes) {
-    AutoPasLog(debug, "Container {} took {} nanoseconds:", c.first, c.second);
+    AutoPasLog(debug, "Container {} took {} nanoseconds:", utils::StringUtils::to_string(c.first), c.second);
     if (c.second < optimalContainerTime) {
       optimalContainerOption = c.first;
       optimalContainerTime = c.second;
@@ -216,7 +218,7 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
   if (_optimalContainer == nullptr || _optimalContainer->getContainerType() != optimalContainerOption) {
     _optimalContainer = std::move(generateContainer(optimalContainerOption));
   }
-  AutoPasLog(debug, "Selected container {}", _optimalContainer->getContainerType());
+  AutoPasLog(debug, "Selected container {}", utils::StringUtils::to_string(_optimalContainer->getContainerType()));
   return _optimalContainer;
 }
 

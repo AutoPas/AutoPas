@@ -182,7 +182,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   }
 
   auto container = getContainer();
-  AutoPasLog(debug, "Using container {}", container->getContainerType());
+  AutoPasLog(debug, "Using container {}", utils::StringUtils::to_string(container->getContainerType()));
 
   TraversalSelector<ParticleCell> &traversalSelector = _traversalSelectors[container->getContainerType()];
   auto traversal = traversalSelector.template getOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(*f);
