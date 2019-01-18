@@ -17,10 +17,6 @@
 
 namespace autopas {
 
-/**
- * Provides a way to iterate over the possible choices of data layouts.
- */
-static std::vector<DataLayoutOption> allDataLayoutOptions = {DataLayoutOption::aos, DataLayoutOption::soa};
 
 /**
  * Possible choices for the auto tuner.

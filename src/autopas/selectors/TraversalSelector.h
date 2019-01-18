@@ -31,11 +31,6 @@
 namespace autopas {
 
 /**
- * Provides a way to iterate over the possible choices of selector strategies.
- */
-static std::vector<SelectorStrategy> allSelectorStrategies = {
-    SelectorStrategy::fastestAbs, SelectorStrategy::fastestMean, SelectorStrategy::fastestMedian};
-/**
  * Selector for a container traversal.
  * @tparam ParticleCell
  */

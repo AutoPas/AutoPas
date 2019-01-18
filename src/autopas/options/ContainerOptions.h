@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <vector>
+
 namespace autopas {
 
 /**
@@ -17,6 +19,17 @@ enum ContainerOptions {
   verletLists = 2,
   verletListsCells = 3,
   verletClusterLists = 4,
+};
+
+/**
+ * Provides a way to iterate over the possible choices of ContainerOption.
+ */
+static const std::vector<ContainerOptions> allContainerOptions = {
+    ContainerOptions::directSum,
+    ContainerOptions::linkedCells,
+    ContainerOptions::verletLists,
+    ContainerOptions::verletListsCells,
+    ContainerOptions::verletClusterLists,
 };
 
 }  // namespace autopas

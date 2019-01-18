@@ -11,18 +11,6 @@
 namespace autopas {
 
 /**
- * Provides a way to iterate over the possible choices of TraversalOption.
- */
-static std::vector<TraversalOptions> allTraversalOptions = {TraversalOptions::c08,
-                                                            TraversalOptions::sliced,
-                                                            TraversalOptions::c18,
-                                                            TraversalOptions::c01,
-                                                            TraversalOptions::directSumTraversal,
-                                                            TraversalOptions::slicedVerlet,
-                                                            TraversalOptions::c18Verlet,
-                                                            TraversalOptions::c01Verlet};
-
-/**
  * This interface serves as a common parent class for all cell pair traversals.
  */
 class TraversalInterface {
