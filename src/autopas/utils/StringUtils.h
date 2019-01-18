@@ -8,9 +8,10 @@
 
 #include <string>
 #include <vector>
-#include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
-#include "autopas/selectors/AutoTuner.h"
+#include "autopas/options/ContainerOptions.h"
+#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/SelectorStrategies.h"
+#include "autopas/options/TraversalOptions.h"
 
 namespace autopas {
 namespace utils {
@@ -24,7 +25,7 @@ namespace StringUtils {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-static std::string to_string(autopas::SelectorStrategy option) {
+inline std::string to_string(autopas::SelectorStrategy option) {
   switch (option) {
     case autopas::SelectorStrategy::fastestAbs: {
       return "Fastest-Absolute-Value";
@@ -45,7 +46,7 @@ static std::string to_string(autopas::SelectorStrategy option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-static std::string to_string(DataLayoutOption option) {
+inline std::string to_string(DataLayoutOption option) {
   switch (option) {
     case autopas::DataLayoutOption::aos: {
       return "Array-of-Structures";
@@ -63,7 +64,7 @@ static std::string to_string(DataLayoutOption option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-static std::string to_string(ContainerOptions option) {
+inline std::string to_string(ContainerOptions option) {
   switch (option) {
     case autopas::ContainerOptions::directSum: {
       return "DirectSum";
@@ -90,7 +91,7 @@ static std::string to_string(ContainerOptions option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-static std::string to_string(TraversalOptions option) {
+inline std::string to_string(TraversalOptions option) {
   switch (option) {
     case autopas::TraversalOptions::dummyTraversal: {
       return "dummyTraversal";
@@ -135,7 +136,7 @@ constexpr char delimiters[] = " ,;|/";
  * @param delimiters
  * @return Vector of substrings.
  */
-static std::vector<std::string> tokenize(const std::string &searchString, const std::string &delimiters) {
+inline std::vector<std::string> tokenize(const std::string &searchString, const std::string &delimiters) {
   std::vector<std::string> wordVector;
 
   std::size_t prev = 0, pos;
@@ -159,7 +160,7 @@ static std::vector<std::string> tokenize(const std::string &searchString, const 
  * for each not parsable word.
  * @return Vector of TraversalOption enums. If no valid option was found the empty vector is returned.
  */
-static std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::string &traversalOptionsString,
+inline std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::string &traversalOptionsString,
                                                                     bool ignoreUnknownOptions = true) {
   std::vector<autopas::TraversalOptions> traversalOptions;
 
@@ -203,7 +204,7 @@ static std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::s
  * for each not parsable word.
  * @return Vector of ContainerOption enums. If no valid option was found the empty vector is returned.
  */
-static std::vector<autopas::ContainerOptions> parseContainerOptions(const std::string &containerOptionsString,
+inline std::vector<autopas::ContainerOptions> parseContainerOptions(const std::string &containerOptionsString,
                                                                     bool ignoreUnknownOptions = true) {
   std::vector<autopas::ContainerOptions> containerOptions;
 
@@ -239,7 +240,7 @@ static std::vector<autopas::ContainerOptions> parseContainerOptions(const std::s
  * @return An enum representing the selector Strategy. If no valid option was found 'autopas::SelectorStrategy(-1)' is
  * returned.
  */
-static autopas::SelectorStrategy parseSelectorStrategy(const std::string &selectorStrategyString) {
+inline autopas::SelectorStrategy parseSelectorStrategy(const std::string &selectorStrategyString) {
   // hack to initialize the enum out of range as an error value.
   auto selectorStrategy(autopas::SelectorStrategy(-1));
   if (selectorStrategyString.find("abs") != std::string::npos) {
@@ -261,7 +262,7 @@ static autopas::SelectorStrategy parseSelectorStrategy(const std::string &select
  * @return An enum representing the data layout. If no valid option was found 'autopas::DataLayoutOption(-1)' is
  * returned.
  */
-static autopas::DataLayoutOption parseDataLayout(const std::string &dataLayoutSting) {
+inline autopas::DataLayoutOption parseDataLayout(const std::string &dataLayoutSting) {
   // hack to initialize the enum out of range as an error value.
   auto dataLayout(autopas::DataLayoutOption(-1));
   if (dataLayoutSting.find("aos") != std::string::npos or

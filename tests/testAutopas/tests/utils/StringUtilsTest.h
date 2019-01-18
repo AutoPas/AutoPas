@@ -9,7 +9,6 @@
 #include <gmock/gmock-matchers.h>
 #include <functional>
 #include "AutoPasTestBase.h"
-#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 #include "autopas/utils/StringUtils.h"
 
 class StringUtilsTest : public AutoPasTestBase {};

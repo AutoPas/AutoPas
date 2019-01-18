@@ -9,21 +9,13 @@
 #include <array>
 #include <memory>
 #include "autopas/autopasIncludes.h"
+#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/TraversalOptions.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
 
 namespace autopas {
-
-/**
- * Possible choices for the particle data layout.
- */
-enum DataLayoutOption { aos, soa };
-
-/**
- * Provides a way to iterate over the possible choices of data layouts.
- */
-static std::vector<DataLayoutOption> allDataLayoutOptions = {DataLayoutOption::aos, DataLayoutOption::soa};
 
 /**
  * Possible choices for the auto tuner.
@@ -185,7 +177,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   }
 
   auto container = getContainer();
-  AutoPasLog(debug, "Using container {}", container->getContainerType());
+  AutoPasLog(debug, "Using container {}", utils::StringUtils::to_string(container->getContainerType()));
 
   TraversalSelector<ParticleCell> &traversalSelector = _traversalSelectors[container->getContainerType()];
   auto traversal = traversalSelector.template getOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(*f);
