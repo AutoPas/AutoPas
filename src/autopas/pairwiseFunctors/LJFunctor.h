@@ -513,7 +513,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
  private:
-
   template <bool newton3, bool duplicatedCalculations>
   void SoAFunctorImpl(SoA<SoAArraysType> &soa,
                       const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
@@ -649,7 +648,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
                   virialy *= 0.5;
                   virialz *= 0.5;
                   bool inbox2 = xArr[j] >= lowCorner[0] and xArr[j] < highCorner[0] and yArr[j] >= lowCorner[1] and
-                      yArr[j] < highCorner[1] and zArr[j] >= lowCorner[2] and zArr[j] < highCorner[2];
+                                yArr[j] < highCorner[1] and zArr[j] >= lowCorner[2] and zArr[j] < highCorner[2];
                   inbox2Mul = inbox2 ? 0.5 : 0.;
                 }
                 double inboxMul = inbox1Mul + inbox2Mul;
@@ -772,7 +771,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, upotSum{0.} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, upotSum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
       upotSum = 0.;
