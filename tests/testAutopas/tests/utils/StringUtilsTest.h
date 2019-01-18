@@ -11,6 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 #include "autopas/utils/StringUtils.h"
+#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/selectors/AutoTuner.h"
 
 class StringUtilsTest : public AutoPasTestBase {};
 
