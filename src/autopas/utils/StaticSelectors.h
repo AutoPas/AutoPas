@@ -23,36 +23,25 @@ namespace autopas {
  * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
  * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
  */
-template <typename ContainerT, typename FunctionType>
-void withStaticContainerType(ContainerT &container, FunctionType &&function) {
+template <typename Particle, typename ParticleCell, typename FunctionType>
+void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle, ParticleCell>> container,
+                             FunctionType &&function) {
   auto container_ptr = container.get();
   switch (container->getContainerType()) {
     case ContainerOptions::directSum:
-      function(
-          dynamic_cast<autopas::DirectSum<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,
-                                          typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType> *>(
-              container_ptr));
+      function(dynamic_cast<autopas::DirectSum<Particle, ParticleCell> *>(container_ptr));
       return;
     case ContainerOptions::linkedCells:
-      function(dynamic_cast<
-               autopas::LinkedCells<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,
-                                    typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType> *>(
-          container_ptr));
+      function(dynamic_cast<autopas::LinkedCells<Particle, ParticleCell> *>(container_ptr));
       return;
     case ContainerOptions::verletLists:
-      function(
-          dynamic_cast<autopas::VerletLists<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType> *>(
-              container_ptr));
+      function(dynamic_cast<autopas::VerletLists<Particle> *>(container_ptr));
       return;
     case ContainerOptions::verletListsCells:
-      function(dynamic_cast<
-               autopas::VerletListsCells<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType> *>(
-          container_ptr));
+      function(dynamic_cast<autopas::VerletListsCells<Particle> *>(container_ptr));
       return;
     case ContainerOptions::verletClusterLists:
-      function(dynamic_cast<
-               autopas::VerletClusterLists<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType> *>(
-          container_ptr));
+      function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(container_ptr));
       return;
   }
   autopas::utils::ExceptionHandler::exception("wrong type of container in StaticSelectorMacros.h");
