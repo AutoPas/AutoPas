@@ -1,11 +1,12 @@
 /**
- * @file StaticSelectorMacros.h
+ * @file StaticSelectors.h
  * @author seckler
  * @date 21.06.18
  */
 
 #pragma once
 
+#include <memory>
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
@@ -17,7 +18,8 @@ namespace autopas {
  * Will execute the passed function body with the static container type of container.
  * Currently, either LinkedCells, VerletLists, VerletListsCells, VerletClusterLists or DirectSum.
  *
- * @tparam ContainerT
+ * @tparam Particle
+ * @tparam ParticleCell
  * @tparam FunctionType
  * @param container The container to be used.
  * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
