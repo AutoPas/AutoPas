@@ -567,10 +567,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       // in theory this is a variable, we could auto-tune over...
 #ifdef __AVX512F__
       // use a multiple of 8 for avx
-      const size_t vecsize = 16;
+      constexpr size_t vecsize = 16;
 #else
       // for everything else 12 is faster
-      const size_t vecsize = 12;
+      constexpr size_t vecsize = 12;
 #endif
       size_t joff = 0;
 
