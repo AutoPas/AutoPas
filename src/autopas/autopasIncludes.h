@@ -15,7 +15,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Logger.h"
 #include "autopas/utils/SoA.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticSelectors.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
