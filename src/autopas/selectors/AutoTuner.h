@@ -17,7 +17,6 @@
 
 namespace autopas {
 
-
 /**
  * Possible choices for the auto tuner.
  * @todo: implement more options and then use this enum! :D
