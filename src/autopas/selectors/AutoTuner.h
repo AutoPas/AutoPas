@@ -191,7 +191,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
                               [&](auto container) { container->iteratePairwiseSoA(f, traversal.get(), useNewton3); });
     } else {
       withStaticContainerType(container,
-                               [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
+                              [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
@@ -204,7 +204,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
                               [&](auto container) { container->iteratePairwiseSoA(f, traversal.get(), useNewton3); });
     } else {
       withStaticContainerType(container,
-                               [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
+                              [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
     }
   }
   ++_iterationsSinceTuning;
