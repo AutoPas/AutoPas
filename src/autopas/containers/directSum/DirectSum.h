@@ -12,6 +12,7 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -77,7 +78,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
+    AutoPasLog(debug, "Using traversal {} with AoS", utils::StringUtils::to_string(traversal->getTraversalType()));
     if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
@@ -91,8 +92,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
-    f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
+    AutoPasLog(debug, "Using traversal {} with SoA ", utils::StringUtils::to_string(traversal->getTraversalType()))
+        f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 
     if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
