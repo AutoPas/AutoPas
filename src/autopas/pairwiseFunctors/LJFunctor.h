@@ -643,10 +643,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
                 // for non-newton3 the division is in the post-processing step.
                 double inbox2Mul = 0.;
                 if (newton3) {
-                  upot *= 0.5;
-                  virialx *= 0.5;
-                  virialy *= 0.5;
-                  virialz *= 0.5;
                   bool inbox2 = xArr[j] >= lowCorner[0] and xArr[j] < highCorner[0] and yArr[j] >= lowCorner[1] and
                                 yArr[j] < highCorner[1] and zArr[j] >= lowCorner[2] and zArr[j] < highCorner[2];
                   inbox2Mul = inbox2 ? 0.5 : 0.;
