@@ -25,11 +25,8 @@ enum ContainerOptions {
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
 static const std::vector<ContainerOptions> allContainerOptions = {
-    ContainerOptions::directSum,
-    ContainerOptions::linkedCells,
-    ContainerOptions::verletLists,
-    ContainerOptions::verletListsCells,
-    ContainerOptions::verletClusterLists,
+    ContainerOptions::directSum,        ContainerOptions::linkedCells,        ContainerOptions::verletLists,
+    ContainerOptions::verletListsCells, ContainerOptions::verletClusterLists,
 };
 
 }  // namespace autopas
