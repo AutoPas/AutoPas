@@ -401,7 +401,7 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsPair) {
 TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   bool duplicatedCalculation = false;
   bool newton3 = true;
-  double multiparticlefactor = 2.;  // two particles, so factor 2
+  double multiParticleFactor = 2.;  // two particles, so factor 2
   double whereFactor = 1.;          // all inside, so factor 1
   std::string where_str = "inside";
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
@@ -439,8 +439,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   double upot = functor.getUpot();
   double virial = functor.getVirial();
 
-  EXPECT_NEAR(upot, whereFactor * multiparticlefactor * expectedEnergy, absDelta)
+  EXPECT_NEAR(upot, whereFactor * multiParticleFactor * expectedEnergy, absDelta)
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
-  EXPECT_NEAR(virial, whereFactor * multiparticlefactor * expectedVirial, absDelta)
+  EXPECT_NEAR(virial, whereFactor * multiParticleFactor * expectedVirial, absDelta)
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
 }
