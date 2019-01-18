@@ -21,8 +21,7 @@ namespace autopas {
  * @tparam FunctionType
  * @param containerI The container to be used.
  * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
- * E.g: [&](auto *container){container->doSth();}  // the * is optional here.
- *
+ * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
  */
 template <typename ContainerT, typename FunctionType>
 void withStaticContainerType(ContainerT &containerI, FunctionType &&function) {
