@@ -33,23 +33,23 @@ void withStaticContainerType(ContainerT &containerI, FunctionType &&function) {
                                           typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType> *>(
               container_ptr));
       return;
-    case ContainerOptions ::linkedCells:
+    case ContainerOptions::linkedCells:
       function(dynamic_cast<
                autopas::LinkedCells<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType,
                                     typename std::remove_pointer_t<decltype(container_ptr)>::ParticleCellType> *>(
           container_ptr));
       return;
-    case ContainerOptions ::verletLists:
+    case ContainerOptions::verletLists:
       function(
           dynamic_cast<autopas::VerletLists<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType> *>(
               container_ptr));
       return;
-    case ContainerOptions ::verletListsCells:
+    case ContainerOptions::verletListsCells:
       function(dynamic_cast<
                autopas::VerletListsCells<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType> *>(
           container_ptr));
       return;
-    case ContainerOptions ::verletClusterLists:
+    case ContainerOptions::verletClusterLists:
       function(dynamic_cast<
                autopas::VerletClusterLists<typename std::remove_pointer_t<decltype(container_ptr)>::ParticleType> *>(
           container_ptr));
