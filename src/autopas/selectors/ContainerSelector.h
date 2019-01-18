@@ -14,6 +14,8 @@
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "autopas/utils/StringUtils.h"
+#include "autopas/options/ContainerOptions.h"
 
 namespace autopas {
 

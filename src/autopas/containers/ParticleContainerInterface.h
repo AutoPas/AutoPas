@@ -14,17 +14,6 @@
 
 namespace autopas {
 
-/**
- * Possible choices for the particle container type.
- */
-enum ContainerOptions {
-  directSum = 0,
-  linkedCells = 1,
-  verletLists = 2,
-  verletListsCells = 3,
-  verletClusterLists = 4,
-};
-
 // consider multiple inheritance or delegation to avoid virtual call to Functor
 /**
  * The ParticleContainerInterface class provides a basic interface for all Containers within AutoPas.

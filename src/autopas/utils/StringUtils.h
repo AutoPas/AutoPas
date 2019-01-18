@@ -8,9 +8,10 @@
 
 #include <string>
 #include <vector>
-#include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
-#include "autopas/selectors/AutoTuner.h"
+#include "autopas/options/ContainerOptions.h"
+#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/SelectorStrategies.h"
+#include "autopas/options/TraversalOptions.h"
 
 namespace autopas {
 namespace utils {

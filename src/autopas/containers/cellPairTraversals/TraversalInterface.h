@@ -6,22 +6,9 @@
 
 #pragma once
 
-namespace autopas {
+#include "autopas/options/TraversalOptions.h"
 
-/**
- * Possible choices for the cell pair traversal.
- */
-enum TraversalOptions {
-  c08 = 0,
-  sliced = 1,
-  c18 = 2,
-  c01 = 3,
-  directSumTraversal = 4,
-  slicedVerlet = 5,
-  c18Verlet = 6,
-  c01Verlet = 7,
-  dummyTraversal = 666,
-};
+namespace autopas {
 
 /**
  * Provides a way to iterate over the possible choices of TraversalOption.

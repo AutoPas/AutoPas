@@ -9,16 +9,13 @@
 #include <array>
 #include <memory>
 #include "autopas/autopasIncludes.h"
+#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/TraversalOptions.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
 
 namespace autopas {
-
-/**
- * Possible choices for the particle data layout.
- */
-enum DataLayoutOption { aos, soa };
 
 /**
  * Provides a way to iterate over the possible choices of data layouts.
