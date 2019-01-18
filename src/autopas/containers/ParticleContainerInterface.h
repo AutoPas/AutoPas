@@ -7,10 +7,9 @@
 
 #pragma once
 
-#include <autopas/selectors/TraversalSelector.h>
 #include <array>
-
 #include "autopas/iterators/ParticleIteratorWrapper.h"
+#include "autopas/selectors/TraversalSelector.h"
 
 namespace autopas {
 
