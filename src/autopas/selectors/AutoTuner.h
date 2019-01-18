@@ -193,7 +193,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
-    AutoPasLog(debug, "IteratePairwiese took {} nanoseconds", runtime);
+    AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
     _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
     traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
   } else {
