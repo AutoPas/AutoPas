@@ -256,7 +256,6 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
         const __m256d fy = _mm256_mul_pd(dry, facMasked);
         const __m256d fz = _mm256_mul_pd(drz, facMasked);
 
-
         fxacc = _mm256_add_pd(fxacc, fx);
         fyacc = _mm256_add_pd(fyacc, fy);
         fzacc = _mm256_add_pd(fzacc, fz);
@@ -289,9 +288,8 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
 
       const union {
         __m128d reg;
-        double[2] arr;
-      } sumfxfyVEC;
-      sumfxfyVEC.reg = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
+        double arr[2];
+      } sumfxfyVEC{_mm_add_pd(hSumfxfyLow, hSumfxfyHigh)};
       const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
 
       const double sumfx = sumfxfyVEC.arr[0];
