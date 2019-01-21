@@ -46,7 +46,8 @@ void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle, Particl
       function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(container_ptr));
       return;
   }
-  autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticSelectorMacros.h. Type: {}", container->getContainerType());
+  autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticSelectorMacros.h. Type: {}",
+                                              container->getContainerType());
 }
 
 }  // namespace autopas
