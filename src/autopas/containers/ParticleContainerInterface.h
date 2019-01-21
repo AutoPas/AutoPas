@@ -7,18 +7,16 @@
 
 #pragma once
 
-#include <autopas/selectors/TraversalSelector.h>
 #include <array>
-
 #include "autopas/iterators/ParticleIteratorWrapper.h"
+#include "autopas/selectors/TraversalSelector.h"
 
 namespace autopas {
 
-// consider multiple inheritance or delegation to avoid virtual call to Functor
 /**
  * The ParticleContainerInterface class provides a basic interface for all Containers within AutoPas.
  * It defines method interfaces for addition and deletion of particles, accessing general container
- * properietes and creating iterators.
+ * properties and creating iterators.
  *
  * @tparam Particle Class for particles
  */
