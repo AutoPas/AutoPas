@@ -34,6 +34,11 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
 
   /// @todo: test all containers
   for (auto &traversalLC : autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals()) {
+    if (traversalLC == autopas::TraversalOptions::c01) {
+      // c01 traversal does not work with newton3.
+      // Here only one traversal is tested.
+      continue;
+    }
     autopas::AutoPas<Particle, FPCell> autoPas;
 
     // generates one cell per particle + 1 halo layer

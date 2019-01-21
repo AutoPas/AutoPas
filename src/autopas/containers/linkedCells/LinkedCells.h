@@ -48,7 +48,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @return Vector of all applicable traversal options.
    */
   static const std::vector<TraversalOptions> &allLCApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::c08, TraversalOptions::sliced};
+    static const std::vector<TraversalOptions> v{TraversalOptions::c01, TraversalOptions::c08, TraversalOptions::c18,
+                                                 TraversalOptions::sliced};
     return v;
   }
 
