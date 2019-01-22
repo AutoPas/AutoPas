@@ -109,6 +109,9 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::pro
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
+  if (useNewton3) {
+    utils::ExceptionHandler::exception("The C01 traversal cannot work with enabled newton3!");
+  }
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }
 
