@@ -34,6 +34,7 @@ bool LJFunctorAVX2Test::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::
 
   for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
     EXPECT_EQ(*idptr1, *idptr2);
+    // TODO: assert near
     EXPECT_DOUBLE_EQ(*xptr1, *xptr2);
     EXPECT_DOUBLE_EQ(*yptr1, *yptr2);
     EXPECT_DOUBLE_EQ(*zptr1, *zptr2);
@@ -73,11 +74,13 @@ void LJFunctorAVX2Test::testLJFunctorVSLJFunctorAVX2(bool newton3) {
   FPCell cell1AVX2;
   FPCell cell2AVX2;
 
+  size_t numParticles = 8;
+
   Particle defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
   RandomGenerator::fillWithParticles(cell1AVX2, defaultParticle, _lowCorner,
-                                     {_lowCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, 1);
+                                     {_lowCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, numParticles);
   RandomGenerator::fillWithParticles(cell2AVX2, defaultParticle, {_lowCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
-                                     _highCorner, 1);
+                                     _highCorner, numParticles);
 
   // copy cells
   FPCell cell1NoAVX2(cell1AVX2);

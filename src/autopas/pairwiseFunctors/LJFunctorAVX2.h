@@ -238,7 +238,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
 
         // _CMP_GT_OS == Greater-than (ordered, signaling)
         // signaling = throw error if NaN is encountered
-        const __m256d cutoffMask = _mm256_cmp_pd(dr2, cutoffsquare, _CMP_GT_OS);
+        const __m256d cutoffMask = _mm256_cmp_pd(dr2, cutoffsquare, _CMP_LT_OS);
 
         const __m256d invdr2 = _mm256_div_pd(one, dr2);
         const __m256d lj2 = _mm256_mul_pd(sigmasquare, invdr2);
