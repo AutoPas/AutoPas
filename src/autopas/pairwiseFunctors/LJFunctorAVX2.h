@@ -203,7 +203,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-    // @@TODO:
+    // @@TODO: Globlas
 //    bool isHaloCell1 = false;
 //    bool isHaloCell2 = false;
 
@@ -264,9 +264,9 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
 
         // if newton 3 is used subtract fD from particle j
         if (newton3) {
-          const __m256d fx2 = _mm256_broadcast_sd(&fx2ptr[j]);
-          const __m256d fy2 = _mm256_broadcast_sd(&fy2ptr[j]);
-          const __m256d fz2 = _mm256_broadcast_sd(&fz2ptr[j]);
+          const __m256d fx2 = _mm256_load_pd(&fx2ptr[j]);
+          const __m256d fy2 = _mm256_load_pd(&fy2ptr[j]);
+          const __m256d fz2 = _mm256_load_pd(&fz2ptr[j]);
 
           const __m256d fx2new = _mm256_sub_pd(fx2, fx);
           const __m256d fy2new = _mm256_sub_pd(fy2, fy);
