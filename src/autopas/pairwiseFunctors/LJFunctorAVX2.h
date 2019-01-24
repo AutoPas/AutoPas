@@ -203,6 +203,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
+    // @@TODO:
 //    bool isHaloCell1 = false;
 //    bool isHaloCell2 = false;
 
@@ -211,6 +212,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     const __m256d epsilon24 = _mm256_broadcast_sd(&_epsilon24);
     const __m256d sigmasquare = _mm256_broadcast_sd(&_sigmasquare);
 
+    // @TODO: mask away forces if numParticles is not multiple of vector length
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
