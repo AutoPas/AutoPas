@@ -74,7 +74,7 @@ void LJFunctorAVX2Test::testLJFunctorVSLJFunctorAVX2(bool newton3) {
   FPCell cell1AVX2;
   FPCell cell2AVX2;
 
-  size_t numParticles = 8;
+  size_t numParticles = 7;
 
   Particle defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
   RandomGenerator::fillWithParticles(cell1AVX2, defaultParticle, _lowCorner,
