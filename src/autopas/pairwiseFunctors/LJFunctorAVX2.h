@@ -52,9 +52,9 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
                          std::array<double, 3> highCorner = {0., 0., 0.}, bool duplicatedCalculation = true)
       : _one{_mm256_set1_pd(1.)},
         _masks{
-            _mm256_set_epi64x(0, 0, 0, 0xffffffffffffffff),
-            _mm256_set_epi64x(0, 0, 0xffffffffffffffff, 0xffffffffffffffff),
-            _mm256_set_epi64x(0, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff),
+            _mm256_set_epi64x(0, 0, 0, -1),
+            _mm256_set_epi64x(0, 0, -1, -1),
+            _mm256_set_epi64x(0, -1, -1, -1),
         },
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
         _epsilon24{_mm256_set1_pd(epsilon * 24.0)},
@@ -198,10 +198,10 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
                         double *const __restrict__ &x2ptr, double *const __restrict__ &y2ptr,
                         double *const __restrict__ &z2ptr, double *const __restrict__ &fx2ptr,
                         double *const __restrict__ &fy2ptr, double *const __restrict__ &fz2ptr, __m256d &fxacc,
-                        __m256d &fyacc, __m256d &fzacc, const __m256i &loaderMask = _mm256_set1_epi64x(-1)) {
-    const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], loaderMask) : _mm256_load_pd(&x2ptr[j]);
-    const __m256d y2 = masked ? _mm256_maskload_pd(&y2ptr[j], loaderMask) : _mm256_load_pd(&y2ptr[j]);
-    const __m256d z2 = masked ? _mm256_maskload_pd(&z2ptr[j], loaderMask) : _mm256_load_pd(&z2ptr[j]);
+                        __m256d &fyacc, __m256d &fzacc, const unsigned int rest = 0) {
+    const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
+    const __m256d y2 = masked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&y2ptr[j]);
+    const __m256d z2 = masked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&z2ptr[j]);
 
     const __m256d drx = _mm256_sub_pd(x1, x2);
     const __m256d dry = _mm256_sub_pd(y1, y2);
@@ -228,7 +228,9 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, _epsilon24);
     const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
 
-    const __m256d facMasked = _mm256_and_pd(fac, cutoffMask);
+    const __m256d facMasked = masked
+                                  ? _mm256_and_pd(fac, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                                  : _mm256_and_pd(fac, cutoffMask);
 
     const __m256d fx = _mm256_mul_pd(drx, facMasked);
     const __m256d fy = _mm256_mul_pd(dry, facMasked);
@@ -279,7 +281,6 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     //    bool isHaloCell1 = false;
     //    bool isHaloCell2 = false;
 
-    // @TODO: mask away forces if numParticles is not multiple of vector length
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
@@ -295,20 +296,18 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
           SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc);
         }
-        auto rest = (soa2.getNumParticles() & (vecLength - 1));
+        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         std::cout << rest << std::endl;
         if (rest > 0)
-          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                _masks[rest - 1]);
+          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, rest);
       } else {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc);
+          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc);
         }
-        auto rest = (soa2.getNumParticles() & (vecLength - 1));
-        if(rest > 0)
-          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                _masks[rest - 1]);
+        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
+        if (rest > 0)
+          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -667,7 +666,8 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
 
   //  double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
   const __m256d _one;
-  const std::vector<__m256i> _masks;
+  //  const std::vector<__m256i> _masks;
+  const __m256i _masks[3];
   const __m256d _cutoffsquare;
   const __m256d _epsilon24;
   const __m256d _sigmasquare;
