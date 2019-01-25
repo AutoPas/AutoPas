@@ -42,7 +42,7 @@ bool LJFunctorAVX2Test::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::
     EXPECT_DOUBLE_EQ(*fyptr1, *fyptr2);
     EXPECT_DOUBLE_EQ(*fzptr1, *fzptr2);
   }
-  return not ::testing::Test::HasFailure();
+  return not::testing::Test::HasFailure();
 }
 
 bool LJFunctorAVX2Test::particleEqual(Particle &p1, Particle &p2) {
@@ -55,7 +55,7 @@ bool LJFunctorAVX2Test::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_DOUBLE_EQ(p1.getF()[1], p2.getF()[1]);
   EXPECT_DOUBLE_EQ(p1.getF()[2], p2.getF()[2]);
 
-  return not ::testing::Test::HasFailure();
+  return not::testing::Test::HasFailure();
 }
 
 bool LJFunctorAVX2Test::AoSParticlesEqual(FPCell &cell1, FPCell &cell2) {
@@ -70,7 +70,7 @@ bool LJFunctorAVX2Test::AoSParticlesEqual(FPCell &cell1, FPCell &cell2) {
   return ret;
 }
 
-void LJFunctorAVX2Test::testLJFunctorVSLJFunctorAVX2(bool newton3) {
+void LJFunctorAVX2Test::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   FPCell cell1AVX2;
   FPCell cell2AVX2;
 
@@ -121,6 +121,46 @@ void LJFunctorAVX2Test::testLJFunctorVSLJFunctorAVX2(bool newton3) {
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX2, cell2NoAVX2)) << "Cells 2 not equal after extracting.";
 }
 
-TEST_F(LJFunctorAVX2Test, testLJFunctorVSLJFunctorAVX2Newton3) { testLJFunctorVSLJFunctorAVX2(true); }
+void LJFunctorAVX2Test::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
+  FPCell cellAVX2;
 
-TEST_F(LJFunctorAVX2Test, testLJFunctorVSLJFunctorAVX2NoNewton3) { testLJFunctorVSLJFunctorAVX2(false); }
+  size_t numParticles = 7;
+
+  Particle defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  RandomGenerator::fillWithParticles(cellAVX2, defaultParticle, _lowCorner, _highCorner, numParticles);
+
+  // copy cells
+  FPCell cellNoAVX2(cellAVX2);
+
+  autopas::LJFunctor<Particle, FPCell, false, false> ljFunctorNoAVX2(_cutoff, _epsilon, _sigma, 0.0, _lowCorner,
+                                                                     _highCorner);
+  autopas::LJFunctorAVX2<Particle, FPCell, false, false> ljFunctorAVX2(_cutoff, _epsilon, _sigma, 0.0, _lowCorner,
+                                                                       _highCorner);
+
+  ASSERT_TRUE(AoSParticlesEqual(cellAVX2, cellNoAVX2)) << "Cells not equal after copy initialization.";
+
+  ljFunctorNoAVX2.SoALoader(cellNoAVX2, cellNoAVX2._particleSoABuffer);
+  ljFunctorAVX2.SoALoader(cellAVX2, cellAVX2._particleSoABuffer);
+
+  ASSERT_TRUE(SoAParticlesEqual(cellAVX2._particleSoABuffer, cellNoAVX2._particleSoABuffer))
+      << "Cells not equal after loading.";
+
+  ljFunctorNoAVX2.SoAFunctor(cellNoAVX2._particleSoABuffer, newton3);
+  ljFunctorAVX2.SoAFunctor(cellAVX2._particleSoABuffer, newton3);
+
+  ASSERT_TRUE(SoAParticlesEqual(cellAVX2._particleSoABuffer, cellNoAVX2._particleSoABuffer))
+      << "Cells not equal after applying functor.";
+
+  ljFunctorAVX2.SoAExtractor(cellAVX2, cellAVX2._particleSoABuffer);
+  ljFunctorAVX2.SoAExtractor(cellNoAVX2, cellNoAVX2._particleSoABuffer);
+
+  ASSERT_TRUE(AoSParticlesEqual(cellAVX2, cellNoAVX2)) << "Cells 1 not equal after extracting.";
+}
+
+TEST_F(LJFunctorAVX2Test, testLJFunctorVSLJFunctorAVX2OneCellNewton3) { testLJFunctorVSLJFunctorAVXOneCell(true); }
+
+TEST_F(LJFunctorAVX2Test, testLJFunctorVSLJFunctorAVX2OneCellNoNewton3) { testLJFunctorVSLJFunctorAVXOneCell(false); }
+
+TEST_F(LJFunctorAVX2Test, testLJFunctorVSLJFunctorAVX2TwoCellNewton3) { testLJFunctorVSLJFunctorAVXTwoCells(true); }
+
+TEST_F(LJFunctorAVX2Test, testLJFunctorVSLJFunctorAVX2TwoCellNoNewton3) { testLJFunctorVSLJFunctorAVXTwoCells(false); }

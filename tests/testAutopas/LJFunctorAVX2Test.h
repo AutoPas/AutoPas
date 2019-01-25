@@ -20,9 +20,22 @@ class LJFunctorAVX2Test : public AutoPasTestBase {
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is AVX2, second non-AVX2
    *
+   * Checks SoAFunctor(soa1, soa2, newton3)
+   *
    * @param newton3
    */
-  void testLJFunctorVSLJFunctorAVX2(bool newton3);
+  void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3);
+
+  /**
+   * Checks equality of SoALoader, SoAFunctor and SoAExtractor.
+   * Expects that particles are loaded and extracted in the same order.
+   * In all comparisons first is AVX2, second non-AVX2
+   *
+   * Checks SoAFunctor(soa, newton3)
+   *
+   * @param newton3
+   */
+  void testLJFunctorVSLJFunctorAVXOneCell(bool newton3);
 
   /**
    * Checks that two non empty SoAs' particles are equal

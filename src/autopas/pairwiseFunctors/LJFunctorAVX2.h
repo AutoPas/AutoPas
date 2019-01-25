@@ -104,7 +104,8 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     //    bool isHaloCell1 = false;
     //    bool isHaloCell2 = false;
 
-    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+    for (size_t i = soa.getNumParticles() - 1; i > 0; --i) {
+      std::cout << i << std::endl;
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
       __m256d fzacc = _mm256_setzero_pd();
@@ -116,23 +117,20 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
       // floor soa2 numParticles to multiple of vecLength
       if (newton3) {
         unsigned int j = 0;
-        for (; j < (soa.getNumParticles() - i + 1 & ~(vecLength - 1)); j += 4) {
-          SoAKernel<true, false>(j + i + 1, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
+        for (; j < (i & ~(vecLength - 1)); j += 4) {
+          SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
         }
-        const int rest = (int)(soa.getNumParticles() - i + 1 & (vecLength - 1));
-        std::cout << rest << std::endl;
+        const int rest = (int)(i & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<true, true>(j + i + 1, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc,
-                                rest);
+          SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, rest);
       } else {
         unsigned int j = 0;
-        for (; j < (soa.getNumParticles() - i + 1 & ~(vecLength - 1)); j += 4) {
-          SoAKernel<false, false>(j + i + 1, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
+        for (; j < (i & ~(vecLength - 1)); j += 4) {
+          SoAKernel<false, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
         }
-        const int rest = (int)(soa.getNumParticles() - i + 1 & (vecLength - 1));
+        const int rest = (int)(i & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<false, true>(j + i + 1, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc,
-                                 rest);
+          SoAKernel<false, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -159,107 +157,6 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
       fyptr[i] += sumfy;
       fzptr[i] += sumfz;
     }
-
-    //    if (soa.getNumParticles() == 0) return;
-    //
-    //    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    //    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    //    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    //
-    //    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    //    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    //    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-    //    // the local redeclaration of the following values helps the auto-generation of various compilers.
-    ////    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 =
-    ///_shift6;
-    //    if (calculateGlobals) {
-    //      // Checks if the cell is a halo cell, if it is, we skip it.
-    //      // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are
-    //      not
-    //      // set. (as of 23.11.2018)
-    //      bool isHaloCell = false;
-    //      isHaloCell |= xptr[0] < _lowCorner[0] || xptr[0] >= _highCorner[0];
-    //      isHaloCell |= yptr[0] < _lowCorner[1] || yptr[0] >= _highCorner[1];
-    //      isHaloCell |= zptr[0] < _lowCorner[2] || zptr[0] >= _highCorner[2];
-    //      if (isHaloCell) {
-    //        return;
-    //      }
-    //    }
-    //
-    //    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
-    //      double fxacc = 0.;
-    //      double fyacc = 0.;
-    //      double fzacc = 0.;
-    //
-    //      double upotSum = 0.;
-    //      double virialSumX = 0.;
-    //      double virialSumY = 0.;
-    //      double virialSumZ = 0.;
-    //// icpc vectorizes this.
-    //// g++ only with -ffast-math or -funsafe-math-optimizations
-    //#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
-    //      for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-    //        const double drx = xptr[i] - xptr[j];
-    //        const double dry = yptr[i] - yptr[j];
-    //        const double drz = zptr[i] - zptr[j];
-    //
-    //        const double drx2 = drx * drx;
-    //        const double dry2 = dry * dry;
-    //        const double drz2 = drz * drz;
-    //
-    //        const double dr2 = drx2 + dry2 + drz2;
-    //
-    //        const double mask = (dr2 > cutoffsquare) ? 0. : 1.;
-    //
-    //        const double invdr2 = 1. / dr2;
-    //        const double lj2 = sigmasquare * invdr2;
-    //        const double lj6 = lj2 * lj2 * lj2;
-    //        const double lj12 = lj6 * lj6;
-    //        const double lj12m6 = lj12 - lj6;
-    //        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
-    //
-    //        const double fx = drx * fac;
-    //        const double fy = dry * fac;
-    //        const double fz = drz * fac;
-    //
-    //        fxacc += fx;
-    //        fyacc += fy;
-    //        fzacc += fz;
-    //
-    //        // newton 3
-    //        fxptr[j] -= fx;
-    //        fyptr[j] -= fy;
-    //        fzptr[j] -= fz;
-    //
-    //        if (calculateGlobals) {
-    //          const double virialx = drx * fx;
-    //          const double virialy = dry * fy;
-    //          const double virialz = drz * fz;
-    //          const double upot = (epsilon24 * lj12m6 + shift6) * mask;
-    //
-    //          // these calculations assume that this functor is not called for halo cells!
-    //          upotSum += upot;
-    //          virialSumX += virialx;
-    //          virialSumY += virialy;
-    //          virialSumZ += virialz;
-    //        }
-    //      }
-    //
-    //      fxptr[i] += fxacc;
-    //      fyptr[i] += fyacc;
-    //      fzptr[i] += fzacc;
-    //
-    //      if (calculateGlobals) {
-    //        const int threadnum = autopas_get_thread_num();
-    //        // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed
-    //        for
-    //        // AoS)
-    //        _aosThreadData[threadnum].upotSum += upotSum * (newton3 ? 1 : 2);
-    //        _aosThreadData[threadnum].virialSum[0] += virialSumX * (newton3 ? 1 : 2);
-    //        _aosThreadData[threadnum].virialSum[1] += virialSumY * (newton3 ? 1 : 2);
-    //        _aosThreadData[threadnum].virialSum[2] += virialSumZ * (newton3 ? 1 : 2);
-    //      }
-    //    }
   }
 
  private:
