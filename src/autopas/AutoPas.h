@@ -184,6 +184,16 @@ class AutoPas {
    */
   std::array<double, 3> getBoxMax() { return _autoTuner->getContainer()->getBoxMax(); }
 
+  /**
+   * Checks if the neighbor lists are valid, or whether they need a rebuild.
+   * @return True if the lists are valid, false if a rebuild is needed.
+   */
+  bool isNeighborListValid() {
+    if(auto container = dynamic_cast<VerletLists<Particle>>(_autoTuner->getContainer().ptr())){
+      return not container.needsRebuild();
+    }
+  }
+
  private:
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };
