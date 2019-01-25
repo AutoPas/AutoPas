@@ -189,7 +189,7 @@ class AutoPas {
    * @return True if the lists are valid, false if a rebuild is needed.
    */
   bool isNeighborListValid() {
-    if(auto container = dynamic_cast<VerletLists<Particle>*>(_autoTuner->getContainer().get())){
+    if (auto container = dynamic_cast<VerletLists<Particle> *>(_autoTuner->getContainer().get())) {
       return not container->needsRebuild();
     }
   }
