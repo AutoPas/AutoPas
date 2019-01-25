@@ -182,7 +182,7 @@ class VerletLists
    */
   bool needsRebuild() {
     AutoPasLog(debug, "Neighborlist is valid: {}", this->_neighborListIsValid);
-    // if the neighbor list is NOT validor we have not rebuild for this->_rebuildFrequency steps
+    // if the neighbor list is NOT valid or we have not rebuilt since this->_rebuildFrequency steps
     return (not this->_neighborListIsValid) or (this->_traversalsSinceLastRebuild >= this->_rebuildFrequency);
   }
 
