@@ -104,7 +104,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     //    bool isHaloCell1 = false;
     //    bool isHaloCell2 = false;
 
-    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
+    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
       __m256d fzacc = _mm256_setzero_pd();
@@ -116,21 +116,23 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
       // floor soa2 numParticles to multiple of vecLength
       if (newton3) {
         unsigned int j = 0;
-        for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc);
+        for (; j < (soa.getNumParticles() - i + 1 & ~(vecLength - 1)); j += 4) {
+          SoAKernel<true, false>(j + i + 1, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
         }
-        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
+        const int rest = (int)(soa.getNumParticles() - i + 1 & (vecLength - 1));
         std::cout << rest << std::endl;
         if (rest > 0)
-          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, rest);
+          SoAKernel<true, true>(j + i + 1, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc,
+                                rest);
       } else {
         unsigned int j = 0;
-        for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc);
+        for (; j < (soa.getNumParticles() - i + 1 & ~(vecLength - 1)); j += 4) {
+          SoAKernel<false, false>(j + i + 1, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
         }
-        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
+        const int rest = (int)(soa.getNumParticles() - i + 1 & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, rest);
+          SoAKernel<false, true>(j + i + 1, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc,
+                                 rest);
       }
 
       // horizontally reduce fDacc to sumfD
