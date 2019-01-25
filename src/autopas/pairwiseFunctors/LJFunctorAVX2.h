@@ -90,6 +90,74 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+    if (soa.getNumParticles() == 0) return;
+
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    // @@TODO: Globlas
+    //    bool isHaloCell1 = false;
+    //    bool isHaloCell2 = false;
+
+    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
+      __m256d fxacc = _mm256_setzero_pd();
+      __m256d fyacc = _mm256_setzero_pd();
+      __m256d fzacc = _mm256_setzero_pd();
+
+      const __m256d x1 = _mm256_broadcast_sd(&xptr[i]);
+      const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
+      const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
+
+      // floor soa2 numParticles to multiple of vecLength
+      if (newton3) {
+        unsigned int j = 0;
+        for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
+          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc);
+        }
+        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
+        std::cout << rest << std::endl;
+        if (rest > 0)
+          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, rest);
+      } else {
+        unsigned int j = 0;
+        for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
+          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc);
+        }
+        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
+        if (rest > 0)
+          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, rest);
+      }
+
+      // horizontally reduce fDacc to sumfD
+      const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
+      const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
+
+      const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
+      const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
+
+      const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
+      const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
+
+      const union {
+        __m128d reg;
+        double arr[2];
+      } sumfxfyVEC = {.reg = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh)};
+      const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
+
+      const double sumfx = sumfxfyVEC.arr[0];
+      const double sumfy = sumfxfyVEC.arr[1];
+      const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+
+      fxptr[i] += sumfx;
+      fyptr[i] += sumfy;
+      fzptr[i] += sumfz;
+    }
+
     //    if (soa.getNumParticles() == 0) return;
     //
     //    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
