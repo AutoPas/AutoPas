@@ -12,7 +12,11 @@
 #include "autopas/utils/Timer.h"
 
 template <class Container, class Functor>
-void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);
+void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3);
+
+template <class Container, class Functor, class Traversal>
+void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
+                               int numIterations, bool useNewton3);
 
 void addParticles(
     autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
@@ -51,25 +55,37 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff);
-
-  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
-      boxMin, boxMax, cutoff);
-
   autopas::sph::SPHCalcDensityFunctor densfunc;
-
   autopas::sph::SPHCalcHydroForceFunctor hydrofunc;
 
   int numParticles = 16;
   int numIterations = 100000;
   int containerTypeInt = 0;
-  enum ContainerType { linkedCells, directSum, verletLists } containerType = linkedCells;
+  enum ContainerType { linkedCells, directSum, verletLists, verletListsCells } containerType = linkedCells;
   int functorTypeInt = 0;
   enum FunctorType { densityFunctor, hydroForceFunctor } functorType = densityFunctor;
+
   double skin = 0.;
   int rebuildFrequency = 10;
-  if (argc == 7) {
+  bool useNewton3 = true;
+  if (argc == 9) {
+    numParticles = atoi(argv[1]);
+    numIterations = atoi(argv[2]);
+    containerTypeInt = atoi(argv[3]);
+    functorTypeInt = atoi(argv[4]);
+    skin = atof(argv[5]);
+    rebuildFrequency = atof(argv[6]);
+    useNewton3 = atoi(argv[7]);
+    boxMax[0] = boxMax[1] = boxMax[2] = atof(argv[8]);
+  } else if (argc == 8) {
+    numParticles = atoi(argv[1]);
+    numIterations = atoi(argv[2]);
+    containerTypeInt = atoi(argv[3]);
+    functorTypeInt = atoi(argv[4]);
+    skin = atof(argv[5]);
+    rebuildFrequency = atof(argv[6]);
+    useNewton3 = atoi(argv[7]);
+  } else if (argc == 7) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
     containerTypeInt = atoi(argv[3]);
@@ -86,20 +102,25 @@ int main(int argc, char *argv[]) {
     numIterations = atoi(argv[2]);
     containerTypeInt = atoi(argv[3]);
   } else {
-    std::cerr << "ERROR: wrong number of arguments given. " << std::endl
-              << "sph-diagram-generation requires the following arguments:" << std::endl
-              << "numParticles numIterations containerType [functorType [skin rebuildFrequency]]:" << std::endl
-              << std::endl
-              << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl
-              << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
+    std::cerr
+        << "ERROR: wrong number of arguments given. " << std::endl
+        << "sph-diagram-generation requires the following arguments:" << std::endl
+        << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 [boxSize]]]]:"
+        << std::endl
+        << std::endl
+        << "containerType should be either 0 (linked-cells), 1 (direct sum), 2 (verlet lists) or 3 (verlet lists cells)"
+        << std::endl
+        << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
     exit(1);
   }
 
-  if (containerTypeInt <= verletLists) {
+  if (containerTypeInt <= verletListsCells) {
     containerType = static_cast<ContainerType>(containerTypeInt);
   } else {
-    std::cerr << "Error: wrong containerType " << containerTypeInt << std::endl
-              << "containerType should be either 0 (linked-cells), 1 (direct sum) or 2 (verlet lists)" << std::endl;
+    std::cerr
+        << "Error: wrong containerType " << containerTypeInt << std::endl
+        << "containerType should be either 0 (linked-cells), 1 (direct sum), 2 (verlet lists) or 3 (verlet lists cells)"
+        << std::endl;
     exit(2);
   }
 
@@ -111,38 +132,54 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
+  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
+      boxMin, boxMax, cutoff);
+  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
+      boxMin, boxMax, cutoff);
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
+  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(
+      boxMin, boxMax, cutoff, autopas::TraversalOptions::c08, skin * cutoff, rebuildFrequency);
 
   addParticles(lcCont, numParticles);
 
   for (auto it = lcCont.begin(); it.isValid(); ++it) {
     dirCont.addParticle(*it);
     verletCont.addParticle(*it);
+    verletCellCont.addParticle(*it);
   }
 
   if (containerType == linkedCells) {
     if (functorType == densityFunctor) {
-      measureContainer(&lcCont, &densfunc, numParticles, numIterations);
+      measureContainer(&lcCont, &densfunc, numParticles, numIterations, useNewton3);
     } else if (functorType == hydroForceFunctor) {
-      measureContainer(&lcCont, &hydrofunc, numParticles, numIterations);
+      measureContainer(&lcCont, &hydrofunc, numParticles, numIterations, useNewton3);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
     }
   } else if (containerType == directSum) {
     if (functorType == densityFunctor) {
-      measureContainer(&dirCont, &densfunc, numParticles, numIterations);
+      measureContainer(&dirCont, &densfunc, numParticles, numIterations, useNewton3);
     } else if (functorType == hydroForceFunctor) {
-      measureContainer(&dirCont, &hydrofunc, numParticles, numIterations);
+      measureContainer(&dirCont, &hydrofunc, numParticles, numIterations, useNewton3);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
     }
   } else if (containerType == verletLists) {
     if (functorType == densityFunctor) {
-      measureContainer(&verletCont, &densfunc, numParticles, numIterations);
+      measureContainer(&verletCont, &densfunc, numParticles, numIterations, useNewton3);
     } else if (functorType == hydroForceFunctor) {
-      measureContainer(&verletCont, &hydrofunc, numParticles, numIterations);
+      measureContainer(&verletCont, &hydrofunc, numParticles, numIterations, useNewton3);
+    } else {
+      std::cout << "wrong functor given" << std::endl;
+      exit(2);
+    }
+  } else if (containerType == verletListsCells) {
+    if (functorType == densityFunctor) {
+      measureContainer(&verletCellCont, &densfunc, numParticles, numIterations, useNewton3);
+    } else if (functorType == hydroForceFunctor) {
+      measureContainer(&verletCellCont, &hydrofunc, numParticles, numIterations, useNewton3);
     } else {
       std::cout << "wrong functor given" << std::endl;
       exit(2);
@@ -154,26 +191,29 @@ int main(int argc, char *argv[]) {
 }
 
 template <class Container, class Functor>
-void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations) {
-  // autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
-  //    flopFunctor(cont->getCutoff());
-
-  autopas::utils::Timer t;
-
-  // cont->iteratePairwiseAoS(&flopFunctor);
-  // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
-
+void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
   autopas::CellPairTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>> *traversal;
 
   switch (cont->getContainerType()) {
     case autopas::ContainerOptions::linkedCells: {
-      traversal =
-          new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-              dynamic_cast<autopas::LinkedCells<autopas::sph::SPHParticle,
-                                                autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(cont)
-                  ->getCellBlock()
-                  .getCellsPerDimensionWithHalo(),
-              func);
+      auto dims =
+          dynamic_cast<
+              autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(
+              cont)
+              ->getCellBlock()
+              .getCellsPerDimensionWithHalo();
+      std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
+
+      if (useNewton3) {
+        traversal =
+            new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims,
+                                                                                                                  func);
+      } else {
+        traversal =
+            new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
+                dims, func);
+      }
+
       break;
     }
     case autopas::ContainerOptions::directSum: {
@@ -182,14 +222,42 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
               func);
       break;
     }
+    case autopas::ContainerOptions::verletListsCells: {
+      auto dims = dynamic_cast<autopas::VerletListsCells<autopas::sph::SPHParticle> *>(cont)->getCellsPerDimension();
+      std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
+
+      if (useNewton3) {
+        traversal =
+            new autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims,
+                                                                                                                  func);
+      } else {
+        traversal =
+            new autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
+                dims, func);
+      }
+      break;
+    }
     default:
       traversal = new autopas::DummyTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>>({0, 0, 0});
   }
 
+  measureContainerTraversal(cont, func, traversal, numParticles, numIterations, useNewton3);
+}
+
+template <class Container, class Functor, class Traversal>
+void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
+                               int numIterations, bool useNewton3) {
+  // autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
+  //    flopFunctor(cont->getCutoff());
+
+  autopas::utils::Timer t;
+
+  // cont->iteratePairwiseAoS(&flopFunctor);
+  // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
+
   t.start();
-  for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseAoS(func, traversal);
-  }
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwiseAoS(func, traversal, useNewton3);
+
   double elapsedTime = t.stop();
 
   // double flops = flopsPerIteration * numIterations;
@@ -197,9 +265,8 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwiseSoA(func, traversal);
-  }
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwiseSoA(func, traversal, useNewton3);
+
   elapsedTime = t.stop();
 
   delete traversal;
