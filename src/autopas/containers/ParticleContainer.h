@@ -9,7 +9,7 @@
 
 #include <array>
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversalInterface.h"
+#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 
 #ifdef AUTOPAS_OPENMP
 #include <omp.h>
@@ -46,8 +46,14 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * @param applicableTraversals Sorted vector of traversals applicable for this Container.
    */
   ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                    const std::vector<TraversalOptions> &applicableTraversals = DefaultApplicableTraversals())
-      : _cells(), _applicableTraversals(applicableTraversals), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
+                    std::vector<TraversalOptions> applicableTraversals = DefaultApplicableTraversals())
+      : _cells(),
+        _applicableTraversals(
+            // first sort the applicableTraversals, then pass them to _applicableTraversals. (Comma operator)
+            (std::sort(applicableTraversals.begin(), applicableTraversals.end()), applicableTraversals)),
+        _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cutoff(cutoff) {}
 
   /**
    * destructor of ParticleContainer
@@ -163,7 +169,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   /**
    * Vector of all applicable traversal options for the container.
    */
-  const std::vector<TraversalOptions> &_applicableTraversals;
+  const std::vector<TraversalOptions> _applicableTraversals;
 
  private:
   std::array<double, 3> _boxMin;

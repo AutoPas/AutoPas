@@ -21,46 +21,10 @@ namespace autopas {
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-  FullParticleCell() { autopas_init_lock(&particlesLock); }
-
-  ~FullParticleCell() { autopas_destroy_lock(&particlesLock); }
-
-  /**
-   * Move Constructor
-   * @param other
-   */
-  FullParticleCell(FullParticleCell&& other) {
-    _particles = std::move(other._particles);
-    _particleSoABuffer = std::move(other._particleSoABuffer);
-    autopas_init_lock(&particlesLock);
-  }
-
-  /**
-   * Copy constructor
-   * @param other
-   */
-  FullParticleCell(const FullParticleCell& other) {
-    _particles = other._particles;
-    _particleSoABuffer = other._particleSoABuffer;
-    autopas_init_lock(&particlesLock);
-  }
-
-  /**
-   * Assignment operator
-   * @param other
-   * @return reference to this object after copy
-   */
-  FullParticleCell& operator=(FullParticleCell& other) {
-    _particles = other._particles;
-    _particleSoABuffer = other._particleSoABuffer;
-    autopas_init_lock(&particlesLock);
-    return *this;
-  }
-
   void addParticle(Particle& m) override {
-    autopas_set_lock(&particlesLock);
+    particlesLock.lock();
     _particles.push_back(m);
-    autopas_unset_lock(&particlesLock);
+    particlesLock.unlock();
   }
 
   virtual SingleCellIteratorWrapper<Particle> begin() override {
@@ -81,14 +45,14 @@ class FullParticleCell : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteByIndex(size_t index) override {
-    autopas_set_lock(&particlesLock);
+    particlesLock.lock();
     assert(index < numParticles());
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
     }
     _particles.pop_back();
-    autopas_unset_lock(&particlesLock);
+    particlesLock.unlock();
   }
 
   /**
@@ -138,6 +102,6 @@ class FullParticleCell : public ParticleCell<Particle> {
   typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
 
  private:
-  autopas_lock_t particlesLock;
+  AutoPasLock particlesLock;
 };
 }  // namespace autopas

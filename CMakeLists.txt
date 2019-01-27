@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.3)
 
 
 #CMAKE policies, etc.
+CMAKE_POLICY(SET CMP0054 NEW)
 CMAKE_POLICY(SET CMP0057 NEW)
 set(CMAKE_CXX_STANDARD 14)
 # cmake < 3.6 ignores "set(CMAKE_CXX_STANDARD 11)" when using icpc

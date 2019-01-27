@@ -24,27 +24,13 @@ class DummyTraversal : public CellPairTraversal<ParticleCell> {
    * Constructor
    * @param dims
    */
-  DummyTraversal(const std::array<unsigned long, 3> &dims) : CellPairTraversal<ParticleCell>(dims){};
+  explicit DummyTraversal(const std::array<unsigned long, 3> &dims) : CellPairTraversal<ParticleCell>(dims){};
 
   ~DummyTraversal() = default;
 
-  TraversalOptions getTraversalType() override;
+  TraversalOptions getTraversalType() override { return TraversalOptions::dummyTraversal; }
 
-  bool isApplicable() override;
-
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  bool isApplicable() override { return true; }
 };
-
-template <class ParticleCell>
-TraversalOptions DummyTraversal<ParticleCell>::getTraversalType() {
-  return TraversalOptions::dummyTraversal;
-}
-
-template <class ParticleCell>
-bool DummyTraversal<ParticleCell>::isApplicable() {
-  return true;
-}
-template <class ParticleCell>
-void DummyTraversal<ParticleCell>::traverseCellPairs(std::vector<ParticleCell> &cells) {}
 
 }  // namespace autopas

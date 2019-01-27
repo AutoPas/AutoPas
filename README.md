@@ -182,7 +182,8 @@ AutoPasLog(warn, "Hello {}", name);
 ```
 The global log level can be set at runtime with:
 ```
-autopas::Logger::get()->set_level(autpas::Logger::LogLevel::debug);
+#include "autopas/utils/Logger.h"
+autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
 ```
 Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `off`,
 
