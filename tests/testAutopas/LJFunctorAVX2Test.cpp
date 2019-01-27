@@ -33,14 +33,14 @@ bool LJFunctorAVX2Test::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::
   double *const __restrict__ fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
 
   for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
-    EXPECT_EQ(*idptr1, *idptr2);
+    EXPECT_EQ(idptr1[i], idptr2[i]);
     // TODO: assert near
-    EXPECT_DOUBLE_EQ(*xptr1, *xptr2);
-    EXPECT_DOUBLE_EQ(*yptr1, *yptr2);
-    EXPECT_DOUBLE_EQ(*zptr1, *zptr2);
-    EXPECT_DOUBLE_EQ(*fxptr1, *fxptr2);
-    EXPECT_DOUBLE_EQ(*fyptr1, *fyptr2);
-    EXPECT_DOUBLE_EQ(*fzptr1, *fzptr2);
+    EXPECT_DOUBLE_EQ(xptr1[i], xptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(yptr1[i], yptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(zptr1[i], zptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(fxptr1[i], fxptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(fyptr1[i], fyptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(fzptr1[i], fzptr2[i]) << "for particle pair " << idptr1[i];
   }
   return not::testing::Test::HasFailure();
 }
@@ -48,12 +48,12 @@ bool LJFunctorAVX2Test::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::
 bool LJFunctorAVX2Test::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
-  EXPECT_DOUBLE_EQ(p1.getR()[0], p2.getR()[0]);
-  EXPECT_DOUBLE_EQ(p1.getR()[1], p2.getR()[1]);
-  EXPECT_DOUBLE_EQ(p1.getR()[2], p2.getR()[2]);
-  EXPECT_DOUBLE_EQ(p1.getF()[0], p2.getF()[0]);
-  EXPECT_DOUBLE_EQ(p1.getF()[1], p2.getF()[1]);
-  EXPECT_DOUBLE_EQ(p1.getF()[2], p2.getF()[2]);
+  EXPECT_DOUBLE_EQ(p1.getR()[0], p2.getR()[0]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getR()[1], p2.getR()[1]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getR()[2], p2.getR()[2]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getF()[0], p2.getF()[0]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getF()[1], p2.getF()[1]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getF()[2], p2.getF()[2]) << "for particle pair " << p1.getID();
 
   return not::testing::Test::HasFailure();
 }
@@ -78,8 +78,8 @@ void LJFunctorAVX2Test::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
 
   Particle defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
   RandomGenerator::fillWithParticles(cell1AVX2, defaultParticle, _lowCorner,
-                                     {_lowCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, numParticles);
-  RandomGenerator::fillWithParticles(cell2AVX2, defaultParticle, {_lowCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
+                                     {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
+  RandomGenerator::fillWithParticles(cell2AVX2, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
                                      _highCorner, numParticles);
 
   // copy cells
