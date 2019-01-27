@@ -201,17 +201,17 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
 
     // if newton 3 is used subtract fD from particle j
     if (newton3) {
-      const __m256d fx2 = _mm256_load_pd(&fx2ptr[j]);
-      const __m256d fy2 = _mm256_load_pd(&fy2ptr[j]);
-      const __m256d fz2 = _mm256_load_pd(&fz2ptr[j]);
+      const __m256d fx2 = masked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fx2ptr[j]);
+      const __m256d fy2 = masked ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fy2ptr[j]);
+      const __m256d fz2 = masked ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fz2ptr[j]);
 
       const __m256d fx2new = _mm256_sub_pd(fx2, fx);
       const __m256d fy2new = _mm256_sub_pd(fy2, fy);
       const __m256d fz2new = _mm256_sub_pd(fz2, fz);
 
-      _mm256_store_pd(&fx2ptr[j], fx2new);
-      _mm256_store_pd(&fy2ptr[j], fy2new);
-      _mm256_store_pd(&fz2ptr[j], fz2new);
+      masked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new) : _mm256_store_pd(&fx2ptr[j], fx2new);
+      masked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new) : _mm256_store_pd(&fy2ptr[j], fy2new);
+      masked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new) : _mm256_store_pd(&fz2ptr[j], fz2new);
     }
   }
 
