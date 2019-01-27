@@ -104,8 +104,9 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     //    bool isHaloCell1 = false;
     //    bool isHaloCell2 = false;
 
-    for (size_t i = soa.getNumParticles() - 1; i > 0; --i) {
-      std::cout << i << std::endl;
+    // reverse outer loop s.th. inner loop always beginns at aligned array start
+    // typecast to detect underflow
+    for (size_t i = soa.getNumParticles() - 1; (long)i >= 0; --i) {
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
       __m256d fzacc = _mm256_setzero_pd();
@@ -114,24 +115,14 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
       const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
       const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
 
-      // floor soa2 numParticles to multiple of vecLength
-      if (newton3) {
-        unsigned int j = 0;
-        for (; j < (i & ~(vecLength - 1)); j += 4) {
-          SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
-        }
-        const int rest = (int)(i & (vecLength - 1));
-        if (rest > 0)
-          SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, rest);
-      } else {
-        unsigned int j = 0;
-        for (; j < (i & ~(vecLength - 1)); j += 4) {
-          SoAKernel<false, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
-        }
-        const int rest = (int)(i & (vecLength - 1));
-        if (rest > 0)
-          SoAKernel<false, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, rest);
+      // floor soa numParticles to multiple of vecLength
+      unsigned int j = 0;
+      for (; j < (i & ~(vecLength - 1)); j += 4) {
+        SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
       }
+      const int rest = (int)(i & (vecLength - 1));
+      if (rest > 0)
+        SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -264,7 +255,6 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
           SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
-        std::cout << rest << std::endl;
         if (rest > 0)
           SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, rest);
       } else {
