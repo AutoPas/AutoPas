@@ -153,12 +153,12 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
 
 TEST_F(AutoPasTest, checkIsNeighborListValid) {
   // for linked cells this should be false
-  EXPECT_FALSE(autoPas.isNeighborListValid());
+  EXPECT_TRUE(autoPas.needsContainerUpdate());
 
   // now build verlet lists
   autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 2, {autopas::ContainerOptions::verletLists}, {});
   // after build this should be false
-  EXPECT_FALSE(autoPas.isNeighborListValid());
+  EXPECT_TRUE(autoPas.needsContainerUpdate());
 
   // run once, builds verlet lists. (here for 0 particles)
   MockFunctor<Particle, FPCell> emptyFunctor;
@@ -169,5 +169,5 @@ TEST_F(AutoPasTest, checkIsNeighborListValid) {
   autoPas.iteratePairwise(&emptyFunctor, autopas::aos);
 
   // now verlet lists should be valid.
-  EXPECT_TRUE(autoPas.isNeighborListValid());
+  EXPECT_FALSE(autoPas.needsContainerUpdate());
 }
