@@ -192,7 +192,7 @@ class AutoPas {
    * @return True if the lists are valid, false if a rebuild is needed.
    */
   bool needsContainerUpdate() {
-    if(_autoTuner->willRebuild()){
+    if (_autoTuner->willRebuild()) {
       return true;
     }
     if (auto container = dynamic_cast<VerletLists<Particle> *>(_autoTuner->getContainer().get())) {
