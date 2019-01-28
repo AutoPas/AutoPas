@@ -108,7 +108,7 @@ void initContainerUniform(std::vector<autopas::ContainerOptions> &containerOptio
  * @param autopas
  */
 template <class AutoPasTemplate>
-void wirteVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopas) {
+void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopas) {
   std::ofstream vtkFile;
   vtkFile.open(filename);
 
@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
   cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
 
-  if (not vtkFilename.empty()) wirteVTKFile(vtkFilename, particlesTotal, autopas);
+  if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
 
   // statistics for linked cells
   if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::linkedCells) {

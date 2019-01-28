@@ -102,7 +102,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    // @@TODO: Globlas
+    // @TODO: Globlas
     //    bool isHaloCell1 = false;
     //    bool isHaloCell2 = false;
 
