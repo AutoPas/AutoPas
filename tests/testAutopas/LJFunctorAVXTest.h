@@ -7,14 +7,19 @@
 #ifdef __AVX__
 #pragma once
 
-#include <autopas/utils/SoA.h>
-#include <testingHelpers/commonTypedefs.h>
 #include "AutoPasTestBase.h"
+#include "autopas/utils/SoA.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class LJFunctorAVXTest : public AutoPasTestBase {
  public:
   LJFunctorAVXTest()
       : AutoPasTestBase(), _cutoff{1.}, _epsilon{1.}, _sigma{1.}, _lowCorner{0, 0, 0}, _highCorner{2, 1, 1} {}
+
+  /**
+   *  Maximum error allowed for comparisons.
+   */
+  constexpr static double _maxError = 1e-14;
 
   /**
    * Checks equality of SoALoader, SoAFunctor and SoAExtractor.
