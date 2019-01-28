@@ -21,6 +21,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"help", no_argument, nullptr, 'h'},
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
+                                         {"no-newton3", no_argument, nullptr, '3'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
@@ -39,6 +40,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
+      case '3': {
+        newton3 = false;
+        break;
+      }
       case 'b': {
         try {
           boxLength = stod(strArg);
@@ -334,6 +339,9 @@ void MDFlexParser::printConfig() {
       break;
     }
   }
+
+  cout << setw(valueOffset) << left << "Newton3"
+       << ":  " << (newton3 ? "On" : "Off") << endl;
 
   cout << setw(valueOffset) << left << "Cutoff radius"
        << ":  " << cutoff << endl;
