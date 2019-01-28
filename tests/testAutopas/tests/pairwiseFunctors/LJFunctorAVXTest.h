@@ -19,7 +19,7 @@ class LJFunctorAVXTest : public AutoPasTestBase {
   /**
    *  Maximum error allowed for comparisons.
    */
-  constexpr static double _maxError = 1e-14;
+  constexpr static double _maxError = 1e-12;
 
   /**
    * Checks equality of SoALoader, SoAFunctor and SoAExtractor.
