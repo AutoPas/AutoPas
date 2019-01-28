@@ -59,7 +59,9 @@ bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_NEAR(p1.getF()[1], p2.getF()[1], _maxError) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getF()[2], p2.getF()[2], _maxError) << "for particle pair " << p1.getID();
 
-  return not HasFailure();
+  // clang-format off
+  return not ::testing::Test::HasFailure();
+  // clang-format on
 }
 
 bool LJFunctorAVXTest::AoSParticlesEqual(FPCell &cell1, FPCell &cell2) {
