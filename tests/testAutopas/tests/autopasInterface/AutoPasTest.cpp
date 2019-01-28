@@ -151,12 +151,12 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
   AutoPasLog(info, "test logger working.");
 }
 
-TEST_F(AutoPasTest, checkIsNeighborListValid){
+TEST_F(AutoPasTest, checkIsNeighborListValid) {
   // for linked cells this should be false
   EXPECT_FALSE(autoPas.isNeighborListValid());
 
   // now build verlet lists
-  autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 2, {autopas::ContainerOptions::verletLists},{});
+  autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 2, {autopas::ContainerOptions::verletLists}, {});
   // after build this should be false
   EXPECT_FALSE(autoPas.isNeighborListValid());
 
