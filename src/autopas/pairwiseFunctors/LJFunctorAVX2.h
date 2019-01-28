@@ -4,7 +4,6 @@
  * @date 17 Jan 2018
  * @author F. Gratl
  */
-#ifdef __AVX__
 #pragma once
 
 #include <immintrin.h>
@@ -50,6 +49,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
   explicit LJFunctorAVX2(double cutoff, double epsilon, double sigma, double shift,
                          std::array<double, 3> lowCorner = {0., 0., 0.},
                          std::array<double, 3> highCorner = {0., 0., 0.}, bool duplicatedCalculation = false)
+#ifdef __AVX___
       : _one{_mm256_set1_pd(1.)},
         _masks{
             _mm256_set_epi64x(0, 0, 0, -1),
@@ -74,6 +74,11 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     //      _aosthreaddata.resize(autopas_get_max_threads());
     //    }
   }
+#else
+  {
+    utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
+  }
+#endif
 
   bool isRelevantForTuning() override { return relevantForTuning; }
 
@@ -86,6 +91,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+#ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -144,6 +150,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
       fyptr[i] += sumfy;
       fzptr[i] += sumfz;
     }
+#endif
   }
 
  private:
@@ -153,6 +160,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
                         double *const __restrict__ &z2ptr, double *const __restrict__ &fx2ptr,
                         double *const __restrict__ &fy2ptr, double *const __restrict__ &fz2ptr, __m256d &fxacc,
                         __m256d &fyacc, __m256d &fzacc, const unsigned int rest = 0) {
+#ifdef __AVX___
     const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
     const __m256d y2 = masked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&y2ptr[j]);
     const __m256d z2 = masked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&z2ptr[j]);
@@ -209,6 +217,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
       masked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new) : _mm256_store_pd(&fy2ptr[j], fy2new);
       masked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new) : _mm256_store_pd(&fz2ptr[j], fz2new);
     }
+#endif
   }
 
  public:
@@ -216,6 +225,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
    */
   void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
+#ifdef __AVX___
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -288,6 +298,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
       fy1ptr[i] += sumfy;
       fz1ptr[i] += sumfz;
     }
+#endif
   }
 
   // clang-format off
@@ -498,5 +509,3 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
 
 };  // namespace autopas
 }  // namespace autopas
-
-#endif  // __AVX__
