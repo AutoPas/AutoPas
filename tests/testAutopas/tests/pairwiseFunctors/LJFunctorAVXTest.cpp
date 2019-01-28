@@ -12,8 +12,6 @@
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/RandomGenerator.h"
 
-using ::testing::Test::HasFailure;
-
 template <class SoAType>
 bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
   EXPECT_GT(soa1.getNumParticles(), 0);
@@ -46,7 +44,9 @@ bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
     EXPECT_NEAR(fyptr1[i], fyptr2[i], _maxError) << "for particle pair " << idptr1[i];
     EXPECT_NEAR(fzptr1[i], fzptr2[i], _maxError) << "for particle pair " << idptr1[i];
   }
-  return not HasFailure();
+  // clang-format off
+  return not ::testing::Test::HasFailure();
+  // clang-format on
 }
 
 bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
