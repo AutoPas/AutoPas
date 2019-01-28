@@ -8,13 +8,14 @@ if [[ "$#" -ne 1 ]]; then
     exit -1
 fi
 
+EXECUTABLE=$(readlink -e "${1}")
+[[ $? -ne 0 ]] && echo "Path to md-flexible invalid!" && exit -2
+
 timestamp=`date +%Y-%m-%d_%H-%M-%S`
 outputDir="measurePerf_${timestamp}"
 
 mkdir ${outputDir}
 cd ${outputDir}
-
-EXECUTABLE=../${1}
 
 Mols=(   16    32    64   128  256  512 1024 2048 4096 8192 16384 32768 65536)
 Reps=(10000 10000 10000 10000 1000 1000  200  100   20   20    20    20    20)
