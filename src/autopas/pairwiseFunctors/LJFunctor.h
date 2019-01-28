@@ -24,7 +24,8 @@ namespace autopas {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, bool calculateGlobals = false, bool relevantForTuning = true>
+template <class Particle, class ParticleCell, bool useNewton3 = true, bool calculateGlobals = false,
+          bool relevantForTuning = true>
 class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -72,6 +73,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
   bool isRelevantForTuning() override { return relevantForTuning; }
+
+  bool allowsNewton3() override { return useNewton3; }
+
+  bool allowsNonNewton3() override { return not useNewton3; }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
