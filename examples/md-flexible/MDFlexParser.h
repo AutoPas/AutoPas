@@ -51,10 +51,10 @@ class MDFlexParser {
   static constexpr size_t valueOffset = 32;
 
   // defaults:
-  std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists};
+  std::vector<autopas::ContainerOptions> containerOptions = autopas::allContainerOptions;
   autopas::SelectorStrategy containerSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
   autopas::DataLayoutOption dataLayoutOption = autopas::DataLayoutOption::soa;
-  std::vector<autopas::TraversalOptions> traversalOptions = {autopas::c08, autopas::directSumTraversal};
+  std::vector<autopas::TraversalOptions> traversalOptions = autopas::allTraversalOptions;
   autopas::SelectorStrategy traversalSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
 
  private:
