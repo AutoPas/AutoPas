@@ -29,12 +29,21 @@ function separate {
     echo
 }
 
+declare -A traversals=(
+    [DirectSum]=directSumTraversala
+    [Linked-Cells]=c08
+    [VerletLists]=c08ThisIsADummy
+    [VerletCells]=verletC18
+    [VerletCluster]=c01
+)
+
 # iterate over containers
-for container in DirectSum Linked-Cells VerletLists ;
+# for container in DirectSum Linked-Cells VerletLists ;
+for container in DirectSum Linked-Cells VerletLists VerletCluster VerletCells ;
 do
     separate "Container: ${container}"
     # only set verlet options if needed
-    if [[ ${container} = 'VerletLists' ]];
+    if [[ ${container} =~ 'Verlet' ]];
     then
         VLRebuild=(1   5  10  20)
         VLSkin=( 0.0 0.1 0.2 0.3)
@@ -52,7 +61,7 @@ do
             configPrinted=false
 
             # since this loop only has one iteration for non verlet container only print for verlet
-            if [[ ${container} = 'VerletLists' ]];
+            if [[ ${container} =~ 'Verlet' ]];
             then
                 separate "VLRebuild: ${VLRebuild[$iVL]} VLSkin: ${VLSkin[$iVL]}"
                 filename="runtimes_${container}_${dataLayout}_${VLRebuild[$iVL]}_${VLSkin[$iVL]}.csv"
@@ -74,6 +83,7 @@ do
                 # Only works sensibly as long as the default for traversals contains exactly one applicable traversal per container
                 output=$(${EXECUTABLE} \
                     --container ${container} \
+                    --traversal ${traversals[$container]} \
                     --data-layout ${dataLayout} \
                     --cutoff 1 \
                     --box-length 10 \
