@@ -151,7 +151,7 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
   AutoPasLog(info, "test logger working.");
 }
 
-TEST_F(AutoPasTest, checkIsNeighborListValid) {
+TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
   // for linked cells this should be false
   EXPECT_TRUE(autoPas.needsContainerUpdate());
 

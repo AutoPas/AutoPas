@@ -94,6 +94,18 @@ class AutoTuner {
   template <class PairwiseFunctor>
   bool iteratePairwise(PairwiseFunctor *f, DataLayoutOption dataLayoutOption);
 
+  bool willRebuild() {
+    if (_iterationsSinceTuning >= _tuningInterval) {
+      if (_numSamples < _maxSamples) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  }
+
  private:
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   bool iteratePairwiseTemplateHelper(PairwiseFunctor *f);
