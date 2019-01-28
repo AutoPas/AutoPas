@@ -430,7 +430,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       })
 
   /**
-   * get the number of flops used per kernel call. This should count the
+   * Get the number of flops used per kernel call. This should count the
    * floating point operations needed for two particles that lie within a cutoff
    * radius.
    * @return the number of floating point operations
