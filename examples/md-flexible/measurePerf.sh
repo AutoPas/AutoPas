@@ -68,6 +68,14 @@ do
                 filename="runtimes_${container}_${dataLayout}.csv"
             fi
 
+            # workaround because there is no traversal for Verlet clusters with newton 3 yet.
+            if [[ ${container} =~ 'VerletCluster' ]];
+            then
+                noNewton3="--no-newton3"
+            else
+                noNewton3=""
+            fi
+
             # iterate over molecules with the correct repetition
             for i in `seq 0 $(( ${#Mols[@]} - 1 ))` ;
             do
@@ -94,7 +102,9 @@ do
                     --iterations ${thisReps} \
                     --tuning-interval $(( ${thisReps} + 1 )) \
                     --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
-                    --verlet-skin-radius ${VLSkin[$iVL]}
+                    --verlet-skin-radius ${VLSkin[$iVL]} \
+                    --no-flops \
+                    ${noNewton3}
                 )
 
                 printf "${output}\n"
