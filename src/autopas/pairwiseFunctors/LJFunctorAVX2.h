@@ -4,7 +4,7 @@
  * @date 17 Jan 2018
  * @author F. Gratl
  */
-
+#ifdef __AVX__
 #pragma once
 
 #include <immintrin.h>
@@ -49,7 +49,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
    */
   explicit LJFunctorAVX2(double cutoff, double epsilon, double sigma, double shift,
                          std::array<double, 3> lowCorner = {0., 0., 0.},
-                         std::array<double, 3> highCorner = {0., 0., 0.}, bool duplicatedCalculation = true)
+                         std::array<double, 3> highCorner = {0., 0., 0.}, bool duplicatedCalculation = false)
       : _one{_mm256_set1_pd(1.)},
         _masks{
             _mm256_set_epi64x(0, 0, 0, -1),
@@ -67,14 +67,10 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
         _lowCorner(lowCorner),
         _highCorner(highCorner),
         _postProcessed{false} {
-    if (calculateGlobals and duplicatedCalculation) {
-      if (lowCorner == highCorner) {
-        throw utils::ExceptionHandler::AutoPasException(
-            "Please specify the lowCorner and highCorner properly if calculateGlobals and duplicatedCalculation are "
-            "set to true.");
-      }
+    if (calculateGlobals or duplicatedCalculation) {
+      utils::ExceptionHandler::exception("Calculation of global values and duplicated calculations not supported.");
     }
-    //    if (calculateglobals) {
+    //    if (calculateGlobals) {
     //      _aosthreaddata.resize(autopas_get_max_threads());
     //    }
   }
@@ -82,7 +78,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
   bool isRelevantForTuning() override { return relevantForTuning; }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    utils::ExceptionHandler::exception("LJFunctorAVX2AVX2.AoSFunctor() not implemented!");
+    utils::ExceptionHandler::exception("LJFunctorAVX2.AoSFunctor() not implemented!");
   }
 
   /**
@@ -304,157 +300,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
   void SoAFunctor(SoA<SoAArraysType> &soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
-    //    auto numParts = soa.getNumParticles();
-    //    AutoPasLog(debug, "SoAFunctorVerlet: {}", soa.getNumParticles());
-    //
-    //    if (numParts == 0) return;
-    //
-    //    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    //    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    //    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    //
-    //    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    //    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    //    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-    //
-    //    for (size_t i = iFrom; i < iTo; ++i) {
-    //      double fxacc = 0;
-    //      double fyacc = 0;
-    //      double fzacc = 0;
-    //      const size_t listSizeI = neighborList[i].size();
-    //      const size_t *const __restrict__ currentList = neighborList[i].data();
-    //
-    //      // this is a magic number, that should correspond to at least
-    //      // vectorization width*N have testet multiple sizes:
-    //      // 4: does not give a speedup, slower than original AoSFunctor
-    //      // 8: small speedup compared to AoS
-    //      // 12: highest speedup compared to Aos
-    //      // 16: smaller speedup
-    //      // in theory this is a variable, we could auto-tune over...
-    //#ifdef __AVX512F__
-    //      // use a multiple of 8 for avx
-    //      const size_t vecsize = 16;
-    //#else
-    //      // for everything else 12 is faster
-    //      const size_t vecsize = 12;
-    //#endif
-    //      size_t joff = 0;
-    //
-    //      // if the size of the verlet list is larger than the given size vecsize,
-    //      // we will use a vectorized version.
-    //      if (listSizeI >= vecsize) {
-    //        alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
-    //        // broadcast of the position of particle i
-    //        for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-    //          xtmp[tmpj] = xptr[i];
-    //          ytmp[tmpj] = yptr[i];
-    //          ztmp[tmpj] = zptr[i];
-    //        }
-    //        // loop over the verlet list from 0 to x*vecsize
-    //        for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-    //          // in each iteration we calculate the interactions of particle i with
-    //          // vecsize particles in the neighborlist of particle i starting at
-    //          // particle joff
-    //
-    //          // gather position of particle j
-    //#pragma omp simd safelen(vecsize)
-    //          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-    //            xArr[tmpj] = xptr[currentList[joff + tmpj]];
-    //            yArr[tmpj] = yptr[currentList[joff + tmpj]];
-    //            zArr[tmpj] = zptr[currentList[joff + tmpj]];
-    //          }
-    //
-    //          // do omp simd with reduction of the interaction
-    //#pragma omp simd reduction(+ : fxacc, fyacc, fzacc) safelen(vecsize)
-    //          for (size_t j = 0; j < vecsize; j++) {
-    //            // const size_t j = currentList[jNeighIndex];
-    //
-    //            const double drx = xtmp[j] - xArr[j];
-    //            const double dry = ytmp[j] - yArr[j];
-    //            const double drz = ztmp[j] - zArr[j];
-    //
-    //            const double drx2 = drx * drx;
-    //            const double dry2 = dry * dry;
-    //            const double drz2 = drz * drz;
-    //
-    //            const double dr2 = drx2 + dry2 + drz2;
-    //
-    //            const double mask = (dr2 <= _cutoffsquare) ? 1. : 0.;
-    //
-    //            const double invdr2 = 1. / dr2 * mask;
-    //            const double lj2 = _sigmasquare * invdr2;
-    //            const double lj6 = lj2 * lj2 * lj2;
-    //            const double lj12 = lj6 * lj6;
-    //            const double lj12m6 = lj12 - lj6;
-    //            const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
-    //
-    //            const double fx = drx * fac;
-    //            const double fy = dry * fac;
-    //            const double fz = drz * fac;
-    //
-    //            fxacc += fx;
-    //            fyacc += fy;
-    //            fzacc += fz;
-    //            if (newton3) {
-    //              fxArr[j] = fx;
-    //              fyArr[j] = fy;
-    //              fzArr[j] = fz;
-    //            }
-    //          }
-    //          // scatter the forces to where they belong, this is only needed for newton3
-    //          if (newton3) {
-    //#pragma omp simd safelen(vecsize)
-    //            for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-    //              const size_t j = currentList[joff + tmpj];
-    //              fxptr[j] -= fxArr[tmpj];
-    //              fyptr[j] -= fyArr[tmpj];
-    //              fzptr[j] -= fzArr[tmpj];
-    //            }
-    //          }
-    //        }
-    //      }
-    //      // this loop goes over the remainder and uses no optimizations
-    //      for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
-    //        size_t j = neighborList[i][jNeighIndex];
-    //        if (i == j) continue;
-    //
-    //        const double drx = xptr[i] - xptr[j];
-    //        const double dry = yptr[i] - yptr[j];
-    //        const double drz = zptr[i] - zptr[j];
-    //
-    //        const double drx2 = drx * drx;
-    //        const double dry2 = dry * dry;
-    //        const double drz2 = drz * drz;
-    //
-    //        const double dr2 = drx2 + dry2 + drz2;
-    //
-    //        if (dr2 > _cutoffsquare) continue;
-    //
-    //        const double invdr2 = 1. / dr2;
-    //        const double lj2 = _sigmasquare * invdr2;
-    //        const double lj6 = lj2 * lj2 * lj2;
-    //        const double lj12 = lj6 * lj6;
-    //        const double lj12m6 = lj12 - lj6;
-    //        const double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
-    //
-    //        const double fx = drx * fac;
-    //        const double fy = dry * fac;
-    //        const double fz = drz * fac;
-    //
-    //        fxacc += fx;
-    //        fyacc += fy;
-    //        fzacc += fz;
-    //        if (newton3) {
-    //          fxptr[j] -= fx;
-    //          fyptr[j] -= fy;
-    //          fzptr[j] -= fz;
-    //        }
-    //      }
-    //
-    //      fxptr[i] += fxacc;
-    //      fyptr[i] += fyacc;
-    //      fzptr[i] += fzacc;
-    //    }
+    utils::ExceptionHandler::exception("Verlet SoA functor not implemented!");
   }
 
   /**
@@ -652,3 +498,5 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
 
 };  // namespace autopas
 }  // namespace autopas
+
+#endif  // __AVX__
