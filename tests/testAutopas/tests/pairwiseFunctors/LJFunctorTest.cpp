@@ -61,7 +61,7 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
 void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
   // test is for the soa functors the forces are calculated correctly
 
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, epsilon, sigma, shift);
+  autopas::LJFunctor<Molecule, FMCell, true, false> functor(cutoff, epsilon, sigma, shift);
 
   FMCell cell1, cell2;
   {
@@ -183,12 +183,12 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
   {
     // throw if lowcorner == highcorner, but calculateglobals and duplicatedCalculation are true
-    typedef autopas::LJFunctor<Molecule, FMCell, true> functortype;
+    typedef autopas::LJFunctor<Molecule, FMCell, true, true> functortype;
     EXPECT_THROW(functortype functor(cutoff, epsilon, sigma, shift, lowCorner, {0., 0., 0.}, duplicatedCalculation),
                  exception_type);
   }
 
-  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+  autopas::LJFunctor<Molecule, FMCell, true, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
                                                      duplicatedCalculation);
 
   // getupot without postprocessing is not allowed
@@ -208,7 +208,7 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
 }
 
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
-  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+  autopas::LJFunctor<Molecule, FMCell, true, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
                                                      duplicatedCalculation);
   double xOffset;
   double whereFactor;
@@ -270,7 +270,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
-  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+  autopas::LJFunctor<Molecule, FMCell, true, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
                                                      duplicatedCalculation);
   double xOffset;
   double whereFactor;
@@ -429,7 +429,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
   Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
 
-  autopas::LJFunctor<Molecule, FMCell, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
+  autopas::LJFunctor<Molecule, FMCell, true, true> functor(cutoff, epsilon, sigma, shift, lowCorner, highCorner,
                                                      duplicatedCalculation);
 
   functor.resetGlobalValues();
