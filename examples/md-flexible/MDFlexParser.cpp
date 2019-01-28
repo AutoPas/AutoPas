@@ -82,11 +82,13 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'f': {
-        if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+        if (strArg.find("avx") != string::npos) {
+          functorOption = lj12_6_AVX;
+        } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
           functorOption = lj12_6;
         } else {
           cerr << "Unknown functor : " << strArg << endl;
-          cerr << "Please use 'Lennard-Jones', you have no options here :P" << endl;
+          cerr << "Please use 'Lennard-Jones' or 'Lennard-Jones-AVX'" << endl;
           displayHelp = true;
         }
         break;
@@ -336,6 +338,10 @@ void MDFlexParser::printConfig() {
   switch (functorOption) {
     case FunctorOption::lj12_6: {
       cout << "Lennard-Jones (12-6)" << endl;
+      break;
+    }
+    case FunctorOption::lj12_6_AVX: {
+      cout << "Lennard-Jones (12-6) AVX intrinsics" << endl;
       break;
     }
   }
