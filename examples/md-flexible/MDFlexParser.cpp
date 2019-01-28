@@ -459,3 +459,5 @@ autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 autopas::SelectorStrategy MDFlexParser::getTraversalSelectorStrategy() const { return traversalSelectorStrategy; }
 
 autopas::SelectorStrategy MDFlexParser::getContainerSelectorStrategy() const { return containerSelectorStrategy; }
+
+bool MDFlexParser::getNewton3() const { return newton3; }
