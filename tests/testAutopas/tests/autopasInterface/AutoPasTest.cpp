@@ -7,6 +7,10 @@
 #include "AutoPasTest.h"
 #include "testingHelpers/commonTypedefs.h"
 
+using ::testing::_;
+using ::testing::AtLeast;
+using ::testing::Return;
+
 /**
  * test whether the RegionIterator can be generated and something is returned.
  * This mainly makes certain, that the specific parts of the code can be compiled.
@@ -145,4 +149,25 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
 
   // ensure logger still working
   AutoPasLog(info, "test logger working.");
+}
+
+TEST_F(AutoPasTest, checkIsNeighborListValid) {
+  // for linked cells this should be false
+  EXPECT_FALSE(autoPas.isNeighborListValid());
+
+  // now build verlet lists
+  autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 2, {autopas::ContainerOptions::verletLists}, {});
+  // after build this should be false
+  EXPECT_FALSE(autoPas.isNeighborListValid());
+
+  // run once, builds verlet lists. (here for 0 particles)
+  MockFunctor<Particle, FPCell> emptyFunctor;
+  EXPECT_CALL(emptyFunctor, allowsNewton3()).Times(AtLeast(1)).WillOnce(Return(true));
+  EXPECT_CALL(emptyFunctor, allowsNonNewton3()).Times(AtLeast(1)).WillOnce(Return(false));
+  EXPECT_CALL(emptyFunctor, isRelevantForTuning()).Times(AtLeast(1)).WillOnce(Return(true));
+  autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &emptyFunctor);
+  autoPas.iteratePairwise(&emptyFunctor, autopas::aos);
+
+  // now verlet lists should be valid.
+  EXPECT_TRUE(autoPas.isNeighborListValid());
 }
