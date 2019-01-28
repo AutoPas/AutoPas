@@ -29,17 +29,16 @@ function separate {
     echo
 }
 
-declare -A traversals=(
-    [DirectSum]=directSumTraversal
-    [Linked-Cells]=c08
-    [VerletLists]=c08ThisIsADummy
-    [VerletCells]=verletC18
-    [VerletCluster]=c01
-)
+
+# workaround because bash3 does not support declare -A
+traversals__DirectSum=directSumTraversal
+traversals__LinkedCells=c08
+traversals__VerletLists=c08ThisIsADummy
+traversals__VerletCells=verletC18
+traversals__VerletCluster=c01
 
 # iterate over containers
-# for container in DirectSum Linked-Cells VerletLists ;
-for container in DirectSum Linked-Cells VerletLists VerletCluster VerletCells ;
+for container in DirectSum LinkedCells VerletLists VerletCluster VerletCells ;
 do
     separate "Container: ${container}"
     # only set verlet options if needed
@@ -80,10 +79,13 @@ do
                 fi
 
                 separate "Particles: ${Mols[$i]} Iterations: ${thisReps}"
-                # Only works sensibly as long as the default for traversals contains exactly one applicable traversal per container
+
+                # workaround because bash3 does not support declare -A
+                t=traversals__${container}
+
                 output=$(${EXECUTABLE} \
                     --container ${container} \
-                    --traversal ${traversals[$container]} \
+                    --traversal ${!t} \
                     --data-layout ${dataLayout} \
                     --cutoff 1 \
                     --box-length 10 \
