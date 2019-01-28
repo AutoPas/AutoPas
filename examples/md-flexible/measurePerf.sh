@@ -30,7 +30,7 @@ function separate {
 }
 
 declare -A traversals=(
-    [DirectSum]=directSumTraversala
+    [DirectSum]=directSumTraversal
     [Linked-Cells]=c08
     [VerletLists]=c08ThisIsADummy
     [VerletCells]=verletC18
