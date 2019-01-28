@@ -522,10 +522,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   void SoAFunctorImpl(SoA<SoAArraysType> &soa,
                       const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                       size_t iFrom, size_t iTo) {
-    auto numParts = soa.getNumParticles();
-    AutoPasLog(debug, "SoAFunctorVerlet: {}", soa.getNumParticles());
-
-    if (numParts == 0) return;
+    if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
