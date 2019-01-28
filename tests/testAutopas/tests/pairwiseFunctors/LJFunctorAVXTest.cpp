@@ -37,12 +37,12 @@ bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
   for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
-    EXPECT_NEAR(xptr1[i], xptr2[i], _maxError) << "for particle pair " << idptr1[i];
-    EXPECT_NEAR(yptr1[i], yptr2[i], _maxError) << "for particle pair " << idptr1[i];
-    EXPECT_NEAR(zptr1[i], zptr2[i], _maxError) << "for particle pair " << idptr1[i];
-    EXPECT_NEAR(fxptr1[i], fxptr2[i], _maxError) << "for particle pair " << idptr1[i];
-    EXPECT_NEAR(fyptr1[i], fyptr2[i], _maxError) << "for particle pair " << idptr1[i];
-    EXPECT_NEAR(fzptr1[i], fzptr2[i], _maxError) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(xptr1[i], xptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(yptr1[i], yptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(zptr1[i], zptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(fxptr1[i], fxptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(fyptr1[i], fyptr2[i]) << "for particle pair " << idptr1[i];
+    EXPECT_DOUBLE_EQ(fzptr1[i], fzptr2[i]) << "for particle pair " << idptr1[i];
   }
   // clang-format off
   return not ::testing::Test::HasFailure();
@@ -52,12 +52,12 @@ bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
 bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
-  EXPECT_NEAR(p1.getR()[0], p2.getR()[0], _maxError) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getR()[1], p2.getR()[1], _maxError) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getR()[2], p2.getR()[2], _maxError) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[0], p2.getF()[0], _maxError) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[1], p2.getF()[1], _maxError) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[2], p2.getF()[2], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getR()[0], p2.getR()[0]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getR()[1], p2.getR()[1]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getR()[2], p2.getR()[2]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getF()[0], p2.getF()[0]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getF()[1], p2.getF()[1]) << "for particle pair " << p1.getID();
+  EXPECT_DOUBLE_EQ(p1.getF()[2], p2.getF()[2]) << "for particle pair " << p1.getID();
 
   // clang-format off
   return not ::testing::Test::HasFailure();
