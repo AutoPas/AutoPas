@@ -14,7 +14,7 @@
 #include "MDFlexParser.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX2.h"
+#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 
 using namespace std;
 using namespace autopas;
@@ -260,11 +260,11 @@ int main(int argc, char **argv) {
           LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
-    case MDFlexParser::FunctorOption::lj12_6_AVX2: {
-      durationApply = calculate<LJFunctorAVX2<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(
+    case MDFlexParser::FunctorOption::lj12_6_AVX: {
+      durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(
           autopas, cutoff, numIterations, dataLayoutChoice);
       flopsPerKernelCall =
-          LJFunctorAVX2<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+          LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
   }

@@ -4,15 +4,16 @@
  * @date 12/17/18
  */
 
+#ifdef __AVX__
 #pragma once
 
 #include <autopas/utils/SoA.h>
 #include <testingHelpers/commonTypedefs.h>
 #include "AutoPasTestBase.h"
 
-class LJFunctorAVX2Test : public AutoPasTestBase {
+class LJFunctorAVXTest : public AutoPasTestBase {
  public:
-  LJFunctorAVX2Test()
+  LJFunctorAVXTest()
       : AutoPasTestBase(), _cutoff{1.}, _epsilon{1.}, _sigma{1.}, _lowCorner{0, 0, 0}, _highCorner{2, 1, 1} {}
 
   /**
@@ -69,3 +70,4 @@ class LJFunctorAVX2Test : public AutoPasTestBase {
   const std::array<double, 3> _lowCorner;
   const std::array<double, 3> _highCorner;
 };
+#endif  // __AVX__

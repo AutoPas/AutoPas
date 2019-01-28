@@ -1,5 +1,5 @@
 /**
- * @file LJFunctorAVX2.h
+ * @file LJFunctorAVX.h
  *
  * @date 17 Jan 2018
  * @author F. Gratl
@@ -19,21 +19,21 @@ namespace autopas {
 
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
- * This Version is implemented using AVX2 intrinsics.
+ * This Version is implemented using AVX intrinsics.
  * @tparam Particle The type of particle.
  * @tparam ParticleCell The type of particlecell.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, class ParticleCell, bool calculateGlobals = false, bool relevantForTuning = true>
-class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
+class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
   /**
    * Deleted default constructor
    */
-  LJFunctorAVX2() = delete;
+  LJFunctorAVX() = delete;
 
   /**
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
@@ -46,10 +46,10 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctorAVX2(double cutoff, double epsilon, double sigma, double shift,
-                         std::array<double, 3> lowCorner = {0., 0., 0.},
-                         std::array<double, 3> highCorner = {0., 0., 0.}, bool duplicatedCalculation = false)
-#ifdef __AVX___
+  explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift,
+                        std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
+                        bool duplicatedCalculation = false)
+#ifdef __AVX__
       : _one{_mm256_set1_pd(1.)},
         _masks{
             _mm256_set_epi64x(0, 0, 0, -1),
@@ -75,7 +75,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
     //    }
   }
 #else
-  {
+      : _one{0}, _masks{0, 0, 0}, _cutoffsquare{0}, _epsilon24{0}, _sigmasquare{0} {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -83,7 +83,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
   bool isRelevantForTuning() override { return relevantForTuning; }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    utils::ExceptionHandler::exception("LJFunctorAVX2.AoSFunctor() not implemented!");
+    utils::ExceptionHandler::exception("LJFunctorAVX.AoSFunctor() not implemented!");
   }
 
   /**
@@ -160,7 +160,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
                         double *const __restrict__ &z2ptr, double *const __restrict__ &fx2ptr,
                         double *const __restrict__ &fy2ptr, double *const __restrict__ &fz2ptr, __m256d &fxacc,
                         __m256d &fyacc, __m256d &fzacc, const unsigned int rest = 0) {
-#ifdef __AVX___
+#ifdef __AVX__
     const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
     const __m256d y2 = masked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&y2ptr[j]);
     const __m256d z2 = masked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&z2ptr[j]);
@@ -225,7 +225,7 @@ class LJFunctorAVX2 : public Functor<Particle, ParticleCell, typename Particle::
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
    */
   void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
-#ifdef __AVX___
+#ifdef __AVX__
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
