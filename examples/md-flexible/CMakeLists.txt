@@ -34,7 +34,7 @@ add_test(
 
 add_test(
         NAME md-flexMeasurePerf
-        COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/measurePerf.sh md-flexible
+        COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/measurePerf.sh md-flexible -silent
         CONFIGURATIONS checkExamples
 )
 

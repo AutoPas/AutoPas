@@ -2,23 +2,38 @@
 
 export LC_NUMERIC=en_US.UTF-8
 
-if [[ "$#" -ne 1 ]]; then
+if [[ "$#" -lt 1 ]]
+then
     echo "Illegal number of parameters"
-    echo "Usage: $0 PATH_TO_MD-Flexible"
+    echo "Usage: $0 PATH_TO_MD-Flexible <-s>"
+    echo " -s Silent: no scaling files are written and number of molecules and repetitions is reduced significantly."
     exit -1
 fi
 
 EXECUTABLE=$(readlink -e "${1}")
 [[ $? -ne 0 ]] && echo "Path to md-flexible invalid!" && exit -2
 
-timestamp=`date +%Y-%m-%d_%H-%M-%S`
-outputDir="measurePerf_${timestamp}"
+SILENT=false
+if [[ "${2}" =~ '-s' ]]
+then
+    SILENT=true
+    echo "Running in silent mode."
+fi
 
-mkdir ${outputDir}
-cd ${outputDir}
+if [[ ${SILENT} = false ]]
+then
+    timestamp=`date +%Y-%m-%d_%H-%M-%S`
+    outputDir="measurePerf_${timestamp}"
 
-Mols=(   16    32    64   128  256  512 1024 2048 4096 8192 16384 32768 65536)
-Reps=(10000 10000 10000 10000 1000 1000  200  100   20   20    20    20    20)
+    mkdir ${outputDir}
+    cd ${outputDir}
+
+    Mols=(   16    32    64   128  256  512 1024 2048 4096 8192 16384 32768 65536)
+    Reps=(10000 10000 10000 10000 1000 1000  200  100   20   20    20    20    20)
+else
+    Mols=(   16    32    64 )
+    Reps=(   10    10    10 )
+fi
 
 
 # places text in the middle of a dashed line
@@ -110,22 +125,24 @@ do
 
                 printf "${output}\n"
 
-                if [[ "${configPrinted}" = false ]] ; then
-                    configPrinted=true
-                    # print all output lines until, excluding, "Using" (this is the whole config part)
-                    allMols=${Mols[@]}
-                    allIterations=${Reps[@]}
-                    sed '/Using/Q' <<< "${output}" | sed -e "s|\( *total[ :]*\)[0-9]*|\1${allMols}|" -e "s|\(Iterations[ :]*\)[0-9]*|\1${allIterations}|" >> ${filename}
-                    echo >> ${filename}
-                    printf "%12s%15s%15s%15s%24s\n" "NumParticles" "GFLOPs/s" "MFUPs/s" "Time[micros]" "SingleIteration[micros]" >> ${filename}
+                if [[ "${SILENT}" = false ]] ; then
+                    if [[ "${configPrinted}" = false ]] ; then
+                        configPrinted=true
+                        # print all output lines until, excluding, "Using" (this is the whole config part)
+                        allMols=${Mols[@]}
+                        allIterations=${Reps[@]}
+                        sed '/Using/Q' <<< "${output}" | sed -e "s|\( *total[ :]*\)[0-9]*|\1${allMols}|" -e "s|\(Iterations[ :]*\)[0-9]*|\1${allIterations}|" >> ${filename}
+                        echo >> ${filename}
+                        printf "%12s%15s%15s%15s%24s\n" "NumParticles" "GFLOPs/s" "MFUPs/s" "Time[micros]" "SingleIteration[micros]" >> ${filename}
+                    fi
+
+                    gflops=$(echo "$output" | sed --quiet -e 's|GFLOPs/sec.*: \(.*\)|\1|gp')
+                    mfups=$(echo "$output" | sed --quiet -e 's|MFUPs/sec.*: \(.*\)|\1|gp')
+                    timeTotal=$(echo "$output" | sed --quiet -e 's|Time total.*: \(.*\) .*s (.*|\1|gp')
+                    timeOne=$(echo "$output" | sed --quiet -e 's|One iteration.*: \(.*\) .*s (.*|\1|gp')
+
+                    printf "%12d%15.2f%15.2f%15.2f%24.2f\n" "${Mols[$i]}" "$gflops" "$mfups" "$timeTotal" "$timeOne"  >> ${filename}
                 fi
-
-                gflops=$(echo "$output" | sed --quiet -e 's|GFLOPs/sec.*: \(.*\)|\1|gp')
-                mfups=$(echo "$output" | sed --quiet -e 's|MFUPs/sec.*: \(.*\)|\1|gp')
-                timeTotal=$(echo "$output" | sed --quiet -e 's|Time total.*: \(.*\) .*s (.*|\1|gp')
-                timeOne=$(echo "$output" | sed --quiet -e 's|One iteration.*: \(.*\) .*s (.*|\1|gp')
-
-                printf "%12d%15.2f%15.2f%15.2f%24.2f\n" "${Mols[$i]}" "$gflops" "$mfups" "$timeTotal" "$timeOne"  >> ${filename}
             done
         done
     done
