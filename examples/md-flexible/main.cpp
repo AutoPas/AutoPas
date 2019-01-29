@@ -290,9 +290,10 @@ int main(int argc, char **argv) {
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
-  if (numIterations > 0)
+  if (numIterations > 0) {
     cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
          << "s)" << endl;
+  }
   auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
   cout << "MFUPs/sec    : " << mfups << endl;
 
