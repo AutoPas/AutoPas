@@ -185,17 +185,20 @@ class AutoPas {
   std::array<double, 3> getBoxMax() { return _autoTuner->getContainer()->getBoxMax(); }
 
   /**
-   * Checks if the neighbor lists are valid, or whether they need a rebuild.
+   * Checks if the container needs to be updated.
    * Will return false if no lists are used.
    * This function can indicate whether you should send only halo particles or whether you should send leaving particles
    * as well.
    * @return True if the lists are valid, false if a rebuild is needed.
    */
-  bool isNeighborListValid() {
+  bool needsContainerUpdate() {
+    if (_autoTuner->willRebuild()) {
+      return true;
+    }
     if (auto container = dynamic_cast<VerletLists<Particle> *>(_autoTuner->getContainer().get())) {
-      return not container->needsRebuild();
+      return container->needsRebuild();
     } else {
-      return false;
+      return true;
     }
   }
 
