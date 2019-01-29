@@ -177,6 +177,7 @@ int main(int argc, char **argv) {
   auto generatorChoice(parser.getGeneratorOption());
   auto logLevel(parser.getLogLevel());
   auto measureFlops(parser.getMeasureFlops());
+  auto useNewton3(parser.getNewton3());
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
   auto particlesPerDim(parser.getParticlesPerDim());
@@ -254,10 +255,17 @@ int main(int argc, char **argv) {
 
   switch (functorChoice) {
     case MDFlexParser::FunctorOption::lj12_6: {
-      durationApply = calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(
-          autopas, cutoff, numIterations, dataLayoutChoice);
-      flopsPerKernelCall =
-          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      if (useNewton3) {
+        durationApply = calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, true>>(
+            autopas, cutoff, numIterations, dataLayoutChoice);
+        flopsPerKernelCall =
+            LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, true>::getNumFlopsPerKernelCall();
+      } else {
+        durationApply = calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, false>>(
+            autopas, cutoff, numIterations, dataLayoutChoice);
+        flopsPerKernelCall =
+            LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, false>::getNumFlopsPerKernelCall();
+      }
       break;
     }
     case MDFlexParser::FunctorOption::lj12_6_AVX: {
@@ -282,9 +290,12 @@ int main(int argc, char **argv) {
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
-  if (numIterations > 0)
+  if (numIterations > 0) {
     cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
          << "s)" << endl;
+  }
+  auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
+  cout << "MFUPs/sec    : " << mfups << endl;
 
   if (measureFlops) {
     FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
@@ -298,11 +309,9 @@ int main(int argc, char **argv) {
           flopCounterFunctor.getDistanceCalculations() *
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
           floor(numIterations / verletRebuildFrequency);
-    auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
-    cout << "MFUPs/sec    : " << mfups << endl;
     cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
   }
 
