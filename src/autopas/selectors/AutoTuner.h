@@ -94,6 +94,22 @@ class AutoTuner {
   template <class PairwiseFunctor>
   bool iteratePairwise(PairwiseFunctor *f, DataLayoutOption dataLayoutOption);
 
+  /**
+   * Returns whether the container or the traversal will potentially be changed in the next iteration.
+   * @return True if the container will be rebuild on the next iteratePairwise() call. False otherwise.
+   */
+  bool willRebuild() {
+    if (_iterationsSinceTuning >= _tuningInterval) {
+      if (_numSamples < _maxSamples) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  }
+
  private:
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   bool iteratePairwiseTemplateHelper(PairwiseFunctor *f);

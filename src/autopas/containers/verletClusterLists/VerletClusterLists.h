@@ -67,7 +67,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     rebuild();
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::verletListsCells; }
+  ContainerOptions getContainerType() override { return ContainerOptions::verletClusterLists; }
 
   /**
    * Function to iterate over all pairs of particles.

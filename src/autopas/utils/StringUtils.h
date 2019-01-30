@@ -243,7 +243,8 @@ inline std::vector<autopas::ContainerOptions> parseContainerOptions(const std::s
 inline autopas::SelectorStrategy parseSelectorStrategy(const std::string &selectorStrategyString) {
   // hack to initialize the enum out of range as an error value.
   auto selectorStrategy(autopas::SelectorStrategy(-1));
-  if (selectorStrategyString.find("abs") != std::string::npos) {
+  if (selectorStrategyString.find("abs") != std::string::npos or
+      selectorStrategyString.find("min") != std::string::npos) {
     selectorStrategy = autopas::SelectorStrategy::fastestAbs;
   } else if (selectorStrategyString.find("mea") != std::string::npos) {
     selectorStrategy = autopas::SelectorStrategy::fastestMean;

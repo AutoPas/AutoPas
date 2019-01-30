@@ -21,6 +21,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"help", no_argument, nullptr, 'h'},
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
+                                         {"no-newton3", no_argument, nullptr, '3'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
@@ -39,6 +40,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
+      case '3': {
+        newton3 = false;
+        break;
+      }
       case 'b': {
         try {
           boxLength = stod(strArg);
@@ -77,11 +82,13 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'f': {
-        if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+        if (strArg.find("avx") != string::npos) {
+          functorOption = lj12_6_AVX;
+        } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
           functorOption = lj12_6;
         } else {
           cerr << "Unknown functor : " << strArg << endl;
-          cerr << "Please use 'Lennard-Jones', you have no options here :P" << endl;
+          cerr << "Please use 'Lennard-Jones' or 'Lennard-Jones-AVX'" << endl;
           displayHelp = true;
         }
         break;
@@ -333,7 +340,14 @@ void MDFlexParser::printConfig() {
       cout << "Lennard-Jones (12-6)" << endl;
       break;
     }
+    case FunctorOption::lj12_6_AVX: {
+      cout << "Lennard-Jones (12-6) AVX intrinsics" << endl;
+      break;
+    }
   }
+
+  cout << setw(valueOffset) << left << "Newton3"
+       << ":  " << (newton3 ? "On" : "Off") << endl;
 
   cout << setw(valueOffset) << left << "Cutoff radius"
        << ":  " << cutoff << endl;
@@ -445,3 +459,5 @@ autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 autopas::SelectorStrategy MDFlexParser::getTraversalSelectorStrategy() const { return traversalSelectorStrategy; }
 
 autopas::SelectorStrategy MDFlexParser::getContainerSelectorStrategy() const { return containerSelectorStrategy; }
+
+bool MDFlexParser::getNewton3() const { return newton3; }

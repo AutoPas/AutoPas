@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <autopas/utils/WrapOpenMP.h>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
@@ -31,17 +32,13 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {
-    if (useNewton3) {
-      utils::ExceptionHandler::exception("The C01 traversal cannot work with enabled newton3!");
-    }
-  }
+      : CellPairTraversal<ParticleCell>(dims) {}
 
   /**
    * C01 traversals are only usable if useNewton3 is disabled.
    * @return
    */
-  bool isApplicable() override { return not useNewton3; }
+  bool isApplicable() override { return autopas_get_max_threads() == 1 or not useNewton3; }
 
  protected:
   /**
