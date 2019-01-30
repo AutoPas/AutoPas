@@ -183,7 +183,7 @@ pipeline{
             }
             post{
                 always{
-                    recordIssues(tools: [clang(pattern: 'build*/buildlog_clang.txt'), gcc3(pattern: 'build*/buildlog.txt'), gcc4(pattern: 'build*/buildlog.txt'), intel(pattern: 'build*/buildlog_intel.txt')])
+                    recordIssues tools: [clang(pattern: 'build*/buildlog_clang.txt'), gcc3(pattern: 'build*/buildlog.txt'), gcc4(pattern: 'build*/buildlog.txt'), intel(pattern: 'build*/buildlog_intel.txt')], unstableTotalAll: 1
                 }
                 success{
                     githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
