@@ -3,10 +3,14 @@
 datafiles = "\
 runtimes_DirectSum_AoS.csv                          \
 runtimes_DirectSum_SoA.csv                          \
-runtimes_Linked-Cells_AoS.csv                       \
-runtimes_Linked-Cells_SoA.csv                       \
+runtimes_LinkedCells_AoS.csv                        \
+runtimes_LinkedCells_SoA.csv                        \
 runtimes_VerletLists_AoS_20_0.3.csv                 \
 runtimes_VerletLists_SoA_20_0.3.csv                 \
+runtimes_VerletCells_AoS_20_0.3.csv                 \
+runtimes_VerletCells_SoA_20_0.3.csv                 \
+runtimes_VerletCluster_AoS_20_0.3.csv               \
+runtimes_VerletCluster_SoA_20_0.3.csv               \
 "
 
 titles = "\
@@ -14,15 +18,22 @@ titles = "\
 'Direct Sum SoA'                                    \
 'Linked Cells AoS'                                  \
 'Linked Cells SoA'                                  \
-'Verlet Lists AoS rebuild rate 20, skin 0.3*cutoff' \
-'Verlet Lists SoA rebuild rate 20, skin 0.3*cutoff' \
+'Verlet Lists AoS'                                  \
+'Verlet Lists SoA'                                  \
+'Verlet Cells AoS'                                  \
+'Verlet Cells SoA'                                  \
+'Verlet Cluster AoS'                                \
+'Verlet Cluster SoA'                                \
 "
+
+# set title "CooLMUC3 256 Threads"
 
 # list of keywords used for coloring (same keyword in title = same color)
 colorSelectors = "\
 Linked \
 Direct \
-Verlet \
+'Verlet Lists' \
+'Verlet Cells' \
 "
 
 # list of keywords used for point type (same keyword in title = same point type)
@@ -48,21 +59,27 @@ set logscale x 2
 set logscale y 2
 set grid
 
+set size square
 
 set xlabel xData
 set ylabel yData
 
 set key autotitle columnheader
 #set key bottom right
-set key bottom left
+set key outside
+set key center right
+# set key bottom left
 #set key top left
 set key Left reverse
+
+set xtics rotate by -45
 
 fontsize="12"
 set tics font ",". fontsize
 set key font ",". fontsize
 set xlabel font ",". fontsize
 set ylabel font ",". fontsize
+set title font "," . fontsize
 
 set xrange [] writeback
 set yrange [] writeback
