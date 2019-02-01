@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 
   auto boxLength(parser.getBoxLength());
   auto containerChoice(parser.getContainerOptions());
-  auto selectorStrategy(parser.getContainerSelectorStrategy());
+  auto selectorStrategy(parser.getSelectorStrategy());
   auto cutoff(parser.getCutoff());
   auto dataLayoutOptions(parser.getDataLayoutOptions());
   auto distributionMean(parser.getDistributionMean());
