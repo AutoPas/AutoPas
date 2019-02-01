@@ -5,6 +5,7 @@
  */
 
 #include "autopas/utils/ExceptionHandler.h"
+#include "ExceptionHandler.h"
 
 std::mutex autopas::utils::ExceptionHandler::exceptionMutex;
 autopas::utils::ExceptionBehavior autopas::utils::ExceptionHandler::_behavior = ExceptionBehavior::throwException;

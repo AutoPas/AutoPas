@@ -4,7 +4,7 @@ file(GLOB_RECURSE MY_SRC
         "*.cu"
         )
 
-if (NOT ${CUDA})
+if (NOT ${ENABLE_CUDA})
     message(STATUS "cuda disabled, not building basic-cuda")
     return()
 endif()

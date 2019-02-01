@@ -10,7 +10,7 @@ file(GLOB_RECURSE CU_SRC
         
 ADD_LIBRARY(autopas STATIC
         ${MY_SRC}
-        $<$<BOOL:${CUDA}>:${CU_SRC}>
+        $<$<BOOL:${ENABLE_CUDA}>:${CU_SRC}>
         )
 
 target_link_libraries(autopas

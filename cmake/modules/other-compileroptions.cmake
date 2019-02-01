@@ -3,18 +3,18 @@ option(ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize e
 if (ENABLE_FAST_MATH)
     message(WARNING "Fast-Math might cause particle loss! Only use this if you know what you are doing!")
 endif()
-
+message(STATUS "CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
 target_compile_options(autopas
         PUBLIC
         # Needed to vectorize sqrt()
-        $<$<NOT:$<BOOL:CUDA>>:-fno-math-errno>
+        $<$<NOT:$<BOOL:ENABLE_CUDA>>:-fno-math-errno>
         # fast math for better vectorization
         $<$<AND:$<BOOL:${ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-ffast-math>
         # INTEL: per default fast math is on. Disable via fp-model precise
         $<$<AND:$<NOT:$<BOOL:${ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:-fp-model precise>
         # Warnings:
         # no warnings for intel because it's mainly spam
-        $<$<AND:$<NOT:$<BOOL:${CUDA}>>,$<CXX_COMPILER_ID:GNU>>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
+        $<$<AND:$<NOT:$<BOOL:${ENABLE_CUDA}>>,$<CXX_COMPILER_ID:GNU>>:-Wsuggest-override -Wall -Wno-unused-variable -Wno-unused-function>
         $<$<CXX_COMPILER_ID:Clang>:-Wall>
         # @TODO clean up code with -Weffc++
         )

@@ -8,7 +8,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/pairwiseFunctors/LJFunctorCuda.h"
 #include "autopas/pairwiseFunctors/CellFunctorCuda.h"
-#include "autopas/containers/cellPairTraversals/DirectSumTraversalCuda.h"
+#include "autopas/containers/directSum/DirectSumTraversalCuda.h"
 
 using namespace std;
 using namespace autopas;

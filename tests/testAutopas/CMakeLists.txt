@@ -11,7 +11,7 @@ endif()
 
 ADD_EXECUTABLE(runTests
         ${MY_SRC}
-        $<$<BOOL:${CUDA}>:${CU_SRC}>
+        $<$<BOOL:${ENABLE_CUDA}>:${CU_SRC}>
         )
 
 TARGET_LINK_LIBRARIES(runTests
