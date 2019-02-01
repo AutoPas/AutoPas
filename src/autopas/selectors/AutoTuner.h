@@ -9,9 +9,10 @@
 #include <array>
 #include <memory>
 #include "autopas/autopasIncludes.h"
-#include "autopas/options/DataLayoutOptions.h"
-#include "autopas/options/TraversalOptions.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
 
@@ -49,15 +50,15 @@ class AutoTuner {
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainerOptions Vector of container types AutoPas can choose from.
    * @param allowedTraversalOptions Vector of traversals AutoPas can choose from.
-   * @param containerSelectorStrategy Strategy for the container selector.
-   * @param traversalSelectorStrategy Strategy for the traversal selector.
+   * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
-            std::vector<TraversalOptions> allowedTraversalOptions, SelectorStrategy containerSelectorStrategy,
-            SelectorStrategy traversalSelectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+            unsigned int verletRebuildFrequency, std::vector<ContainerOption> allowedContainerOptions,
+            std::vector<TraversalOption> allowedTraversalOptions,
+            std::vector<DataLayoutOption> allowedDataLayoutOptions, bool allowNewton3,
+            SelectorStrategy selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainerOptions,
@@ -65,8 +66,10 @@ class AutoTuner {
         _allowedTraversalOptions(allowedTraversalOptions),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
-        _containerSelectorStrategy(containerSelectorStrategy),
-        _traversalSelectorStrategy(traversalSelectorStrategy) {}
+        _selectorStrategy(selectorStrategy),
+        _currentConfig(allowedContainerOptions[0], allowedTraversalOptions[0], allowedDataLayoutOptions[0],
+                       allowNewton3),
+        _traversalTimes() {}
 
   /**
    * Getter for the optimal container.
@@ -88,11 +91,10 @@ class AutoTuner {
    * This function only handles short-range interactions.
    * @tparam PairwiseFunctor
    * @param f Functor that describes the pair-potential.
-   * @param dataLayoutOption if true SoA data structure is used otherwise AoS.
    * @return true if this was a tuning iteration.
    */
   template <class PairwiseFunctor>
-  bool iteratePairwise(PairwiseFunctor *f, DataLayoutOption dataLayoutOption);
+  bool iteratePairwise(PairwiseFunctor *f);
 
   /**
    * Returns whether the container or the traversal will potentially be changed in the next iteration.
@@ -110,6 +112,81 @@ class AutoTuner {
     }
   }
 
+  /**
+   * Save the runtime of a given traversal if the functor is relevant for tuning.
+   * The time argument is a long because std::chrono::duration::count returns a long
+   * @param pairwiseFunctor
+   * @param traversal
+   * @param time
+   */
+  template <class PairwiseFunctor>
+  void addTimeMeasurement(PairwiseFunctor &pairwiseFunctor, long time) {
+    if (pairwiseFunctor.isRelevantForTuning()) {
+      _traversalTimes[_currentConfig].push_back(time);
+    }
+  }
+
+  void selectOptimalConfiguration() {
+    // Time measure strategy
+    if (_traversalTimes.empty()) {
+      utils::ExceptionHandler::exception("AutoTuner: Trying to determine fastest configuration before measuring!");
+    }
+
+    long optimalTraversalTime = std::numeric_limits<long>::max();
+    // reduce sample values
+    for (auto &configAndTimes : _traversalTimes) {
+      long value = 0;
+      switch (_selectorStrategy) {
+        case SelectorStrategy::fastestAbs: {
+          value = *std::min_element(configAndTimes.second.begin(), configAndTimes.second.end());
+          break;
+        }
+        case SelectorStrategy::fastestMean: {
+          value = std::accumulate(configAndTimes.second.begin(), configAndTimes.second.end(), 0l);
+          value /= configAndTimes.second.size();
+          break;
+        }
+        case SelectorStrategy::fastestMedian: {
+          value = configAndTimes.second[configAndTimes.second.size() / 2];
+          break;
+        }
+        default:
+          utils::ExceptionHandler::exception("AutoTuner: Unknown selector strategy {}", _selectorStrategy);
+      }
+      // save all values for debugging purposes
+      if (spdlog::get("AutoPasLog")->level() <= spdlog::level::debug) {
+        configAndTimes.second.push_back(value);
+      }
+
+      if (value < optimalTraversalTime) {
+        optimalTraversalTime = value;
+        _currentConfig = configAndTimes.first;
+      }
+    }
+
+    // print all configs, times and their reduced values
+    AutoPasLog(debug, "Collected times: {}", [&]() -> std::string {
+      std::stringstream ss;
+      // print all configs
+      for (auto &p : _traversalTimes) {
+        ss << std::endl << p.first.toString() << " : [";
+        // print all timings
+        for (size_t i = 0; i < p.second.size() - 1; ++i) {
+          ss << " " << p.second[i];
+        }
+        ss << " ] ";
+        ss << "Reduced value: " << p.second[p.second.size() - 1];
+      }
+      return ss.str();
+    }());  // () to evaluate the function here.
+
+    // measurements are not needed anymore
+    _traversalTimes.clear();
+
+    //    utils::StringUtils::to_string(_selectorStrategy)
+    AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
+  }
+
  private:
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   bool iteratePairwiseTemplateHelper(PairwiseFunctor *f);
@@ -119,11 +196,11 @@ class AutoTuner {
 
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
-  std::vector<TraversalOptions> _allowedTraversalOptions;
+  std::vector<TraversalOption> _allowedTraversalOptions;
   /**
    * One selector per possible container.
    */
-  std::map<ContainerOptions, TraversalSelector<ParticleCell>> _traversalSelectors;
+  std::map<ContainerOption, TraversalSelector<ParticleCell>> _traversalSelectors;
 
   /**
    * How many times each configuration should be tested.
@@ -136,29 +213,31 @@ class AutoTuner {
   size_t _numSamples;
 
   // TODO: _containerSelectorStrategy currently unused
-  SelectorStrategy _containerSelectorStrategy;
-  SelectorStrategy _traversalSelectorStrategy;
+  SelectorStrategy _selectorStrategy;
+
+  Configuration _currentConfig;
+  std::unordered_map<Configuration, std::vector<size_t>, ConfigHash> _traversalTimes;
 };
 
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, DataLayoutOption dataLayoutOption) {
+bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
   bool newton3Allowed = f->allowsNewton3();
   bool nonNewton3Allowed = f->allowsNonNewton3();
-  bool useNewton3 = false;
+  // @todo auto-tune (not so far off future)
+  _currentConfig._newton3 = false;
   if (newton3Allowed and nonNewton3Allowed) {
-    // @todo auto-tune (far off future)
   } else if (not newton3Allowed and not nonNewton3Allowed) {
-    utils::ExceptionHandler::exception("Functor::iteratePairwise() Functor neither allows Newton 3 nor not.");
+    utils::ExceptionHandler::exception("AutoTuner: Functor neither allows Newton 3 nor not.");
   } else {
-    useNewton3 = newton3Allowed;
+    _currentConfig._newton3 &= newton3Allowed;
   }
 
   bool isTuning = false;
 
-  switch (dataLayoutOption) {
+  switch (_currentConfig._dataLayout) {
     case DataLayoutOption::aos: {
-      if (useNewton3) {
+      if (_currentConfig._newton3) {
         isTuning = iteratePairwiseTemplateHelper<PairwiseFunctor, false, true>(f);
       } else {
         isTuning = iteratePairwiseTemplateHelper<PairwiseFunctor, false, false>(f);
@@ -166,13 +245,15 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, Data
       break;
     }
     case DataLayoutOption::soa: {
-      if (useNewton3) {
+      if (_currentConfig._newton3) {
         isTuning = iteratePairwiseTemplateHelper<PairwiseFunctor, true, true>(f);
       } else {
         isTuning = iteratePairwiseTemplateHelper<PairwiseFunctor, true, false>(f);
       }
       break;
     }
+    default:
+      utils::ExceptionHandler::exception("AutoTuner: Unknown data layout : {}", _currentConfig._dataLayout);
   }
   return isTuning;
 }
@@ -212,8 +293,9 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     auto stop = std::chrono::high_resolution_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
     AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
-    _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
-    traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
+    //    _containerSelector.addTimeMeasurement(container->getContainerType(), runtime);
+    //    traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
+    addTimeMeasurement(*f, runtime);
   } else {
     if (useSoA) {
       withStaticContainerType(container,
@@ -231,24 +313,26 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
-  auto traversal = _traversalSelectors[getContainer()->getContainerType()]
-                       .template selectNextTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+  auto traversal =
+      _traversalSelectors[_currentConfig._container].template selectNextTraversal<PairwiseFunctor, useSoA, useNewton3>(
+          pairwiseFunctor);
   // if there is no next traversal take next container
   if (traversal) {
+    _currentConfig._traversal = traversal->getTraversalType();
     return true;
   } else {
     auto container = _containerSelector.selectNextContainer();
 
     // if there is no next container everything is tested and the optimum can be chosen
     if (container) {
-      _traversalSelectors[getContainer()->getContainerType()]
-          .template selectNextTraversal<PairwiseFunctor, useSoA, useNewton3>(pairwiseFunctor);
+      _currentConfig._container = container->getContainerType();
+      _traversalSelectors[_currentConfig._container].template selectNextTraversal<PairwiseFunctor, useSoA, useNewton3>(
+          pairwiseFunctor);
       return true;
     } else {
-      _containerSelector.selectOptimalContainer();
-      _traversalSelectors[getContainer()->getContainerType()]
-          .template selectOptimalTraversal<PairwiseFunctor, useSoA, useNewton3>(_traversalSelectorStrategy,
-                                                                                pairwiseFunctor);
+      selectOptimalConfiguration();
+      _containerSelector.selectContainer(_currentConfig._container);
+      _traversalSelectors[_currentConfig._container].selectTraversal(_currentConfig._traversal);
       _iterationsSinceTuning = 0;
       return false;
     }

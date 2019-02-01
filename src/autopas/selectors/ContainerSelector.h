@@ -14,7 +14,7 @@
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
-#include "autopas/options/ContainerOptions.h"
+#include "autopas/options/ContainerOption.h"
 #include "autopas/utils/StringUtils.h"
 
 namespace autopas {
@@ -42,8 +42,8 @@ class ContainerSelector {
    * @param allowedTraversalOptions Vector of traversals the selector can choose from.
    */
   ContainerSelector(std::array<double, 3> &boxMin, std::array<double, 3> &boxMax, double cutoff, double verletSkin,
-                    unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
-                    std::vector<TraversalOptions> allowedTraversalOptions)
+                    unsigned int verletRebuildFrequency, std::vector<ContainerOption> allowedContainerOptions,
+                    std::vector<TraversalOption> allowedTraversalOptions)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
@@ -51,9 +51,9 @@ class ContainerSelector {
         _verletRebuildFrequency(verletRebuildFrequency),
         _allowedContainerOptions(std::move(allowedContainerOptions)),
         _allowedTraversalOptions(std::move(allowedTraversalOptions)),
-        _optimalContainer(nullptr) {
+        _currentContainer(nullptr) {
     // @FIXME This is a workaround because this container does not yet use traversals like it should
-    _allowedTraversalOptions.push_back(TraversalOptions::dummyTraversal);
+    _allowedTraversalOptions.push_back(TraversalOption::dummyTraversal);
   }
 
   /**
@@ -69,6 +69,12 @@ class ContainerSelector {
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> selectOptimalContainer();
 
   /**
+   * Sets the container to the given option.
+   * @param containerOption
+   */
+  void selectContainer(ContainerOption containerOption);
+
+  /**
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
@@ -81,7 +87,7 @@ class ContainerSelector {
    * @param container
    * @param time
    */
-  void addTimeMeasurement(ContainerOptions container, long time);
+  void addTimeMeasurement(ContainerOption container, long time);
 
  private:
   /**
@@ -90,21 +96,21 @@ class ContainerSelector {
    * @return smartpointer to new container
    */
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
-      ContainerOptions containerChoice);
+      ContainerOption containerChoice);
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
   double _verletSkin;
   unsigned int _verletRebuildFrequency;
-  std::vector<ContainerOptions> _allowedContainerOptions;
-  std::vector<TraversalOptions> _allowedTraversalOptions;
-  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _optimalContainer;
-  std::vector<std::pair<ContainerOptions, long>> _containerTimes;
+  std::vector<ContainerOption> _allowedContainerOptions;
+  std::vector<TraversalOption> _allowedTraversalOptions;
+  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
+  std::vector<std::pair<ContainerOption, long>> _containerTimes;
 };
 
 template <class Particle, class ParticleCell>
 std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
-ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions containerChoice) {
+ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption containerChoice) {
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> container;
 
   switch (containerChoice) {
@@ -124,7 +130,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
     }
     case verletListsCells: {
       // @todo determine verletSkin and verletRebuildFrequency via tuning
-      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOptions::c08,
+      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::c08,
                                                                _verletSkin, _verletRebuildFrequency);
       break;
     }
@@ -140,12 +146,12 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
   }
 
   // copy particles so they do not get lost when container is switched
-  if (_optimalContainer != nullptr) {
-    for (auto particleIter = _optimalContainer->begin(IteratorBehavior::ownedOnly); particleIter.isValid();
+  if (_currentContainer != nullptr) {
+    for (auto particleIter = _currentContainer->begin(IteratorBehavior::ownedOnly); particleIter.isValid();
          ++particleIter) {
       container->addParticle(*particleIter);
     }
-    for (auto particleIter = _optimalContainer->begin(IteratorBehavior::haloOnly); particleIter.isValid();
+    for (auto particleIter = _currentContainer->begin(IteratorBehavior::haloOnly); particleIter.isValid();
          ++particleIter) {
       container->addHaloParticle(*particleIter);
     }
@@ -157,14 +163,14 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::selectNextContainer() {
-  ContainerOptions nextContainerType;
+  ContainerOption nextContainerType;
 
   // if none is chosen yet create a new
-  if (_optimalContainer == nullptr) {
+  if (_currentContainer == nullptr) {
     nextContainerType = _allowedContainerOptions.begin().operator*();
   } else {
     auto containerTypeIter = std::find(_allowedContainerOptions.begin(), _allowedContainerOptions.end(),
-                                       _optimalContainer->getContainerType());
+                                       _currentContainer->getContainerType());
     ++containerTypeIter;
 
     if (containerTypeIter >= _allowedContainerOptions.end()) {
@@ -173,10 +179,10 @@ ContainerSelector<Particle, ParticleCell>::selectNextContainer() {
 
     nextContainerType = *containerTypeIter;
   }
-  _optimalContainer = std::move(generateContainer(nextContainerType));
+  _currentContainer = std::move(generateContainer(nextContainerType));
   AutoPasLog(debug, "Testing Container {}", utils::StringUtils::to_string(nextContainerType));
 
-  return _optimalContainer;
+  return _currentContainer;
 }
 
 template <class Particle, class ParticleCell>
@@ -189,7 +195,7 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
 
   // choose the fastest container and reset timings
   // Initialize with something. This will be overridden.
-  ContainerOptions optimalContainerOption = ContainerOptions::directSum;
+  ContainerOption optimalContainerOption = ContainerOption::directSum;
   long optimalContainerTime = std::numeric_limits<long>::max();
   AutoPasLog(debug, "ContainerSelector: Collected container times:");
   for (auto &&c : _containerTimes) {
@@ -208,23 +214,29 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
   }
 
   // only convert when best container is not the current or no container exists yet
-  if (_optimalContainer == nullptr || _optimalContainer->getContainerType() != optimalContainerOption) {
-    _optimalContainer = std::move(generateContainer(optimalContainerOption));
+  if (_currentContainer == nullptr || _currentContainer->getContainerType() != optimalContainerOption) {
+    _currentContainer = std::move(generateContainer(optimalContainerOption));
   }
-  AutoPasLog(debug, "Selected container {}", utils::StringUtils::to_string(_optimalContainer->getContainerType()));
-  return _optimalContainer;
+  AutoPasLog(debug, "Selected container {}", utils::StringUtils::to_string(_currentContainer->getContainerType()));
+  return _currentContainer;
 }
 
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getOptimalContainer() {
-  if (_optimalContainer == nullptr) selectNextContainer();
-  //    utils::ExceptionHandler::exception("ContainerSelector::getOptimalContainer(): No Container selected yet!");
-  return _optimalContainer;
+  if (_currentContainer == nullptr) selectNextContainer();
+  return _currentContainer;
 }
 
 template <class Particle, class ParticleCell>
-void ContainerSelector<Particle, ParticleCell>::addTimeMeasurement(ContainerOptions container, long time) {
+void ContainerSelector<Particle, ParticleCell>::addTimeMeasurement(ContainerOption container, long time) {
   _containerTimes.push_back(std::make_pair(container, time));
+}
+template <class Particle, class ParticleCell>
+void ContainerSelector<Particle, ParticleCell>::selectContainer(ContainerOption containerOption) {
+  // if we already have this container do nothing.
+  if (_currentContainer->getContainerType() != containerOption) {
+    _currentContainer = std::move(generateContainer(containerOption));
+  }
 }
 }  // namespace autopas
