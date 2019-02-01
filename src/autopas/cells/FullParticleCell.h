@@ -89,7 +89,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * device AoS Buffer
    */
-  double * _particlesDevice;
+  double* _particlesDevice;
 
   /**
    * device particle SoABuffer
