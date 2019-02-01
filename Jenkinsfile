@@ -202,16 +202,14 @@ pipeline{
                     }
                 }
                 stage('gpu cloud') {
-                    agent { label 'atsccs11' }
+                    agent { label 'openshift-autoscale-gpu' }
                     steps{
-                        "cuda-10": {
-                            githubNotify context: 'build-cuda', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
-                            container('cuda-10') {
-                                dir("build"){
-                                    sh "cmake -DENABLE_CUDA=ON .."
-                                    sh "make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
-                                    sh "cat buildlog-cuda.txt"
-                                }
+                        githubNotify context: 'build-cuda', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
+                        container('cuda-10') {
+                            dir("build"){
+                                sh "cmake -DENABLE_CUDA=ON .."
+                                sh "make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
+                                sh "cat buildlog-cuda.txt"
                             }
                         }
                     }
