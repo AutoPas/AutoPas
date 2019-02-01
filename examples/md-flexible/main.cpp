@@ -38,25 +38,20 @@ void printMolecules(AutoPasTemplate &autopas) {
  * built. It consists of %`FullParticleCells` and is filled with
  * `PrintableMolecules`. The particles are aligned on a cuboid grid.
  *
- * @param containerOptions Which container type should be built.
- * @param container Pointer to where the container should be built.
+ * @param autopas AutoPas object that should be initialized
  * @param particlesPerDim Number of desired particles per dimension.
- * @param cutoff Cutoff radius to use. Affects number and size of cells for e.g.
- * LinkedCells.
+ * @param particelSpacing Space between two particles along each axis of space.
  */
-void initContainerGrid(std::vector<autopas::ContainerOptions> &containerOptions,
-                       autopas::SelectorStrategy containerSelectorStrategy,
-                       std::vector<autopas::TraversalOptions> &traversalOptions,
-                       autopas::SelectorStrategy traversalSelectorStrategy,
-                       autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                       size_t particlesPerDim, double particelSpacing, double cutoff, double verletSkinRadius,
-                       unsigned int verletRebuildFrequency, unsigned int tuningInterval, unsigned int tuningSamples) {
+void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                       size_t particlesPerDim, double particelSpacing) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
-               containerSelectorStrategy, traversalSelectorStrategy, tuningInterval, tuningSamples);
+  autopas.boxMin = boxMin;
+  autopas.boxMax = boxMax;
+
+  autopas.init();
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
@@ -64,37 +59,29 @@ void initContainerGrid(std::vector<autopas::ContainerOptions> &containerOptions,
                                    {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
 }
 
-void initContainerGauss(std::vector<autopas::ContainerOptions> &containerOptions,
-                        autopas::SelectorStrategy containerSelectorStrategy,
-                        std::vector<autopas::TraversalOptions> &traversalOptions,
-                        autopas::SelectorStrategy traversalSelectorStrategy,
-                        autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                        double boxLength, size_t numParticles, double distributionMean, double distributionStdDev,
-                        double cutoff, double verletSkinRadius, unsigned int verletRebuildFrequency,
-                        unsigned int tuningInterval, unsigned int tuningSamples) {
+void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                        double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
-               containerSelectorStrategy, traversalSelectorStrategy, tuningInterval, tuningSamples);
+  autopas.boxMin = boxMin;
+  autopas.boxMax = boxMax;
+
+  autopas.init();
 
   PrintableMolecule dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
 
-void initContainerUniform(std::vector<autopas::ContainerOptions> &containerOptions,
-                          autopas::SelectorStrategy containerSelectorStrategy,
-                          std::vector<autopas::TraversalOptions> &traversalOptions,
-                          autopas::SelectorStrategy traversalSelectorStrategy,
-                          autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                          double boxLength, size_t numParticles, double cutoff, double verletSkinRadius,
-                          unsigned int verletRebuildFrequency, unsigned int tuningInterval,
-                          unsigned int tuningSamples) {
+void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                          double boxLength, size_t numParticles) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.init(boxMin, boxMax, cutoff, verletSkinRadius, verletRebuildFrequency, containerOptions, traversalOptions,
-               containerSelectorStrategy, traversalSelectorStrategy, tuningInterval, tuningSamples);
+  autopas.boxMin = boxMin;
+  autopas.boxMax = boxMax;
+
+  autopas.init();
 
   PrintableMolecule dummyParticle;
   RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
@@ -134,11 +121,10 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
  * @param autopas
  * @param cutoff
  * @param numIterations
- * @param dataLayoutChoice
  * @return Time for all calculation iterations in microseconds.
  */
 template <class FunctorChoice, class AutoPasTemplate>
-long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations, DataLayoutOption dataLayoutChoice) {
+long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
   auto functor = FunctorChoice(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
 
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
@@ -151,7 +137,7 @@ long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations, Da
       cout << "Iteration " << i << endl;
       cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
     }
-    autopas.iteratePairwise(&functor, dataLayoutChoice);
+    autopas.iteratePairwise(&functor);
   }
   stopCalc = std::chrono::high_resolution_clock::now();
 
@@ -168,9 +154,9 @@ int main(int argc, char **argv) {
 
   auto boxLength(parser.getBoxLength());
   auto containerChoice(parser.getContainerOptions());
-  auto containerSelectorStrategy(parser.getContainerSelectorStrategy());
+  auto selectorStrategy(parser.getContainerSelectorStrategy());
   auto cutoff(parser.getCutoff());
-  auto dataLayoutChoice(parser.getDataLayoutOption());
+  auto dataLayoutOptions(parser.getDataLayoutOptions());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
   auto functorChoice(parser.getFunctorOption());
@@ -183,7 +169,6 @@ int main(int argc, char **argv) {
   auto particlesPerDim(parser.getParticlesPerDim());
   auto particlesTotal(parser.getParticlesTotal());
   auto traversalOptions(parser.getTraversalOptions());
-  auto traversalSelectorStrategy(parser.getTraversalSelectorStrategy());
   auto tuningInterval(parser.getTuningInterval());
   auto tuningSamples(parser.getTuningSamples());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
@@ -199,24 +184,30 @@ int main(int argc, char **argv) {
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
   autopas::Logger::get()->set_level(logLevel);
+
+  autopas.cutoff = cutoff;
+  autopas.verletSkin = verletSkinRadius;
+  autopas.verletRebuildFrequency = verletRebuildFrequency;
+  autopas.tuningInterval = tuningInterval;
+  autopas.numSamples = tuningSamples;
+  autopas.selectorStrategy = selectorStrategy;
+  autopas.allowedContainers = containerChoice;
+  autopas.allowedTraversals = traversalOptions;
+  autopas.allowedDataLayouts = dataLayoutOptions;
+  autopas.allowNewton3 = useNewton3;
+
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
-      initContainerGrid(containerChoice, containerSelectorStrategy, traversalOptions, traversalSelectorStrategy,
-                        autopas, particlesPerDim, particleSpacing, cutoff, verletSkinRadius, verletRebuildFrequency,
-                        tuningInterval, tuningSamples);
+      initContainerGrid(autopas, particlesPerDim, particleSpacing);
       particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
       break;
     }
     case MDFlexParser::GeneratorOption::uniform: {
-      initContainerUniform(containerChoice, containerSelectorStrategy, traversalOptions, traversalSelectorStrategy,
-                           autopas, boxLength, particlesTotal, cutoff, verletSkinRadius, verletRebuildFrequency,
-                           tuningInterval, tuningSamples);
+      initContainerUniform(autopas, boxLength, particlesTotal);
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
-      initContainerGauss(containerChoice, containerSelectorStrategy, traversalOptions, traversalSelectorStrategy,
-                         autopas, boxLength, particlesTotal, distributionMean, distributionStdDev, cutoff,
-                         verletSkinRadius, verletRebuildFrequency, tuningInterval, tuningSamples);
+      initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
       break;
     }
     default:
@@ -233,7 +224,7 @@ int main(int argc, char **argv) {
   if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
 
   // statistics for linked cells
-  if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::linkedCells) {
+  if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
     auto lcContainer = dynamic_cast<autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> *>(
         autopas.getContainer());
     auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
@@ -257,20 +248,20 @@ int main(int argc, char **argv) {
     case MDFlexParser::FunctorOption::lj12_6: {
       if (useNewton3) {
         durationApply = calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, true>>(
-            autopas, cutoff, numIterations, dataLayoutChoice);
+            autopas, cutoff, numIterations);
         flopsPerKernelCall =
             LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, true>::getNumFlopsPerKernelCall();
       } else {
         durationApply = calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, false>>(
-            autopas, cutoff, numIterations, dataLayoutChoice);
+            autopas, cutoff, numIterations);
         flopsPerKernelCall =
             LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, false>::getNumFlopsPerKernelCall();
       }
       break;
     }
     case MDFlexParser::FunctorOption::lj12_6_AVX: {
-      durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(
-          autopas, cutoff, numIterations, dataLayoutChoice);
+      durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff,
+                                                                                                      numIterations);
       flopsPerKernelCall =
           LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
@@ -300,11 +291,11 @@ int main(int argc, char **argv) {
   if (measureFlops) {
     FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
         autopas.getContainer()->getCutoff());
-    autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
+    autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
     // approximation for flops of verlet list generation
-    if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::verletLists)
+    if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *

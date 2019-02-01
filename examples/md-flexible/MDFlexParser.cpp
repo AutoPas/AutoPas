@@ -73,9 +73,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'd': {
-        dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(strArg);
-        if (dataLayoutOption == autopas::DataLayoutOption(-1)) {
-          cerr << "Unknown data layout : " << strArg << endl;
+        dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(strArg);
+        if (dataLayoutOptions.empty()) {
+          cerr << "Unknown data layouts: " << strArg << endl;
           cerr << "Please use 'AoS' or 'SoA'!" << endl;
           displayHelp = true;
         }
@@ -87,7 +87,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
           functorOption = lj12_6;
         } else {
-          cerr << "Unknown functor : " << strArg << endl;
+          cerr << "Unknown functor: " << strArg << endl;
           cerr << "Please use 'Lennard-Jones' or 'Lennard-Jones-AVX'" << endl;
           displayHelp = true;
         }
@@ -105,7 +105,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         } else if (strArg.find("gaus") != string::npos) {
           generatorOption = GeneratorOption::gaussian;
         } else {
-          cerr << "Unknown generator : " << strArg << endl;
+          cerr << "Unknown generator: " << strArg << endl;
           cerr << "Please use 'Grid' or 'Gaussian'" << endl;
           displayHelp = true;
         }
@@ -181,7 +181,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             break;
           }
           default: {
-            cerr << "Unknown Log Level : " << strArg << endl;
+            cerr << "Unknown Log Level: " << strArg << endl;
             cerr << "Please use 'trace', 'debug', 'info', 'warning', 'error', 'critical' or 'off'." << endl;
             displayHelp = true;
           }
@@ -240,7 +240,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       case 't': {
         traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
-          cerr << "Unknown Traversal : " << strArg << endl;
+          cerr << "Unknown Traversal: " << strArg << endl;
           cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
           displayHelp = true;
         }
@@ -305,18 +305,24 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
+template <class T>
+std::string iterableToString(T arr) {
+  std::ostringstream ss;
+  for (auto a : arr) {
+    ss << autopas::utils::StringUtils::to_string(a) << ", ";
+  }
+  // deletes last comma
+  ss << "\b\b";
+  return ss.str();
+}
+
 void MDFlexParser::printConfig() {
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
-       << ":  ";
-  for (auto &op : containerOptions) {
-    cout << autopas::utils::StringUtils::to_string(op) << ", ";
-  }
-  // deletes last comma
-  cout << "\b\b  " << endl;
+       << ":  " << iterableToString(containerOptions) << endl;
 
   // if verlet lists are in the container options print verlet config data
-  if (find(containerOptions.begin(), containerOptions.end(), autopas::ContainerOptions::verletLists) !=
+  if (find(containerOptions.begin(), containerOptions.end(), autopas::ContainerOption::verletLists) !=
       containerOptions.end()) {
     cout << setw(valueOffset) << left << "Verlet rebuild frequency"
          << ":  " << verletRebuildFrequency << endl;
@@ -331,7 +337,7 @@ void MDFlexParser::printConfig() {
   }
 
   cout << setw(valueOffset) << left << "Data Layout"
-       << ":  " << autopas::utils::StringUtils::to_string(dataLayoutOption) << endl;
+       << ":  " << iterableToString(dataLayoutOptions) << endl;
 
   cout << setw(valueOffset) << left << "Functor"
        << ":  ";
@@ -393,12 +399,7 @@ void MDFlexParser::printConfig() {
   }
 
   cout << setw(valueOffset) << left << "Allowed traversals"
-       << ":  ";
-  for (auto &t : traversalOptions) {
-    cout << autopas::utils::StringUtils::to_string(t) << ", ";
-  }
-  // deletes last comma
-  cout << "\b\b  " << endl;
+       << ":  " << iterableToString(traversalOptions) << endl;
 
   if (traversalOptions.size() > 1) {
     cout << setw(valueOffset) << left << "Traversal Selector Strategy"
@@ -413,11 +414,11 @@ void MDFlexParser::printConfig() {
        << ":  " << tuningSamples << endl;
 }
 
-std::vector<autopas::ContainerOptions> MDFlexParser::getContainerOptions() const { return containerOptions; }
+std::vector<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 
-autopas::DataLayoutOption MDFlexParser::getDataLayoutOption() const { return dataLayoutOption; }
+vector<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
 
 MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const { return functorOption; }
 
@@ -429,7 +430,7 @@ double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
 
 size_t MDFlexParser::getParticlesTotal() const { return particlesTotal; }
 
-const vector<autopas::TraversalOptions> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
+const vector<autopas::TraversalOption> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
 
 unsigned int MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
