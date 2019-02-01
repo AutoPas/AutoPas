@@ -41,8 +41,8 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
 TEST_F(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
   MFunctor functor;
 
-  std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
-                                                         autopas::TraversalOptions::c08};
+  std::vector<autopas::TraversalOption> optionVector = {autopas::TraversalOption::sliced,
+                                                         autopas::TraversalOption::c08};
 
   autopas::TraversalSelector<FPCell> traversalSelectorC08({1, 1, 1}, optionVector);
   EXPECT_THROW((traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor)), std::exception);
@@ -50,18 +50,18 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
   auto traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
 
   // check that traversals are of the expected type
-  EXPECT_EQ(autopas::TraversalOptions::c08, traversal->getTraversalType());
+  EXPECT_EQ(autopas::TraversalOption::c08, traversal->getTraversalType());
 
   // also after the functor is known
   traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
-  EXPECT_EQ(autopas::TraversalOptions::c08, traversal->getTraversalType());
+  EXPECT_EQ(autopas::TraversalOption::c08, traversal->getTraversalType());
 }
 
 TEST_F(TraversalSelectorTest, testNextTraversal) {
   MFunctor functor;
 
-  std::vector<autopas::TraversalOptions> optionVector = {autopas::TraversalOptions::sliced,
-                                                         autopas::TraversalOptions::c08};
+  std::vector<autopas::TraversalOption> optionVector = {autopas::TraversalOption::sliced,
+                                                         autopas::TraversalOption::c08};
 
   constexpr size_t domainSize = 1000;
   autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
@@ -70,10 +70,10 @@ TEST_F(TraversalSelectorTest, testNextTraversal) {
   for (int i = 0; i < 2; ++i) {
     auto errorText = "Failed in repetition " + std::to_string(i);
     auto traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
-    EXPECT_EQ(autopas::TraversalOptions::sliced, traversal->getTraversalType()) << errorText;
+    EXPECT_EQ(autopas::TraversalOption::sliced, traversal->getTraversalType()) << errorText;
 
     traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
-    EXPECT_EQ(autopas::TraversalOptions::c08, traversal->getTraversalType()) << errorText;
+    EXPECT_EQ(autopas::TraversalOption::c08, traversal->getTraversalType()) << errorText;
 
     traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
     EXPECT_EQ(nullptr, traversal) << errorText;
@@ -85,13 +85,13 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestAbs) {
 
   mapOptionsTime measurements;
 
-  measurements[autopas::TraversalOptions::c08] = {22, 14};
-  measurements[autopas::TraversalOptions::sliced] = {30, 10};
+  measurements[autopas::TraversalOption::c08] = {22, 14};
+  measurements[autopas::TraversalOption::sliced] = {30, 10};
 
   mapOptionsTime ignoredMeasurements;
-  ignoredMeasurements[autopas::TraversalOptions::c08] = {1};
+  ignoredMeasurements[autopas::TraversalOption::c08] = {1};
 
-  testFastest(strategy, measurements, autopas::TraversalOptions::sliced, ignoredMeasurements);
+  testFastest(strategy, measurements, autopas::TraversalOption::sliced, ignoredMeasurements);
 }
 
 TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMean) {
@@ -99,10 +99,10 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMean) {
 
   mapOptionsTime measurements;
 
-  measurements[autopas::TraversalOptions::c08] = {2, 20};
-  measurements[autopas::TraversalOptions::sliced] = {5, 7};
+  measurements[autopas::TraversalOption::c08] = {2, 20};
+  measurements[autopas::TraversalOption::sliced] = {5, 7};
 
-  testFastest(strategy, measurements, autopas::TraversalOptions::sliced);
+  testFastest(strategy, measurements, autopas::TraversalOption::sliced);
 }
 
 TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMedian) {
@@ -110,17 +110,17 @@ TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMedian) {
 
   mapOptionsTime measurements;
 
-  measurements[autopas::TraversalOptions::c08] = {4, 1, 5};
-  measurements[autopas::TraversalOptions::sliced] = {2, 3, 3, 100};
+  measurements[autopas::TraversalOption::c08] = {4, 1, 5};
+  measurements[autopas::TraversalOption::sliced] = {2, 3, 3, 100};
 
-  testFastest(strategy, measurements, autopas::TraversalOptions::sliced);
+  testFastest(strategy, measurements, autopas::TraversalOption::sliced);
 }
 
 void TraversalSelectorTest::testFastest(autopas::SelectorStrategy strategy, mapOptionsTime measurements,
-                                        autopas::TraversalOptions expectedBest, mapOptionsTime ignoredMeasurements) {
+                                        autopas::TraversalOption expectedBest, mapOptionsTime ignoredMeasurements) {
   MFunctor functor;
 
-  std::vector<autopas::TraversalOptions> optionVector;
+  std::vector<autopas::TraversalOption> optionVector;
   optionVector.reserve(measurements.size());
 
   for (auto &&m : measurements) {

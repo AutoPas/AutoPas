@@ -29,9 +29,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   typedef std::size_t index_t;
 
  private:
-  const std::vector<TraversalOptions>& VCLApplicableTraversals() {
+  const std::vector<TraversalOption>& VCLApplicableTraversals() {
     // traversal not used but prevents usage of newton3
-    static const std::vector<TraversalOptions> v{TraversalOptions::c01};
+    static const std::vector<TraversalOption> v{TraversalOption::c01};
     return v;
   }
 
@@ -67,7 +67,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     rebuild();
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::verletClusterLists; }
+  ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
   /**
    * Function to iterate over all pairs of particles.
@@ -144,8 +144,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector(
-      std::vector<TraversalOptions> traversalOptions) override {
-    std::vector<TraversalOptions> allowedAndApplicable;
+      std::vector<TraversalOption> traversalOptions) override {
+    std::vector<TraversalOption> allowedAndApplicable;
 
     std::sort(traversalOptions.begin(), traversalOptions.end());
     std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),

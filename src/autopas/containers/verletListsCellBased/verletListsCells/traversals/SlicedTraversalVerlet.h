@@ -50,7 +50,7 @@ class SlicedTraversalVerlet
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
 
-  TraversalOptions getTraversalType() override { return TraversalOptions::slicedVerlet; }
+  TraversalOption getTraversalType() override { return TraversalOption::slicedVerlet; }
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>

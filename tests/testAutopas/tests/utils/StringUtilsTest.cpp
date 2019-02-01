@@ -7,13 +7,13 @@
 #include "StringUtilsTest.h"
 
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
-  testParseMultiple<autopas::TraversalOptions>(autopas::allTraversalOptions,
+  testParseMultiple<autopas::TraversalOption>(autopas::allTraversalOptions,
                                                "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced",
                                                autopas::utils::StringUtils::parseTraversalOptions);
 }
 
 TEST(StringUtilsTest, parseContainerOptionsTest) {
-  testParseMultiple<autopas::ContainerOptions>(autopas::allContainerOptions,
+  testParseMultiple<autopas::ContainerOption>(autopas::allContainerOptions,
                                                "directSum, linkedCells, verletLists, verlet-cells, vcluster",
                                                autopas::utils::StringUtils::parseContainerOptions);
 }
@@ -37,9 +37,9 @@ TEST(StringUtilsTest, to_stringSelectorStrategiesTest) {
 }
 
 TEST(StringUtilsTest, to_stringContainerOptionsTest) {
-  testToString(autopas::allContainerOptions, {autopas::ContainerOptions(-1)});
+  testToString(autopas::allContainerOptions, {autopas::ContainerOption(-1)});
 }
 
 TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
-  testToString(autopas::allTraversalOptions, {autopas::TraversalOptions(-1)});
+  testToString(autopas::allTraversalOptions, {autopas::TraversalOption(-1)});
 }

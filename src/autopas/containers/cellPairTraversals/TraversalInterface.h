@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/options/TraversalOptions.h"
+#include "autopas/options/TraversalOption.h"
 
 namespace autopas {
 
@@ -24,7 +24,7 @@ class TraversalInterface {
    * Return a enum representing the name of the traversal class.
    * @return Enum representing traversal.
    */
-  virtual TraversalOptions getTraversalType() = 0;
+  virtual TraversalOption getTraversalType() = 0;
 
   /**
    * Checks if the traversal is applicable to the current state of the domain.

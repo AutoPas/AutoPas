@@ -30,19 +30,19 @@ void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle, Particl
                              FunctionType &&function) {
   auto container_ptr = container.get();
   switch (container->getContainerType()) {
-    case ContainerOptions::directSum:
+    case ContainerOption::directSum:
       function(dynamic_cast<autopas::DirectSum<Particle, ParticleCell> *>(container_ptr));
       return;
-    case ContainerOptions::linkedCells:
+    case ContainerOption::linkedCells:
       function(dynamic_cast<autopas::LinkedCells<Particle, ParticleCell> *>(container_ptr));
       return;
-    case ContainerOptions::verletLists:
+    case ContainerOption::verletLists:
       function(dynamic_cast<autopas::VerletLists<Particle> *>(container_ptr));
       return;
-    case ContainerOptions::verletListsCells:
+    case ContainerOption::verletListsCells:
       function(dynamic_cast<autopas::VerletListsCells<Particle> *>(container_ptr));
       return;
-    case ContainerOptions::verletClusterLists:
+    case ContainerOption::verletClusterLists:
       function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(container_ptr));
       return;
   }

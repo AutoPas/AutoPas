@@ -8,11 +8,11 @@
 
 // must be TEST_F because the logger which is called in the LC constructor is part of the fixture
 TEST_F(ContainerSelectorTest, testGetOptimalContainerOneOption) {
-  std::vector<autopas::ContainerOptions> optionVectorDir = {autopas::ContainerOptions::directSum};
-  std::vector<autopas::ContainerOptions> optionVectorLC = {autopas::ContainerOptions::linkedCells};
-  std::vector<autopas::ContainerOptions> optionVectorVerlet = {autopas::ContainerOptions::verletLists};
+  std::vector<autopas::ContainerOption> optionVectorDir = {autopas::ContainerOption::directSum};
+  std::vector<autopas::ContainerOption> optionVectorLC = {autopas::ContainerOption::linkedCells};
+  std::vector<autopas::ContainerOption> optionVectorVerlet = {autopas::ContainerOption::verletLists};
 
-  std::vector<autopas::TraversalOptions> traversals = {autopas::TraversalOptions::c08};
+  std::vector<autopas::TraversalOption> traversals = {autopas::TraversalOption::c08};
 
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
   const double cutoff = 1;
@@ -40,21 +40,21 @@ TEST_F(ContainerSelectorTest, testNextContainer) {
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
 
-  std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists,
-                                                             autopas::ContainerOptions::directSum,
-                                                             autopas::ContainerOptions::linkedCells};
-  std::vector<autopas::TraversalOptions> traversalOptions = {autopas::TraversalOptions::c08};
+  std::vector<autopas::ContainerOption> containerOptions = {autopas::ContainerOption::verletLists,
+                                                             autopas::ContainerOption::directSum,
+                                                             autopas::ContainerOption::linkedCells};
+  std::vector<autopas::TraversalOption> traversalOptions = {autopas::TraversalOption::c08};
   autopas::ContainerSelector<Particle, FPCell> containerSelector(
       bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, containerOptions, traversalOptions);
 
   auto container = containerSelector.selectNextContainer();
-  EXPECT_EQ(autopas::ContainerOptions::verletLists, container->getContainerType());
+  EXPECT_EQ(autopas::ContainerOption::verletLists, container->getContainerType());
 
   container = containerSelector.selectNextContainer();
-  EXPECT_EQ(autopas::ContainerOptions::directSum, container->getContainerType());
+  EXPECT_EQ(autopas::ContainerOption::directSum, container->getContainerType());
 
   container = containerSelector.selectNextContainer();
-  EXPECT_EQ(autopas::ContainerOptions::linkedCells, container->getContainerType());
+  EXPECT_EQ(autopas::ContainerOption::linkedCells, container->getContainerType());
 
   container = containerSelector.selectNextContainer();
   EXPECT_EQ(nullptr, container);
@@ -69,10 +69,10 @@ TEST_F(ContainerSelectorTest, testSelectOptimalContainer) {
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
 
-  std::vector<autopas::ContainerOptions> containerOptions = {autopas::ContainerOptions::verletLists,
-                                                             autopas::ContainerOptions::directSum,
-                                                             autopas::ContainerOptions::linkedCells};
-  std::vector<autopas::TraversalOptions> traversalOptions = {autopas::TraversalOptions::c08};
+  std::vector<autopas::ContainerOption> containerOptions = {autopas::ContainerOption::verletLists,
+                                                             autopas::ContainerOption::directSum,
+                                                             autopas::ContainerOption::linkedCells};
+  std::vector<autopas::TraversalOption> traversalOptions = {autopas::TraversalOption::c08};
   autopas::ContainerSelector<Particle, FPCell> containerSelector(
       bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, containerOptions, traversalOptions);
 

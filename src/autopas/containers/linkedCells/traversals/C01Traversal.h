@@ -51,7 +51,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
-  TraversalOptions getTraversalType() override { return TraversalOptions::c01; }
+  TraversalOption getTraversalType() override { return TraversalOption::c01; }
 
  private:
   /**

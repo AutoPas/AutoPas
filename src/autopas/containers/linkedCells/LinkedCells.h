@@ -47,13 +47,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * Lists all traversal options applicable for the Linked Cells container.
    * @return Vector of all applicable traversal options.
    */
-  static const std::vector<TraversalOptions> &allLCApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::c01, TraversalOptions::c08, TraversalOptions::c18,
-                                                 TraversalOptions::sliced};
+  static const std::vector<TraversalOption> &allLCApplicableTraversals() {
+    static const std::vector<TraversalOption> v{TraversalOption::c01, TraversalOption::c08, TraversalOption::c18,
+                                                 TraversalOption::sliced};
     return v;
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::linkedCells; }
+  ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
 
   void addParticle(Particle &p) override {
     bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
@@ -199,8 +199,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    std::vector<TraversalOptions> allowedAndApplicable;
+  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOption> traversalOptions) override {
+    std::vector<TraversalOption> allowedAndApplicable;
 
     std::sort(traversalOptions.begin(), traversalOptions.end());
     std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),

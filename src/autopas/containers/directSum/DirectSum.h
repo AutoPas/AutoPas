@@ -44,12 +44,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * Lists all traversal options applicable for the Direct Sum container.
    * @return Vector of all applicable traversal options.
    */
-  static const std::vector<TraversalOptions> &allDSApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::directSumTraversal};
+  static const std::vector<TraversalOption> &allDSApplicableTraversals() {
+    static const std::vector<TraversalOption> v{TraversalOption::directSumTraversal};
     return v;
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::directSum; }
+  ContainerOption getContainerType() override { return ContainerOption::directSum; }
 
   void addParticle(Particle &p) override {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
@@ -135,8 +135,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    std::vector<TraversalOptions> allowedAndApplicable;
+  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOption> traversalOptions) override {
+    std::vector<TraversalOption> allowedAndApplicable;
 
     std::sort(traversalOptions.begin(), traversalOptions.end());
     std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),

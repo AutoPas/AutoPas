@@ -34,9 +34,9 @@ class VerletListsCells
   typedef typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
 
  private:
-  const std::vector<TraversalOptions>& VLCApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::slicedVerlet, TraversalOptions::c18Verlet,
-                                                 TraversalOptions::c01Verlet};
+  const std::vector<TraversalOption>& VLCApplicableTraversals() {
+    static const std::vector<TraversalOption> v{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
+                                                 TraversalOption::c01Verlet};
     return v;
   }
 
@@ -56,14 +56,14 @@ class VerletListsCells
    * @param buildTraversal the traversal used to build the verletlists
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOptions buildTraversal, const double skin = 0,
+                   const TraversalOption buildTraversal, const double skin = 0,
                    const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                                             VLCApplicableTraversals()),
         _buildTraversal(buildTraversal),
         _verletBuiltNewton3(false) {}
 
-  ContainerOptions getContainerType() override { return ContainerOptions::verletListsCells; }
+  ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
 
   /**
    * Function to iterate over all pairs of particles.
@@ -113,8 +113,8 @@ class VerletListsCells
     iteratePairwiseAoS(f, traversal, useNewton3);
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    std::vector<TraversalOptions> allowedAndApplicable;
+  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOption> traversalOptions) override {
+    std::vector<TraversalOption> allowedAndApplicable;
 
     std::sort(traversalOptions.begin(), traversalOptions.end());
     std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
@@ -233,7 +233,7 @@ class VerletListsCells
   std::unordered_map<Particle*, std::pair<size_t, size_t>> _cellMap;
 
   // the traversal used to build the verletlists
-  TraversalOptions _buildTraversal;
+  TraversalOption _buildTraversal;
 
   // specifies if the current verlet list was built for newton3
   bool _verletBuiltNewton3;

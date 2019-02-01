@@ -9,11 +9,11 @@
 
 void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   autopas::LJFunctor<Particle, FPCell> functor(1., 1., 1., 0.);
-  std::vector<autopas::ContainerOptions> containers = {autopas::ContainerOptions::verletLists,
-                                                       autopas::ContainerOptions::linkedCells,
-                                                       autopas::ContainerOptions::directSum};
-  std::vector<autopas::TraversalOptions> traversals = {
-      autopas::TraversalOptions::sliced, autopas::TraversalOptions::c08, autopas::TraversalOptions::directSumTraversal};
+  std::vector<autopas::ContainerOption> containers = {autopas::ContainerOption::verletLists,
+                                                       autopas::ContainerOption::linkedCells,
+                                                       autopas::ContainerOption::directSum};
+  std::vector<autopas::TraversalOption> traversals = {
+      autopas::TraversalOption::sliced, autopas::TraversalOption::c08, autopas::TraversalOption::directSumTraversal};
 
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 42};
   // adaptive domain size so sliced is always applicable.
@@ -22,9 +22,18 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
   const unsigned int numSamples = 2;
-  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency,
-                                                 containers, traversals, autopas::SelectorStrategy::fastestAbs,
-                                                 autopas::SelectorStrategy::fastestAbs, 100, numSamples);
+  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin,
+                                                 bBoxMax,
+                                                 cutoff,
+                                                 verletSkin,
+                                                 verletRebuildFrequency,
+                                                 containers,
+                                                 traversals,
+                                                 std::vector<autopas::DataLayoutOption>(),
+                                                 false,
+                                                 autopas::SelectorStrategy::fastestAbs,
+                                                 100,
+                                                 numSamples);
 
   std::shared_ptr<autopas::ParticleContainer<Particle, FPCell>> fastestContainer;
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
@@ -32,7 +41,7 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
   int i = 0;
   for (; stillTuning; ++i) {
     std::cout << "ITERATION " << i << std::endl;
-    stillTuning = autoTuner.iteratePairwise(&functor, dataLayoutOption);
+    stillTuning = autoTuner.iteratePairwise(&functor);
 
     auto container = autoTuner.getContainer();
 

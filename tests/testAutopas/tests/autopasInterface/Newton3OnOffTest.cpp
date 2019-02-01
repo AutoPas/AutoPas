@@ -12,14 +12,12 @@ using ::testing::Return;  // anything is ok
 TEST_F(Newton3OnOffTest, testAoS) {
   for (auto containerOption : autopas::allContainerOptions) {
     // @todo remove this when cluster list can iterate with newton3 active
-    if (containerOption == autopas::ContainerOptions::verletClusterLists) {
+    if (containerOption == autopas::ContainerOption::verletClusterLists) {
       continue;
     }
 
     // needs two samples per container because we test with and without newton 3 and never take time measurements
-    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(), {containerOption},
-                 autopas::allTraversalOptions, autopas::SelectorStrategy::fastestAbs,
-                 autopas::SelectorStrategy::fastestAbs, 100, 1);
+    autoPas.init();
     autopas::MoleculeLJ defaultParticle;
     RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
     RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
@@ -36,7 +34,7 @@ TEST_F(Newton3OnOffTest, testAoS) {
     }));
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(testing::AtLeast(1));
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(0);  // disables newton3 variant
-    autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
+    autoPas.iteratePairwise(&mockFunctor);
 
     // without newton 3:
     int callsNonNewton3 = 0;
@@ -47,7 +45,7 @@ TEST_F(Newton3OnOffTest, testAoS) {
     }));
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(testing::AtLeast(1));
     EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(0);  // disables newton3 variant
-    autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::aos);
+    autoPas.iteratePairwise(&mockFunctor);
 
     EXPECT_EQ(callsNewton3 * 2, callsNonNewton3);  // should be called exactly two times
 
@@ -59,13 +57,12 @@ TEST_F(Newton3OnOffTest, testAoS) {
 
 TEST_F(Newton3OnOffTest, testSoA) {
   for (auto containerOption : autopas::allContainerOptions) {
-    if (containerOption == autopas::ContainerOptions::verletLists ||
-        containerOption == autopas::ContainerOptions::verletListsCells ||
-        containerOption == autopas::ContainerOptions::verletClusterLists) {
+    if (containerOption == autopas::ContainerOption::verletLists ||
+        containerOption == autopas::ContainerOption::verletListsCells ||
+        containerOption == autopas::ContainerOption::verletClusterLists) {
       continue;
     }
-    autoPas.init(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(), getVerletRebuildFrequency(),
-                 {containerOption});
+    autoPas.init();
     autopas::MoleculeLJ defaultParticle;
     RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
     RandomGenerator::fillWithHaloParticles(*autoPas.getContainer(), defaultParticle,
@@ -95,7 +92,7 @@ TEST_F(Newton3OnOffTest, testSoA) {
     }));
     EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).Times(testing::AtLeast(1));
 
-    autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
+    autoPas.iteratePairwise(&mockFunctor);
 
     // without newton 3:
     int callsNonNewton3SC = 0;
@@ -115,7 +112,7 @@ TEST_F(Newton3OnOffTest, testSoA) {
       callsNonNewton3Pair++;
     }));
     EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).Times(testing::AtLeast(1));
-    autoPas.iteratePairwise(&mockFunctor, autopas::DataLayoutOption::soa);
+    autoPas.iteratePairwise(&mockFunctor);
 
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
     // should be called exactly two times

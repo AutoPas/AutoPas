@@ -13,7 +13,7 @@
 void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   autopas::AutoPas<Particle, FPCell> autoPas;
 
-  autoPas.init({0, 0, 0}, {3, 3, 3}, 1, 0, 1, {autopas::ContainerOptions::directSum});
+  autoPas.init();
 
   std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0), Particle({1, 1, 2}, {0, 0, 0}, 1),
                                Particle({1, 2, 1}, {0, 0, 0}, 2), Particle({1, 2, 2}, {0, 0, 0}, 3)};
@@ -24,7 +24,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
 
   autopas::FlopCounterFunctor<Particle, FPCell> flopCounterFunctor(autoPas.getContainer()->getCutoff());
 
-  autoPas.iteratePairwise(&flopCounterFunctor, dataLayoutOption);
+  autoPas.iteratePairwise(&flopCounterFunctor);
 
   // every particle checks the distance to all others. Only half of the calculations are made due to Newton 3.
   auto expectedDistanceCalculations = molVec.size() * (molVec.size() - 1) / 2;

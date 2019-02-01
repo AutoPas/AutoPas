@@ -36,9 +36,9 @@ class VerletLists
   typedef typename VerletListHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
 
  private:
-  static const std::vector<TraversalOptions>& VLApplicableTraversals() {
+  static const std::vector<TraversalOption>& VLApplicableTraversals() {
     // @todo: implement some traversals for this
-    static const std::vector<TraversalOptions> v{};
+    static const std::vector<TraversalOption> v{};
     return v;
   }
 
@@ -78,13 +78,13 @@ class VerletLists
    * Lists all traversal options applicable for the Verlet Lists container.
    * @return Vector of all applicable traversal options.
    */
-  static const std::vector<TraversalOptions>& allVLApplicableTraversals() {
+  static const std::vector<TraversalOption>& allVLApplicableTraversals() {
     // @FIXME This is a workaround because this container does not yet use traversals like it should
-    static const std::vector<TraversalOptions> v{TraversalOptions::dummyTraversal};
+    static const std::vector<TraversalOption> v{TraversalOption::dummyTraversal};
     return v;
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
+  ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -165,8 +165,8 @@ class VerletLists
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    //    std::vector<TraversalOptions> allowedAndApplicable;
+  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOption> traversalOptions) override {
+    //    std::vector<TraversalOption> allowedAndApplicable;
     //
     //    std::sort(traversalOptions.begin(), traversalOptions.end());
     //    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),

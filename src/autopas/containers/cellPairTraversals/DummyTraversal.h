@@ -28,7 +28,7 @@ class DummyTraversal : public CellPairTraversal<ParticleCell> {
 
   ~DummyTraversal() = default;
 
-  TraversalOptions getTraversalType() override { return TraversalOptions::dummyTraversal; }
+  TraversalOption getTraversalType() override { return TraversalOption::dummyTraversal; }
 
   bool isApplicable() override { return true; }
 };

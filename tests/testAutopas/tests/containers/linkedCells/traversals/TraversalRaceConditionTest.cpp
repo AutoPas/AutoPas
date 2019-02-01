@@ -34,7 +34,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
 
   /// @todo: test all containers
   for (auto &traversalLC : autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals()) {
-    if (traversalLC == autopas::TraversalOptions::c01) {
+    if (traversalLC == autopas::TraversalOption::c01) {
       // c01 traversal does not work with newton3.
       // Here only one traversal is tested.
       continue;
@@ -42,16 +42,16 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
     autopas::AutoPas<Particle, FPCell> autoPas;
 
     // generates one cell per particle + 1 halo layer
-    auto containerList = {autopas::ContainerOptions::linkedCells};
+    auto containerList = {autopas::ContainerOption::linkedCells};
     auto traversalList = {traversalLC};
-    autoPas.init(boxMin, boxMax, cellLength, 0, 1, containerList, traversalList);
+    autoPas.init();
 
     auto defaultParticle = Particle({0, 0, 0}, {0, 0, 0}, 0);
     GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
 
     SimpleFunctor functor;
 
-    autoPas.iteratePairwise(&functor, autopas::aos);
+    autoPas.iteratePairwise(&functor);
 
     for (auto particleIterator = autoPas.begin(); particleIterator.isValid(); ++particleIterator) {
       if (particleIterator->getR()[0] == .5 || particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||

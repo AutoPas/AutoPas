@@ -43,8 +43,7 @@ TEST_F(AutoPasTest, checkRebuildingNewMove) {
   {
     // 1. create new AutoPas container + initialize
     decltype(autoPas) autoPasTmp;
-    autoPasTmp.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 1, {autopas::ContainerOptions::linkedCells},
-                    {autopas::TraversalOptions::c08});
+    autoPasTmp.init();
 
     // ensure no particles
     for (auto iter = autoPasTmp.begin(); iter.isValid(); ++iter) {
@@ -117,8 +116,7 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
     }
     // 2. recreate container by calling constructor + init
     autoPas = decltype(autoPas)();
-    autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 1, {autopas::ContainerOptions::linkedCells},
-                 {autopas::TraversalOptions::c08});
+    autoPas.init();
 
     // ensure no particles
     for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
@@ -156,7 +154,7 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
   EXPECT_TRUE(autoPas.needsContainerUpdate());
 
   // now build verlet lists
-  autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 2, {autopas::ContainerOptions::verletLists}, {});
+  autoPas.init();
   // after build this should be false
   EXPECT_TRUE(autoPas.needsContainerUpdate());
 
@@ -166,7 +164,7 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
   EXPECT_CALL(emptyFunctor, allowsNonNewton3()).Times(AtLeast(1)).WillOnce(Return(false));
   EXPECT_CALL(emptyFunctor, isRelevantForTuning()).Times(AtLeast(1)).WillOnce(Return(true));
   autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &emptyFunctor);
-  autoPas.iteratePairwise(&emptyFunctor, autopas::aos);
+  autoPas.iteratePairwise(&emptyFunctor);
 
   // now verlet lists should be valid.
   EXPECT_FALSE(autoPas.needsContainerUpdate());

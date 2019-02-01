@@ -57,7 +57,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
-  TraversalOptions getTraversalType() override { return TraversalOptions::c18; }
+  TraversalOption getTraversalType() override { return TraversalOption::c18; }
 
  private:
   /**
