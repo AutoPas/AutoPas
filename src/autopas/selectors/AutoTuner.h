@@ -212,7 +212,6 @@ class AutoTuner {
    */
   size_t _numSamples;
 
-  // TODO: _containerSelectorStrategy currently unused
   SelectorStrategy _selectorStrategy;
 
   Configuration _currentConfig;
@@ -225,7 +224,6 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
   bool newton3Allowed = f->allowsNewton3();
   bool nonNewton3Allowed = f->allowsNonNewton3();
   // @todo auto-tune (not so far off future)
-  _currentConfig._newton3 = false;
   if (newton3Allowed and nonNewton3Allowed) {
   } else if (not newton3Allowed and not nonNewton3Allowed) {
     utils::ExceptionHandler::exception("AutoTuner: Functor neither allows Newton 3 nor not.");
