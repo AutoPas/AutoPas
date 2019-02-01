@@ -29,9 +29,21 @@ static unsigned int _instanceCounter = 0;
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
-  AutoPas() {
-    // count the number of autopas instances. This is needed to ensure that the autopas logger is not unregistered while
-    // other instances are still using it.
+  AutoPas()
+      : boxMin{0, 0, 0},
+        boxMax{0, 0, 0},
+        cutoff(1),
+        verletSkin(0.2),
+        verletRebuildFrequency(20),
+        tuningInterval(5000),
+        numSamples(3),
+        selectorStrategy(SelectorStrategy::fastestAbs),
+        allowedContainers(allContainerOptions),
+        allowedTraversals(allTraversalOptions),
+        allowedDataLayouts(allDataLayoutOptions),
+        allowNewton3(false) {
+    // count the number of autopas instances. This is needed to ensure that the autopas
+    // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
     if (_instanceCounter == 1) {
       // initialize the Logger
@@ -61,32 +73,17 @@ class AutoPas {
   }
 
   /**
-   * Initialize the particle container.
+   * Initialize the auto tuner. This will completely reset the container and remove all containing particles!
    *
-   * For possible container choices see AutoPas::ContainerOption.
+   * This function needs to be called before any other functions on the AutoPas object.
    *
-   * @param boxMin Lower corner of the container.
-   * @param boxMax Upper corner of the container.
-   * @param cutoff  Cutoff radius to be used in this container.
-   * @param verletSkin Length added to the cutoff for the verlet lists' skin.
-   * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
-   * @param allowedContainers List of container types AutoPas can choose from.
-   * @param allowedTraversals List of traversals AutoPas can choose from.
-   * @param containerSelectorStrategy Strategy for the container selector.
-   * @param traversalSelectorStrategy Strategy for the traversal selector.
-   * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
-   * @param numSamples Number of samples the tuner should collect for each combination.
+   * Changing any of the member options only takes effect when init is called.
+   *
    */
-  void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            unsigned int verletRebuildFrequency,
-            const std::vector<autopas::ContainerOptions> &allowedContainers = autopas::allContainerOptions,
-            const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
-            SelectorStrategy containerSelectorStrategy = SelectorStrategy::fastestAbs,
-            SelectorStrategy traversalSelectorStrategy = SelectorStrategy::fastestAbs,
-            unsigned int tuningInterval = 100, unsigned int numSamples = 3) {
+  void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainers, allowedTraversals,
-        containerSelectorStrategy, traversalSelectorStrategy, tuningInterval, numSamples);
+        allowedDataLayouts, allowNewton3, selectorStrategy, tuningInterval, numSamples);
   }
 
   /**
@@ -131,12 +128,10 @@ class AutoPas {
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
    * @param f Functor that describes the pair-potential
-   * @param dataLayoutOption useSoA Bool to decide if SoA or AoS should be used.
    */
   template <class Functor>
-  void iteratePairwise(Functor *f, autopas::DataLayoutOption dataLayoutOption) {
-    // @todo remove dataLayoutOption and let it be handled via a selector
-    _autoTuner->iteratePairwise(f, dataLayoutOption);
+  void iteratePairwise(Functor *f) {
+    _autoTuner->iteratePairwise(f);
   }
 
   /**
@@ -202,7 +197,60 @@ class AutoPas {
     }
   }
 
+  /**
+   * Lower corner of the container.
+   */
+  std::array<double, 3> boxMin;
+  /**
+   * Upper corner of the container.
+   */
+  std::array<double, 3> boxMax;
+  /**
+   * Cutoff radius to be used in this container.
+   */
+  double cutoff;
+  /**
+   * Length added to the cutoff for the verlet lists' skin.
+   */
+  double verletSkin;
+  /**
+   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   */
+  unsigned int verletRebuildFrequency;
+  /**
+   * Number of timesteps after which the auto-tuner shall reevaluate all selections.
+   */
+  unsigned int tuningInterval;
+  /**
+   * Number of samples the tuner should collect for each combination.
+   */
+  unsigned int numSamples;
+  /**
+   * Strategy for the container selector.
+   * For possible container choices see AutoPas::SelectorStrategy.
+   */
+  SelectorStrategy selectorStrategy;
+  /**
+   * List of container types AutoPas can choose from.
+   * For possible container choices see AutoPas::ContainerOption.
+   */
+  std::vector<ContainerOption> allowedContainers;
+  /**
+   * List of traversals AutoPas can choose from.
+   * For possible container choices see AutoPas::TraversalOption.
+   */
+  std::vector<TraversalOption> allowedTraversals;
+  /**
+   * List of data layouts AutoPas can choose from.
+   * For possible container choices see AutoPas::DataLayoutOption.
+   */
+  std::vector<DataLayoutOption> allowedDataLayouts;
+  /**
+   * Whether AutoPas is allowed to exploit Newton's third law of motion.
+   */
+  bool allowNewton3;
+
  private:
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
-};
+};  // namespace autopas
 }  // namespace autopas
