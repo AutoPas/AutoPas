@@ -79,123 +79,159 @@ pipeline{
             }
         }
         stage("build") {
-            steps{
-                parallel(
-                    "default": {
-                        githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build"){
-                                sh "cmake .."
-                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+            parallel {
+                stage('normal cloud') {
+                    steps{
+                        parallel(
+                            "default": {
+                                githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
+                                container('autopas-gcc7-cmake-make') {
+                                    dir("build"){
+                                        sh "cmake .."
+                                        sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "gcc openmp": {
+                                container('autopas-gcc7-cmake-make') {
+                                    dir("build-openmp"){
+                                        sh "cmake -DOPENMP=ON .."
+                                        sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "gcc openmp address-sanitizer": {
+                                container('autopas-gcc7-cmake-make') {
+                                    dir("build-openmp-address-sanitizer"){
+                                        sh "cmake -DOPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                                        sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "address sanitizer": {
+                                container('autopas-gcc7-cmake-make') {
+                                    dir("build-addresssanitizer"){
+                                        sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                                        sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "address sanitizer release": {
+                                container('autopas-gcc7-cmake-make') {
+                                    dir("build-addresssanitizer-release"){
+                                        sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                                        sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "thread sanitizer": {
+                                container('autopas-gcc7-cmake-make') {
+                                    dir("build-threadsanitizer"){
+                                        // this is for simple testing of our threading libraries.
+                                        sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
+                                        sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "clang openmp": {
+                                container('autopas-clang6-cmake-ninja-make'){
+                                    dir("build-clang-ninja-openmp"){
+                                        sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
+                                        sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "clang ninja address sanitizer": {
+                                container('autopas-clang6-cmake-ninja-make'){
+                                    dir("build-clang-ninja-addresssanitizer-debug"){
+                                        sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
+                                        sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "clang ninja address sanitizer release": {
+                                container('autopas-clang6-cmake-ninja-make'){
+                                    dir("build-clang-ninja-addresssanitizer-release"){
+                                        sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
+                                        sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "archer": {
+                                container('autopas-archer'){
+                                    dir("build-archer"){
+                                        sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
+                                        sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                    }
+                                }
+                            },
+                            "intel": {
+                                container('autopas-intel18'){
+                                    dir("build-intel"){
+                                        sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DOPENMP=OFF ..'"
+                                        sh "bash -i -c 'make -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
+                                    }
+                                }
+                            },
+                            "intel openmp": {
+                                container('autopas-intel18'){
+                                    dir("build-intel-ninja-openmp"){
+                                        sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DOPENMP=ON ..'"
+                                        sh "bash -i -c 'ninja -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
+                                    }
+                                }
                             }
+                        )
+                    }
+                    post{
+                        always{
+                            warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
                         }
-                    },
-                    "gcc openmp": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-openmp"){
-                                sh "cmake -DOPENMP=ON .."
-                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                            }
+                        success{
+                            githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
                         }
-                    },
-                    "gcc openmp address-sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-openmp-address-sanitizer"){
-                                sh "cmake -DOPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                            }
+                        failure{
+                            githubNotify context: 'build', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
                         }
-                    },
-                    "address sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-addresssanitizer"){
-                                sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                            }
+                        unstable{
+                            githubNotify context: 'build', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
                         }
-                    },
-                    "address sanitizer release": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-addresssanitizer-release"){
-                                sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                            }
+                        aborted{
+                            githubNotify context: 'build', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
                         }
-                    },
-                    "thread sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-threadsanitizer"){
-                                // this is for simple testing of our threading libraries.
-                                sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
-                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                            }
-                        }
-                    },
-                    "clang openmp": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-openmp"){
-                                sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
-                                sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                            }
-                        }
-                    },
-                    "clang ninja address sanitizer": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-addresssanitizer-debug"){
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                            }
-                        }
-                    },
-                    "clang ninja address sanitizer release": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-addresssanitizer-release"){
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                            }
-                        }
-                    },
-                    "archer": {
-                        container('autopas-archer'){
-                            dir("build-archer"){
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
-                                sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                            }
-                        }
-                    },
-                    "intel": {
-                        container('autopas-intel18'){
-                            dir("build-intel"){
-                                sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DOPENMP=OFF ..'"
-                                sh "bash -i -c 'make -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
-                            }
-                        }
-                    },
-                    "intel openmp": {
-                        container('autopas-intel18'){
-                            dir("build-intel-ninja-openmp"){
-                                sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DOPENMP=ON ..'"
-                                sh "bash -i -c 'ninja -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
+                    }
+                }
+                stage('gpu cloud') {
+                    agent { label 'atsccs11' }
+                    steps{
+                        "cuda-10": {
+                            githubNotify context: 'build-cuda', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
+                            container('cuda-10') {
+                                dir("build"){
+                                    sh "cmake -DENABLE_CUDA=ON .."
+                                    sh "make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
+                                    sh "cat buildlog-cuda.txt"
+                                }
                             }
                         }
                     }
-                )
-            }
-            post{
-                always{
-					warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
-                }
-                success{
-                    githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
-                }
-                failure{
-                    githubNotify context: 'build', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                unstable{
-                    githubNotify context: 'build', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                aborted{
-                    githubNotify context: 'build', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
+                    post{
+                        always{
+                            warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog-cuda.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+                        }
+                        success{
+                            githubNotify context: 'build-cuda', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
+                        }
+                        failure{
+                            githubNotify context: 'build-cuda', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
+                        }
+                        unstable{
+                            githubNotify context: 'build-cuda', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
+                        }
+                        aborted{
+                            githubNotify context: 'build-cuda', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
+                        }
+                    }
                 }
             }
         }
