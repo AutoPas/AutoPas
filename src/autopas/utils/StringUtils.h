@@ -10,6 +10,7 @@
 #include <vector>
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategie.h"
 #include "autopas/options/TraversalOption.h"
 
@@ -19,6 +20,24 @@ namespace utils {
  * Some functions to parse enums from (input-) strings.
  */
 namespace StringUtils {
+
+/**
+ * Converts a Newton3Option to its respective string representation.
+ * @param option
+ * @return The string representation or "Unknown option (<IntValue>)".
+ */
+inline std::string to_string(Newton3Option option) {
+  switch (option) {
+    case autopas::Newton3Option::enabled: {
+      return "enabled";
+    }
+    case autopas::Newton3Option::disabled: {
+      return "disabled";
+    }
+  }
+  // do not implement default case to provoke compiler warnings if new options are introduced.
+  return "Unknown option (" + std::to_string(option) + ")";
+}
 
 /**
  * Converts a SelectorStrategy to its respective string representation.

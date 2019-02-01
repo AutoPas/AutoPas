@@ -372,7 +372,7 @@ void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
     utils::ExceptionHandler::exception("TraversalSelector: Nothing was faster than max long! o_O");
   }
 }
-template<class ParticleCell>
+template <class ParticleCell>
 void TraversalSelector<ParticleCell>::selectTraversal(TraversalOption traversalOption) {
   _currentTraversal = traversalOption;
 }

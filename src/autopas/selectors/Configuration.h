@@ -22,7 +22,8 @@ class Configuration {
    * @param _dataLayout
    * @param _newton3
    */
-  Configuration(ContainerOption _container, TraversalOption _traversal, DataLayoutOption _dataLayout, bool _newton3)
+  Configuration(ContainerOption _container, TraversalOption _traversal, DataLayoutOption _dataLayout,
+                Newton3Option _newton3)
       : _container(_container), _traversal(_traversal), _dataLayout(_dataLayout), _newton3(_newton3) {}
 
   /**
@@ -32,7 +33,7 @@ class Configuration {
       : _container(ContainerOption(-1)),
         _traversal(TraversalOption(-1)),
         _dataLayout(DataLayoutOption(-1)),
-        _newton3(false) {}
+        _newton3(Newton3Option(-1)) {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -42,13 +43,13 @@ class Configuration {
     return "{Container : " + utils::StringUtils::to_string(_container) +
            " , Traversal : " + utils::StringUtils::to_string(_traversal) +
            " , Data Layout : " + utils::StringUtils::to_string(_dataLayout) +
-           " , Newton 3 : " + (_newton3 ? "On " : "Off") + "}";
+           " , Newton 3 : " + utils::StringUtils::to_string(_newton3) + "}";
   }
 
   ContainerOption _container;
   TraversalOption _traversal;
   DataLayoutOption _dataLayout;
-  bool _newton3;
+  Newton3Option _newton3;
 };
 
 /**
@@ -63,6 +64,21 @@ class Configuration {
 inline bool operator==(const Configuration& lhs, const Configuration& rhs) {
   return lhs._container == rhs._container and lhs._traversal == rhs._traversal and
          lhs._dataLayout == rhs._dataLayout and lhs._newton3 == rhs._newton3;
+}
+
+/**
+ * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
+ * sets.
+ *
+ * Configurations are compared member wise in the order: _container, _traversal, _dataLayout, _newton3.
+ *
+ * @param lhs
+ * @param rhs
+ * @return
+ */
+inline bool operator<(const Configuration& lhs, const Configuration& rhs) {
+  return std::tie(lhs._container, lhs._traversal, lhs._dataLayout, lhs._newton3) <
+         std::tie(rhs._container, rhs._traversal, rhs._dataLayout, rhs._newton3);
 }
 
 /**
