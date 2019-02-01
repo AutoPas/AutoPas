@@ -147,6 +147,7 @@ class AutoTuner {
           break;
         }
         case SelectorStrategy::fastestMedian: {
+          std::sort(configAndTimes.second.begin(), configAndTimes.second.end());
           value = configAndTimes.second[configAndTimes.second.size() / 2];
           break;
         }
