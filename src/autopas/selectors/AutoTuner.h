@@ -312,6 +312,30 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
+  // check for sane newton3 settings and fix them if needed
+  if ((_currentConfig->_newton3 == Newton3Option::enabled and not pairwiseFunctor->allowsNewton3()) or
+      (_currentConfig->_newton3 == Newton3Option::disabled and not pairwiseFunctor->allowsNonNewton3())) {
+    AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
+               utils::StringUtils::to_string(_currentConfig->_newton3));
+
+    Configuration modifiedCurrentConfig = *_currentConfig;
+    // choose the other option
+    modifiedCurrentConfig._newton3 = Newton3Option((static_cast<int>(_currentConfig->_newton3) + 1) % 2);
+
+    // if modified config is equal to next delete current. Else insert modified config.
+    // the disabled case should come after the enabled.
+    int searchDirection = _currentConfig->_newton3 == Newton3Option::enabled ? 1 : -1;
+    if (modifiedCurrentConfig == *(std::next(_currentConfig, searchDirection))) {
+      AutoPasLog(warn, "Newton 3 {} automatically for this config!",
+                 utils::StringUtils::to_string(modifiedCurrentConfig._newton3));
+      if (pairwiseFunctor->isRelevantForTuning()) {
+        _currentConfig = _allowedConfigurations.erase(_currentConfig);
+      }
+    } else {
+      _currentConfig = _allowedConfigurations.insert(_currentConfig, modifiedCurrentConfig);
+    }
+  }
+
   auto traversal =
       _traversalSelectors[_currentConfig._container].template selectNextTraversal<PairwiseFunctor, useSoA, useNewton3>(
           pairwiseFunctor);
