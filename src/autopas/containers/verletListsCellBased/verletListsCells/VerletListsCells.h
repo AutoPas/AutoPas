@@ -36,7 +36,7 @@ class VerletListsCells
  private:
   const std::vector<TraversalOption>& VLCApplicableTraversals() {
     static const std::vector<TraversalOption> v{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
-                                                 TraversalOption::c01Verlet};
+                                                TraversalOption::c01Verlet};
     return v;
   }
 
@@ -56,8 +56,7 @@ class VerletListsCells
    * @param buildTraversal the traversal used to build the verletlists
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOption buildTraversal, const double skin = 0,
-                   const unsigned int rebuildFrequency = 1)
+                   const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                                             VLCApplicableTraversals()),
         _buildTraversal(buildTraversal),
