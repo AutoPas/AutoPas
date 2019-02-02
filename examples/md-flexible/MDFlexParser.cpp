@@ -21,7 +21,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"help", no_argument, nullptr, 'h'},
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
-                                         {"no-newton3", no_argument, nullptr, '3'},
+                                         {"newton3", required_argument, nullptr, '3'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
@@ -40,7 +40,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
       case '3': {
-        newton3 = false;
+        newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
+        if (newton3Options.empty()) {
+          cerr << "Unknown Newton3 option: " << strArg << endl;
+          cerr << "Please use 'enabled' or 'disabled'!" << endl;
+          displayHelp = true;
+        }
         break;
       }
       case 'b': {
@@ -343,7 +348,7 @@ void MDFlexParser::printConfig() {
   }
 
   cout << setw(valueOffset) << left << "Newton3"
-       << ":  " << (newton3 ? "On" : "Off") << endl;
+       << ":  " << iterableToString(newton3Options) << endl;
 
   cout << setw(valueOffset) << left << "Cutoff radius"
        << ":  " << cutoff << endl;
@@ -444,4 +449,4 @@ autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 
 autopas::SelectorStrategy MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
 
-bool MDFlexParser::getNewton3() const { return newton3; }
+std::vector<autopas::Newton3Option> MDFlexParser::getnewton3Options() const { return newton3Options; }

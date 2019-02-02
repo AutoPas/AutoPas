@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
   auto generatorChoice(parser.getGeneratorOption());
   auto logLevel(parser.getLogLevel());
   auto measureFlops(parser.getMeasureFlops());
-  auto useNewton3(parser.getNewton3());
+  auto newton3Options(parser.getnewton3Options());
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
   auto particlesPerDim(parser.getParticlesPerDim());
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
   autopas.allowedContainers = containerChoice;
   autopas.allowedTraversals = traversalOptions;
   autopas.allowedDataLayouts = dataLayoutOptions;
-  autopas.allowNewton3 = useNewton3;
+  autopas.allowedNewton3Options = newton3Options;
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
@@ -246,17 +246,10 @@ int main(int argc, char **argv) {
 
   switch (functorChoice) {
     case MDFlexParser::FunctorOption::lj12_6: {
-      if (useNewton3) {
-        durationApply = calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, true>>(
-            autopas, cutoff, numIterations);
-        flopsPerKernelCall =
-            LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, true>::getNumFlopsPerKernelCall();
-      } else {
-        durationApply = calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, false>>(
-            autopas, cutoff, numIterations);
-        flopsPerKernelCall =
-            LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, false>::getNumFlopsPerKernelCall();
-      }
+      durationApply = calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, true>>(
+          autopas, cutoff, numIterations);
+      flopsPerKernelCall =
+          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, true>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexParser::FunctorOption::lj12_6_AVX: {

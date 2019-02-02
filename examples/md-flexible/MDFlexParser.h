@@ -32,7 +32,7 @@ class MDFlexParser {
   GeneratorOption getGeneratorOption() const;
   size_t getIterations() const;
   bool getMeasureFlops() const;
-  bool getNewton3() const;
+  std::vector<autopas::Newton3Option> getnewton3Options() const;
   spdlog::level::level_enum getLogLevel() const;
   double getParticleSpacing() const;
   size_t getParticlesTotal() const;
@@ -54,6 +54,7 @@ class MDFlexParser {
   autopas::SelectorStrategy selectorStrategy = autopas::SelectorStrategy::fastestAbs;
   std::vector<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
   std::vector<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
+  std::vector<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
 
  private:
   double boxLength = -1;
@@ -65,7 +66,6 @@ class MDFlexParser {
   size_t iterations = 10;
   spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
-  bool newton3 = true;
   size_t particlesPerDim = 20;
   size_t particlesTotal = 1000;
   double particleSpacing = .4;
