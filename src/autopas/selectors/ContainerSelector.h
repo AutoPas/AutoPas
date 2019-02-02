@@ -141,7 +141,8 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       break;
     }
     default: {
-      AutoPasLog(warn, "Container type {} is not a known type!", utils::StringUtils::to_string(containerChoice));
+      utils::ExceptionHandler::exception("Container type {} is not a known type!",
+                                         utils::StringUtils::to_string(containerChoice));
     }
   }
 
