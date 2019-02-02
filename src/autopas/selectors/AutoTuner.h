@@ -184,7 +184,7 @@ template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
   bool isTuning = false;
   // check if currently in tuning phase, execute iteration and take time measurement if necessary
-  if (_iterationsSinceTuning >= _tuningInterval) {
+  if (_iterationsSinceTuning >= _tuningInterval and f->isRelevantForTuning()) {
     isTuning = tune<PairwiseFunctor>(*f);
   }
 
