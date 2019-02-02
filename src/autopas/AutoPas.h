@@ -41,7 +41,7 @@ class AutoPas {
         allowedContainers(allContainerOptions),
         allowedTraversals(allTraversalOptions),
         allowedDataLayouts(allDataLayoutOptions),
-        allowNewton3(false) {
+        allowedNewton3Options(false) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -83,7 +83,7 @@ class AutoPas {
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainers, allowedTraversals,
-        allowedDataLayouts, allowNewton3, selectorStrategy, tuningInterval, numSamples);
+        allowedDataLayouts, allowedNewton3Options, selectorStrategy, tuningInterval, numSamples);
   }
 
   /**
@@ -248,7 +248,7 @@ class AutoPas {
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  bool allowNewton3;
+  std::vector<Newton3Option> allowedNewton3Options;
 
  private:
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;

@@ -172,12 +172,46 @@ inline std::vector<std::string> tokenize(const std::string &searchString, const 
  * Converts a string of options to a vector of enums. The options are expected to be lower case.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
+ * Possible options: enabled, disabled
+ *
+ * @param newton3OptionsString String containing newton3 options.
+ * @param ignoreUnknownOptions If set to false, a 'autopas::Newton3Option(-1)' will be inserted in the return vector
+ * for each not parsable word.
+ * @return Vector of Newton3Option enums. If no valid option was found and unknown options are ignored
+ * the empty vector is returned.
+ */
+inline std::vector<autopas::Newton3Option> parseNewton3Options(const std::string &newton3OptionsString,
+                                                               bool ignoreUnknownOptions = true) {
+  std::vector<autopas::Newton3Option> newton3Options;
+
+  auto words = tokenize(newton3OptionsString, delimiters);
+
+  for (auto &word : words) {
+    if (word.find("on") != std::string::npos or word.find("true") != std::string::npos or
+        word.find("enable") != std::string::npos) {
+      newton3Options.emplace_back(Newton3Option::enabled);
+    } else if (word.find("of") != std::string::npos or word.find("false") != std::string::npos or
+               word.find("disable") != std::string::npos) {
+      newton3Options.emplace_back(Newton3Option::disabled);
+    } else if (not ignoreUnknownOptions) {
+      newton3Options.emplace_back(autopas::Newton3Option(-1));
+    }
+  }
+
+  return newton3Options;
+}
+
+/**
+ * Converts a string of options to a vector of enums. The options are expected to be lower case.
+ * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
+ *
  * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced
  *
  * @param traversalOptionsString String containing traversal options.
- * @param ignoreUnknownOptions If set to false, a 'autopas::TraversalOptions(-1)' will be inserted in the return vector
+ * @param ignoreUnknownOptions If set to false, a 'autopas::TraversalOption(-1)' will be inserted in the return vector
  * for each not parsable word.
- * @return Vector of TraversalOption enums. If no valid option was found the empty vector is returned.
+ * @return Vector of TraversalOption enums. If no valid option was found and unknown options are ignored the empty
+ * vector is returned.
  */
 inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::string &traversalOptionsString,
                                                                    bool ignoreUnknownOptions = true) {
@@ -219,9 +253,10 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
  * Possible options: directSum, linkedCells, verletLists, vcells, vcluster
  *
  * @param containerOptionsString String containing container options.
- * @param ignoreUnknownOptions If set to false, a 'autopas::ContainerOptions(-1)' will be inserted in the return vector
+ * @param ignoreUnknownOptions If set to false, a 'autopas::ContainerOption(-1)' will be inserted in the return vector
  * for each not parsable word.
- * @return Vector of ContainerOption enums. If no valid option was found the empty vector is returned.
+ * @return Vector of ContainerOption enums. If no valid option was found and unknown options are ignored the empty
+ * vector is returned.
  */
 inline std::vector<autopas::ContainerOption> parseContainerOptions(const std::string &containerOptionsString,
                                                                    bool ignoreUnknownOptions = true) {
@@ -279,8 +314,10 @@ inline autopas::SelectorStrategy parseSelectorStrategy(const std::string &select
  * Possible options: aos, soa
  *
  * @param dataLayoutsSting String containing the data layout option.
- * @return An enum representing the data layout. If no valid option was found 'autopas::DataLayoutOption(-1)' is
- * returned.
+ * @param ignoreUnknownOptions If set to false, a 'autopas::DataLayoutOption(-1)' will be inserted in the return vector
+ * for each not parsable word.
+ * @return An enum representing the data layout. If no valid option was found and unknown options are ignored the empty
+ * vector is returned.
  */
 inline std::vector<autopas::DataLayoutOption> parseDataLayout(const std::string &dataLayoutsSting,
                                                               bool ignoreUnknownOptions = true) {
