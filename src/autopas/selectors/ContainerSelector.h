@@ -78,7 +78,7 @@ class ContainerSelector {
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
-  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getOptimalContainer();
+  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getCurrentContainer();
 
   /**
    * Save the runtime of a given container.
@@ -223,7 +223,7 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
 
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
-ContainerSelector<Particle, ParticleCell>::getOptimalContainer() {
+ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
   if (_currentContainer == nullptr) selectNextContainer();
   return _currentContainer;
 }

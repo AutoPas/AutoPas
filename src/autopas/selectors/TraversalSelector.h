@@ -59,7 +59,7 @@ class TraversalSelector {
    * @return Smartpointer to the optimal traversal.
    */
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  std::unique_ptr<CellPairTraversal<ParticleCell>> getOptimalTraversal(PairwiseFunctor &pairwiseFunctor);
+  std::unique_ptr<CellPairTraversal<ParticleCell>> getCurrentTraversal(PairwiseFunctor &pairwiseFunctor);
 
   /**
    * Save the runtime of a given traversal if the functor is relevant for tuning.
@@ -286,12 +286,13 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 
 template <class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::getOptimalTraversal(
+std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::getCurrentTraversal(
     PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
 
   if (not _isInitialized)
-    utils::ExceptionHandler::exception("TraversalSelector::getOptimalTraversal(): No Traversal selected yet!");
+    utils::ExceptionHandler::exception(
+        "TraversalSelector::getCurrentTraversal(): Traversal selector not initialized (nothing selected yet)!");
 
   traversal = generateTraversal<PairwiseFunctor, useSoA, useNewton3>(_currentTraversal, pairwiseFunctor);
   return traversal;
@@ -375,6 +376,7 @@ void TraversalSelector<ParticleCell>::findFastestMedianTraversal() {
 template <class ParticleCell>
 void TraversalSelector<ParticleCell>::selectTraversal(TraversalOption traversalOption) {
   _currentTraversal = traversalOption;
+  _isInitialized = true;
 }
 
 }  // namespace autopas
