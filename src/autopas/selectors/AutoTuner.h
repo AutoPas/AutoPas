@@ -84,7 +84,8 @@ class AutoTuner {
         }
       }
     }
-    _currentConfig = _allowedConfigurations.end();
+    _currentConfig = _allowedConfigurations.begin();
+    _containerSelector.selectContainer(_currentConfig->_container);
   }
 
   /**
@@ -231,7 +232,7 @@ template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, bool useSoA, bool useNewton3, bool inTuningPhase>
 void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f) {
   auto container = getContainer();
-  AutoPasLog(debug, "Using container {}", utils::StringUtils::to_string(container->getContainerType()));
+  AutoPasLog(debug, "Iterating with configuration: {}", _currentConfig->toString());
 
   auto traversal =
       _traversalSelectors[_currentConfig->_container].template generateTraversal<PairwiseFunctor, useSoA, useNewton3>(
@@ -268,30 +269,6 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
-  // check for sane newton3 settings and fix them if needed
-  if ((_currentConfig->_newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
-      (_currentConfig->_newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
-    AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
-               utils::StringUtils::to_string(_currentConfig->_newton3));
-
-    Configuration modifiedCurrentConfig = *_currentConfig;
-    // choose the other option
-    modifiedCurrentConfig._newton3 = Newton3Option((static_cast<int>(_currentConfig->_newton3) + 1) % 2);
-
-    // if modified config is equal to next delete current. Else insert modified config.
-    // the disabled case should come after the enabled.
-    int searchDirection = _currentConfig->_newton3 == Newton3Option::enabled ? 1 : -1;
-    if (modifiedCurrentConfig == *(std::next(_currentConfig, searchDirection))) {
-      AutoPasLog(warn, "Newton 3 {} automatically for this config!",
-                 utils::StringUtils::to_string(modifiedCurrentConfig._newton3));
-      if (pairwiseFunctor.isRelevantForTuning()) {
-        _currentConfig = _allowedConfigurations.erase(_currentConfig);
-      }
-    } else {
-      _currentConfig = _allowedConfigurations.insert(_currentConfig, modifiedCurrentConfig);
-    }
-  }
-
   bool stillTuning = true;
 
   // if beginning of tuning phase
@@ -303,7 +280,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       _numSamples = 0;
 
       bool traversalApplicable = false;
-      do {
+      // repeat as long as traverals are not applicable or we run out of configs
+      while (not traversalApplicable and _currentConfig != _allowedConfigurations.end()) {
         ++_currentConfig;
         _containerSelector.selectContainer(_currentConfig->_container);
         _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
@@ -330,8 +308,38 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
           }
         }
 
-        // repeat as long as traverals are not applicable or we run out of configs
-      } while (not traversalApplicable and _currentConfig != _allowedConfigurations.end());
+        if (not traversalApplicable) {
+          continue;
+        }
+
+        // check for sane newton3 settings and fix them if needed
+        if ((_currentConfig->_newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
+            (_currentConfig->_newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
+          AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
+                     utils::StringUtils::to_string(_currentConfig->_newton3));
+
+          Configuration modifiedCurrentConfig = *_currentConfig;
+          // choose the other option
+          modifiedCurrentConfig._newton3 = Newton3Option((static_cast<int>(_currentConfig->_newton3) + 1) % 2);
+
+          // if modified config is equal to next delete current. Else insert modified config.
+          // the disabled case should come after the enabled.
+          int searchDirection = _currentConfig->_newton3 == Newton3Option::enabled ? 1 : -1;
+          if (modifiedCurrentConfig == *(std::next(_currentConfig, searchDirection))) {
+            AutoPasLog(warn, "Newton 3 {} automatically for this config!",
+                       utils::StringUtils::to_string(modifiedCurrentConfig._newton3));
+            if (pairwiseFunctor.isRelevantForTuning()) {
+              _currentConfig = _allowedConfigurations.erase(_currentConfig);
+            }
+          } else {
+            _currentConfig = _allowedConfigurations.insert(_currentConfig, modifiedCurrentConfig);
+          }
+          if (_currentConfig != _allowedConfigurations.end()) {
+            _containerSelector.selectContainer(_currentConfig->_container);
+            _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
+          }
+        }
+      }
     }
   }
 
