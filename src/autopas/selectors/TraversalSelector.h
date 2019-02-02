@@ -62,6 +62,19 @@ class TraversalSelector {
   std::unique_ptr<CellPairTraversal<ParticleCell>> getCurrentTraversal(PairwiseFunctor &pairwiseFunctor);
 
   /**
+   * Generates a given Traversal for the given properties.
+   * @tparam PairwiseFunctor
+   * @tparam useSoA
+   * @tparam useNewton3
+   * @param traversalType
+   * @param pairwiseFunctor
+   * @return Smartpointer to the traversal.
+   */
+  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  std::unique_ptr<CellPairTraversal<ParticleCell>> generateTraversal(TraversalOption traversalType,
+                                                                     PairwiseFunctor &pairwiseFunctor);
+
+  /**
    * Save the runtime of a given traversal if the functor is relevant for tuning.
    * @param pairwiseFunctor
    * @param traversal
@@ -115,10 +128,6 @@ class TraversalSelector {
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   std::vector<std::unique_ptr<TraversalInterface>> generateAllAllowedTraversals(PairwiseFunctor &pairwiseFunctor);
 
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
-  std::unique_ptr<CellPairTraversal<ParticleCell>> generateTraversal(TraversalOption traversalType,
-                                                                     PairwiseFunctor &pairwiseFunctor);
-
   // The optimal traversal for all functors that are marked relevant.
   TraversalOption _currentTraversal;
   // indicating whether or not the optimalTraversalOption is already initialized
@@ -128,6 +137,10 @@ class TraversalSelector {
   const std::array<unsigned long, 3> _dims;
   const std::vector<TraversalOption> _allowedTraversalOptions;
 
+ public:
+  const std::vector<TraversalOption> &getAllowedTraversalOptions() const;
+
+ private:
   struct TimeMeasurement {
     TraversalOption traversal;
     long time;
@@ -377,6 +390,10 @@ template <class ParticleCell>
 void TraversalSelector<ParticleCell>::selectTraversal(TraversalOption traversalOption) {
   _currentTraversal = traversalOption;
   _isInitialized = true;
+}
+template <class ParticleCell>
+const std::vector<TraversalOption> &TraversalSelector<ParticleCell>::getAllowedTraversalOptions() const {
+  return _allowedTraversalOptions;
 }
 
 }  // namespace autopas

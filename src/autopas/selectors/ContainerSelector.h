@@ -235,7 +235,7 @@ void ContainerSelector<Particle, ParticleCell>::addTimeMeasurement(ContainerOpti
 template <class Particle, class ParticleCell>
 void ContainerSelector<Particle, ParticleCell>::selectContainer(ContainerOption containerOption) {
   // if we already have this container do nothing.
-  if (_currentContainer->getContainerType() != containerOption) {
+  if (_currentContainer and _currentContainer->getContainerType() != containerOption) {
     _currentContainer = std::move(generateContainer(containerOption));
   }
 }
