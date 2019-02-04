@@ -25,9 +25,11 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
-                     public LinkedCellTraversalInterface<ParticleCell> {
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3,
+          BlackBoxTraversalOption blackBoxTraversalOption = normal>
+class C08Traversal
+    : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3, blackBoxTraversalOption>,
+      public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -36,7 +38,8 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3, blackBoxTraversalOption>(dims,
+                                                                                                      pairwiseFunctor),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension) {}
 
   /**
@@ -49,8 +52,9 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
   C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3,
+          BlackBoxTraversalOption blackBoxTraversalOption>
+inline void C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3, blackBoxTraversalOption>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

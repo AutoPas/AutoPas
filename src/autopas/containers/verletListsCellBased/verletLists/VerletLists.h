@@ -21,6 +21,7 @@ namespace autopas {
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
+ * @note This container supports the [blackbox mode](@ref md_BlackBoxMode).
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @todo deleting particles should also invalidate the verlet lists - should be
@@ -56,23 +57,26 @@ class VerletLists
    * The neighbor lists are build using a search radius of cutoff + skin.
    * The rebuildFrequency should be chosen, s.t. the particles do not move more
    * than a distance of skin/2 between two rebuilds of the lists.
-   * @param boxMin the lower corner of the domain
-   * @param boxMax the upper corner of the domain
-   * @param cutoff the cutoff radius of the interaction
-   * @param skin the skin radius
-   * @param rebuildFrequency specifies after how many pair-wise traversals the
+   * @param boxMin The lower corner of the domain
+   * @param boxMax The upper corner of the domain
+   * @param cutoff The cutoff radius of the interaction
+   * @param skin The skin radius
+   * @param rebuildFrequency Specifies after how many pair-wise traversals the
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals.
-   * @param buildVerletListType specifies how the verlet list should be build, see BuildVerletListType
+   * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
+   * @param blackBoxMode Indicates whether the blackbox mode shall be used. (See BlackBoxMode)
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const unsigned int rebuildFrequency = 1,
-              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
+              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const bool blackBoxMode = false)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
             boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals()),
         _soaListIsValid(false),
         _soa(),
-        _buildVerletListType(buildVerletListType) {}
+        _buildVerletListType(buildVerletListType),
+        _blackBoxMode(blackBoxMode) {}
 
   /**
    * Lists all traversal options applicable for the Verlet Lists container.
@@ -87,28 +91,20 @@ class VerletLists
   ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
 
   /**
-   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
-   * @param useNewton3
-   */
-  void rebuild(bool useNewton3 = true) {
-    this->updateVerletListsAoS(useNewton3);
-    // the neighbor list is now valid
-    this->_neighborListIsValid = true;
-    this->_traversalsSinceLastRebuild = 0;
-  }
-
-  /**
    * @copydoc LinkedCells::iteratePairwiseAoS
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild it!
-      rebuild(useNewton3);
+      rebuildVerletLists(useNewton3);
     }
     this->iterateVerletListsAoS(f, useNewton3);
     // we iterated, so increase traversal counter
     this->_traversalsSinceLastRebuild++;
+
+    if (_blackBoxMode) {
+      iterateBoundaryPartsAoS(f, useNewton3);
+    }
   }
 
   /**
@@ -117,17 +113,21 @@ class VerletLists
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {
-      rebuild(useNewton3);
+      rebuildVerletLists(useNewton3);
       generateSoAListFromAoSVerletLists();
     } else if (not _soaListIsValid) {
       generateSoAListFromAoSVerletLists();
     }
     iterateVerletListsSoA(f, useNewton3);
     this->_traversalsSinceLastRebuild++;
+
+    if (_blackBoxMode) {
+      iterateBoundaryPartsSoA(f, useNewton3);
+    }
   }
 
   /**
-   * get the actual neighbour list
+   * Get the actual neighbour list.
    * @return the neighbour list
    */
   typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() { return _aosNeighborLists; }
@@ -172,7 +172,7 @@ class VerletLists
     //    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
     //    traversalOptions.begin(),
     //                          traversalOptions.end(), std::back_inserter(allowedAndApplicable));
-    // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
+    /// @todo dummyTraversal is a workaround because this container does not yet use traversals like it should
     return TraversalSelector<ParticleCell>({0, 0, 0}, {dummyTraversal});
   }
 
@@ -188,6 +188,18 @@ class VerletLists
 
  protected:
   /**
+   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
+   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @param useNewton3
+   */
+  void rebuildVerletLists(bool useNewton3 = true) {
+    this->updateVerletListsAoS(useNewton3);
+    // the neighbor list is now valid
+    this->_neighborListIsValid = true;
+    this->_traversalsSinceLastRebuild = 0;
+  }
+
+  /**
    * update the verlet lists for AoS usage
    * @param useNewton3 CURRENTLY NOT USED!
    * @todo Build verlet lists according to newton 3.
@@ -199,17 +211,31 @@ class VerletLists
     /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
-        auto traversal =
-            C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, true>(
-                this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-        this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+        if (_blackBoxMode) {
+          auto traversal =
+              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, true,
+                           inner>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+        } else {
+          auto traversal =
+              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, true>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+        }
         break;
       }
       case BuildVerletListType::VerletSoA: {
-        auto traversal =
-            C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, true, true>(
-                this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-        this->_linkedCells.iteratePairwiseSoA(&f, &traversal);
+        if (_blackBoxMode) {
+          auto traversal =
+              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, true, true, inner>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          this->_linkedCells.iteratePairwiseSoA(&f, &traversal);
+        } else {
+          auto traversal =
+              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, true, true>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          this->_linkedCells.iteratePairwiseSoA(&f, &traversal);
+        }
         break;
       }
       default:
@@ -228,13 +254,12 @@ class VerletLists
    */
   template <class ParticleFunctor>
   void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
-    // @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
-    /// traversals
+    /// @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable traversals
 
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
       size_t buckets = _aosNeighborLists.bucket_count();
-      // @todo find a sensible chunk size
+      /// @todo find a sensible chunk size
 #pragma omp parallel for schedule(dynamic)
       for (size_t b = 0; b < buckets; b++) {
         auto endIter = _aosNeighborLists.end(b);
@@ -260,26 +285,43 @@ class VerletLists
   }
 
   /**
-   * iterate over the verlet lists using the SoA traversal
+   * Iterate over the boundary dependent parts of the domain using the SoA traversal.
+   * @tparam ParticleFunctor
+   * @param f
+   * @param useNewton3
+   */
+  template <class ParticleFunctor>
+  void iterateBoundaryPartsSoA(ParticleFunctor* f, const bool useNewton3) {}
+
+  /**
+   * Iterate over the boundary dependent parts of the domain using the SoA traversal.
+   * @tparam ParticleFunctor
+   * @param f
+   * @param useNewton3
+   */
+  template <class ParticleFunctor>
+  void iterateBoundaryPartsAoS(ParticleFunctor* f, const bool useNewton3) {}
+
+  /**
+   * Iterate over the verlet lists using the SoA traversal
    * @tparam ParticleFunctor
    * @param f
    * @param useNewton3
    */
   template <class ParticleFunctor>
   void iterateVerletListsSoA(ParticleFunctor* f, const bool useNewton3) {
-    // @todo optimize iterateVerletListsSoA, e.g. by using traversals with
-    /// openmp possibilities
+    /// @todo optimize iterateVerletListsSoA, e.g. by using traversals with openmp possibilities
 
     // load data from cells into soa
     loadVerletSoA(f);
 
-    // @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
+    /// @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
     const size_t iFrom = 0;
     const size_t iTo = _soaNeighborLists.size();
 
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
-      // @todo find a sensible chunk size
+      /// @todo find a sensible chunk size
       const size_t chunkSize = std::max((iTo - iFrom) / (omp_get_max_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
       for (size_t i = iFrom; i < iTo; i++) {
@@ -302,6 +344,7 @@ class VerletLists
    * @return
    */
   size_t updateIdMapAoS() {
+    /// @todo: potentially adapt to _blackBox -- only consider inner parts -- not necessary, but might be useful
     size_t i = 0;
     _aosNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you
@@ -324,6 +367,7 @@ class VerletLists
   template <class ParticleFunctor>
   void loadVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
+    /// @todo adapt to _blackBoxMode
     for (auto& cell : this->_linkedCells.getCells()) {
       functor->SoALoader(cell, _soa, offset);
       offset += cell.numParticles();
@@ -340,6 +384,7 @@ class VerletLists
   template <class ParticleFunctor>
   void extractVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
+    /// @todo adapt to _blackBoxMode
     for (auto& cell : this->_linkedCells.getCells()) {
       functor->SoAExtractor(cell, _soa, offset);
       offset += cell.numParticles();
@@ -350,6 +395,7 @@ class VerletLists
    * Converts the verlet list stored for AoS usage into one for SoA usage
    */
   void generateSoAListFromAoSVerletLists() {
+    /// @todo adapt to _blackBoxMode
     // resize the list to the size of the aos neighborlist
     _soaNeighborLists.resize(_aosNeighborLists.size());
     // clear the aos 2 soa map
@@ -401,6 +447,9 @@ class VerletLists
 
   /// specifies how the verlet lists are build
   BuildVerletListType _buildVerletListType;
+
+  /// specifies whether this verlet list container runs in blackbox mode
+  bool _blackBoxMode;
 };
 
 }  // namespace autopas
