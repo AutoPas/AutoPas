@@ -20,7 +20,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class DirectSumTraversalCuda : public CellPairTraversal<ParticleCell> {
+class DirectSumTraversalCuda : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.

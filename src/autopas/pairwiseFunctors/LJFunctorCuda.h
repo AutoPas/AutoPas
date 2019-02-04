@@ -75,11 +75,16 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
   }
 
   void AoSFunctorNoN3(int N, int M, double* particles1, double* particles2){
-	  AoSFunctorNoN3Wrapper(N, M, particles1, particles2);
+	  AoSFunctorNoN3PairWrapper(N, M, particles1, particles2);
   }
 
   void SoAFunctorNoN3(int N, typename Particle::SoADevice &device_handle){
 	  SoAFunctorNoN3Wrapper(N, device_handle.posX, device_handle.posY, device_handle.posZ, device_handle.forceX, device_handle.forceY, device_handle.forceZ);
+  }
+
+  void SoAFunctorNoN3(int N, typename Particle::SoADevice &device_handle1, int M, typename Particle::SoADevice &device_handle2){
+	  SoAFunctorNoN3PairWrapper(N, device_handle1.posX, device_handle1.posY, device_handle1.posZ, device_handle1.forceX, device_handle1.forceY,
+			  device_handle1.forceZ, M, device_handle2.posX, device_handle2.posY, device_handle2.posZ);
   }
 
   void deviceAoSLoader(ParticleCell &cell, double* device_buffer) {
