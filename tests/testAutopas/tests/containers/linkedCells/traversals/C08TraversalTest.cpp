@@ -79,20 +79,15 @@ TEST_F(C08TraversalTest, testOuterTraversal) {
   MFunctor functor;
   C08BasedTraversalDummy<autopas::outer> traversal(edgeLength, &functor);
   std::array<std::array<std::array<int, edgeLength[2]>, edgeLength[1]>, edgeLength[0]> touchableArray = {};
-  traversal.c08TraversalOuter([&](unsigned long x, unsigned long y, unsigned long z) {
-    touchableArray[x][y][z]++;
-  });
+  traversal.c08TraversalOuter([&](unsigned long x, unsigned long y, unsigned long z) { touchableArray[x][y][z]++; });
   for (unsigned int x = 0; x < edgeLength[0]; ++x) {
     for (unsigned int y = 0; y < edgeLength[1]; ++y) {
       for (unsigned int z = 0; z < edgeLength[2]; ++z) {
         bool shouldBeTrue = false;
-        if(x < 3 or x >= edgeLength[0] - 2)
-          shouldBeTrue = true;
-        if(y < 3 or y >= edgeLength[1] - 2)
-          shouldBeTrue = true;
-        if(z < 3 or z >= edgeLength[2] - 2)
-          shouldBeTrue = true;
-        EXPECT_EQ(touchableArray[x][y][z], shouldBeTrue ? 1 : 0) << "x: " << x << ", y: "<< y << ", z: " << z;
+        if (x < 3 or x >= edgeLength[0] - 2) shouldBeTrue = true;
+        if (y < 3 or y >= edgeLength[1] - 2) shouldBeTrue = true;
+        if (z < 3 or z >= edgeLength[2] - 2) shouldBeTrue = true;
+        EXPECT_EQ(touchableArray[x][y][z], shouldBeTrue ? 1 : 0) << "x: " << x << ", y: " << y << ", z: " << z;
       }
     }
   }
