@@ -123,7 +123,7 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
   const array<unsigned long, 3> stride = {2, 2, 2};
   array<unsigned long, 3> end = {};
   for (int d = 0; d < 3; ++d) {
-    end[d] = this->_cellsPerDimension[d] - 1;
+    end[d] = this->_cellsPerDimension[d];
   }
 
 #if defined(AUTOPAS_OPENMP)
@@ -233,12 +233,12 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
       {
         // upper y: always only one value for y:
         unsigned long x;
-        if (start_y % 2 == 1) {
+        if (start_x % 2 == 1) {
           // round to first uneven number smaller than end_z
-          x = (end_y & ~1ul) - 1ul;
+          x = (end_x & ~1ul) - 1ul;
         } else {  // start_z == 0
           // round to first even number smaller than end_z
-          x = (end_y - 1ul) & ~1ul;
+          x = (end_x - 1ul) & ~1ul;
         }
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(2)
