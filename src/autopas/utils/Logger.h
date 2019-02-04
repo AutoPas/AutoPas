@@ -45,7 +45,7 @@
  * @param ... Formatting arguments
  */
 #define AutoPasLog(lvl, fmt, ...) \
-  { spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__); }
+  spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__)
 
 #endif
 
