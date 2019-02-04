@@ -91,7 +91,7 @@ class VerletLists
    * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
    * @param useNewton3
    */
-  void rebuild(bool useNewton3 = true) {
+  void rebuildInnerVerletLists(bool useNewton3 = true) {
     this->updateVerletListsAoS(useNewton3);
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
@@ -103,8 +103,8 @@ class VerletLists
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild it!
-      rebuild(useNewton3);
+    if (needsRebuildInner()) {  // if we need to rebuild the list, we should rebuild it!
+      rebuildInnerVerletLists(useNewton3);
     }
     this->iterateVerletListsAoS(f, useNewton3);
     // we iterated, so increase traversal counter
@@ -116,8 +116,8 @@ class VerletLists
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {
-      rebuild(useNewton3);
+    if (needsRebuildInner()) {
+      rebuildInnerVerletLists(useNewton3);
       generateSoAListFromAoSVerletLists();
     } else if (not _soaListIsValid) {
       generateSoAListFromAoSVerletLists();
@@ -130,7 +130,7 @@ class VerletLists
    * get the actual neighbour list
    * @return the neighbour list
    */
-  typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() { return _aosNeighborLists; }
+  typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() { return _aosNeighborListsInner; }
 
   /**
    * Checks whether the neighbor lists are valid.
@@ -154,7 +154,7 @@ class VerletLists
 
     // particles can also simply be very close already:
     typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell> validityCheckerFunctor(
-        _aosNeighborLists, ((this->getCutoff() - this->_skin) * (this->getCutoff() - this->_skin)));
+        _aosNeighborListsInner, ((this->getCutoff() - this->_skin) * (this->getCutoff() - this->_skin)));
 
     auto traversal =
         C08Traversal<LinkedParticleCell,
@@ -180,7 +180,7 @@ class VerletLists
    * specifies whether the neighbor lists need to be rebuild
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
-  bool needsRebuild() {
+  bool needsRebuildInner() {
     AutoPasLog(debug, "Neighborlist is valid: {}", this->_neighborListIsValid);
     // if the neighbor list is NOT valid or we have not rebuilt since this->_rebuildFrequency steps
     return (not this->_neighborListIsValid) or (this->_traversalsSinceLastRebuild >= this->_rebuildFrequency);
@@ -194,7 +194,7 @@ class VerletLists
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
-    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff());
+    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborListsInner, this->getCutoff());
 
     /// @todo autotune traversal
     switch (_buildVerletListType) {
@@ -233,12 +233,12 @@ class VerletLists
 
 #if defined(AUTOPAS_OPENMP)
     if (not useNewton3) {
-      size_t buckets = _aosNeighborLists.bucket_count();
+      size_t buckets = _aosNeighborListsInner.bucket_count();
       // @todo find a sensible chunk size
 #pragma omp parallel for schedule(dynamic)
       for (size_t b = 0; b < buckets; b++) {
-        auto endIter = _aosNeighborLists.end(b);
-        for (auto it = _aosNeighborLists.begin(b); it != endIter; ++it) {
+        auto endIter = _aosNeighborListsInner.end(b);
+        for (auto it = _aosNeighborListsInner.begin(b); it != endIter; ++it) {
           Particle& i = *(it->first);
           for (auto j_ptr : it->second) {
             Particle& j = *j_ptr;
@@ -249,7 +249,7 @@ class VerletLists
     } else
 #endif
     {
-      for (auto& list : _aosNeighborLists) {
+      for (auto& list : _aosNeighborListsInner) {
         Particle& i = *list.first;
         for (auto j_ptr : list.second) {
           Particle& j = *j_ptr;
@@ -297,18 +297,18 @@ class VerletLists
   }
 
   /**
-   * update the AoS id maps.
+   * Update the AoS id maps.
    * The Id Map is used to map the id of a particle to the actual particle
    * @return
    */
   size_t updateIdMapAoS() {
     size_t i = 0;
-    _aosNeighborLists.clear();
+    _aosNeighborListsInner.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you
     // want to parallelize it!
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
       // create the verlet list entries for all particles
-      _aosNeighborLists[&(*iter)];
+      _aosNeighborListsInner[&(*iter)];
     }
 
     return i;
@@ -351,11 +351,11 @@ class VerletLists
    */
   void generateSoAListFromAoSVerletLists() {
     // resize the list to the size of the aos neighborlist
-    _soaNeighborLists.resize(_aosNeighborLists.size());
+    _soaNeighborLists.resize(_aosNeighborListsInner.size());
     // clear the aos 2 soa map
     _aos2soaMap.clear();
 
-    _aos2soaMap.reserve(_aosNeighborLists.size());
+    _aos2soaMap.reserve(_aosNeighborListsInner.size());
     size_t i = 0;
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
       // set the map
@@ -363,7 +363,7 @@ class VerletLists
     }
     i = 0;
     size_t accumulatedListSize = 0;
-    for (auto& aosList : _aosNeighborLists) {
+    for (auto& aosList : _aosNeighborListsInner) {
       accumulatedListSize += aosList.second.size();
       size_t i_id = _aos2soaMap[aosList.first];
       // each soa neighbor list should be of the same size as for aos
@@ -378,13 +378,16 @@ class VerletLists
     AutoPasLog(debug,
                "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
                "size is {}",
-               static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
+               static_cast<double>(accumulatedListSize) / _aosNeighborListsInner.size());
     _soaListIsValid = true;
   }
 
  private:
-  /// verlet lists.
-  typename verlet_internal::AoS_verletlist_storage_type _aosNeighborLists;
+  /// Verlet lists for all inner cells
+  typename verlet_internal::AoS_verletlist_storage_type _aosNeighborListsInner;
+
+  // Verlet lists for outer cells
+  typename verlet_internal::AoS_verletlist_storage_type _aosNeighborListsBoundary;
 
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)

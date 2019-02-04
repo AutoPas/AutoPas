@@ -196,7 +196,7 @@ class AutoPas {
       return true;
     }
     if (auto container = dynamic_cast<VerletLists<Particle> *>(_autoTuner->getContainer().get())) {
-      return container->needsRebuild();
+      return container->needsRebuildInner();
     } else {
       return true;
     }

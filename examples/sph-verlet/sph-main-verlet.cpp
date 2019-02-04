@@ -248,7 +248,7 @@ void densityPressureHydroForce(Container& sphSystem) {
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
-  updateHaloParticles(sphSystem, sphSystem.needsRebuild());
+  updateHaloParticles(sphSystem, sphSystem.needsRebuildInner());
 
   // 1.2 then calculate density
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
@@ -344,7 +344,7 @@ int main() {
     leapfrogFullDrift(sphSystem, dt);
 
     // for verlet-lists this only needs to be done, if particles moved too far.
-    if (sphSystem.needsRebuild() or sphSystem.isContainerUpdateNeeded()) {
+    if (sphSystem.needsRebuildInner() or sphSystem.isContainerUpdateNeeded()) {
       // ensure that there are no halo particles if we need to update the
       // container
       deleteHaloParticles(sphSystem);
