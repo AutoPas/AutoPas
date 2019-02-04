@@ -1,12 +1,14 @@
 PROJECT_NAME           = "@CMAKE_PROJECT_NAME@"
 PROJECT_NUMBER         = @AUTOPAS_VERSION_MAJOR@.@AUTOPAS_VERSION_MINOR@.@AUTOPAS_VERSION_PATCH@
-STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src @PROJECT_SOURCE_DIR@/docs
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen/
 INPUT                  = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@ \
                          @PROJECT_SOURCE_DIR@/src/ \
-                         @CMAKE_SOURCE_DIR@/docs
+                         @PROJECT_SOURCE_DIR@/docs/
 FILE_PATTERNS          = *.h \
-                         *.cpp
+                         *.cpp \
+                         *.md
 RECURSIVE              = YES
 USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@
 HTML_HEADER            = @CMAKE_SOURCE_DIR@/docs/AutoPasHeader.html
