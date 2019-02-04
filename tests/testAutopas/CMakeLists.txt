@@ -2,7 +2,7 @@ FILE(GLOB_RECURSE MY_SRC
         "*.cpp"
         "*.h"
         )
-if(CUDA)        
+if(ENABLE_CUDA)
 FILE(GLOB_RECURSE CU_SRC
         "*.cu"
         "*.cuh"
@@ -11,7 +11,7 @@ endif()
 
 ADD_EXECUTABLE(runTests
         ${MY_SRC}
-        $<$<BOOL:${CUDA}>:${CU_SRC}>
+        $<$<BOOL:${ENABLE_CUDA}>:${CU_SRC}>
         )
 
 TARGET_LINK_LIBRARIES(runTests

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+#include "DirectSumTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctorCuda.h"
 
@@ -21,6 +22,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class DirectSumTraversalCuda : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
+
  public:
   /**
    * Constructor for the DirectSum traversal.

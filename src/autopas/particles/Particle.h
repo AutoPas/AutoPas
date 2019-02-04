@@ -140,14 +140,14 @@ class Particle {
   /*
    * The Storage Arrays for Cuda
    */
-  struct SoADevice{
-	  size_t* ids;
-	  double* posX;
-	  double* posY;
-	  double* posZ;
-	  double* forceX;
-	  double* forceY;
-	  double* forceZ;
+  struct SoADevice {
+    size_t *ids;
+    double *posX;
+    double *posY;
+    double *posZ;
+    double *forceX;
+    double *forceY;
+    double *forceZ;
   };
 
  protected:

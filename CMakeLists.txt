@@ -1,11 +1,13 @@
+cmake_minimum_required(VERSION 3.3)
+CMAKE_POLICY(SET CMP0054 NEW)
+CMAKE_POLICY(SET CMP0057 NEW)
+
 project(AutoPas)
 
-cmake_minimum_required(VERSION 3.3)
 
 
 #CMAKE policies, etc.
-CMAKE_POLICY(SET CMP0054 NEW)
-CMAKE_POLICY(SET CMP0057 NEW)
+
 set(CMAKE_CXX_STANDARD 14)
 # cmake < 3.6 ignores "set(CMAKE_CXX_STANDARD 11)" when using icpc
 if (CMAKE_VERSION VERSION_LESS "3.6" AND CMAKE_CXX_COMPILER_ID MATCHES "Intel")
@@ -37,12 +39,12 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 # CUDA options
-option(CUDA "Activates Cuda Components" OFF)
-if(CUDA)
+option(ENABLE_CUDA "Activates Cuda Components" OFF)
+if(ENABLE_CUDA)
     message(STATUS "Cuda enabled.")
     enable_language(CUDA)
-    set(CUDA_SEPARABLE_COMPILATION ON)
-    set(CUDAHOSTCXX=clang)
+    set(CUDA_SEPARABLE_COMPILATION OFF)
+    set(CUDAHOSTCXX=g++)
     set(CUDA_PROPAGATE_HOST_FLAGS ON)
 else()
     message(STATUS "Cuda disabled.")
@@ -74,6 +76,6 @@ ADD_SUBDIRECTORY(tests)
 # modules needing targets:
 include(logging)
 include(other-compileroptions)
-if(NOT CUDA)
+if(NOT ENABLE_CUDA)
     include(vectorization)
 endif()
