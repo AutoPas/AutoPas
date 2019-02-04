@@ -90,14 +90,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with AoS",
-               utils::StringUtils::to_string(
-                   traversal->getTraversalType())) if (auto *traversalInterface =
-                                                           dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(
-                                                               traversal)) {
+    AutoPasLog(debug, "Using traversal {} with AoS", utils::StringUtils::to_string(traversal->getTraversalType()));
+    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
-    }
-    else {
+    } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: {}",
           traversal->getTraversalType());
@@ -115,8 +111,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with SoA ", utils::StringUtils::to_string(traversal->getTraversalType()))
-        loadSoAs(f);
+    AutoPasLog(debug, "Using traversal {} with SoA ", utils::StringUtils::to_string(traversal->getTraversalType()));
+    loadSoAs(f);
     if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
