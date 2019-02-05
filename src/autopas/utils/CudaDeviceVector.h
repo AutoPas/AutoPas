@@ -11,44 +11,36 @@
 namespace autopas {
 
 template <typename T>
-class CudaDeviceVector{
-	public:
-	CudaDeviceVector(size_t max):_max_size(max), _size(0){
-		cudaMalloc((void **)&_data, sizeof(T) * _max_size);
-	}
+class CudaDeviceVector {
+ public:
+  CudaDeviceVector(size_t max) : _max_size(max), _size(0) { cudaMalloc((void**)&_data, sizeof(T) * _max_size); }
 
-	virtual ~CudaDeviceVector(){
-		cudaFree(_data);
-	}
+  virtual ~CudaDeviceVector() { cudaFree(_data); }
 
-	T* get(){
-		return _data;
-	}
+  T* get() { return _data; }
 
-	size_t size(){
-		return _size;
-	}
+  size_t size() { return _size; }
 
-	cudaError_t copyHostToDevice(int n, T* hostData){
-		_size = n;
-		if (n > _max_size){
-			_max_size = (n/32 + 1) * 32;
+  cudaError_t copyHostToDevice(int n, T* hostData) {
+    _size = n;
+    if (n > _max_size) {
+      _max_size = (n / 32 + 1) * 32;
 
-			cudaFree(_data);
-			cudaMalloc((void **)&_data, sizeof(T) * _max_size);
-		}
-		return cudaMemcpy(_data, hostData, n * sizeof(T), cudaMemcpyHostToDevice);
-	}
+      cudaFree(_data);
+      cudaMalloc((void**)&_data, sizeof(T) * _max_size);
+    }
+    return cudaMemcpy(_data, hostData, n * sizeof(T), cudaMemcpyHostToDevice);
+  }
 
-	cudaError_t copyDeviceToHost(int n, T* hostData){
-		return cudaMemcpy(hostData, _data, n * sizeof(T), cudaMemcpyDeviceToHost);
-	}
+  cudaError_t copyDeviceToHost(int n, T* hostData) {
+    return cudaMemcpy(hostData, _data, n * sizeof(T), cudaMemcpyDeviceToHost);
+  }
 
-	private:
-	size_t _max_size;
-	size_t _size;
+ private:
+  size_t _max_size;
+  size_t _size;
 
-	T* _data;
+  T* _data;
 };
 
 }  // namespace autopas

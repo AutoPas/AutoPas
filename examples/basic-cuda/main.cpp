@@ -6,9 +6,9 @@
 
 #include <iostream>
 #include "autopas/autopasIncludes.h"
-#include "autopas/pairwiseFunctors/LJFunctorCuda.h"
-#include "autopas/pairwiseFunctors/CellFunctorCuda.h"
 #include "autopas/containers/directSum/DirectSumTraversalCuda.h"
+#include "autopas/pairwiseFunctors/CellFunctorCuda.h"
+#include "autopas/pairwiseFunctors/LJFunctorCuda.h"
 #include "autopas/utils/CudaDeviceVector.h"
 
 using namespace std;
@@ -39,7 +39,6 @@ class MyMolecule : public Particle {
   int _myvar;
 };
 
-
 template <class ParticleCell>
 void addAFewParticles(ParticleCell &pc) {
   static int i = 0;
@@ -59,7 +58,7 @@ int main() {
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   addAFewParticles<>(dir);
-  
+
   typedef LJFunctorCuda<MyMolecule, FullParticleCell<MyMolecule>> cudaF;
   cudaF functor(cutoff, 1.0, 1.0, 0.0);
 
@@ -83,28 +82,26 @@ int main() {
   }
   cout << endl;
 
-  autopas::CudaDeviceVector<double> cdv (32);
-  std::vector<double> data = {3,0,0,0,0,0, 1.9,0,0,0,2,0};
-  std::vector<double> res(12,-1);
+  autopas::CudaDeviceVector<double> cdv(32);
+  std::vector<double> data = {3, 0, 0, 0, 0, 0, 1.9, 0, 0, 0, 2, 0};
+  std::vector<double> res(12, -1);
 
   loadConstants(9., 24., 1.);
   cdv.copyHostToDevice(12, data.data());
 
-  AoSFunctorNoN3Wrapper(12/6, cdv.get());
+  AoSFunctorNoN3Wrapper(12 / 6, cdv.get());
 
   cdv.copyDeviceToHost(12, res.data());
 
-
-  for(auto it : data){
-	  std::cout << it << ", ";
+  for (auto it : data) {
+    std::cout << it << ", ";
   }
   cout << endl;
-  for(auto it : res){
-	  std::cout << it << ", ";
+  for (auto it : res) {
+    std::cout << it << ", ";
   }
   cout << endl;
 
   cout << "Hodor" << endl;
   return EXIT_SUCCESS;
 }
-

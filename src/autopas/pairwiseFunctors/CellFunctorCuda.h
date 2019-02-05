@@ -67,8 +67,8 @@ template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA
 void CellFunctorCuda<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3>::processCellPair(
     ParticleCell &cell1, ParticleCell &cell2) {
   if (useSoA) {
-	_functor->SoAFunctorNoN3(cell1._particleSoABuffer.getNumParticles(), cell1._particleSoABufferDevice,
-			cell2._particleSoABuffer.getNumParticles(), cell2._particleSoABufferDevice);
+    _functor->SoAFunctorNoN3(cell1._particleSoABuffer.getNumParticles(), cell1._particleSoABufferDevice,
+                             cell2._particleSoABuffer.getNumParticles(), cell2._particleSoABufferDevice);
   } else {
     _functor->AoSFunctorNoN3(cell1.numParticles(), cell2.numParticles(), cell1._particlesDevice,
                              cell2._particlesDevice);
