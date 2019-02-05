@@ -24,20 +24,18 @@ namespace autopas {
  * as soon the boundary wall is fully processed.
  *
  * @tparam ParticleCell The type of cells.
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, bool useSoA, bool useNewton3>
 class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the sliced traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+  explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims)
       : CellPairTraversal<ParticleCell>(dims), _dimsPerLength{}, _sliceThickness{}, locks() {
     rebuild(dims);
   }
@@ -67,9 +65,8 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   std::vector<AutoPasLock> locks;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::rebuild(
-    const std::array<unsigned long, 3> &dims) {
+template <class ParticleCell, bool useSoA, bool useNewton3>
+inline void SlicedBasedTraversal<ParticleCell, useSoA, useNewton3>::rebuild(const std::array<unsigned long, 3> &dims) {
   CellPairTraversal<ParticleCell>::rebuild(dims);
 
   // find longest dimension
@@ -101,9 +98,9 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewto
 
   locks.resize(numSlices);
 }
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, bool useSoA, bool useNewton3>
 template <typename LoopBody>
-void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::slicedTraversal(LoopBody &&loopBody) {
+void SlicedBasedTraversal<ParticleCell, useSoA, useNewton3>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = _sliceThickness.size();

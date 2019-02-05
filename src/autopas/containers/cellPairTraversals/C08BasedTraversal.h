@@ -19,23 +19,19 @@ namespace autopas {
  * cell and all adjacent cells with greater ID in each direction are safe, even when using newton3 optimizations.
  *
  * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  * @tparam useNewton3
  * @tparam blackBoxTraversalOption The blackbox traversal option to be used.
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3,
-          BlackBoxTraversalOption blackBoxTraversalOption = normal>
+template <class ParticleCell, bool useSoA, bool useNewton3, BlackBoxTraversalOption blackBoxTraversalOption = normal>
 class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the c08 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C08BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {}
+  explicit C08BasedTraversal(const std::array<unsigned long, 3>& dims) : CellPairTraversal<ParticleCell>(dims) {}
 
   /**
    * C08 traversals are always usable.
@@ -59,10 +55,9 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
   inline void c08TraversalOuter(LoopBody&& loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3,
-          BlackBoxTraversalOption blackBoxTraversalOption>
+template <class ParticleCell, bool useSoA, bool useNewton3, BlackBoxTraversalOption blackBoxTraversalOption>
 template <typename LoopBody>
-inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3, blackBoxTraversalOption>::c08Traversal(
+inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversalOption>::c08Traversal(
     LoopBody&& loopBody) {
   if (blackBoxTraversalOption == outer) {
     // tooSmall indicates whether there is any inner region.
@@ -116,11 +111,10 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3,
-          BlackBoxTraversalOption blackBoxTraversalOption>
+template <class ParticleCell, bool useSoA, bool useNewton3, BlackBoxTraversalOption blackBoxTraversalOption>
 template <typename LoopBody>
-inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
-                              blackBoxTraversalOption>::c08TraversalOuter(LoopBody&& loopBody) {
+inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversalOption>::c08TraversalOuter(
+    LoopBody&& loopBody) {
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
   array<unsigned long, 3> end = {};
@@ -198,10 +192,10 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
         // upper y: always only one value for y:
         unsigned long y;
         if (start_y % 2 == 1) {
-          // round to first uneven number smaller than end_z
+          // round to first uneven number smaller than end_y
           y = (end_y & ~1ul) - 1ul;
         } else {  // start_z == 0
-          // round to first even number smaller than end_z
+          // round to first even number smaller than end_y
           y = (end_y - 1ul) & ~1ul;
         }
         end_y_inner = y;
@@ -236,10 +230,10 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
         // upper y: always only one value for y:
         unsigned long x;
         if (start_x % 2 == 1) {
-          // round to first uneven number smaller than end_z
+          // round to first uneven number smaller than end_x
           x = (end_x & ~1ul) - 1ul;
         } else {  // start_z == 0
-          // round to first even number smaller than end_z
+          // round to first even number smaller than end_x
           x = (end_x - 1ul) & ~1ul;
         }
 #if defined(AUTOPAS_OPENMP)

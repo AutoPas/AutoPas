@@ -31,7 +31,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class SlicedTraversalVerlet
-    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
+    : public SlicedBasedTraversal<ParticleCell, useSoA, useNewton3>,
       public VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3> {
  public:
   /**
@@ -41,7 +41,7 @@ class SlicedTraversalVerlet
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+      : SlicedBasedTraversal<ParticleCell, useSoA, useNewton3>(dims),
         VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
 
   /**

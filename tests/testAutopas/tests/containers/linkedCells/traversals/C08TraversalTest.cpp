@@ -60,12 +60,10 @@ TEST_F(C08TraversalTest, testTraversal7x8x9) {
 }
 
 template <autopas::BlackBoxTraversalOption blackBoxTraversalOption>
-class C08BasedTraversalDummy
-    : public autopas::C08BasedTraversal<FPCell, MFunctor, false, true, blackBoxTraversalOption> {
+class C08BasedTraversalDummy : public autopas::C08BasedTraversal<FPCell, false, true, blackBoxTraversalOption> {
  public:
-  explicit C08BasedTraversalDummy(const std::array<unsigned long, 3>& dims, MFunctor* pairwiseFunctor)
-      : autopas::C08BasedTraversal<FPCell, MFunctor, false /*useSoA*/, true /*newton3*/, blackBoxTraversalOption>(
-            dims, pairwiseFunctor) {}
+  explicit C08BasedTraversalDummy(const std::array<unsigned long, 3>& dims)
+      : autopas::C08BasedTraversal<FPCell, false /*useSoA*/, true /*newton3*/, blackBoxTraversalOption>(dims) {}
 
   autopas::TraversalOptions getTraversalType() override {
     autopas::utils::ExceptionHandler::exception("not yet implemented.");
@@ -80,11 +78,11 @@ class C08BasedTraversalDummy
 
 TEST_F(C08TraversalTest, testOuterTraversal) {
   constexpr std::array<size_t, 3> edgeLength = {7, 8, 9};
-  MFunctor functor;
-  C08BasedTraversalDummy<autopas::outer> traversal(edgeLength, &functor);
+  C08BasedTraversalDummy<autopas::outer> traversal(edgeLength);
   std::array<std::array<std::array<int, edgeLength[2]>, edgeLength[1]>, edgeLength[0]> touchableArray = {};
-  traversal.c08Traversal_public(
-      [&](unsigned long x, unsigned long y, unsigned long z) { touchableArray[x][y][z]++; });
+  traversal.c08Traversal_public([&](unsigned long x, unsigned long y, unsigned long z) { touchableArray[x][y][z]++; });
+
+  // the upper halo is NOT traversed => "x < edgeLength[0] - 1"
   for (unsigned int x = 0; x < edgeLength[0] - 1; ++x) {
     for (unsigned int y = 0; y < edgeLength[1] - 1; ++y) {
       for (unsigned int z = 0; z < edgeLength[2] - 1; ++z) {
@@ -100,8 +98,7 @@ TEST_F(C08TraversalTest, testOuterTraversal) {
 
 TEST_F(C08TraversalTest, testInnerTraversal) {
   constexpr std::array<size_t, 3> edgeLength = {7, 8, 9};
-  MFunctor functor;
-  C08BasedTraversalDummy<autopas::inner> traversal(edgeLength, &functor);
+  C08BasedTraversalDummy<autopas::inner> traversal(edgeLength);
   std::array<std::array<std::array<int, edgeLength[2]>, edgeLength[1]>, edgeLength[0]> touchableArray = {};
   traversal.c08Traversal_public([&](unsigned long x, unsigned long y, unsigned long z) { touchableArray[x][y][z]++; });
   for (unsigned int x = 0; x < edgeLength[0]; ++x) {

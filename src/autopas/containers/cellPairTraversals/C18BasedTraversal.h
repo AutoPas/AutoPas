@@ -17,21 +17,18 @@ namespace autopas {
  * cell and all adjacent cells with greater ID are safe, even when using newton3 optimizations.
  *
  * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, bool useSoA, bool useNewton3>
 class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the c18 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C18BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {}
+  explicit C18BasedTraversal(const std::array<unsigned long, 3>& dims) : CellPairTraversal<ParticleCell>(dims) {}
 
   /**
    * C18 traversals are always usable.
@@ -48,9 +45,9 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
   inline void c18Traversal(LoopBody&& loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, bool useSoA, bool useNewton3>
 template <typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c18Traversal(LoopBody&& loopBody) {
+inline void C18BasedTraversal<ParticleCell, useSoA, useNewton3>::c18Traversal(LoopBody&& loopBody) {
   using std::array;
   const array<unsigned long, 3> stride = {3, 3, 2};
   array<unsigned long, 3> end = {};

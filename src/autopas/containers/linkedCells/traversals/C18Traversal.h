@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
+class C18Traversal : public C18BasedTraversal<ParticleCell, useSoA, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -35,7 +35,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+      : C18BasedTraversal<ParticleCell, useSoA, useNewton3>(dims),
         _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)) {

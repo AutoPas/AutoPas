@@ -32,7 +32,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
+class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, useSoA, useNewton3>,
                         public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -42,7 +42,7 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+      : SlicedBasedTraversal<ParticleCell, useSoA, useNewton3>(dims),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension) {}
 
   /**

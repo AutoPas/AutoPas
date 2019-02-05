@@ -27,9 +27,8 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3,
           BlackBoxTraversalOption blackBoxTraversalOption = normal>
-class C08Traversal
-    : public C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3, blackBoxTraversalOption>,
-      public LinkedCellTraversalInterface<ParticleCell> {
+class C08Traversal : public C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversalOption>,
+                     public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -38,8 +37,7 @@ class C08Traversal
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3, blackBoxTraversalOption>(dims,
-                                                                                                      pairwiseFunctor),
+      : C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversalOption>(dims),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension) {}
 
   /**
