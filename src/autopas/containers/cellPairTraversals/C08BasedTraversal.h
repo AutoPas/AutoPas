@@ -77,12 +77,15 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
   }
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
-  const array<unsigned long, 3> blackBoxOffset = {2, 2, 2};
+  const array<unsigned long, 3> blackBoxOffsetBottom = {3, 3, 3};
+  const array<unsigned long, 3> blackBoxOffsetTop = {2, 2, 2};
   array<unsigned long, 3> end = {};
   for (int d = 0; d < 3; ++d) {
     end[d] = this->_cellsPerDimension[d] - 1;
   }
-
+  if (blackBoxTraversalOption == inner) {
+    end = ArrayMath::sub(end, blackBoxOffsetTop);
+  }
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
@@ -91,8 +94,7 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
       std::array<unsigned long, 3> start = utils::ThreeDimensionalMapping::oneToThreeD(col, stride);
 
       if (blackBoxTraversalOption == inner) {
-        start = ArrayMath::add(start, blackBoxOffset);
-        end = ArrayMath::sub(end, blackBoxOffset);
+        start = ArrayMath::add(start, blackBoxOffsetBottom);
       }
 
       // intel compiler demands following:
@@ -123,7 +125,7 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
   const array<unsigned long, 3> stride = {2, 2, 2};
   array<unsigned long, 3> end = {};
   for (int d = 0; d < 3; ++d) {
-    end[d] = this->_cellsPerDimension[d];
+    end[d] = this->_cellsPerDimension[d] - 1;
   }
 
 #if defined(AUTOPAS_OPENMP)
@@ -241,6 +243,7 @@ inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3,
           x = (end_x - 1ul) & ~1ul;
         }
 #if defined(AUTOPAS_OPENMP)
+        // no nowait here!
 #pragma omp for schedule(dynamic, 1) collapse(2)
 #endif
         for (unsigned long z = start_z_inner; z < end_z_inner; z += stride_z) {

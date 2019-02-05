@@ -71,7 +71,11 @@ class C08BasedTraversalDummy
     autopas::utils::ExceptionHandler::exception("not yet implemented.");
     return autopas::TraversalOptions::dummyTraversal;
   }
-  friend class C08TraversalTest_testOuterTraversal_Test;
+
+  template <typename LoopBody>
+  inline void c08Traversal_public(LoopBody&& loopBody) {
+    this->c08Traversal(loopBody);
+  }
 };
 
 TEST_F(C08TraversalTest, testOuterTraversal) {
@@ -79,15 +83,35 @@ TEST_F(C08TraversalTest, testOuterTraversal) {
   MFunctor functor;
   C08BasedTraversalDummy<autopas::outer> traversal(edgeLength, &functor);
   std::array<std::array<std::array<int, edgeLength[2]>, edgeLength[1]>, edgeLength[0]> touchableArray = {};
-  traversal.c08TraversalOuter([&](unsigned long x, unsigned long y, unsigned long z) { touchableArray[x][y][z]++; });
+  traversal.c08Traversal_public(
+      [&](unsigned long x, unsigned long y, unsigned long z) { touchableArray[x][y][z]++; });
+  for (unsigned int x = 0; x < edgeLength[0] - 1; ++x) {
+    for (unsigned int y = 0; y < edgeLength[1] - 1; ++y) {
+      for (unsigned int z = 0; z < edgeLength[2] - 1; ++z) {
+        bool outside = false;
+        if (x < 3 or x >= edgeLength[0] - 3) outside = true;
+        if (y < 3 or y >= edgeLength[1] - 3) outside = true;
+        if (z < 3 or z >= edgeLength[2] - 3) outside = true;
+        EXPECT_EQ(touchableArray[x][y][z], outside ? 1 : 0) << "x: " << x << ", y: " << y << ", z: " << z;
+      }
+    }
+  }
+}
+
+TEST_F(C08TraversalTest, testInnerTraversal) {
+  constexpr std::array<size_t, 3> edgeLength = {7, 8, 9};
+  MFunctor functor;
+  C08BasedTraversalDummy<autopas::inner> traversal(edgeLength, &functor);
+  std::array<std::array<std::array<int, edgeLength[2]>, edgeLength[1]>, edgeLength[0]> touchableArray = {};
+  traversal.c08Traversal_public([&](unsigned long x, unsigned long y, unsigned long z) { touchableArray[x][y][z]++; });
   for (unsigned int x = 0; x < edgeLength[0]; ++x) {
     for (unsigned int y = 0; y < edgeLength[1]; ++y) {
       for (unsigned int z = 0; z < edgeLength[2]; ++z) {
-        bool shouldBeTrue = false;
-        if (x < 3 or x >= edgeLength[0] - 2) shouldBeTrue = true;
-        if (y < 3 or y >= edgeLength[1] - 2) shouldBeTrue = true;
-        if (z < 3 or z >= edgeLength[2] - 2) shouldBeTrue = true;
-        EXPECT_EQ(touchableArray[x][y][z], shouldBeTrue ? 1 : 0) << "x: " << x << ", y: " << y << ", z: " << z;
+        bool outside = false;
+        if (x < 3 or x >= edgeLength[0] - 3) outside = true;
+        if (y < 3 or y >= edgeLength[1] - 3) outside = true;
+        if (z < 3 or z >= edgeLength[2] - 3) outside = true;
+        EXPECT_EQ(touchableArray[x][y][z], outside ? 0 : 1) << "x: " << x << ", y: " << y << ", z: " << z;
       }
     }
   }
