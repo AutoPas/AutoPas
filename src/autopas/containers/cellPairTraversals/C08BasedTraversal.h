@@ -121,6 +121,16 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
     end[d] = this->_cellsPerDimension[d] - 1;
   }
 
+  auto getInnerEnd = [](unsigned long start, unsigned long end) -> unsigned long {
+    if (start == 1) {
+      // round to first uneven number smaller than end
+      return (end & ~1ul) - 1ul;
+    } else {  // start == 0
+      // round to first even number smaller than end
+      return (end - 1ul) & ~1ul;
+    }
+  };
+
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
@@ -132,10 +142,12 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+      const unsigned long start_z_inner = start_z + 2, start_y_inner = start_y + 2;
+      const unsigned long end_z_inner = getInnerEnd(start_z, end_z), end_y_inner = getInnerEnd(start_y, end_y),
+                          end_x_inner = getInnerEnd(start_x, end_x);
+
       // z:
-      {
-        // lower z
-        unsigned long z = start_z;
+      for (unsigned long z : {start_z, end_z_inner}) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(2) nowait
 #endif
@@ -146,33 +158,8 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
         }
       }
 
-      unsigned long end_z_inner;
-      {
-        // upper z: always only one value for z:
-        unsigned long z;
-        if (start_z == 1) {
-          // round to first uneven number smaller than end_z
-          z = (end_z & ~1ul) - 1ul;
-        } else {  // start_z == 0
-          // round to first even number smaller than end_z
-          z = (end_z - 1ul) & ~1ul;
-        }
-        end_z_inner = z;
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(2) nowait
-#endif
-        for (unsigned long y = start_y; y < end_y; y += stride_y) {
-          for (unsigned long x = start_x; x < end_x; x += stride_x) {
-            loopBody(x, y, z);
-          }
-        }
-      }
-
-      const unsigned long start_z_inner = 2 + start_z;  // (start_z == 0 ? 2 : 3);
       // y:
-      {
-        // lower y
-        unsigned long y = start_y;
+      for (unsigned long y : {start_y, end_y_inner}) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(2) nowait
 #endif
@@ -182,35 +169,9 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
           }
         }
       }
-
-      unsigned long end_y_inner;
-      {
-        // upper y: always only one value for y:
-        unsigned long y;
-        if (start_y == 1) {
-          // round to first uneven number smaller than end_y
-          y = (end_y & ~1ul) - 1ul;
-        } else {  // start_z == 0
-          // round to first even number smaller than end_y
-          y = (end_y - 1ul) & ~1ul;
-        }
-        end_y_inner = y;
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(2) nowait
-#endif
-        for (unsigned long z = start_z_inner; z < end_z_inner; z += stride_z) {
-          for (unsigned long x = start_x; x < end_x; x += stride_x) {
-            loopBody(x, y, z);
-          }
-        }
-      }
-
-      const unsigned long start_y_inner = 2 + start_y;  // (start_y == 0 ? 2 : 3);
 
       // x:
-      {
-        // lower x
-        unsigned long x = start_x;
+      for (unsigned long x : {start_x, end_x_inner}) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(2) nowait
 #endif
@@ -220,27 +181,9 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
           }
         }
       }
-
-      {
-        // upper x: always only one value for x:
-        unsigned long x;
-        if (start_x == 1) {
-          // round to first uneven number smaller than end_x
-          x = (end_x & ~1ul) - 1ul;
-        } else {  // start_z == 0
-          // round to first even number smaller than end_x
-          x = (end_x - 1ul) & ~1ul;
-        }
 #if defined(AUTOPAS_OPENMP)
-        // no nowait here, as we want a barrier at the end of the entire loop over the color.
-#pragma omp for schedule(dynamic, 1) collapse(2)
+#pragma omp barrier
 #endif
-        for (unsigned long z = start_z_inner; z < end_z_inner; z += stride_z) {
-          for (unsigned long y = start_y_inner; y < end_y_inner; y += stride_y) {
-            loopBody(x, y, z);
-          }
-        }
-      }
     }
   }
 }
