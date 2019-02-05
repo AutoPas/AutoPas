@@ -87,9 +87,9 @@ TEST_F(C08TraversalTest, testOuterTraversal) {
     for (unsigned int y = 0; y < edgeLength[1] - 1; ++y) {
       for (unsigned int z = 0; z < edgeLength[2] - 1; ++z) {
         bool outside = false;
-        if (x < 3 or x >= edgeLength[0] - 3) outside = true;
-        if (y < 3 or y >= edgeLength[1] - 3) outside = true;
-        if (z < 3 or z >= edgeLength[2] - 3) outside = true;
+        if (x < 2 or x >= edgeLength[0] - 3) outside = true;
+        if (y < 2 or y >= edgeLength[1] - 3) outside = true;
+        if (z < 2 or z >= edgeLength[2] - 3) outside = true;
         EXPECT_EQ(touchableArray[x][y][z], outside ? 1 : 0) << "x: " << x << ", y: " << y << ", z: " << z;
       }
     }
@@ -123,9 +123,9 @@ TEST_F(C08TraversalTest, testOuterTraversalColors) {
       for (unsigned int z = 0; z < edgeLength[2] - 1; ++z) {
         unsigned long currentColor = touchableArray[x][y][z];
         bool outside = false;
-        if (x < 3 or x >= edgeLength[0] - 3) outside = true;
-        if (y < 3 or y >= edgeLength[1] - 3) outside = true;
-        if (z < 3 or z >= edgeLength[2] - 3) outside = true;
+        if (x < 2 or x >= edgeLength[0] - 3) outside = true;
+        if (y < 2 or y >= edgeLength[1] - 3) outside = true;
+        if (z < 2 or z >= edgeLength[2] - 3) outside = true;
         if (not outside) continue;
 
         for (unsigned int dx = 0; dx < 2; ++dx) {
@@ -155,9 +155,9 @@ TEST_F(C08TraversalTest, testInnerTraversal) {
     for (unsigned int y = 0; y < edgeLength[1]; ++y) {
       for (unsigned int z = 0; z < edgeLength[2]; ++z) {
         bool outside = false;
-        if (x < 3 or x >= edgeLength[0] - 3) outside = true;
-        if (y < 3 or y >= edgeLength[1] - 3) outside = true;
-        if (z < 3 or z >= edgeLength[2] - 3) outside = true;
+        if (x < 2 or x >= edgeLength[0] - 3) outside = true;
+        if (y < 2 or y >= edgeLength[1] - 3) outside = true;
+        if (z < 2 or z >= edgeLength[2] - 3) outside = true;
         EXPECT_EQ(touchableArray[x][y][z], outside ? 0 : 1) << "x: " << x << ", y: " << y << ", z: " << z;
       }
     }

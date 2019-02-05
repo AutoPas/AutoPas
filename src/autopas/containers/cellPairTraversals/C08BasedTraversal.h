@@ -72,14 +72,13 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
   }
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
-  const array<unsigned long, 3> blackBoxOffsetBottom = {3, 3, 3};
-  const array<unsigned long, 3> blackBoxOffsetTop = {2, 2, 2};
+  const array<unsigned long, 3> blackBoxOffset = {2, 2, 2};
   array<unsigned long, 3> end = {};
   for (int d = 0; d < 3; ++d) {
     end[d] = this->_cellsPerDimension[d] - 1;
   }
   if (blackBoxTraversalOption == inner) {
-    end = ArrayMath::sub(end, blackBoxOffsetTop);
+    end = ArrayMath::sub(end, blackBoxOffset);
   }
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
@@ -89,7 +88,7 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
       std::array<unsigned long, 3> start = utils::ThreeDimensionalMapping::oneToThreeD(col, stride);
 
       if (blackBoxTraversalOption == inner) {
-        start = ArrayMath::add(start, blackBoxOffsetBottom);
+        start = ArrayMath::add(start, blackBoxOffset);
       }
 
       // intel compiler demands following:
@@ -133,18 +132,16 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-
       // z:
       {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3) nowait
-#endif
         // lower z
-        for (unsigned long z = start_z; z < 3; z += stride_z) {
-          for (unsigned long y = start_y; y < end_y; y += stride_y) {
-            for (unsigned long x = start_x; x < end_x; x += stride_x) {
-              loopBody(x, y, z);
-            }
+        unsigned long z = start_z;
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for schedule(dynamic, 1) collapse(2) nowait
+#endif
+        for (unsigned long y = start_y; y < end_y; y += stride_y) {
+          for (unsigned long x = start_x; x < end_x; x += stride_x) {
+            loopBody(x, y, z);
           }
         }
       }
@@ -171,18 +168,17 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
         }
       }
 
-      const unsigned long start_z_inner = 4 - start_z;  // (start_z == 0 ? 4 : 3);
+      const unsigned long start_z_inner = 2 + start_z;  // (start_z == 0 ? 2 : 3);
       // y:
       {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3) nowait
-#endif
         // lower y
+        unsigned long y = start_y;
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for schedule(dynamic, 1) collapse(2) nowait
+#endif
         for (unsigned long z = start_z_inner; z < end_z_inner; z += stride_z) {
-          for (unsigned long y = start_y; y < 3; y += stride_y) {
-            for (unsigned long x = start_x; x < end_x; x += stride_x) {
-              loopBody(x, y, z);
-            }
+          for (unsigned long x = start_x; x < end_x; x += stride_x) {
+            loopBody(x, y, z);
           }
         }
       }
@@ -209,19 +205,18 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
         }
       }
 
-      const unsigned long start_y_inner = 4 - start_y;  // (start_z == 0 ? 4 : 3);
+      const unsigned long start_y_inner = 2 + start_y;  // (start_y == 0 ? 2 : 3);
 
       // x:
       {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3) nowait
-#endif
         // lower x
+        unsigned long x = start_x;
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for schedule(dynamic, 1) collapse(2) nowait
+#endif
         for (unsigned long z = start_z_inner; z < end_z_inner; z += stride_z) {
           for (unsigned long y = start_y_inner; y < end_y_inner; y += stride_y) {
-            for (unsigned long x = start_x; x < 3; x += stride_x) {
-              loopBody(x, y, z);
-            }
+            loopBody(x, y, z);
           }
         }
       }
