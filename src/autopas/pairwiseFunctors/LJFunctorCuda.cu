@@ -5,6 +5,7 @@
  * @author jspahl
  */
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include <iostream>
 
 __constant__ constants global_constants;
 
@@ -50,7 +51,7 @@ void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ, double* for
 	 myposition.x = posX[tid];
 	 myposition.y = posY[tid];
 	 myposition.z = posZ[tid];
-	 double3 myf = {forceX[tid], forceY[tid], forceZ[tid]};
+	 double3 myf = {0, 0, 0};
 
 	 for(i = 0, tile = 0; i < N; i+=block_size, ++tile){
 		 int idx = tile * blockDim.x + threadIdx.x;
@@ -64,9 +65,9 @@ void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ, double* for
 		 __syncthreads();
 	 }
 
-	 forceX[tid] = myf.x;
-	 forceY[tid] = myf.y;
-	 forceZ[tid] = myf.z;
+	 forceX[tid] += myf.x;
+	 forceY[tid] += myf.y;
+	 forceZ[tid] += myf.z;
 }
 
 template <int block_size>
@@ -117,7 +118,7 @@ void AoSFunctorNoN3(int N, double* particles){
 	 myposition.x = particles[6 * tid + 0];
 	 myposition.y = particles[6 * tid + 1];
 	 myposition.z = particles[6 * tid + 2];
-	 double3 myf = {particles[6 * tid + 3],particles[6 * tid + 4],particles[6 * tid + 5]};
+	 double3 myf = {0, 0, 0};
 
 	 for(i = 0, tile = 0; i < N; i+=block_size, ++tile){
 		 int idx = tile * blockDim.x + threadIdx.x;
@@ -130,10 +131,9 @@ void AoSFunctorNoN3(int N, double* particles){
 		  }
 		 __syncthreads();
 	 }
-
-	 particles[6 * tid + 3] = myf.x;
-	 particles[6 * tid + 4] = myf.y;
-	 particles[6 * tid + 5] = myf.z;
+	 particles[6 * tid + 3] += myf.x;
+	 particles[6 * tid + 4] += myf.y;
+	 particles[6 * tid + 5] += myf.z;
 }
 
 template <int block_size>
@@ -142,6 +142,10 @@ void AoSFunctorNoN3Pair(int N, int M, double* particles1, double* particles2){
 	 int i, tile;
 	 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 	 __shared__ double3 block_pos2[32];
+
+	 if(tid >= N){
+		 return;
+	 }
 
 	 double3 myposition;
 	 myposition.x = particles1[6 * tid + 0];
@@ -167,6 +171,7 @@ void AoSFunctorNoN3Pair(int N, int M, double* particles1, double* particles2){
 }
 
 void AoSFunctorNoN3Wrapper(int N, double* particles){
+	std::cout<<"AoS: "  << N << std::endl;
 	AoSFunctorNoN3<32><<<N/32 + 1,32>>>(N, particles);
 }
 
@@ -175,6 +180,7 @@ void AoSFunctorNoN3PairWrapper(int N, int M, double* particles1, double* particl
 }
 
 void SoAFunctorNoN3Wrapper(int N, double* posX, double* posY, double* posZ, double* forceX, double* forceY, double* forceZ){
+	std::cout<<"SoA: " << N << std::endl;
 	SoAFunctorNoN3<32><<<N/32 + 1,32>>>(N, posX, posY, posZ, forceX, forceY, forceZ);
 }
 

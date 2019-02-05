@@ -86,7 +86,7 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
 			  device_handle1.forceZ, M, device_handle2.posX, device_handle2.posY, device_handle2.posZ);
   }
 
-  void deviceAoSLoader(ParticleCell &cell, double* device_buffer) {
+  void deviceAoSLoader(ParticleCell &cell, double** device_buffer) {
 	  size_t num_particles = cell.numParticles();
 	  double * particles = new double [num_particles * 6];
 
@@ -101,20 +101,24 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
       particles[i++] = cellIter->getF()[1];
       particles[i++] = cellIter->getF()[2];
     }
+    cudaMemcpy(*device_buffer, particles, num_particles * 6, cudaMemcpyHostToDevice);
 
-    cudaMemcpy(device_buffer, particles, num_particles * 6, cudaMemcpyHostToDevice);
     delete[] particles;
   }
 
-  void deviceAoSExtractor(ParticleCell &cell, double *device_buffer) {
+  void deviceAoSExtractor(ParticleCell &cell, double ** device_buffer) {
     size_t num_particles = cell.numParticles();
-    double *particles = new double[num_particles * 6];
+    double * particles = new double[num_particles * 6];
 
-    cudaMemcpy(particles, device_buffer, num_particles * 6, cudaMemcpyDeviceToHost);
-    cudaFree(device_buffer);
+    cudaMemcpy(particles, *device_buffer, num_particles * 6, cudaMemcpyDeviceToHost);
+    cudaFree(*device_buffer);
+
+    for(int i = 0; i < num_particles * 6; ++i){
+    	std::cout << particles[i] << ", ";
+    }
+    std::cout << std::endl;
 
     auto cellIter = cell.begin();
-
     for (size_t i = 3; cellIter.isValid(); i += 4, ++cellIter) {
       cellIter->addF({particles[i], particles[++i], particles[++i]});
     }
@@ -126,12 +130,12 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
     size_t size = soa.getNumParticles();
     if (size == 0) return;
     // cudaMalloc((void **)device_handle.ids, sizeof(typename Particle::SoADevice::ids) * size);
-    cudaMalloc((void **)&device_handle.posX, sizeof(typename Particle::SoADevice::posX) * size);
-    cudaMalloc((void **)&device_handle.posY, sizeof(typename Particle::SoADevice::posY) * size);
-    cudaMalloc((void **)&device_handle.posZ, sizeof(typename Particle::SoADevice::posZ) * size);
-    cudaMalloc((void **)&device_handle.forceX, sizeof(typename Particle::SoADevice::forceX) * size);
-    cudaMalloc((void **)&device_handle.forceY, sizeof(typename Particle::SoADevice::forceY) * size);
-    cudaMalloc((void **)&device_handle.forceZ, sizeof(typename Particle::SoADevice::forceZ) * size);
+    cudaMalloc((void **)&device_handle.posX, sizeof(Particle::SoADevice::posX) * size);
+    cudaMalloc((void **)&device_handle.posY, sizeof(Particle::SoADevice::posY) * size);
+    cudaMalloc((void **)&device_handle.posZ, sizeof(Particle::SoADevice::posZ) * size);
+    cudaMalloc((void **)&device_handle.forceX, sizeof(Particle::SoADevice::forceX) * size);
+    cudaMalloc((void **)&device_handle.forceY, sizeof(Particle::SoADevice::forceY) * size);
+    cudaMalloc((void **)&device_handle.forceZ, sizeof(Particle::SoADevice::forceZ) * size);
 
     cudaError_t e;
     e = cudaMemcpy(device_handle.posX, soa.template begin<Particle::AttributeNames::posX>(), size,
@@ -164,7 +168,70 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
     cudaFree(device_handle.posX);
     cudaFree(device_handle.posY);
     cudaFree(device_handle.posZ);
+    for(int i = 0; i < 4; ++i){
+    	std::cout << soa.template begin<Particle::AttributeNames::forceZ>()[i] << ", ";
+    }
+    std::cout << std::endl;
   }
+
+  /**
+   * SoALoader
+   * @param cell
+   * @param soa
+   * @param offset
+   */
+  AUTOPAS_FUNCTOR_SOALOADER(
+      cell, soa, offset,
+      // @todo it is probably better to resize the soa only once, before calling
+      // SoALoader (verlet-list only)
+      soa.resizeArrays(offset + cell.numParticles());
+
+      if (cell.numParticles() == 0) return;
+
+      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+      auto cellIter = cell.begin();
+      // load particles in SoAs
+      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+        idptr[i] = cellIter->getID();
+        xptr[i] = cellIter->getR()[0];
+        yptr[i] = cellIter->getR()[1];
+        zptr[i] = cellIter->getR()[2];
+        fxptr[i] = cellIter->getF()[0];
+        fyptr[i] = cellIter->getF()[1];
+        fzptr[i] = cellIter->getF()[2];
+      })
+  /**
+   * soaextractor
+   * @param cell
+   * @param soa
+   * @param offset
+   */
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR(
+      cell, soa, offset,
+      // body start
+      if (soa.getNumParticles() == 0) return;
+
+      auto cellIter = cell.begin();
+
+#ifndef NDEBUG
+      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+#endif
+
+      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+      for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
+        assert(idptr[i] == cellIter->getID());
+        cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
+      })
 
  private:
   /**

@@ -111,10 +111,13 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void iteratePairwiseAoSCuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
 
-    f->deviceAoSLoader(*getCell(), getCell()->_particlesDevice);
+    f->deviceAoSLoader(*getCell(), &getCell()->_particlesDevice);
+    f->deviceAoSLoader(*getHaloCell(), &getHaloCell()->_particlesDevice);
+
     traversal->traverseCellPairs(this->_cells);
 
-    f->deviceAoSExtractor(*getCell(), getCell()->_particlesDevice);
+    f->deviceAoSExtractor(*getCell(), &getCell()->_particlesDevice);
+    f->deviceAoSExtractor(*getHaloCell(), &getHaloCell()->_particlesDevice);
   }
 
   template <class ParticleFunctor, class Traversal>

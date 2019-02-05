@@ -9,6 +9,7 @@
 #include "autopas/pairwiseFunctors/LJFunctorCuda.h"
 #include "autopas/pairwiseFunctors/CellFunctorCuda.h"
 #include "autopas/containers/directSum/DirectSumTraversalCuda.h"
+#include "autopas/utils/CudaDeviceVector.h"
 
 using namespace std;
 using namespace autopas;
@@ -54,18 +55,29 @@ int main() {
   autopas::Logger::create();
 
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
-  double cutoff = 1.0;
+  double cutoff = 3.0;
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   addAFewParticles<>(dir);
   
-  LJFunctorCuda<MyMolecule, FullParticleCell<MyMolecule>> functor(cutoff, 2.0, 3.0, 0.0);
-  typedef CellFunctorCuda<MyMolecule, FullParticleCell<MyMolecule>, LJFunctorCuda<MyMolecule, FullParticleCell<MyMolecule>>, false, false> CFT;
-  CFT cfunctor(&functor);
+  typedef LJFunctorCuda<MyMolecule, FullParticleCell<MyMolecule>> cudaF;
+  cudaF functor(cutoff, 2.0, 3.0, 0.0);
 
-  DirectSumTraversalCuda<FullParticleCell<MyMolecule>, LJFunctorCuda<MyMolecule, FullParticleCell<MyMolecule>>, false, false> traversal(&functor);
+  DirectSumTraversalCuda<FullParticleCell<MyMolecule>, cudaF, false, false> traversalAoS(&functor);
+  DirectSumTraversalCuda<FullParticleCell<MyMolecule>, cudaF, true, false> traversalSoA(&functor);
 
-  dir.iteratePairwiseAoS(&functor, &traversal, false);
+  for (auto pi = dir.begin(); pi.isValid(); ++pi) {
+    pi->print();
+  }
+
+  dir.iteratePairwiseAoSCuda(&functor, &traversalAoS, false);
+  dir.iteratePairwiseSoACuda(&functor, &traversalSoA, false);
+
+  for (auto pi = dir.begin(); pi.isValid(); ++pi) {
+    pi->print();
+  }
+
+  autopas::CudaDeviceVector<double> cdv (32);
 
   cout << "Hodor" << endl;
   return EXIT_SUCCESS;

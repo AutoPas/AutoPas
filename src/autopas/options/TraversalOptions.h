@@ -23,6 +23,7 @@ enum TraversalOptions {
   c18Verlet = 6,
   c01Verlet = 7,
   dummyTraversal = 666,
+  directSumTraversalCuda = 8,
 };
 
 /**

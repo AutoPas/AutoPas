@@ -53,7 +53,7 @@ class DirectSumTraversalCuda : public CellPairTraversal<ParticleCell>, public Di
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 TraversalOptions DirectSumTraversalCuda<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::getTraversalType() {
-  return TraversalOptions::directSumTraversal;
+  return TraversalOptions::directSumTraversalCuda;
 }
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
