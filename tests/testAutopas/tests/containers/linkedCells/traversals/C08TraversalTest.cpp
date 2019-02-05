@@ -71,7 +71,7 @@ class C08BasedTraversalDummy
     autopas::utils::ExceptionHandler::exception("not yet implemented.");
     return autopas::TraversalOptions::dummyTraversal;
   }
-  FRIEND_TEST(C08TraversalTest, testOuterTraversal);
+  friend class C08TraversalTest_testOuterTraversal_Test;
 };
 
 TEST_F(C08TraversalTest, testOuterTraversal) {
