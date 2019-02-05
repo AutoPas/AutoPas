@@ -37,11 +37,11 @@ class CudaDeviceVector{
 			cudaFree(_data);
 			cudaMalloc((void **)&_data, sizeof(T) * _max_size);
 		}
-		return cudaMemcpy(_data, hostData, n, cudaMemcpyHostToDevice);
+		return cudaMemcpy(_data, hostData, n * sizeof(T), cudaMemcpyHostToDevice);
 	}
 
 	cudaError_t copyDeviceToHost(int n, T* hostData){
-		return cudaMemcpy(hostData, _data, _size, cudaMemcpyDeviceToHost);
+		return cudaMemcpy(hostData, _data, n * sizeof(T), cudaMemcpyDeviceToHost);
 	}
 
 	private:

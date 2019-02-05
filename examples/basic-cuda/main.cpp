@@ -61,7 +61,7 @@ int main() {
   addAFewParticles<>(dir);
   
   typedef LJFunctorCuda<MyMolecule, FullParticleCell<MyMolecule>> cudaF;
-  cudaF functor(cutoff, 2.0, 3.0, 0.0);
+  cudaF functor(cutoff, 1.0, 1.0, 0.0);
 
   DirectSumTraversalCuda<FullParticleCell<MyMolecule>, cudaF, false, false> traversalAoS(&functor);
   DirectSumTraversalCuda<FullParticleCell<MyMolecule>, cudaF, true, false> traversalSoA(&functor);
@@ -69,15 +69,40 @@ int main() {
   for (auto pi = dir.begin(); pi.isValid(); ++pi) {
     pi->print();
   }
+  cout << endl;
 
   dir.iteratePairwiseAoSCuda(&functor, &traversalAoS, false);
-  dir.iteratePairwiseSoACuda(&functor, &traversalSoA, false);
-
   for (auto pi = dir.begin(); pi.isValid(); ++pi) {
     pi->print();
   }
+  cout << endl;
+
+  dir.iteratePairwiseSoACuda(&functor, &traversalSoA, false);
+  for (auto pi = dir.begin(); pi.isValid(); ++pi) {
+    pi->print();
+  }
+  cout << endl;
 
   autopas::CudaDeviceVector<double> cdv (32);
+  std::vector<double> data = {3,0,0,0,0,0, 1.9,0,0,0,2,0};
+  std::vector<double> res(12,-1);
+
+  loadConstants(9., 24., 1.);
+  cdv.copyHostToDevice(12, data.data());
+
+  AoSFunctorNoN3Wrapper(12/6, cdv.get());
+
+  cdv.copyDeviceToHost(12, res.data());
+
+
+  for(auto it : data){
+	  std::cout << it << ", ";
+  }
+  cout << endl;
+  for(auto it : res){
+	  std::cout << it << ", ";
+  }
+  cout << endl;
 
   cout << "Hodor" << endl;
   return EXIT_SUCCESS;

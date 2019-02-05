@@ -101,7 +101,7 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
       particles[i++] = cellIter->getF()[1];
       particles[i++] = cellIter->getF()[2];
     }
-    cudaMemcpy(*device_buffer, particles, num_particles * 6, cudaMemcpyHostToDevice);
+    cudaMemcpy(*device_buffer, particles, num_particles * 6 * sizeof(double), cudaMemcpyHostToDevice);
 
     delete[] particles;
   }
@@ -110,13 +110,8 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
     size_t num_particles = cell.numParticles();
     double * particles = new double[num_particles * 6];
 
-    cudaMemcpy(particles, *device_buffer, num_particles * 6, cudaMemcpyDeviceToHost);
+    cudaMemcpy(particles, *device_buffer, num_particles * 6 * sizeof(double), cudaMemcpyDeviceToHost);
     cudaFree(*device_buffer);
-
-    for(int i = 0; i < num_particles * 6; ++i){
-    	std::cout << particles[i] << ", ";
-    }
-    std::cout << std::endl;
 
     auto cellIter = cell.begin();
     for (size_t i = 3; cellIter.isValid(); i += 4, ++cellIter) {
@@ -138,17 +133,17 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
     cudaMalloc((void **)&device_handle.forceZ, sizeof(Particle::SoADevice::forceZ) * size);
 
     cudaError_t e;
-    e = cudaMemcpy(device_handle.posX, soa.template begin<Particle::AttributeNames::posX>(), size,
+    e = cudaMemcpy(device_handle.posX, soa.template begin<Particle::AttributeNames::posX>(), sizeof(Particle::SoADevice::posX) * size,
                    cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.posY, soa.template begin<Particle::AttributeNames::posY>(), size,
+    e = cudaMemcpy(device_handle.posY, soa.template begin<Particle::AttributeNames::posY>(), sizeof(Particle::SoADevice::posY) * size,
                    cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.posZ, soa.template begin<Particle::AttributeNames::posZ>(), size,
+    e = cudaMemcpy(device_handle.posZ, soa.template begin<Particle::AttributeNames::posZ>(), sizeof(Particle::SoADevice::posZ) * size,
                    cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.forceX, soa.template begin<Particle::AttributeNames::forceX>(), size,
+    e = cudaMemcpy(device_handle.forceX, soa.template begin<Particle::AttributeNames::forceX>(), sizeof(Particle::SoADevice::forceX) * size,
                    cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.forceY, soa.template begin<Particle::AttributeNames::forceY>(), size,
+    e = cudaMemcpy(device_handle.forceY, soa.template begin<Particle::AttributeNames::forceY>(), sizeof(Particle::SoADevice::forceY) * size,
                    cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.forceZ, soa.template begin<Particle::AttributeNames::forceZ>(), size,
+    e = cudaMemcpy(device_handle.forceZ, soa.template begin<Particle::AttributeNames::forceZ>(), sizeof(Particle::SoADevice::forceZ) * size,
                    cudaMemcpyHostToDevice);
   }
 
@@ -156,11 +151,11 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
     size_t size = soa.getNumParticles();
     if (size == 0) return;
 
-    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceX>(), device_handle.forceX, size,
+    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceX>(), device_handle.forceX, sizeof(Particle::SoADevice::forceX) * size,
                cudaMemcpyDeviceToHost);
-    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceY>(), device_handle.forceY, size,
+    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceY>(), device_handle.forceY, sizeof(Particle::SoADevice::forceY) * size,
                cudaMemcpyDeviceToHost);
-    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceZ>(), device_handle.forceZ, size,
+    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceZ>(), device_handle.forceZ, sizeof(Particle::SoADevice::forceZ) * size,
                cudaMemcpyDeviceToHost);
     cudaFree(device_handle.forceX);
     cudaFree(device_handle.forceY);
@@ -168,10 +163,6 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
     cudaFree(device_handle.posX);
     cudaFree(device_handle.posY);
     cudaFree(device_handle.posZ);
-    for(int i = 0; i < 4; ++i){
-    	std::cout << soa.template begin<Particle::AttributeNames::forceZ>()[i] << ", ";
-    }
-    std::cout << std::endl;
   }
 
   /**
