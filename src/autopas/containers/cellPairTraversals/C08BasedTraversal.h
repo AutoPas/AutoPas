@@ -191,7 +191,7 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
       {
         // upper y: always only one value for y:
         unsigned long y;
-        if (start_y % 2 == 1) {
+        if (start_y == 1) {
           // round to first uneven number smaller than end_y
           y = (end_y & ~1ul) - 1ul;
         } else {  // start_z == 0
@@ -216,7 +216,7 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(3) nowait
 #endif
-        // lower y
+        // lower x
         for (unsigned long z = start_z_inner; z < end_z_inner; z += stride_z) {
           for (unsigned long y = start_y_inner; y < end_y_inner; y += stride_y) {
             for (unsigned long x = start_x; x < 3; x += stride_x) {
@@ -227,9 +227,9 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
       }
 
       {
-        // upper y: always only one value for y:
+        // upper x: always only one value for x:
         unsigned long x;
-        if (start_x % 2 == 1) {
+        if (start_x == 1) {
           // round to first uneven number smaller than end_x
           x = (end_x & ~1ul) - 1ul;
         } else {  // start_z == 0
@@ -237,7 +237,7 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
           x = (end_x - 1ul) & ~1ul;
         }
 #if defined(AUTOPAS_OPENMP)
-        // no nowait here!
+        // no nowait here, as we want a barrier at the end of the entire loop over the color.
 #pragma omp for schedule(dynamic, 1) collapse(2)
 #endif
         for (unsigned long z = start_z_inner; z < end_z_inner; z += stride_z) {

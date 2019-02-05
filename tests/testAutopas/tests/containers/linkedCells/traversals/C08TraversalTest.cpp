@@ -96,6 +96,56 @@ TEST_F(C08TraversalTest, testOuterTraversal) {
   }
 }
 
+TEST_F(C08TraversalTest, testOuterTraversalColors) {
+  // the idea of this test is to check whether the colors used correctly, such that no race conditions can occur.
+
+#if defined(AUTOPAS_OPENMP)
+  int previousThreadCount = autopas::autopas_get_max_threads();
+  omp_set_num_threads(1);
+#endif
+
+  constexpr std::array<size_t, 3> edgeLength = {7, 8, 9};
+  C08BasedTraversalDummy<autopas::outer> traversal(edgeLength);
+  std::array<std::array<std::array<int, edgeLength[2]>, edgeLength[1]>, edgeLength[0]> touchableArray = {};
+
+  unsigned long color = 0;
+  traversal.c08Traversal_public([&](unsigned long x, unsigned long y, unsigned long z) {
+    if (x < 2 and y < 2 and z < 2) {
+      // from the lower entries we can get the colors (at least if they are traversed first)
+      color = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, {2, 2, 2});
+    }
+    touchableArray[x][y][z] = color + 1;
+  });
+
+  // the upper halo is NOT traversed => "x < edgeLength[0] - 1"
+  for (unsigned int x = 0; x < edgeLength[0] - 1; ++x) {
+    for (unsigned int y = 0; y < edgeLength[1] - 1; ++y) {
+      for (unsigned int z = 0; z < edgeLength[2] - 1; ++z) {
+        unsigned long currentColor = touchableArray[x][y][z];
+        bool outside = false;
+        if (x < 3 or x >= edgeLength[0] - 3) outside = true;
+        if (y < 3 or y >= edgeLength[1] - 3) outside = true;
+        if (z < 3 or z >= edgeLength[2] - 3) outside = true;
+        if (not outside) continue;
+
+        for (unsigned int dx = 0; dx < 2; ++dx) {
+          for (unsigned int dy = 0; dy < 2; ++dy) {
+            for (unsigned int dz = 0; dz < 2; ++dz) {
+              if (dx == 0 and dy == 0 and dz == 0) continue;
+              int neighborColor = touchableArray[x + dx][y + dy][z + dz];
+              EXPECT_NE(currentColor, neighborColor)
+                  << "x: " << x << ", y: " << y << ", z: " << z << "; dx: " << dx << ", dy: " << dy << ", dz: " << dz;
+            }
+          }
+        }
+      }
+    }
+  }
+#if defined(AUTOPAS_OPENMP)
+  omp_set_num_threads(previousThreadCount);
+#endif
+}
+
 TEST_F(C08TraversalTest, testInnerTraversal) {
   constexpr std::array<size_t, 3> edgeLength = {7, 8, 9};
   C08BasedTraversalDummy<autopas::inner> traversal(edgeLength);
