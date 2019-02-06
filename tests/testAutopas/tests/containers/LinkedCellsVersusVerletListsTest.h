@@ -22,7 +22,7 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 
-  double getCutoff() const { return 1.0; }
+  double getCutoff() const { return .9; }
 
  protected:
   void test(unsigned long numMolecules, double rel_err_tolerance, std::array<double, 3> boxMax,

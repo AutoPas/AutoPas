@@ -65,10 +65,12 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   _verletLists->iteratePairwiseAoS(&flopsVerlet, &traversalFLOPS);
   _linkedCells->iteratePairwiseAoS(&flopsLinked, &traversalFLOPS);
 
-  ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
-  if (not blackBoxMode) {
-    ASSERT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());
-  }
+  EXPECT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
+
+  // blackbox mode: the following line is only true, if the verlet lists do NOT use less cells than the linked cells
+  // (for small scenarios), as the verlet lists fall back to linked cells.
+  EXPECT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());
+
 }
 
 TEST_F(LinkedCellsVersusVerletListsTest, test100) {
