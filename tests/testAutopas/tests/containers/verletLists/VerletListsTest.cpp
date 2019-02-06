@@ -563,8 +563,8 @@ TEST_F(VerletListsTest, LoadExtractSoA) {
   MockFunctor<Particle, FPCell> mockFunctor;
   autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &mockFunctor);
 
-  EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(216);  // 6*6*6=216 cells
-  EXPECT_CALL(mockFunctor, SoAExtractorVerlet(_, _, _)).Times(216);
+  EXPECT_CALL(mockFunctor, SoALoader(_, _, _)).Times(216);  // 6*6*6=216 cells
+  EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(216);
   EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _, _)).Times(1);
   verletLists.iteratePairwiseSoA(&mockFunctor, &dummyTraversal, true);
 }

@@ -97,7 +97,7 @@ TEST_F(C08TraversalTest, testOuterTraversal) {
 }
 
 TEST_F(C08TraversalTest, testOuterTraversalColors) {
-  // the idea of this test is to check whether the colors used correctly, such that no race conditions can occur.
+  // the idea of this test is to check whether the colors are used correctly, such that no race conditions can occur.
 
 #if defined(AUTOPAS_OPENMP)
   int previousThreadCount = autopas::autopas_get_max_threads();

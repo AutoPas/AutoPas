@@ -291,7 +291,19 @@ class VerletLists
    * @param useNewton3
    */
   template <class ParticleFunctor>
-  void iterateBoundaryPartsSoA(ParticleFunctor* f, const bool useNewton3) {}
+  void iterateBoundaryPartsSoA(ParticleFunctor* f, const bool useNewton3) {
+    if (useNewton3) {
+      C08Traversal<ParticleCell, ParticleFunctor, /*useSoA*/ true, /*useNewton3*/ true,
+                   BlackBoxTraversalOption::outer>
+          traversal(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f);
+      traversal.traverseCellPairs(this->_linkedCells.getCells());
+    } else {
+      C08Traversal<ParticleCell, ParticleFunctor, /*useSoA*/ true, /*useNewton3*/ false,
+                   BlackBoxTraversalOption::outer>
+          traversal(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f);
+      traversal.traverseCellPairs(this->_linkedCells.getCells());
+    }
+  }
 
   /**
    * Iterate over the boundary dependent parts of the domain using the SoA traversal.
@@ -300,7 +312,19 @@ class VerletLists
    * @param useNewton3
    */
   template <class ParticleFunctor>
-  void iterateBoundaryPartsAoS(ParticleFunctor* f, const bool useNewton3) {}
+  void iterateBoundaryPartsAoS(ParticleFunctor* f, const bool useNewton3) {
+    if (useNewton3) {
+      C08Traversal<ParticleCell, ParticleFunctor, /*useSoA*/ false, /*useNewton3*/ true,
+                   BlackBoxTraversalOption::outer>
+          traversal(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f);
+      traversal.traverseCellPairs(this->_linkedCells.getCells());
+    } else {
+      C08Traversal<ParticleCell, ParticleFunctor, /*useSoA*/ false, /*useNewton3*/ false,
+                   BlackBoxTraversalOption::outer>
+          traversal(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f);
+      traversal.traverseCellPairs(this->_linkedCells.getCells());
+    }
+  }
 
   /**
    * Iterate over the verlet lists using the SoA traversal

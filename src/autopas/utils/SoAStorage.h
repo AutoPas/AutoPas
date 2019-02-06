@@ -19,13 +19,23 @@ template <class SoAArraysType>
 class SoAStorage {
  private:
   // End of iteration/recursion.
-  template <std::size_t I = 0, typename FunctorT, typename... Tp>
-  inline typename std::enable_if<I == sizeof...(Tp), void>::type for_each(std::tuple<Tp...>&, FunctorT) {}
+  template <std::size_t I, std::size_t END, typename FunctorT, typename... Tp>
+  inline typename std::enable_if<I == END, void>::type for_each(std::tuple<Tp...>&, FunctorT) {}
 
-  template <std::size_t I = 0, typename FunctorT, typename... Tp>
-  inline typename std::enable_if<(I < sizeof...(Tp)), void>::type for_each(std::tuple<Tp...>& t, FunctorT f) {
+  template <std::size_t I, std::size_t END, typename FunctorT, typename... Tp>
+  inline typename std::enable_if<(I < END), void>::type for_each(std::tuple<Tp...>& t, FunctorT f) {
     f(std::get<I>(t));
-    for_each<I + 1, FunctorT, Tp...>(t, f);
+    for_each<I + 1, END, FunctorT, Tp...>(t, f);
+  }
+
+  template <typename FunctorT, typename... Tp>
+  inline void for_each_wrap(std::tuple<Tp...>& t, FunctorT f) {
+    for_each<0, sizeof...(Tp), FunctorT, Tp...>(t, f);
+  }
+
+  template <std::size_t END, typename FunctorT, typename... Tp>
+  inline void for_each_wrap(std::tuple<Tp...>& t, FunctorT f) {
+    for_each<0, END, FunctorT, Tp...>(t, f);
   }
 
  public:
@@ -33,13 +43,27 @@ class SoAStorage {
    * Apply the specific function to all vectors.
    * This can e.g. be resize operations, ...
    * The functor func should not require input parameters. The returns of the functor are ignored.
-   * @tparam FunctorT the type of the functor
-   * @param func a functor, that should be applied on all vectors (e.g. lambda functions, should take `auto& list` as an
-   * argument)
+   * @tparam FunctorT The type of the functor
+   * @param func A functor, that should be applied on all vectors (e.g. lambda functions, should take `auto& list` as an
+   * argument).
    */
   template <typename FunctorT>
   void apply(FunctorT func) {
-    for_each(soaStorageTuple, func);
+    for_each_wrap(soaStorageTuple, func);
+  }
+
+  /**
+   * Apply the specific function to all vectors.
+   * This can e.g. be resize operations, ...
+   * The functor func should not require input parameters. The returns of the functor are ignored.
+   * @tparam FunctorT The type of the functor.
+   * @tparam numElements Number of elements to apply func to.
+   * @param func A functor, that should be applied on all vectors (e.g. lambda functions, should take `auto& list` as an
+   * argument).
+   */
+  template <std::size_t numElements, typename FunctorT>
+  void apply(FunctorT func) {
+    for_each_wrap<numElements>(soaStorageTuple, func);
   }
 
   /**

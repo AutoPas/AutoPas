@@ -379,10 +379,11 @@ class SPHParticle : public autopas::Particle {
    * Attribute names for the soa arrays
    */
   enum AttributeNames : int {
-    mass,
+    id,
     posX,
     posY,
     posZ,
+    mass,
     smth,
     density,
     velX,
@@ -400,7 +401,7 @@ class SPHParticle : public autopas::Particle {
   /**
    * SoA arrays type, cf. AttributeNames
    */
-  typedef autopas::utils::SoAType<double, double, double, double, double, double, double, double, double, double,
+  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double, double, double, double, double,
                                   double, double, double, double, double, double>::Type SoAArraysType;
 
  private:

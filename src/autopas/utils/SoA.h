@@ -46,6 +46,17 @@ class SoA {
   }
 
   /**
+   * @brief Resizes all Vectors to the given length.
+   * @details Resizes only the first numElements arrays to the new value.
+   * @param length New length the arrays should be resized to.
+   * @tparam numElements Indicates how many of the arrays should be resized.
+   */
+  template <unsigned int numElements>
+  void resizeArrays(size_t length) {
+    soaStorage.template apply<numElements>([=](auto &list) { list.resize(length); });
+  }
+
+  /**
    * @brief Pushes a given value to the desired attribute array.
    * @tparam attribute Index of array to push to.
    * @param value Value to push.
