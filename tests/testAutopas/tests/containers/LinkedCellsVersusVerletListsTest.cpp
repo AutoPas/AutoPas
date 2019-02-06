@@ -70,7 +70,6 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   // blackbox mode: the following line is only true, if the verlet lists do NOT use less cells than the linked cells
   // (for small scenarios), as the verlet lists fall back to linked cells.
   EXPECT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());
-
 }
 
 TEST_F(LinkedCellsVersusVerletListsTest, test100) {

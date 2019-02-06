@@ -401,8 +401,8 @@ class SPHParticle : public autopas::Particle {
   /**
    * SoA arrays type, cf. AttributeNames
    */
-  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double, double, double, double, double,
-                                  double, double, double, double, double, double>::Type SoAArraysType;
+  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double, double, double, double,
+                                  double, double, double, double, double, double, double>::Type SoAArraysType;
 
  private:
   double _density;   // density

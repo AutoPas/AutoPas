@@ -48,8 +48,6 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD3_T(SoAExtractor,
                  void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
-
-
   // virtual bool allowsNewton3() { return true; }
   MOCK_METHOD0(allowsNewton3, bool());
 

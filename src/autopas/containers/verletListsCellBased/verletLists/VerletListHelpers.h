@@ -24,11 +24,11 @@ class VerletListHelpers {
   typedef std::unordered_map<Particle *, std::vector<Particle *>> AoS_verletlist_storage_type;
 
   /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-  //typedef utils::SoAType<size_t, double, double, double>::Type SoAArraysType;
+  // typedef utils::SoAType<size_t, double, double, double>::Type SoAArraysType;
   using SoAArraysType = typename Particle::SoAArraysType;
 
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
-  //enum AttributeNames : int { id, posX, posY, posZ };
+  // enum AttributeNames : int { id, posX, posY, posZ };
   using AttributeNames = typename Particle::AttributeNames;
 
   /// typedef for verlet-list particle cell type
