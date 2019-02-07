@@ -292,6 +292,9 @@ class VerletLists
    */
   template <class ParticleFunctor>
   void iterateBoundaryPartsSoA(ParticleFunctor* f, const bool useNewton3) {
+    // load SoA's
+    loadBoundarySoA(f);
+
     if (useNewton3) {
       C08Traversal<ParticleCell, ParticleFunctor, /*useSoA*/ true, /*useNewton3*/ true, BlackBoxTraversalOption::outer>
           traversal(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f);
@@ -301,6 +304,9 @@ class VerletLists
           traversal(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f);
       traversal.traverseCellPairs(this->_linkedCells.getCells());
     }
+
+    // extract SoA's
+    extractBoundarySoA(f);
   }
 
   /**
@@ -379,11 +385,38 @@ class VerletLists
   }
 
   /**
+   * Load the SoA's for all relevant cells of the boundary traversal using
+   * functor.SoALoader(...)
+   * @tparam ParticleFunctor The type of the functor.
+   * @param functor The SoALoader method of this functor is used.
+   */
+  template <class ParticleFunctor>
+  void loadBoundarySoA(ParticleFunctor* functor) {
+    /// @todo optimize only boundary parts, OpenMP
+    for (auto& cell : this->_linkedCells.getCells()) {
+      functor->SoALoader(cell, cell._particleSoABuffer, 0);
+    }
+  }
+
+  /**
+   * Extracts the particle information from the cell SoA's using
+   * functor.SoAExtractor(...)
+   * @tparam ParticleFunctor The type of the functor.
+   * @param functor The SoAExtractor method of this functor is used.
+   */
+  template <class ParticleFunctor>
+  void extractBoundarySoA(ParticleFunctor* functor) {
+    /// @todo optimize only boundary parts, OpenMP
+    for (auto& cell : this->_linkedCells.getCells()) {
+      functor->SoAExtractor(cell, cell._particleSoABuffer, 0);
+    }
+  }
+
+  /**
    * Load the particle information from the cell and store it in the global SoA
    * using functor.SoALoader(...)
-   * @tparam ParticleFunctor the type of the functor
-   * @param functor the SoAExtractor method of this functor is used. use the
-   * actual
+   * @tparam ParticleFunctor The type of the functor.
+   * @param functor The SoALoader method of this functor is used.
    */
   template <class ParticleFunctor>
   void loadVerletSoA(ParticleFunctor* functor) {
@@ -398,9 +431,8 @@ class VerletLists
   /**
    * Extracts the particle information from the global SoA using
    * functor.SoAExtractor(...)
-   * @tparam ParticleFunctor the type of the functor
-   * @param functor the SoAExtractor method of this functor is used. use the
-   * actual
+   * @tparam ParticleFunctor The type of the functor.
+   * @param functor The SoAExtractor method of this functor is used.
    */
   template <class ParticleFunctor>
   void extractVerletSoA(ParticleFunctor* functor) {

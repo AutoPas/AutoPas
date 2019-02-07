@@ -9,7 +9,7 @@
 LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest() : _verletLists(nullptr), _linkedCells(nullptr) {}
 
 void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double rel_err_tolerance,
-                                            std::array<double, 3> boxMax, bool blackBoxMode) {
+                                            std::array<double, 3> boxMax, bool useSoA, bool blackBoxMode) {
   _linkedCells = std::make_unique<lctype>(getBoxMin(), boxMax, getCutoff());
   if (blackBoxMode) {
     _verletLists = std::make_unique<vltype>(getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 2,
@@ -33,8 +33,14 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalLJ(
       _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  _verletLists->iteratePairwiseAoS(&func, &traversalLJ);
   _linkedCells->iteratePairwiseAoS(&func, &traversalLJ);
+
+  autopas::DummyTraversal<FMCell> dt({0, 0, 0});  // The dummy doesn't need correct size of cellblock!
+  if (useSoA) {
+    _verletLists->iteratePairwiseSoA(&func, &dt);
+  } else {
+    _verletLists->iteratePairwiseAoS(&func, &dt);
+  }
 
   auto itDirect = _verletLists->begin();
   auto itLinked = _linkedCells->begin();
@@ -79,8 +85,12 @@ TEST_F(LinkedCellsVersusVerletListsTest, test100) {
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 1e-14;
-  for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
-    test(numMolecules, rel_err_tolerance, boxMax);
+  for (auto blackBox : {true, false}) {
+    for (auto useSoA : {true, false}) {
+      for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
+        test(numMolecules, rel_err_tolerance, boxMax, useSoA, blackBox);
+      }
+    }
   }
 }
 
@@ -91,8 +101,12 @@ TEST_F(LinkedCellsVersusVerletListsTest, test1000) {
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 2e-12;
-  for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
-    test(numMolecules, rel_err_tolerance, boxMax);
+  for (auto blackBox : {true, false}) {
+    for (auto useSoA : {true, false}) {
+      for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
+        test(numMolecules, rel_err_tolerance, boxMax, useSoA, blackBox);
+      }
+    }
   }
 }
 
@@ -103,44 +117,11 @@ TEST_F(LinkedCellsVersusVerletListsTest, test2000) {
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 1e-10;
-  for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
-    test(numMolecules, rel_err_tolerance, boxMax);
-  }
-}
-
-TEST_F(LinkedCellsVersusVerletListsTest, test100BlackBox) {
-  unsigned long numMolecules = 100;
-
-  // empirically determined and set near the minimal possible value
-  // i.e. if something changes, it may be needed to increase value
-  // (and OK to do so)
-  double rel_err_tolerance = 1e-14;
-
-  for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
-    test(numMolecules, rel_err_tolerance, boxMax, true);
-  }
-}
-
-TEST_F(LinkedCellsVersusVerletListsTest, test1000BlackBox) {
-  unsigned long numMolecules = 1000;
-
-  // empirically determined and set near the minimal possible value
-  // i.e. if something changes, it may be needed to increase value
-  // (and OK to do so)
-  double rel_err_tolerance = 2e-12;
-  for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
-    test(numMolecules, rel_err_tolerance, boxMax, true);
-  }
-}
-
-TEST_F(LinkedCellsVersusVerletListsTest, test2000BlackBox) {
-  unsigned long numMolecules = 2000;
-
-  // empirically determined and set near the minimal possible value
-  // i.e. if something changes, it may be needed to increase value
-  // (and OK to do so)
-  double rel_err_tolerance = 1e-10;
-  for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
-    test(numMolecules, rel_err_tolerance, boxMax, true);
+  for (auto blackBox : {true, false}) {
+    for (auto useSoA : {true, false}) {
+      for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
+        test(numMolecules, rel_err_tolerance, boxMax, useSoA, blackBox);
+      }
+    }
   }
 }

@@ -25,8 +25,8 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
   double getCutoff() const { return .9; }
 
  protected:
-  void test(unsigned long numMolecules, double rel_err_tolerance, std::array<double, 3> boxMax,
-            bool blackBoxMode = false);
+  void test(unsigned long numMolecules, double rel_err_tolerance, std::array<double, 3> boxMax, bool useSoA,
+            bool blackBoxMode);
 
   using vltype = autopas::VerletLists<autopas::MoleculeLJ>;
   using lctype = autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>;
