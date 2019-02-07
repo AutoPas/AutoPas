@@ -372,17 +372,49 @@ class VerletLists
   }
 
   /**
+   * Loops over cells that are relevant for the inner traversal.
+   * @tparam LoopBody
+   * @param dims
+   * @param parallel define if this is allowed to be parallel
+   * @param loopBody
+   */
+  template <class LoopBody>
+  void innerRelevantTraversal(const std::array<size_t, 3>& dims, bool parallel, LoopBody loopBody) {
+    const size_t dim_x = dims[0], dim_y = dims[1], dim_z = dims[2];
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel for collapse(3) if (parallel)
+#endif
+    for (size_t z = 2; z < dim_z - 2; ++z) {
+      for (size_t y = 2; y < dim_y - 2; ++y) {
+        for (size_t x = 2; x < dim_x - 2; ++x) {
+          loopBody(x, y, z);
+        }
+      }
+    }
+  }
+
+  /**
    * Update the AoS id maps.
-   * The Id Map is used to map the id of a particle to the actual particle
+   * The Id Map is used to map the id of a particle to the actual particle.
    */
   void updateIdMapAoS() {
-    /// @todo: potentially adapt to _blackBox -- only consider inner parts -- not necessary, but might be useful
     _aosNeighborLists.clear();
-    // DON'T simply parallelize this loop!!! this needs modifications if you
-    // want to parallelize it!
-    for (auto iter = this->begin(); iter.isValid(); ++iter) {
-      // create the verlet list entries for all particles
-      _aosNeighborLists[&(*iter)];
+    if (not this->_blackBoxMode) {
+      // DON'T simply parallelize this loop!!! this needs modifications if you
+      // want to parallelize it!
+      for (auto iter = this->begin(); iter.isValid(); ++iter) {
+        // create the verlet list entries for all particles
+        _aosNeighborLists[&(*iter)];
+      }
+    } else {
+      auto& cells = this->_linkedCells.getCells();
+      auto& dims = this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+      innerRelevantTraversal(dims, false /*not allowed to be parallel!*/, [&](size_t x, size_t y, size_t z) {
+        auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
+        for (auto iter = cell.begin(); iter.isValid(); ++iter) {
+          _aosNeighborLists[&(*iter)];
+        }
+      });
     }
   }
 
@@ -531,10 +563,19 @@ class VerletLists
   template <class ParticleFunctor>
   void loadVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
-    /// @todo adapt to _blackBoxMode
-    for (auto& cell : this->_linkedCells.getCells()) {
-      functor->SoALoader(cell, _soa, offset);
-      offset += cell.numParticles();
+    if (not this->_blackBoxMode) {
+      for (auto& cell : this->_linkedCells.getCells()) {
+        functor->SoALoader(cell, _soa, offset);
+        offset += cell.numParticles();
+      }
+    } else {
+      auto& cells = this->_linkedCells.getCells();
+      auto& dims = this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+      innerRelevantTraversal(dims, false /*not allowed to be parallel!*/, [&](size_t x, size_t y, size_t z) {
+        auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
+        functor->SoALoader(cell, _soa, offset);
+        offset += cell.numParticles();
+      });
     }
   }
 
@@ -547,10 +588,19 @@ class VerletLists
   template <class ParticleFunctor>
   void extractVerletSoA(ParticleFunctor* functor) {
     size_t offset = 0;
-    /// @todo adapt to _blackBoxMode
-    for (auto& cell : this->_linkedCells.getCells()) {
-      functor->SoAExtractor(cell, _soa, offset);
-      offset += cell.numParticles();
+    if (not this->_blackBoxMode) {
+      for (auto& cell : this->_linkedCells.getCells()) {
+        functor->SoAExtractor(cell, _soa, offset);
+        offset += cell.numParticles();
+      }
+    } else {
+      auto& cells = this->_linkedCells.getCells();
+      auto& dims = this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+      innerRelevantTraversal(dims, false /*not allowed to be parallel!*/, [&](size_t x, size_t y, size_t z) {
+        auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
+        functor->SoAExtractor(cell, _soa, offset);
+        offset += cell.numParticles();
+      });
     }
   }
 
@@ -568,9 +618,20 @@ class VerletLists
 
     _aos2soaMap.reserve(_aosNeighborLists.size());
     size_t i = 0;
-    for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
-      // set the map
-      _aos2soaMap[&(*iter)] = i;
+    if (not this->_blackBoxMode) {
+      for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
+        // set the map
+        _aos2soaMap[&(*iter)] = i;
+      }
+    } else {
+      auto& cells = this->_linkedCells.getCells();
+      auto& dims = this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+      innerRelevantTraversal(dims, false /*not allowed to be parallel!*/, [&](size_t x, size_t y, size_t z) {
+        auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
+        for (auto iter = cell.begin(); iter.isValid(); ++iter, ++i) {
+          _aos2soaMap[&(*iter)] = i;
+        }
+      });
     }
     size_t accumulatedListSize = 0;
     for (auto& aosList : _aosNeighborLists) {
