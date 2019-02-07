@@ -59,7 +59,8 @@ class VerletListsCells
                    const TraversalOptions buildTraversal, const double skin = 0,
                    const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                                            VLCApplicableTraversals()),
+                                                            VLCApplicableTraversals(),
+                                                            /*blackbox not yet supported*/ false),
         _buildTraversal(buildTraversal),
         _verletBuiltNewton3(false) {}
 

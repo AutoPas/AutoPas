@@ -38,7 +38,7 @@ class VerletLists
 
  private:
   static const std::vector<TraversalOptions>& VLApplicableTraversals() {
-    // @todo: implement some traversals for this
+    /// @todo: implement some traversals for this
     static const std::vector<TraversalOptions> v{};
     return v;
   }
@@ -72,11 +72,10 @@ class VerletLists
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const bool blackBoxMode = false)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals()),
+            boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals(), blackBoxMode),
         _soaListIsValid(false),
         _soa(),
-        _buildVerletListType(buildVerletListType),
-        _blackBoxMode(blackBoxMode) {}
+        _buildVerletListType(buildVerletListType) {}
 
   /**
    * Lists all traversal options applicable for the Verlet Lists container.
@@ -102,7 +101,7 @@ class VerletLists
     // we iterated, so increase traversal counter
     this->_traversalsSinceLastRebuild++;
 
-    if (_blackBoxMode) {
+    if (this->_blackBoxMode) {
       iterateBoundaryPartsAoS(f, useNewton3);
     }
   }
@@ -121,7 +120,7 @@ class VerletLists
     iterateVerletListsSoA(f, useNewton3);
     this->_traversalsSinceLastRebuild++;
 
-    if (_blackBoxMode) {
+    if (this->_blackBoxMode) {
       iterateBoundaryPartsSoA(f, useNewton3);
     }
   }
@@ -211,7 +210,7 @@ class VerletLists
     /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
-        if (_blackBoxMode) {
+        if (this->_blackBoxMode) {
           auto traversal =
               C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, true,
                            inner>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
@@ -225,7 +224,7 @@ class VerletLists
         break;
       }
       case BuildVerletListType::VerletSoA: {
-        if (_blackBoxMode) {
+        if (this->_blackBoxMode) {
           auto traversal =
               C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, true, true, inner>(
                   this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
@@ -582,9 +581,6 @@ class VerletLists
 
   /// specifies how the verlet lists are build
   BuildVerletListType _buildVerletListType;
-
-  /// specifies whether this verlet list container runs in blackbox mode
-  bool _blackBoxMode;
 };
 
 }  // namespace autopas

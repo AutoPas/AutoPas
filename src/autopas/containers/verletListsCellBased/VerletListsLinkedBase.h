@@ -38,23 +38,35 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param applicableTraversals all applicable traversals
+   * @param blackBoxMode Indicates whether the [blackbox mode](@ref md_BlackBoxMode) shall be used.
    */
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const unsigned int rebuildFrequency,
-                        const std::vector<TraversalOptions>& applicableTraversals)
+                        const std::vector<TraversalOptions>& applicableTraversals, bool blackBoxMode)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
         _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false) {}
+        _neighborListIsValid(false),
+        _blackBoxMode(blackBoxMode) {}
 
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticle
    * @note This function invalidates the neighbor lists.
    */
   void addParticle(Particle& p) override {
-    _neighborListIsValid = false;
+    if (not _blackBoxMode) {
+      _neighborListIsValid = false;
+    } else {
+      // If the blackBoxMode is used the lists become invalid if the particles are added to far into the domain.
+      if (autopas::utils::inBox(p.getR(),
+                                // cutoff includes skin already!
+                                ArrayMath::add(this->getBoxMin(), {this->_cutoff, this->_cutoff, this->_cutoff}),
+                                ArrayMath::sub(this->getBoxMax(), {this->_cutoff, this->_cutoff, this->_cutoff}))) {
+        _neighborListIsValid = false;
+      }
+    }
     _linkedCells.addParticle(p);
   }
 
@@ -63,7 +75,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @note This function invalidates the neighbor lists.
    */
   void addHaloParticle(Particle& haloParticle) override {
-    _neighborListIsValid = false;
+    if (not _blackBoxMode) {
+      _neighborListIsValid = false;
+    }
     _linkedCells.addHaloParticle(haloParticle);
   }
 
@@ -77,7 +91,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @note This function invalidates the neighbor lists.
    */
   void deleteHaloParticles() override {
-    _neighborListIsValid = false;
+    if (not _blackBoxMode) {
+      _neighborListIsValid = false;
+    }
     _linkedCells.deleteHaloParticles();
   }
 
@@ -219,6 +235,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
 
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid;
+
+  /// specifies whether this verlet list container runs in blackbox mode
+  bool _blackBoxMode;
 };
 
 }  // namespace autopas
