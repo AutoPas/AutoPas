@@ -156,12 +156,20 @@ class VerletLists
     typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell> validityCheckerFunctor(
         _aosNeighborLists, ((this->getCutoff() - this->_skin) * (this->getCutoff() - this->_skin)));
 
-    auto traversal =
-        C08Traversal<LinkedParticleCell,
-                     typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>, false,
-                     true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &validityCheckerFunctor);
-    this->_linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, &traversal, useNewton3);
-
+    if (this->_blackBoxMode) {
+      auto traversal =
+          C08Traversal<LinkedParticleCell,
+                       typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>, false,
+                       true, BlackBoxTraversalOption::inner>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &validityCheckerFunctor);
+      this->_linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, &traversal, useNewton3);
+    } else {
+      auto traversal =
+          C08Traversal<LinkedParticleCell,
+                       typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>, false,
+                       true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &validityCheckerFunctor);
+      this->_linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, &traversal, useNewton3);
+    }
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
