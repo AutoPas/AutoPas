@@ -65,7 +65,7 @@ class VerletLists
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
-   * @param blackBoxMode Indicates whether the blackbox mode shall be used. (See BlackBoxMode)
+   * @param blackBoxMode Indicates whether the [blackbox mode](@ref md_BlackBoxMode) shall be used.
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const unsigned int rebuildFrequency = 1,
@@ -385,6 +385,67 @@ class VerletLists
   }
 
   /**
+   * Loops over relevant parts of the boundary!
+   * @tparam LoopBody
+   * @param loopBody
+   */
+  template <class LoopBody>
+  void boundaryRelevantTraversal(const std::array<size_t, 3>& dims, LoopBody loopBody) {
+    /// @todo optimize OpenMP
+
+    // lower z
+    for (size_t z = 0; z < 3; ++z) {
+      for (size_t y = 0; y < dims[1]; ++y) {
+        for (size_t x = 0; x < dims[0]; ++x) {
+          loopBody(x, y, z);
+        }
+      }
+    }
+    // upper z
+    for (size_t z = dims[2] - 3; z < dims[2]; ++z) {
+      for (size_t y = 0; y < dims[1]; ++y) {
+        for (size_t x = 0; x < dims[0]; ++x) {
+          loopBody(x, y, z);
+        }
+      }
+    }
+
+    // lower y
+    for (size_t z = 3; z < dims[2] - 3; ++z) {
+      for (size_t y = 0; y < 3; ++y) {
+        for (size_t x = 0; x < dims[0]; ++x) {
+          loopBody(x, y, z);
+        }
+      }
+    }
+    // upper y
+    for (size_t z = 3; z < dims[2] - 3; ++z) {
+      for (size_t y = dims[1] - 3; y < dims[1]; ++y) {
+        for (size_t x = 0; x < dims[0]; ++x) {
+          loopBody(x, y, z);
+        }
+      }
+    }
+
+    // lower x
+    for (size_t z = 3; z < dims[2] - 3; ++z) {
+      for (size_t y = 3; y < dims[1] - 3; ++y) {
+        for (size_t x = 0; x < 3; ++x) {
+          loopBody(x, y, z);
+        }
+      }
+    }
+    // upper x
+    for (size_t z = 3; z < dims[2] - 3; ++z) {
+      for (size_t y = 3; y < dims[1] - 3; ++y) {
+        for (size_t x = dims[0] - 3; x < dims[0]; ++x) {
+          loopBody(x, y, z);
+        }
+      }
+    }
+  }
+
+  /**
    * Load the SoA's for all relevant cells of the boundary traversal using
    * functor.SoALoader(...)
    * @tparam ParticleFunctor The type of the functor.
@@ -392,10 +453,12 @@ class VerletLists
    */
   template <class ParticleFunctor>
   void loadBoundarySoA(ParticleFunctor* functor) {
-    /// @todo optimize only boundary parts, OpenMP
-    for (auto& cell : this->_linkedCells.getCells()) {
+    auto& cells = this->_linkedCells.getCells();
+    auto& dims = this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+    boundaryRelevantTraversal(dims, [&](size_t x, size_t y, size_t z) {
+      auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
       functor->SoALoader(cell, cell._particleSoABuffer, 0);
-    }
+    });
   }
 
   /**
@@ -406,10 +469,12 @@ class VerletLists
    */
   template <class ParticleFunctor>
   void extractBoundarySoA(ParticleFunctor* functor) {
-    /// @todo optimize only boundary parts, OpenMP
-    for (auto& cell : this->_linkedCells.getCells()) {
+    auto& cells = this->_linkedCells.getCells();
+    auto& dims = this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+    boundaryRelevantTraversal(dims, [&](size_t x, size_t y, size_t z) {
+      auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
       functor->SoAExtractor(cell, cell._particleSoABuffer, 0);
-    }
+    });
   }
 
   /**
