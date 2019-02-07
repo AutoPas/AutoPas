@@ -390,6 +390,7 @@ class VerletLists
   /**
    * Loops over relevant parts of the boundary.
    * @tparam LoopBody
+   * @param dims
    * @param loopBody
    */
   template <class LoopBody>
