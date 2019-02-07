@@ -64,7 +64,7 @@ inline void C08BasedTraversal<ParticleCell, useSoA, useNewton3, blackBoxTraversa
     // If there is no inner region, just do a normal traversal, as the traversals are supposedly the same.
     bool tooSmall = false;
     for (unsigned short d = 0; d < 3; ++d) {
-      tooSmall |= this->_cellsPerDimension[d] <= 6;
+      tooSmall |= this->_cellsPerDimension[d] < 6;
     }
     if (not tooSmall) {
       return c08TraversalOuter(loopBody);

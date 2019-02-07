@@ -480,10 +480,15 @@ class VerletLists
   void loadBoundarySoA(ParticleFunctor* functor) {
     auto& cells = this->_linkedCells.getCells();
     auto& dims = this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
-    boundaryRelevantTraversal(dims, [&](size_t x, size_t y, size_t z) {
-      auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
-      functor->SoALoader(cell, cell._particleSoABuffer, 0);
-    });
+    if (dims[0] < 6 or dims[1] < 6 or dims[2] < 6) {
+      std::for_each(cells.begin(), cells.end(),
+                    [&](auto& cell) { functor->SoALoader(cell, cell._particleSoABuffer, 0); });
+    } else {
+      boundaryRelevantTraversal(dims, [&](size_t x, size_t y, size_t z) {
+        auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
+        functor->SoALoader(cell, cell._particleSoABuffer, 0);
+      });
+    }
   }
 
   /**
