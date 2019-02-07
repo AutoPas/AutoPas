@@ -381,61 +381,82 @@ class VerletLists
   }
 
   /**
-   * Loops over relevant parts of the boundary!
+   * Loops over relevant parts of the boundary.
    * @tparam LoopBody
    * @param loopBody
    */
   template <class LoopBody>
   void boundaryRelevantTraversal(const std::array<size_t, 3>& dims, LoopBody loopBody) {
-    /// @todo optimize OpenMP
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel
+#endif
+    {
+      // lower z
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for collapse(3) nowait
+#endif
+      for (size_t z = 0; z < 3; ++z) {
+        for (size_t y = 0; y < dims[1]; ++y) {
+          for (size_t x = 0; x < dims[0]; ++x) {
+            loopBody(x, y, z);
+          }
+        }
+      }
+      // upper z
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for collapse(3) nowait
+#endif
+      for (size_t z = dims[2] - 3; z < dims[2]; ++z) {
+        for (size_t y = 0; y < dims[1]; ++y) {
+          for (size_t x = 0; x < dims[0]; ++x) {
+            loopBody(x, y, z);
+          }
+        }
+      }
 
-    // lower z
-    for (size_t z = 0; z < 3; ++z) {
-      for (size_t y = 0; y < dims[1]; ++y) {
-        for (size_t x = 0; x < dims[0]; ++x) {
-          loopBody(x, y, z);
+      // lower y
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for collapse(3) nowait
+#endif
+      for (size_t z = 3; z < dims[2] - 3; ++z) {
+        for (size_t y = 0; y < 3; ++y) {
+          for (size_t x = 0; x < dims[0]; ++x) {
+            loopBody(x, y, z);
+          }
         }
       }
-    }
-    // upper z
-    for (size_t z = dims[2] - 3; z < dims[2]; ++z) {
-      for (size_t y = 0; y < dims[1]; ++y) {
-        for (size_t x = 0; x < dims[0]; ++x) {
-          loopBody(x, y, z);
+      // upper y
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for collapse(3) nowait
+#endif
+      for (size_t z = 3; z < dims[2] - 3; ++z) {
+        for (size_t y = dims[1] - 3; y < dims[1]; ++y) {
+          for (size_t x = 0; x < dims[0]; ++x) {
+            loopBody(x, y, z);
+          }
         }
       }
-    }
 
-    // lower y
-    for (size_t z = 3; z < dims[2] - 3; ++z) {
-      for (size_t y = 0; y < 3; ++y) {
-        for (size_t x = 0; x < dims[0]; ++x) {
-          loopBody(x, y, z);
+      // lower x
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for collapse(3) nowait
+#endif
+      for (size_t z = 3; z < dims[2] - 3; ++z) {
+        for (size_t y = 3; y < dims[1] - 3; ++y) {
+          for (size_t x = 0; x < 3; ++x) {
+            loopBody(x, y, z);
+          }
         }
       }
-    }
-    // upper y
-    for (size_t z = 3; z < dims[2] - 3; ++z) {
-      for (size_t y = dims[1] - 3; y < dims[1]; ++y) {
-        for (size_t x = 0; x < dims[0]; ++x) {
-          loopBody(x, y, z);
-        }
-      }
-    }
-
-    // lower x
-    for (size_t z = 3; z < dims[2] - 3; ++z) {
-      for (size_t y = 3; y < dims[1] - 3; ++y) {
-        for (size_t x = 0; x < 3; ++x) {
-          loopBody(x, y, z);
-        }
-      }
-    }
-    // upper x
-    for (size_t z = 3; z < dims[2] - 3; ++z) {
-      for (size_t y = 3; y < dims[1] - 3; ++y) {
-        for (size_t x = dims[0] - 3; x < dims[0]; ++x) {
-          loopBody(x, y, z);
+      // upper x
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for collapse(3) nowait
+#endif
+      for (size_t z = 3; z < dims[2] - 3; ++z) {
+        for (size_t y = 3; y < dims[1] - 3; ++y) {
+          for (size_t x = dims[0] - 3; x < dims[0]; ++x) {
+            loopBody(x, y, z);
+          }
         }
       }
     }
