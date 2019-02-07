@@ -82,22 +82,18 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
     _verletLists->iteratePairwiseAoS(&flopsVerlet, &dummy, useNewton3);
   }
 
-  if(not useNewton3 and useSoA and (boxMax[0]==10. or not blackBoxMode)) {
+  if (not useNewton3 and useSoA and (boxMax[0] == 10. or not blackBoxMode)) {
     // special case if newton3 is disabled and soa are used: here linked cells will anyways partially use newton3 (for
     // the intra cell interactions), so linked cell kernel calls will be less than for verlet.
     EXPECT_LE(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls())
-              << "N3: " << (useNewton3 ? "true" : "false") << ", blackBox: " << (blackBoxMode ? "true" : "false")
-              << ", "
-              << (useSoA ? "soa" : "aos") << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2]
-              << "]";
+        << "N3: " << (useNewton3 ? "true" : "false") << ", blackBox: " << (blackBoxMode ? "true" : "false") << ", "
+        << (useSoA ? "soa" : "aos") << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2] << "]";
 
   } else {
     // normally the number of kernel calls should be exactly the same
     EXPECT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls())
-              << "N3: " << (useNewton3 ? "true" : "false") << ", blackBox: " << (blackBoxMode ? "true" : "false")
-              << ", "
-              << (useSoA ? "soa" : "aos") << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2]
-              << "]";
+        << "N3: " << (useNewton3 ? "true" : "false") << ", blackBox: " << (blackBoxMode ? "true" : "false") << ", "
+        << (useSoA ? "soa" : "aos") << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2] << "]";
   }
   // blackbox mode: the following line is only true, if the verlet lists do NOT use less cells than the linked cells
   // (for small scenarios), as the verlet lists fall back to linked cells.

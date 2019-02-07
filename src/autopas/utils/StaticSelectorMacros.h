@@ -12,12 +12,12 @@
  * @note The second Argument is variadic such that commas pose no problem.
  */
 #define AUTOPAS_WITH_STATIC_BOOL(theBool, ...) \
-  {                                           \
-    if (theBool) {                            \
-      constexpr bool c_##theBool = true;      \
-      __VA_ARGS__                             \
-    } else {                                  \
-      constexpr bool c_##theBool = false;     \
-      __VA_ARGS__                             \
-    }                                         \
+  {                                            \
+    if (theBool) {                             \
+      constexpr bool c_##theBool = true;       \
+      __VA_ARGS__                              \
+    } else {                                   \
+      constexpr bool c_##theBool = false;      \
+      __VA_ARGS__                              \
+    }                                          \
   }
