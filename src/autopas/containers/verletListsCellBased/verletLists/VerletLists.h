@@ -398,13 +398,14 @@ class VerletLists
 #pragma omp parallel
 #endif
     {
+      const size_t dim_x = dims[0], dim_y = dims[1], dim_z = dims[2];
       // lower z
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for collapse(3) nowait
 #endif
       for (size_t z = 0; z < 3; ++z) {
-        for (size_t y = 0; y < dims[1]; ++y) {
-          for (size_t x = 0; x < dims[0]; ++x) {
+        for (size_t y = 0; y < dim_y; ++y) {
+          for (size_t x = 0; x < dim_x; ++x) {
             loopBody(x, y, z);
           }
         }
@@ -413,9 +414,9 @@ class VerletLists
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for collapse(3) nowait
 #endif
-      for (size_t z = dims[2] - 3; z < dims[2]; ++z) {
-        for (size_t y = 0; y < dims[1]; ++y) {
-          for (size_t x = 0; x < dims[0]; ++x) {
+      for (size_t z = dim_z - 3; z < dim_z; ++z) {
+        for (size_t y = 0; y < dim_y; ++y) {
+          for (size_t x = 0; x < dim_x; ++x) {
             loopBody(x, y, z);
           }
         }
@@ -425,9 +426,9 @@ class VerletLists
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for collapse(3) nowait
 #endif
-      for (size_t z = 3; z < dims[2] - 3; ++z) {
+      for (size_t z = 3; z < dim_z - 3; ++z) {
         for (size_t y = 0; y < 3; ++y) {
-          for (size_t x = 0; x < dims[0]; ++x) {
+          for (size_t x = 0; x < dim_x; ++x) {
             loopBody(x, y, z);
           }
         }
@@ -436,9 +437,9 @@ class VerletLists
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for collapse(3) nowait
 #endif
-      for (size_t z = 3; z < dims[2] - 3; ++z) {
-        for (size_t y = dims[1] - 3; y < dims[1]; ++y) {
-          for (size_t x = 0; x < dims[0]; ++x) {
+      for (size_t z = 3; z < dim_z - 3; ++z) {
+        for (size_t y = dim_y - 3; y < dim_y; ++y) {
+          for (size_t x = 0; x < dim_x; ++x) {
             loopBody(x, y, z);
           }
         }
@@ -448,8 +449,8 @@ class VerletLists
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for collapse(3) nowait
 #endif
-      for (size_t z = 3; z < dims[2] - 3; ++z) {
-        for (size_t y = 3; y < dims[1] - 3; ++y) {
+      for (size_t z = 3; z < dim_z - 3; ++z) {
+        for (size_t y = 3; y < dim_y - 3; ++y) {
           for (size_t x = 0; x < 3; ++x) {
             loopBody(x, y, z);
           }
@@ -459,9 +460,9 @@ class VerletLists
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for collapse(3) nowait
 #endif
-      for (size_t z = 3; z < dims[2] - 3; ++z) {
-        for (size_t y = 3; y < dims[1] - 3; ++y) {
-          for (size_t x = dims[0] - 3; x < dims[0]; ++x) {
+      for (size_t z = 3; z < dim_z - 3; ++z) {
+        for (size_t y = 3; y < dim_y - 3; ++y) {
+          for (size_t x = dim_x - 3; x < dim_x; ++x) {
             loopBody(x, y, z);
           }
         }
