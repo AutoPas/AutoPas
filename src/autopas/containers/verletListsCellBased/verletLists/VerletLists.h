@@ -525,7 +525,6 @@ class VerletLists
       // set the map
       _aos2soaMap[&(*iter)] = i;
     }
-    i = 0;
     size_t accumulatedListSize = 0;
     for (auto& aosList : _aosNeighborLists) {
       accumulatedListSize += aosList.second.size();
@@ -537,7 +536,6 @@ class VerletLists
         _soaNeighborLists[i_id][j] = _aos2soaMap.at(neighbor);
         j++;
       }
-      i++;
     }
     AutoPasLog(debug,
                "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
