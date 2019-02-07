@@ -481,8 +481,13 @@ class VerletLists
     auto& cells = this->_linkedCells.getCells();
     auto& dims = this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
     if (dims[0] < 6 or dims[1] < 6 or dims[2] < 6) {
-      std::for_each(cells.begin(), cells.end(),
-                    [&](auto& cell) { functor->SoALoader(cell, cell._particleSoABuffer, 0); });
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for
+#endif
+      for (size_t i = 0; i < cells.size(); ++i) {
+        auto& cell = cells[i];
+        functor->SoALoader(cell, cell._particleSoABuffer, 0);
+      }
     } else {
       boundaryRelevantTraversal(dims, [&](size_t x, size_t y, size_t z) {
         auto& cell = cells[utils::ThreeDimensionalMapping::threeToOneD(x, y, z, dims)];
