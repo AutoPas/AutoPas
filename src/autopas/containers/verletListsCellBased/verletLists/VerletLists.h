@@ -366,22 +366,18 @@ class VerletLists
   }
 
   /**
-   * update the AoS id maps.
+   * Update the AoS id maps.
    * The Id Map is used to map the id of a particle to the actual particle
-   * @return
    */
-  size_t updateIdMapAoS() {
+  void updateIdMapAoS() {
     /// @todo: potentially adapt to _blackBox -- only consider inner parts -- not necessary, but might be useful
-    size_t i = 0;
     _aosNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you
     // want to parallelize it!
-    for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
+    for (auto iter = this->begin(); iter.isValid(); ++iter) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
     }
-
-    return i;
   }
 
   /**
@@ -514,6 +510,8 @@ class VerletLists
    */
   void generateSoAListFromAoSVerletLists() {
     /// @todo adapt to _blackBoxMode
+    /// @todo openmp parallelization?
+
     // resize the list to the size of the aos neighborlist
     _soaNeighborLists.resize(_aosNeighborLists.size());
     // clear the aos 2 soa map
