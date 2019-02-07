@@ -202,6 +202,25 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
     return _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
   }
 
+  /**
+   * Specifies whether the neighbor lists need to be rebuild.
+   * @param useNewton3 if newton3 is gonna be used to traverse
+   * @return True if the neighbor lists need to be rebuild, false otherwise.
+   */
+  bool needsRebuild(bool useNewton3) {
+    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
+    // if the neighbor list is NOT valid, we have not rebuild for _rebuildFrequency steps or useNewton3 changed
+    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency) or
+           (useNewton3 != _verletBuiltNewton3);
+  }
+
+  /**
+   * Specifies whether the neighbor lists need to be rebuild.
+   * @note Assumes that the newton3 type has NOT changed!
+   * @return True if the neighbor lists need to be rebuild, false otherwise.
+   */
+  bool needsRebuild() { return needsRebuild(_verletBuiltNewton3); }
+
  protected:
   /**
    * Updates a found particle within cellI to the values of particleI.
@@ -239,6 +258,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
 
   /// specifies whether this verlet list container runs in blackbox mode
   bool _blackBoxMode;
+
+  /// specifies if the current verlet list was built for newton3
+  bool _verletBuiltNewton3;
 };
 
 }  // namespace autopas

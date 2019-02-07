@@ -95,7 +95,7 @@ class VerletLists
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild it!
+    if (this->needsRebuild(useNewton3)) {  // if we need to rebuild the list, we should rebuild it!
       rebuildVerletLists(useNewton3);
     }
     this->iterateVerletListsAoS(f, useNewton3);
@@ -112,7 +112,7 @@ class VerletLists
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {
+    if (this->needsRebuild(useNewton3)) {
       rebuildVerletLists(useNewton3);
       generateSoAListFromAoSVerletLists();
     } else if (not _soaListIsValid) {
@@ -176,16 +176,6 @@ class VerletLists
     return TraversalSelector<ParticleCell>({0, 0, 0}, {dummyTraversal});
   }
 
-  /**
-   * specifies whether the neighbor lists need to be rebuild
-   * @return true if the neighbor lists need to be rebuild, false otherwise
-   */
-  bool needsRebuild() {
-    AutoPasLog(debug, "Neighborlist is valid: {}", this->_neighborListIsValid);
-    // if the neighbor list is NOT valid or we have not rebuilt since this->_rebuildFrequency steps
-    return (not this->_neighborListIsValid) or (this->_traversalsSinceLastRebuild >= this->_rebuildFrequency);
-  }
-
  protected:
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -193,6 +183,7 @@ class VerletLists
    * @param useNewton3
    */
   void rebuildVerletLists(bool useNewton3 = true) {
+    this->_verletBuiltNewton3 = useNewton3;
     this->updateVerletListsAoS(useNewton3);
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
