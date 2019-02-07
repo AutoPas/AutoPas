@@ -32,14 +32,16 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, useNewton3> traversalLJ(
-      _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  _linkedCells->iteratePairwiseAoS(&func, &traversalLJ);
-
   autopas::DummyTraversal<FMCell> dummy({0, 0, 0});  // The dummy doesn't need correct size of cellblock!
   if (useSoA) {
+    autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, true, useNewton3> traversalLJ(
+        _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
+    _linkedCells->iteratePairwiseSoA(&func, &traversalLJ);
     _verletLists->iteratePairwiseSoA(&func, &dummy, useNewton3);
   } else {
+    autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, useNewton3> traversalLJ(
+        _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
+    _linkedCells->iteratePairwiseAoS(&func, &traversalLJ);
     _verletLists->iteratePairwiseAoS(&func, &dummy, useNewton3);
   }
 
@@ -68,20 +70,35 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
 
-  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, useNewton3> traversalFLOPS(
-      _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
-  _linkedCells->iteratePairwiseAoS(&flopsLinked, &traversalFLOPS);
-
   if (useSoA) {
+    autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, true, useNewton3> traversalFLOPS(
+        _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+    _linkedCells->iteratePairwiseSoA(&flopsLinked, &traversalFLOPS);
     _verletLists->iteratePairwiseSoA(&flopsVerlet, &dummy, useNewton3);
   } else {
+    autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, useNewton3> traversalFLOPS(
+        _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+    _linkedCells->iteratePairwiseAoS(&flopsLinked, &traversalFLOPS);
     _verletLists->iteratePairwiseAoS(&flopsVerlet, &dummy, useNewton3);
   }
 
-  EXPECT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls())
-      << "N3: " << (useNewton3 ? "true" : "false") << ", blackBox: " << (blackBoxMode ? "true" : "false") << ", "
-      << (useSoA ? "soa" : "aos") << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2] << "]";
+  if(not useNewton3 and useSoA and (boxMax[0]==10. or not blackBoxMode)) {
+    // special case if newton3 is disabled and soa are used: here linked cells will anyways partially use newton3 (for
+    // the intra cell interactions), so linked cell kernel calls will be less than for verlet.
+    EXPECT_LE(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls())
+              << "N3: " << (useNewton3 ? "true" : "false") << ", blackBox: " << (blackBoxMode ? "true" : "false")
+              << ", "
+              << (useSoA ? "soa" : "aos") << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2]
+              << "]";
 
+  } else {
+    // normally the number of kernel calls should be exactly the same
+    EXPECT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls())
+              << "N3: " << (useNewton3 ? "true" : "false") << ", blackBox: " << (blackBoxMode ? "true" : "false")
+              << ", "
+              << (useSoA ? "soa" : "aos") << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2]
+              << "]";
+  }
   // blackbox mode: the following line is only true, if the verlet lists do NOT use less cells than the linked cells
   // (for small scenarios), as the verlet lists fall back to linked cells.
   EXPECT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());

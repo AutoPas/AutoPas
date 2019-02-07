@@ -144,7 +144,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    for (unsigned int i = iFrom; i < iTo; ++i) {
+    for (unsigned long i = iFrom; i < iTo; ++i) {
       const size_t listSizeI = neighborList[i].size();
       const size_t *const __restrict__ currentList = neighborList[i].data();
 
@@ -167,7 +167,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       // if the size of the verlet list is larger than the given size vecsize,
       // we will use a vectorized version.
       if (listSizeI >= vecsize) {
-        alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr;
+        alignas(64) std::array<double, vecsize> xtmp{}, ytmp{}, ztmp{}, xArr{}, yArr{}, zArr{};
         // broadcast of the position of particle i
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
           xtmp[tmpj] = xptr[i];
@@ -268,8 +268,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
                             })
 
   /**
-   * empty SoAExtractor.
-   * nothing to be done yet.
+   * Empty SoAExtractor.
+   * Nothing to be done yet.
    */
   AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , )
 
