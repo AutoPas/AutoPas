@@ -44,6 +44,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
     _linkedCells->iteratePairwiseAoS(&func, &traversalLJ);
     _verletLists->iteratePairwiseAoS(&func, &dummy, useNewton3);
   }
+  EXPECT_TRUE(_verletLists->checkNeighborListsAreValid(useNewton3));
 
   auto itDirect = _verletLists->begin();
   auto itLinked = _linkedCells->begin();
