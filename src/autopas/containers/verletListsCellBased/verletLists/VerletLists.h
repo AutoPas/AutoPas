@@ -11,6 +11,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/StaticSelectorMacros.h"
 
 namespace autopas {
 
@@ -200,8 +201,7 @@ class VerletLists
 
   /**
    * update the verlet lists for AoS usage
-   * @param useNewton3 CURRENTLY NOT USED!
-   * @todo Build verlet lists according to newton 3.
+   * @param useNewton3 Specifies whether newton 3 should be used or not.
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
@@ -211,29 +211,37 @@ class VerletLists
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
         if (this->_blackBoxMode) {
-          auto traversal =
-              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, true,
-                           inner>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
+            auto traversal =
+                C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false,
+                             c_useNewton3, inner>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+            this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          })
         } else {
-          auto traversal =
-              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, true>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
+            auto traversal =
+                C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false,
+                             c_useNewton3>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+            this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          })
         }
         break;
       }
       case BuildVerletListType::VerletSoA: {
         if (this->_blackBoxMode) {
-          auto traversal =
-              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, true, true, inner>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseSoA(&f, &traversal);
+          AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
+            auto traversal =
+                C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, true,
+                             c_useNewton3, inner>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+            this->_linkedCells.iteratePairwiseSoA(&f, &traversal);
+          })
         } else {
-          auto traversal =
-              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, true, true>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseSoA(&f, &traversal);
+          AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
+            auto traversal =
+                C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, true,
+                             c_useNewton3>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+            this->_linkedCells.iteratePairwiseSoA(&f, &traversal);
+          })
         }
         break;
       }

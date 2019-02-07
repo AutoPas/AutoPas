@@ -25,6 +25,7 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
   double getCutoff() const { return .9; }
 
  protected:
+  template <bool useNewton3>
   void test(unsigned long numMolecules, double rel_err_tolerance, std::array<double, 3> boxMax, bool useSoA,
             bool blackBoxMode);
 

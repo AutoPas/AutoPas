@@ -204,7 +204,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
             const double dr2 = drx2 + dry2 + drz2;
 
-            const double mask = (dr2 <= _cutoffSquare) ? 1. : 0.;
+            const unsigned long mask = (dr2 <= _cutoffSquare) ? 1 : 0;
 
             kernelCallsAcc += mask;
           }

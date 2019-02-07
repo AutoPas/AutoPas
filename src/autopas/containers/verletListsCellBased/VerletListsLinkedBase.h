@@ -60,10 +60,11 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
       _neighborListIsValid = false;
     } else {
       // If the blackBoxMode is used the lists become invalid if the particles are added to far into the domain.
+      double cutoff = this->getCutoff();
       if (autopas::utils::inBox(p.getR(),
                                 // cutoff includes skin already!
-                                ArrayMath::add(this->getBoxMin(), {this->_cutoff, this->_cutoff, this->_cutoff}),
-                                ArrayMath::sub(this->getBoxMax(), {this->_cutoff, this->_cutoff, this->_cutoff}))) {
+                                ArrayMath::add(this->getBoxMin(), {cutoff, cutoff, cutoff}),
+                                ArrayMath::sub(this->getBoxMax(), {cutoff, cutoff, cutoff}))) {
         _neighborListIsValid = false;
       }
     }
