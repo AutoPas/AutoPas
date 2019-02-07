@@ -40,10 +40,11 @@ class ContainerSelector {
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainerOptions Vector of container types the selector can choose from.
    * @param allowedTraversalOptions Vector of traversals the selector can choose from.
+   * @param blackBoxMode Indicates whether the [blackbox mode](@ref md_BlackBoxMode) shall be used.
    */
   ContainerSelector(std::array<double, 3> &boxMin, std::array<double, 3> &boxMax, double cutoff, double verletSkin,
                     unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
-                    std::vector<TraversalOptions> allowedTraversalOptions)
+                    std::vector<TraversalOptions> allowedTraversalOptions, bool blackBoxMode)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
@@ -51,7 +52,8 @@ class ContainerSelector {
         _verletRebuildFrequency(verletRebuildFrequency),
         _allowedContainerOptions(std::move(allowedContainerOptions)),
         _allowedTraversalOptions(std::move(allowedTraversalOptions)),
-        _optimalContainer(nullptr) {
+        _optimalContainer(nullptr),
+        _blackBoxMode(blackBoxMode) {
     // @FIXME This is a workaround because this container does not yet use traversals like it should
     _allowedTraversalOptions.push_back(TraversalOptions::dummyTraversal);
   }
@@ -100,6 +102,7 @@ class ContainerSelector {
   std::vector<TraversalOptions> _allowedTraversalOptions;
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _optimalContainer;
   std::vector<std::pair<ContainerOptions, long>> _containerTimes;
+  bool _blackBoxMode;
 };
 
 template <class Particle, class ParticleCell>
@@ -119,7 +122,8 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOptions co
     case verletLists: {
       // @todo determine verletSkin and verletRebuildFrequency via tuning
       container =
-          std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
+          std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency,
+                                                  VerletLists<Particle>::BuildVerletListType::VerletSoA, _blackBoxMode);
       break;
     }
     case verletListsCells: {

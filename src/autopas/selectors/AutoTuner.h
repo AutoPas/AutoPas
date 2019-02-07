@@ -53,15 +53,17 @@ class AutoTuner {
    * @param traversalSelectorStrategy Strategy for the traversal selector.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
+   * @param blackBoxMode Indicates whether the [blackbox mode](@ref md_BlackBoxMode) shall be used.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency, std::vector<ContainerOptions> allowedContainerOptions,
             std::vector<TraversalOptions> allowedTraversalOptions, SelectorStrategy containerSelectorStrategy,
-            SelectorStrategy traversalSelectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+            SelectorStrategy traversalSelectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
+            bool blackBoxMode)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainerOptions,
-                           allowedTraversalOptions),
+                           allowedTraversalOptions, blackBoxMode),
         _allowedTraversalOptions(allowedTraversalOptions),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),

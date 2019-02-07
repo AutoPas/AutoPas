@@ -19,11 +19,11 @@ TEST_F(ContainerSelectorTest, testGetOptimalContainerOneOption) {
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
   autopas::ContainerSelector<Particle, FPCell> containerSelectorDir(
-      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, optionVectorDir, traversals);
-  autopas::ContainerSelector<Particle, FPCell> containerSelectorLC(bBoxMin, bBoxMax, cutoff, verletSkin,
-                                                                   verletRebuildFrequency, optionVectorLC, traversals);
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, optionVectorDir, traversals, false);
+  autopas::ContainerSelector<Particle, FPCell> containerSelectorLC(
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, optionVectorLC, traversals, false);
   autopas::ContainerSelector<Particle, FPCell> containerSelectorVerlet(
-      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, optionVectorVerlet, traversals);
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, optionVectorVerlet, traversals, false);
 
   auto containerDir = containerSelectorDir.getOptimalContainer();
   auto containerLC = containerSelectorLC.getOptimalContainer();
@@ -45,7 +45,7 @@ TEST_F(ContainerSelectorTest, testNextContainer) {
                                                              autopas::ContainerOptions::linkedCells};
   std::vector<autopas::TraversalOptions> traversalOptions = {autopas::TraversalOptions::c08};
   autopas::ContainerSelector<Particle, FPCell> containerSelector(
-      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, containerOptions, traversalOptions);
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, containerOptions, traversalOptions, false);
 
   auto container = containerSelector.selectNextContainer();
   EXPECT_EQ(autopas::ContainerOptions::verletLists, container->getContainerType());
@@ -74,7 +74,7 @@ TEST_F(ContainerSelectorTest, testSelectOptimalContainer) {
                                                              autopas::ContainerOptions::linkedCells};
   std::vector<autopas::TraversalOptions> traversalOptions = {autopas::TraversalOptions::c08};
   autopas::ContainerSelector<Particle, FPCell> containerSelector(
-      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, containerOptions, traversalOptions);
+      bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency, containerOptions, traversalOptions, false);
 
   EXPECT_THROW(containerSelector.selectOptimalContainer(), std::exception);
 

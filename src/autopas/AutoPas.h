@@ -76,6 +76,7 @@ class AutoPas {
    * @param traversalSelectorStrategy Strategy for the traversal selector.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param numSamples Number of samples the tuner should collect for each combination.
+   * @param blackBoxMode Indicates whether the [blackbox mode](@ref md_BlackBoxMode) shall be used.
    */
   void init(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency,
@@ -83,10 +84,10 @@ class AutoPas {
             const std::vector<autopas::TraversalOptions> &allowedTraversals = autopas::allTraversalOptions,
             SelectorStrategy containerSelectorStrategy = SelectorStrategy::fastestAbs,
             SelectorStrategy traversalSelectorStrategy = SelectorStrategy::fastestAbs,
-            unsigned int tuningInterval = 100, unsigned int numSamples = 3) {
+            unsigned int tuningInterval = 100, unsigned int numSamples = 3, bool blackBoxMode = false) {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainers, allowedTraversals,
-        containerSelectorStrategy, traversalSelectorStrategy, tuningInterval, numSamples);
+        containerSelectorStrategy, traversalSelectorStrategy, tuningInterval, numSamples, blackBoxMode);
   }
 
   /**
