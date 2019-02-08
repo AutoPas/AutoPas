@@ -35,7 +35,7 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * C01 traversals are only usable if useNewton3 is disabled.
    * @return
    */
-  bool isApplicable() override { return autopas_get_max_threads() == 1 or not useNewton3; }
+  bool isApplicable() override { return not useNewton3; }
 
  protected:
   /**
