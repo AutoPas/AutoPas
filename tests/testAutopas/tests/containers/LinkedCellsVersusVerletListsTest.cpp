@@ -99,7 +99,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
 
   // now test what happens if we remove halo and boundary molecules.
   std::vector<Molecule> haloMolecules, boundaryMolecules;
-  for(auto iter = _verletLists->begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter){
+  for (auto iter = _verletLists->begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
     haloMolecules.push_back(*iter);
   }
   _verletLists->deleteHaloParticles();
@@ -133,7 +133,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   EXPECT_EQ(_verletLists->checkNeighborListsAreValid(), blackBoxMode);
 
   // add boundary molecules again.
-  for(auto& m : boundaryMolecules){
+  for (auto &m : boundaryMolecules) {
     _verletLists->addParticle(m);
   }
 
@@ -141,7 +141,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   EXPECT_EQ(_verletLists->checkNeighborListsAreValid(), blackBoxMode);
 
   // add halo molecules again.
-  for(auto& m : haloMolecules){
+  for (auto &m : haloMolecules) {
     _verletLists->addHaloParticle(m);
   }
 
