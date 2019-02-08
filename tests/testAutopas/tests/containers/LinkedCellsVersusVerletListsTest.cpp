@@ -13,10 +13,10 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
                                             std::array<double, 3> boxMax, bool useSoA, bool blackBoxMode) {
   _linkedCells = std::make_unique<lctype>(getBoxMin(), boxMax, getCutoff());
   if (blackBoxMode) {
-    _verletLists = std::make_unique<vltype>(getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 2,
+    _verletLists = std::make_unique<vltype>(getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 4,
                                             vltype::BuildVerletListType::VerletSoA, /*blackBoxMode*/ true);
   } else {
-    _verletLists = std::make_unique<vltype>(getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 2);
+    _verletLists = std::make_unique<vltype>(getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 4);
   }
   RandomGenerator::fillWithParticles(*_verletLists, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
   // now fill second container with the molecules from the first one, because
@@ -45,9 +45,6 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
     _verletLists->iteratePairwiseAoS(&func, &dummy, useNewton3);
   }
   EXPECT_TRUE(_verletLists->checkNeighborListsAreValid(useNewton3));
-
-  auto itDirect = _verletLists->begin();
-  auto itLinked = _linkedCells->begin();
 
   std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, the
@@ -99,6 +96,85 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   // blackbox mode: the following line is only true, if the verlet lists do NOT use less cells than the linked cells
   // (for small scenarios), as the verlet lists fall back to linked cells.
   EXPECT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());
+
+  // now test what happens if we remove halo and boundary molecules.
+  std::vector<Molecule> haloMolecules, boundaryMolecules;
+  for(auto iter = _verletLists->begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter){
+    haloMolecules.push_back(*iter);
+  }
+  _verletLists->deleteHaloParticles();
+
+  EXPECT_NE(_verletLists->needsRebuild(), blackBoxMode);
+  EXPECT_EQ(_verletLists->checkNeighborListsAreValid(), blackBoxMode);
+
+  double innermin = _verletLists->getCutoff();
+  double innermax = _verletLists->getBoxMax()[0] - _verletLists->getCutoff();
+  double bmin = _verletLists->getBoxMin()[0];
+  double bmax = _verletLists->getBoxMax()[0];
+
+  // delete boundary molecules! and save them.
+  for (size_t dim = 0; dim < 3; ++dim) {
+    for (auto isLow : {false, true}) {
+      std::array<double, 3> min = {bmin, bmin, bmin};
+      std::array<double, 3> max = {bmax, bmax, bmax};
+      if (isLow) {
+        max[dim] = innermin;
+      } else {
+        min[dim] = innermax;
+      }
+      for (auto iter = _verletLists->getRegionIterator(min, max); iter.isValid(); ++iter) {
+        boundaryMolecules.push_back(*iter);
+        iter.deleteCurrentParticle();
+      }
+    }
+  }
+
+  EXPECT_NE(_verletLists->needsRebuild(), blackBoxMode);
+  EXPECT_EQ(_verletLists->checkNeighborListsAreValid(), blackBoxMode);
+
+  // add boundary molecules again.
+  for(auto& m : boundaryMolecules){
+    _verletLists->addParticle(m);
+  }
+
+  EXPECT_NE(_verletLists->needsRebuild(), blackBoxMode);
+  EXPECT_EQ(_verletLists->checkNeighborListsAreValid(), blackBoxMode);
+
+  // add halo molecules again.
+  for(auto& m : haloMolecules){
+    _verletLists->addHaloParticle(m);
+  }
+
+  EXPECT_NE(_verletLists->needsRebuild(), blackBoxMode);
+  EXPECT_EQ(_verletLists->checkNeighborListsAreValid(), blackBoxMode);
+
+  if (useSoA) {
+    autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, true, useNewton3> traversalLJ(
+        _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
+    _linkedCells->iteratePairwiseSoA(&func, &traversalLJ);
+    _verletLists->iteratePairwiseSoA(&func, &dummy, useNewton3);
+  } else {
+    autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, useNewton3> traversalLJ(
+        _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
+    _linkedCells->iteratePairwiseAoS(&func, &traversalLJ);
+    _verletLists->iteratePairwiseAoS(&func, &dummy, useNewton3);
+  }
+  EXPECT_TRUE(_verletLists->checkNeighborListsAreValid(useNewton3));
+
+  std::vector<std::array<double, 3>> forcesVerlet2(numMolecules);
+  // get and sort by id, the
+  for (auto it = _verletLists->begin(); it.isValid(); ++it) {
+    autopas::MoleculeLJ &m = *it;
+    forcesVerlet2.at(m.getID()) = m.getF();
+  }
+
+  for (unsigned long i = 0; i < numMolecules; ++i) {
+    for (int d = 0; d < 3; ++d) {
+      double f1 = forcesVerlet2[i][d] * .5;
+      double f2 = forcesLinked[i][d];
+      EXPECT_NEAR(f1, f2, std::fabs(f1 * rel_err_tolerance));
+    }
+  }
 }
 
 TEST_F(LinkedCellsVersusVerletListsTest, test100) {
@@ -128,7 +204,7 @@ TEST_F(LinkedCellsVersusVerletListsTest, test1000) {
 
   for (auto blackBox : {true, false}) {
     for (auto useSoA : {true, false}) {
-      for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
+      for (auto boxMax : {std::array<double, 3>{10., 10., 10.}}) {
         test<true>(numMolecules, rel_err_tolerance, boxMax, useSoA, blackBox);
         test<false>(numMolecules, rel_err_tolerance, boxMax, useSoA, blackBox);
       }
@@ -145,7 +221,7 @@ TEST_F(LinkedCellsVersusVerletListsTest, test2000) {
   double rel_err_tolerance = 1e-10;
   for (auto blackBox : {true, false}) {
     for (auto useSoA : {true, false}) {
-      for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
+      for (auto boxMax : {std::array<double, 3>{10., 10., 10.}}) {
         test<true>(numMolecules, rel_err_tolerance, boxMax, useSoA, blackBox);
         test<false>(numMolecules, rel_err_tolerance, boxMax, useSoA, blackBox);
       }
