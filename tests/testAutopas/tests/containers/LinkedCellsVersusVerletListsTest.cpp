@@ -149,14 +149,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   EXPECT_EQ(_verletLists->checkNeighborListsAreValid(), blackBoxMode);
 
   if (useSoA) {
-    autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, true, useNewton3> traversalLJ(
-        _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
-    _linkedCells->iteratePairwiseSoA(&func, &traversalLJ);
     _verletLists->iteratePairwiseSoA(&func, &dummy, useNewton3);
   } else {
-    autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, useNewton3> traversalLJ(
-        _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
-    _linkedCells->iteratePairwiseAoS(&func, &traversalLJ);
     _verletLists->iteratePairwiseAoS(&func, &dummy, useNewton3);
   }
   EXPECT_TRUE(_verletLists->checkNeighborListsAreValid(useNewton3));
