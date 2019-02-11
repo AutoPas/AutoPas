@@ -6,6 +6,7 @@
  */
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
 #include <iostream>
+#include "autopas/utils/CudaExceptionHandler.h"
 
 __constant__ constants global_constants;
 
@@ -235,17 +236,20 @@ void AoSFunctorNoN3Pair(int N, int M, double* particles1, double* particles2) {
 
 void AoSFunctorNoN3Wrapper(int N, double* particles) {
 	AoSFunctorNoN3<32> <<<N / 32 + 1, 32>>>(N, particles);
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
 void AoSFunctorNoN3PairWrapper(int N, int M, double* particles1,
 		double* particles2) {
 	AoSFunctorNoN3Pair<32> <<<N / 32 + 1, 32>>>(N, M, particles1, particles2);
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
 void SoAFunctorNoN3Wrapper(int N, double* posX, double* posY, double* posZ,
 		double* forceX, double* forceY, double* forceZ) {
 	SoAFunctorNoN3<32> <<<N / 32 + 1, 32>>>(N, posX, posY, posZ, forceX, forceY,
 			forceZ);
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
 void SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY, double* posZ,
@@ -253,6 +257,7 @@ void SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY, double* posZ,
 		double* posY2, double* posZ2) {
 	SoAFunctorNoN3Pair<32> <<<N / 32 + 1, 32>>>(N, posX, posY, posZ, forceX,
 			forceY, forceZ, M, posX2, posY2, posZ2);
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
 void loadConstants(double cutoffsquare, double epsilon24, double sigmasquare) {

@@ -24,9 +24,10 @@ namespace autopas {
  * @tparam useNewton3
  * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
  * cell1)
+ * @tparam useCuda
  */
 template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3 = true,
-          bool bidirectional = true>
+          bool bidirectional = true, bool useCuda = false>
 class CellFunctor {
  public:
   /**
@@ -86,20 +87,27 @@ class CellFunctor {
 
   void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2);
 
+  void processCellPairCudaNoN3(ParticleCell &cell1, ParticleCell &cell2);
+
   void processCellSoAN3(ParticleCell &cell);
 
   void processCellSoANoN3(ParticleCell &cell);
 
+  void processCellCudaNoN3(ParticleCell &cell);
+
   ParticleFunctor *_functor;
 };
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCell(
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional, useCuda>::processCell(
     ParticleCell &cell) {
   if (cell.numParticles() == 0) {
     return;
   }
-  if (useSoA) {
+  if (useCuda) {
+    processCellCudaNoN3(cell);
+  } else if (useSoA) {
     if (useNewton3) {
       processCellSoAN3(cell);
     } else {
@@ -114,13 +122,16 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellPair(
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional, useCuda>::processCellPair(
     ParticleCell &cell1, ParticleCell &cell2) {
   if (cell1.numParticles() == 0 || cell2.numParticles() == 0) {
     return;
   }
-  if (useSoA) {
+  if (useCuda) {
+    processCellPairCudaNoN3(cell1, cell2);
+  } else if (useSoA) {
     if (useNewton3) {
       processCellPairSoAN3(cell1, cell2);
     } else {
@@ -135,8 +146,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellAoSN3(
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional, useCuda>::processCellAoSN3(
     ParticleCell &cell) {
   AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell, {
     for (; outer.isValid(); ++outer) {
@@ -153,9 +165,10 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
   })
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellAoSNoN3(
-    ParticleCell &cell) {
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional,
+                 useCuda>::processCellAoSNoN3(ParticleCell &cell) {
   AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell, {
     auto innerStart = outer;
     for (; outer.isValid(); ++outer) {
@@ -180,9 +193,10 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
   })
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellPairAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2) {
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional,
+                 useCuda>::processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2) {
   AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell1, {
     AUTOPAS_WITH_STATIC_CELL_ITER(innerStart, cell2, {
       // body
@@ -199,9 +213,10 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
   });
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellPairAoSNoN3(
-    ParticleCell &cell1, ParticleCell &cell2) {
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional,
+                 useCuda>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2) {
   AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell1, {
     AUTOPAS_WITH_STATIC_CELL_ITER(innerStart, cell2, {
       // body
@@ -219,28 +234,47 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
   });
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellPairSoAN3(
-    ParticleCell &cell1, ParticleCell &cell2) {
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional,
+                 useCuda>::processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellPairSoANoN3(
-    ParticleCell &cell1, ParticleCell &cell2) {
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional,
+                 useCuda>::processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
   if (bidirectional) _functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellSoAN3(
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional, useCuda>::processCellSoAN3(
     ParticleCell &cell) {
   _functor->SoAFunctor(cell._particleSoABuffer, true);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellSoANoN3(
-    ParticleCell &cell) {
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional,
+                 useCuda>::processCellSoANoN3(ParticleCell &cell) {
   _functor->SoAFunctor(cell._particleSoABuffer, false);  // the functor has to enable this...
+}
+
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional,
+                 useCuda>::processCellPairCudaNoN3(ParticleCell &cell1, ParticleCell &cell2) {
+  _functor->CudaFunctorNoN3(cell1._particleSoABufferDevice, cell2._particleSoABufferDevice);
+  if (bidirectional) _functor->CudaFunctorNoN3(cell2._particleSoABufferDevice, cell1._particleSoABufferDevice);
+}
+
+template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional,
+          bool useCuda>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional,
+                 useCuda>::processCellCudaNoN3(ParticleCell &cell) {
+  _functor->CudaFunctorNoN3(cell._particleSoABufferDevice);
 }
 }  // namespace autopas

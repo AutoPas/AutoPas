@@ -28,9 +28,14 @@ target_compile_definitions(autopas
         $<$<BOOL:${OPENMP}>:AUTOPAS_OPENMP>
         $<$<BOOL:${ENABLE_CUDA}>:AUTOPAS_CUDA>
         )
+        
+if(ENABLE_CUDA)
 target_compile_options(autopas 
         PUBLIC 
         $<$<COMPILE_LANGUAGE:CUDA>:-gencode arch=compute_61,code=sm_61>
         )
+        
+TARGET_INCLUDE_DIRECTORIES(autopas SYSTEM PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+endif()
 
 TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC ../.)

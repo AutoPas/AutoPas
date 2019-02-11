@@ -9,7 +9,6 @@
 
 #include "cuda_runtime.h"
 
-
 struct constants{
   double cutoffsquare;
   double epsilon24;

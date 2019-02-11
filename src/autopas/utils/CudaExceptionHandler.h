@@ -18,15 +18,24 @@ class CudaExceptionHandler {
  public:
   CudaExceptionHandler() = delete;
 
-  static void checkErrorCode(cudaError_t error) {
 #if defined(AUTOPAS_CUDA)
-    if (error == 0) return;
+  static void checkErrorCode(cudaError_t error) {
+    if (error == cudaSuccess) return;
     std::string errorname = std::string(cudaGetErrorName(error));
     std::string errorstring = std::string(cudaGetErrorString(error));
-#endif
 
     autopas::utils::ExceptionHandler::exception(std::string("cuda error") + errorname);
   }
+
+  static void checkLastCudaCall() {
+    cudaError error = cudaGetLastError();
+    if (error == cudaSuccess) return;
+    std::string errorname = std::string(cudaGetErrorName(error));
+    std::string errorstring = std::string(cudaGetErrorString(error));
+
+    autopas::utils::ExceptionHandler::exception(std::string("cuda error") + errorname);
+  }
+#endif
 };
 
 }  // namespace utils

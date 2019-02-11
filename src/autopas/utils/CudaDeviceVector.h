@@ -6,16 +6,18 @@
 
 #pragma once
 
-#if defined(AUTOPAS_CUDA)
-
 #include "autopas/utils/CudaExceptionHandler.h"
+#include "autopas/utils/ExceptionHandler.h"
+#if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
+#endif
 
 namespace autopas {
 namespace utils {
 
 template <typename T>
 class CudaDeviceVector {
+#if defined(AUTOPAS_CUDA)
  public:
   CudaDeviceVector() : CudaDeviceVector(32) {}
 
@@ -56,9 +58,12 @@ class CudaDeviceVector {
   size_t _size;
 
   T* _data;
+
+#else
+ public:
+  CudaDeviceVector() { utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!"); }
+#endif
 };
 
 }  // namespace utils
 }  // namespace autopas
-
-#endif

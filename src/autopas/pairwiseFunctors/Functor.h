@@ -8,6 +8,7 @@
 #pragma once
 
 #include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoA.h"
 
@@ -99,6 +100,22 @@ class Functor {
    */
   virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
+  }
+
+  virtual void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+    utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3: not yet implemented");
+  }
+  virtual void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
+                               CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2) {
+    utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3(two cells): not yet implemented");
+  }
+  virtual void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
+                               CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+    utils::ExceptionHandler::exception("Functor::CudaDeviceSoALoader: not yet implemented");
+  }
+  virtual void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
+                                  CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+    utils::ExceptionHandler::exception("Functor::CudaDeviceSoAExtractor: not yet implemented");
   }
 
   /**
