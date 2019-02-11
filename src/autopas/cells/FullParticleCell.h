@@ -9,6 +9,7 @@
 #include <vector>
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
+#include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -86,6 +87,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   SoA<SoAArraysType> _particleSoABuffer;
 
+#if defined(AUTOPAS_CUDA)
   /**
    * device AoS Buffer
    */
@@ -94,8 +96,8 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * device particle SoABuffer
    */
-  typename Particle::SoADevice _particleSoABufferDevice;
-
+  CudaSoA<typename Particle::CudaDeviceArraysType> _particleSoABufferDevice;
+#endif
   /**
    * type of the internal iterator
    */

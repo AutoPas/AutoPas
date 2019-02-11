@@ -13,6 +13,9 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
+#if defined(AUTOPAS_CUDA)
+#include "autopas/utils/CudaSoAType.h"
+#endif
 
 namespace autopas {
 
@@ -137,9 +140,13 @@ class Particle {
    */
   typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
+#if defined(AUTOPAS_CUDA)
   /*
    * The Storage Arrays for Cuda
    */
+  typedef autopas::utils::CudaSoAType<size_t, double, double, double, double, double, double>::Type
+      CudaDeviceArraysType;
+
   struct SoADevice {
     size_t *ids;
     double *posX;
@@ -149,6 +156,7 @@ class Particle {
     double *forceY;
     double *forceZ;
   };
+#endif
 
  protected:
   /**

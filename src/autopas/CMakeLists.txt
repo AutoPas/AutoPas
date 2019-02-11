@@ -26,6 +26,11 @@ target_link_libraries(autopas
 target_compile_definitions(autopas
         PUBLIC
         $<$<BOOL:${OPENMP}>:AUTOPAS_OPENMP>
+        $<$<BOOL:${ENABLE_CUDA}>:AUTOPAS_CUDA>
+        )
+target_compile_options(autopas 
+        PUBLIC 
+        $<$<COMPILE_LANGUAGE:CUDA>:-gencode arch=compute_61,code=sm_61>
         )
 
 TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC ../.)

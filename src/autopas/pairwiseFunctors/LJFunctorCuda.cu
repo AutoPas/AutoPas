@@ -35,6 +35,47 @@ double3 bodyBodyF(double3 i, double3 j, double3 fi) {
 	return fi;
 }
 
+__device__
+double3 bodyBodyFcalcGlobals(double3 i, double3 j, double3 fi, double4 globals) {
+	double drx = i.x - j.x;
+	double dry = i.y - j.y;
+	double drz = i.z - j.z;
+
+	double dr2 = drx * drx + dry * dry + drz * drz;
+
+	if (dr2 > global_constants.cutoffsquare | dr2 == 0.0) {
+		return fi;
+	}
+
+	double invdr2 = 1. / dr2;
+	double lj6 = global_constants.sigmasquare * invdr2;
+	lj6 = lj6 * lj6 * lj6;
+	double lj12 = lj6 * lj6;
+	double lj12m6 = lj12 - lj6;
+	double fac = global_constants.epsilon24 * (lj12 + lj12m6) * invdr2;
+
+    const double fx = drx * fac;
+    const double fy = dry * fac;
+    const double fz = drz * fac;
+
+    const double virialx = drx * fx;
+    const double virialy = dry * fy;
+    const double virialz = drz * fz;
+    const double upot = (global_constants.epsilon24 * lj12m6 + global_constants.shift6);
+
+    // these calculations assume that this functor is not called for halo cells!
+    globals.w += upot;
+    globals.x += virialx;
+    globals.y += virialy;
+    globals.z += virialz;
+
+	fi.x += fx;
+	fi.y += fy;
+	fi.z += fz;
+
+	return fi;
+}
+
 template<int block_size>
 __global__
 void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ,
@@ -74,9 +115,9 @@ void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ,
 		__syncthreads();
 	}
 
-	forceX[tid] += myf.x;
-	forceY[tid] += myf.y;
-	forceZ[tid] += myf.z;
+	atomicAdd(forceX + tid, myf.x);
+	atomicAdd(forceY + tid, myf.y);
+	atomicAdd(forceZ + tid, myf.z);
 }
 
 template<int block_size>
@@ -110,9 +151,9 @@ void SoAFunctorNoN3Pair(int N, double* posX, double* posY, double* posZ,
 		__syncthreads();
 	}
 
-	forceX[tid] += myf.x;
-	forceY[tid] += myf.y;
-	forceZ[tid] += myf.z;
+	atomicAdd(forceX + tid, myf.x);
+	atomicAdd(forceY + tid, myf.y);
+	atomicAdd(forceZ + tid, myf.z);
 }
 
 template<int block_size>
@@ -152,9 +193,9 @@ void AoSFunctorNoN3(int N, double* particles) {
 		}
 		__syncthreads();
 	}
-	particles[6 * tid + 3] += myf.x;
-	particles[6 * tid + 4] += myf.y;
-	particles[6 * tid + 5] += myf.z;
+	atomicAdd(particles + 6 * tid + 3, myf.x);
+	atomicAdd(particles + 6 * tid + 4, myf.y);
+	atomicAdd(particles + 6 * tid + 5, myf.z);
 }
 
 template<int block_size>
@@ -187,9 +228,9 @@ void AoSFunctorNoN3Pair(int N, int M, double* particles1, double* particles2) {
 		__syncthreads();
 	}
 
-	particles1[6 * tid + 3] += myf.x;
-	particles1[6 * tid + 4] += myf.y;
-	particles1[6 * tid + 5] += myf.z;
+	atomicAdd(particles1 + 6 * tid + 3, myf.x);
+	atomicAdd(particles1 + 6 * tid + 4, myf.y);
+	atomicAdd(particles1 + 6 * tid + 5, myf.z);
 }
 
 void AoSFunctorNoN3Wrapper(int N, double* particles) {

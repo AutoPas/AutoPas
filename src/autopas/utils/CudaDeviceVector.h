@@ -6,34 +6,49 @@
 
 #pragma once
 
+#if defined(AUTOPAS_CUDA)
+
+#include "autopas/utils/CudaExceptionHandler.h"
 #include "cuda_runtime.h"
 
 namespace autopas {
+namespace utils {
 
 template <typename T>
 class CudaDeviceVector {
  public:
-  CudaDeviceVector(size_t max) : _max_size(max), _size(0) { cudaMalloc((void**)&_data, sizeof(T) * _max_size); }
+  CudaDeviceVector() : CudaDeviceVector(32) {}
 
-  virtual ~CudaDeviceVector() { cudaFree(_data); }
+  CudaDeviceVector(size_t max) : _max_size(max), _size(0) {
+    autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
+  }
+
+  CudaDeviceVector(const CudaDeviceVector<T>& obj) : _max_size(obj._max_size), _size(obj._size) {
+    autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
+    cudaMemcpy(_data, obj._data, _size * sizeof(T), cudaMemcpyDeviceToDevice);
+  }
+
+  virtual ~CudaDeviceVector() { autopas::utils::CudaExceptionHandler::checkErrorCode(cudaFree(_data)); }
 
   T* get() { return _data; }
 
   size_t size() { return _size; }
 
-  cudaError_t copyHostToDevice(int n, T* hostData) {
+  void copyHostToDevice(const size_t n, T* hostData) {
     _size = n;
     if (n > _max_size) {
       _max_size = (n / 32 + 1) * 32;
 
-      cudaFree(_data);
-      cudaMalloc((void**)&_data, sizeof(T) * _max_size);
+      autopas::utils::CudaExceptionHandler::checkErrorCode(cudaFree(_data));
+      autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
     }
-    return cudaMemcpy(_data, hostData, n * sizeof(T), cudaMemcpyHostToDevice);
+    autopas::utils::CudaExceptionHandler::checkErrorCode(
+        cudaMemcpy(_data, hostData, n * sizeof(T), cudaMemcpyHostToDevice));
   }
 
-  cudaError_t copyDeviceToHost(int n, T* hostData) {
-    return cudaMemcpy(hostData, _data, n * sizeof(T), cudaMemcpyDeviceToHost);
+  void copyDeviceToHost(const size_t n, T* hostData) {
+    autopas::utils::CudaExceptionHandler::checkErrorCode(
+        cudaMemcpy(hostData, _data, n * sizeof(T), cudaMemcpyDeviceToHost));
   }
 
  private:
@@ -43,4 +58,7 @@ class CudaDeviceVector {
   T* _data;
 };
 
+}  // namespace utils
 }  // namespace autopas
+
+#endif

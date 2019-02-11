@@ -9,6 +9,7 @@
 
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include "autopas/utils/CudaDeviceVector.h"
 
 namespace autopas {
 
@@ -76,16 +77,26 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
     AoSFunctorNoN3PairWrapper(N, M, particles1, particles2);
   }
 
-  void SoAFunctorNoN3(int N, typename Particle::SoADevice &device_handle) {
-    SoAFunctorNoN3Wrapper(N, device_handle.posX, device_handle.posY, device_handle.posZ, device_handle.forceX,
-                          device_handle.forceY, device_handle.forceZ);
+  void SoAFunctorNoN3(int N, CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+    SoAFunctorNoN3Wrapper(N, device_handle.template get<Particle::AttributeNames::posX>().get(),
+                          device_handle.template get<Particle::AttributeNames::posY>().get(),
+                          device_handle.template get<Particle::AttributeNames::posZ>().get(),
+                          device_handle.template get<Particle::AttributeNames::forceX>().get(),
+                          device_handle.template get<Particle::AttributeNames::forceY>().get(),
+                          device_handle.template get<Particle::AttributeNames::forceZ>().get());
   }
 
-  void SoAFunctorNoN3(int N, typename Particle::SoADevice &device_handle1, int M,
-                      typename Particle::SoADevice &device_handle2) {
-    SoAFunctorNoN3PairWrapper(N, device_handle1.posX, device_handle1.posY, device_handle1.posZ, device_handle1.forceX,
-                              device_handle1.forceY, device_handle1.forceZ, M, device_handle2.posX, device_handle2.posY,
-                              device_handle2.posZ);
+  void SoAFunctorNoN3(int N, CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1, int M,
+                      CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2) {
+    SoAFunctorNoN3PairWrapper(N, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                              device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                              device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                              device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                              device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                              device_handle1.template get<Particle::AttributeNames::forceZ>().get(), M,
+                              device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                              device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                              device_handle2.template get<Particle::AttributeNames::posZ>().get());
   }
 
   void deviceAoSLoader(ParticleCell &cell, double **device_buffer) {
@@ -123,48 +134,36 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
     delete[] particles;
   }
 
-  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa, typename Particle::SoADevice &device_handle) {
+  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
+                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
     size_t size = soa.getNumParticles();
     if (size == 0) return;
-    // cudaMalloc((void **)device_handle.ids, sizeof(typename Particle::SoADevice::ids) * size);
-    cudaMalloc((void **)&device_handle.posX, sizeof(Particle::SoADevice::posX) * size);
-    cudaMalloc((void **)&device_handle.posY, sizeof(Particle::SoADevice::posY) * size);
-    cudaMalloc((void **)&device_handle.posZ, sizeof(Particle::SoADevice::posZ) * size);
-    cudaMalloc((void **)&device_handle.forceX, sizeof(Particle::SoADevice::forceX) * size);
-    cudaMalloc((void **)&device_handle.forceY, sizeof(Particle::SoADevice::forceY) * size);
-    cudaMalloc((void **)&device_handle.forceZ, sizeof(Particle::SoADevice::forceZ) * size);
 
-    cudaError_t e;
-    e = cudaMemcpy(device_handle.posX, soa.template begin<Particle::AttributeNames::posX>(),
-                   sizeof(Particle::SoADevice::posX) * size, cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.posY, soa.template begin<Particle::AttributeNames::posY>(),
-                   sizeof(Particle::SoADevice::posY) * size, cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.posZ, soa.template begin<Particle::AttributeNames::posZ>(),
-                   sizeof(Particle::SoADevice::posZ) * size, cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.forceX, soa.template begin<Particle::AttributeNames::forceX>(),
-                   sizeof(Particle::SoADevice::forceX) * size, cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.forceY, soa.template begin<Particle::AttributeNames::forceY>(),
-                   sizeof(Particle::SoADevice::forceY) * size, cudaMemcpyHostToDevice);
-    e = cudaMemcpy(device_handle.forceZ, soa.template begin<Particle::AttributeNames::forceZ>(),
-                   sizeof(Particle::SoADevice::forceZ) * size, cudaMemcpyHostToDevice);
+    device_handle.template get<Particle::AttributeNames::posX>().copyHostToDevice(
+        size, soa.template begin<Particle::AttributeNames::posX>());
+    device_handle.template get<Particle::AttributeNames::posY>().copyHostToDevice(
+        size, soa.template begin<Particle::AttributeNames::posY>());
+    device_handle.template get<Particle::AttributeNames::posZ>().copyHostToDevice(
+        size, soa.template begin<Particle::AttributeNames::posZ>());
+
+    device_handle.template get<Particle::AttributeNames::forceX>().copyHostToDevice(
+        size, soa.template begin<Particle::AttributeNames::forceX>());
+    device_handle.template get<Particle::AttributeNames::forceY>().copyHostToDevice(
+        size, soa.template begin<Particle::AttributeNames::forceY>());
+    device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
+        size, soa.template begin<Particle::AttributeNames::forceZ>());
   }
 
-  void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa, typename Particle::SoADevice &device_handle) {
+  void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
+                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
     size_t size = soa.getNumParticles();
     if (size == 0) return;
-
-    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceX>(), device_handle.forceX,
-               sizeof(Particle::SoADevice::forceX) * size, cudaMemcpyDeviceToHost);
-    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceY>(), device_handle.forceY,
-               sizeof(Particle::SoADevice::forceY) * size, cudaMemcpyDeviceToHost);
-    cudaMemcpy(soa.template begin<Particle::AttributeNames::forceZ>(), device_handle.forceZ,
-               sizeof(Particle::SoADevice::forceZ) * size, cudaMemcpyDeviceToHost);
-    cudaFree(device_handle.forceX);
-    cudaFree(device_handle.forceY);
-    cudaFree(device_handle.forceZ);
-    cudaFree(device_handle.posX);
-    cudaFree(device_handle.posY);
-    cudaFree(device_handle.posZ);
+    device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(
+        size, soa.template begin<Particle::AttributeNames::forceX>());
+    device_handle.template get<Particle::AttributeNames::forceY>().copyDeviceToHost(
+        size, soa.template begin<Particle::AttributeNames::forceY>());
+    device_handle.template get<Particle::AttributeNames::forceZ>().copyDeviceToHost(
+        size, soa.template begin<Particle::AttributeNames::forceZ>());
   }
 
   /**
@@ -270,3 +269,4 @@ class LJFunctorCuda : public Functor<Particle, ParticleCell, typename Particle::
 };  // class LJFunctor
 
 }  // namespace autopas
+   // namespace autopas

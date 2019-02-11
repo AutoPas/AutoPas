@@ -82,7 +82,7 @@ int main() {
   }
   cout << endl;
 
-  autopas::CudaDeviceVector<double> cdv(32);
+  autopas::utils::CudaDeviceVector<double> cdv(32);
   std::vector<double> data = {3, 0, 0, 0, 0, 0, 1.9, 0, 0, 0, 2, 0};
   std::vector<double> res(12, -1);
 

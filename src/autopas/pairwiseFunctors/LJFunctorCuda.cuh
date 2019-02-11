@@ -14,6 +14,11 @@ struct constants{
   double cutoffsquare;
   double epsilon24;
   double sigmasquare;
+  double shift6;
+  double _upotSum;
+  double3 _virialSum;
+  double3 _lowCorner;
+  double3 _highCorner;
 };
 
 void loadConstants(double cutoffsquare, double epsilon24, double sigmasquare);
