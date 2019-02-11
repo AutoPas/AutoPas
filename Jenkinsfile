@@ -26,7 +26,7 @@ pipeline{
                         stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
 
                         // get doxygen warnings
-                        warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build-doxygen/DoxygenWarningLog.txt']], unHealthy: '', failedTotalAll: '0'
+                        recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(pattern: 'build-doxygen/DoxygenWarningLog.txt')], unstableTotalAll: 1
                     },
                     "clang format": {
                         dir("clang-format"){

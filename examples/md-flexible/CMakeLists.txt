@@ -32,5 +32,11 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 
+add_test(
+        NAME md-flexMeasurePerf
+        COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/measurePerf.sh md-flexible -silent
+        CONFIGURATIONS checkExamples
+)
+
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)
