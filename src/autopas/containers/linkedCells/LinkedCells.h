@@ -128,6 +128,22 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     extractSoAs(f);
   }
 
+  // TODO Doc
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoACuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
+    AutoPasLog(debug, "Using traversal {} with Cuda ", utils::StringUtils::to_string(traversal->getTraversalType()))
+        loadSoAsCuda(f);
+    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoACuda. TraversalID: {}",
+          traversal->getTraversalType());
+    }
+
+    extractSoAsCuda(f);
+  }
+
   void updateContainer() override {
     auto haloIter = this->begin(IteratorBehavior::haloOnly);
     if (haloIter.isValid()) {
@@ -301,6 +317,24 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < this->_cells.size(); ++i) {
+      functor->SoAExtractor(this->_cells[i], this->_cells[i]._particleSoABuffer);
+    }
+  }
+
+  // TODO parallel
+  template <class ParticleFunctor>
+  void loadSoAsCuda(ParticleFunctor *functor) {
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      functor->SoALoader(this->_cells[i], this->_cells[i]._particleSoABuffer);
+      functor->deviceSoALoader(this->_cells[i]._particleSoABuffer, this->_cells[i]._particleSoABufferDevice);
+    }
+  }
+
+  // TODO parallel
+  template <class ParticleFunctor>
+  void extractSoAsCuda(ParticleFunctor *functor) {
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      functor->deviceSoAExtractor(this->_cells[i]._particleSoABuffer, this->_cells[i]._particleSoABufferDevice);
       functor->SoAExtractor(this->_cells[i], this->_cells[i]._particleSoABuffer);
     }
   }

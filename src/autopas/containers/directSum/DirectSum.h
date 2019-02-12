@@ -121,7 +121,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoACuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwiseSoACuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
     AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
     f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
