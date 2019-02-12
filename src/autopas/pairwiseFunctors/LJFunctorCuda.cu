@@ -37,7 +37,8 @@ double3 bodyBodyF(double3 i, double3 j, double3 fi) {
 }
 
 __device__
-double3 bodyBodyFcalcGlobals(double3 i, double3 j, double3 fi, double4 globals) {
+double3 bodyBodyFcalcGlobals(double3 i, double3 j, double3 fi,
+		double4 globals) {
 	double drx = i.x - j.x;
 	double dry = i.y - j.y;
 	double drz = i.z - j.z;
@@ -55,20 +56,21 @@ double3 bodyBodyFcalcGlobals(double3 i, double3 j, double3 fi, double4 globals) 
 	double lj12m6 = lj12 - lj6;
 	double fac = global_constants.epsilon24 * (lj12 + lj12m6) * invdr2;
 
-    const double fx = drx * fac;
-    const double fy = dry * fac;
-    const double fz = drz * fac;
+	const double fx = drx * fac;
+	const double fy = dry * fac;
+	const double fz = drz * fac;
 
-    const double virialx = drx * fx;
-    const double virialy = dry * fy;
-    const double virialz = drz * fz;
-    const double upot = (global_constants.epsilon24 * lj12m6 + global_constants.shift6);
+	const double virialx = drx * fx;
+	const double virialy = dry * fy;
+	const double virialz = drz * fz;
+	const double upot = (global_constants.epsilon24 * lj12m6
+			+ global_constants.shift6);
 
-    // these calculations assume that this functor is not called for halo cells!
-    globals.w += upot;
-    globals.x += virialx;
-    globals.y += virialy;
-    globals.z += virialz;
+	// these calculations assume that this functor is not called for halo cells!
+	globals.w += upot;
+	globals.x += virialx;
+	globals.y += virialy;
+	globals.z += virialz;
 
 	fi.x += fx;
 	fi.y += fy;
@@ -84,24 +86,24 @@ void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ,
 	__shared__ double3 block_pos[block_size];
 	int i, tile;
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
-	if (tid >= N) {
-		return;
-	}
 
 	double3 myposition;
-	myposition.x = posX[tid];
-	myposition.y = posY[tid];
-	myposition.z = posZ[tid];
 	double3 myf = { 0, 0, 0 };
+	if (tid < N) {
+		myposition.x = posX[tid];
+		myposition.y = posY[tid];
+		myposition.z = posZ[tid];
+	}
 
 	for (i = block_size, tile = 0; i < N; i += block_size, ++tile) {
 		int idx = tile * blockDim.x + threadIdx.x;
 
 		block_pos[threadIdx.x] = {posX[idx], posY[idx], posZ[idx]};
 		__syncthreads();
-
-		for (int j = 0; j < blockDim.x; ++j) {
-			myf = bodyBodyF(myposition, block_pos[j], myf);
+		if (tid < N) {
+			for (int j = 0; j < blockDim.x; ++j) {
+				myf = bodyBodyF(myposition, block_pos[j], myf);
+			}
 		}
 		__syncthreads();
 	}
@@ -109,9 +111,10 @@ void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ,
 		int idx = tile * blockDim.x + threadIdx.x;
 		block_pos[threadIdx.x] = {posX[idx], posY[idx], posZ[idx]};
 		__syncthreads();
-
-		for (int j = 0; j < N - tile * blockDim.x; ++j) {
-			myf = bodyBodyF(myposition, block_pos[j], myf);
+		if (tid < N) {
+			for (int j = 0; j < N - tile * blockDim.x; ++j) {
+				myf = bodyBodyF(myposition, block_pos[j], myf);
+			}
 		}
 		__syncthreads();
 	}
@@ -129,15 +132,14 @@ void SoAFunctorNoN3Pair(int N, double* posX, double* posY, double* posZ,
 	__shared__ double3 block_pos[block_size];
 	int i, tile;
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
-	if (tid >= N) {
-		return;
-	}
-
 	double3 myposition;
+	double3 myf = { 0, 0, 0 };
+
+	if (tid < N) {
 	myposition.x = posX[tid];
 	myposition.y = posY[tid];
 	myposition.z = posZ[tid];
-	double3 myf = { 0, 0, 0 };
+	}
 
 	for (i = 0, tile = 0; i < M; i += block_size, ++tile) {
 		int idx = tile * blockDim.x + threadIdx.x;
@@ -247,16 +249,16 @@ void AoSFunctorNoN3PairWrapper(int N, int M, double* particles1,
 
 void SoAFunctorNoN3Wrapper(int N, double* posX, double* posY, double* posZ,
 		double* forceX, double* forceY, double* forceZ) {
-	SoAFunctorNoN3<32> <<<N / 32 + 1, 32>>>(N, posX, posY, posZ, forceX, forceY,
-			forceZ);
+	SoAFunctorNoN3<32> <<<((N - 1) / 32) + 1, 32>>>(N, posX, posY, posZ, forceX,
+			forceY, forceZ);
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
 void SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY, double* posZ,
 		double* forceX, double* forceY, double* forceZ, int M, double* posX2,
 		double* posY2, double* posZ2) {
-	SoAFunctorNoN3Pair<32> <<<N / 32 + 1, 32>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ, M, posX2, posY2, posZ2);
+	SoAFunctorNoN3Pair<32> <<<((N - 1) / 32) + 1, 32>>>(N, posX, posY, posZ,
+			forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 

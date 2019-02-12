@@ -75,6 +75,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     if (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
+#if defined(AUTOPAS_CUDA)
+    loadConstants(_cutoffsquare, _epsilon24, _sigmasquare);
+#endif
   }
 
   bool isRelevantForTuning() override { return relevantForTuning; }
@@ -380,7 +383,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
   }
 
-  void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+  void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
 #if defined(AUTOPAS_CUDA)
     size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
     SoAFunctorNoN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
@@ -395,7 +398,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
   void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2) {
+                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2) override {
 #if defined(AUTOPAS_CUDA)
     size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
     size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
@@ -415,7 +418,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
   void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
+#if defined(AUTOPAS_CUDA)
     size_t size = soa.getNumParticles();
     if (size == 0) return;
 
@@ -432,10 +436,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         size, soa.template begin<Particle::AttributeNames::forceY>());
     device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
         size, soa.template begin<Particle::AttributeNames::forceZ>());
+#else
+    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+#endif
   }
 
   void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
-                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
+#if defined(AUTOPAS_CUDA)
     size_t size = soa.getNumParticles();
     if (size == 0) return;
     device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(
@@ -444,6 +452,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         size, soa.template begin<Particle::AttributeNames::forceY>());
     device_handle.template get<Particle::AttributeNames::forceZ>().copyDeviceToHost(
         size, soa.template begin<Particle::AttributeNames::forceZ>());
+#else
+    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+#endif
   }
 
   /**

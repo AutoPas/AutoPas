@@ -19,3 +19,4 @@ ADD_SUBDIRECTORY(sph-traversals)
 ADD_SUBDIRECTORY(cluster-test)
 
 ADD_SUBDIRECTORY(basic-cuda)
+ADD_SUBDIRECTORY(benchmark-cuda)

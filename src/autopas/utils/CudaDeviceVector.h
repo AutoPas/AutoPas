@@ -61,7 +61,10 @@ class CudaDeviceVector {
 
 #else
  public:
-  CudaDeviceVector() { utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!"); }
+  CudaDeviceVector() {}
+  CudaDeviceVector(size_t max) {}
+
+  CudaDeviceVector(const CudaDeviceVector<T>& obj) {}
 #endif
 };
 

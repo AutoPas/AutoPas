@@ -87,7 +87,6 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   SoA<SoAArraysType> _particleSoABuffer;
 
-#if defined(AUTOPAS_CUDA)
   /**
    * device AoS Buffer
    */
@@ -97,7 +96,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * device particle SoABuffer
    */
   CudaSoA<typename Particle::CudaDeviceArraysType> _particleSoABufferDevice;
-#endif
+
   /**
    * type of the internal iterator
    */
