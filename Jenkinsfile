@@ -306,7 +306,7 @@ pipeline{
                             dir("build-archer"){
                                 // needed to properly check all test cases (also just single ones)
                                 // I suspect that archer breaks when death tests are used
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest --verbose'
                             }
                         }
                     },
@@ -411,7 +411,7 @@ pipeline{
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer/examples"){
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest -C checkExamples -j8 --verbose'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
