@@ -195,6 +195,17 @@ class AutoTuner {
   template <class PairwiseFunctor, bool useSoA, bool useNewton3, bool inTuningPhase>
   void iteratePairwiseTemplateHelper(PairwiseFunctor *f);
 
+  /**
+   * Tune available algorithm configurations.
+   *
+   * When in tuning phase selects next config to test. At the end of the tuning phase select optimum.
+   *
+   * The function returns true if the selected config is not yet the optimum but something that should be sampled.
+   *
+   * @tparam PairwiseFunctor
+   * @param pairwiseFunctor
+   * @return true iff still in tuning phase.
+   */
   template <class PairwiseFunctor>
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
@@ -230,6 +241,11 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
   // check if currently in tuning phase, execute iteration and take time measurement if necessary
   if (_iterationsSinceTuning >= _tuningInterval and f->isRelevantForTuning()) {
     isTuning = tune<PairwiseFunctor>(*f);
+    if (not isTuning) {
+      _iterationsSinceTuning = 0;
+    }
+  } else {
+    ++_iterationsSinceTuning;
   }
 
   // large case differentiation for data layout and newton 3
@@ -315,90 +331,73 @@ template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
-  // if beginning of tuning phase
+  // need more samples; keep current config
+  if (_numSamples < _maxSamples) {
+    ++_numSamples;
+    return stillTuning;
+  }
+
+  // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
     _currentConfig = _allowedConfigurations.begin();
     _numSamples = 0;
-  } else {
-    if (_numSamples >= _maxSamples) {
-      _numSamples = 0;
-
-      bool traversalApplicable = false;
-      // repeat as long as traverals are not applicable or we run out of configs
-      while (not traversalApplicable and _currentConfig != _allowedConfigurations.end()) {
-        ++_currentConfig;
-        _containerSelector.selectContainer(_currentConfig->_container);
-        _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
-
-        if (_currentConfig->_dataLayout == DataLayoutOption::soa) {
-          if (_currentConfig->_newton3 == Newton3Option::enabled) {
-            traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                      .template getCurrentTraversal<PairwiseFunctor, true, true>(pairwiseFunctor)
-                                      ->isApplicable();
-          } else {
-            traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                      .template getCurrentTraversal<PairwiseFunctor, true, false>(pairwiseFunctor)
-                                      ->isApplicable();
-          }
-        } else {
-          if (_currentConfig->_newton3 == Newton3Option::enabled) {
-            traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                      .template getCurrentTraversal<PairwiseFunctor, false, true>(pairwiseFunctor)
-                                      ->isApplicable();
-          } else {
-            traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                      .template getCurrentTraversal<PairwiseFunctor, false, false>(pairwiseFunctor)
-                                      ->isApplicable();
-          }
-        }
-
-        if (not traversalApplicable) {
-          continue;
-        }
-
-        // check for sane newton3 settings and fix them if needed
-        if ((_currentConfig->_newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
-            (_currentConfig->_newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
-          AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
-                     utils::StringUtils::to_string(_currentConfig->_newton3));
-
-          Configuration modifiedCurrentConfig = *_currentConfig;
-          // choose the other option
-          modifiedCurrentConfig._newton3 = Newton3Option((static_cast<int>(_currentConfig->_newton3) + 1) % 2);
-
-          // if modified config is equal to next delete current. Else insert modified config.
-          // the disabled case should come after the enabled.
-          int searchDirection = _currentConfig->_newton3 == Newton3Option::enabled ? 1 : -1;
-          if (modifiedCurrentConfig == *(std::next(_currentConfig, searchDirection))) {
-            AutoPasLog(warn, "Newton 3 {} automatically for this config!",
-                       utils::StringUtils::to_string(modifiedCurrentConfig._newton3));
-            if (pairwiseFunctor.isRelevantForTuning()) {
-              _currentConfig = _allowedConfigurations.erase(_currentConfig);
-            }
-          } else {
-            _currentConfig = _allowedConfigurations.insert(_currentConfig, modifiedCurrentConfig);
-          }
-          if (_currentConfig != _allowedConfigurations.end()) {
-            _containerSelector.selectContainer(_currentConfig->_container);
-            _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
-          }
-        }
-      }
-    }
+  } else {  // enough samples -> next config
+    ++_currentConfig;
+    _numSamples = 0;
   }
 
+  // check config and skip until one is applicable
+  bool configIsApplicable = false;
+  // repeat as long as traverals are not applicable or we run out of configs
+  while (not configIsApplicable and _currentConfig != _allowedConfigurations.end()) {
+    _containerSelector.selectContainer(_currentConfig->_container);
+    _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
+
+    if (not(configIsApplicable = configApplicable(_currentConfig, pairwiseFunctor))) {
+      continue;
+    }
+
+    // check if newton3 works with this functor and fix if needed
+    if ((_currentConfig->_newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
+        (_currentConfig->_newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
+      AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
+                 utils::StringUtils::to_string(_currentConfig->_newton3));
+
+      Configuration modifiedCurrentConfig = *_currentConfig;
+      // choose the other option
+      modifiedCurrentConfig._newton3 = Newton3Option((static_cast<int>(_currentConfig->_newton3) + 1) % 2);
+
+      // if modified config is equal to next delete current. Else insert modified config.
+      // the disabled case should come after the enabled.
+      int searchDirection = _currentConfig->_newton3 == Newton3Option::enabled ? 1 : -1;
+      if (modifiedCurrentConfig == *(std::next(_currentConfig, searchDirection))) {
+        AutoPasLog(warn, "Newton 3 {} automatically for this configuration!",
+                   utils::StringUtils::to_string(modifiedCurrentConfig._newton3));
+        if (pairwiseFunctor.isRelevantForTuning()) {
+          _currentConfig = _allowedConfigurations.erase(_currentConfig);
+        }
+      } else {
+        _currentConfig = _allowedConfigurations.insert(_currentConfig, modifiedCurrentConfig);
+      }
+      if (_currentConfig != _allowedConfigurations.end()) {
+        _containerSelector.selectContainer(_currentConfig->_container);
+        _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
+      }
+    }
+    ++_currentConfig;
+  }
+  // while loop also increases pointer if good one is found
+  --_currentConfig;
+
   // reached end of tuning phase
-  if (_currentConfig == _allowedConfigurations.end()) {
+  if (_currentConfig == _allowedConfigurations.end() && _numSamples >= _maxSamples) {
     selectOptimalConfiguration();
-    _iterationsSinceTuning = 0;
     stillTuning = false;
     _containerSelector.selectContainer(_currentConfig->_container);
     // assume optimal traversal is applicable
     _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
   }
 
-  ++_iterationsSinceTuning;
-  ++_numSamples;
   return stillTuning;
 }
 
@@ -466,4 +465,5 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
+
 }  // namespace autopas
