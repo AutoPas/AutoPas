@@ -56,9 +56,9 @@ class AutoTuner {
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            unsigned int verletRebuildFrequency, std::vector<ContainerOption> allowedContainerOptions,
-            std::vector<TraversalOption> allowedTraversalOptions,
-            std::vector<DataLayoutOption> allowedDataLayoutOptions, std::vector<Newton3Option> allowedNewton3Options,
+            unsigned int verletRebuildFrequency, const std::vector<ContainerOption> &allowedContainerOptions,
+            const std::vector<TraversalOption> &allowedTraversalOptions,
+            const std::vector<DataLayoutOption> &allowedDataLayoutOptions, const std::vector<Newton3Option> &allowedNewton3Options,
             SelectorStrategy selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
@@ -84,6 +84,11 @@ class AutoTuner {
         }
       }
     }
+
+    if (_allowedConfigurations.empty()) {
+      autopas::utils::ExceptionHandler::exception("AutoTuner: No valid configurations could be created.");
+    }
+
     _currentConfig = _allowedConfigurations.begin();
     _containerSelector.selectContainer(_currentConfig->_container);
   }

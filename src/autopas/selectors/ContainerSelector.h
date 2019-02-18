@@ -225,7 +225,10 @@ ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
-  if (_currentContainer == nullptr) selectNextContainer();
+  if (_currentContainer == nullptr) {
+    autopas::utils::ExceptionHandler::exception(
+        "ContainerSelector: getCurrentContainer() called before any container was selected!");
+  }
   return _currentContainer;
 }
 
@@ -236,6 +239,10 @@ void ContainerSelector<Particle, ParticleCell>::addTimeMeasurement(ContainerOpti
 template <class Particle, class ParticleCell>
 void ContainerSelector<Particle, ParticleCell>::selectContainer(ContainerOption containerOption) {
   // if we already have this container do nothing.
+  if (_currentContainer == nullptr) {
+    _currentContainer = generateContainer(containerOption);
+  }
+
   if (_currentContainer and _currentContainer->getContainerType() != containerOption) {
     _currentContainer = std::move(generateContainer(containerOption));
   }
