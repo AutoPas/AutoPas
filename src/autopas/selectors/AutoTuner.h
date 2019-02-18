@@ -105,7 +105,7 @@ class AutoTuner {
   }
 
   template <class PairwiseFunctor>
-  bool configApplicable(Configuration conf, PairwiseFunctor pairwiseFunctor);
+  bool configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -427,7 +427,7 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
 }
 template<class Particle, class ParticleCell>
 template<class PairwiseFunctor>
-bool AutoTuner<Particle, ParticleCell>::configApplicable(Configuration conf, PairwiseFunctor pairwiseFunctor) {
+bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
   bool traversalApplicable = false;
 
   switch (_currentConfig->_dataLayout) {

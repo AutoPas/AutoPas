@@ -48,8 +48,8 @@ void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<Prin
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
-  autopas.boxMin = boxMin;
-  autopas.boxMax = boxMax;
+  autopas.setBoxMin(boxMin);
+  autopas.setBoxMax(boxMax);
 
   autopas.init();
 
@@ -64,8 +64,8 @@ void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<Pri
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.boxMin = boxMin;
-  autopas.boxMax = boxMax;
+  autopas.setBoxMin(boxMin);
+  autopas.setBoxMax(boxMax);
 
   autopas.init();
 
@@ -78,8 +78,8 @@ void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<P
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
-  autopas.boxMin = boxMin;
-  autopas.boxMax = boxMax;
+  autopas.setBoxMin(boxMin);
+  autopas.setBoxMax(boxMax);
 
   autopas.init();
 
@@ -185,16 +185,16 @@ int main(int argc, char **argv) {
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
   autopas::Logger::get()->set_level(logLevel);
 
-  autopas.cutoff = cutoff;
-  autopas.verletSkin = verletSkinRadius;
-  autopas.verletRebuildFrequency = verletRebuildFrequency;
-  autopas.tuningInterval = tuningInterval;
-  autopas.numSamples = tuningSamples;
-  autopas.selectorStrategy = selectorStrategy;
-  autopas.allowedContainers = containerChoice;
-  autopas.allowedTraversals = traversalOptions;
-  autopas.allowedDataLayouts = dataLayoutOptions;
-  autopas.allowedNewton3Options = newton3Options;
+  autopas.setCutoff(cutoff);
+  autopas.setVerletSkin(verletSkinRadius);
+  autopas.setVerletRebuildFrequency(verletRebuildFrequency);
+  autopas.setTuningInterval(tuningInterval);
+  autopas.setNumSamples(tuningSamples);
+  autopas.setSelectorStrategy(selectorStrategy);
+  autopas.setAllowedContainers(containerChoice);
+  autopas.setAllowedTraversals(traversalOptions);
+  autopas.setAllowedDataLayouts(dataLayoutOptions);
+  autopas.setAllowedNewton3Options(newton3Options);
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {

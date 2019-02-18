@@ -43,6 +43,11 @@ TEST_F(AutoPasTest, checkRebuildingNewMove) {
   {
     // 1. create new AutoPas container + initialize
     decltype(autoPas) autoPasTmp;
+    autoPasTmp.setBoxMin ({0., 0., 0.});
+    autoPasTmp.setBoxMax ({.5, .5, .5});
+    autoPasTmp.setCutoff (1.);
+    autoPasTmp.setAllowedContainers ({autopas::ContainerOption::linkedCells});
+    autoPasTmp.setAllowedTraversals ({autopas::TraversalOption::c08});
     autoPasTmp.init();
 
     // ensure no particles
@@ -116,6 +121,12 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
     }
     // 2. recreate container by calling constructor + init
     autoPas = decltype(autoPas)();
+
+    autoPas.setBoxMin({0., 0., 0.});
+    autoPas.setBoxMax({.5, .5, .5});
+    autoPas.setCutoff(1.);
+    autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
+    autoPas.setAllowedTraversals({autopas::TraversalOption::c08});
     autoPas.init();
 
     // ensure no particles
@@ -154,6 +165,14 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
   EXPECT_TRUE(autoPas.needsContainerUpdate());
 
   // now build verlet lists
+  autoPas.setBoxMin({0., 0., 0.});
+  autoPas.setBoxMax({.5, .5, .5});
+  autoPas.setCutoff(1.);
+  autoPas.setVerletSkin(0);
+  autoPas.setVerletRebuildFrequency(2);
+  autoPas.setAllowedContainers({autopas::ContainerOption::verletLists});
+  // @TODO: set traversal when this container finally uses one!
+  // autoPas._allowedTraversals = {};
   autoPas.init();
   // after build this should be false
   EXPECT_TRUE(autoPas.needsContainerUpdate());

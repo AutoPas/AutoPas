@@ -17,6 +17,19 @@ TEST_F(Newton3OnOffTest, testAoS) {
     }
 
     // needs two samples per container because we test with and without newton 3 and never take time measurements
+    autoPas.setBoxMin(getBoxMin());
+    autoPas.setBoxMax(getBoxMax());
+    autoPas.setCutoff(getCutoff());
+    autoPas.setVerletSkin(getVerletSkin());
+    autoPas.setVerletRebuildFrequency(getVerletRebuildFrequency());
+    autoPas.setAllowedContainers({containerOption});
+    autoPas.setAllowedTraversals(autopas::allTraversalOptions);
+    autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::aos});
+    autoPas.setAllowedNewton3Options(autopas::allNewton3Options);
+    autoPas.setTuningInterval(100);
+    autoPas.setSelectorStrategy(autopas::SelectorStrategy::fastestAbs);
+    autoPas.setNumSamples(1);
+
     autoPas.init();
     autopas::MoleculeLJ defaultParticle;
     RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);
@@ -62,6 +75,19 @@ TEST_F(Newton3OnOffTest, testSoA) {
         containerOption == autopas::ContainerOption::verletClusterLists) {
       continue;
     }
+    autoPas.setBoxMax(getBoxMin());
+    autoPas.setBoxMax(getBoxMax());
+    autoPas.setCutoff(getCutoff());
+    autoPas.setVerletSkin(getVerletSkin());
+    autoPas.setVerletRebuildFrequency(getVerletRebuildFrequency());
+    autoPas.setAllowedContainers({containerOption});
+    autoPas.setAllowedTraversals(autopas::allTraversalOptions);
+    autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::soa});
+    autoPas.setAllowedNewton3Options(autopas::allNewton3Options);
+    autoPas.setTuningInterval(100);
+    autoPas.setSelectorStrategy(autopas::SelectorStrategy::fastestAbs);
+    autoPas.setNumSamples(1);
+
     autoPas.init();
     autopas::MoleculeLJ defaultParticle;
     RandomGenerator::fillWithParticles(*autoPas.getContainer(), defaultParticle, 100);

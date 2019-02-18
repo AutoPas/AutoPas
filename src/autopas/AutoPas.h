@@ -30,18 +30,18 @@ template <class Particle, class ParticleCell>
 class AutoPas {
  public:
   AutoPas()
-      : boxMin{0, 0, 0},
-        boxMax{0, 0, 0},
-        cutoff(1),
-        verletSkin(0.2),
-        verletRebuildFrequency(20),
-        tuningInterval(5000),
-        numSamples(3),
-        selectorStrategy(SelectorStrategy::fastestAbs),
-        allowedContainers(allContainerOptions),
-        allowedTraversals(allTraversalOptions),
-        allowedDataLayouts(allDataLayoutOptions),
-        allowedNewton3Options(false) {
+      : _boxMin{0, 0, 0},
+        _boxMax{0, 0, 0},
+        _cutoff(1),
+        _verletSkin(0.2),
+        _verletRebuildFrequency(20),
+        _tuningInterval(5000),
+        _numSamples(3),
+        _selectorStrategy(SelectorStrategy::fastestAbs),
+        _allowedContainers(allContainerOptions),
+        _allowedTraversals(allTraversalOptions),
+        _allowedDataLayouts(allDataLayoutOptions),
+        _allowedNewton3Options(false) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -82,8 +82,8 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainers, allowedTraversals,
-        allowedDataLayouts, allowedNewton3Options, selectorStrategy, tuningInterval, numSamples);
+        _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, _allowedContainers, _allowedTraversals,
+        _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy, _tuningInterval, _numSamples);
   }
 
   /**
@@ -180,6 +180,187 @@ class AutoPas {
   std::array<double, 3> getBoxMax() { return _autoTuner->getContainer()->getBoxMax(); }
 
   /**
+   * Set coordinates of the lower corner of the domain.
+   * @param boxMin
+   */
+  void setBoxMin(const std::array<double, 3> &boxMin) {
+    AutoPas::_boxMin = boxMin;
+  }
+
+  /**
+   * Set coordinates of the upper corner of the domain.
+   * @param boxMax
+   */
+  void setBoxMax(const std::array<double, 3> &boxMax) {
+    AutoPas::_boxMax = boxMax;
+  }
+
+  /**
+   * Get cutoff radius.
+   * @return
+   */
+  double getCutoff() const {
+    return _cutoff;
+  }
+
+  /**
+   * Set cutoff radius.
+   * @param cutoff
+   */
+  void setCutoff(double cutoff) {
+    AutoPas::_cutoff = cutoff;
+  }
+
+  /**
+   * Get length added to the cutoff for the Verlet lists' skin.
+   * @return
+   */
+  double getVerletSkin() const {
+    return _verletSkin;
+  }
+
+  /**
+   * Set length added to the cutoff for the Verlet lists' skin.
+   * @param verletSkin
+   */
+  void setVerletSkin(double verletSkin) {
+    AutoPas::_verletSkin = verletSkin;
+  }
+
+  /**
+   * Get Verlet rebuild frequency.
+   * @return
+   */
+  unsigned int getVerletRebuildFrequency() const {
+    return _verletRebuildFrequency;
+  }
+
+  /**
+   * Set Verlet rebuild frequency.
+   * @param verletRebuildFrequency
+   */
+  void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
+    AutoPas::_verletRebuildFrequency = verletRebuildFrequency;
+  }
+
+  /**
+   * Get tuning interval.
+   * @return
+   */
+  unsigned int getTuningInterval() const {
+    return _tuningInterval;
+  }
+
+  /**
+   * Set tuning interval.
+   * @param tuningInterval
+   */
+  void setTuningInterval(unsigned int tuningInterval) {
+    AutoPas::_tuningInterval = tuningInterval;
+  }
+
+  /**
+   * Get number of samples taken per configuration during the tuning.
+   * @return
+   */
+  unsigned int getNumSamples() const {
+    return _numSamples;
+  }
+
+  /**
+   * Set number of samples taken per configuration during the tuning.
+   * @param numSamples
+   */
+  void setNumSamples(unsigned int numSamples) {
+    AutoPas::_numSamples = numSamples;
+  }
+
+  /**
+   * Get the selector configuration strategy.
+   * @return
+   */
+  SelectorStrategy getSelectorStrategy() const {
+    return _selectorStrategy;
+  }
+
+  /**
+   * Set the selector configuration strategy.
+   * For possible selector strategy choices see AutoPas::SelectorStrategy.
+   * @param selectorStrategy
+   */
+  void setSelectorStrategy(SelectorStrategy selectorStrategy) {
+    AutoPas::_selectorStrategy = selectorStrategy;
+  }
+
+  /**
+   * Get the list of allowed containers.
+   * @return
+   */
+  const std::vector<ContainerOption> &getAllowedContainers() const {
+    return _allowedContainers;
+  }
+
+  /**
+   * Set the list of allowed containers.
+   * For possible container choices see AutoPas::ContainerOption.
+   * @param allowedContainers
+   */
+  void setAllowedContainers(const std::vector<ContainerOption> &allowedContainers) {
+    AutoPas::_allowedContainers = allowedContainers;
+  }
+
+  /**
+   * Get the list of allowed traversals.
+   * @return
+   */
+  const std::vector<TraversalOption> &getAllowedTraversals() const {
+    return _allowedTraversals;
+  }
+
+  /**
+   * Set the list of allowed traversals.
+   * For possible traversals choices see AutoPas::TraversalOption.
+   * @param allowedTraversals
+   */
+  void setAllowedTraversals(const std::vector<TraversalOption> &allowedTraversals) {
+    AutoPas::_allowedTraversals = allowedTraversals;
+  }
+
+  /**
+   * Get the list of allowed data layouts.
+   * @return
+   */
+  const std::vector<DataLayoutOption> &getAllowedDataLayouts() const {
+    return _allowedDataLayouts;
+  }
+
+  /**
+   * Set the list of allowed data layouts.
+   * For possible data layout choices see AutoPas::DataLayoutOption.
+   * @param allowedDataLayouts
+   */
+  void setAllowedDataLayouts(const std::vector<DataLayoutOption> &allowedDataLayouts) {
+    AutoPas::_allowedDataLayouts = allowedDataLayouts;
+  }
+
+  /**
+   * Get the list of allowed newton 3 options.
+   * @return
+   */
+  const std::vector<Newton3Option> &getAllowedNewton3Options() const {
+    return _allowedNewton3Options;
+  }
+
+  /**
+   * Set the list of allowed newton 3 options.
+   * For possible newton 3 choices see AutoPas::Newton3Option
+   * @param allowedNewton3Options
+   */
+  void setAllowedNewton3Options(const std::vector<Newton3Option> &allowedNewton3Options) {
+    AutoPas::_allowedNewton3Options = allowedNewton3Options;
+  }
+
+  /**
    * Checks if the container needs to be updated.
    * Will return false if no lists are used.
    * This function can indicate whether you should send only halo particles or whether you should send leaving particles
@@ -197,60 +378,60 @@ class AutoPas {
     }
   }
 
+ private:
   /**
    * Lower corner of the container.
    */
-  std::array<double, 3> boxMin;
+  std::array<double, 3> _boxMin;
   /**
    * Upper corner of the container.
    */
-  std::array<double, 3> boxMax;
+  std::array<double, 3> _boxMax;
   /**
    * Cutoff radius to be used in this container.
    */
-  double cutoff;
+  double _cutoff;
   /**
    * Length added to the cutoff for the verlet lists' skin.
    */
-  double verletSkin;
+  double _verletSkin;
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
-  unsigned int verletRebuildFrequency;
+  unsigned int _verletRebuildFrequency;
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
-  unsigned int tuningInterval;
+  unsigned int _tuningInterval;
   /**
    * Number of samples the tuner should collect for each combination.
    */
-  unsigned int numSamples;
+  unsigned int _numSamples;
   /**
-   * Strategy for the container selector.
+   * Strategy for the configuration selector.
    * For possible container choices see AutoPas::SelectorStrategy.
    */
-  SelectorStrategy selectorStrategy;
+  SelectorStrategy _selectorStrategy;
   /**
    * List of container types AutoPas can choose from.
    * For possible container choices see AutoPas::ContainerOption.
    */
-  std::vector<ContainerOption> allowedContainers;
+  std::vector<ContainerOption> _allowedContainers;
   /**
    * List of traversals AutoPas can choose from.
    * For possible container choices see AutoPas::TraversalOption.
    */
-  std::vector<TraversalOption> allowedTraversals;
+  std::vector<TraversalOption> _allowedTraversals;
   /**
    * List of data layouts AutoPas can choose from.
    * For possible container choices see AutoPas::DataLayoutOption.
    */
-  std::vector<DataLayoutOption> allowedDataLayouts;
+  std::vector<DataLayoutOption> _allowedDataLayouts;
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  std::vector<Newton3Option> allowedNewton3Options;
+  std::vector<Newton3Option> _allowedNewton3Options;
 
- private:
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };  // namespace autopas
 }  // namespace autopas
