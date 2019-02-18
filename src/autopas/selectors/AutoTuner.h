@@ -237,15 +237,15 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
     case DataLayoutOption::aos: {
       if (_currentConfig->_newton3 == Newton3Option::enabled) {
         if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/true, /*tuning*/true>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/ true, /*tuning*/ true>(f);
         } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/true, /*tuning*/false>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/ true, /*tuning*/ false>(f);
         }
       } else {
         if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/false, /*tuning*/true>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/ false, /*tuning*/ true>(f);
         } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/false, /*tuning*/false>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/ false, /*tuning*/ false>(f);
         }
       }
       break;
@@ -253,15 +253,15 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
     case DataLayoutOption::soa: {
       if (_currentConfig->_newton3 == Newton3Option::enabled) {
         if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/true, /*tuning*/true>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/ true, /*tuning*/ true>(f);
         } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/true, /*tuning*/false>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/ true, /*tuning*/ false>(f);
         }
       } else {
         if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/false, /*tuning*/true>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/ false, /*tuning*/ true>(f);
         } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/false, /*tuning*/false>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/ false, /*tuning*/ false>(f);
         }
       }
       break;
