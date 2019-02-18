@@ -318,10 +318,6 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     _containerSelector.selectContainer(_currentConfig->_container);
     _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
 
-    if (not(configIsApplicable = configApplicable(*_currentConfig, pairwiseFunctor))) {
-      continue;
-    }
-
     // check if newton3 works with this functor and fix if needed
     if ((_currentConfig->_newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
         (_currentConfig->_newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
@@ -349,14 +345,14 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
         _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
       }
     }
-    ++_currentConfig;
-  } while (not configIsApplicable and _currentConfig != _allowedConfigurations.end());
-  // @TODO FIXME this might break the end of the tuning
-  // while loop also increases pointer if good one is found
-  --_currentConfig;
+
+  // if current config is not applicable but there are still some left check next
+  } while (_currentConfig != _allowedConfigurations.end() and not configApplicable(*_currentConfig, pairwiseFunctor) and
+           (&*(++_currentConfig) != nullptr));
 
   // reached end of tuning phase
-  if (_currentConfig == _allowedConfigurations.end() && _numSamples >= _maxSamples) {
+  // either wait until last config has enough samples or last config is not applicable
+  if (_currentConfig == _allowedConfigurations.end()  and (_numSamples >= _maxSamples or not configIsApplicable)) {
     selectOptimalConfiguration();
     stillTuning = false;
     _containerSelector.selectContainer(_currentConfig->_container);
