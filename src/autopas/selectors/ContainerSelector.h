@@ -148,13 +148,14 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
 
   // copy particles so they do not get lost when container is switched
   if (_currentContainer != nullptr) {
-    for (auto particleIter = _currentContainer->begin(IteratorBehavior::ownedOnly); particleIter.isValid();
+    for (auto particleIter = _currentContainer->begin(IteratorBehavior::haloAndOwned); particleIter.isValid();
          ++particleIter) {
-      container->addParticle(*particleIter);
-    }
-    for (auto particleIter = _currentContainer->begin(IteratorBehavior::haloOnly); particleIter.isValid();
-         ++particleIter) {
-      container->addHaloParticle(*particleIter);
+      // try to add every particle as inner. If it fails try as a halo.
+      try {
+        container->addParticle(*particleIter);
+      } catch (const autopas::utils::ExceptionHandler::AutoPasException &e) {
+        container->addHaloParticle(*particleIter);
+      }
     }
   }
 
