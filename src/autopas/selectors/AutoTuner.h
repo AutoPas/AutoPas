@@ -103,6 +103,50 @@ class AutoTuner {
     return container;
   }
 
+  template <class PairwiseFunctor>
+  bool configApplicable(Configuration conf, PairwiseFunctor pairwiseFunctor) {
+    bool traversalApplicable = false;
+
+    switch (_currentConfig->_dataLayout) {
+      case DataLayoutOption::aos: {
+        switch (_currentConfig->_newton3) {
+          case Newton3Option::enabled: {
+            traversalApplicable = _traversalSelectors[_currentConfig->_container]
+                                      .template getCurrentTraversal<PairwiseFunctor, false, true>(pairwiseFunctor)
+                                      ->isApplicable();
+            break;
+          }
+          case Newton3Option::disabled: {
+            traversalApplicable = _traversalSelectors[_currentConfig->_container]
+                                      .template getCurrentTraversal<PairwiseFunctor, false, false>(pairwiseFunctor)
+                                      ->isApplicable();
+            break;
+          }
+        }
+        break;
+      }
+      case DataLayoutOption::soa: {
+        switch (_currentConfig->_newton3) {
+          case Newton3Option::enabled: {
+            traversalApplicable = _traversalSelectors[_currentConfig->_container]
+                                      .template getCurrentTraversal<PairwiseFunctor, true, true>(pairwiseFunctor)
+                                      ->isApplicable();
+            break;
+          }
+          case Newton3Option::disabled: {
+            traversalApplicable = _traversalSelectors[_currentConfig->_container]
+                                      .template getCurrentTraversal<PairwiseFunctor, true, false>(pairwiseFunctor)
+                                      ->isApplicable();
+            break;
+          }
+        }
+        break;
+      }
+    }
+
+    return traversalApplicable;
+  }
+
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
