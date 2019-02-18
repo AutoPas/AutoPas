@@ -16,6 +16,13 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   std::array<double, 3> boxMax = {3., 3., 3.};
 
   //@todo test this with all containers and traversals
+  autoPas.setBoxMin(boxMin);
+  autoPas.setBoxMax(boxMax);
+  autoPas.setCutoff(cutoff);
+  autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
+  autoPas.setAllowedTraversals({autopas::TraversalOption::c08});
+  autoPas.setAllowedDataLayouts({dataLayoutOption});
+
   autoPas.init();
   autopas::MoleculeLJ defaultParticle;
 

@@ -29,8 +29,8 @@ void AutoTunerTest::testTune(autopas::DataLayoutOption dataLayoutOption) {
                                                  verletRebuildFrequency,
                                                  containers,
                                                  traversals,
-                                                 std::vector<autopas::DataLayoutOption>(),
-                                                 false,
+                                                 autopas::allDataLayoutOptions,
+                                                 autopas::allNewton3Options,
                                                  autopas::SelectorStrategy::fastestAbs,
                                                  100,
                                                  numSamples);
