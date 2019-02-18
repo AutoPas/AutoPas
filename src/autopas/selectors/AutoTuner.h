@@ -93,6 +93,7 @@ class AutoTuner {
    * Also checks if the container was already encountered and if not creates a new traversal selector for it.
    * @return Smartpointer to the optimal container.
    */
+   // TODO: remove this
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getContainer() {
     auto container = _containerSelector.getCurrentContainer();
     // if the container is new create a new traversal selector for it
@@ -104,48 +105,7 @@ class AutoTuner {
   }
 
   template <class PairwiseFunctor>
-  bool configApplicable(Configuration conf, PairwiseFunctor pairwiseFunctor) {
-    bool traversalApplicable = false;
-
-    switch (_currentConfig->_dataLayout) {
-      case DataLayoutOption::aos: {
-        switch (_currentConfig->_newton3) {
-          case Newton3Option::enabled: {
-            traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                      .template getCurrentTraversal<PairwiseFunctor, false, true>(pairwiseFunctor)
-                                      ->isApplicable();
-            break;
-          }
-          case Newton3Option::disabled: {
-            traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                      .template getCurrentTraversal<PairwiseFunctor, false, false>(pairwiseFunctor)
-                                      ->isApplicable();
-            break;
-          }
-        }
-        break;
-      }
-      case DataLayoutOption::soa: {
-        switch (_currentConfig->_newton3) {
-          case Newton3Option::enabled: {
-            traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                      .template getCurrentTraversal<PairwiseFunctor, true, true>(pairwiseFunctor)
-                                      ->isApplicable();
-            break;
-          }
-          case Newton3Option::disabled: {
-            traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                      .template getCurrentTraversal<PairwiseFunctor, true, false>(pairwiseFunctor)
-                                      ->isApplicable();
-            break;
-          }
-        }
-        break;
-      }
-    }
-
-    return traversalApplicable;
-  }
+  bool configApplicable(Configuration conf, PairwiseFunctor pairwiseFunctor);
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -353,7 +313,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     _containerSelector.selectContainer(_currentConfig->_container);
     _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
 
-    if (not(configIsApplicable = configApplicable(_currentConfig, pairwiseFunctor))) {
+    if (not(configIsApplicable = configApplicable(*_currentConfig, pairwiseFunctor))) {
       continue;
     }
 
@@ -464,6 +424,50 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
   _traversalTimes.clear();
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
+}
+template<class Particle, class ParticleCell>
+template<class PairwiseFunctor>
+bool AutoTuner<Particle, ParticleCell>::configApplicable(Configuration conf, PairwiseFunctor pairwiseFunctor) {
+  bool traversalApplicable = false;
+
+  switch (_currentConfig->_dataLayout) {
+    case DataLayoutOption::aos: {
+      switch (_currentConfig->_newton3) {
+        case Newton3Option::enabled: {
+          traversalApplicable = _traversalSelectors[_currentConfig->_container]
+              .template getCurrentTraversal<PairwiseFunctor, false, true>(pairwiseFunctor)
+              ->isApplicable();
+          break;
+        }
+        case Newton3Option::disabled: {
+          traversalApplicable = _traversalSelectors[_currentConfig->_container]
+              .template getCurrentTraversal<PairwiseFunctor, false, false>(pairwiseFunctor)
+              ->isApplicable();
+          break;
+        }
+      }
+      break;
+    }
+    case DataLayoutOption::soa: {
+      switch (_currentConfig->_newton3) {
+        case Newton3Option::enabled: {
+          traversalApplicable = _traversalSelectors[_currentConfig->_container]
+              .template getCurrentTraversal<PairwiseFunctor, true, true>(pairwiseFunctor)
+              ->isApplicable();
+          break;
+        }
+        case Newton3Option::disabled: {
+          traversalApplicable = _traversalSelectors[_currentConfig->_container]
+              .template getCurrentTraversal<PairwiseFunctor, true, false>(pairwiseFunctor)
+              ->isApplicable();
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  return traversalApplicable;
 }
 
 }  // namespace autopas
