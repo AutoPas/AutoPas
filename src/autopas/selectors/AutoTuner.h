@@ -58,8 +58,9 @@ class AutoTuner {
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency, const std::vector<ContainerOption> &allowedContainerOptions,
             const std::vector<TraversalOption> &allowedTraversalOptions,
-            const std::vector<DataLayoutOption> &allowedDataLayoutOptions, const std::vector<Newton3Option> &allowedNewton3Options,
-            SelectorStrategy selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+            const std::vector<DataLayoutOption> &allowedDataLayoutOptions,
+            const std::vector<Newton3Option> &allowedNewton3Options, SelectorStrategy selectorStrategy,
+            unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainerOptions,
@@ -98,7 +99,7 @@ class AutoTuner {
    * Also checks if the container was already encountered and if not creates a new traversal selector for it.
    * @return Smartpointer to the optimal container.
    */
-   // TODO: remove this
+  // TODO: remove this
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getContainer() {
     auto container = _containerSelector.getCurrentContainer();
     // if the container is new create a new traversal selector for it
@@ -209,8 +210,6 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
     if (not isTuning) {
       _iterationsSinceTuning = 0;
     }
-  } else {
-    ++_iterationsSinceTuning;
   }
 
   // large case differentiation for data layout and newton 3
@@ -250,6 +249,8 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
     default:
       utils::ExceptionHandler::exception("AutoTuner: Unknown data layout : {}", _currentConfig->_dataLayout);
   }
+  ++_numSamples;
+  ++_iterationsSinceTuning;
   return isTuning;
 }
 
@@ -298,7 +299,6 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 
   // need more samples; keep current config
   if (_numSamples < _maxSamples) {
-    ++_numSamples;
     return stillTuning;
   }
 
@@ -314,7 +314,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   // check config and skip until one is applicable
   bool configIsApplicable = false;
   // repeat as long as traverals are not applicable or we run out of configs
-  while (not configIsApplicable and _currentConfig != _allowedConfigurations.end()) {
+  do {
     _containerSelector.selectContainer(_currentConfig->_container);
     _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
 
@@ -350,7 +350,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       }
     }
     ++_currentConfig;
-  }
+  } while (not configIsApplicable and _currentConfig != _allowedConfigurations.end());
+  // @TODO FIXME this might break the end of the tuning
   // while loop also increases pointer if good one is found
   --_currentConfig;
 
@@ -430,8 +431,8 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
-template<class Particle, class ParticleCell>
-template<class PairwiseFunctor>
+template <class Particle, class ParticleCell>
+template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
   bool traversalApplicable = false;
 
@@ -440,14 +441,14 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
       switch (_currentConfig->_newton3) {
         case Newton3Option::enabled: {
           traversalApplicable = _traversalSelectors[_currentConfig->_container]
-              .template getCurrentTraversal<PairwiseFunctor, false, true>(pairwiseFunctor)
-              ->isApplicable();
+                                    .template getCurrentTraversal<PairwiseFunctor, false, true>(pairwiseFunctor)
+                                    ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
           traversalApplicable = _traversalSelectors[_currentConfig->_container]
-              .template getCurrentTraversal<PairwiseFunctor, false, false>(pairwiseFunctor)
-              ->isApplicable();
+                                    .template getCurrentTraversal<PairwiseFunctor, false, false>(pairwiseFunctor)
+                                    ->isApplicable();
           break;
         }
       }
@@ -457,14 +458,14 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
       switch (_currentConfig->_newton3) {
         case Newton3Option::enabled: {
           traversalApplicable = _traversalSelectors[_currentConfig->_container]
-              .template getCurrentTraversal<PairwiseFunctor, true, true>(pairwiseFunctor)
-              ->isApplicable();
+                                    .template getCurrentTraversal<PairwiseFunctor, true, true>(pairwiseFunctor)
+                                    ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
           traversalApplicable = _traversalSelectors[_currentConfig->_container]
-              .template getCurrentTraversal<PairwiseFunctor, true, false>(pairwiseFunctor)
-              ->isApplicable();
+                                    .template getCurrentTraversal<PairwiseFunctor, true, false>(pairwiseFunctor)
+                                    ->isApplicable();
           break;
         }
       }
