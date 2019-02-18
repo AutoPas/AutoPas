@@ -26,7 +26,7 @@ pipeline{
                         stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
 
                         // get doxygen warnings
-                        warnings canComputeNew: false, canResolveRelativePaths: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '.*README.*', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Doxygen', pattern: 'build-doxygen/DoxygenWarningLog.txt']], unHealthy: '', failedTotalAll: '0'
+                        recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(pattern: 'build-doxygen/DoxygenWarningLog.txt')], unstableTotalAll: 1
                     },
                     "clang format": {
                         dir("clang-format"){
@@ -183,7 +183,7 @@ pipeline{
             }
             post{
                 always{
-					warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+                    recordIssues tools: [clang(pattern: 'build*/buildlog_clang.txt'), gcc3(pattern: 'build*/buildlog.txt'), gcc4(pattern: 'build*/buildlog.txt'), intel(pattern: 'build*/buildlog_intel.txt')], unstableTotalAll: 1
                 }
                 success{
                     githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
@@ -275,7 +275,7 @@ pipeline{
                             dir("build-archer"){
                                 // needed to properly check all test cases (also just single ones)
                                 // I suspect that archer breaks when death tests are used
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest --verbose'
                             }
                         }
                     },
@@ -380,7 +380,7 @@ pipeline{
                     "archer": {
                         container('autopas-archer'){
                             dir("build-archer/examples"){
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest -C checkExamples -j8 --verbose'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     },
