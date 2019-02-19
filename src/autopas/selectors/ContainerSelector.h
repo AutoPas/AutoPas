@@ -57,18 +57,6 @@ class ContainerSelector {
   }
 
   /**
-   * Selects the next allowed container.
-   * @return Smartpointer to the selected container.
-   */
-  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> selectNextContainer();
-
-  /**
-   * Selects the optimal container based on saved measurements.
-   * @return Smartpointer to the selected container.
-   */
-  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> selectOptimalContainer();
-
-  /**
    * Sets the container to the given option.
    * @param containerOption
    */
@@ -79,15 +67,6 @@ class ContainerSelector {
    * @return Smartpointer to the optimal container.
    */
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getCurrentContainer();
-
-  /**
-   * Save the runtime of a given container.
-   * If a better (from a different traversal) already exists nothing happens.
-   * If a worse (from a different traversal) already exists it is overwritten.
-   * @param container
-   * @param time
-   */
-  void addTimeMeasurement(ContainerOption container, long time);
 
  private:
   /**
@@ -105,7 +84,6 @@ class ContainerSelector {
   std::vector<ContainerOption> _allowedContainerOptions;
   std::vector<TraversalOption> _allowedTraversalOptions;
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
-  std::vector<std::pair<ContainerOption, long>> _containerTimes;
 };
 
 template <class Particle, class ParticleCell>
@@ -164,67 +142,6 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
 
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
-ContainerSelector<Particle, ParticleCell>::selectNextContainer() {
-  ContainerOption nextContainerType;
-
-  // if none is chosen yet create a new
-  if (_currentContainer == nullptr) {
-    nextContainerType = _allowedContainerOptions.begin().operator*();
-  } else {
-    auto containerTypeIter = std::find(_allowedContainerOptions.begin(), _allowedContainerOptions.end(),
-                                       _currentContainer->getContainerType());
-    ++containerTypeIter;
-
-    if (containerTypeIter >= _allowedContainerOptions.end()) {
-      return std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>(nullptr);
-    }
-
-    nextContainerType = *containerTypeIter;
-  }
-  _currentContainer = std::move(generateContainer(nextContainerType));
-  AutoPasLog(debug, "Testing Container {}", utils::StringUtils::to_string(nextContainerType));
-
-  return _currentContainer;
-}
-
-template <class Particle, class ParticleCell>
-std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
-ContainerSelector<Particle, ParticleCell>::selectOptimalContainer() {
-  // Time measure strategy
-  if (_containerTimes.empty()) {
-    utils::ExceptionHandler::exception("ContainerSelector: Trying to determine fastest container before measuring!");
-  }
-
-  // choose the fastest container and reset timings
-  // Initialize with something. This will be overridden.
-  ContainerOption optimalContainerOption = ContainerOption::directSum;
-  long optimalContainerTime = std::numeric_limits<long>::max();
-  AutoPasLog(debug, "ContainerSelector: Collected container times:");
-  for (auto &&c : _containerTimes) {
-    AutoPasLog(debug, "Container {} took {} nanoseconds:", utils::StringUtils::to_string(c.first), c.second);
-    if (c.second < optimalContainerTime) {
-      optimalContainerOption = c.first;
-      optimalContainerTime = c.second;
-    }
-  }
-  // measurements are not needed anymore
-  _containerTimes.clear();
-
-  // sanity check
-  if (optimalContainerTime == std::numeric_limits<long>::max()) {
-    utils::ExceptionHandler::exception("ContainerSelector: Nothing was faster than max long! o_O");
-  }
-
-  // only convert when best container is not the current or no container exists yet
-  if (_currentContainer == nullptr || _currentContainer->getContainerType() != optimalContainerOption) {
-    _currentContainer = std::move(generateContainer(optimalContainerOption));
-  }
-  AutoPasLog(debug, "Selected container {}", utils::StringUtils::to_string(_currentContainer->getContainerType()));
-  return _currentContainer;
-}
-
-template <class Particle, class ParticleCell>
-std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
@@ -233,10 +150,6 @@ ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
   return _currentContainer;
 }
 
-template <class Particle, class ParticleCell>
-void ContainerSelector<Particle, ParticleCell>::addTimeMeasurement(ContainerOption container, long time) {
-  _containerTimes.push_back(std::make_pair(container, time));
-}
 template <class Particle, class ParticleCell>
 void ContainerSelector<Particle, ParticleCell>::selectContainer(ContainerOption containerOption) {
   // if we already have this container do nothing.
