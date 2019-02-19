@@ -41,7 +41,7 @@ class AutoPas {
         _allowedContainers(allContainerOptions),
         _allowedTraversals(allTraversalOptions),
         _allowedDataLayouts(allDataLayoutOptions),
-        _allowedNewton3Options(false) {
+        _allowedNewton3Options(allNewton3Options) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
