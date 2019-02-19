@@ -348,7 +348,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 
   // if current config is not applicable but there are still some left check next
   } while (_currentConfig != _allowedConfigurations.end() and not configApplicable(*_currentConfig, pairwiseFunctor) and
-           (&*(++_currentConfig) != nullptr));
+           ((++_currentConfig) != _allowedConfigurations.end()));
 
   // reached end of tuning phase
   // either wait until last config has enough samples or last config is not applicable

@@ -20,18 +20,18 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
 
     autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, {traversalOption});
 
-    EXPECT_THROW((traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor)), std::exception);
+    EXPECT_THROW((traversalSelector.getCurrentTraversal<MFunctor, false, false>(functor)), std::exception);
 
     traversalSelector.selectNextTraversal<MFunctor, false, false>(functor);
 
-    auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor);
+    auto traversal = traversalSelector.getCurrentTraversal<MFunctor, false, false>(functor);
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())
         << "Is the domain size large enough for the processors' thread count?";
 
     // now that the functor is known check if still the same is returned
-    traversal = traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor);
+    traversal = traversalSelector.getCurrentTraversal<MFunctor, false, false>(functor);
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())
         << "Repeated call for traversal " << traversalOption << " failed";
@@ -45,15 +45,15 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
                                                          autopas::TraversalOption::c08};
 
   autopas::TraversalSelector<FPCell> traversalSelectorC08({1, 1, 1}, optionVector);
-  EXPECT_THROW((traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor)), std::exception);
+  EXPECT_THROW((traversalSelectorC08.getCurrentTraversal<MFunctor, false, true>(functor)), std::exception);
   traversalSelectorC08.selectNextTraversal<MFunctor, false, true>(functor);
-  auto traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
+  auto traversal = traversalSelectorC08.getCurrentTraversal<MFunctor, false, true>(functor);
 
   // check that traversals are of the expected type
   EXPECT_EQ(autopas::TraversalOption::c08, traversal->getTraversalType());
 
   // also after the functor is known
-  traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
+  traversal = traversalSelectorC08.getCurrentTraversal<MFunctor, false, true>(functor);
   EXPECT_EQ(autopas::TraversalOption::c08, traversal->getTraversalType());
 }
 
