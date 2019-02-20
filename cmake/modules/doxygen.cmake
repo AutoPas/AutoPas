@@ -11,13 +11,6 @@ find_package(Doxygen
         COMPONENTS dot
         OPTIONAL_COMPONENTS mscgen dia)
 if (DOXYGEN_FOUND)
-    if (CMAKE_VERSION VERSION_LESS "3.9")
-        if (NOT DOXYGEN_DOT_FOUND)
-            MESSAGE(WARNING "dot needs to be installed to generate the doxygen documentation, please install dot (graphviz)")
-            return()
-        endif()
-    else()
-    endif()
     # set input and output files
     set(DOXY_CONF_DIR docs)
     set(DOXYGEN_IN ${DOXY_CONF_DIR}/Doxyfile.in)
