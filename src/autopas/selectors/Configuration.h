@@ -67,6 +67,17 @@ inline bool operator==(const Configuration& lhs, const Configuration& rhs) {
 }
 
 /**
+ * Not-Equals operator for Configuration objects.
+ *
+ * @remark removing "inline" here leads to multiple definition errors.
+ *
+ * @param lhs
+ * @param rhs
+ * @return true iff at least one member is different.
+ */
+inline bool operator!=(const Configuration& lhs, const Configuration& rhs) { return not(lhs == rhs); }
+
+/**
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
  * sets.
  *
