@@ -15,8 +15,6 @@ class AutoPasTest : public testing::Test {
     autoPas.setBoxMin({0., 0., 0.});
     autoPas.setBoxMax({10., 10., 10.});
     autoPas.setCutoff(1.);
-    autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
-    autoPas.setAllowedTraversals({autopas::TraversalOption::c08});
     autoPas.init();
   }
 
