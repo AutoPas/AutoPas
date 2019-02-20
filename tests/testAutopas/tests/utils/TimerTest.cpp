@@ -9,7 +9,7 @@
 #include <thread>
 #include "autopas/utils/Timer.h"
 
-TEST(TimerTest, testTimer) {
+TEST(DISABLED_TimerTest, testTimer) {
   autopas::utils::Timer timer;
   timer.start();
   auto time = timer.stop();
