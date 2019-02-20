@@ -33,7 +33,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   omp_set_num_threads(8);
 #endif
 
-  /// @todo: test all containers
+  /// @todo: test all containers similar to Newton3OnOffTest
   auto containerList = {autopas::ContainerOption::linkedCells};
 
   for (auto &traversalLC : autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals()) {
@@ -42,7 +42,8 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
       // Here only one traversal is tested.
       continue;
     }
-    for (auto &dataLayout : autopas::allDataLayoutOptions) {
+    // @TODO: extend Simple Functor for SoA
+    for (auto &dataLayout : /*autopas::allDataLayoutOptions*/ {autopas::DataLayoutOption::aos}) {
       autopas::AutoPas<Particle, FPCell> autoPas;
 
       auto traversalList = {traversalLC};
