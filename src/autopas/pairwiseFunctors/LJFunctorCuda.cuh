@@ -29,3 +29,9 @@ void SoAFunctorNoN3Wrapper(int N, double* posX, double* posY, double* posZ, doub
 void SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY, double* posZ, double* forceX, double* forceY, double* forceZ,
 		int M, double* posX2, double* posY2, double* posZ2);
 
+void SoAFunctorN3Wrapper(int N, double* posX, double* posY, double* posZ, double* forceX, double* forceY, double* forceZ);
+void SoAFunctorN3PairWrapper(int N, double* posX, double* posY, double* posZ,
+		double* forceX, double* forceY, double* forceZ, int M, double* posX2,
+		double* posY2, double* posZ2, double* forceX2,
+		double* forceY2, double* forceZ2);
+

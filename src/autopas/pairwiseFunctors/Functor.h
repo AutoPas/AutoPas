@@ -102,11 +102,11 @@ class Functor {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 
-  virtual void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+  virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) {
     utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3: not yet implemented");
   }
-  virtual void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                               CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2) {
+  virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
+                           CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3(two cells): not yet implemented");
   }
   virtual void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,

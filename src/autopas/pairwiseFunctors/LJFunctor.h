@@ -383,35 +383,73 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
   }
 
-  void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
+  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
 #if defined(AUTOPAS_CUDA)
-    size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
-    SoAFunctorNoN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
-                          device_handle.template get<Particle::AttributeNames::posY>().get(),
-                          device_handle.template get<Particle::AttributeNames::posZ>().get(),
-                          device_handle.template get<Particle::AttributeNames::forceX>().get(),
-                          device_handle.template get<Particle::AttributeNames::forceY>().get(),
-                          device_handle.template get<Particle::AttributeNames::forceZ>().get());
+    const size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
+    if (newton3) {
+        SoAFunctorN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
+                              device_handle.template get<Particle::AttributeNames::posY>().get(),
+                              device_handle.template get<Particle::AttributeNames::posZ>().get(),
+                              device_handle.template get<Particle::AttributeNames::forceX>().get(),
+                              device_handle.template get<Particle::AttributeNames::forceY>().get(),
+                              device_handle.template get<Particle::AttributeNames::forceZ>().get());
+    } else {
+      SoAFunctorNoN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
+                            device_handle.template get<Particle::AttributeNames::posY>().get(),
+                            device_handle.template get<Particle::AttributeNames::posZ>().get(),
+                            device_handle.template get<Particle::AttributeNames::forceX>().get(),
+                            device_handle.template get<Particle::AttributeNames::forceY>().get(),
+                            device_handle.template get<Particle::AttributeNames::forceZ>().get());
+    }
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
 #endif
   }
 
-  void CudaFunctorNoN3(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2) override {
+  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
+                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
 #if defined(AUTOPAS_CUDA)
-    size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
-    size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
-
-    SoAFunctorNoN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
-                              device_handle1.template get<Particle::AttributeNames::posY>().get(),
-                              device_handle1.template get<Particle::AttributeNames::posZ>().get(),
-                              device_handle1.template get<Particle::AttributeNames::forceX>().get(),
-                              device_handle1.template get<Particle::AttributeNames::forceY>().get(),
-                              device_handle1.template get<Particle::AttributeNames::forceZ>().get(), size2,
-                              device_handle2.template get<Particle::AttributeNames::posX>().get(),
-                              device_handle2.template get<Particle::AttributeNames::posY>().get(),
-                              device_handle2.template get<Particle::AttributeNames::posZ>().get());
+    const size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
+    const size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
+    if (newton3) {
+      if (size1 > size2) {
+        SoAFunctorN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                                device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                                device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceZ>().get(), size2,
+                                device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                                device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                                device_handle2.template get<Particle::AttributeNames::posZ>().get(),
+                                device_handle2.template get<Particle::AttributeNames::forceX>().get(),
+                                device_handle2.template get<Particle::AttributeNames::forceY>().get(),
+                                device_handle2.template get<Particle::AttributeNames::forceZ>().get());
+      } else {
+        SoAFunctorN3PairWrapper(size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                                device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                                device_handle2.template get<Particle::AttributeNames::posZ>().get(),
+                                device_handle2.template get<Particle::AttributeNames::forceX>().get(),
+                                device_handle2.template get<Particle::AttributeNames::forceY>().get(),
+                                device_handle2.template get<Particle::AttributeNames::forceZ>().get(), size1,
+                                device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                                device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                                device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceZ>().get());
+      }
+    } else {
+      SoAFunctorNoN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                                device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                                device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                                device_handle1.template get<Particle::AttributeNames::forceZ>().get(), size2,
+                                device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                                device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                                device_handle2.template get<Particle::AttributeNames::posZ>().get());
+    }
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
 #endif
@@ -556,7 +594,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       _virialSum = ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
     }
     if (not newton3) {
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2 here.
+      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+      // here.
       _upotSum *= 0.5;
       _virialSum = ArrayMath::mulScalar(_virialSum, 0.5);
     }

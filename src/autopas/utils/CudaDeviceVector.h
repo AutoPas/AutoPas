@@ -36,7 +36,7 @@ class CudaDeviceVector {
 
   size_t size() { return _size; }
 
-  void copyHostToDevice(const size_t n, T* hostData) {
+  void copyHostToDevice(const size_t n, T* hostData, const cudaStream_t stream = 0) {
     _size = n;
     if (n > _max_size) {
       _max_size = (n / 32 + 1) * 32;
@@ -45,12 +45,12 @@ class CudaDeviceVector {
       autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
     }
     autopas::utils::CudaExceptionHandler::checkErrorCode(
-        cudaMemcpy(_data, hostData, n * sizeof(T), cudaMemcpyHostToDevice));
+        cudaMemcpyAsync(_data, hostData, n * sizeof(T), cudaMemcpyHostToDevice, stream));
   }
 
-  void copyDeviceToHost(const size_t n, T* hostData) {
+  void copyDeviceToHost(const size_t n, T* hostData, const cudaStream_t stream = 0) {
     autopas::utils::CudaExceptionHandler::checkErrorCode(
-        cudaMemcpy(hostData, _data, n * sizeof(T), cudaMemcpyDeviceToHost));
+        cudaMemcpyAsync(hostData, _data, n * sizeof(T), cudaMemcpyDeviceToHost, stream));
   }
 
  private:

@@ -45,7 +45,7 @@ bool LJFunctorCudaTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::
     EXPECT_NEAR(fzptr1[i], fzptr2[i], _maxError) << "for particle pair " << idptr1[i];
   }
   // clang-format off
-  return not ::testing::Test::HasFailure();
+	return not ::testing::Test::HasFailure();
   // clang-format on
 }
 
@@ -60,7 +60,7 @@ bool LJFunctorCudaTest::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_NEAR(p1.getF()[2], p2.getF()[2], _maxError) << "for particle pair " << p1.getID();
 
   // clang-format off
-  return not ::testing::Test::HasFailure();
+	return not ::testing::Test::HasFailure();
   // clang-format on
 }
 
@@ -76,7 +76,7 @@ bool LJFunctorCudaTest::AoSParticlesEqual(FPCell &cell1, FPCell &cell2) {
   return ret;
 }
 
-void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles) {
+void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2, bool newton3) {
   FPCell cell1Cuda;
   FPCell cell2Cuda;
 
@@ -84,7 +84,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   RandomGenerator::fillWithParticles(cell1Cuda, defaultParticle, _lowCorner,
                                      {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   RandomGenerator::fillWithParticles(cell2Cuda, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
-                                     _highCorner, numParticles);
+                                     _highCorner, numParticles2);
 
   // copy cells
   FPCell cell1NoCuda(cell1Cuda);
@@ -107,8 +107,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ljFunctorCuda.deviceSoALoader(cell2Cuda._particleSoABuffer, cell2Cuda._particleSoABufferDevice);
 
   // Functor calls
-  ljFunctorNoCuda.SoAFunctor(cell1NoCuda._particleSoABuffer, cell2NoCuda._particleSoABuffer, false);
-  ljFunctorCuda.CudaFunctorNoN3(cell1Cuda._particleSoABufferDevice, cell2Cuda._particleSoABufferDevice);
+  ljFunctorNoCuda.SoAFunctor(cell1NoCuda._particleSoABuffer, cell2NoCuda._particleSoABuffer, newton3);
+  ljFunctorCuda.CudaFunctor(cell1Cuda._particleSoABufferDevice, cell2Cuda._particleSoABufferDevice, newton3);
 
   ljFunctorCuda.deviceSoAExtractor(cell1Cuda._particleSoABuffer, cell1Cuda._particleSoABufferDevice);
   ljFunctorCuda.deviceSoAExtractor(cell2Cuda._particleSoABuffer, cell2Cuda._particleSoABufferDevice);
@@ -127,7 +127,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ASSERT_TRUE(AoSParticlesEqual(cell2Cuda, cell2NoCuda)) << "Cells 2 not equal after extracting.";
 }
 
-void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles) {
+void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles, bool newton3) {
   FPCell cellCuda;
 
   Particle defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
@@ -148,8 +148,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   ljFunctorCuda.deviceSoALoader(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
 
   // functor calls
-  ljFunctorNoCuda.SoAFunctor(cellNoCuda._particleSoABuffer, false);
-  ljFunctorCuda.CudaFunctorNoN3(cellCuda._particleSoABufferDevice);
+  ljFunctorNoCuda.SoAFunctor(cellNoCuda._particleSoABuffer, newton3);
+  ljFunctorCuda.CudaFunctor(cellCuda._particleSoABufferDevice, newton3);
 
   ljFunctorCuda.deviceSoAExtractor(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
 
@@ -165,22 +165,66 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNoNewton3_7Particles) {
   testLJFunctorVSLJFunctorCudaOneCell(7);
 }
-TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_7Particles) {
-  testLJFunctorVSLJFunctorCudaTwoCells(7);
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNewton3_7Particles) {
+  testLJFunctorVSLJFunctorCudaOneCell(7, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_7_7Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(7, 7);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_7_21Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(7, 21, true);
+}
+
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_7_34Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(7, 34);
 }
 
 TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNoNewton3_32Particles) {
   testLJFunctorVSLJFunctorCudaOneCell(32);
 }
-TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_32Particles) {
-  testLJFunctorVSLJFunctorCudaTwoCells(32);
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNewton3_32Particles) {
+  testLJFunctorVSLJFunctorCudaOneCell(32, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_32_32Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(32, 32);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_32_32Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(32, 32, true);
 }
 
 TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNoNewton3_34Particles) {
   testLJFunctorVSLJFunctorCudaOneCell(34);
+}TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNewton3_34Particles) {
+	  testLJFunctorVSLJFunctorCudaOneCell(34,true);
+	}TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNewton3_66Particles) {
+		  testLJFunctorVSLJFunctorCudaOneCell(66, true);
+		}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_34_34Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(34, 34);
 }
-TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_34Particles) {
-  testLJFunctorVSLJFunctorCudaTwoCells(34);
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_35_34Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(35, 34, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_21_35Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(21, 35, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_35_21Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(35, 21, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_35_64Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(35, 64, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_64_36Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(64, 36, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_128_124Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(128, 124, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_128_128Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(128, 128, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_34_7Particles) {
+  testLJFunctorVSLJFunctorCudaTwoCells(34, 7);
 }
 
 #endif  // AUTOPAS_CUDA

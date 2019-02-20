@@ -38,8 +38,8 @@ class MyMolecule : public Particle {
   int _myvar;
 };
 
-template <class Cell>
-void fillSpaceWithGrid(Cell &pc, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double gridsize,
+template <class Container>
+void fillSpaceWithGrid(Container &pc, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double gridsize,
                        int maxN = 10000) {
   int i = 0;
 
@@ -69,6 +69,12 @@ int main() {
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.6, 700);
 
+for (int i = 1; i < 33; ++i) {
+	MyMolecule m({(double)-i,0,0}, {0., 0., 0.}, static_cast<unsigned long>(i), i);
+	dir.addHaloParticle(m);
+}
+
+
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
 
   Func func(cutoff, epsilon, sigma, 0.0);
@@ -76,6 +82,8 @@ int main() {
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, false, false, false> traversalAoS(&func);
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, false, false> traversalSoA(&func);
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, false, true> traversalCuda(&func);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, true, true> traversalCudaN3(&func);
+
 
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
@@ -102,6 +110,15 @@ int main() {
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "Cuda:" << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
+       << "microseconds" << endl;
+
+  start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < maxIterations; ++i) {
+    dir.iteratePairwiseSoACuda(&func, &traversalCudaN3, true);
+  }
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+  cout << "CudaN3:" << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
        << "microseconds" << endl;
 
   return EXIT_SUCCESS;

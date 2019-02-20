@@ -26,22 +26,22 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is AVX2, second non-AVX2
    *
-   * Checks SoAFunctor(soa1, soa2, newton3)
+   * Checks CudaFunctor(soa1, soa2, newton3)
    *
    * @param newton3
    */
-  void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles);
+  void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2, bool newton3 = false);
 
   /**
    * Checks equality of SoALoader, SoAFunctor and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is AVX2, second non-AVX2
    *
-   * Checks SoAFunctor(soa, newton3)
+   * Checks CudaFunctor(soa, newton3)
    *
    * @param newton3
    */
-  void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles);
+  void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles, bool newton3 = false);
 
   /**
    * Checks that two non empty SoAs' particles are equal

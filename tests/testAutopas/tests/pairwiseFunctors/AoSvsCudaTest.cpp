@@ -65,7 +65,7 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
   ljFunctor.deviceSoALoader(cell._particleSoABuffer, cell._particleSoABufferDevice);
 
   start = std::chrono::high_resolution_clock::now();
-  ljFunctor.CudaFunctorNoN3(cell._particleSoABufferDevice);
+  ljFunctor.CudaFunctor(cell._particleSoABufferDevice, false);
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
 

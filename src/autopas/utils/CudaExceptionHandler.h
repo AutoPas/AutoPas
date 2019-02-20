@@ -24,7 +24,7 @@ class CudaExceptionHandler {
     std::string errorname = std::string(cudaGetErrorName(error));
     std::string errorstring = std::string(cudaGetErrorString(error));
 
-    autopas::utils::ExceptionHandler::exception(std::string("cuda error") + errorname);
+    autopas::utils::ExceptionHandler::exception(std::string("cuda error: ") + errorname);
   }
 
   static void checkLastCudaCall() {
@@ -33,7 +33,7 @@ class CudaExceptionHandler {
     std::string errorname = std::string(cudaGetErrorName(error));
     std::string errorstring = std::string(cudaGetErrorString(error));
 
-    autopas::utils::ExceptionHandler::exception(std::string("cuda error") + errorname);
+    autopas::utils::ExceptionHandler::exception(std::string("cuda error: ") + errorname);
   }
 #endif
 };
