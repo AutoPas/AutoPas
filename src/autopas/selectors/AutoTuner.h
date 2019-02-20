@@ -72,6 +72,10 @@ class AutoTuner {
         _allowedConfigurations(),
         _currentConfig(),
         _traversalTimes() {
+
+    //@TODO needed until all containers support propper traversals
+    _allowedTraversalOptions.push_back(TraversalOption::dummyTraversal);
+
     std::sort(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end());
 
     // generate all potential configs
