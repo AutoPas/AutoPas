@@ -53,6 +53,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return v;
   }
 
+  std::vector<TraversalOption> getAllTraversals() override { return allLCApplicableTraversals(); }
+
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
 
   void addParticle(Particle &p) override {
@@ -194,13 +196,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOption> traversalOptions) override {
-    std::vector<TraversalOption> allowedAndApplicable;
-
-    std::sort(traversalOptions.begin(), traversalOptions.end());
-    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
-                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), allowedAndApplicable);
+  TraversalSelector<ParticleCell> generateTraversalSelector() override {
+    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

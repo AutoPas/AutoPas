@@ -28,13 +28,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   typedef std::size_t index_t;
 
- private:
-  const std::vector<TraversalOption>& VCLApplicableTraversals() {
-    // traversal not used but prevents usage of newton3
-    static const std::vector<TraversalOption> v{TraversalOption::c01};
-    return v;
-  }
-
  public:
   /**
    * Constructor of the VerletClusterLists class.
@@ -54,7 +47,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
-                                                                VCLApplicableTraversals()),
+                                                                allVCLApplicableTraversals()),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -66,6 +59,18 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         _neighborListIsValid(false) {
     rebuild();
   }
+
+  /**
+   * Lists all traversal options applicable for the Verlet Lists container.
+   * @return Vector of all applicable traversal options.
+   */
+  static const std::vector<TraversalOption>& allVCLApplicableTraversals() {
+    // traversal not used but prevents usage of newton3
+    static const std::vector<TraversalOption> v{TraversalOption::c01};
+    return v;
+  }
+
+  std::vector<TraversalOption> getAllTraversals() override { return allVCLApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
@@ -143,14 +148,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return false;
   }
 
-  TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector(
-      std::vector<TraversalOption> traversalOptions) override {
-    std::vector<TraversalOption> allowedAndApplicable;
-
-    std::sort(traversalOptions.begin(), traversalOptions.end());
-    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
-                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
-    return TraversalSelector<FullParticleCell<Particle>>(_cellsPerDim, allowedAndApplicable);
+  TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector() override {
+    return TraversalSelector<FullParticleCell<Particle>>(_cellsPerDim);
   }
 
   /**

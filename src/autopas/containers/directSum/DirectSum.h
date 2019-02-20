@@ -49,6 +49,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return v;
   }
 
+  std::vector<TraversalOption> getAllTraversals() override { return allDSApplicableTraversals(); }
+
   ContainerOption getContainerType() override { return ContainerOption::directSum; }
 
   void addParticle(Particle &p) override {
@@ -133,14 +135,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOption> traversalOptions) override {
-    std::vector<TraversalOption> allowedAndApplicable;
-
-    std::sort(traversalOptions.begin(), traversalOptions.end());
-    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
-                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
+  TraversalSelector<ParticleCell> generateTraversalSelector() override {
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelector<ParticleCell>({2, 0, 0}, allowedAndApplicable);
+    return TraversalSelector<ParticleCell>({2, 0, 0});
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

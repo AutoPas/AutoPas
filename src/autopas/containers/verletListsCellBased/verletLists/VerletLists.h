@@ -35,13 +35,6 @@ class VerletLists
   typedef typename VerletListHelpers<Particle>::SoAArraysType SoAArraysType;
   typedef typename VerletListHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
 
- private:
-  static const std::vector<TraversalOption>& VLApplicableTraversals() {
-    // @todo: implement some traversals for this
-    static const std::vector<TraversalOption> v{};
-    return v;
-  }
-
  public:
   /**
    * Enum that specifies how the verlet lists should be build
@@ -83,6 +76,8 @@ class VerletLists
     static const std::vector<TraversalOption> v{TraversalOption::dummyTraversal};
     return v;
   }
+
+  std::vector<TraversalOption> getAllTraversals() override { return allVLApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
@@ -165,15 +160,9 @@ class VerletLists
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOption> traversalOptions) override {
-    //    std::vector<TraversalOption> allowedAndApplicable;
-    //
-    //    std::sort(traversalOptions.begin(), traversalOptions.end());
-    //    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
-    //    traversalOptions.begin(),
-    //                          traversalOptions.end(), std::back_inserter(allowedAndApplicable));
+  TraversalSelector<ParticleCell> generateTraversalSelector() override {
     // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
-    return TraversalSelector<ParticleCell>({0, 0, 0}, {dummyTraversal});
+    return TraversalSelector<ParticleCell>({0, 0, 0});
   }
 
   /**
