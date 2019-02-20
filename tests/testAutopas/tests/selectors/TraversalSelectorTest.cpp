@@ -16,16 +16,14 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
 
   // this should be high enough so that sliced is still valid for the current processors thread count.
   constexpr size_t domainSize = 1000;
-  autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize},
-                                                       autopas::allTraversalOptions);
+  autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize});
 
   // expect an exception if nothing is selected yet
-  EXPECT_THROW((traversalSelector.getCurrentTraversal<MFunctor, false, false>(functor)), std::exception);
+  EXPECT_THROW((traversalSelector.generateTraversal<MFunctor, false, false>(autopas::TraversalOption(-1), functor)),
+               autopas::utils::ExceptionHandler::AutoPasException);
 
   for (auto &traversalOption : autopas::allTraversalOptions) {
-    traversalSelector.selectTraversal(traversalOption);
-
-    auto traversal = traversalSelector.getCurrentTraversal<MFunctor, false, false>(functor);
+    auto traversal = traversalSelector.generateTraversal<MFunctor, false, false>(traversalOption, functor);
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())
@@ -33,7 +31,7 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   }
 }
 
-//TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestAbs) {
+// TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestAbs) {
 //  auto strategy = autopas::SelectorStrategy::fastestAbs;
 //
 //  mapOptionsTime measurements;
@@ -47,7 +45,7 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
 //  testFastest(strategy, measurements, autopas::TraversalOption::sliced, ignoredMeasurements);
 //}
 //
-//TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMean) {
+// TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMean) {
 //  auto strategy = autopas::SelectorStrategy::fastestMean;
 //
 //  mapOptionsTime measurements;
@@ -58,7 +56,7 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
 //  testFastest(strategy, measurements, autopas::TraversalOption::sliced);
 //}
 //
-//TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMedian) {
+// TEST_F(TraversalSelectorTest, testSelectOptimalTraversalFastestMedian) {
 //  auto strategy = autopas::SelectorStrategy::fastestMedian;
 //
 //  mapOptionsTime measurements;
@@ -69,7 +67,7 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
 //  testFastest(strategy, measurements, autopas::TraversalOption::sliced);
 //}
 //
-//void TraversalSelectorTest::testFastest(autopas::SelectorStrategy strategy, mapOptionsTime measurements,
+// void TraversalSelectorTest::testFastest(autopas::SelectorStrategy strategy, mapOptionsTime measurements,
 //                                        autopas::TraversalOption expectedBest, mapOptionsTime ignoredMeasurements) {
 //  MFunctor functor;
 //
