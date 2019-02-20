@@ -13,6 +13,10 @@
 void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   autopas::AutoPas<Particle, FPCell> autoPas;
 
+  autoPas.setBoxMin({0,0,0});
+  autoPas.setBoxMax({3,3,3});
+  autoPas.setCutoff(1);
+  autoPas.setAllowedContainers({autopas::ContainerOption::directSum});
   autoPas.init();
 
   std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0), Particle({1, 1, 2}, {0, 0, 0}, 1),
