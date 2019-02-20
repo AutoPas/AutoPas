@@ -69,11 +69,10 @@ int main() {
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.6, 700);
 
-for (int i = 1; i < 33; ++i) {
-	MyMolecule m({(double)-i,0,0}, {0., 0., 0.}, static_cast<unsigned long>(i), i);
-	dir.addHaloParticle(m);
-}
-
+  for (int i = 1; i < 33; ++i) {
+    MyMolecule m({(double)-i, 0, 0}, {0., 0., 0.}, static_cast<unsigned long>(i), i);
+    dir.addHaloParticle(m);
+  }
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
 
@@ -83,7 +82,6 @@ for (int i = 1; i < 33; ++i) {
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, false, false> traversalSoA(&func);
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, false, true> traversalCuda(&func);
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, true, true> traversalCudaN3(&func);
-
 
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {

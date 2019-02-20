@@ -10,7 +10,6 @@
 
 #include <AutoPasTestBase.h>
 
-class CudaDeviceVectorTest: public AutoPasTestBase {
-};
+class CudaDeviceVectorTest : public AutoPasTestBase {};
 
 #endif

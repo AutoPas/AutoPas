@@ -387,12 +387,12 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 #if defined(AUTOPAS_CUDA)
     const size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
     if (newton3) {
-        SoAFunctorN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
-                              device_handle.template get<Particle::AttributeNames::posY>().get(),
-                              device_handle.template get<Particle::AttributeNames::posZ>().get(),
-                              device_handle.template get<Particle::AttributeNames::forceX>().get(),
-                              device_handle.template get<Particle::AttributeNames::forceY>().get(),
-                              device_handle.template get<Particle::AttributeNames::forceZ>().get());
+      SoAFunctorN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
+                          device_handle.template get<Particle::AttributeNames::posY>().get(),
+                          device_handle.template get<Particle::AttributeNames::posZ>().get(),
+                          device_handle.template get<Particle::AttributeNames::forceX>().get(),
+                          device_handle.template get<Particle::AttributeNames::forceY>().get(),
+                          device_handle.template get<Particle::AttributeNames::forceZ>().get());
     } else {
       SoAFunctorNoN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
                             device_handle.template get<Particle::AttributeNames::posY>().get(),

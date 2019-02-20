@@ -194,11 +194,13 @@ TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNewton3_32_32Partic
 
 TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNoNewton3_34Particles) {
   testLJFunctorVSLJFunctorCudaOneCell(34);
-}TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNewton3_34Particles) {
-	  testLJFunctorVSLJFunctorCudaOneCell(34,true);
-	}TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNewton3_66Particles) {
-		  testLJFunctorVSLJFunctorCudaOneCell(66, true);
-		}
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNewton3_34Particles) {
+  testLJFunctorVSLJFunctorCudaOneCell(34, true);
+}
+TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellNewton3_66Particles) {
+  testLJFunctorVSLJFunctorCudaOneCell(66, true);
+}
 TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellNoNewton3_34_34Particles) {
   testLJFunctorVSLJFunctorCudaTwoCells(34, 34);
 }

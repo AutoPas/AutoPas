@@ -110,12 +110,12 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
     return;
   }
   if (useCuda) {
-	  if (useNewton3){
-		    processCellCudaN3(cell);
+    if (useNewton3) {
+      processCellCudaN3(cell);
 
-	  }else{
-    processCellCudaNoN3(cell);
-	  }
+    } else {
+      processCellCudaNoN3(cell);
+    }
   } else if (useSoA) {
     if (useNewton3) {
       processCellSoAN3(cell);
@@ -139,12 +139,12 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
     return;
   }
   if (useCuda) {
-	  if(useNewton3){
-		    processCellPairCudaN3(cell1, cell2);
+    if (useNewton3) {
+      processCellPairCudaN3(cell1, cell2);
 
-	  }else{
-    processCellPairCudaNoN3(cell1, cell2);
-	  }
+    } else {
+      processCellPairCudaNoN3(cell1, cell2);
+    }
   } else if (useSoA) {
     if (useNewton3) {
       processCellPairSoAN3(cell1, cell2);
