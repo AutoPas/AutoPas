@@ -44,7 +44,7 @@ TEST_F(AutoPasTest, checkRebuildingNewMove) {
     // 1. create new AutoPas container + initialize
     decltype(autoPas) autoPasTmp;
     autoPasTmp.setBoxMin ({0., 0., 0.});
-    autoPasTmp.setBoxMax ({.5, .5, .5});
+    autoPasTmp.setBoxMax ({5., 5., 5.});
     autoPasTmp.setCutoff (1.);
     autoPasTmp.setAllowedContainers ({autopas::ContainerOption::linkedCells});
     autoPasTmp.setAllowedTraversals ({autopas::TraversalOption::c08});
@@ -123,7 +123,7 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
     autoPas = decltype(autoPas)();
 
     autoPas.setBoxMin({0., 0., 0.});
-    autoPas.setBoxMax({.5, .5, .5});
+    autoPas.setBoxMax({5., 5., 5.});
     autoPas.setCutoff(1.);
     autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
     autoPas.setAllowedTraversals({autopas::TraversalOption::c08});
@@ -166,7 +166,7 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
 
   // now build verlet lists
   autoPas.setBoxMin({0., 0., 0.});
-  autoPas.setBoxMax({.5, .5, .5});
+  autoPas.setBoxMax({5., 5., 5.});
   autoPas.setCutoff(1.);
   autoPas.setVerletSkin(0);
   autoPas.setVerletRebuildFrequency(2);
@@ -179,9 +179,9 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
 
   // run once, builds verlet lists. (here for 0 particles)
   MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, allowsNewton3()).Times(AtLeast(1)).WillOnce(Return(true));
-  EXPECT_CALL(emptyFunctor, allowsNonNewton3()).Times(AtLeast(1)).WillOnce(Return(false));
-  EXPECT_CALL(emptyFunctor, isRelevantForTuning()).Times(AtLeast(1)).WillOnce(Return(true));
+  EXPECT_CALL(emptyFunctor, allowsNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(emptyFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
+  EXPECT_CALL(emptyFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
   autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &emptyFunctor);
   autoPas.iteratePairwise(&emptyFunctor);
 
