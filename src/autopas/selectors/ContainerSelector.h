@@ -41,8 +41,9 @@ class ContainerSelector {
    * @param allowedContainerOptions Vector of container types the selector can choose from.
    * @param allowedTraversalOptions Vector of traversals the selector can choose from.
    */
-  ContainerSelector(std::array<double, 3> &boxMin, std::array<double, 3> &boxMax, double cutoff, double verletSkin,
-                    unsigned int verletRebuildFrequency, std::vector<ContainerOption> allowedContainerOptions,
+  ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
+                    double verletSkin, unsigned int verletRebuildFrequency,
+                    std::vector<ContainerOption> allowedContainerOptions,
                     std::vector<TraversalOption> allowedTraversalOptions)
       : _boxMin(boxMin),
         _boxMax(boxMax),
