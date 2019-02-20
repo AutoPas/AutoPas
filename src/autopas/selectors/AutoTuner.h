@@ -170,6 +170,7 @@ class AutoTuner {
     }
   }
 
+  const autopas::Configuration getCurrentConfig() const;
  private:
   void selectOptimalConfiguration();
 
@@ -485,6 +486,11 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
   }
 
   return traversalApplicable;
+}
+
+template<class Particle, class ParticleCell>
+const autopas::Configuration  AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
+  return *_currentConfig;
 }
 
 }  // namespace autopas
