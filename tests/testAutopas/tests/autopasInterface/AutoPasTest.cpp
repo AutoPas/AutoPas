@@ -161,9 +161,6 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
 }
 
 TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
-  // for linked cells this should be false
-  EXPECT_TRUE(autoPas.needsContainerUpdate());
-
   // now build verlet lists
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({5., 5., 5.});
@@ -174,7 +171,8 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
   // @TODO: set traversal when this container finally uses one!
   // autoPas._allowedTraversals = {};
   autoPas.init();
-  // after build this should be false
+
+  // after build this should be true
   EXPECT_TRUE(autoPas.needsContainerUpdate());
 
   // run once, builds verlet lists. (here for 0 particles)
