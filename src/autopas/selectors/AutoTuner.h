@@ -72,12 +72,23 @@ class AutoTuner {
         _allowedConfigurations(),
         _currentConfig(),
         _traversalTimes() {
+    std::sort(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end());
+
     // generate all potential configs
     for (auto &containerOption : allowedContainerOptions) {
       _containerSelector.selectContainer(containerOption);
-      _traversalSelectors.emplace(containerOption, _containerSelector.getCurrentContainer()->generateTraversalSelector(
-                                                       allowedTraversalOptions));
-      for (auto &traversalOption : _traversalSelectors[containerOption].getAllowedTraversalOptions()) {
+      _traversalSelectors.emplace(containerOption,
+                                  _containerSelector.getCurrentContainer()->generateTraversalSelector());
+
+      // get all traversals of the container and restrict them to the allowed ones
+      auto allContainerTraversals = _containerSelector.getCurrentContainer()->getAllTraversals();
+      std::vector<TraversalOption> allowedAndApplicable;
+      std::sort(allContainerTraversals.begin(), allContainerTraversals.end());
+      std::set_intersection(this->_allowedTraversalOptions.begin(), this->_allowedTraversalOptions.end(),
+                            allContainerTraversals.begin(), allContainerTraversals.end(),
+                            std::back_inserter(allowedAndApplicable));
+
+      for (auto &traversalOption : allowedAndApplicable) {
         for (auto &dataLayoutOption : allowedDataLayoutOptions) {
           for (auto &newton3Option : allowedNewton3Options) {
             _allowedConfigurations.emplace(containerOption, traversalOption, dataLayoutOption, newton3Option);
@@ -179,7 +190,7 @@ class AutoTuner {
   ContainerSelector<Particle, ParticleCell> _containerSelector;
   std::vector<TraversalOption> _allowedTraversalOptions;
   /**
-   * One selector per possible container.
+   * One selector / factory per possible container because every container might have a different number of cells.
    */
   std::map<ContainerOption, TraversalSelector<ParticleCell>> _traversalSelectors;
 
@@ -313,10 +324,9 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 
   // check config and skip until one is applicable
   bool configIsApplicable = false;
-  // repeat as long as traverals are not applicable or we run out of configs
+  // repeat as long as traversals are not applicable or we run out of configs
   do {
     _containerSelector.selectContainer(_currentConfig->_container);
-    _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
 
     // check if newton3 works with this functor and fix if needed
     if ((_currentConfig->_newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
@@ -342,22 +352,19 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       }
       if (_currentConfig != _allowedConfigurations.end()) {
         _containerSelector.selectContainer(_currentConfig->_container);
-        _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
       }
     }
 
-  // if current config is not applicable but there are still some left check next
+    // if current config is not applicable but there are still some left check next
   } while (_currentConfig != _allowedConfigurations.end() and not configApplicable(*_currentConfig, pairwiseFunctor) and
            ((++_currentConfig) != _allowedConfigurations.end()));
 
   // reached end of tuning phase
   // either wait until last config has enough samples or last config is not applicable
-  if (_currentConfig == _allowedConfigurations.end()  and (_numSamples >= _maxSamples or not configIsApplicable)) {
+  if (_currentConfig == _allowedConfigurations.end() and (_numSamples >= _maxSamples or not configIsApplicable)) {
     selectOptimalConfiguration();
     stillTuning = false;
     _containerSelector.selectContainer(_currentConfig->_container);
-    // assume optimal traversal is applicable
-    _traversalSelectors[_currentConfig->_container].selectTraversal(_currentConfig->_traversal);
   }
 
   return stillTuning;
@@ -432,36 +439,40 @@ template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
   bool traversalApplicable = false;
 
-  switch (_currentConfig->_dataLayout) {
+  switch (conf._dataLayout) {
     case DataLayoutOption::aos: {
-      switch (_currentConfig->_newton3) {
+      switch (conf._newton3) {
         case Newton3Option::enabled: {
-          traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                    .template getCurrentTraversal<PairwiseFunctor, false, true>(pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              _traversalSelectors[conf._container]
+                  .template generateTraversal<PairwiseFunctor, false, true>(conf._traversal, pairwiseFunctor)
+                  ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
-          traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                    .template getCurrentTraversal<PairwiseFunctor, false, false>(pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              _traversalSelectors[conf._container]
+                  .template generateTraversal<PairwiseFunctor, false, false>(conf._traversal, pairwiseFunctor)
+                  ->isApplicable();
           break;
         }
       }
       break;
     }
     case DataLayoutOption::soa: {
-      switch (_currentConfig->_newton3) {
+      switch (conf._newton3) {
         case Newton3Option::enabled: {
-          traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                    .template getCurrentTraversal<PairwiseFunctor, true, true>(pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              _traversalSelectors[conf._container]
+                  .template generateTraversal<PairwiseFunctor, true, true>(conf._traversal, pairwiseFunctor)
+                  ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
-          traversalApplicable = _traversalSelectors[_currentConfig->_container]
-                                    .template getCurrentTraversal<PairwiseFunctor, true, false>(pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              _traversalSelectors[conf._container]
+                  .template generateTraversal<PairwiseFunctor, true, false>(conf._traversal, pairwiseFunctor)
+                  ->isApplicable();
           break;
         }
       }
