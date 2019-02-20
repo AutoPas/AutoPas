@@ -26,7 +26,7 @@ namespace StringUtils {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(Newton3Option option) {
+inline std::string to_string(const Newton3Option &option) {
   switch (option) {
     case autopas::Newton3Option::enabled: {
       return "enabled";
@@ -44,7 +44,7 @@ inline std::string to_string(Newton3Option option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(autopas::SelectorStrategy option) {
+inline std::string to_string(const autopas::SelectorStrategy &option) {
   switch (option) {
     case autopas::SelectorStrategy::fastestAbs: {
       return "Fastest-Absolute-Value";
@@ -65,7 +65,7 @@ inline std::string to_string(autopas::SelectorStrategy option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(DataLayoutOption option) {
+inline std::string to_string(const DataLayoutOption &option) {
   switch (option) {
     case autopas::DataLayoutOption::aos: {
       return "Array-of-Structures";
@@ -83,7 +83,7 @@ inline std::string to_string(DataLayoutOption option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(ContainerOption option) {
+inline std::string to_string(const ContainerOption &option) {
   switch (option) {
     case autopas::ContainerOption::directSum: {
       return "DirectSum";
@@ -110,7 +110,7 @@ inline std::string to_string(ContainerOption option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(TraversalOption option) {
+inline std::string to_string(const TraversalOption &option) {
   switch (option) {
     case autopas::TraversalOption::dummyTraversal: {
       return "dummyTraversal";
