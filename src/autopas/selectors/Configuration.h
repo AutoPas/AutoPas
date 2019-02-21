@@ -13,6 +13,9 @@
 
 namespace autopas {
 
+/**
+ * Class containing multiple options that form a algorithm configuration for the pairwise iteration.
+ */
 class Configuration {
  public:
   /**
@@ -46,9 +49,21 @@ class Configuration {
            " , Newton 3 : " + utils::StringUtils::to_string(_newton3) + "}";
   }
 
+  /**
+   * Container option.
+   */
   ContainerOption _container;
+  /**
+   * Traversal option.
+   */
   TraversalOption _traversal;
+  /**
+   * Data Layout option.
+   */
   DataLayoutOption _dataLayout;
+  /**
+   * Newton 3 option.
+   */
   Newton3Option _newton3;
 };
 
@@ -97,6 +112,11 @@ inline bool operator<(const Configuration& lhs, const Configuration& rhs) {
  * Aims to place integer representations of members in one large number s.th. they never overlap.
  */
 struct ConfigHash {
+  /**
+   * Hash Function operator
+   * @param configuration
+   * @return
+   */
   std::size_t operator()(Configuration configuration) const {
     return static_cast<std::size_t>(configuration._newton3) + static_cast<std::size_t>(configuration._dataLayout) * 10 +
            static_cast<std::size_t>(configuration._traversal) * 100 +

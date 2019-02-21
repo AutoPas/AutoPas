@@ -37,11 +37,12 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * C01 traversals are only usable if useNewton3 is disabled.
    *
-   * @TODO for Steffen: think about why c01 is not applicable with N3 and 1 thread
    *
    * @return
    */
-  bool isApplicable() override { return not useNewton3; }
+  bool isApplicable() override {  // @TODO for Steffen: think about why c01 is not applicable with N3 and 1 thread
+    return not useNewton3;
+  }
 
  protected:
   /**

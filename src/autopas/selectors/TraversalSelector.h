@@ -44,7 +44,6 @@ class TraversalSelector {
   /**
    * Constructor of the TraversalSelector class.
    * @param dims Array with the dimension lengths of the domain.
-   * @param allowedTraversalOptions Vector of traversals the selector can choose from.
    */
   TraversalSelector(const std::array<unsigned long, 3> &dims) : _dims(dims) {}
 

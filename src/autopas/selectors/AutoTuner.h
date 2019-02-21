@@ -51,6 +51,8 @@ class AutoTuner {
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainerOptions Vector of container types AutoPas can choose from.
    * @param allowedTraversalOptions Vector of traversals AutoPas can choose from.
+   * @param allowedDataLayoutOptions Vector of data layouts AutoPas can choose from.
+   * @param allowedNewton3Options Vector of newton 3 options AutoPas can choose from.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
@@ -114,7 +116,7 @@ class AutoTuner {
    * Also checks if the container was already encountered and if not creates a new traversal selector for it.
    * @return Smartpointer to the optimal container.
    */
-  // TODO: remove this
+  // @TODO: remove this
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getContainer() {
     auto container = _containerSelector.getCurrentContainer();
     // if the container is new create a new traversal selector for it
@@ -125,6 +127,13 @@ class AutoTuner {
     return container;
   }
 
+  /**
+   * Check if a configuration is applicable to the current domain with the given functor.
+   * @tparam PairwiseFunctor
+   * @param conf
+   * @param pairwiseFunctor
+   * @return
+   */
   template <class PairwiseFunctor>
   bool configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
 
@@ -160,7 +169,6 @@ class AutoTuner {
    * Save the runtime of a given traversal if the functor is relevant for tuning.
    * The time argument is a long because std::chrono::duration::count returns a long
    * @param pairwiseFunctor
-   * @param traversal
    * @param time
    */
   template <class PairwiseFunctor>
