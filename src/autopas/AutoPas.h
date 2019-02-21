@@ -183,57 +183,43 @@ class AutoPas {
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) {
-    AutoPas::_boxMin = boxMin;
-  }
+  void setBoxMin(const std::array<double, 3> &boxMin) { AutoPas::_boxMin = boxMin; }
 
   /**
    * Set coordinates of the upper corner of the domain.
    * @param boxMax
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) {
-    AutoPas::_boxMax = boxMax;
-  }
+  void setBoxMax(const std::array<double, 3> &boxMax) { AutoPas::_boxMax = boxMax; }
 
   /**
    * Get cutoff radius.
    * @return
    */
-  double getCutoff() const {
-    return _cutoff;
-  }
+  double getCutoff() const { return _cutoff; }
 
   /**
    * Set cutoff radius.
    * @param cutoff
    */
-  void setCutoff(double cutoff) {
-    AutoPas::_cutoff = cutoff;
-  }
+  void setCutoff(double cutoff) { AutoPas::_cutoff = cutoff; }
 
   /**
    * Get length added to the cutoff for the Verlet lists' skin.
    * @return
    */
-  double getVerletSkin() const {
-    return _verletSkin;
-  }
+  double getVerletSkin() const { return _verletSkin; }
 
   /**
    * Set length added to the cutoff for the Verlet lists' skin.
    * @param verletSkin
    */
-  void setVerletSkin(double verletSkin) {
-    AutoPas::_verletSkin = verletSkin;
-  }
+  void setVerletSkin(double verletSkin) { AutoPas::_verletSkin = verletSkin; }
 
   /**
    * Get Verlet rebuild frequency.
    * @return
    */
-  unsigned int getVerletRebuildFrequency() const {
-    return _verletRebuildFrequency;
-  }
+  unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
 
   /**
    * Set Verlet rebuild frequency.
@@ -247,58 +233,44 @@ class AutoPas {
    * Get tuning interval.
    * @return
    */
-  unsigned int getTuningInterval() const {
-    return _tuningInterval;
-  }
+  unsigned int getTuningInterval() const { return _tuningInterval; }
 
   /**
    * Set tuning interval.
    * @param tuningInterval
    */
-  void setTuningInterval(unsigned int tuningInterval) {
-    AutoPas::_tuningInterval = tuningInterval;
-  }
+  void setTuningInterval(unsigned int tuningInterval) { AutoPas::_tuningInterval = tuningInterval; }
 
   /**
    * Get number of samples taken per configuration during the tuning.
    * @return
    */
-  unsigned int getNumSamples() const {
-    return _numSamples;
-  }
+  unsigned int getNumSamples() const { return _numSamples; }
 
   /**
    * Set number of samples taken per configuration during the tuning.
    * @param numSamples
    */
-  void setNumSamples(unsigned int numSamples) {
-    AutoPas::_numSamples = numSamples;
-  }
+  void setNumSamples(unsigned int numSamples) { AutoPas::_numSamples = numSamples; }
 
   /**
    * Get the selector configuration strategy.
    * @return
    */
-  SelectorStrategy getSelectorStrategy() const {
-    return _selectorStrategy;
-  }
+  SelectorStrategy getSelectorStrategy() const { return _selectorStrategy; }
 
   /**
    * Set the selector configuration strategy.
    * For possible selector strategy choices see AutoPas::SelectorStrategy.
    * @param selectorStrategy
    */
-  void setSelectorStrategy(SelectorStrategy selectorStrategy) {
-    AutoPas::_selectorStrategy = selectorStrategy;
-  }
+  void setSelectorStrategy(SelectorStrategy selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
 
   /**
    * Get the list of allowed containers.
    * @return
    */
-  const std::vector<ContainerOption> &getAllowedContainers() const {
-    return _allowedContainers;
-  }
+  const std::vector<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
 
   /**
    * Set the list of allowed containers.
@@ -313,9 +285,7 @@ class AutoPas {
    * Get the list of allowed traversals.
    * @return
    */
-  const std::vector<TraversalOption> &getAllowedTraversals() const {
-    return _allowedTraversals;
-  }
+  const std::vector<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
 
   /**
    * Set the list of allowed traversals.
@@ -330,9 +300,7 @@ class AutoPas {
    * Get the list of allowed data layouts.
    * @return
    */
-  const std::vector<DataLayoutOption> &getAllowedDataLayouts() const {
-    return _allowedDataLayouts;
-  }
+  const std::vector<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
 
   /**
    * Set the list of allowed data layouts.
@@ -347,9 +315,7 @@ class AutoPas {
    * Get the list of allowed newton 3 options.
    * @return
    */
-  const std::vector<Newton3Option> &getAllowedNewton3Options() const {
-    return _allowedNewton3Options;
-  }
+  const std::vector<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
 
   /**
    * Set the list of allowed newton 3 options.

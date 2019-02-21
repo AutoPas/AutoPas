@@ -43,11 +43,11 @@ TEST_F(AutoPasTest, checkRebuildingNewMove) {
   {
     // 1. create new AutoPas container + initialize
     decltype(autoPas) autoPasTmp;
-    autoPasTmp.setBoxMin ({0., 0., 0.});
-    autoPasTmp.setBoxMax ({5., 5., 5.});
-    autoPasTmp.setCutoff (1.);
-    autoPasTmp.setAllowedContainers ({autopas::ContainerOption::linkedCells});
-    autoPasTmp.setAllowedTraversals ({autopas::TraversalOption::c08});
+    autoPasTmp.setBoxMin({0., 0., 0.});
+    autoPasTmp.setBoxMax({5., 5., 5.});
+    autoPasTmp.setCutoff(1.);
+    autoPasTmp.setAllowedContainers({autopas::ContainerOption::linkedCells});
+    autoPasTmp.setAllowedTraversals({autopas::TraversalOption::c08});
     autoPasTmp.init();
 
     // ensure no particles

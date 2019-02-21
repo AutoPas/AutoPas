@@ -17,14 +17,14 @@
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */
- class Newton3OnOffTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {
+class Newton3OnOffTest : public AutoPasTestBase,
+                         public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {
  public:
-  Newton3OnOffTest() : mockFunctor() {
-  }
+  Newton3OnOffTest() : mockFunctor() {}
 
-  void SetUp() override { }
+  void SetUp() override {}
 
-  void TearDown() override { }
+  void TearDown() override {}
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 
@@ -34,9 +34,8 @@
   double getVerletSkin() const { return 0.0; }
   unsigned int getVerletRebuildFrequency() const { return 1; }
 
-  void countFunctorCalls(autopas::ContainerOption containerOption,
-                           autopas::TraversalOption traversalOption,
-                           autopas::DataLayoutOption dataLayout);
+  void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
+                         autopas::DataLayoutOption dataLayout);
 
   template <class ParticleFunctor, class Container, class Traversal>
   void iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,

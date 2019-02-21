@@ -72,7 +72,6 @@ class AutoTuner {
         _allowedConfigurations(),
         _currentConfig(),
         _traversalTimes() {
-
     //@TODO needed until all containers support propper traversals
     _allowedTraversalOptions.push_back(TraversalOption::dummyTraversal);
 
@@ -182,6 +181,7 @@ class AutoTuner {
    * @return
    */
   const std::set<Configuration> &getAllowedConfigurations() const;
+
  private:
   void selectOptimalConfiguration();
 
@@ -499,12 +499,12 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
   return traversalApplicable;
 }
 
-template<class Particle, class ParticleCell>
-const autopas::Configuration  AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
+template <class Particle, class ParticleCell>
+const autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
   return *_currentConfig;
 }
 
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 const std::set<Configuration> &AutoTuner<Particle, ParticleCell>::getAllowedConfigurations() const {
   return _allowedConfigurations;
 }

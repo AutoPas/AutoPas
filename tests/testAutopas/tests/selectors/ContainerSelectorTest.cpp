@@ -13,7 +13,6 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
 
-
   autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, verletSkin,
                                                                  verletRebuildFrequency, autopas::allContainerOptions,
                                                                  autopas::allTraversalOptions);

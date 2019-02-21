@@ -60,6 +60,7 @@ class TraversalSelector {
   template <class PairwiseFunctor, bool useSoA, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> generateTraversal(TraversalOption traversalType,
                                                                      PairwiseFunctor &pairwiseFunctor);
+
  private:
   /**
    * indicating whether or not the optimalTraversalOption is already initialized

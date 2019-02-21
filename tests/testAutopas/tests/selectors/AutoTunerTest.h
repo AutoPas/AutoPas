@@ -15,4 +15,19 @@ class AutoTunerTest : public AutoPasTestBase {
  public:
   AutoTunerTest() = default;
   ~AutoTunerTest() = default;
+
+  /**
+   * Map multiple runtimes to one configuration each.
+   */
+  using mapConfigTime = std::map<autopas::Configuration, std::vector<long>>;
+
+  /**
+   * Create a tuner with
+   * @param strategy
+   * @param configAndTimes
+   * @param expectedBest
+   * @param ignoredConfigAndTimes
+   */
+  void testFastest(autopas::SelectorStrategy strategy, mapConfigTime configAndTimes,
+                   autopas::Configuration expectedBest, mapConfigTime ignoredConfigAndTimes = {});
 };
