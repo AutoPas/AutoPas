@@ -76,6 +76,7 @@ class AutoTuner {
     //@TODO needed until all containers support propper traversals
     _allowedTraversalOptions.push_back(TraversalOption::dummyTraversal);
 
+    // needs to be sorted for intersection with applicable traversals
     std::sort(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end());
 
     // generate all potential configs
@@ -170,7 +171,17 @@ class AutoTuner {
     }
   }
 
+  /**
+   * Get the currently selected configuration.
+   * @return
+   */
   const autopas::Configuration getCurrentConfig() const;
+
+  /**
+   * Get the set of all allowed configurations.
+   * @return
+   */
+  const std::set<Configuration> &getAllowedConfigurations() const;
  private:
   void selectOptimalConfiguration();
 
@@ -493,4 +504,8 @@ const autopas::Configuration  AutoTuner<Particle, ParticleCell>::getCurrentConfi
   return *_currentConfig;
 }
 
+template<class Particle, class ParticleCell>
+const std::set<Configuration> &AutoTuner<Particle, ParticleCell>::getAllowedConfigurations() const {
+  return _allowedConfigurations;
+}
 }  // namespace autopas
