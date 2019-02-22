@@ -73,7 +73,7 @@ class AutoPas {
   }
 
   /**
-   * Initialize the auto tuner. This will completely reset the container and remove all containing particles!
+   * Initialize AutoPas. This will completely reset the container and remove all containing particles!
    *
    * This function needs to be called before any other functions on the AutoPas object.
    *
