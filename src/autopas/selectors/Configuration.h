@@ -14,7 +14,7 @@
 namespace autopas {
 
 /**
- * Class containing multiple options that form a algorithm configuration for the pairwise iteration.
+ * Class containing multiple options that form an algorithm configuration for the pairwise iteration.
  */
 class Configuration {
  public:
