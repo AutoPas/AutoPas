@@ -12,7 +12,7 @@ using ::testing::Combine;
 using ::testing::Return;  // anything is ok
 using ::testing::ValuesIn;
 
-// Parse combination strings and call actuall test function
+// Parse combination strings and call actual test function
 TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
   auto contTravStr = std::get<0>(GetParam());
   auto dataLayoutStr = std::get<1>(GetParam());
