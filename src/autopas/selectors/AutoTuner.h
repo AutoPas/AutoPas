@@ -360,7 +360,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 
       Configuration modifiedCurrentConfig = *_currentConfig;
       // choose the other option
-      modifiedCurrentConfig._newton3 = Newton3Option((static_cast<int>(_currentConfig->_newton3) + 1) % 2);
+      modifiedCurrentConfig._newton3 = _currentConfig->_newton3 == Newton3Option::enabled ? Newton3Option::disabled : Newton3Option::enabled;
 
       // if modified config is equal to next delete current. Else insert modified config.
       // the disabled case should come after the enabled.
