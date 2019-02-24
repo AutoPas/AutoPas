@@ -5,10 +5,10 @@
  */
 
 #include <iostream>
+#include <vector>
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
-#include "autopas/pairwiseFunctors/LJFunctorCuda.h"
 #include "autopas/utils/CudaDeviceVector.h"
 
 using namespace std;
@@ -40,7 +40,7 @@ class MyMolecule : public Particle {
 };
 
 template <class ParticleCell>
-void addAFewParticles(ParticleCell &pc) {
+void addParticles(ParticleCell &pc) {
   static int i = 0;
   int iEnd = i + 4;
   for (; i < iEnd; ++i) {
@@ -49,50 +49,76 @@ void addAFewParticles(ParticleCell &pc) {
     pc.addParticle(m);
   }
 }
+template <class ParticleCell>
+void fillSpaceWithGrid(ParticleCell &pc, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double gridsize,
+                       int maxN = 10000) {
+  int i = 0;
 
-int main() {
+  for (double x = boxMin[0]; x < boxMax[0]; x += gridsize) {
+    for (double y = boxMin[1]; y < boxMax[1]; y += gridsize) {
+      for (double z = boxMin[2]; z < boxMax[2]; z += gridsize) {
+        std::array<double, 3> arr({x, y, z});
+        MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
+        pc.addParticle(m);
+        if (++i >= maxN) {
+          return;
+        }
+      }
+    }
+  }
+}
+
+void testRun(LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> &func, FullParticleCell<MyMolecule> &fpc1,
+             FullParticleCell<MyMolecule> &fpc2, int num_threads = 32) {
+  cout << "NumC1: " << fpc1.numParticles() << "; NumC2: " << fpc2.numParticles() << "; threads: " << num_threads << ";"
+       << endl;
+
+  func.setCudaOptions(num_threads);
+  func.SoALoader(fpc1, fpc1._particleSoABuffer);
+  func.SoALoader(fpc2, fpc2._particleSoABuffer);
+  func.deviceSoALoader(fpc1._particleSoABuffer, fpc1._particleSoABufferDevice);
+  func.deviceSoALoader(fpc2._particleSoABuffer, fpc2._particleSoABufferDevice);
+
+  auto start = std::chrono::high_resolution_clock::now();
+
+  func.CudaFunctor(fpc1._particleSoABufferDevice, false);
+  func.CudaFunctor(fpc1._particleSoABufferDevice, fpc2._particleSoABufferDevice, false);
+
+  func.deviceSoAExtractor(fpc1._particleSoABuffer, fpc1._particleSoABufferDevice);
+  func.deviceSoAExtractor(fpc2._particleSoABuffer, fpc2._particleSoABufferDevice);
+
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+  cout << "->" << duration << "microseconds" << endl;
+}
+
+int main(int argc, char **argv) {
+  int numParticles = 100000;
+  if (argc == 2) {
+    numParticles = stoi(string(argv[1]));
+  }
   autopas::Logger::create();
 
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
-  double cutoff = 3.0;
+  double cutoff = 100.0;
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
-  addAFewParticles<>(dir);
+
+  FullParticleCell<MyMolecule> fpc1;
+  FullParticleCell<MyMolecule> fpc2;
+
+  fillSpaceWithGrid(fpc1, {0, 0, 0}, {9, 9, 9}, 0.19, numParticles);
+  fillSpaceWithGrid(fpc2, {9.2, 0, 0}, {18.2, 9, 9}, 0.19, numParticles);
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
   Func func(cutoff, 1.0, 1.0, 0.0);
 
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, false, true> traversal(&func);
+  CellFunctor<MyMolecule, FullParticleCell<MyMolecule>, Func, true, true, true, true> cft(&func);
 
-  for (auto pi = dir.begin(); pi.isValid(); ++pi) {
-    pi->print();
+  vector<int> v = {32, 64, 96, 128, 256,512, 1024};
+  for (auto it : v) {
+    testRun(func, fpc1, fpc2, it);
   }
-  cout << endl;
 
-  dir.iteratePairwiseSoACuda(&func, &traversal, false);
-  for (auto pi = dir.begin(); pi.isValid(); ++pi) {
-    pi->print();
-  }
-  cout << endl;
-
-  autopas::utils::CudaDeviceVector<double> cdv(32);
-  std::vector<double> data = {3, 0, 0, 0, 0, 0, 1.9, 0, 0, 0, 2, 0};
-  std::vector<double> res(12, -1);
-
-  loadConstants(9., 24., 1.);
-  cdv.copyHostToDevice(12, data.data());
-
-  cdv.copyDeviceToHost(12, res.data());
-
-  for (auto it : data) {
-    std::cout << it << ", ";
-  }
-  cout << endl;
-  for (auto it : res) {
-    std::cout << it << ", ";
-  }
-  cout << endl;
-
-  cout << "Hodor" << endl;
   return EXIT_SUCCESS;
 }

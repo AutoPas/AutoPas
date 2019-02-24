@@ -76,7 +76,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       _aosThreadData.resize(autopas_get_max_threads());
     }
 #if defined(AUTOPAS_CUDA)
-    loadConstants(_cutoffsquare, _epsilon24, _sigmasquare);
+    _cudawrapper.loadConstants(_cutoffsquare, _epsilon24, _sigmasquare);
 #endif
   }
 
@@ -387,19 +387,19 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 #if defined(AUTOPAS_CUDA)
     const size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
     if (newton3) {
-      SoAFunctorN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
-                          device_handle.template get<Particle::AttributeNames::posY>().get(),
-                          device_handle.template get<Particle::AttributeNames::posZ>().get(),
-                          device_handle.template get<Particle::AttributeNames::forceX>().get(),
-                          device_handle.template get<Particle::AttributeNames::forceY>().get(),
-                          device_handle.template get<Particle::AttributeNames::forceZ>().get());
+      _cudawrapper.SoAFunctorN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
+                                       device_handle.template get<Particle::AttributeNames::posY>().get(),
+                                       device_handle.template get<Particle::AttributeNames::posZ>().get(),
+                                       device_handle.template get<Particle::AttributeNames::forceX>().get(),
+                                       device_handle.template get<Particle::AttributeNames::forceY>().get(),
+                                       device_handle.template get<Particle::AttributeNames::forceZ>().get());
     } else {
-      SoAFunctorNoN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
-                            device_handle.template get<Particle::AttributeNames::posY>().get(),
-                            device_handle.template get<Particle::AttributeNames::posZ>().get(),
-                            device_handle.template get<Particle::AttributeNames::forceX>().get(),
-                            device_handle.template get<Particle::AttributeNames::forceY>().get(),
-                            device_handle.template get<Particle::AttributeNames::forceZ>().get());
+      _cudawrapper.SoAFunctorNoN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
+                                         device_handle.template get<Particle::AttributeNames::posY>().get(),
+                                         device_handle.template get<Particle::AttributeNames::posZ>().get(),
+                                         device_handle.template get<Particle::AttributeNames::forceX>().get(),
+                                         device_handle.template get<Particle::AttributeNames::forceY>().get(),
+                                         device_handle.template get<Particle::AttributeNames::forceZ>().get());
     }
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
@@ -413,47 +413,49 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     const size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
     if (newton3) {
       if (size1 > size2) {
-        SoAFunctorN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
-                                device_handle1.template get<Particle::AttributeNames::posY>().get(),
-                                device_handle1.template get<Particle::AttributeNames::posZ>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceX>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceY>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceZ>().get(), size2,
-                                device_handle2.template get<Particle::AttributeNames::posX>().get(),
-                                device_handle2.template get<Particle::AttributeNames::posY>().get(),
-                                device_handle2.template get<Particle::AttributeNames::posZ>().get(),
-                                device_handle2.template get<Particle::AttributeNames::forceX>().get(),
-                                device_handle2.template get<Particle::AttributeNames::forceY>().get(),
-                                device_handle2.template get<Particle::AttributeNames::forceZ>().get());
+        _cudawrapper.SoAFunctorN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceZ>().get(),
+                                             size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::posZ>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::forceX>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::forceY>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::forceZ>().get());
       } else {
-        SoAFunctorN3PairWrapper(size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
-                                device_handle2.template get<Particle::AttributeNames::posY>().get(),
-                                device_handle2.template get<Particle::AttributeNames::posZ>().get(),
-                                device_handle2.template get<Particle::AttributeNames::forceX>().get(),
-                                device_handle2.template get<Particle::AttributeNames::forceY>().get(),
-                                device_handle2.template get<Particle::AttributeNames::forceZ>().get(), size1,
-                                device_handle1.template get<Particle::AttributeNames::posX>().get(),
-                                device_handle1.template get<Particle::AttributeNames::posY>().get(),
-                                device_handle1.template get<Particle::AttributeNames::posZ>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceX>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceY>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceZ>().get());
+        _cudawrapper.SoAFunctorN3PairWrapper(size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::posZ>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::forceX>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::forceY>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::forceZ>().get(),
+                                             size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceZ>().get());
       }
     } else {
-      SoAFunctorNoN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
-                                device_handle1.template get<Particle::AttributeNames::posY>().get(),
-                                device_handle1.template get<Particle::AttributeNames::posZ>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceX>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceY>().get(),
-                                device_handle1.template get<Particle::AttributeNames::forceZ>().get(), size2,
-                                device_handle2.template get<Particle::AttributeNames::posX>().get(),
-                                device_handle2.template get<Particle::AttributeNames::posY>().get(),
-                                device_handle2.template get<Particle::AttributeNames::posZ>().get());
+      _cudawrapper.SoAFunctorNoN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                                             device_handle1.template get<Particle::AttributeNames::forceZ>().get(),
+                                             size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                                             device_handle2.template get<Particle::AttributeNames::posZ>().get());
     }
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
 #endif
   }
+
+  void setCudaOptions(int nt) { _cudawrapper.setNumThreads(nt); }
 
   void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
                        CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
@@ -924,6 +926,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
+
+#if defined(AUTOPAS_CUDA)
+  // conatins wrapper functions for cuda calls
+  CudaWrapper _cudawrapper;
+#endif
 
 };  // class LJFunctor
 }  // namespace autopas

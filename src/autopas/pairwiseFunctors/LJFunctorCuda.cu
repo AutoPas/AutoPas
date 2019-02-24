@@ -333,34 +333,89 @@ void SoAFunctorN3Pair(int N, soa<> cell1, int M, soa<> cell2) {
 	atomicAdd(cell1.forceZ + tid, myf.z);
 }
 
-void SoAFunctorNoN3Wrapper(int N, double* posX, double* posY, double* posZ,
-		double* forceX, double* forceY, double* forceZ) {
-	SoAFunctorNoN3<32> <<<((N - 1) / 32) + 1, 32>>>(N, posX, posY, posZ, forceX,
+void CudaWrapper::SoAFunctorNoN3Wrapper(int N, double* posX, double* posY, double* posZ,
+		double* forceX, double* forceY, double* forceZ, cudaStream_t stream) {
+	switch (_num_threads){
+	case 32:
+	SoAFunctorNoN3<32> <<<numRequiredBlocks(N), 32>>>(N, posX, posY, posZ, forceX,
 			forceY, forceZ);
+	break;
+	case 64:
+	SoAFunctorNoN3<64> <<<numRequiredBlocks(N), 64>>>(N, posX, posY, posZ, forceX,
+			forceY, forceZ);
+	break;
+	case 96:
+	SoAFunctorNoN3<96> <<<numRequiredBlocks(N), 96>>>(N, posX, posY, posZ, forceX,
+			forceY, forceZ);
+	break;
+	case 128:
+	SoAFunctorNoN3<128> <<<numRequiredBlocks(N), 128>>>(N, posX, posY, posZ, forceX,
+			forceY, forceZ);
+	break;
+	case 256:
+	SoAFunctorNoN3<256> <<<numRequiredBlocks(N), 256>>>(N, posX, posY, posZ, forceX,
+			forceY, forceZ);
+	break;
+	case 512:
+	SoAFunctorNoN3<512> <<<numRequiredBlocks(N), 512>>>(N, posX, posY, posZ, forceX,
+			forceY, forceZ);
+	break;
+	case 1024:
+	SoAFunctorNoN3<1024> <<<numRequiredBlocks(N), 1024>>>(N, posX, posY, posZ, forceX,
+			forceY, forceZ);
+	break;
+	default:
+		break;
+	}
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY, double* posZ,
+void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY, double* posZ,
 		double* forceX, double* forceY, double* forceZ, int M, double* posX2,
-		double* posY2, double* posZ2) {
-	SoAFunctorNoN3Pair<32> <<<((N - 1) / 32) + 1, 32>>>(N, posX, posY, posZ,
+		double* posY2, double* posZ2, cudaStream_t stream) {
+	switch(_num_threads){
+	case 32:
+	SoAFunctorNoN3Pair<32> <<<numRequiredBlocks(N), 32>>>(N, posX, posY, posZ,
 			forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+	break;
+	case 64:
+	SoAFunctorNoN3Pair<64> <<<numRequiredBlocks(N), 64>>>(N, posX, posY, posZ,
+			forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+	break;
+	case 96:
+		SoAFunctorNoN3Pair<96> <<<numRequiredBlocks(N), 96>>>(N, posX, posY, posZ,
+				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		break;
+	case 128:
+		SoAFunctorNoN3Pair<128> <<<numRequiredBlocks(N), 128>>>(N, posX, posY, posZ,
+				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		break;
+	case 256:
+		SoAFunctorNoN3Pair<256> <<<numRequiredBlocks(N), 256>>>(N, posX, posY, posZ,
+				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		break;
+	case 512:
+		SoAFunctorNoN3Pair<512> <<<numRequiredBlocks(N), 512>>>(N, posX, posY, posZ,
+				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		break;
+	case 1024:
+		SoAFunctorNoN3Pair<1024> <<<numRequiredBlocks(N), 1024>>>(N, posX, posY, posZ,
+				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		break;
+	default:
+		break;
+	}
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void SoAFunctorN3Wrapper(int N, double* posX, double* posY, double* posZ,
+void CudaWrapper::SoAFunctorN3Wrapper(int N, double* posX, double* posY, double* posZ,
 		double* forceX, double* forceY, double* forceZ) {
-	SoAFunctorN3<32> <<<((N - 1) / 32) + 1, 32>>>(N, posX, posY, posZ, forceX,
+	SoAFunctorN3<32> <<<numRequiredBlocks(N), _num_threads>>>(N, posX, posY, posZ, forceX,
 			forceY, forceZ);
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void SoAFunctorN3PairWrapper(int N, soa<> cell1, int M, soa<> cell2) {
-	SoAFunctorN3Pair<32> <<<((N - 1) / 32) + 1, 32>>>(N, cell1, M, cell2);
-	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
-}
-
-void SoAFunctorN3PairWrapper(int N, double* posX, double* posY, double* posZ,
+void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY, double* posZ,
 		double* forceX, double* forceY, double* forceZ, int M, double* posX2,
 		double* posY2, double* posZ2, double* forceX2, double* forceY2,
 		double* forceZ2) {
@@ -379,10 +434,10 @@ void SoAFunctorN3PairWrapper(int N, double* posX, double* posY, double* posZ,
 	cell2.forceY = forceY2;
 	cell2.forceZ = forceZ2;
 
-	SoAFunctorN3PairWrapper(N, cell1, M, cell2);
+	SoAFunctorN3Pair<32> <<<numRequiredBlocks(N), _num_threads>>>(N, cell1, M, cell2);
 }
 
-void loadConstants(double cutoffsquare, double epsilon24, double sigmasquare) {
+void CudaWrapper::loadConstants(double cutoffsquare, double epsilon24, double sigmasquare) {
 
 	constants c;
 	c.cutoffsquare = cutoffsquare;
