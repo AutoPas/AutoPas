@@ -269,7 +269,7 @@ void SoAFunctorN3(int N, double* posX, double* posY, double* posZ,
 		cell1_forces_shared[threadIdx.x] = {0,0,0};
 		__syncthreads();
 
-		for (int j = threadIdx.x; j >= 0; --j) {
+		for (int j = threadIdx.x -1; j >= 0; --j) {
 			myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[j], myf,
 					cell1_forces_shared + j);
 		}
