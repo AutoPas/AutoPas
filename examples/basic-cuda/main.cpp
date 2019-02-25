@@ -69,9 +69,9 @@ void fillSpaceWithGrid(ParticleCell &pc, std::array<double, 3> boxMin, std::arra
 }
 
 void testRun(LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> &func, FullParticleCell<MyMolecule> &fpc1,
-             FullParticleCell<MyMolecule> &fpc2, int num_threads = 32) {
-  cout << "NumC1: " << fpc1.numParticles() << "; NumC2: " << fpc2.numParticles() << "; threads: " << num_threads << ";"
-       << endl;
+             FullParticleCell<MyMolecule> &fpc2, int num_threads = 32, bool newton3 = false) {
+  cout << "NumC1: " << fpc1.numParticles() << "; NumC2: " << fpc2.numParticles() << "; threads: " << num_threads
+       << "; n3: " << newton3 << "; " << endl;
 
   func.setCudaOptions(num_threads);
   func.SoALoader(fpc1, fpc1._particleSoABuffer);
@@ -81,8 +81,8 @@ void testRun(LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> &func, FullPart
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  func.CudaFunctor(fpc1._particleSoABufferDevice, false);
-  func.CudaFunctor(fpc1._particleSoABufferDevice, fpc2._particleSoABufferDevice, false);
+  func.CudaFunctor(fpc1._particleSoABufferDevice, newton3);
+  func.CudaFunctor(fpc1._particleSoABufferDevice, fpc2._particleSoABufferDevice, newton3);
 
   func.deviceSoAExtractor(fpc1._particleSoABuffer, fpc1._particleSoABufferDevice);
   func.deviceSoAExtractor(fpc2._particleSoABuffer, fpc2._particleSoABufferDevice);
@@ -113,12 +113,12 @@ int main(int argc, char **argv) {
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
   Func func(cutoff, 1.0, 1.0, 0.0);
 
-  CellFunctor<MyMolecule, FullParticleCell<MyMolecule>, Func, true, true, true, true> cft(&func);
-
-  vector<int> v = {32, 64, 96, 128, 256,512, 1024};
+  vector<int> v = {32, 64, 128, 256, 512, 1024};
   for (auto it : v) {
-    testRun(func, fpc1, fpc2, it);
+    testRun(func, fpc1, fpc2, it, false);
   }
-
+  for (auto it : v) {
+    testRun(func, fpc1, fpc2, it, true);
+  }
   return EXIT_SUCCESS;
 }

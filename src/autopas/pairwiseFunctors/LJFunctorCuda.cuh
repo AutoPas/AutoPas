@@ -49,9 +49,9 @@ public:
 private:
 	int numRequiredBlocks(int n){
 		return ((n - 1) / _num_threads) + 1;
+
 	}
 private:
 	int _num_threads;
 };
-
 

@@ -6,6 +6,7 @@
  */
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
 #include <iostream>
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "math_constants.h"
 #include "autopas/utils/CudaDeviceVector.h"
@@ -24,8 +25,20 @@ public:
 	floating_precision* forceZ;
 };
 
+template<typename T> struct vec3 {
+	typedef T Type;
+};
+template<> struct vec3<float> {
+	typedef float3 Type;
+};
+template<> struct vec3<double> {
+	typedef double3 Type;
+};
+
+template<typename floatType>
 __device__
-double3 bodyBodyF(double3 i, double3 j, double3 fi) {
+typename vec3<floatType>::Type bodyBodyF(typename vec3<floatType>::Type i,
+		typename vec3<floatType>::Type j, typename vec3<floatType>::Type fi) {
 	auto drx = i.x - j.x;
 	auto dry = i.y - j.y;
 	auto drz = i.z - j.z;
@@ -50,15 +63,18 @@ double3 bodyBodyF(double3 i, double3 j, double3 fi) {
 	return fi;
 }
 
+template<typename floatType>
 __device__
-double3 bodyBodyFN3(double3 i, double3 j, double3 fi, double3* fj) {
+typename vec3<floatType>::Type bodyBodyFN3(typename vec3<floatType>::Type i,
+		typename vec3<floatType>::Type j, typename vec3<floatType>::Type fi,
+		typename vec3<floatType>::Type* fj) {
 	auto drx = i.x - j.x;
 	auto dry = i.y - j.y;
 	auto drz = i.z - j.z;
 
 	auto dr2 = drx * drx + dry * dry + drz * drz;
 
-	if (dr2 > global_constants.cutoffsquare | dr2 == 0.0) {
+	if (dr2 > global_constants.cutoffsquare) {
 		return fi;
 	}
 
@@ -84,8 +100,7 @@ double3 bodyBodyFN3(double3 i, double3 j, double3 fi, double3* fj) {
 	return fi;
 }
 
-__device__
-double3 bodyBodyFcalcGlobals(double3 i, double3 j, double3 fi,
+__device__ double3 bodyBodyFcalcGlobals(double3 i, double3 j, double3 fi,
 		double4 globals) {
 	double drx = i.x - j.x;
 	double dry = i.y - j.y;
@@ -127,16 +142,16 @@ double3 bodyBodyFcalcGlobals(double3 i, double3 j, double3 fi,
 	return fi;
 }
 
-template<int block_size>
+template<typename floatType, int block_size>
 __global__
-void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ,
-		double* forceX, double* forceY, double* forceZ) {
-	__shared__ double3 block_pos[block_size];
+void SoAFunctorNoN3(int N, floatType* posX, floatType* posY, floatType* posZ,
+		floatType* forceX, floatType* forceY, floatType* forceZ) {
+	__shared__ typename vec3<floatType>::Type block_pos[block_size];
 	int i, tile;
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-	double3 myposition = { 0, 0, 0 };
-	double3 myf = { 0, 0, 0 };
+	typename vec3<floatType>::Type myposition = { 0, 0, 0 };
+	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 	if (tid < N) {
 		myposition.x = posX[tid];
 		myposition.y = posY[tid];
@@ -150,7 +165,7 @@ void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ,
 		__syncthreads();
 		if (tid < N) {
 			for (int j = 0; j < blockDim.x; ++j) {
-				myf = bodyBodyF(myposition, block_pos[j], myf);
+				myf = bodyBodyF<double>(myposition, block_pos[j], myf);
 			}
 		}
 		__syncthreads();
@@ -162,7 +177,7 @@ void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ,
 
 		const int size = N - tile * blockDim.x;
 		for (int j = 0; j < size; ++j) {
-			myf = bodyBodyF(myposition, block_pos[j], myf);
+			myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
 		}
 
 		__syncthreads();
@@ -173,16 +188,17 @@ void SoAFunctorNoN3(int N, double* posX, double* posY, double* posZ,
 	atomicAdd(forceZ + tid, myf.z);
 }
 
-template<int block_size>
+template<typename floatType, int block_size>
 __global__
-void SoAFunctorNoN3Pair(int N, double* posX, double* posY, double* posZ,
-		double* forceX, double* forceY, double* forceZ, int M, double* posX2,
-		double* posY2, double* posZ2) {
-	__shared__ double3 block_pos[block_size];
+void SoAFunctorNoN3Pair(int N, floatType* posX, floatType* posY,
+		floatType* posZ, floatType* forceX, floatType* forceY,
+		floatType* forceZ, int M, floatType* posX2, floatType* posY2,
+		floatType* posZ2) {
+	__shared__ typename vec3<floatType>::Type block_pos[block_size];
 	int i, tile;
 	int tid = blockIdx.x * block_size + threadIdx.x;
-	double3 myposition;
-	double3 myf = { 0, 0, 0 };
+	typename vec3<floatType>::Type myposition;
+	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
 	if (tid < N) {
 		myposition.x = posX[tid];
@@ -199,7 +215,7 @@ void SoAFunctorNoN3Pair(int N, double* posX, double* posY, double* posZ,
 
 		const int size = min(block_size, M - i);
 		for (int j = 0; j < size; ++j) {
-			myf = bodyBodyF(myposition, block_pos[j], myf);
+			myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
 		}
 		__syncthreads();
 	}
@@ -208,16 +224,17 @@ void SoAFunctorNoN3Pair(int N, double* posX, double* posY, double* posZ,
 	atomicAdd(forceZ + tid, myf.z);
 }
 
-template<int block_size, bool NMisMultipleBlockSize = false>
+template<typename floatType, int block_size, bool NMisMultipleBlockSize = false>
 __global__
 void SoAFunctorN3(int N, double* posX, double* posY, double* posZ,
 		double* forceX, double* forceY, double* forceZ) {
 	static_assert((block_size & (block_size - 1)) == 0, "block size must be power of 2");
-	__shared__ double3 cell1_pos_shared[block_size];
-	__shared__ double3 cell1_forces_shared[block_size];
+	__shared__ typename vec3<floatType>::Type cell1_pos_shared[block_size];
+	__shared__ typename vec3<floatType>::Type cell1_forces_shared[block_size];
 	int tid = blockIdx.x * block_size + threadIdx.x;
-	double3 myposition = { CUDART_INF, CUDART_INF, CUDART_INF };
-	double3 myf = { 0, 0, 0 };
+	typename vec3<floatType>::Type myposition = { CUDART_INF, CUDART_INF,
+			CUDART_INF };
+	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 	int i, tile;
 	const int mask = block_size - 1;
 
@@ -235,8 +252,8 @@ void SoAFunctorN3(int N, double* posX, double* posY, double* posZ,
 
 		for (int j = 0; j < block_size; ++j) {
 			const int offset = (j + threadIdx.x) & mask;
-			myf = bodyBodyFN3(myposition, cell1_pos_shared[offset], myf,
-					cell1_forces_shared + offset);
+			myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[offset],
+					myf, cell1_forces_shared + offset);
 		}
 		__syncthreads();
 
@@ -253,7 +270,7 @@ void SoAFunctorN3(int N, double* posX, double* posY, double* posZ,
 		__syncthreads();
 
 		for (int j = threadIdx.x; j >= 0; --j) {
-			myf = bodyBodyFN3(myposition, cell1_pos_shared[j], myf,
+			myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[j], myf,
 					cell1_forces_shared + j);
 		}
 		__syncthreads();
@@ -269,15 +286,16 @@ void SoAFunctorN3(int N, double* posX, double* posY, double* posZ,
 	atomicAdd(forceZ + tid, myf.z);
 }
 
-template<int block_size, bool NMisMultipleBlockSize = false>
+template<typename floatType, int block_size, bool NMisMultipleBlockSize = false>
 __global__
 void SoAFunctorN3Pair(int N, soa<> cell1, int M, soa<> cell2) {
 	static_assert((block_size & (block_size - 1)) == 0, "block size must be power of 2");
-	__shared__ double3 cell2_pos_shared[block_size];
-	__shared__ double3 cell2_forces_shared[block_size];
+	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+	__shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
 	int tid = blockIdx.x * block_size + threadIdx.x;
-	double3 myposition = { CUDART_INF, CUDART_INF, CUDART_INF };
-	double3 myf = { 0, 0, 0 };
+	typename vec3<floatType>::Type myposition = { CUDART_INF, CUDART_INF,
+			CUDART_INF };
+	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 	int i, tile;
 	const int mask = block_size - 1;
 
@@ -295,8 +313,8 @@ void SoAFunctorN3Pair(int N, soa<> cell1, int M, soa<> cell2) {
 
 		for (int j = 0; j < block_size; ++j) {
 			const int offset = (j + threadIdx.x) & mask;
-			myf = bodyBodyFN3(myposition, cell2_pos_shared[offset], myf,
-					cell2_forces_shared + offset);
+			myf = bodyBodyFN3<floatType>(myposition, cell2_pos_shared[offset],
+					myf, cell2_forces_shared + offset);
 		}
 		__syncthreads();
 
@@ -316,8 +334,8 @@ void SoAFunctorN3Pair(int N, soa<> cell1, int M, soa<> cell2) {
 		const int size = block_size + M - i;
 		for (int j = 0; j < size; ++j) {
 			const int offset = (j + threadIdx.x) % size;
-			myf = bodyBodyFN3(myposition, cell2_pos_shared[offset], myf,
-					cell2_forces_shared + offset);
+			myf = bodyBodyFN3<floatType>(myposition, cell2_pos_shared[offset],
+					myf, cell2_forces_shared + offset);
 		}
 		__syncthreads();
 		if (idx < M) {
@@ -333,92 +351,127 @@ void SoAFunctorN3Pair(int N, soa<> cell1, int M, soa<> cell2) {
 	atomicAdd(cell1.forceZ + tid, myf.z);
 }
 
-void CudaWrapper::SoAFunctorNoN3Wrapper(int N, double* posX, double* posY, double* posZ,
-		double* forceX, double* forceY, double* forceZ, cudaStream_t stream) {
-	switch (_num_threads){
+void CudaWrapper::SoAFunctorNoN3Wrapper(int N, double* posX, double* posY,
+		double* posZ, double* forceX, double* forceY, double* forceZ,
+		cudaStream_t stream) {
+	switch (_num_threads) {
 	case 32:
-	SoAFunctorNoN3<32> <<<numRequiredBlocks(N), 32>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ);
-	break;
+		SoAFunctorNoN3<double, 32> <<<numRequiredBlocks(N), 32>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
 	case 64:
-	SoAFunctorNoN3<64> <<<numRequiredBlocks(N), 64>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ);
-	break;
+		SoAFunctorNoN3<double, 64> <<<numRequiredBlocks(N), 64>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
 	case 96:
-	SoAFunctorNoN3<96> <<<numRequiredBlocks(N), 96>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ);
-	break;
+		SoAFunctorNoN3<double, 96> <<<numRequiredBlocks(N), 96>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
 	case 128:
-	SoAFunctorNoN3<128> <<<numRequiredBlocks(N), 128>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ);
-	break;
+		SoAFunctorNoN3<double, 128> <<<numRequiredBlocks(N), 128>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ);
+		break;
 	case 256:
-	SoAFunctorNoN3<256> <<<numRequiredBlocks(N), 256>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ);
-	break;
+		SoAFunctorNoN3<double, 256> <<<numRequiredBlocks(N), 256>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ);
+		break;
 	case 512:
-	SoAFunctorNoN3<512> <<<numRequiredBlocks(N), 512>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ);
-	break;
+		SoAFunctorNoN3<double, 512> <<<numRequiredBlocks(N), 512>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ);
+		break;
 	case 1024:
-	SoAFunctorNoN3<1024> <<<numRequiredBlocks(N), 1024>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ);
-	break;
+		SoAFunctorNoN3<double, 1024> <<<numRequiredBlocks(N), 1024>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ);
+		break;
 	default:
+		autopas::utils::ExceptionHandler::exception(
+				std::string("cuda Kernel size not available"));
 		break;
 	}
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY, double* posZ,
-		double* forceX, double* forceY, double* forceZ, int M, double* posX2,
-		double* posY2, double* posZ2, cudaStream_t stream) {
-	switch(_num_threads){
+void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY,
+		double* posZ, double* forceX, double* forceY, double* forceZ, int M,
+		double* posX2, double* posY2, double* posZ2, cudaStream_t stream) {
+	switch (_num_threads) {
 	case 32:
-	SoAFunctorNoN3Pair<32> <<<numRequiredBlocks(N), 32>>>(N, posX, posY, posZ,
-			forceX, forceY, forceZ, M, posX2, posY2, posZ2);
-	break;
+		SoAFunctorNoN3Pair<double, 32> <<<numRequiredBlocks(N), 32>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		break;
 	case 64:
-	SoAFunctorNoN3Pair<64> <<<numRequiredBlocks(N), 64>>>(N, posX, posY, posZ,
-			forceX, forceY, forceZ, M, posX2, posY2, posZ2);
-	break;
+		SoAFunctorNoN3Pair<double, 64> <<<numRequiredBlocks(N), 64>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		break;
 	case 96:
-		SoAFunctorNoN3Pair<96> <<<numRequiredBlocks(N), 96>>>(N, posX, posY, posZ,
-				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		SoAFunctorNoN3Pair<double, 96> <<<numRequiredBlocks(N), 96>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 128:
-		SoAFunctorNoN3Pair<128> <<<numRequiredBlocks(N), 128>>>(N, posX, posY, posZ,
-				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		SoAFunctorNoN3Pair<double, 128> <<<numRequiredBlocks(N), 128>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 256:
-		SoAFunctorNoN3Pair<256> <<<numRequiredBlocks(N), 256>>>(N, posX, posY, posZ,
-				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		SoAFunctorNoN3Pair<double, 256> <<<numRequiredBlocks(N), 256>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 512:
-		SoAFunctorNoN3Pair<512> <<<numRequiredBlocks(N), 512>>>(N, posX, posY, posZ,
-				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		SoAFunctorNoN3Pair<double, 512> <<<numRequiredBlocks(N), 512>>>(N, posX,
+				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 1024:
-		SoAFunctorNoN3Pair<1024> <<<numRequiredBlocks(N), 1024>>>(N, posX, posY, posZ,
-				forceX, forceY, forceZ, M, posX2, posY2, posZ2);
+		SoAFunctorNoN3Pair<double, 1024> <<<numRequiredBlocks(N), 1024>>>(N,
+				posX, posY, posZ, forceX, forceY, forceZ, M, posX2, posY2,
+				posZ2);
 		break;
 	default:
+		autopas::utils::ExceptionHandler::exception(
+				std::string("cuda Kernel size not available"));
 		break;
 	}
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void CudaWrapper::SoAFunctorN3Wrapper(int N, double* posX, double* posY, double* posZ,
-		double* forceX, double* forceY, double* forceZ) {
-	SoAFunctorN3<32> <<<numRequiredBlocks(N), _num_threads>>>(N, posX, posY, posZ, forceX,
-			forceY, forceZ);
+void CudaWrapper::SoAFunctorN3Wrapper(int N, double* posX, double* posY,
+		double* posZ, double* forceX, double* forceY, double* forceZ) {
+
+	switch (_num_threads) {
+	case 32:
+		SoAFunctorN3<double, 32> <<<numRequiredBlocks(N), 32>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
+	case 64:
+		SoAFunctorN3<double, 64> <<<numRequiredBlocks(N), 64>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
+	case 128:
+		SoAFunctorN3<double, 128> <<<numRequiredBlocks(N), 128>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
+	case 256:
+		SoAFunctorN3<double, 256> <<<numRequiredBlocks(N), 256>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
+	case 512:
+		SoAFunctorN3<double, 512> <<<numRequiredBlocks(N), 512>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
+	case 1024:
+		SoAFunctorN3<double, 1024> <<<numRequiredBlocks(N), 1024>>>(N, posX, posY,
+				posZ, forceX, forceY, forceZ);
+		break;
+	default:
+		autopas::utils::ExceptionHandler::exception(
+				std::string("cuda Kernel size not available"));
+		break;
+	}
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY, double* posZ,
-		double* forceX, double* forceY, double* forceZ, int M, double* posX2,
-		double* posY2, double* posZ2, double* forceX2, double* forceY2,
-		double* forceZ2) {
+void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY,
+		double* posZ, double* forceX, double* forceY, double* forceZ, int M,
+		double* posX2, double* posY2, double* posZ2, double* forceX2,
+		double* forceY2, double* forceZ2) {
 	soa<double> cell1;
 	cell1.posX = posX;
 	cell1.posY = posY;
@@ -433,11 +486,41 @@ void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY, dou
 	cell2.forceX = forceX2;
 	cell2.forceY = forceY2;
 	cell2.forceZ = forceZ2;
-
-	SoAFunctorN3Pair<32> <<<numRequiredBlocks(N), _num_threads>>>(N, cell1, M, cell2);
+	switch (_num_threads) {
+	case 32:
+		SoAFunctorN3Pair<double, 32> <<<numRequiredBlocks(N), 32>>>(N, cell1, M,
+				cell2);
+		break;
+	case 64:
+		SoAFunctorN3Pair<double, 64> <<<numRequiredBlocks(N), 64>>>(N, cell1, M,
+				cell2);
+		break;
+	case 128:
+		SoAFunctorN3Pair<double, 128> <<<numRequiredBlocks(N), 128>>>(N, cell1,
+				M, cell2);
+		break;
+	case 256:
+		SoAFunctorN3Pair<double, 256> <<<numRequiredBlocks(N), 256>>>(N, cell1,
+				M, cell2);
+		break;
+	case 512:
+		SoAFunctorN3Pair<double, 512> <<<numRequiredBlocks(N), 512>>>(N, cell1,
+				M, cell2);
+		break;
+	case 1024:
+		SoAFunctorN3Pair<double, 1024> <<<numRequiredBlocks(N), 1024>>>(N,
+				cell1, M, cell2);
+		break;
+	default:
+		autopas::utils::ExceptionHandler::exception(
+				std::string("cuda Kernel size not available"));
+		break;
+	}
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void CudaWrapper::loadConstants(double cutoffsquare, double epsilon24, double sigmasquare) {
+void CudaWrapper::loadConstants(double cutoffsquare, double epsilon24,
+		double sigmasquare) {
 
 	constants c;
 	c.cutoffsquare = cutoffsquare;
@@ -446,4 +529,3 @@ void CudaWrapper::loadConstants(double cutoffsquare, double epsilon24, double si
 
 	cudaMemcpyToSymbol(global_constants, &c, sizeof(constants));
 }
-
