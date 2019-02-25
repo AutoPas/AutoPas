@@ -454,8 +454,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
 #endif
   }
-
+#if defined(AUTOPAS_CUDA)
   void setCudaOptions(int nt) { _cudawrapper.setNumThreads(nt); }
+#endif
 
   void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
                        CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {

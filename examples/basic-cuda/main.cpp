@@ -85,7 +85,7 @@ void testRun(LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> &func, FullPart
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   auto soloT = std::chrono::duration_cast<std::chrono::microseconds>(mid - start).count();
   auto pairT = std::chrono::duration_cast<std::chrono::microseconds>(stop - mid).count();
-  cout << "->" << duration << "microseconds; (" <<soloT <<", "<<pairT<<")" <<endl;
+  cout << "->" << duration << "microseconds; (" << soloT << ", " << pairT << ")" << endl;
 }
 
 int main(int argc, char **argv) {
