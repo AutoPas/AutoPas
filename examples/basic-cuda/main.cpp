@@ -35,20 +35,13 @@ class MyMolecule : public Particle {
     cout << " myvar: " << _myvar << endl;
   }
 
+  // typedef autopas::utils::SoAType<size_t, float, float, float, float, float, float>::Type SoAArraysType;
+  // typedef autopas::utils::CudaSoAType<size_t, float, float, float, float, float, float>::Type CudaDeviceArraysType;
+
  private:
   int _myvar;
 };
 
-template <class ParticleCell>
-void addParticles(ParticleCell &pc) {
-  static int i = 0;
-  int iEnd = i + 4;
-  for (; i < iEnd; ++i) {
-    std::array<double, 3> arr({static_cast<double>(i), static_cast<double>(i), static_cast<double>(i)});
-    MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
-    pc.addParticle(m);
-  }
-}
 template <class ParticleCell>
 void fillSpaceWithGrid(ParticleCell &pc, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double gridsize,
                        int maxN = 10000) {
@@ -82,14 +75,17 @@ void testRun(LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> &func, FullPart
   auto start = std::chrono::high_resolution_clock::now();
 
   func.CudaFunctor(fpc1._particleSoABufferDevice, newton3);
+  func.deviceSoAExtractor(fpc1._particleSoABuffer, fpc1._particleSoABufferDevice);
+  auto mid = std::chrono::high_resolution_clock::now();
   func.CudaFunctor(fpc1._particleSoABufferDevice, fpc2._particleSoABufferDevice, newton3);
 
-  func.deviceSoAExtractor(fpc1._particleSoABuffer, fpc1._particleSoABufferDevice);
   func.deviceSoAExtractor(fpc2._particleSoABuffer, fpc2._particleSoABufferDevice);
 
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "->" << duration << "microseconds" << endl;
+  auto soloT = std::chrono::duration_cast<std::chrono::microseconds>(mid - start).count();
+  auto pairT = std::chrono::duration_cast<std::chrono::microseconds>(stop - mid).count();
+  cout << "->" << duration << "microseconds; (" <<soloT <<", "<<pairT<<")" <<endl;
 }
 
 int main(int argc, char **argv) {

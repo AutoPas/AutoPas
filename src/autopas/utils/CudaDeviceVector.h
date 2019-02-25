@@ -21,7 +21,7 @@ class CudaDeviceVector {
  public:
   CudaDeviceVector() : CudaDeviceVector(32) {}
 
-  CudaDeviceVector(size_t max) : _max_size(max), _size(0) {
+  CudaDeviceVector(size_t max) : _max_size(max), _size(0), _padToMultiple(1024) {
     autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
   }
 
@@ -39,7 +39,7 @@ class CudaDeviceVector {
   void copyHostToDevice(const size_t n, T* hostData, const cudaStream_t stream = 0) {
     _size = n;
     if (n > _max_size) {
-      _max_size = (n / 32 + 1) * 32;
+      _max_size = (n / _padToMultiple + 1) * _padToMultiple;
 
       autopas::utils::CudaExceptionHandler::checkErrorCode(cudaFree(_data));
       autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
@@ -56,6 +56,7 @@ class CudaDeviceVector {
  private:
   size_t _max_size;
   size_t _size;
+  size_t _padToMultiple;
 
   T* _data;
 

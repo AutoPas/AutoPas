@@ -41,11 +41,11 @@ public:
 	void SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY, double* posZ, double* forceX, double* forceY, double* forceZ,
 			int M, double* posX2, double* posY2, double* posZ2, cudaStream_t stream = 0);
 
-	void SoAFunctorN3Wrapper(int N, double* posX, double* posY, double* posZ, double* forceX, double* forceY, double* forceZ);
+	void SoAFunctorN3Wrapper(int N, double* posX, double* posY, double* posZ, double* forceX, double* forceY, double* forceZ, cudaStream_t stream = 0);
 	void SoAFunctorN3PairWrapper(int N, double* posX, double* posY, double* posZ,
 			double* forceX, double* forceY, double* forceZ, int M, double* posX2,
 			double* posY2, double* posZ2, double* forceX2,
-			double* forceY2, double* forceZ2);
+			double* forceY2, double* forceZ2, cudaStream_t stream = 0);
 private:
 	int numRequiredBlocks(int n){
 		return ((n - 1) / _num_threads) + 1;

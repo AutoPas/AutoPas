@@ -165,7 +165,7 @@ void SoAFunctorNoN3(int N, floatType* posX, floatType* posY, floatType* posZ,
 		__syncthreads();
 		if (tid < N) {
 			for (int j = 0; j < blockDim.x; ++j) {
-				myf = bodyBodyF<double>(myposition, block_pos[j], myf);
+				myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
 			}
 		}
 		__syncthreads();
@@ -226,8 +226,8 @@ void SoAFunctorNoN3Pair(int N, floatType* posX, floatType* posY,
 
 template<typename floatType, int block_size, bool NMisMultipleBlockSize = false>
 __global__
-void SoAFunctorN3(int N, double* posX, double* posY, double* posZ,
-		double* forceX, double* forceY, double* forceZ) {
+void SoAFunctorN3(int N, floatType* posX, floatType* posY, floatType* posZ,
+		floatType* forceX, floatType* forceY, floatType* forceZ) {
 	static_assert((block_size & (block_size - 1)) == 0, "block size must be power of 2");
 	__shared__ typename vec3<floatType>::Type cell1_pos_shared[block_size];
 	__shared__ typename vec3<floatType>::Type cell1_forces_shared[block_size];
@@ -288,7 +288,7 @@ void SoAFunctorN3(int N, double* posX, double* posY, double* posZ,
 
 template<typename floatType, int block_size, bool NMisMultipleBlockSize = false>
 __global__
-void SoAFunctorN3Pair(int N, soa<> cell1, int M, soa<> cell2) {
+void SoAFunctorN3Pair(int N, soa<floatType> cell1, int M, soa<floatType> cell2) {
 	static_assert((block_size & (block_size - 1)) == 0, "block size must be power of 2");
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
 	__shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
@@ -356,31 +356,31 @@ void CudaWrapper::SoAFunctorNoN3Wrapper(int N, double* posX, double* posY,
 		cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorNoN3<double, 32> <<<numRequiredBlocks(N), 32>>>(N, posX, posY,
+		SoAFunctorNoN3<double, 32> <<<numRequiredBlocks(N), 32, 0, stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 64:
-		SoAFunctorNoN3<double, 64> <<<numRequiredBlocks(N), 64>>>(N, posX, posY,
+		SoAFunctorNoN3<double, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 96:
-		SoAFunctorNoN3<double, 96> <<<numRequiredBlocks(N), 96>>>(N, posX, posY,
+		SoAFunctorNoN3<double, 96> <<<numRequiredBlocks(N), 96, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 128:
-		SoAFunctorNoN3<double, 128> <<<numRequiredBlocks(N), 128>>>(N, posX,
+		SoAFunctorNoN3<double, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ);
 		break;
 	case 256:
-		SoAFunctorNoN3<double, 256> <<<numRequiredBlocks(N), 256>>>(N, posX,
+		SoAFunctorNoN3<double, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ);
 		break;
 	case 512:
-		SoAFunctorNoN3<double, 512> <<<numRequiredBlocks(N), 512>>>(N, posX,
+		SoAFunctorNoN3<double, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ);
 		break;
 	case 1024:
-		SoAFunctorNoN3<double, 1024> <<<numRequiredBlocks(N), 1024>>>(N, posX,
+		SoAFunctorNoN3<double, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ);
 		break;
 	default:
@@ -396,31 +396,31 @@ void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY,
 		double* posX2, double* posY2, double* posZ2, cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorNoN3Pair<double, 32> <<<numRequiredBlocks(N), 32>>>(N, posX,
+		SoAFunctorNoN3Pair<double, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 64:
-		SoAFunctorNoN3Pair<double, 64> <<<numRequiredBlocks(N), 64>>>(N, posX,
+		SoAFunctorNoN3Pair<double, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 96:
-		SoAFunctorNoN3Pair<double, 96> <<<numRequiredBlocks(N), 96>>>(N, posX,
+		SoAFunctorNoN3Pair<double, 96> <<<numRequiredBlocks(N), 96, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 128:
-		SoAFunctorNoN3Pair<double, 128> <<<numRequiredBlocks(N), 128>>>(N, posX,
+		SoAFunctorNoN3Pair<double, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 256:
-		SoAFunctorNoN3Pair<double, 256> <<<numRequiredBlocks(N), 256>>>(N, posX,
+		SoAFunctorNoN3Pair<double, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 512:
-		SoAFunctorNoN3Pair<double, 512> <<<numRequiredBlocks(N), 512>>>(N, posX,
+		SoAFunctorNoN3Pair<double, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 1024:
-		SoAFunctorNoN3Pair<double, 1024> <<<numRequiredBlocks(N), 1024>>>(N,
+		SoAFunctorNoN3Pair<double, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N,
 				posX, posY, posZ, forceX, forceY, forceZ, M, posX2, posY2,
 				posZ2);
 		break;
@@ -433,31 +433,31 @@ void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY,
 }
 
 void CudaWrapper::SoAFunctorN3Wrapper(int N, double* posX, double* posY,
-		double* posZ, double* forceX, double* forceY, double* forceZ) {
+		double* posZ, double* forceX, double* forceY, double* forceZ, cudaStream_t stream) {
 
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorN3<double, 32> <<<numRequiredBlocks(N), 32>>>(N, posX, posY,
+		SoAFunctorN3<double, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 64:
-		SoAFunctorN3<double, 64> <<<numRequiredBlocks(N), 64>>>(N, posX, posY,
+		SoAFunctorN3<double, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 128:
-		SoAFunctorN3<double, 128> <<<numRequiredBlocks(N), 128>>>(N, posX, posY,
+		SoAFunctorN3<double, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 256:
-		SoAFunctorN3<double, 256> <<<numRequiredBlocks(N), 256>>>(N, posX, posY,
+		SoAFunctorN3<double, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 512:
-		SoAFunctorN3<double, 512> <<<numRequiredBlocks(N), 512>>>(N, posX, posY,
+		SoAFunctorN3<double, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 1024:
-		SoAFunctorN3<double, 1024> <<<numRequiredBlocks(N), 1024>>>(N, posX, posY,
+		SoAFunctorN3<double, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	default:
@@ -471,7 +471,8 @@ void CudaWrapper::SoAFunctorN3Wrapper(int N, double* posX, double* posY,
 void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY,
 		double* posZ, double* forceX, double* forceY, double* forceZ, int M,
 		double* posX2, double* posY2, double* posZ2, double* forceX2,
-		double* forceY2, double* forceZ2) {
+		double* forceY2, double* forceZ2, cudaStream_t stream) {
+
 	soa<double> cell1;
 	cell1.posX = posX;
 	cell1.posY = posY;
@@ -488,27 +489,27 @@ void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY,
 	cell2.forceZ = forceZ2;
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorN3Pair<double, 32> <<<numRequiredBlocks(N), 32>>>(N, cell1, M,
+		SoAFunctorN3Pair<double, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, cell1, M,
 				cell2);
 		break;
 	case 64:
-		SoAFunctorN3Pair<double, 64> <<<numRequiredBlocks(N), 64>>>(N, cell1, M,
+		SoAFunctorN3Pair<double, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, cell1, M,
 				cell2);
 		break;
 	case 128:
-		SoAFunctorN3Pair<double, 128> <<<numRequiredBlocks(N), 128>>>(N, cell1,
+		SoAFunctorN3Pair<double, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, cell1,
 				M, cell2);
 		break;
 	case 256:
-		SoAFunctorN3Pair<double, 256> <<<numRequiredBlocks(N), 256>>>(N, cell1,
+		SoAFunctorN3Pair<double, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, cell1,
 				M, cell2);
 		break;
 	case 512:
-		SoAFunctorN3Pair<double, 512> <<<numRequiredBlocks(N), 512>>>(N, cell1,
+		SoAFunctorN3Pair<double, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, cell1,
 				M, cell2);
 		break;
 	case 1024:
-		SoAFunctorN3Pair<double, 1024> <<<numRequiredBlocks(N), 1024>>>(N,
+		SoAFunctorN3Pair<double, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N,
 				cell1, M, cell2);
 		break;
 	default:
