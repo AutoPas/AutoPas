@@ -12,49 +12,51 @@
 #include "autopas/utils/CudaDeviceVector.h"
 #include "autopas/utils/CudaSoA.h"
 
-__constant__ constants global_constants;
+__constant__ constants<float> global_constants_float;
+__constant__ constants<double> global_constants_double;
 
-template<typename floating_precision = double>
+template<typename floatType>
 class soa {
 public:
-	floating_precision* posX;
-	floating_precision* posY;
-	floating_precision* posZ;
-	floating_precision* forceX;
-	floating_precision* forceY;
-	floating_precision* forceZ;
+	floatType* posX;
+	floatType* posY;
+	floatType* posZ;
+	floatType* forceX;
+	floatType* forceY;
+	floatType* forceZ;
 };
 
-template<typename T> struct vec3 {
-	typedef T Type;
-};
-template<> struct vec3<float> {
-	typedef float3 Type;
-};
-template<> struct vec3<double> {
-	typedef double3 Type;
-};
+template <typename T>
+__device__ inline constants<T>& getConstants()
+{
+    return global_constants_float;
+}
+template <>
+__device__ inline constants<double>& getConstants<double>()
+{
+    return global_constants_double;
+}
 
 template<typename floatType>
 __device__
-typename vec3<floatType>::Type bodyBodyF(typename vec3<floatType>::Type i,
+inline typename vec3<floatType>::Type bodyBodyF(typename vec3<floatType>::Type i,
 		typename vec3<floatType>::Type j, typename vec3<floatType>::Type fi) {
-	auto drx = i.x - j.x;
-	auto dry = i.y - j.y;
-	auto drz = i.z - j.z;
+	floatType drx = i.x - j.x;
+	floatType dry = i.y - j.y;
+	floatType drz = i.z - j.z;
 
-	auto dr2 = drx * drx + dry * dry + drz * drz;
+	floatType dr2 = drx * drx + dry * dry + drz * drz;
 
-	if (dr2 > global_constants.cutoffsquare | dr2 == 0.0) {
+	if (dr2 > getConstants<floatType>().cutoffsquare | dr2 == 0.0) {
 		return fi;
 	}
 
-	auto invdr2 = 1. / dr2;
-	auto lj6 = global_constants.sigmasquare * invdr2;
+	floatType invdr2 = 1. / dr2;
+	floatType lj6 = getConstants<floatType>().sigmasquare * invdr2;
 	lj6 = lj6 * lj6 * lj6;
-	auto lj12 = lj6 * lj6;
-	auto lj12m6 = lj12 - lj6;
-	auto fac = global_constants.epsilon24 * (lj12 + lj12m6) * invdr2;
+	floatType lj12 = lj6 * lj6;
+	floatType lj12m6 = lj12 - lj6;
+	floatType fac = getConstants<floatType>().epsilon24 * (lj12 + lj12m6) * invdr2;
 
 	fi.x += drx * fac;
 	fi.y += dry * fac;
@@ -65,29 +67,29 @@ typename vec3<floatType>::Type bodyBodyF(typename vec3<floatType>::Type i,
 
 template<typename floatType>
 __device__
-typename vec3<floatType>::Type bodyBodyFN3(typename vec3<floatType>::Type i,
+inline typename vec3<floatType>::Type bodyBodyFN3(typename vec3<floatType>::Type i,
 		typename vec3<floatType>::Type j, typename vec3<floatType>::Type fi,
 		typename vec3<floatType>::Type* fj) {
-	auto drx = i.x - j.x;
-	auto dry = i.y - j.y;
-	auto drz = i.z - j.z;
+	floatType drx = i.x - j.x;
+	floatType dry = i.y - j.y;
+	floatType drz = i.z - j.z;
 
-	auto dr2 = drx * drx + dry * dry + drz * drz;
+	floatType dr2 = drx * drx + dry * dry + drz * drz;
 
-	if (dr2 > global_constants.cutoffsquare) {
+	if (dr2 > getConstants<floatType>().cutoffsquare) {
 		return fi;
 	}
 
-	auto invdr2 = 1. / dr2;
-	auto lj6 = global_constants.sigmasquare * invdr2;
+	floatType invdr2 = 1. / dr2;
+	floatType lj6 = getConstants<floatType>().sigmasquare * invdr2;
 	lj6 = lj6 * lj6 * lj6;
-	auto lj12 = lj6 * lj6;
-	auto lj12m6 = lj12 - lj6;
-	auto fac = global_constants.epsilon24 * (lj12 + lj12m6) * invdr2;
+	floatType lj12 = lj6 * lj6;
+	floatType lj12m6 = lj12 - lj6;
+	floatType fac = getConstants<floatType>().epsilon24 * (lj12 + lj12m6) * invdr2;
 
-	auto dfx = drx * fac;
-	auto dfy = dry * fac;
-	auto dfz = drz * fac;
+	floatType dfx = drx * fac;
+	floatType dfy = dry * fac;
+	floatType dfz = drz * fac;
 
 	fi.x += dfx;
 	fi.y += dfy;
@@ -100,47 +102,6 @@ typename vec3<floatType>::Type bodyBodyFN3(typename vec3<floatType>::Type i,
 	return fi;
 }
 
-__device__ double3 bodyBodyFcalcGlobals(double3 i, double3 j, double3 fi,
-		double4 globals) {
-	double drx = i.x - j.x;
-	double dry = i.y - j.y;
-	double drz = i.z - j.z;
-
-	double dr2 = drx * drx + dry * dry + drz * drz;
-
-	if (dr2 > global_constants.cutoffsquare | dr2 == 0.0) {
-		return fi;
-	}
-
-	double invdr2 = 1. / dr2;
-	double lj6 = global_constants.sigmasquare * invdr2;
-	lj6 = lj6 * lj6 * lj6;
-	double lj12 = lj6 * lj6;
-	double lj12m6 = lj12 - lj6;
-	double fac = global_constants.epsilon24 * (lj12 + lj12m6) * invdr2;
-
-	const double fx = drx * fac;
-	const double fy = dry * fac;
-	const double fz = drz * fac;
-
-	const double virialx = drx * fx;
-	const double virialy = dry * fy;
-	const double virialz = drz * fz;
-	const double upot = (global_constants.epsilon24 * lj12m6
-			+ global_constants.shift6);
-
-	// these calculations assume that this functor is not called for halo cells!
-	globals.w += upot;
-	globals.x += virialx;
-	globals.y += virialy;
-	globals.z += virialz;
-
-	fi.x += fx;
-	fi.y += fy;
-	fi.z += fz;
-
-	return fi;
-}
 
 template<typename floatType, int block_size>
 __global__
@@ -351,36 +312,37 @@ void SoAFunctorN3Pair(int N, soa<floatType> cell1, int M, soa<floatType> cell2) 
 	atomicAdd(cell1.forceZ + tid, myf.z);
 }
 
-void CudaWrapper::SoAFunctorNoN3Wrapper(int N, double* posX, double* posY,
-		double* posZ, double* forceX, double* forceY, double* forceZ,
+template<typename floatType>
+void CudaWrapper::SoAFunctorNoN3Wrapper(int N, floatType* posX, floatType* posY,
+		floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ,
 		cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorNoN3<double, 32> <<<numRequiredBlocks(N), 32, 0, stream>>>(N, posX, posY,
+		SoAFunctorNoN3<floatType, 32> <<<numRequiredBlocks(N), 32, 0, stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 64:
-		SoAFunctorNoN3<double, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX, posY,
+		SoAFunctorNoN3<floatType, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 96:
-		SoAFunctorNoN3<double, 96> <<<numRequiredBlocks(N), 96, 0,stream>>>(N, posX, posY,
+		SoAFunctorNoN3<floatType, 96> <<<numRequiredBlocks(N), 96, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 128:
-		SoAFunctorNoN3<double, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX,
+		SoAFunctorNoN3<floatType, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ);
 		break;
 	case 256:
-		SoAFunctorNoN3<double, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX,
+		SoAFunctorNoN3<floatType, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ);
 		break;
 	case 512:
-		SoAFunctorNoN3<double, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX,
+		SoAFunctorNoN3<floatType, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ);
 		break;
 	case 1024:
-		SoAFunctorNoN3<double, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N, posX,
+		SoAFunctorNoN3<floatType, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ);
 		break;
 	default:
@@ -391,36 +353,44 @@ void CudaWrapper::SoAFunctorNoN3Wrapper(int N, double* posX, double* posY,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY,
-		double* posZ, double* forceX, double* forceY, double* forceZ, int M,
-		double* posX2, double* posY2, double* posZ2, cudaStream_t stream) {
+template void CudaWrapper::SoAFunctorNoN3Wrapper<float>(int N, float* posX, float* posY,
+		float* posZ, float* forceX, float* forceY, float* forceZ,
+		cudaStream_t stream);
+template void CudaWrapper::SoAFunctorNoN3Wrapper<double>(int N, double* posX, double* posY,
+		double* posZ, double* forceX, double* forceY, double* forceZ,
+		cudaStream_t stream);
+
+template<typename floatType>
+void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, floatType* posX, floatType* posY,
+		floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ, int M,
+		floatType* posX2, floatType* posY2, floatType* posZ2, cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorNoN3Pair<double, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, posX,
+		SoAFunctorNoN3Pair<floatType, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 64:
-		SoAFunctorNoN3Pair<double, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX,
+		SoAFunctorNoN3Pair<floatType, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 96:
-		SoAFunctorNoN3Pair<double, 96> <<<numRequiredBlocks(N), 96, 0,stream>>>(N, posX,
+		SoAFunctorNoN3Pair<floatType, 96> <<<numRequiredBlocks(N), 96, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 128:
-		SoAFunctorNoN3Pair<double, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX,
+		SoAFunctorNoN3Pair<floatType, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 256:
-		SoAFunctorNoN3Pair<double, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX,
+		SoAFunctorNoN3Pair<floatType, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 512:
-		SoAFunctorNoN3Pair<double, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX,
+		SoAFunctorNoN3Pair<floatType, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX,
 				posY, posZ, forceX, forceY, forceZ, M, posX2, posY2, posZ2);
 		break;
 	case 1024:
-		SoAFunctorNoN3Pair<double, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N,
+		SoAFunctorNoN3Pair<floatType, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N,
 				posX, posY, posZ, forceX, forceY, forceZ, M, posX2, posY2,
 				posZ2);
 		break;
@@ -432,32 +402,40 @@ void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, double* posX, double* posY,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void CudaWrapper::SoAFunctorN3Wrapper(int N, double* posX, double* posY,
-		double* posZ, double* forceX, double* forceY, double* forceZ, cudaStream_t stream) {
+template void CudaWrapper::SoAFunctorNoN3PairWrapper<float>(int N, float* posX, float* posY,
+		float* posZ, float* forceX, float* forceY, float* forceZ, int M,
+		float* posX2, float* posY2, float* posZ2, cudaStream_t stream);
+template void CudaWrapper::SoAFunctorNoN3PairWrapper<double>(int N, double* posX, double* posY,
+		double* posZ, double* forceX, double* forceY, double* forceZ, int M,
+		double* posX2, double* posY2, double* posZ2, cudaStream_t stream);
+
+template<typename floatType>
+void CudaWrapper::SoAFunctorN3Wrapper(int N, floatType* posX, floatType* posY,
+		floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ, cudaStream_t stream) {
 
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorN3<double, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, posX, posY,
+		SoAFunctorN3<floatType, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 64:
-		SoAFunctorN3<double, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX, posY,
+		SoAFunctorN3<floatType, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 128:
-		SoAFunctorN3<double, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX, posY,
+		SoAFunctorN3<floatType, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 256:
-		SoAFunctorN3<double, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX, posY,
+		SoAFunctorN3<floatType, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 512:
-		SoAFunctorN3<double, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX, posY,
+		SoAFunctorN3<floatType, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	case 1024:
-		SoAFunctorN3<double, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N, posX, posY,
+		SoAFunctorN3<floatType, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N, posX, posY,
 				posZ, forceX, forceY, forceZ);
 		break;
 	default:
@@ -468,19 +446,24 @@ void CudaWrapper::SoAFunctorN3Wrapper(int N, double* posX, double* posY,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY,
-		double* posZ, double* forceX, double* forceY, double* forceZ, int M,
-		double* posX2, double* posY2, double* posZ2, double* forceX2,
-		double* forceY2, double* forceZ2, cudaStream_t stream) {
+template void CudaWrapper::SoAFunctorN3Wrapper<float>(int N, float* posX, float* posY,
+		float* posZ, float* forceX, float* forceY, float* forceZ, cudaStream_t stream);
+template void CudaWrapper::SoAFunctorN3Wrapper<double>(int N, double* posX, double* posY,
+		double* posZ, double* forceX, double* forceY, double* forceZ, cudaStream_t stream);
 
-	soa<double> cell1;
+template<typename floatType>
+void CudaWrapper::SoAFunctorN3PairWrapper(int N, floatType* posX, floatType* posY,
+		floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ, int M,
+		floatType* posX2, floatType* posY2, floatType* posZ2, floatType* forceX2,
+		floatType* forceY2, floatType* forceZ2, cudaStream_t stream){
+	soa<floatType> cell1;
 	cell1.posX = posX;
 	cell1.posY = posY;
 	cell1.posZ = posZ;
 	cell1.forceX = forceX;
 	cell1.forceY = forceY;
 	cell1.forceZ = forceZ;
-	soa<double> cell2;
+	soa<floatType> cell2;
 	cell2.posX = posX2;
 	cell2.posY = posY2;
 	cell2.posZ = posZ2;
@@ -489,27 +472,27 @@ void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY,
 	cell2.forceZ = forceZ2;
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorN3Pair<double, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, cell1, M,
+		SoAFunctorN3Pair<floatType, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, cell1, M,
 				cell2);
 		break;
 	case 64:
-		SoAFunctorN3Pair<double, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, cell1, M,
+		SoAFunctorN3Pair<floatType, 64> <<<numRequiredBlocks(N), 64, 0,stream>>>(N, cell1, M,
 				cell2);
 		break;
 	case 128:
-		SoAFunctorN3Pair<double, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, cell1,
+		SoAFunctorN3Pair<floatType, 128> <<<numRequiredBlocks(N), 128, 0,stream>>>(N, cell1,
 				M, cell2);
 		break;
 	case 256:
-		SoAFunctorN3Pair<double, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, cell1,
+		SoAFunctorN3Pair<floatType, 256> <<<numRequiredBlocks(N), 256, 0,stream>>>(N, cell1,
 				M, cell2);
 		break;
 	case 512:
-		SoAFunctorN3Pair<double, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, cell1,
+		SoAFunctorN3Pair<floatType, 512> <<<numRequiredBlocks(N), 512, 0,stream>>>(N, cell1,
 				M, cell2);
 		break;
 	case 1024:
-		SoAFunctorN3Pair<double, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N,
+		SoAFunctorN3Pair<floatType, 1024> <<<numRequiredBlocks(N), 1024, 0,stream>>>(N,
 				cell1, M, cell2);
 		break;
 	default:
@@ -518,15 +501,30 @@ void CudaWrapper::SoAFunctorN3PairWrapper(int N, double* posX, double* posY,
 		break;
 	}
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
+
+
 }
 
-void CudaWrapper::loadConstants(double cutoffsquare, double epsilon24,
-		double sigmasquare) {
+template void CudaWrapper::SoAFunctorN3PairWrapper<float>(int N, float* posX, float* posY,
+		float* posZ, float* forceX, float* forceY, float* forceZ, int M,
+		float* posX2, float* posY2, float* posZ2, float* forceX2,
+		float* forceY2, float* forceZ2, cudaStream_t stream);
+template void CudaWrapper::SoAFunctorN3PairWrapper<double>(int N, double* posX, double* posY,
+		double* posZ, double* forceX, double* forceY, double* forceZ, int M,
+		double* posX2, double* posY2, double* posZ2, double* forceX2,
+		double* forceY2, double* forceZ2, cudaStream_t stream);
 
-	constants c;
+template<typename floatType>
+void CudaWrapper::loadConstants(floatType cutoffsquare, floatType epsilon24, floatType sigmasquare){
+
+	constants<floatType> c;
 	c.cutoffsquare = cutoffsquare;
 	c.epsilon24 = epsilon24;
 	c.sigmasquare = sigmasquare;
-
-	cudaMemcpyToSymbol(global_constants, &c, sizeof(constants));
+	cudaMemcpyToSymbol(global_constants_double, &c, sizeof(constants<floatType>));
 }
+template void CudaWrapper::loadConstants<float>(float cutoffsquare, float epsilon24,
+		float sigmasquare);
+template void CudaWrapper::loadConstants<double>(double cutoffsquare, double epsilon24,
+		double sigmasquare);
+

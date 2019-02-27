@@ -89,7 +89,7 @@ void testRun(LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> &func, FullPart
 }
 
 int main(int argc, char **argv) {
-  int numParticles = 100000;
+  int numParticles = 8000;
   if (argc == 2) {
     numParticles = stoi(string(argv[1]));
   }

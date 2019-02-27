@@ -102,17 +102,50 @@ class Functor {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 
+  /**
+   * @brief Functor using Cuda on SoA in device Memory
+   *
+   * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
+   *
+   * @param device_handle soa in device memory
+   * @param newton3 defines whether or whether not to use newton
+   */
   virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) {
     utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3: not yet implemented");
   }
+
+  /**
+   * @brief Functor using Cuda on SoAs in device Memory
+   *
+   * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
+   * the GPU
+   *
+   * @param device_handle1 first soa in device memory
+   * @param device_handle1 second soa in device memory
+   * @param newton3 defines whether or whether not to use newton
+   */
   virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
                            CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3(two cells): not yet implemented");
   }
+
+  /**
+   * @brief Copies the SoA data of the given cell to the Cuda device.
+   *
+   * @param soa  Structure of arrays where the data is loaded.
+   * @param device_handle soa in device memory where the data is copied to
+   */
   virtual void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
                                CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
     utils::ExceptionHandler::exception("Functor::CudaDeviceSoALoader: not yet implemented");
   }
+
+  /**
+   * @brief Copies the data stored on the Cuda device back to the SoA overwrites the data in the soa
+   *
+   * @param soa  Structure of arrays where the data copied to.
+   * @param device_handle soa in device memory where the data is loaded from
+   */
   virtual void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
                                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
     utils::ExceptionHandler::exception("Functor::CudaDeviceSoAExtractor: not yet implemented");
