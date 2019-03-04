@@ -265,7 +265,6 @@ void SoAFunctorN3Pair(int N, soa<floatType> cell1, int M, soa<floatType> cell2) 
 		myposition.y = cell1.posY[tid];
 		myposition.z = cell1.posZ[tid];
 	}
-
 	for (i = block_size, tile = 0; i <= M; i += block_size, ++tile) {
 		int idx = tile * block_size + threadIdx.x;
 		cell2_pos_shared[threadIdx.x] = {cell2.posX[idx], cell2.posY[idx], cell2.posZ[idx]};

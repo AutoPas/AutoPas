@@ -9,17 +9,17 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/particles/ParticleFP32.h"
 #include "autopas/utils/CudaDeviceVector.h"
 
 using namespace std;
 using namespace autopas;
 
-class MyMolecule : public Particle {
+class MyMoleculeFP32 : public ParticleFP64 {
  public:
-  MyMolecule() : Particle(), _myvar(0) {}
+  MyMoleculeFP32() : ParticleFP64() {}
 
-  MyMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i, int myvar)
-      : Particle(r, v, i), _myvar(myvar) {}
+  MyMoleculeFP32(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : ParticleFP64(r, v, i) {}
 
   void print() {
     cout << "Molecule with position: ";
@@ -31,18 +31,14 @@ class MyMolecule : public Particle {
     for (auto &f : getF()) {
       cout << f << ", ";
     }
-    cout << "ID: " << getID();
-    cout << " myvar: " << _myvar << endl;
+    cout << "ID: " << getID() << endl;
   }
 
-  // typedef autopas::utils::SoAType<size_t, float, float, float, float, float, float>::Type SoAArraysType;
-  // typedef autopas::utils::CudaSoAType<size_t, float, float, float, float, float, float>::Type CudaDeviceArraysType;
-
- private:
-  int _myvar;
+  typedef autopas::utils::SoAType<size_t, float, float, float, float, float, float>::Type SoAArraysType;
+  typedef autopas::utils::CudaSoAType<size_t, float, float, float, float, float, float>::Type CudaDeviceArraysType;
 };
 
-template <class ParticleCell>
+template <class ParticleCell, class Particle>
 void fillSpaceWithGrid(ParticleCell &pc, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double gridsize,
                        int maxN = 10000) {
   int i = 0;
@@ -50,8 +46,7 @@ void fillSpaceWithGrid(ParticleCell &pc, std::array<double, 3> boxMin, std::arra
   for (double x = boxMin[0]; x < boxMax[0]; x += gridsize) {
     for (double y = boxMin[1]; y < boxMax[1]; y += gridsize) {
       for (double z = boxMin[2]; z < boxMax[2]; z += gridsize) {
-        std::array<double, 3> arr({x, y, z});
-        MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
+        Particle m({x, y, z}, {0., 0., 0.}, static_cast<unsigned long>(i));
         pc.addParticle(m);
         if (++i >= maxN) {
           return;
@@ -61,8 +56,9 @@ void fillSpaceWithGrid(ParticleCell &pc, std::array<double, 3> boxMin, std::arra
   }
 }
 
-void testRun(LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> &func, FullParticleCell<MyMolecule> &fpc1,
-             FullParticleCell<MyMolecule> &fpc2, int num_threads = 32, bool newton3 = false) {
+template <typename Particle>
+void testRun(LJFunctor<Particle, FullParticleCell<Particle>> &func, FullParticleCell<Particle> &fpc1,
+             FullParticleCell<Particle> &fpc2, int num_threads = 32, bool newton3 = false) {
   cout << "NumC1: " << fpc1.numParticles() << "; NumC2: " << fpc2.numParticles() << "; threads: " << num_threads
        << "; n3: " << newton3 << "; " << endl;
 
@@ -88,33 +84,42 @@ void testRun(LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> &func, FullPart
   cout << "->" << duration << "microseconds; (" << soloT << ", " << pairT << ")" << endl;
 }
 
-int main(int argc, char **argv) {
-  int numParticles = 8000;
-  if (argc == 2) {
-    numParticles = stoi(string(argv[1]));
-  }
+template <typename Particle>
+void run(int numParticles) {
   autopas::Logger::create();
 
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
   double cutoff = 100.0;
 
-  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
+  FullParticleCell<Particle> fpc1;
+  FullParticleCell<Particle> fpc2;
 
-  FullParticleCell<MyMolecule> fpc1;
-  FullParticleCell<MyMolecule> fpc2;
+  fillSpaceWithGrid<FullParticleCell<Particle>, Particle>(fpc1, {0, 0, 0}, {9, 9, 9}, 0.19, numParticles);
+  fillSpaceWithGrid<FullParticleCell<Particle>, Particle>(fpc2, {9.2, 0, 0}, {18.2, 9, 9}, 0.19, numParticles);
 
-  fillSpaceWithGrid(fpc1, {0, 0, 0}, {9, 9, 9}, 0.19, numParticles);
-  fillSpaceWithGrid(fpc2, {9.2, 0, 0}, {18.2, 9, 9}, 0.19, numParticles);
-
-  typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
+  typedef LJFunctor<Particle, FullParticleCell<Particle>> Func;
   Func func(cutoff, 1.0, 1.0, 0.0);
 
-  vector<int> v = {32, 64, 128, 256, 512, 1024};
+  vector<int> v = {512};
   for (auto it : v) {
     testRun(func, fpc1, fpc2, it, false);
   }
   for (auto it : v) {
     testRun(func, fpc1, fpc2, it, true);
   }
+}
+
+int main(int argc, char **argv) {
+  int numParticles = 8000;
+  if (argc == 2) {
+    numParticles = stoi(string(argv[1]));
+  }
+
+  cout << "Test double precision" << endl;
+  // run<ParticleFP64>(numParticles);
+
+  cout << "Test single precision" << endl;
+  run<MyMoleculeFP32>(numParticles);
+
   return EXIT_SUCCESS;
 }
