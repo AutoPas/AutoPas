@@ -18,10 +18,10 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam DataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
@@ -48,9 +48,9 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
   inline void c18Traversal(LoopBody&& loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 template <typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c18Traversal(LoopBody&& loopBody) {
+inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c18Traversal(LoopBody&& loopBody) {
   using std::array;
   const array<unsigned long, 3> stride = {3, 3, 2};
   array<unsigned long, 3> end = {};

@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
@@ -49,9 +49,9 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
   inline void c08Traversal(LoopBody&& loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 template <typename LoopBody>
-inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c08Traversal(LoopBody&& loopBody) {
+inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c08Traversal(LoopBody&& loopBody) {
   using std::array;
   const array<unsigned long, 3> stride = {2, 2, 2};
   array<unsigned long, 3> end = {};
