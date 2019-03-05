@@ -165,7 +165,8 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
   EXPECT_CALL(emptyFunctor, allowsNewton3()).Times(AtLeast(1)).WillOnce(Return(true));
   EXPECT_CALL(emptyFunctor, allowsNonNewton3()).Times(AtLeast(1)).WillOnce(Return(false));
   EXPECT_CALL(emptyFunctor, isRelevantForTuning()).Times(AtLeast(1)).WillOnce(Return(true));
-  autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &emptyFunctor);
+  autopas::C08Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
+                                                                                               &emptyFunctor);
   autoPas.iteratePairwise(&emptyFunctor, autopas::aos);
 
   // now verlet lists should be valid.

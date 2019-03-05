@@ -13,10 +13,10 @@
 
 typedef autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> Container;
 typedef autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
-                              autopas::sph::SPHCalcHydroForceFunctor, false, false>
+                              autopas::sph::SPHCalcHydroForceFunctor, autopas::DataLayoutOption::aos, false>
     HydroTraversal;
 typedef autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
-                              false, false>
+                              autopas::DataLayoutOption::aos, false>
     DensityTraversal;
 
 void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>& bBoxMax) {

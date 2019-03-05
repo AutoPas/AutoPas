@@ -11,6 +11,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
@@ -114,7 +115,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     f->deviceAoSLoader(*getCell(), &getCell()->_particlesDevice);
     f->deviceAoSLoader(*getHaloCell(), &getHaloCell()->_particlesDevice);
 
-    traversal->traverseCellPairs(this->_cells);
+    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in DirectSum::iteratePairwiseAoSCuda");
+    }
 
     f->deviceAoSExtractor(*getCell(), &getCell()->_particlesDevice);
     f->deviceAoSExtractor(*getHaloCell(), &getHaloCell()->_particlesDevice);
@@ -129,7 +135,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     f->deviceSoALoader((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
     f->deviceSoALoader((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
 
-    traversal->traverseCellPairs(this->_cells);
+    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in DirectSum::iteratePairwiseSoACuda");
+    }
 
     f->deviceSoAExtractor((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
     f->deviceSoAExtractor((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);

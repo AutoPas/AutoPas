@@ -32,7 +32,7 @@ target_compile_definitions(autopas
 if(ENABLE_CUDA)
 target_compile_options(autopas 
         PUBLIC 
-        $<$<COMPILE_LANGUAGE:CUDA>:-gencode arch=compute_61,code=sm_61>
+        $<$<COMPILE_LANGUAGE:CUDA>:-gencode arch=compute_61,code=sm_61 -Xcompiler ${CMAKE_CXX_FLAGS}>
         )
         
 TARGET_INCLUDE_DIRECTORIES(autopas SYSTEM PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})

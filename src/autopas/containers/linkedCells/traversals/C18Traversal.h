@@ -8,8 +8,8 @@
 
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/options/DataLayoutOptions.h"
+#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -103,9 +103,8 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                                      unsigned long x, unsigned long y,
-                                                                                      unsigned long z) {
+void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(
+    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
   unsigned int xArray;

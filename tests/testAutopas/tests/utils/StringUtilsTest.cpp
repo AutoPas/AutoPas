@@ -19,7 +19,7 @@ TEST(StringUtilsTest, parseContainerOptionsTest) {
 }
 
 TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
-  testParseSingle<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, {"soa", "aos"},
+  testParseSingle<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, {"cuda", "soa", "aos"},
                                              autopas::utils::StringUtils::parseDataLayout);
 }
 

@@ -100,8 +100,8 @@ int main(int argc, char *argv[]) {
   addParticles(cont, numParticles);
 
   autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
-                        autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>, false,
-                        false>
+                        autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                        autopas::DataLayoutOption::aos, false>
       dummyTraversal({0, 0, 0}, &func);
 
   // iterate to rebuild

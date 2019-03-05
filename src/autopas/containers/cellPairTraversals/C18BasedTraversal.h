@@ -50,7 +50,8 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 template <typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c18Traversal(LoopBody&& loopBody) {
+inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c18Traversal(
+    LoopBody&& loopBody) {
   using std::array;
   const array<unsigned long, 3> stride = {3, 3, 2};
   array<unsigned long, 3> end = {};

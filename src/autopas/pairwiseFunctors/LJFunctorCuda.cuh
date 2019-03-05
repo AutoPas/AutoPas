@@ -51,7 +51,7 @@ public:
 	void SoAFunctorNoN3Wrapper(int N, floatType* posX, floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ, cudaStream_t stream = 0);
 	template<typename floatType>
 	void SoAFunctorNoN3PairWrapper(int N, floatType* posX, floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ,
-			int M, floatType* posX2, floatType* posY2, floatType* posZ2, cudaStream_t stream = 0);
+			int M, floatType* posX2, floatType* posY2, floatType* posZ2, cudaStream_t stream);
 
 	template<typename floatType>
 	void SoAFunctorN3Wrapper(int N, floatType* posX, floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ, cudaStream_t stream = 0);
@@ -59,7 +59,7 @@ public:
 void SoAFunctorN3PairWrapper(int N, floatType* posX, floatType* posY, floatType* posZ,
 		floatType* forceX, floatType* forceY, floatType* forceZ, int M, floatType* posX2,
 		floatType* posY2, floatType* posZ2, floatType* forceX2,
-		floatType* forceY2, floatType* forceZ2, cudaStream_t stream = 0);
+		floatType* forceY2, floatType* forceZ2, cudaStream_t stream);
 
 	int numRequiredBlocks(int n){
 		return ((n - 1) / _num_threads) + 1;

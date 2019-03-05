@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/options/DataLayoutOptions.h"
 #include "mocks/MockFunctor.h"
 
 // a place for typedefs that are commonly used in tests
@@ -20,11 +21,15 @@ typedef autopas::FullParticleCell<autopas::MoleculeLJ> FMCell;
 // M prefix for mocks
 typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;
 
-typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, false, true>
+typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
+                             autopas::DataLayoutOption::aos, true>
     CellFunctorAoSN3;
-typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, false, false>
+typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
+                             autopas::DataLayoutOption::aos, false>
     CellFunctorAoSNoN3;
-typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, true, true>
+typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
+                             autopas::DataLayoutOption::soa, true>
     CellFunctorSoAN3;
-typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor, true, false>
+typedef autopas::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
+                             autopas::DataLayoutOption::soa, false>
     CellFunctorSoANoN3;

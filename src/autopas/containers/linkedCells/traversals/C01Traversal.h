@@ -8,8 +8,8 @@
 
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/options/DataLayoutOptions.h"
+#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 namespace autopas {
 
@@ -73,7 +73,8 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, false, false> _cellFunctor;
+  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, false, false>
+      _cellFunctor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

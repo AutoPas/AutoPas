@@ -146,9 +146,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   switch (DataLayout) {
     case DataLayoutOption::aos:
       if (useNewton3) {
-        processCellPairCudaN3(cell1, cell2);
+        processCellPairAoSN3(cell1, cell2);
       } else {
-        processCellPairCudaNoN3(cell1, cell2);
+        processCellPairAoSNoN3(cell1, cell2);
       }
       break;
     case DataLayoutOption::soa:

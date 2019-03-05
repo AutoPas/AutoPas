@@ -67,7 +67,10 @@ int main() {
   double sigma = 0.4;
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
+  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
+
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.6, 700);
+  fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.6, 700);
 
   for (int i = 1; i < 33; ++i) {
     MyMolecule m({(double)-i, 0, 0}, {0., 0., 0.}, static_cast<unsigned long>(i), i);
@@ -78,10 +81,12 @@ int main() {
 
   Func func(cutoff, epsilon, sigma, 0.0);
 
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, false, false, false> traversalAoS(&func);
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, false, false> traversalSoA(&func);
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, false, true> traversalCuda(&func);
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, true, true, true> traversalCudaN3(&func);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::aos, false> traversalAoS(&func);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, false> traversalSoA(&func);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalCuda(&func);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalCudaN3(&func);
+
+  C01Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> C01CudaN3({4, 4, 4}, &func);
 
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
@@ -119,5 +124,13 @@ int main() {
   cout << "CudaN3:" << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
        << "microseconds" << endl;
 
+  start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < maxIterations; ++i) {
+    lc.iteratePairwiseSoACuda(&func, &C01CudaN3, true);
+  }
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+  cout << "LcCudaN3:" << maxIterations << " iterations with " << dir.getNumParticles()
+       << " particles took: " << duration << "microseconds" << endl;
   return EXIT_SUCCESS;
 }

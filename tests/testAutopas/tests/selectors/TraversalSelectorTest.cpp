@@ -20,18 +20,19 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
 
     autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, {traversalOption});
 
-    EXPECT_THROW((traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor)), std::exception);
+    EXPECT_THROW((traversalSelector.getOptimalTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(functor)),
+                 std::exception);
 
-    traversalSelector.selectNextTraversal<MFunctor, false, false>(functor);
+    traversalSelector.selectNextTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(functor);
 
-    auto traversal = traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor);
+    auto traversal = traversalSelector.getOptimalTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(functor);
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())
         << "Is the domain size large enough for the processors' thread count?";
 
     // now that the functor is known check if still the same is returned
-    traversal = traversalSelector.getOptimalTraversal<MFunctor, false, false>(functor);
+    traversal = traversalSelector.getOptimalTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(functor);
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())
         << "Repeated call for traversal " << traversalOption << " failed";
@@ -45,15 +46,16 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalBadFirstOption) {
                                                          autopas::TraversalOptions::c08};
 
   autopas::TraversalSelector<FPCell> traversalSelectorC08({1, 1, 1}, optionVector);
-  EXPECT_THROW((traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor)), std::exception);
-  traversalSelectorC08.selectNextTraversal<MFunctor, false, true>(functor);
-  auto traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
+  EXPECT_THROW((traversalSelectorC08.getOptimalTraversal<MFunctor, autopas::DataLayoutOption::aos, true>(functor)),
+               std::exception);
+  traversalSelectorC08.selectNextTraversal<MFunctor, autopas::DataLayoutOption::aos, true>(functor);
+  auto traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, autopas::DataLayoutOption::aos, true>(functor);
 
   // check that traversals are of the expected type
   EXPECT_EQ(autopas::TraversalOptions::c08, traversal->getTraversalType());
 
   // also after the functor is known
-  traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, false, true>(functor);
+  traversal = traversalSelectorC08.getOptimalTraversal<MFunctor, autopas::DataLayoutOption::aos, true>(functor);
   EXPECT_EQ(autopas::TraversalOptions::c08, traversal->getTraversalType());
 }
 
@@ -69,13 +71,13 @@ TEST_F(TraversalSelectorTest, testNextTraversal) {
   // assure that this works repeatedly
   for (int i = 0; i < 2; ++i) {
     auto errorText = "Failed in repetition " + std::to_string(i);
-    auto traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
+    auto traversal = traversalSelector.selectNextTraversal<MFunctor, autopas::DataLayoutOption::soa, true>(functor);
     EXPECT_EQ(autopas::TraversalOptions::sliced, traversal->getTraversalType()) << errorText;
 
-    traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
+    traversal = traversalSelector.selectNextTraversal<MFunctor, autopas::DataLayoutOption::soa, true>(functor);
     EXPECT_EQ(autopas::TraversalOptions::c08, traversal->getTraversalType()) << errorText;
 
-    traversal = traversalSelector.selectNextTraversal<MFunctor, true, true>(functor);
+    traversal = traversalSelector.selectNextTraversal<MFunctor, autopas::DataLayoutOption::soa, true>(functor);
     EXPECT_EQ(nullptr, traversal) << errorText;
   }
 }
@@ -130,7 +132,9 @@ void TraversalSelectorTest::testFastest(autopas::SelectorStrategy strategy, mapO
   constexpr size_t domainSize = 1000;
   autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize}, optionVector);
 
-  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
+  EXPECT_THROW(
+      (traversalSelector.selectOptimalTraversal<MFunctor, autopas::DataLayoutOption::soa, true>(strategy, functor)),
+      std::exception);
 
   for (auto &&m : measurements) {
     for (auto &&t : m.second) {
@@ -146,9 +150,12 @@ void TraversalSelectorTest::testFastest(autopas::SelectorStrategy strategy, mapO
     }
   }
 
-  auto traversal = traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor);
+  auto traversal =
+      traversalSelector.selectOptimalTraversal<MFunctor, autopas::DataLayoutOption::soa, true>(strategy, functor);
   EXPECT_EQ(expectedBest, traversal->getTraversalType());
 
   // select optimal traversal should delete all measurements
-  EXPECT_THROW((traversalSelector.selectOptimalTraversal<MFunctor, true, true>(strategy, functor)), std::exception);
+  EXPECT_THROW(
+      (traversalSelector.selectOptimalTraversal<MFunctor, autopas::DataLayoutOption::soa, true>(strategy, functor)),
+      std::exception);
 }

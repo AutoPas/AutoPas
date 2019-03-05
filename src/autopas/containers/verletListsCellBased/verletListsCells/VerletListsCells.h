@@ -13,6 +13,7 @@
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/options/DataLayoutOptions.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -123,6 +124,11 @@ class VerletListsCells
     return TraversalSelector<ParticleCell>(this->getCellsPerDimension(), allowedAndApplicable);
   }
 
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoACuda(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
+    utils::ExceptionHandler::exception("VerletList Cuda not implemented");
+  }
+
   /**
    * Specifies whether the neighbor lists need to be rebuild.
    * @param useNewton3 if newton3 is gonna be used to traverse
@@ -177,37 +183,37 @@ class VerletListsCells
     switch (_buildTraversal) {
       case c08: {
         if (useNewton3) {
-          auto traversal =
-              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, true>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                        DataLayoutOption::aos, true>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
         } else {
-          auto traversal =
-              C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, false>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                        DataLayoutOption::aos, false>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
         }
         break;
       }
       case c18: {
         if (useNewton3) {
-          auto traversal =
-              C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, true>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          auto traversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                        DataLayoutOption::aos, true>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
         } else {
-          auto traversal =
-              C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, false>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          auto traversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                        DataLayoutOption::aos, false>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
         }
         break;
       }
       case c01: {
         if (not useNewton3) {
-          auto traversal =
-              C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor, false, false>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          auto traversal = C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                        DataLayoutOption::aos, false>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
         } else {
           utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");

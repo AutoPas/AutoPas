@@ -16,6 +16,7 @@
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include "autopas/utils/CudaStreamHandler.h"
 #else
 #include "autopas/utils/ExceptionHandler.h"
 #endif
@@ -64,7 +65,13 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         _duplicatedCalculations{duplicatedCalculation},
         _lowCorner(lowCorner),
         _highCorner(highCorner),
-        _postProcessed{false} {
+        _postProcessed {
+    false
+  }
+#if defined(AUTOPAS_CUDA)
+  , _streams(32)
+#endif
+  {
     if (calculateGlobals and duplicatedCalculation) {
       if (lowCorner == highCorner) {
         throw utils::ExceptionHandler::AutoPasException(
@@ -386,20 +393,22 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
 #if defined(AUTOPAS_CUDA)
     const size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
+    cudaStream_t stream = _streams.getStreamRandom();
+
     if (newton3) {
       _cudawrapper.SoAFunctorN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
                                        device_handle.template get<Particle::AttributeNames::posY>().get(),
                                        device_handle.template get<Particle::AttributeNames::posZ>().get(),
                                        device_handle.template get<Particle::AttributeNames::forceX>().get(),
                                        device_handle.template get<Particle::AttributeNames::forceY>().get(),
-                                       device_handle.template get<Particle::AttributeNames::forceZ>().get());
+                                       device_handle.template get<Particle::AttributeNames::forceZ>().get(), stream);
     } else {
       _cudawrapper.SoAFunctorNoN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
                                          device_handle.template get<Particle::AttributeNames::posY>().get(),
                                          device_handle.template get<Particle::AttributeNames::posZ>().get(),
                                          device_handle.template get<Particle::AttributeNames::forceX>().get(),
                                          device_handle.template get<Particle::AttributeNames::forceY>().get(),
-                                         device_handle.template get<Particle::AttributeNames::forceZ>().get());
+                                         device_handle.template get<Particle::AttributeNames::forceZ>().get(), stream);
     }
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
@@ -411,6 +420,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 #if defined(AUTOPAS_CUDA)
     const size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
     const size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
+    cudaStream_t stream = _streams.getStreamRandom();
+
     if (newton3) {
       if (size1 > size2) {
         _cudawrapper.SoAFunctorN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
@@ -424,7 +435,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
                                              device_handle2.template get<Particle::AttributeNames::posZ>().get(),
                                              device_handle2.template get<Particle::AttributeNames::forceX>().get(),
                                              device_handle2.template get<Particle::AttributeNames::forceY>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::forceZ>().get());
+                                             device_handle2.template get<Particle::AttributeNames::forceZ>().get(),
+                                             stream);
       } else {
         _cudawrapper.SoAFunctorN3PairWrapper(size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
                                              device_handle2.template get<Particle::AttributeNames::posY>().get(),
@@ -437,7 +449,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
                                              device_handle1.template get<Particle::AttributeNames::posZ>().get(),
                                              device_handle1.template get<Particle::AttributeNames::forceX>().get(),
                                              device_handle1.template get<Particle::AttributeNames::forceY>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceZ>().get());
+                                             device_handle1.template get<Particle::AttributeNames::forceZ>().get(),
+                                             stream);
       }
     } else {
       _cudawrapper.SoAFunctorNoN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
@@ -448,7 +461,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
                                              device_handle1.template get<Particle::AttributeNames::forceZ>().get(),
                                              size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
                                              device_handle2.template get<Particle::AttributeNames::posY>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::posZ>().get());
+                                             device_handle2.template get<Particle::AttributeNames::posZ>().get(),
+                                             stream);
     }
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
@@ -487,6 +501,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 #if defined(AUTOPAS_CUDA)
     size_t size = soa.getNumParticles();
     if (size == 0) return;
+
     device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(
         size, soa.template begin<Particle::AttributeNames::forceX>());
     device_handle.template get<Particle::AttributeNames::forceY>().copyDeviceToHost(
@@ -929,8 +944,12 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   bool _postProcessed;
 
 #if defined(AUTOPAS_CUDA)
-  // conatins wrapper functions for cuda calls
+  // contains wrapper functions for cuda calls
   CudaWrapper _cudawrapper;
+
+  // Handles all cuda streams
+  utils::CudaStreamHandler _streams;
+
 #endif
 
 };  // class LJFunctor

@@ -205,21 +205,18 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
 
       if (useNewton3) {
-        traversal =
-            new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims,
-                                                                                                                  func);
+        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                              autopas::DataLayoutOption::aos, true>(dims, func);
       } else {
-        traversal =
-            new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-                dims, func);
+        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                              autopas::DataLayoutOption::aos, false>(dims, func);
       }
 
       break;
     }
     case autopas::ContainerOptions::directSum: {
-      traversal =
-          new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-              func);
+      traversal = new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                                  autopas::DataLayoutOption::aos, false>(func);
       break;
     }
     case autopas::ContainerOptions::verletListsCells: {
@@ -227,13 +224,11 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
 
       if (useNewton3) {
-        traversal =
-            new autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims,
-                                                                                                                  func);
+        traversal = new autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                              autopas::DataLayoutOption::aos, true>(dims, func);
       } else {
-        traversal =
-            new autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-                dims, func);
+        traversal = new autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                              autopas::DataLayoutOption::aos, false>(dims, func);
       }
       break;
     }
