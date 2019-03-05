@@ -67,7 +67,7 @@ do
         VLSkin=(0)
     fi
 
-    for dataLayout in AoS SoA ;
+    for dataLayout in AoS SoA cuda;
     do
         separate "${dataLayout}"
 

@@ -20,7 +20,7 @@ void testC18Traversal(const std::array<size_t, 3> &edgeLength) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::C18Traversal<FPCell, MFunctor, false, true> C18Traversal(edgeLength, &functor);
+  autopas::C18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> C18Traversal(edgeLength, &functor);
 
   size_t boundaryXYcells = (edgeLength[2] - 1);
   size_t boundaryXYinteractions = boundaryXYcells * (7 + 5 + 6 + 4);

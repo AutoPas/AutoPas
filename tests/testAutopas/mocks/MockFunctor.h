@@ -9,6 +9,9 @@
 #include <gmock/gmock.h>
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
+#if defined(AUTOPAS_CUDA)
+#include "autopas/utils/CudaSoA.h"
+#endif
 
 // gmock does not write overrides, so we suppress that warning here!
 #if __GNUC__ >= 5
@@ -78,6 +81,23 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
 
   //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD0(isRelevantForTuning, bool());
+
+#if defined(AUTOPAS_CUDA)
+  // virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3)
+  MOCK_METHOD2_T(CudaFunctor,
+                 void(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3));
+
+  /*virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
+  CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3)*/
+  MOCK_METHOD3_T(CudaFunctor,
+                 void(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
+                      autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3));
+
+  /*  MOCK_METHOD2_T(SoALoader, void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD3_T(SoALoader,
+                 void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));*/
+
+#endif
 };
 
 #if __GNUC__ >= 5

@@ -21,6 +21,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
+#include "autopas/options/DataLayoutOptions.h"
 #include "autopas/options/SelectorStrategies.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -53,12 +54,12 @@ class TraversalSelector {
   /**
    * Gets the optimal traversal for a given cell functor. If no traversal is selected yet a optimum search is started.
    * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
-   * @tparam useSoA
+   * @tparam DataLayout
    * @tparam useNewton3
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @return Smartpointer to the optimal traversal.
    */
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> getOptimalTraversal(PairwiseFunctor &pairwiseFunctor);
 
   /**
@@ -78,24 +79,24 @@ class TraversalSelector {
   /**
    * Selects the next allowed and applicable traversal.
    * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
-   * @tparam useSoA
+   * @tparam DataLayout
    * @tparam useNewton3
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @return Smartpointer to the selected traversal.
    */
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> selectNextTraversal(PairwiseFunctor &pairwiseFunctor);
 
   /**
    * Selects the optimal traversal based on saved measurements.
    * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
-   * @tparam useSoA
+   * @tparam DataLayout
    * @tparam useNewton3
    * @param strategy Strategy the selector should employ to choose the best traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @return Smartpointer to the selected traversal.
    */
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> selectOptimalTraversal(SelectorStrategy strategy,
                                                                           PairwiseFunctor &pairwiseFunctor);
 
@@ -106,10 +107,10 @@ class TraversalSelector {
 
   void findFastestMedianTraversal();
 
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
   std::vector<std::unique_ptr<TraversalInterface>> generateAllAllowedTraversals(PairwiseFunctor &pairwiseFunctor);
 
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> generateTraversal(TraversalOptions traversalType,
                                                                      PairwiseFunctor &pairwiseFunctor);
 
@@ -131,13 +132,13 @@ class TraversalSelector {
 };
 
 template <class ParticleCell>
-template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 std::vector<std::unique_ptr<TraversalInterface>> TraversalSelector<ParticleCell>::generateAllAllowedTraversals(
     PairwiseFunctor &pairwiseFunctor) {
   std::vector<std::unique_ptr<TraversalInterface>> traversals;
 
   for (auto &option : _allowedTraversalOptions) {
-    traversals.push_back(generateTraversal<PairwiseFunctor, useSoA, useNewton3>(option, pairwiseFunctor));
+    traversals.push_back(generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(option, pairwiseFunctor));
   }
 
   if (traversals.empty()) utils::ExceptionHandler::exception("TraversalSelector: No traversals were generated.");
@@ -146,48 +147,48 @@ std::vector<std::unique_ptr<TraversalInterface>> TraversalSelector<ParticleCell>
 }
 
 template <class ParticleCell>
-template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOptions traversalType, PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
   switch (traversalType) {
     case TraversalOptions::directSumTraversal: {
       traversal =
-          std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);
+          std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(&pairwiseFunctor);
       break;
     }
     case TraversalOptions::c08: {
-      traversal =
-          std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      traversal = std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor);
       break;
     }
     case TraversalOptions::sliced: {
-      traversal =
-          std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      traversal = std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor);
       break;
     }
     case TraversalOptions::c18: {
-      traversal =
-          std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      traversal = std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor);
       break;
     }
     case TraversalOptions::c01: {
-      traversal =
-          std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      traversal = std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor);
       break;
     }
     case TraversalOptions::slicedVerlet: {
-      traversal = std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+      traversal = std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
           _dims, &pairwiseFunctor);
       break;
     }
     case TraversalOptions::c18Verlet: {
-      traversal = std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+      traversal = std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
           _dims, &pairwiseFunctor);
       break;
     }
     case TraversalOptions::c01Verlet: {
-      traversal = std::make_unique<C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+      traversal = std::make_unique<C01TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
           _dims, &pairwiseFunctor);
       break;
     }
@@ -203,7 +204,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 }
 
 template <class ParticleCell>
-template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::selectOptimalTraversal(
     SelectorStrategy strategy, PairwiseFunctor &pairwiseFunctor) {
   // Time measure strategy
@@ -232,14 +233,14 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   _traversalTimes.clear();
 
   // Assumption: the fastest traversal is applicable :O
-  auto traversal = generateTraversal<PairwiseFunctor, useSoA, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
+  auto traversal = generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
 
   AutoPasLog(debug, "Selected traversal {}", utils::StringUtils::to_string(_optimalTraversalOption));
   return traversal;
 }
 
 template <class ParticleCell>
-template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::selectNextTraversal(
     PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
@@ -269,7 +270,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       _optimalTraversalOption = *selectedTraversalIter;
     }
 
-    traversal = generateTraversal<PairwiseFunctor, useSoA, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
+    traversal = generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
     traversalIsApplicable = traversal->isApplicable();
   }
   AutoPasLog(debug, "Testing traversal {}", utils::StringUtils::to_string(_optimalTraversalOption));
@@ -279,7 +280,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
 }
 
 template <class ParticleCell>
-template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::getOptimalTraversal(
     PairwiseFunctor &pairwiseFunctor) {
   std::unique_ptr<CellPairTraversal<ParticleCell>> traversal;
@@ -287,7 +288,7 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
   if (not _isInitialized)
     utils::ExceptionHandler::exception("TraversalSelector::getOptimalTraversal(): No Traversal selected yet!");
 
-  traversal = generateTraversal<PairwiseFunctor, useSoA, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
+  traversal = generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(_optimalTraversalOption, pairwiseFunctor);
   return traversal;
 }
 

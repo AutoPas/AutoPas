@@ -107,6 +107,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     iteratePairwiseAoS(f, traversal, useNewton3);
   }
 
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwiseSoACuda(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
+    iteratePairwiseAoS(f, traversal, useNewton3);
+  }
+
   /**
    * @copydoc VerletLists::addParticle()
    */

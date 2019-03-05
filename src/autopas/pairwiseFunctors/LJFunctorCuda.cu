@@ -411,7 +411,6 @@ template void CudaWrapper::SoAFunctorNoN3PairWrapper<double>(int N, double* posX
 template<typename floatType>
 void CudaWrapper::SoAFunctorN3Wrapper(int N, floatType* posX, floatType* posY,
 		floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ, cudaStream_t stream) {
-
 	switch (_num_threads) {
 	case 32:
 		SoAFunctorN3<floatType, 32> <<<numRequiredBlocks(N), 32, 0,stream>>>(N, posX, posY,

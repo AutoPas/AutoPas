@@ -8,6 +8,7 @@
 
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
+#include "autopas/options/DataLayoutOptions.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -21,11 +22,11 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam DataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -35,9 +36,9 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
         _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
+            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(
                 pairwiseFunctor)) {
     computeOffsets();
   }
@@ -68,7 +69,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellFunctor;
+  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellFunctor;
 
   /**
    * Pairs for processBaseCell(). 3x3 Array for each special case in x and y direction.
@@ -76,8 +77,8 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
   std::array<std::array<std::vector<unsigned long>, 3>, 3> _cellOffsets;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets() {
   for (int z = 0; z <= 1; ++z) {
     for (int y = -1; y <= 1; ++y) {
       for (int x = -1; x <= 1; ++x) {
@@ -101,10 +102,9 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::com
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                                      unsigned long x, unsigned long y,
-                                                                                      unsigned long z) {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(
+    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
   unsigned int xArray;
@@ -140,8 +140,8 @@ void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBas
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }

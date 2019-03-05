@@ -26,10 +26,10 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::C18TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalVerletLJ(
-      _verletListsCells.getCellsPerDimension(), &func);
-  autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalLinkedLJ(
-      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  autopas::C18TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
+      traversalVerletLJ(_verletListsCells.getCellsPerDimension(), &func);
+  autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
+      traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   _verletListsCells.iteratePairwiseAoS(&func, &traversalVerletLJ);
   _linkedCells.iteratePairwiseAoS(&func, &traversalLinkedLJ);
 
@@ -56,10 +56,11 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   }
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
-  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalVerletFLOPS(
-      _verletListsCells.getCellsPerDimension(), &flopsVerlet);
-  autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalLinkedFLOPS(
-      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                              true>
+      traversalVerletFLOPS(_verletListsCells.getCellsPerDimension(), &flopsVerlet);
+  autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
+      traversalLinkedFLOPS(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
   _verletListsCells.iteratePairwiseAoS(&flopsVerlet, &traversalVerletFLOPS);
   _linkedCells.iteratePairwiseAoS(&flopsLinked, &traversalLinkedFLOPS);
 

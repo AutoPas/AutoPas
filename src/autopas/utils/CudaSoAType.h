@@ -15,8 +15,8 @@ namespace autopas {
 namespace utils {
 
 /**
- * Helper struct to get a the SoAType.
- * The type is defined as SoAType<size_t, double, double, double>::Type;
+ * Helper struct to get a the CudaSoAType.
+ * The type is defined as CudaSoAType<size_t, double, double, double>::Type;
  * @tparam soatypes the template parameter list of types.
  */
 template <typename... soatypes>

@@ -23,15 +23,24 @@ class CudaSoA {
 
   /**
    * @brief delete constructor.
-   * @param soa SoA to copy.
+   * @param soa CudaSoA to copy.
    */
   CudaSoA(const CudaSoA& soa) = default;
 
+  /**
+   * Get the device vector at the specific entry of the storage
+   * @tparam soaAttribute the attribute for which the device vector should be returned
+   * @return a reference to the vector for the specific attribute
+   */
   template <size_t soaAttribute>
   auto& get() {
     return std::get<soaAttribute>(soaStorageTuple);
   }
 
+  /**
+   * @copydoc get()
+   * @note const variant
+   */
   template <size_t soaAttribute>
   const auto& get() const {
     return std::get<soaAttribute>(soaStorageTuple);

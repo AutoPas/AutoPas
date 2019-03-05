@@ -25,7 +25,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, false, true> traversalLJ(
+  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true> traversalLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   _verletLists.iteratePairwiseAoS(&func, &traversalLJ);
   _linkedCells.iteratePairwiseAoS(&func, &traversalLJ);
@@ -56,8 +56,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   }
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
-  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalFLOPS(
-      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
+      traversalFLOPS(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
   _verletLists.iteratePairwiseAoS(&flopsVerlet, &traversalFLOPS);
   _linkedCells.iteratePairwiseAoS(&flopsLinked, &traversalFLOPS);
 

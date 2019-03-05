@@ -54,6 +54,9 @@ inline std::string to_string(DataLayoutOption option) {
     case autopas::DataLayoutOption::soa: {
       return "Structure-of-Arrays";
     }
+    case autopas::DataLayoutOption::cuda: {
+      return "Structure-of-Arrays on Cuda capable device";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown option (" + std::to_string(option) + ")";
@@ -259,19 +262,21 @@ inline autopas::SelectorStrategy parseSelectorStrategy(const std::string &select
  *
  * Possible options: aos, soa
  *
- * @param dataLayoutSting String containing the data layout option.
+ * @param dataLayoutString String containing the data layout option.
  * @return An enum representing the data layout. If no valid option was found 'autopas::DataLayoutOption(-1)' is
  * returned.
  */
-inline autopas::DataLayoutOption parseDataLayout(const std::string &dataLayoutSting) {
+inline autopas::DataLayoutOption parseDataLayout(const std::string &dataLayoutString) {
   // hack to initialize the enum out of range as an error value.
   auto dataLayout(autopas::DataLayoutOption(-1));
-  if (dataLayoutSting.find("aos") != std::string::npos or
-      dataLayoutSting.find("array-of-struct") != std::string::npos) {
+  if (dataLayoutString.find("aos") != std::string::npos or
+      dataLayoutString.find("array-of-struct") != std::string::npos) {
     dataLayout = autopas::DataLayoutOption::aos;
-  } else if (dataLayoutSting.find("soa") != std::string::npos or
-             dataLayoutSting.find("-of-array") != std::string::npos) {
+  } else if (dataLayoutString.find("soa") != std::string::npos or
+             dataLayoutString.find("-of-array") != std::string::npos) {
     dataLayout = autopas::DataLayoutOption::soa;
+  } else if (dataLayoutString.find("cuda") != std::string::npos) {
+    dataLayout = autopas::DataLayoutOption::cuda;
   }
   return dataLayout;
 }

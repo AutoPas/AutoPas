@@ -20,12 +20,12 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam DataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C01TraversalVerlet
-    : public C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
+    : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
       public VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3> {
  public:
   /**
@@ -35,7 +35,7 @@ class C01TraversalVerlet
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
         VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
 
   /**
@@ -47,8 +47,8 @@ class C01TraversalVerlet
   TraversalOptions getTraversalType() override { return TraversalOptions::c01Verlet; }
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellVerlet(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellVerlet(
     typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                        useNewton3>::verlet_storage_type &verlet) {
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
