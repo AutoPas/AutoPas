@@ -9,7 +9,6 @@
 #include "LJFunctorCudaTest.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
-#include "autopas/particles/ParticleFP32.h"
 #include "testingHelpers/RandomGenerator.h"
 
 template <class SoAType>
@@ -231,7 +230,7 @@ TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellFP64NoNewton3_34_7P
   testLJFunctorVSLJFunctorCudaTwoCells<Particle>(34, 7, false);
 }
 
-// floating pint precision
+// floating point precision
 /*
 TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellFP32NoNewton3_7Particles) {
   testLJFunctorVSLJFunctorCudaOneCell<autopas::ParticleFP32>(7,false);

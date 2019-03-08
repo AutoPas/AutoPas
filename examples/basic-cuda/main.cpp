@@ -9,7 +9,6 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
-#include "autopas/particles/ParticleFP32.h"
 #include "autopas/utils/CudaDeviceVector.h"
 
 using namespace std;
