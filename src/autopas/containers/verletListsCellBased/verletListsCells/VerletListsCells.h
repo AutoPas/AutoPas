@@ -124,6 +124,14 @@ class VerletListsCells
     return TraversalSelector<ParticleCell>(this->getCellsPerDimension(), allowedAndApplicable);
   }
 
+  /**
+   * Dummy function. Throws exception
+   * @tparam ParticleFunctor
+   * @tparam Traversal
+   * @param f functor that describes the pair-potential
+   * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
+   */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoACuda(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
     utils::ExceptionHandler::exception("VerletList Cuda not implemented");

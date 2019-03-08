@@ -15,6 +15,10 @@
 namespace autopas {
 namespace utils {
 
+/**
+ * This class handles storage of vectors on the gpu.
+ * @tparam T types of the elements in the vector
+ */
 template <typename T>
 class CudaDeviceVector {
 #if defined(AUTOPAS_CUDA)
@@ -62,9 +66,20 @@ class CudaDeviceVector {
 
 #else
  public:
+  /**
+   * @brief Dummy default constructor.
+   */
   CudaDeviceVector() {}
+  /**
+   * @brief Dummy construcor.
+   * @param max initial maximal vector size
+   */
   CudaDeviceVector(size_t max) {}
 
+  /**
+   * @brief Dummy Copy Constructor
+   * @param obj other object
+   */
   CudaDeviceVector(const CudaDeviceVector<T>& obj) {}
 #endif
 };

@@ -16,6 +16,9 @@
 namespace autopas {
 namespace utils {
 
+/**
+ * Handles an Array of Cuda streams and provides different access Methods.
+ */
 class CudaStreamHandler {
 #if defined(AUTOPAS_CUDA)
  public:

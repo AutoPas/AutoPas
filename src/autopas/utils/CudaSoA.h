@@ -13,6 +13,10 @@
 
 namespace autopas {
 
+/**
+ * This class stores a soa on the GPU.
+ * @tparam CudaSoAArraysType types of the soa vectors
+ */
 template <class CudaSoAArraysType>
 class CudaSoA {
  public:

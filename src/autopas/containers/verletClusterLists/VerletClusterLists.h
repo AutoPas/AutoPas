@@ -107,6 +107,14 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     iteratePairwiseAoS(f, traversal, useNewton3);
   }
 
+  /**
+   * Dummy function. (Uses AoS instead)
+   * @tparam ParticleFunctor
+   * @tparam Traversal
+   * @param f functor that describes the pair-potential
+   * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
+   */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoACuda(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
     iteratePairwiseAoS(f, traversal, useNewton3);

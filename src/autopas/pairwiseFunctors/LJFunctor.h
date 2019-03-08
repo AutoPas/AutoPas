@@ -390,6 +390,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
   }
 
+  /**
+   * @brief Functor using Cuda on SoA in device Memory
+   *
+   * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
+   *
+   * @param device_handle soa in device memory
+   * @param newton3 defines whether or whether not to use newton
+   */
   void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
 #if defined(AUTOPAS_CUDA)
     const size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
@@ -415,6 +423,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 #endif
   }
 
+  /**
+   * @brief Functor using Cuda on SoAs in device Memory
+   *
+   * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
+   * the GPU
+   *
+   * @param device_handle1 first soa in device memory
+   * @param device_handle2 second soa in device memory
+   * @param newton3 defines whether or whether not to use newton
+   */
   void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
                    CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
 #if defined(AUTOPAS_CUDA)
@@ -472,6 +490,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   void setCudaOptions(int nt) { _cudawrapper.setNumThreads(nt); }
 #endif
 
+  /**
+   * @copydoc Functor::deviceSoALoader
+   */
   void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
                        CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
 #if defined(AUTOPAS_CUDA)
@@ -496,6 +517,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 #endif
   }
 
+  /**
+   * @copydoc Functor::deviceSoAExtractor
+   */
   void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
                           CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
 #if defined(AUTOPAS_CUDA)

@@ -138,7 +138,7 @@ class Particle {
    */
   typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
-  /*
+  /**
    * The Storage Arrays for Cuda
    */
   typedef autopas::utils::CudaSoAType<size_t, double, double, double, double, double, double>::Type

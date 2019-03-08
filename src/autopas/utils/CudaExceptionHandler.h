@@ -13,7 +13,9 @@
 
 namespace autopas {
 namespace utils {
-
+/**
+ * Handles exceptions in the context of cuda
+ */
 class CudaExceptionHandler {
  public:
   CudaExceptionHandler() = delete;

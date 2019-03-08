@@ -108,24 +108,14 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
   }
 
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoSCuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with AoS", traversal->getTraversalType());
-
-    f->deviceAoSLoader(*getCell(), &getCell()->_particlesDevice);
-    f->deviceAoSLoader(*getHaloCell(), &getHaloCell()->_particlesDevice);
-
-    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::iteratePairwiseAoSCuda");
-    }
-
-    f->deviceAoSExtractor(*getCell(), &getCell()->_particlesDevice);
-    f->deviceAoSExtractor(*getHaloCell(), &getHaloCell()->_particlesDevice);
-  }
-
+  /**
+   * Function to iterate over all pairs of particles in an structure of arrays setting on the gpu
+   * @tparam ParticleFunctor
+   * @tparam Traversal
+   * @param f functor that describes the pair-potential
+   * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
+   */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoACuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
     AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());

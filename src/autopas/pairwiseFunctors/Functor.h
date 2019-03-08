@@ -121,7 +121,7 @@ class Functor {
    * the GPU
    *
    * @param device_handle1 first soa in device memory
-   * @param device_handle1 second soa in device memory
+   * @param device_handle2 second soa in device memory
    * @param newton3 defines whether or whether not to use newton
    */
   virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,

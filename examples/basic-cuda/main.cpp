@@ -100,7 +100,7 @@ void run(int numParticles) {
   typedef LJFunctor<Particle, FullParticleCell<Particle>> Func;
   Func func(cutoff, 1.0, 1.0, 0.0);
 
-  vector<int> v = {512};
+  vector<int> v = {32, 64, 128, 256, 512, 1024};
   for (auto it : v) {
     testRun(func, fpc1, fpc2, it, false);
   }

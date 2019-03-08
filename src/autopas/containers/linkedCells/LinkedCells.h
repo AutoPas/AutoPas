@@ -123,7 +123,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     extractSoAs(f);
   }
 
-  // TODO Doc
+  /**
+   * @copydoc DirectSum::iteratePairwiseSoA
+   */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoACuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
     AutoPasLog(debug, "Using traversal {} with Cuda ", utils::StringUtils::to_string(traversal->getTraversalType()))
@@ -317,6 +319,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   // TODO parallel
+  /**
+   * Iterate over all cells and load the data from the SoAs to the GPU.
+   * @tparam ParticleFunctor
+   * @param functor
+   */
   template <class ParticleFunctor>
   void loadSoAsCuda(ParticleFunctor *functor) {
     for (size_t i = 0; i < this->_cells.size(); ++i) {
@@ -326,6 +333,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   // TODO parallel
+  /**
+   * Iterate over all cells and fetch the data from the GPU to the SoAs.
+   * @tparam ParticleFunctor
+   * @param functor
+   */
   template <class ParticleFunctor>
   void extractSoAsCuda(ParticleFunctor *functor) {
     for (size_t i = 0; i < this->_cells.size(); ++i) {
