@@ -23,7 +23,7 @@ class CudaStreamHandler {
 #if defined(AUTOPAS_CUDA)
  public:
   CudaStreamHandler(size_t nStreams) : _streams(nStreams), random_index(0) {
-    for (int i = 0; i < nStreams; ++i) {
+    for (size_t i = 0; i < nStreams; ++i) {
       cudaStreamCreate(_streams.data() + i);
     }
   }

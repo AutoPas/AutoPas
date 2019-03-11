@@ -296,24 +296,24 @@ int main(int argc, char **argv) {
   }
   auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
   cout << "MFUPs/sec    : " << mfups << endl;
-  /*
-    if (measureFlops) {
-      FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-          autopas.getContainer()->getCutoff());
-      autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
 
-      auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
-      // approximation for flops of verlet list generation
-      if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::verletLists)
-        flops +=
-            flopCounterFunctor.getDistanceCalculations() *
-            FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
-            floor(numIterations / verletRebuildFrequency);
+  if (measureFlops) {
+    FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
+        autopas.getContainer()->getCutoff());
+    autopas.iteratePairwise(&flopCounterFunctor, dataLayoutChoice);
 
-      cout << "GFLOPs       : " << flops * 1e-9 << endl;
-      cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
-      cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
-    }
-  */
+    auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
+    // approximation for flops of verlet list generation
+    if (autopas.getContainer()->getContainerType() == autopas::ContainerOptions::verletLists)
+      flops +=
+          flopCounterFunctor.getDistanceCalculations() *
+          FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
+          floor(numIterations / verletRebuildFrequency);
+
+    cout << "GFLOPs       : " << flops * 1e-9 << endl;
+    cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
+    cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+  }
+
   return EXIT_SUCCESS;
 }

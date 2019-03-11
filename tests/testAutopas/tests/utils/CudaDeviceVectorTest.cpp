@@ -18,7 +18,7 @@ TEST_F(CudaDeviceVectorTest, CopyTest) {
   std::vector<int> target = {0, 0, 0, 0, 0, 0, 0};
   test_vector.copyDeviceToHost(7, target.data());
 
-  for (int i = 0; i < source.size(); ++i) {
+  for (size_t i = 0; i < source.size(); ++i) {
     EXPECT_EQ(source[i], target[i]) << "Vectors differ at index " << i;
   }
 }

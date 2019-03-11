@@ -43,7 +43,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
 #if defined(AUTOPAS_CUDA)
     int nDevices;
     cudaGetDeviceCount(&nDevices);
-    return (not DataLayout == DataLayoutOption::cuda) || nDevices > 0;
+    return (not(DataLayout == DataLayoutOption::cuda)) || nDevices > 0;
 #else
     return true;
 #endif
