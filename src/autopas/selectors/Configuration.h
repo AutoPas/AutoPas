@@ -43,10 +43,10 @@ class Configuration {
    * @return String representation.
    */
   std::string toString() const {
-    return "{Container : " + utils::StringUtils::to_string(_container) +
-           " , Traversal : " + utils::StringUtils::to_string(_traversal) +
-           " , Data Layout : " + utils::StringUtils::to_string(_dataLayout) +
-           " , Newton 3 : " + utils::StringUtils::to_string(_newton3) + "}";
+    return "{Container: " + utils::StringUtils::to_string(_container) +
+           " , Traversal: " + utils::StringUtils::to_string(_traversal) +
+           " , Data Layout: " + utils::StringUtils::to_string(_dataLayout) +
+           " , Newton 3: " + utils::StringUtils::to_string(_newton3) + "}";
   }
 
   /**
