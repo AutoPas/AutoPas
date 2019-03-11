@@ -90,7 +90,7 @@ class AutoTuner {
       auto allContainerTraversals = _containerSelector.getCurrentContainer()->getAllTraversals();
       std::vector<TraversalOption> allowedAndApplicable;
       std::sort(allContainerTraversals.begin(), allContainerTraversals.end());
-      std::set_intersection(this->_allowedTraversalOptions.begin(), this->_allowedTraversalOptions.end(),
+      std::set_intersection(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end(),
                             allContainerTraversals.begin(), allContainerTraversals.end(),
                             std::back_inserter(allowedAndApplicable));
 
