@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
   auto generatorChoice(parser.getGeneratorOption());
   auto logLevel(parser.getLogLevel());
   auto measureFlops(parser.getMeasureFlops());
-  auto newton3Options(parser.getnewton3Options());
+  auto newton3Options(parser.getNewton3Options());
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
   auto particlesPerDim(parser.getParticlesPerDim());

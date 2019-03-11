@@ -32,7 +32,7 @@ class MDFlexParser {
   GeneratorOption getGeneratorOption() const;
   size_t getIterations() const;
   bool getMeasureFlops() const;
-  std::vector<autopas::Newton3Option> getnewton3Options() const;
+  std::vector<autopas::Newton3Option> getNewton3Options() const;
   spdlog::level::level_enum getLogLevel() const;
   double getParticleSpacing() const;
   size_t getParticlesTotal() const;

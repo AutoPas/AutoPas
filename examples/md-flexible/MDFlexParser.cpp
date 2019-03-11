@@ -449,4 +449,4 @@ autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 
 autopas::SelectorStrategy MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
 
-std::vector<autopas::Newton3Option> MDFlexParser::getnewton3Options() const { return newton3Options; }
+std::vector<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
