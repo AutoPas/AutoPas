@@ -276,8 +276,11 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
     default:
       utils::ExceptionHandler::exception("AutoTuner: Unknown data layout : {}", _currentConfig->_dataLayout);
   }
-  ++_numSamples;
-  ++_iterationsSinceTuning;
+
+  if (f->isRelevantForTuning()) {
+    ++_numSamples;
+    ++_iterationsSinceTuning;
+  }
   return isTuning;
 }
 
