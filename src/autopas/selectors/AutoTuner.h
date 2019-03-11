@@ -112,19 +112,11 @@ class AutoTuner {
   }
 
   /**
-   * Getter for the optimal container.
-   * Also checks if the container was already encountered and if not creates a new traversal selector for it.
-   * @return Smartpointer to the optimal container.
+   * Getter for the current container.
+   * @return Smartpointer to the current container.
    */
-  // @TODO: remove this
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getContainer() {
-    auto container = _containerSelector.getCurrentContainer();
-    // if the container is new create a new traversal selector for it
-    //    if (_traversalSelectors.find(container->getContainerType()) == _traversalSelectors.end()) {
-    //      _traversalSelectors.insert(std::make_pair(container->getContainerType(),
-    //                                                container->generateTraversalSelector(_allowedTraversalOptions)));
-    //    }
-    return container;
+    return _containerSelector.getCurrentContainer();
   }
 
   /**
@@ -360,7 +352,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 
       Configuration modifiedCurrentConfig = *_currentConfig;
       // choose the other option
-      modifiedCurrentConfig._newton3 = _currentConfig->_newton3 == Newton3Option::enabled ? Newton3Option::disabled : Newton3Option::enabled;
+      modifiedCurrentConfig._newton3 =
+          _currentConfig->_newton3 == Newton3Option::enabled ? Newton3Option::disabled : Newton3Option::enabled;
 
       // if modified config is equal to next delete current. Else insert modified config.
       // the disabled case should come after the enabled.
