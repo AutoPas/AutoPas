@@ -21,6 +21,10 @@ class CudaExceptionHandler {
   CudaExceptionHandler() = delete;
 
 #if defined(AUTOPAS_CUDA)
+  /**
+   * @brief checks Cuda Error Code and throws corresponding autpas exception
+   * @param error Cuda Error Code
+   */
   static void checkErrorCode(cudaError_t error) {
     if (error == cudaSuccess) return;
     std::string errorname = std::string(cudaGetErrorName(error));
@@ -29,6 +33,9 @@ class CudaExceptionHandler {
     autopas::utils::ExceptionHandler::exception(std::string("cuda error: ") + errorname);
   }
 
+  /**
+   * @brief checks cuda Error Code of the most recent cuda call and throws corresponding autpas exception
+   */
   static void checkLastCudaCall() {
     cudaError error = cudaGetLastError();
     if (error == cudaSuccess) return;
