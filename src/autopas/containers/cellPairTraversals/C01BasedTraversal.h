@@ -38,7 +38,19 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * C01 traversals are only usable if useNewton3 is disabled.
    * @return
    */
-  bool isApplicable() override { return not useNewton3; }
+  bool isApplicable() override {
+#if defined(AUTOPAS_CUDA)
+    int nDevices;
+    cudaGetDeviceCount(&nDevices);
+    if (DataLayout == DataLayoutOption::cuda) {
+      return nDevices > 0;
+    } else {
+      return not useNewton3;
+    }
+#else
+    return not useNewton3;
+#endif
+  }
 
  protected:
   /**

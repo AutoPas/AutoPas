@@ -37,7 +37,15 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    * C18 traversals are always usable.
    * @return
    */
-  bool isApplicable() override { return true; }
+  bool isApplicable() override {
+#if defined(AUTOPAS_CUDA)
+    int nDevices;
+    cudaGetDeviceCount(&nDevices);
+    return (not(DataLayout == DataLayoutOption::cuda)) || nDevices > 0;
+#else
+    return true;
+#endif
+  }
 
  protected:
   /**

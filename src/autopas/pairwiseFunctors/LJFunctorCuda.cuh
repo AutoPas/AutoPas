@@ -9,8 +9,10 @@
 
 #include "cuda_runtime.h"
 
-template <typename floatType>
-struct constants{
+namespace autopas {
+
+template<typename floatType>
+struct constants {
 	floatType cutoffsquare;
 	floatType epsilon24;
 	floatType sigmasquare;
@@ -28,44 +30,62 @@ template<> struct vec3<double> {
 	typedef double3 Type;
 };
 
-class CudaWrapper{
+class CudaWrapper {
 public:
 	CudaWrapper() {
 		_num_threads = 32;
 	}
-	virtual ~CudaWrapper(){
+	virtual ~CudaWrapper() {
 
 	}
 
-	void setNumThreads(int num_threads){
-		_num_threads=num_threads;
+	void setNumThreads(int num_threads) {
+		_num_threads = num_threads;
 	}
 
 	template<typename floatType>
-	void loadConstants(floatType cutoffsquare, floatType epsilon24, floatType sigmasquare);
+	void loadConstants(floatType cutoffsquare, floatType epsilon24,
+			floatType sigmasquare);
 
 	void AoSFunctorNoN3Wrapper(int N, double* particles);
-	void AoSFunctorNoN3PairWrapper(int N, int M, double* particles1, double* particles2);
+	void AoSFunctorNoN3PairWrapper(int N, int M, double* particles1,
+			double* particles2);
 
 	template<typename floatType>
-	void SoAFunctorNoN3Wrapper(int N, floatType* posX, floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ, cudaStream_t stream = 0);
+	void SoAFunctorNoN3Wrapper(int N, floatType* posX, floatType* posY,
+			floatType* posZ, floatType* forceX, floatType* forceY,
+			floatType* forceZ, cudaStream_t stream = 0);
 	template<typename floatType>
-	void SoAFunctorNoN3PairWrapper(int N, floatType* posX, floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ,
-			int M, floatType* posX2, floatType* posY2, floatType* posZ2, cudaStream_t stream);
+	void SoAFunctorNoN3PairWrapper(int N, floatType* posX, floatType* posY,
+			floatType* posZ, floatType* forceX, floatType* forceY,
+			floatType* forceZ, int M, floatType* posX2, floatType* posY2,
+			floatType* posZ2, cudaStream_t stream);
 
 	template<typename floatType>
-	void SoAFunctorN3Wrapper(int N, floatType* posX, floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY, floatType* forceZ, cudaStream_t stream = 0);
+	void SoAFunctorN3Wrapper(int N, floatType* posX, floatType* posY,
+			floatType* posZ, floatType* forceX, floatType* forceY,
+			floatType* forceZ, cudaStream_t stream = 0);
 	template<typename floatType>
-void SoAFunctorN3PairWrapper(int N, floatType* posX, floatType* posY, floatType* posZ,
-		floatType* forceX, floatType* forceY, floatType* forceZ, int M, floatType* posX2,
-		floatType* posY2, floatType* posZ2, floatType* forceX2,
-		floatType* forceY2, floatType* forceZ2, cudaStream_t stream);
+	void SoAFunctorN3PairWrapper(int N, floatType* posX, floatType* posY,
+			floatType* posZ, floatType* forceX, floatType* forceY,
+			floatType* forceZ, int M, floatType* posX2, floatType* posY2,
+			floatType* posZ2, floatType* forceX2, floatType* forceY2,
+			floatType* forceZ2, cudaStream_t stream);
 
-	int numRequiredBlocks(int n){
+	template<typename floatType>
+	void LinkedCellsTraversalNoN3Wrapper(floatType* posX, floatType* posY,
+			floatType* posZ, floatType* forceX, floatType* forceY,
+			floatType* forceZ, unsigned int cids_size, unsigned int* cids,
+			unsigned int cellSizes_size, size_t* cellSizes,
+			unsigned int offsets_size, int* offsets, cudaStream_t stream);
+
+private:
+	int numRequiredBlocks(int n) {
 		return ((n - 1) / _num_threads) + 1;
 	}
 
-private:
 	int _num_threads;
 };
+
+} // namespace autopas
 

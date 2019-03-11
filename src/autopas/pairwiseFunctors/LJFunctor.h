@@ -488,6 +488,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 #if defined(AUTOPAS_CUDA)
   void setCudaOptions(int nt) { _cudawrapper.setNumThreads(nt); }
+  CudaWrapper &getCudaWrapper() { return _cudawrapper; }
 #endif
 
   /**

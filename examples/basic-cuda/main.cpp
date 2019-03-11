@@ -8,6 +8,8 @@
 #include <vector>
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/CudaTraversal.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
 #include "autopas/utils/CudaDeviceVector.h"
 
@@ -61,7 +63,7 @@ void testRun(LJFunctor<Particle, FullParticleCell<Particle>> &func, FullParticle
   cout << "NumC1: " << fpc1.numParticles() << "; NumC2: " << fpc2.numParticles() << "; threads: " << num_threads
        << "; n3: " << newton3 << "; " << endl;
 
-  func.setCudaOptions(num_threads);
+  func.getCudaWrapper().setNumThreads(num_threads);
   func.SoALoader(fpc1, fpc1._particleSoABuffer);
   func.SoALoader(fpc2, fpc2._particleSoABuffer);
   func.deviceSoALoader(fpc1._particleSoABuffer, fpc1._particleSoABufferDevice);
@@ -113,6 +115,10 @@ int main(int argc, char **argv) {
   if (argc == 2) {
     numParticles = stoi(string(argv[1]));
   }
+
+  CudaTraversal<FullParticleCell<ParticleFP64>, LJFunctor<ParticleFP64, FullParticleCell<ParticleFP64>>,
+                DataLayoutOption::cuda, false>
+      ct({12, 12, 12}, NULL);
 
   cout << "Test double precision" << endl;
   // run<ParticleFP64>(numParticles);
