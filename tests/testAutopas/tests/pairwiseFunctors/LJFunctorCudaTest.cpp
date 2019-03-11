@@ -234,7 +234,7 @@ TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaTwoCellFP64NoNewton3_34_7P
 /*
 TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellFP32NoNewton3_7Particles) {
   testLJFunctorVSLJFunctorCudaOneCell<autopas::ParticleFP32>(7,false);
-}/*
+}
 TEST_F(LJFunctorCudaTest, testLJFunctorVSLJFunctorCudaOneCellFP32Newton3_7Particles) {
   testLJFunctorVSLJFunctorCudaOneCell<autopas::ParticleFP32>(7, true);
 }

@@ -6,11 +6,9 @@
  */
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
 #include <iostream>
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "math_constants.h"
-#include "autopas/utils/CudaDeviceVector.h"
-#include "autopas/utils/CudaSoA.h"
-#include "autopas/particles/Particle.h"
 
 namespace autopas {
 
