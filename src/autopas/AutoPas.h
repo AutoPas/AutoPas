@@ -75,7 +75,7 @@ class AutoPas {
   /**
    * Initialize AutoPas. This will completely reset the container and remove all containing particles!
    *
-   * This function needs to be called before any other functions on the AutoPas object.
+   * This function needs to be called before any other function (except setters) on the AutoPas object.
    *
    * Changing any of the member options only takes effect when init is called.
    *
