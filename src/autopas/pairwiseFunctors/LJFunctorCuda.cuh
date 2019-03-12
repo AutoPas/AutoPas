@@ -79,6 +79,13 @@ public:
 			unsigned int cellSizes_size, size_t* cellSizes,
 			unsigned int offsets_size, int* offsets, cudaStream_t stream);
 
+	template<typename floatType>
+	void LinkedCellsTraversalN3Wrapper(floatType* posX, floatType* posY,
+			floatType* posZ, floatType* forceX, floatType* forceY,
+			floatType* forceZ, unsigned int cids_size, unsigned int* cids,
+			unsigned int cellSizes_size, size_t* cellSizes,
+			unsigned int offsets_size, int* offsets, cudaStream_t stream);
+
 private:
 	int numRequiredBlocks(int n) {
 		return ((n - 1) / _num_threads) + 1;

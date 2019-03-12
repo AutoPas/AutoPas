@@ -116,12 +116,8 @@ int main(int argc, char **argv) {
     numParticles = stoi(string(argv[1]));
   }
 
-  CudaTraversal<FullParticleCell<ParticleFP64>, LJFunctor<ParticleFP64, FullParticleCell<ParticleFP64>>,
-                DataLayoutOption::cuda, false>
-      ct({12, 12, 12}, NULL);
-
   cout << "Test double precision" << endl;
-  // run<ParticleFP64>(numParticles);
+  run<ParticleFP64>(numParticles);
 
   cout << "Test single precision" << endl;
   run<MyMoleculeFP32>(numParticles);

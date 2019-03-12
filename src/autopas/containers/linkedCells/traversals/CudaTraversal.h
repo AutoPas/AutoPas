@@ -1,7 +1,7 @@
 /**
  * @file CudaTraversal.h
- * @author nguyen
- * @date 16.09.2018
+ * @author jspahl
+ * @date 11.03.2019
  */
 
 #pragma once
@@ -53,7 +53,7 @@ class CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellT
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-
+  // TODO define New Traversal Option
   TraversalOptions getTraversalType() override { return TraversalOptions::c01; }
 
   /**
@@ -108,13 +108,19 @@ inline void CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
     for (int y = -1; y <= 1; ++y) {
       for (int x = -1; x <= 1; ++x) {
         int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
-        if (useNewton3 && offset >= 0) {
+        if (not useNewton3) {
           _cellOffsets.push_back(offset);
+        } else {
+          if (offset > 0) {
+            _cellOffsets.push_back(offset);
+          }
         }
       }
     }
   }
+#if defined(AUTOPAS_CUDA)
   _deviceCellOffsets.copyHostToDevice(_cellOffsets.size(), _cellOffsets.data());
+#endif
 
   std::vector<unsigned int> nonHaloCells;
   const unsigned long end_x = this->_cellsPerDimension[0] - 1;
@@ -128,8 +134,10 @@ inline void CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
       }
     }
   }
+#if defined(AUTOPAS_CUDA)
   _nonHaloCells.copyHostToDevice(nonHaloCells.size(), nonHaloCells.data());
-}
+#endif
+}  // namespace autopas
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
@@ -146,27 +154,39 @@ inline void CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
   for (size_t i = 0; i < cells.size(); ++i) {
     _functor->SoALoader(cells[i], _storageCell._particleSoABuffer, cellSizePartialSum.back());
     const size_t size = cells[i].numParticles();
-    std::max(maxParticlesInCell, size);
+
+    maxParticlesInCell = std::max(maxParticlesInCell, size);
     cellSizePartialSum.push_back(cellSizePartialSum.back() + size);
   }
 
-  _functor->getCudaWrapper().setNumThreads((maxParticlesInCell / 32) * 32);
+  _functor->getCudaWrapper().setNumThreads(((maxParticlesInCell - 1) / 32 + 1) * 32);
   _deviceCellSizes.copyHostToDevice(cellSizePartialSum.size(), cellSizePartialSum.data());
   _functor->deviceSoALoader(_storageCell._particleSoABuffer, _storageCell._particleSoABufferDevice);
 
   // wait for copies to be done
   utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 
-  _functor->getCudaWrapper().LinkedCellsTraversalNoN3Wrapper(
-      _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posX>().get(),
-      _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posY>().get(),
-      _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posZ>().get(),
-      _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceX>().get(),
-      _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceY>().get(),
-      _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceZ>().get(),
-      _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(), _deviceCellSizes.get(),
-      _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
-
+  if (useNewton3) {
+    _functor->getCudaWrapper().LinkedCellsTraversalN3Wrapper(
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posX>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posY>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posZ>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceX>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceY>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceZ>().get(),
+        _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(), _deviceCellSizes.get(),
+        _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
+  } else {
+    _functor->getCudaWrapper().LinkedCellsTraversalNoN3Wrapper(
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posX>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posY>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::posZ>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceX>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceY>().get(),
+        _storageCell._particleSoABufferDevice.template get<Particle::AttributeNames::forceZ>().get(),
+        _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(), _deviceCellSizes.get(),
+        _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
+  }
   utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 
   // Extract
@@ -175,6 +195,7 @@ inline void CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
   for (size_t i = 0; i < cells.size(); ++i) {
     _functor->SoAExtractor(cells[i], _storageCell._particleSoABuffer, cellSizePartialSum[i]);
   }
+
   utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 #endif
 }

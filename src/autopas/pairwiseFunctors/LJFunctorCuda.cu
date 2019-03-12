@@ -548,18 +548,16 @@ void LinkedCellsTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 
 	int own_cid = cids[blockIdx.x];
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
-
 	typename vec3<floatType>::Type myposition = { getInfinity<floatType>(),
 			getInfinity<floatType>(), getInfinity<floatType>() };
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
-	int index = cellSizes[blockIdx.x];
-	if (threadIdx.x < cellSizes[own_cid + 1] - cellSizes[own_cid]) {
+	int index = cellSizes[own_cid] + threadIdx.x;
+	if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
 		myposition.x = posX[index];
 		myposition.y = posY[index];
 		myposition.z = posZ[index];
 	}
-
 	//other cells
 	for (auto other_index = 0; other_index < offsets_size; ++other_index) {
 		const int other_id = own_cid + offsets[other_index];
@@ -573,8 +571,72 @@ void LinkedCellsTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 		}
 		__syncthreads();
 	}
+	if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
+		atomicAdd(forceX + index, myf.x);
+		atomicAdd(forceY + index, myf.y);
+		atomicAdd(forceZ + index, myf.z);
+	}
+}
 
-	if (threadIdx.x < cellSizes[own_cid + 1] - cellSizes[own_cid]) {
+template<typename floatType, int block_size>
+__global__
+void LinkedCellsTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
+		floatType* forceX, floatType* forceY, floatType* forceZ,
+		unsigned int* cids, size_t* cellSizes, unsigned int offsets_size,
+		int* offsets) {
+
+	int own_cid = cids[blockIdx.x];
+	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+	__shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
+
+	typename vec3<floatType>::Type myposition = { getInfinity<floatType>(),
+			getInfinity<floatType>(), getInfinity<floatType>() };
+	typename vec3<floatType>::Type myf = { 0, 0, 0 };
+
+	int index = cellSizes[own_cid] + threadIdx.x;
+	if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
+		myposition.x = posX[index];
+		myposition.y = posY[index];
+		myposition.z = posZ[index];
+	}
+	//other cells
+	for (auto other_index = 0; other_index < offsets_size; ++other_index) {
+		const int other_id = own_cid + offsets[other_index];
+		const int cell2Start = cellSizes[other_id];
+		const int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
+
+		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
+		cell2_forces_shared[threadIdx.x] = {0,0,0};
+		__syncthreads();
+		for (int j = 0; j < sizeCell2; ++j) {
+			const int offset = (j + threadIdx.x) % sizeCell2;
+			myf = bodyBodyFN3<floatType, false>(myposition,
+					cell2_pos_shared[offset], myf,
+					cell2_forces_shared + offset);
+		}
+		__syncthreads();
+
+		atomicAdd(forceX + cell2Start + threadIdx.x,
+				cell2_forces_shared[threadIdx.x].x);
+		atomicAdd(forceY + cell2Start + threadIdx.x,
+				cell2_forces_shared[threadIdx.x].y);
+		atomicAdd(forceZ + cell2Start + threadIdx.x,
+				cell2_forces_shared[threadIdx.x].z);
+		__syncthreads();
+	}
+	//same cells
+	{
+		const int cell1Start = cellSizes[own_cid];
+		const int sizeCell1 = cellSizes[own_cid + 1] - cell1Start;
+
+		cell2_pos_shared[threadIdx.x] = {posX[cell1Start+threadIdx.x], posY[cell1Start+threadIdx.x], posZ[cell1Start+threadIdx.x]};
+		__syncthreads();
+		for (int j = 0; j < sizeCell1; ++j) {
+			myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
+		}
+		__syncthreads();
+	}
+	if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
 		atomicAdd(forceX + index, myf.x);
 		atomicAdd(forceY + index, myf.y);
 		atomicAdd(forceZ + index, myf.z);
@@ -605,7 +667,8 @@ void CudaWrapper::LinkedCellsTraversalNoN3Wrapper(floatType* posX,
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
-				std::string("cuda Kernel size not available"));
+				"cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
+				_num_threads);
 		break;
 	}
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
@@ -618,6 +681,49 @@ template void CudaWrapper::LinkedCellsTraversalNoN3Wrapper<float>(float* posX,
 		cudaStream_t stream);
 
 template void CudaWrapper::LinkedCellsTraversalNoN3Wrapper<double>(double* posX,
+		double* posY, double* posZ, double* forceX, double* forceY,
+		double* forceZ, unsigned int cids_size, unsigned int* cids,
+		unsigned int cellSizes_size, size_t* cellSizes,
+		unsigned int offsets_size, int* offsets, cudaStream_t stream);
+
+template<typename floatType>
+void CudaWrapper::LinkedCellsTraversalN3Wrapper(floatType* posX,
+		floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY,
+		floatType* forceZ, unsigned int cids_size, unsigned int* cids,
+		unsigned int cellSizes_size, size_t* cellSizes,
+		unsigned int offsets_size, int* offsets, cudaStream_t stream) {
+	switch (_num_threads) {
+	case 32:
+		LinkedCellsTraversalN3<floatType, 32> <<<cids_size, 32, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
+				offsets_size, offsets);
+		break;
+	case 64:
+		LinkedCellsTraversalN3<floatType, 64> <<<cids_size, 64, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
+				offsets_size, offsets);
+		break;
+	case 96:
+		LinkedCellsTraversalN3<floatType, 96> <<<cids_size, 96, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
+				offsets_size, offsets);
+		break;
+	default:
+		autopas::utils::ExceptionHandler::exception(
+				"cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
+				_num_threads);
+		break;
+	}
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
+}
+
+template void CudaWrapper::LinkedCellsTraversalN3Wrapper<float>(float* posX,
+		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
+		unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
+		size_t* cellSizes, unsigned int offsets_size, int* offsets,
+		cudaStream_t stream);
+
+template void CudaWrapper::LinkedCellsTraversalN3Wrapper<double>(double* posX,
 		double* posY, double* posZ, double* forceX, double* forceY,
 		double* forceZ, unsigned int cids_size, unsigned int* cids,
 		unsigned int cellSizes_size, size_t* cellSizes,
