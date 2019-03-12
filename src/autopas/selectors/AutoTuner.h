@@ -43,7 +43,7 @@ template <class Particle, class ParticleCell>
 class AutoTuner {
  public:
   /**
-   * Constructor for the AutoTuner
+   * Constructor for the AutoTuner that generates all configurations from the given options.
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
@@ -59,15 +59,13 @@ class AutoTuner {
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletRebuildFrequency, const std::vector<ContainerOption> &allowedContainerOptions,
-            const std::vector<TraversalOption> &allowedTraversalOptions,
+            std::vector<TraversalOption> allowedTraversalOptions,
             const std::vector<DataLayoutOption> &allowedDataLayoutOptions,
             const std::vector<Newton3Option> &allowedNewton3Options, SelectorStrategy selectorStrategy,
             unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
-        _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, allowedContainerOptions,
-                           allowedTraversalOptions),
-        _allowedTraversalOptions(allowedTraversalOptions),
+        _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
         _selectorStrategy(selectorStrategy),
@@ -75,10 +73,10 @@ class AutoTuner {
         _currentConfig(),
         _traversalTimes() {
     //@TODO needed until all containers support propper traversals
-    _allowedTraversalOptions.push_back(TraversalOption::dummyTraversal);
+    allowedTraversalOptions.push_back(TraversalOption::dummyTraversal);
 
     // needs to be sorted for intersection with applicable traversals
-    std::sort(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end());
+    std::sort(allowedTraversalOptions.begin(), allowedTraversalOptions.end());
 
     // generate all potential configs
     for (auto &containerOption : allowedContainerOptions) {
@@ -90,7 +88,7 @@ class AutoTuner {
       auto allContainerTraversals = _containerSelector.getCurrentContainer()->getAllTraversals();
       std::vector<TraversalOption> allowedAndApplicable;
       std::sort(allContainerTraversals.begin(), allContainerTraversals.end());
-      std::set_intersection(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end(),
+      std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                             allContainerTraversals.begin(), allContainerTraversals.end(),
                             std::back_inserter(allowedAndApplicable));
 
@@ -204,7 +202,7 @@ class AutoTuner {
 
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
-  std::vector<TraversalOption> _allowedTraversalOptions;
+
   /**
    * One selector / factory per possible container because every container might have a different number of cells.
    */

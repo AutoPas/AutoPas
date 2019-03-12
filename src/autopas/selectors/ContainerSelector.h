@@ -38,24 +38,15 @@ class ContainerSelector {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
-   * @param allowedContainerOptions Vector of container types the selector can choose from.
-   * @param allowedTraversalOptions Vector of traversals the selector can choose from.
    */
   ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                    double verletSkin, unsigned int verletRebuildFrequency,
-                    std::vector<ContainerOption> allowedContainerOptions,
-                    std::vector<TraversalOption> allowedTraversalOptions)
+                    double verletSkin, unsigned int verletRebuildFrequency)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
         _verletSkin(verletSkin),
         _verletRebuildFrequency(verletRebuildFrequency),
-        _allowedContainerOptions(std::move(allowedContainerOptions)),
-        _allowedTraversalOptions(std::move(allowedTraversalOptions)),
-        _currentContainer(nullptr) {
-    // @FIXME This is a workaround because this container does not yet use traversals like it should
-    _allowedTraversalOptions.push_back(TraversalOption::dummyTraversal);
-  }
+        _currentContainer(nullptr) {}
 
   /**
    * Sets the container to the given option.
@@ -82,8 +73,6 @@ class ContainerSelector {
   double _cutoff;
   double _verletSkin;
   unsigned int _verletRebuildFrequency;
-  std::vector<ContainerOption> _allowedContainerOptions;
-  std::vector<TraversalOption> _allowedTraversalOptions;
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
 };
 
