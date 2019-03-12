@@ -22,6 +22,7 @@ enum TraversalOptions {
   slicedVerlet = 5,
   c18Verlet = 6,
   c01Verlet = 7,
+  c01Cuda = 8,
   dummyTraversal = 666,
 };
 
@@ -37,6 +38,7 @@ static const std::vector<TraversalOptions> allTraversalOptions = {
     TraversalOptions::slicedVerlet,
     TraversalOptions::c18Verlet,
     TraversalOptions::c01Verlet,
+    TraversalOptions::c01Cuda,
 };
 
 }  // namespace autopas

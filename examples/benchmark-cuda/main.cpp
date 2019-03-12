@@ -8,7 +8,7 @@
 #include <iostream>
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
-#include "autopas/containers/linkedCells/traversals/CudaTraversal.h"
+#include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
 
 using namespace std;
@@ -63,7 +63,7 @@ int main() {
   int maxIterations = 5;
   long numParticles = 10000;
 
-  std::array<double, 3> boxMin({0., 0., 0.}), boxMax({12., 12., 12.});
+  std::array<double, 3> boxMin({0., 0., 0.}), boxMax({33., 33., 33.});
   double cutoff = 3.0;
   double epsilon = 2.0;
   double sigma = 0.4;
@@ -88,9 +88,14 @@ int main() {
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalCuda(&func);
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalCudaN3(&func);
 
-  C01Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> C01CudaN3({6, 6, 6}, &func);
-  CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalLCcuda({6, 6, 6}, &func);
-  CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalLCcudaN3({6, 6, 6}, &func);
+  C08Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, true> traversalc08N3(
+      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  C01Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> C01CudaN3(
+      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalLCcuda(
+      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalLCcudaN3(
+      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
 
   auto start = std::chrono::high_resolution_clock::now();
   auto stop = std::chrono::high_resolution_clock::now();
@@ -134,12 +139,21 @@ int main() {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
+    lc.iteratePairwiseSoA(&func, &traversalc08N3, true);
+  }
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+  cout << "LcSoAN3:" << maxIterations << " iterations with " << lc.getNumParticles() << " particles took: " << duration
+       << "microseconds" << endl;
+
+  start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < maxIterations; ++i) {
     lc.iteratePairwiseSoACuda(&func, &C01CudaN3, true);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "LcCudaN3:" << maxIterations << " iterations with " << dir.getNumParticles()
-       << " particles took: " << duration << "microseconds" << endl;
+  cout << "LcCudaN3:" << maxIterations << " iterations with " << lc.getNumParticles() << " particles took: " << duration
+       << "microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
@@ -147,7 +161,7 @@ int main() {
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "LcTraversalCudaNoN3:" << maxIterations << " iterations with " << dir.getNumParticles()
+  cout << "LcTraversalCudaNoN3:" << maxIterations << " iterations with " << lc.getNumParticles()
        << " particles took: " << duration << "microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
@@ -156,7 +170,7 @@ int main() {
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "LcTraversalCudaN3:" << maxIterations << " iterations with " << dir.getNumParticles()
+  cout << "LcTraversalCudaN3:" << maxIterations << " iterations with " << lc.getNumParticles()
        << " particles took: " << duration << "microseconds" << endl;
   return EXIT_SUCCESS;
 }

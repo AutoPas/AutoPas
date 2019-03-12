@@ -5,7 +5,7 @@
  */
 
 #include "CudaTraversalVersusDirectSumTest.h"
-#include "autopas/containers/linkedCells/traversals/CudaTraversal.h"
+#include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 
 CudaTraversalVersusDirectSumTest::CudaTraversalVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
@@ -54,7 +54,7 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::CudaTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::cuda, useNewton3>
+  autopas::C01CudaTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::cuda, useNewton3>
       traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, useNewton3>
       traversalDS(&func);

@@ -1,5 +1,5 @@
 /**
- * @file CudaTraversal.h
+ * @file C01CudaTraversal.h
  * @author jspahl
  * @date 11.03.2019
  */
@@ -20,10 +20,9 @@
 namespace autopas {
 
 /**
- * This class provides the c01 traversal.
+ * This class provides the c01 traversal on the GPU.
  *
- * The traversal uses the c01 base step performed on every single cell.
- * newton3 cannot be applied!
+ * The traversal calculates all cells in parallel
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -31,7 +30,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellTraversalInterface<ParticleCell> {
+class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -39,7 +38,7 @@ class CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellT
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
+  explicit C01CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims), _functor(pairwiseFunctor) {
     computeOffsets();
   }
@@ -53,8 +52,8 @@ class CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellT
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-  // TODO define New Traversal Option
-  TraversalOptions getTraversalType() override { return TraversalOptions::c01; }
+
+  TraversalOptions getTraversalType() override { return TraversalOptions::c01Cuda; }
 
   /**
    * Cuda traversal is only usable if using a GPU.
@@ -103,7 +102,7 @@ class CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellT
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets() {
+inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets() {
   for (int z = -1; z <= 1; ++z) {
     for (int y = -1; y <= 1; ++y) {
       for (int x = -1; x <= 1; ++x) {
@@ -140,7 +139,7 @@ inline void CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
 }  // namespace autopas
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
+inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception(

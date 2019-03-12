@@ -123,6 +123,9 @@ inline std::string to_string(TraversalOptions option) {
     case autopas::TraversalOptions::slicedVerlet: {
       return "verlet-sliced";
     }
+    case autopas::TraversalOptions::c01Cuda: {
+      return "cuda-c01";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown option (" + std::to_string(option) + ")";
