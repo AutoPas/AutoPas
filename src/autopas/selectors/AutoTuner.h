@@ -191,8 +191,8 @@ class AutoTuner {
   /**
    * Tune available algorithm configurations.
    *
+   * It is assumed this function is only called for relevant functors.
    * When in tuning phase selects next config to test. At the end of the tuning phase select optimum.
-   *
    * The function returns true if the selected config is not yet the optimum but something that should be sampled.
    *
    * @tparam PairwiseFunctor
@@ -361,12 +361,10 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       // if modified config is equal to next delete current. Else insert modified config.
       // the disabled case should come after the enabled.
       int searchDirection = _currentConfig->_newton3 == Newton3Option::enabled ? 1 : -1;
+      AutoPasLog(warn, "Newton 3 {} automatically for this configuration!",
+                 utils::StringUtils::to_string(modifiedCurrentConfig._newton3));
       if (modifiedCurrentConfig == *(std::next(_currentConfig, searchDirection))) {
-        AutoPasLog(warn, "Newton 3 {} automatically for this configuration!",
-                   utils::StringUtils::to_string(modifiedCurrentConfig._newton3));
-        if (pairwiseFunctor.isRelevantForTuning()) {
-          _currentConfig = _allowedConfigurations.erase(_currentConfig);
-        }
+        _currentConfig = _allowedConfigurations.erase(_currentConfig);
       } else {
         _currentConfig = _allowedConfigurations.insert(_currentConfig, modifiedCurrentConfig);
       }
@@ -431,8 +429,6 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
     }
   }
 
-  _currentConfig = _allowedConfigurations.find(optimalConfiguration);
-
   // print all configs, times and their reduced values
   AutoPasLog(debug, "Collected times: {}", [&]() -> std::string {
     std::stringstream ss;
@@ -448,6 +444,13 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
     }
     return ss.str();
   }());  // () to evaluate the function here.
+
+  _currentConfig = _allowedConfigurations.find(optimalConfiguration);
+  // sanity check
+  if (_currentConfig >= _allowedConfigurations.end()) {
+    autopas::utils::ExceptionHandler::exception(
+        "AutoTuner: Optimal configuration not found in list of configurations!");
+  }
 
   // measurements are not needed anymore
   _traversalTimes.clear();
