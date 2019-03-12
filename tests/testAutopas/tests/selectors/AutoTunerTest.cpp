@@ -178,3 +178,31 @@ void AutoTunerTest::testFastest(autopas::SelectorStrategy strategy, mapConfigTim
 
   EXPECT_EQ(expectedBest, tuner.getCurrentConfig());
 }
+
+TEST_F(AutoTunerTest, testWillRebuild) {
+
+  // also check if rebuild is detected if next config is invalid
+
+  FAIL() << "Not yet implemented!";
+}
+
+TEST_F(AutoTunerTest, testNoConfig) {
+
+  // generates no configurations
+
+  FAIL() << "Not yet implemented!";
+}
+
+TEST_F(AutoTunerTest, testOneConfig) {
+
+  // generates exactly one configuration
+
+  FAIL() << "Not yet implemented!";
+}
+
+TEST_F(AutoTunerTest, testLastConfigThrownOut) {
+
+  // generates configurations which are thrown out at runtime (newton3 conflict)
+
+  FAIL() << "Not yet implemented!";
+}
