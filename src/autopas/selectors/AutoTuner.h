@@ -430,7 +430,7 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
   }
 
   // print all configs, times and their reduced values
-  AutoPasLog(debug, "Collected times: {}", [&]() -> std::string {
+  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
     std::stringstream ss;
     // print all configs
     for (auto &p : _traversalTimes) {
@@ -442,12 +442,12 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
       ss << " ] ";
       ss << "Reduced value: " << p.second[p.second.size() - 1];
     }
-    return ss.str();
-  }());  // () to evaluate the function here.
+    AutoPasLog(debug, "Collected times: {}", ss.str());
+  }
 
   _currentConfig = _allowedConfigurations.find(optimalConfiguration);
   // sanity check
-  if (_currentConfig >= _allowedConfigurations.end()) {
+  if (_currentConfig == _allowedConfigurations.end()) {
     autopas::utils::ExceptionHandler::exception(
         "AutoTuner: Optimal configuration not found in list of configurations!");
   }
