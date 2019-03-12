@@ -110,6 +110,39 @@ class AutoTuner {
   }
 
   /**
+   * Constructor for the AutoTuner that only contains the given configurations.
+   * Mainly for easier unit testing.
+   * @param boxMin Lower corner of the container.
+   * @param boxMax Upper corner of the container.
+   * @param cutoff  Cutoff radius to be used in this container.
+   * @param verletSkin Length added to the cutoff for the verlet lists' skin.
+   * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * @param allowedConfigurations Set of configurations AutoPas can choose from.
+   * @param selectorStrategy Strategy for the configuration selection.
+   * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
+   * @param maxSamples Number of samples that shall be collected for each combination.
+   */
+  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
+            unsigned int verletRebuildFrequency, const std::set<Configuration> &allowedConfigurations,
+            SelectorStrategy selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+      : _tuningInterval(tuningInterval),
+        _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
+        _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency),
+        _maxSamples(maxSamples),
+        _numSamples(maxSamples),
+        _selectorStrategy(selectorStrategy),
+        _allowedConfigurations(allowedConfigurations),
+        _currentConfig(),
+        _traversalTimes() {
+    if (_allowedConfigurations.empty()) {
+      autopas::utils::ExceptionHandler::exception("AutoTuner: No configurations passed.");
+    }
+
+    _currentConfig = _allowedConfigurations.begin();
+    _containerSelector.selectContainer(_currentConfig->_container);
+  }
+
+  /**
    * Getter for the current container.
    * @return Smartpointer to the current container.
    */
