@@ -29,13 +29,18 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   auto prevConfig = autopas::Configuration(autopas::ContainerOption(-1), autopas::TraversalOption(-1),
                                            autopas::DataLayoutOption(-1), autopas::Newton3Option(-1));
 
+  // number of possible configurations * number of samples
+  size_t expectedNumberOfIterations = 40 * maxSamples;
+
   int collectedSamples = 0;
+  int iterations = 0;
   while (stillTuning) {
     if (collectedSamples == maxSamples) {
       collectedSamples = 0;
     }
 
     stillTuning = autoTuner.iteratePairwise(&functor);
+    ++iterations;
     ++collectedSamples;
 
     auto currentConfig = autoTuner.getCurrentConfig();
@@ -46,6 +51,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     }
     prevConfig = currentConfig;
   }
+
+  EXPECT_EQ(expectedNumberOfIterations, iterations);
 }
 
 TEST_F(AutoTunerTest, testSelectOptimalTraversalFastestAbs) {
