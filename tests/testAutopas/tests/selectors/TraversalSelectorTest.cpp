@@ -15,6 +15,11 @@ TEST_F(TraversalSelectorTest, testGetOptimalTraversalOneOption) {
   MFunctor functor;
 
   for (auto &traversalOption : autopas::allTraversalOptions) {
+    if (traversalOption == autopas::TraversalOptions::c01Cuda) {
+      // c01Cuda does not work for aos Data Layout
+      return;
+    }
+
     // this should be high enough so that sliced is still valid for the current processors thread count.
     constexpr size_t domainSize = 1000;
 

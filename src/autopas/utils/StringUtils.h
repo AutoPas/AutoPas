@@ -174,7 +174,9 @@ inline std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::s
 
   for (auto &word : words) {
     if (word.find("01") != std::string::npos) {
-      if (word.find('v') != std::string::npos)
+      if (word.find("cuda") != std::string::npos) {
+        traversalOptions.emplace_back(autopas::TraversalOptions::c01Cuda);
+      } else if (word.find('v') != std::string::npos)
         traversalOptions.emplace_back(autopas::TraversalOptions::c01Verlet);
       else
         traversalOptions.emplace_back(autopas::TraversalOptions::c01);
