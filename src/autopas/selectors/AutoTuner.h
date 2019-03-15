@@ -231,7 +231,7 @@ class AutoTuner {
   /**
    * Tune available algorithm configurations.
    *
-   * It is assumed this function is only called for relevant functors.
+   * It is assumed this function is only called for relevant functors and that at least two configurations are allowed.
    * When in tuning phase selects next config to test. At the end of the tuning phase select optimum.
    * The function returns true if the selected config is not yet the optimum but something that should be sampled.
    *
@@ -271,8 +271,11 @@ template <class Particle, class ParticleCell>
 template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
   bool isTuning = false;
-  // check if currently in tuning phase, execute iteration and take time measurement if necessary
-  if (_iterationsSinceTuning >= _tuningInterval and f->isRelevantForTuning()) {
+  // tune if :
+  // - more than one config exists
+  // - currently in tuning phase
+  // - functor is relevant
+  if (_allowedConfigurations.size() > 1 and _iterationsSinceTuning >= _tuningInterval and f->isRelevantForTuning()) {
     isTuning = tune<PairwiseFunctor>(*f);
     if (not isTuning) {
       _iterationsSinceTuning = 0;
@@ -381,48 +384,37 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     _numSamples = 0;
   }
 
-  // check config and skip until one is applicable
-  bool configIsApplicable = false;
   // repeat as long as traversals are not applicable or we run out of configs
-  do {
-    _containerSelector.selectContainer(_currentConfig->_container);
-
-    // check if newton3 works with this functor and fix if needed
+  while (_currentConfig != _allowedConfigurations.end()) {
+    // check if newton3 works with this functor and remove config if not
     if ((_currentConfig->_newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
         (_currentConfig->_newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
       AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
                  utils::StringUtils::to_string(_currentConfig->_newton3));
 
-      Configuration modifiedCurrentConfig = *_currentConfig;
-      // choose the other option
-      modifiedCurrentConfig._newton3 =
-          _currentConfig->_newton3 == Newton3Option::enabled ? Newton3Option::disabled : Newton3Option::enabled;
-
-      // if modified config is equal to next delete current. Else insert modified config.
-      // the disabled case should come after the enabled.
-      int searchDirection = _currentConfig->_newton3 == Newton3Option::enabled ? 1 : -1;
-      AutoPasLog(warn, "Newton 3 {} automatically for this configuration!",
-                 utils::StringUtils::to_string(modifiedCurrentConfig._newton3));
-      if (modifiedCurrentConfig == *(std::next(_currentConfig, searchDirection))) {
-        _currentConfig = _allowedConfigurations.erase(_currentConfig);
+      _currentConfig = _allowedConfigurations.erase(_currentConfig);
+    } else {
+      if (configApplicable(*_currentConfig, pairwiseFunctor)) {
+        // we found a valid config!
+        break;
       } else {
-        _currentConfig = _allowedConfigurations.insert(_currentConfig, modifiedCurrentConfig);
-      }
-      if (_currentConfig != _allowedConfigurations.end()) {
-        _containerSelector.selectContainer(_currentConfig->_container);
+        ++_currentConfig;
       }
     }
-
-    // if current config is not applicable but there are still some left check next
-  } while (_currentConfig != _allowedConfigurations.end() and not configApplicable(*_currentConfig, pairwiseFunctor) and
-           ((++_currentConfig) != _allowedConfigurations.end()));
+  }
 
   // reached end of tuning phase
   // either wait until last config has enough samples or last config is not applicable
-  if (_currentConfig == _allowedConfigurations.end() and (_numSamples >= _maxSamples or not configIsApplicable)) {
-    selectOptimalConfiguration();
-    stillTuning = false;
-    _containerSelector.selectContainer(_currentConfig->_container);
+  if (_currentConfig == _allowedConfigurations.end()) {
+    if (_traversalTimes.empty()) {
+      autopas::utils::ExceptionHandler::exception("AutoTuner: No applicable configurations found!");
+    }
+
+    if (_numSamples >= _maxSamples) {
+      selectOptimalConfiguration();
+      stillTuning = false;
+      _containerSelector.selectContainer(_currentConfig->_container);
+    }
   }
 
   return stillTuning;
@@ -430,6 +422,10 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 
 template <class Particle, class ParticleCell>
 void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
+  if (_allowedConfigurations.size() == 1) {
+    return;
+  }
+
   // Time measure strategy
   if (_traversalTimes.empty()) {
     utils::ExceptionHandler::exception("AutoTuner: Trying to determine fastest configuration before measuring!");
