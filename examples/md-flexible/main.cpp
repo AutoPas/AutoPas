@@ -247,9 +247,9 @@ int main(int argc, char **argv) {
   switch (functorChoice) {
     case MDFlexParser::FunctorOption::lj12_6: {
       durationApply =
-          calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(
-              autopas, cutoff, numIterations);
-      flopsPerKernelCall = LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+          calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff, numIterations);
+      flopsPerKernelCall =
+          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexParser::FunctorOption::lj12_6_AVX: {

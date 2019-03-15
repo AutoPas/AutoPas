@@ -30,8 +30,8 @@ enum FunctorN3Modes {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
+          bool calculateGlobals = false, bool relevantForTuning = true>
 class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
   using SoAArraysType = typename Particle::SoAArraysType;
 

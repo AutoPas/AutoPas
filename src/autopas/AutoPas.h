@@ -127,7 +127,7 @@ class AutoPas {
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
-    * @param f Functor that describes the pair-potential.
+   * @param f Functor that describes the pair-potential.
    */
   template <class Functor>
   void iteratePairwise(Functor *f) {

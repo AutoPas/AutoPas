@@ -25,7 +25,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
                                                  autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
-//  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+  //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
   auto prevConfig = autopas::Configuration(autopas::ContainerOption(-1), autopas::TraversalOption(-1),
                                            autopas::DataLayoutOption(-1), autopas::Newton3Option(-1));
@@ -56,7 +56,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   EXPECT_EQ(expectedNumberOfIterations, iterations);
 }
 
-
 TEST_F(AutoTunerTest, testWillRebuild) {
   // also check if rebuild is detected if next config is invalid
 
@@ -67,7 +66,6 @@ TEST_F(AutoTunerTest, testWillRebuild) {
  * Generates no configurations.
  */
 TEST_F(AutoTunerTest, testNoConfig) {
-
   // wrap constructor call into lambda to avoid parser errors
   auto exp1 = []() {
     autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {},
@@ -89,14 +87,11 @@ TEST_F(AutoTunerTest, testNoConfig) {
  * Generates exactly one valid configuration.
  */
 TEST_F(AutoTunerTest, testOneConfig) {
-
   autopas::Configuration conf(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
-                         autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                              autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
-  autopas::AutoTuner<Particle, FPCell> tuner(
-      {0, 0, 0}, {10, 10, 10}, 1, 0, 100,
-      {conf},
-      autopas::SelectorStrategy::fastestAbs, 1000, 3);
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {conf},
+                                             autopas::SelectorStrategy::fastestAbs, 1000, 3);
 
   EXPECT_EQ(conf, tuner.getCurrentConfig());
 
@@ -113,16 +108,13 @@ TEST_F(AutoTunerTest, testOneConfig) {
  * Generates exactly one valid and one invalid configuration.
  */
 TEST_F(AutoTunerTest, testConfigSecondInvalid) {
-
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
-                         autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
-                         autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
-  autopas::AutoTuner<Particle, FPCell> tuner(
-      {0, 0, 0}, {10, 10, 10}, 1, 0, 100,
-      {confN3, confNoN3},
-      autopas::SelectorStrategy::fastestAbs, 1000, 3);
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {confN3, confNoN3},
+                                             autopas::SelectorStrategy::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
@@ -150,10 +142,8 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
 
-  autopas::AutoTuner<Particle, FPCell> tuner(
-      {0, 0, 0}, {10, 10, 10}, 1, 0, 100,
-      {confN3, confNoN3},
-      autopas::SelectorStrategy::fastestAbs, 1000, 3);
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {confN3, confNoN3},
+                                             autopas::SelectorStrategy::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 

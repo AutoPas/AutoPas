@@ -186,7 +186,6 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdateVL) {
   EXPECT_FALSE(autoPas.needsContainerUpdate());
 }
 
-
 TEST_F(AutoPasTest, checkNeedsContainerUpdateLC) {
   // now build verlet lists
   autoPas.setBoxMin({0., 0., 0.});
