@@ -120,7 +120,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
                          autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   autopas::AutoTuner<Particle, FPCell> tuner(
-      {0, 0, 0}, {1000, 1000, 1000}, 1, 0, 100,
+      {0, 0, 0}, {10, 10, 10}, 1, 0, 100,
       {confN3, confNoN3},
       autopas::SelectorStrategy::fastestAbs, 1000, 3);
 
