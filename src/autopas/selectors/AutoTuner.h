@@ -16,7 +16,7 @@
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
-#include "OptimumSelectorTest.h"
+#include "OptimumSelector.h"
 
 namespace autopas {
 

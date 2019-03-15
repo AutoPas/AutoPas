@@ -1,0 +1,32 @@
+/**
+ * @file OptimumSelectorTest.cpp
+ * @author F. Gratl
+ * @date 3/15/19
+ */
+
+#include "autopas/selectors/OptimumSelector.h"
+#include "OptimumSelectorTest.h"
+
+TEST(OptimumSelectorTest, min) {
+  std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
+
+  auto min = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategy::fastestAbs);
+
+  EXPECT_EQ(1, min);
+}
+
+TEST(OptimumSelectorTest, mean) {
+  std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
+
+  auto mean = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategy::fastestMean);
+
+  EXPECT_EQ(4, mean);
+}
+
+TEST(OptimumSelectorTest, median) {
+  std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
+
+  auto median = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategy::fastestMedian);
+
+  EXPECT_EQ(5, median);
+}
