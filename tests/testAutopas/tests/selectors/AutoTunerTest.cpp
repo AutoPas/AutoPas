@@ -214,7 +214,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
  */
 TEST_F(AutoTunerTest, testOneConfig) {
 
-  autopas::Configuration conf(autopas::ContainerOption::linkedCells, autopas::TraversalOption::sliced,
+  autopas::Configuration conf(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
                          autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
   autopas::AutoTuner<Particle, FPCell> tuner(
@@ -238,13 +238,13 @@ TEST_F(AutoTunerTest, testOneConfig) {
  */
 TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 
-  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::sliced,
+  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
                          autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
-  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::sliced,
+  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
                          autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   autopas::AutoTuner<Particle, FPCell> tuner(
-      {0, 0, 0}, {10, 10, 10}, 1, 0, 100,
+      {0, 0, 0}, {1000, 1000, 1000}, 1, 0, 100,
       {confN3, confNoN3},
       autopas::SelectorStrategy::fastestAbs, 1000, 3);
 
@@ -265,8 +265,26 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 }
 
+/**
+ * All generated configurations are thrown out at runtime.
+ */
 TEST_F(AutoTunerTest, testLastConfigThrownOut) {
-  // generates configurations which are thrown out at runtime (newton3 conflict)
+  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
+                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
+                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
 
-  FAIL() << "Not yet implemented!";
+  autopas::AutoTuner<Particle, FPCell> tuner(
+      {0, 0, 0}, {10, 10, 10}, 1, 0, 100,
+      {confN3, confNoN3},
+      autopas::SelectorStrategy::fastestAbs, 1000, 3);
+
+  EXPECT_EQ(confN3, tuner.getCurrentConfig());
+
+  MFunctor functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+
+  EXPECT_THROW(tuner.iteratePairwise(&functor), autopas::utils::ExceptionHandler::AutoPasException);
 }
