@@ -16,6 +16,7 @@
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
+#include "OptimumSelectorTest.h"
 
 namespace autopas {
 
@@ -430,27 +431,10 @@ void AutoTuner<Particle, ParticleCell>::selectOptimalConfiguration() {
   Configuration optimalConfiguration;
   // reduce sample values
   for (auto &configAndTimes : _traversalTimes) {
-    long value = 0;
-    switch (_selectorStrategy) {
-      case SelectorStrategy::fastestAbs: {
-        value = *std::min_element(configAndTimes.second.begin(), configAndTimes.second.end());
-        break;
-      }
-      case SelectorStrategy::fastestMean: {
-        value = std::accumulate(configAndTimes.second.begin(), configAndTimes.second.end(), 0l);
-        value /= configAndTimes.second.size();
-        break;
-      }
-      case SelectorStrategy::fastestMedian: {
-        std::sort(configAndTimes.second.begin(), configAndTimes.second.end());
-        value = configAndTimes.second[configAndTimes.second.size() / 2];
-        break;
-      }
-      default:
-        utils::ExceptionHandler::exception("AutoTuner: Unknown selector strategy {}", _selectorStrategy);
-    }
+    long value = OptimumSelector::optimumValue(configAndTimes.second, _selectorStrategy);
+
     // save all values for debugging purposes
-    if (spdlog::get("AutoPasLog")->level() <= spdlog::level::debug) {
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       configAndTimes.second.push_back(value);
     }
 
