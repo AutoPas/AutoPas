@@ -25,12 +25,13 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
                                                  autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
+//  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
   auto prevConfig = autopas::Configuration(autopas::ContainerOption(-1), autopas::TraversalOption(-1),
                                            autopas::DataLayoutOption(-1), autopas::Newton3Option(-1));
 
-  // number of possible configurations * number of samples
-  size_t expectedNumberOfIterations = 40 * maxSamples;
+  // number of possible configurations * number of samples + last iteration after tuning
+  size_t expectedNumberOfIterations = 34 * maxSamples + 1;
 
   int collectedSamples = 0;
   int iterations = 0;
@@ -55,131 +56,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   EXPECT_EQ(expectedNumberOfIterations, iterations);
 }
 
-TEST_F(AutoTunerTest, testSelectOptimalTraversalFastestAbs) {
-  mapConfigTime configTimes;
-
-  autopas::Configuration bestConfig(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
-
-  configTimes[bestConfig] = {30, 10};
-  configTimes[autopas::Configuration(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled)] = {22, 14};
-
-  mapConfigTime ignoredConfigTimes;
-  ignoredConfigTimes[autopas::Configuration(autopas::ContainerOption::directSum,
-                                            autopas::TraversalOption::directSumTraversal,
-                                            autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled)] = {1};
-
-  testFastest(autopas::SelectorStrategy::fastestAbs, configTimes, bestConfig, ignoredConfigTimes);
-}
-
-TEST_F(AutoTunerTest, testSelectOptimalTraversalFastestMean) {
-  mapConfigTime configTimes;
-
-  autopas::Configuration bestConfig(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
-
-  configTimes[bestConfig] = {5, 7};
-  configTimes[autopas::Configuration(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled)] = {2, 20};
-
-  mapConfigTime ignoredConfigTimes;
-  ignoredConfigTimes[autopas::Configuration(autopas::ContainerOption::directSum,
-                                            autopas::TraversalOption::directSumTraversal,
-                                            autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled)] = {1, 5};
-
-  testFastest(autopas::SelectorStrategy::fastestMean, configTimes, bestConfig, ignoredConfigTimes);
-}
-
-TEST_F(AutoTunerTest, testSelectOptimalTraversalFastestMedian) {
-  mapConfigTime configTimes;
-
-  autopas::Configuration bestConfig(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
-
-  configTimes[bestConfig] = {2, 3, 3, 100};
-  configTimes[autopas::Configuration(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled)] = {4, 1, 5, 2};
-
-  mapConfigTime ignoredConfigTimes;
-  ignoredConfigTimes[autopas::Configuration(autopas::ContainerOption::directSum,
-                                            autopas::TraversalOption::directSumTraversal,
-                                            autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled)] = {1, 5};
-
-  testFastest(autopas::SelectorStrategy::fastestMedian, configTimes, bestConfig, ignoredConfigTimes);
-}
-
-void AutoTunerTest::testFastest(autopas::SelectorStrategy strategy, mapConfigTime configAndTimes,
-                                autopas::Configuration expectedBest, mapConfigTime ignoredConfigAndTimes) {
-  //  std::set<autopas::Configuration> relevantConfigs;
-  //  std::set<autopas::Configuration> ignoredConfigs;
-  //  std::set<autopas::Configuration> allConfigs;
-  //
-  //  for (auto &&m : configAndTimes) {
-  //    relevantConfigs.insert(m.first);
-  //  }
-  //  for (auto &&m : ignoredConfigAndTimes) {
-  //    ignoredConfigs.insert(m.first);
-  //  }
-  //
-  //  std::set_union(relevantConfigs.begin(), relevantConfigs.end(), ignoredConfigs.begin(), ignoredConfigs.end(),
-  //                 std::inserter(allConfigs, allConfigs.begin()));
-  //
-  //  // assert relevant and ignored configs are disjoint
-  //  ASSERT_EQ(relevantConfigs.size() + ignoredConfigs.size(), allConfigs.size());
-  //
-  //  constexpr size_t domainSize = 1000;
-  //  constexpr unsigned int maxSamples = 1;
-  //
-  //  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {domainSize, domainSize, domainSize}, 1, 0, 100, allConfigs,
-  //                                             strategy, 1000, maxSamples);
-  //
-  //  // check that all expected configurations are created
-  //  ASSERT_EQ(relevantConfigs.size(), tuner.getAllowedConfigurations().size());
-  //
-  //  MFunctor functor;
-  //
-  //  for (int i = 0; i < allConfigs.size(); ++i) {
-  //    tuner.iteratePairwise(&functor);
-  //    auto currentConfig = tuner.getCurrentConfig();
-  //
-  //    // find time in sets
-  //    auto timingIter = configAndTimes.find(currentConfig);
-  //
-  //    // overwrite time measurement
-  //  }
-  //
-  ////  for (auto &&m : configAndTimes) {
-  ////    for (auto &&t : m.second) {
-  ////      EXPECT_CALL(functor, isRelevantForTuning()).WillOnce(::testing::Return(true));
-  ////      tuner.addTimeMeasurement(functor, t);
-  ////    }
-  ////  }
-  ////
-  ////  for (auto &&m : ignoredConfigAndTimes) {
-  ////    for (auto &&t : m.second) {
-  ////      EXPECT_CALL(functor, isRelevantForTuning()).WillOnce(::testing::Return(false));
-  ////      tuner.addTimeMeasurement(functor, t);
-  ////    }
-  ////  }
-  //
-  //  // some necessary calls...
-  //  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  //  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  //  EXPECT_CALL(functor, SoALoader(_, _)).Times(::testing::AtLeast(1));
-  //  EXPECT_CALL(functor, SoAExtractor(_, _)).Times(::testing::AtLeast(1));
-  //  // Only needed if verlet Lists are present
-  //  //  EXPECT_CALL(functor, SoALoader(_,_,_)).Times(::testing::AtLeast(1));
-  //  //  EXPECT_CALL(functor, SoAExtractor(_,_,_)).Times(::testing::AtLeast(1));
-  //
-  //  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  //  // rush through the tuning procedure
-  //  for (size_t i = 0; i < tuner.getAllowedConfigurations().size() * maxSamples; ++i) {
-  //    tuner.iteratePairwise(&functor);
-  //  }
-  //
-  //  EXPECT_EQ(expectedBest, tuner.getCurrentConfig());
-}
 
 TEST_F(AutoTunerTest, testWillRebuild) {
   // also check if rebuild is detected if next config is invalid
