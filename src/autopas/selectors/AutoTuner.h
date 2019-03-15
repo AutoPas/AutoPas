@@ -9,6 +9,7 @@
 #include <array>
 #include <memory>
 #include <set>
+#include "OptimumSelector.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -16,7 +17,6 @@
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
-#include "OptimumSelector.h"
 
 namespace autopas {
 
@@ -112,7 +112,7 @@ class AutoTuner {
 
   /**
    * Constructor for the AutoTuner that only contains the given configurations.
-   * Mainly for easier unit testing.
+   * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff  Cutoff radius to be used in this container.
@@ -137,6 +137,14 @@ class AutoTuner {
         _traversalTimes() {
     if (_allowedConfigurations.empty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: No configurations passed.");
+    }
+
+    for (auto &conf : allowedConfigurations) {
+      if (_traversalSelectors.find(conf._container) == _traversalSelectors.end()) {
+        _containerSelector.selectContainer(conf._container);
+        _traversalSelectors.emplace(conf._container,
+                                    _containerSelector.getCurrentContainer()->generateTraversalSelector());
+      }
     }
 
     _currentConfig = _allowedConfigurations.begin();
