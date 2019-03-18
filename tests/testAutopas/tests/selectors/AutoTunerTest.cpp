@@ -99,40 +99,39 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 /**
  * This test simulates that the next config (which is checked by willRebuild) is invalid.
  */
-// TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
-//  // also check if rebuild is detected if next config is invalid
-//
-//  std::set<autopas::Configuration> configs;
-//  configs.emplace(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-//                  autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
-//  configs.emplace(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-//                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-//  configs.emplace(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
-//  autopas::DataLayoutOption::aos,
-//                  autopas::Newton3Option::enabled);
-//
-//  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, configs,
-//                                                 autopas::SelectorStrategy::fastestAbs, 1000, 2);
-//
-//  EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
-//
-//  MockFunctor<Particle, FPCell> functor;
-//  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-//  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-//  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-//
-//  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild for first iteration.";
-//  autoTuner.iteratePairwise(&functor); // DS N3
-//  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-//  autoTuner.iteratePairwise(&functor); // DS N3
-//  // Fixme: This check fails
-//  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because config is kicked and next config has different
-//  container."; autoTuner.iteratePairwise(&functor); // LC N3 EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no
-//  rebuild because more samples needed."; autoTuner.iteratePairwise(&functor); // LC N3
-//  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
-//  autoTuner.iteratePairwise(&functor); // optimum
-//  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
-//}
+TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
+  // also check if rebuild is detected if next config is invalid
+
+  std::set<autopas::Configuration> configs;
+  configs.emplace(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
+                  autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+  configs.emplace(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
+                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+  configs.emplace(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08, autopas::DataLayoutOption::aos,
+                  autopas::Newton3Option::enabled);
+
+  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, configs,
+                                                 autopas::SelectorStrategy::fastestAbs, 1000, 2);
+
+  EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
+
+  MockFunctor<Particle, FPCell> functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
+
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
+  autoTuner.iteratePairwise(&functor);  // DS N3
+  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  autoTuner.iteratePairwise(&functor);  // DS N3
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
+  autoTuner.iteratePairwise(&functor);  // LC N3
+  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  autoTuner.iteratePairwise(&functor);  // LC N3
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
+  autoTuner.iteratePairwise(&functor);  // optimum
+  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
+}
 
 TEST_F(AutoTunerTest, testWillRebuildDL) {
   // also check if rebuild is detected if next config is invalid
