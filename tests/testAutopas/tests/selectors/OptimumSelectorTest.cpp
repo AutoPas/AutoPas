@@ -4,8 +4,8 @@
  * @date 3/15/19
  */
 
-#include "autopas/selectors/OptimumSelector.h"
 #include "OptimumSelectorTest.h"
+#include "autopas/selectors/OptimumSelector.h"
 
 TEST(OptimumSelectorTest, min) {
   std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
