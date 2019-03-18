@@ -406,6 +406,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: No applicable configurations found!");
     }
 
+    // sets _currentConfig
     selectOptimalConfiguration();
     stillTuning = false;
   }

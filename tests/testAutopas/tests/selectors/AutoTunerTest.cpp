@@ -30,7 +30,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   auto prevConfig = autopas::Configuration(autopas::ContainerOption(-1), autopas::TraversalOption(-1),
                                            autopas::DataLayoutOption(-1), autopas::Newton3Option(-1));
 
-  // number of possible configurations * number of samples + last iteration after tuning
+  // total number of possible configurations * number of samples + last iteration after tuning
+  // number of configs manually counted
   size_t expectedNumberOfIterations = 34 * maxSamples + 1;
 
   int collectedSamples = 0;

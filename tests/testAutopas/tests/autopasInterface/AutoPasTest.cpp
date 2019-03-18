@@ -168,8 +168,6 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdateVL) {
   autoPas.setVerletSkin(0);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setAllowedContainers({autopas::ContainerOption::verletLists});
-  /// @TODO: set traversal when this container finally uses one!
-  // autoPas._allowedTraversals = {};
   autoPas.init();
 
   // after build this should be true
