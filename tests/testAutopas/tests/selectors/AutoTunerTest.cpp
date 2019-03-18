@@ -120,6 +120,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
+  // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
   autoTuner.iteratePairwise(&functor);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
@@ -153,7 +154,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
   // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect no rebuild for first iteration.";
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
   autoTuner.iteratePairwise(&functor);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   autoTuner.iteratePairwise(&functor);  // DS NoN3

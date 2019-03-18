@@ -180,29 +180,15 @@ class AutoTuner {
   bool iteratePairwise(PairwiseFunctor *f);
 
   /**
-   * Returns whether the container or the traversal will be changed in the next iteration.
-   * @return True if the container will be rebuild on the next iteratePairwise() call. False otherwise.
+   * Returns whether the configuration will be changed in the next iteration.
+   * This does does not necessarily mean that the container will change.
+   *
+   * @return True if the next iteratePairwise() call uses a different configuration. False otherwise.
    */
   bool willRebuild() {
     if (_allowedConfigurations.size() == 1) {
       return false;
     }
-
-    // first iteration or start of tuning phase
-    //    if (_iterationsSinceTuning == _tuningInterval) {
-    //      return (_currentConfig->_container != _allowedConfigurations.begin()->_container) or
-    //             (_currentConfig->_traversal != _allowedConfigurations.begin()->_traversal);
-    //    }
-    //
-    //    if (_iterationsSinceTuning >= _tuningInterval) {
-    //      if (_numSamples < _maxSamples) {
-    //        return false;
-    //      } else {
-    //        return true;
-    //      }
-    //    } else {
-    //      return false;
-    //    }
 
     return _iterationsSinceTuning >= _tuningInterval and _numSamples >= _maxSamples;
   }
