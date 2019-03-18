@@ -184,7 +184,17 @@ class AutoTuner {
    * @return True if the container will be rebuild on the next iteratePairwise() call. False otherwise.
    */
   bool willRebuild() {
-    if (_iterationsSinceTuning >= _tuningInterval) {
+    if (_allowedConfigurations.size() == 1) {
+      return false;
+    }
+
+    // first iteration or start of tuning phase
+    if (_iterationsSinceTuning == _tuningInterval) {
+      return (_currentConfig->_container != _allowedConfigurations.begin()->_container) or
+             (_currentConfig->_traversal != _allowedConfigurations.begin()->_traversal);
+    }
+
+    if (_iterationsSinceTuning > _tuningInterval) {
       if (_numSamples < _maxSamples) {
         return false;
       } else {
