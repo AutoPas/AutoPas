@@ -189,23 +189,22 @@ class AutoTuner {
     }
 
     // first iteration or start of tuning phase
-//    if (_iterationsSinceTuning == _tuningInterval) {
-//      return (_currentConfig->_container != _allowedConfigurations.begin()->_container) or
-//             (_currentConfig->_traversal != _allowedConfigurations.begin()->_traversal);
-//    }
-//
-//    if (_iterationsSinceTuning >= _tuningInterval) {
-//      if (_numSamples < _maxSamples) {
-//        return false;
-//      } else {
-//        return true;
-//      }
-//    } else {
-//      return false;
-//    }
+    //    if (_iterationsSinceTuning == _tuningInterval) {
+    //      return (_currentConfig->_container != _allowedConfigurations.begin()->_container) or
+    //             (_currentConfig->_traversal != _allowedConfigurations.begin()->_traversal);
+    //    }
+    //
+    //    if (_iterationsSinceTuning >= _tuningInterval) {
+    //      if (_numSamples < _maxSamples) {
+    //        return false;
+    //      } else {
+    //        return true;
+    //      }
+    //    } else {
+    //      return false;
+    //    }
 
     return _iterationsSinceTuning >= _tuningInterval and _numSamples >= _maxSamples;
-
   }
 
   /**
