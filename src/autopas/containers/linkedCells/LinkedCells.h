@@ -47,13 +47,15 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * Lists all traversal options applicable for the Linked Cells container.
    * @return Vector of all applicable traversal options.
    */
-  static const std::vector<TraversalOptions> &allLCApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::c01, TraversalOptions::c08, TraversalOptions::c18,
-                                                 TraversalOptions::sliced};
+  static const std::vector<TraversalOption> &allLCApplicableTraversals() {
+    static const std::vector<TraversalOption> v{TraversalOption::c01, TraversalOption::c08, TraversalOption::c18,
+                                                TraversalOption::sliced};
     return v;
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::linkedCells; }
+  std::vector<TraversalOption> getAllTraversals() override { return allLCApplicableTraversals(); }
+
+  ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
 
   void addParticle(Particle &p) override {
     bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
@@ -90,14 +92,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with AoS",
-               utils::StringUtils::to_string(
-                   traversal->getTraversalType())) if (auto *traversalInterface =
-                                                           dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(
-                                                               traversal)) {
+    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
-    }
-    else {
+    } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: {}",
           traversal->getTraversalType());
@@ -115,8 +112,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with SoA ", utils::StringUtils::to_string(traversal->getTraversalType()))
-        loadSoAs(f);
+    loadSoAs(f);
+
     if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
@@ -199,13 +196,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    std::vector<TraversalOptions> allowedAndApplicable;
-
-    std::sort(traversalOptions.begin(), traversalOptions.end());
-    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
-                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), allowedAndApplicable);
+  TraversalSelector<ParticleCell> generateTraversalSelector() override {
+    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

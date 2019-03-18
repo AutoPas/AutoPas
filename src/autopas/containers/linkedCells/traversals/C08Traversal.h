@@ -43,7 +43,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-  TraversalOptions getTraversalType() override { return TraversalOptions::c08; }
+  TraversalOption getTraversalType() override { return TraversalOption::c08; }
 
  private:
   C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellHandler;

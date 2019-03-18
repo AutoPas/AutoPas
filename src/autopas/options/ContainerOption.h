@@ -1,5 +1,5 @@
 /**
- * @file ContainerOptions.h
+ * @file ContainerOption.h
  * @author F. Gratl
  * @date 1/18/19
  */
@@ -13,7 +13,7 @@ namespace autopas {
 /**
  * Possible choices for the particle container type.
  */
-enum ContainerOptions {
+enum ContainerOption {
   directSum = 0,
   linkedCells = 1,
   verletLists = 2,
@@ -24,9 +24,9 @@ enum ContainerOptions {
 /**
  * Provides a way to iterate over the possible choices of ContainerOption.
  */
-static const std::vector<ContainerOptions> allContainerOptions = {
-    ContainerOptions::directSum,        ContainerOptions::linkedCells,        ContainerOptions::verletLists,
-    ContainerOptions::verletListsCells, ContainerOptions::verletClusterLists,
+static const std::vector<ContainerOption> allContainerOptions = {
+    ContainerOption::directSum,        ContainerOption::linkedCells,        ContainerOption::verletLists,
+    ContainerOption::verletListsCells, ContainerOption::verletClusterLists,
 };
 
 }  // namespace autopas

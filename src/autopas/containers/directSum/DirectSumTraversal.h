@@ -34,7 +34,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)) {}
 
-  TraversalOptions getTraversalType() override { return TraversalOptions::directSumTraversal; }
+  TraversalOption getTraversalType() override { return TraversalOption::directSumTraversal; }
 
   bool isApplicable() override { return true; }
 

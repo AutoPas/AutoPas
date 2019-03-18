@@ -13,7 +13,7 @@ Alternatively you can build the documentation on your own:
 
 
 ## Requirements
-* cmake 3.3 or newer
+* cmake 3.10 or newer
 * make (build-essentials) or ninja
 * a c++14 compiler (gcc7, clang6 and icpc 2018 are tested)
 

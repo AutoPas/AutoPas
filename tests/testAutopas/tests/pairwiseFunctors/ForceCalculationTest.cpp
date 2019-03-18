@@ -16,8 +16,14 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   std::array<double, 3> boxMax = {3., 3., 3.};
 
   //@todo test this with all containers and traversals
-  autoPas.init(boxMin, boxMax, cutoff, 0, 1, {autopas::ContainerOptions::linkedCells},
-               {autopas::TraversalOptions::c08});
+  autoPas.setBoxMin(boxMin);
+  autoPas.setBoxMax(boxMax);
+  autoPas.setCutoff(cutoff);
+  autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
+  autoPas.setAllowedTraversals({autopas::TraversalOption::c08});
+  autoPas.setAllowedDataLayouts({dataLayoutOption});
+
+  autoPas.init();
   autopas::MoleculeLJ defaultParticle;
 
   GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
@@ -29,7 +35,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor(cutoff, epsilon,
                                                                                                   sigma, 0.0);
 
-  autoPas.iteratePairwise(&functor, dataLayoutOption);
+  autoPas.iteratePairwise(&functor);
 
   for (auto p = autoPas.begin(); p.isValid(); ++p) {
     auto id = p->getID();

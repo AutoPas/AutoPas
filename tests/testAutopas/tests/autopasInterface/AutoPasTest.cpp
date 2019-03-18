@@ -43,8 +43,12 @@ TEST_F(AutoPasTest, checkRebuildingNewMove) {
   {
     // 1. create new AutoPas container + initialize
     decltype(autoPas) autoPasTmp;
-    autoPasTmp.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 1, {autopas::ContainerOptions::linkedCells},
-                    {autopas::TraversalOptions::c08});
+    autoPasTmp.setBoxMin({0., 0., 0.});
+    autoPasTmp.setBoxMax({5., 5., 5.});
+    autoPasTmp.setCutoff(1.);
+    autoPasTmp.setAllowedContainers({autopas::ContainerOption::linkedCells});
+    autoPasTmp.setAllowedTraversals({autopas::TraversalOption::c08});
+    autoPasTmp.init();
 
     // ensure no particles
     for (auto iter = autoPasTmp.begin(); iter.isValid(); ++iter) {
@@ -117,8 +121,13 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
     }
     // 2. recreate container by calling constructor + init
     autoPas = decltype(autoPas)();
-    autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 1, {autopas::ContainerOptions::linkedCells},
-                 {autopas::TraversalOptions::c08});
+
+    autoPas.setBoxMin({0., 0., 0.});
+    autoPas.setBoxMax({5., 5., 5.});
+    autoPas.setCutoff(1.);
+    autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
+    autoPas.setAllowedTraversals({autopas::TraversalOption::c08});
+    autoPas.init();
 
     // ensure no particles
     for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
@@ -151,23 +160,48 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
   AutoPasLog(info, "test logger working.");
 }
 
-TEST_F(AutoPasTest, checkNeedsContainerUpdate) {
-  // for linked cells this should be false
-  EXPECT_TRUE(autoPas.needsContainerUpdate());
-
+TEST_F(AutoPasTest, checkNeedsContainerUpdateVL) {
   // now build verlet lists
-  autoPas.init({0., 0., 0.}, {5., 5., 5.}, 1., 0, 2, {autopas::ContainerOptions::verletLists}, {});
-  // after build this should be false
+  autoPas.setBoxMin({0., 0., 0.});
+  autoPas.setBoxMax({5., 5., 5.});
+  autoPas.setCutoff(1.);
+  autoPas.setVerletSkin(0);
+  autoPas.setVerletRebuildFrequency(2);
+  autoPas.setAllowedContainers({autopas::ContainerOption::verletLists});
+  autoPas.init();
+
+  // after build this should be true
   EXPECT_TRUE(autoPas.needsContainerUpdate());
 
   // run once, builds verlet lists. (here for 0 particles)
   MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, allowsNewton3()).Times(AtLeast(1)).WillOnce(Return(true));
-  EXPECT_CALL(emptyFunctor, allowsNonNewton3()).Times(AtLeast(1)).WillOnce(Return(false));
-  EXPECT_CALL(emptyFunctor, isRelevantForTuning()).Times(AtLeast(1)).WillOnce(Return(true));
-  autopas::C08Traversal<FPCell, MFunctor, false, true> dummyTraversal({0, 0, 0}, &emptyFunctor);
-  autoPas.iteratePairwise(&emptyFunctor, autopas::aos);
+  EXPECT_CALL(emptyFunctor, allowsNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(emptyFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
+  EXPECT_CALL(emptyFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
+  autoPas.iteratePairwise(&emptyFunctor);
 
   // now verlet lists should be valid.
   EXPECT_FALSE(autoPas.needsContainerUpdate());
+}
+
+TEST_F(AutoPasTest, checkNeedsContainerUpdateLC) {
+  // now build verlet lists
+  autoPas.setBoxMin({0., 0., 0.});
+  autoPas.setBoxMax({5., 5., 5.});
+  autoPas.setCutoff(1.);
+  autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
+  autoPas.init();
+
+  // after build this should be true
+  EXPECT_TRUE(autoPas.needsContainerUpdate());
+
+  // run once
+  MockFunctor<Particle, FPCell> emptyFunctor;
+  EXPECT_CALL(emptyFunctor, allowsNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(emptyFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
+  EXPECT_CALL(emptyFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
+  autoPas.iteratePairwise(&emptyFunctor);
+
+  // lc should always return true.
+  EXPECT_TRUE(autoPas.needsContainerUpdate());
 }

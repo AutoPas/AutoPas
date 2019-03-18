@@ -92,10 +92,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   FPCell cell1NoAVX(cell1AVX);
   FPCell cell2NoAVX(cell2AVX);
 
-  autopas::LJFunctor<Particle, FPCell, false, false> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner,
-                                                                    _highCorner);
-  autopas::LJFunctorAVX<Particle, FPCell, false, false> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner,
-                                                                     _highCorner);
+  autopas::LJFunctor<Particle, FPCell> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctorAVX<Particle, FPCell> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
 
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after copy initialization.";
@@ -138,10 +136,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   // copy cells
   FPCell cellNoAVX(cellAVX);
 
-  autopas::LJFunctor<Particle, FPCell, false, false> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner,
-                                                                    _highCorner);
-  autopas::LJFunctorAVX<Particle, FPCell, false, false> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner,
-                                                                     _highCorner);
+  autopas::LJFunctor<Particle, FPCell> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctorAVX<Particle, FPCell> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
 
