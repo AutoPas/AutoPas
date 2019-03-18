@@ -58,7 +58,7 @@ void fillSpaceWithGrid(Container &pc, std::array<double, 3> boxMin, std::array<d
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
   autopas::Logger::create();
   int maxIterations = 5;
   long numParticles = 10000;
@@ -73,11 +73,6 @@ int main() {
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.8, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
-
-  for (int i = 1; i < 33; ++i) {
-    MyMolecule m({(double)-i, 0, 0}, {0., 0., 0.}, static_cast<unsigned long>(i), i);
-    dir.addHaloParticle(m);
-  }
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
 

@@ -729,6 +729,83 @@ template void CudaWrapper::LinkedCellsTraversalN3Wrapper<double>(double* posX,
 		unsigned int cellSizes_size, size_t* cellSizes,
 		unsigned int offsets_size, int* offsets, cudaStream_t stream);
 
+template<typename floatType, int block_size>
+__global__
+void CellVerletNoN3(floatType* posX, floatType* posY, floatType* posZ,
+		floatType* forceX, floatType* forceY, floatType* forceZ,
+		unsigned int* cids, unsigned int others_size, unsigned int* other_ids) {
+
+	int own_cid = cids[blockIdx.x];
+	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+	typename vec3<floatType>::Type myposition = { getInfinity<floatType>(),
+			getInfinity<floatType>(), getInfinity<floatType>() };
+	typename vec3<floatType>::Type myf = { 0, 0, 0 };
+
+	int index = 32 * own_cid + threadIdx.x;
+	myposition.x = posX[index];
+	myposition.y = posY[index];
+	myposition.z = posZ[index];
+	//other cells
+	for (auto other_index = 0; other_index < others_size; ++other_index) {
+		const int cell2Start = 32 * other_ids[other_index];
+
+		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
+		__syncthreads();
+		for (int j = 0; j < block_size; ++j) {
+			myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
+		}
+		__syncthreads();
+	}
+	atomicAdd(forceX + index, myf.x);
+	atomicAdd(forceY + index, myf.y);
+	atomicAdd(forceZ + index, myf.z);
+}
+
+template<typename floatType, int block_size>
+__global__
+void CellVerletN3(floatType* posX, floatType* posY, floatType* posZ,
+		floatType* forceX, floatType* forceY, floatType* forceZ,
+		unsigned int* cids, unsigned int others_size, unsigned int* other_ids) {
+	const int mask = block_size - 1;
+
+	int own_cid = cids[blockIdx.x];
+	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+	__shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
+
+	typename vec3<floatType>::Type myposition = { getInfinity<floatType>(),
+			getInfinity<floatType>(), getInfinity<floatType>() };
+	typename vec3<floatType>::Type myf = { 0, 0, 0 };
+
+	int index = 32 * own_cid + threadIdx.x;
+	myposition.x = posX[index];
+	myposition.y = posY[index];
+	myposition.z = posZ[index];
+
+	//other cells
+	for (auto other_index = 0; other_index < others_size; ++other_index) {
+		const int cell2Start = 32 * other_ids[other_index];
+
+		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
+		cell2_forces_shared[threadIdx.x] = {0,0,0};
+		__syncthreads();
+		for (int j = 0; j < block_size; ++j) {
+			int offset = 0;
+			if ((block_size & (block_size - 1)) == 0) {
+				offset = (j + threadIdx.x) & mask;
+			} else {
+				offset = (j + threadIdx.x) % block_size;
+			}
+			myf = bodyBodyFN3<floatType, true>(myposition,
+					cell2_pos_shared[offset], myf,
+					cell2_forces_shared + offset);
+		}
+		__syncthreads();
+	}
+	atomicAdd(forceX + index, myf.x);
+	atomicAdd(forceY + index, myf.y);
+	atomicAdd(forceZ + index, myf.z);
+}
+
 template<typename floatType>
 void CudaWrapper::loadConstants(floatType cutoffsquare, floatType epsilon24,
 		floatType sigmasquare) {
