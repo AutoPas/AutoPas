@@ -377,9 +377,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     _numSamples = 0;
   } else {  // enough samples -> next config
     ++_currentConfig;
-    if (_currentConfig != _allowedConfigurations.end()) {
-      _numSamples = 0;
-    }
+    _numSamples = 0;
   }
 
   // repeat as long as traversals are not applicable or we run out of configs
@@ -408,10 +406,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: No applicable configurations found!");
     }
 
-    if (_numSamples >= _maxSamples) {
-      selectOptimalConfiguration();
-      stillTuning = false;
-    }
+    selectOptimalConfiguration();
+    stillTuning = false;
   }
 
   _containerSelector.selectContainer(_currentConfig->_container);
