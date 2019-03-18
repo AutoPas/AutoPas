@@ -77,15 +77,17 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild for first iteration.";
+  // Intended false positive
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
   autoTuner.iteratePairwise(&functor); // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   autoTuner.iteratePairwise(&functor); // DS NoN3
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because next container is the same.";
+  // Intended false positive
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
   autoTuner.iteratePairwise(&functor); // DS N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   autoTuner.iteratePairwise(&functor); // DS N3
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because next config has different container.";
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
   autoTuner.iteratePairwise(&functor); // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   autoTuner.iteratePairwise(&functor); // LC NoN3
@@ -152,11 +154,12 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild for first iteration.";
+  // Intended false positive
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect no rebuild for first iteration.";
   autoTuner.iteratePairwise(&functor); // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   autoTuner.iteratePairwise(&functor); // DS NoN3
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because next config has different container.";
+  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
   autoTuner.iteratePairwise(&functor); // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   autoTuner.iteratePairwise(&functor); // LC NoN3
