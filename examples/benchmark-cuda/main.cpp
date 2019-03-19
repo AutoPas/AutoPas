@@ -35,6 +35,9 @@ class MyMolecule : public Particle {
     cout << " myvar: " << _myvar << endl;
   }
 
+  // typedef autopas::utils::SoAType<size_t, float, float, float, float, float, float>::Type SoAArraysType;
+  // typedef autopas::utils::CudaSoAType<size_t, float, float, float, float, float, float>::Type CudaDeviceArraysType;
+
  private:
   int _myvar;
 };

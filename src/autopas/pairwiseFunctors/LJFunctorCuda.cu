@@ -731,7 +731,7 @@ template void CudaWrapper::LinkedCellsTraversalN3Wrapper<double>(double* posX,
 
 template<typename floatType, int block_size>
 __global__
-void CellVerletNoN3(floatType* posX, floatType* posY, floatType* posZ,
+void CellVerletTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 		floatType* forceX, floatType* forceY, floatType* forceZ,
 		unsigned int* cids, unsigned int others_size, unsigned int* other_ids) {
 
@@ -761,9 +761,50 @@ void CellVerletNoN3(floatType* posX, floatType* posY, floatType* posZ,
 	atomicAdd(forceZ + index, myf.z);
 }
 
+template<typename floatType>
+void CudaWrapper::CellVerletTraversalNoN3Wrapper(floatType* posX,
+		floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY,
+		floatType* forceZ, unsigned int cids_size, unsigned int* cids,
+		unsigned int others_size, unsigned int* other_ids,
+		cudaStream_t stream) {
+	switch (_num_threads) {
+	case 32:
+		CellVerletTraversalNoN3<floatType, 32> <<<cids_size, 32, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
+				other_ids);
+		break;
+	case 64:
+		CellVerletTraversalNoN3<floatType, 64> <<<cids_size, 64, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
+				other_ids);
+		break;
+	case 96:
+		CellVerletTraversalNoN3<floatType, 96> <<<cids_size, 96, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
+				other_ids);
+		break;
+	default:
+		autopas::utils::ExceptionHandler::exception(
+				"cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
+				_num_threads);
+		break;
+	}
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
+}
+
+template void CudaWrapper::CellVerletTraversalNoN3Wrapper<float>(float* posX,
+		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
+		unsigned int cids_size, unsigned int* cids, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream);
+
+template void CudaWrapper::CellVerletTraversalNoN3Wrapper<double>(double* posX,
+		double* posY, double* posZ, double* forceX, double* forceY,
+		double* forceZ, unsigned int cids_size, unsigned int* cids,
+		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
+
 template<typename floatType, int block_size>
 __global__
-void CellVerletN3(floatType* posX, floatType* posY, floatType* posZ,
+void CellVerletTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 		floatType* forceX, floatType* forceY, floatType* forceZ,
 		unsigned int* cids, unsigned int others_size, unsigned int* other_ids) {
 	const int mask = block_size - 1;
@@ -805,6 +846,47 @@ void CellVerletN3(floatType* posX, floatType* posY, floatType* posZ,
 	atomicAdd(forceY + index, myf.y);
 	atomicAdd(forceZ + index, myf.z);
 }
+
+template<typename floatType>
+void CudaWrapper::CellVerletTraversalN3Wrapper(floatType* posX, floatType* posY,
+		floatType* posZ, floatType* forceX, floatType* forceY,
+		floatType* forceZ, unsigned int cids_size, unsigned int* cids,
+		unsigned int others_size, unsigned int* other_ids,
+		cudaStream_t stream) {
+	switch (_num_threads) {
+	case 32:
+		CellVerletTraversalN3<floatType, 32> <<<cids_size, 32, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
+				other_ids);
+		break;
+	case 64:
+		CellVerletTraversalN3<floatType, 64> <<<cids_size, 64, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
+				other_ids);
+		break;
+	case 96:
+		CellVerletTraversalN3<floatType, 96> <<<cids_size, 96, 0, stream>>>(
+				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
+				other_ids);
+		break;
+	default:
+		autopas::utils::ExceptionHandler::exception(
+				"cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
+				_num_threads);
+		break;
+	}
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
+}
+
+template void CudaWrapper::CellVerletTraversalN3Wrapper<float>(float* posX,
+		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
+		unsigned int cids_size, unsigned int* cids, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream);
+
+template void CudaWrapper::CellVerletTraversalN3Wrapper<double>(double* posX,
+		double* posY, double* posZ, double* forceX, double* forceY,
+		double* forceZ, unsigned int cids_size, unsigned int* cids,
+		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
 
 template<typename floatType>
 void CudaWrapper::loadConstants(floatType cutoffsquare, floatType epsilon24,

@@ -30,8 +30,8 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    *
    * @param newton3
    */
-  template <typename ParticleType>
-  void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2, bool newton3 = false);
+  template <typename ParticleType, bool useNewton3>
+  void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2);
 
   /**
    * Checks equality of SoALoader, SoAFunctor and SoAExtractor.
@@ -42,8 +42,8 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    *
    * @param newton3
    */
-  template <typename ParticleType>
-  void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles, bool newton3 = false);
+  template <typename ParticleType, bool useNewton3>
+  void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles);
 
   /**
    * Checks that two non empty SoAs' particles are equal
