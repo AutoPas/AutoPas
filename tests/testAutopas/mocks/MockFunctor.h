@@ -92,11 +92,6 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD3_T(CudaFunctor,
                  void(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
                       autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3));
-
-  /*  MOCK_METHOD2_T(SoALoader, void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
-  MOCK_METHOD3_T(SoALoader,
-                 void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));*/
-
 #endif
 };
 

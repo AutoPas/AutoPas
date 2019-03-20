@@ -13,7 +13,7 @@
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
-#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -34,13 +34,6 @@ class VerletListsCells
   typedef FullParticleCell<Particle> ParticleCell;
   typedef typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
 
- private:
-  const std::vector<TraversalOptions>& VLCApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::slicedVerlet, TraversalOptions::c18Verlet,
-                                                 TraversalOptions::c01Verlet};
-    return v;
-  }
-
  public:
   /**
    * Constructor of the VerletListsCells class.
@@ -57,14 +50,25 @@ class VerletListsCells
    * @param buildTraversal the traversal used to build the verletlists
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOptions buildTraversal, const double skin = 0,
-                   const unsigned int rebuildFrequency = 1)
+                   const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                                            VLCApplicableTraversals()),
+                                                            allVLCApplicableTraversals()),
         _buildTraversal(buildTraversal),
         _verletBuiltNewton3(false) {}
 
-  ContainerOptions getContainerType() override { return ContainerOptions::verletListsCells; }
+  /**
+   * Lists all traversal options applicable for the Verlet Lists Cells container.
+   * @return Vector of all applicable traversal options.
+   */
+  static const std::vector<TraversalOption>& allVLCApplicableTraversals() {
+    static const std::vector<TraversalOption> v{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
+                                                TraversalOption::c01Verlet};
+    return v;
+  }
+
+  std::vector<TraversalOption> getAllTraversals() override { return allVLCApplicableTraversals(); }
+
+  ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
 
   /**
    * Function to iterate over all pairs of particles.
@@ -114,14 +118,8 @@ class VerletListsCells
     iteratePairwiseAoS(f, traversal, useNewton3);
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    std::vector<TraversalOptions> allowedAndApplicable;
-
-    std::sort(traversalOptions.begin(), traversalOptions.end());
-    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
-                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
-
-    return TraversalSelector<ParticleCell>(this->getCellsPerDimension(), allowedAndApplicable);
+  TraversalSelector<ParticleCell> generateTraversalSelector() override {
+    return TraversalSelector<ParticleCell>(this->getCellsPerDimension());
   }
 
   /**
@@ -247,7 +245,7 @@ class VerletListsCells
   std::unordered_map<Particle*, std::pair<size_t, size_t>> _cellMap;
 
   // the traversal used to build the verletlists
-  TraversalOptions _buildTraversal;
+  TraversalOption _buildTraversal;
 
   // specifies if the current verlet list was built for newton3
   bool _verletBuiltNewton3;

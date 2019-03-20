@@ -22,17 +22,17 @@ class MDFlexParser {
   MDFlexParser() = default;
 
   double getBoxLength();
-  std::vector<autopas::ContainerOptions> getContainerOptions() const;
-  autopas::SelectorStrategy getContainerSelectorStrategy() const;
+  std::vector<autopas::ContainerOption> getContainerOptions() const;
+  autopas::SelectorStrategy getSelectorStrategy() const;
   double getCutoff() const;
-  autopas::DataLayoutOption getDataLayoutOption() const;
+  vector<autopas::DataLayoutOption> getDataLayoutOptions() const;
   double getDistributionMean() const;
   double getDistributionStdDev() const;
   FunctorOption getFunctorOption() const;
   GeneratorOption getGeneratorOption() const;
   size_t getIterations() const;
   bool getMeasureFlops() const;
-  bool getNewton3() const;
+  std::vector<autopas::Newton3Option> getNewton3Options() const;
   spdlog::level::level_enum getLogLevel() const;
   double getParticleSpacing() const;
   size_t getParticlesTotal() const;
@@ -40,8 +40,7 @@ class MDFlexParser {
   unsigned int getTuningInterval() const;
   unsigned int getTuningSamples() const;
   string getWriteVTK() const;
-  const vector<autopas::TraversalOptions> &getTraversalOptions() const;
-  autopas::SelectorStrategy getTraversalSelectorStrategy() const;
+  const vector<autopas::TraversalOption> &getTraversalOptions() const;
   unsigned int getVerletRebuildFrequency() const;
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
@@ -51,11 +50,11 @@ class MDFlexParser {
   static constexpr size_t valueOffset = 32;
 
   // defaults:
-  std::vector<autopas::ContainerOptions> containerOptions = autopas::allContainerOptions;
-  autopas::SelectorStrategy containerSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
-  autopas::DataLayoutOption dataLayoutOption = autopas::DataLayoutOption::soa;
-  std::vector<autopas::TraversalOptions> traversalOptions = autopas::allTraversalOptions;
-  autopas::SelectorStrategy traversalSelectorStrategy = autopas::SelectorStrategy::fastestAbs;
+  std::vector<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
+  autopas::SelectorStrategy selectorStrategy = autopas::SelectorStrategy::fastestAbs;
+  std::vector<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
+  std::vector<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
+  std::vector<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
 
  private:
   double boxLength = -1;
@@ -67,7 +66,6 @@ class MDFlexParser {
   size_t iterations = 10;
   spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
-  bool newton3 = true;
   size_t particlesPerDim = 20;
   size_t particlesTotal = 1000;
   double particleSpacing = .4;

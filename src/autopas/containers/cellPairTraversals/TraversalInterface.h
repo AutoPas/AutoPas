@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "autopas/options/TraversalOptions.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
 
@@ -24,13 +25,19 @@ class TraversalInterface {
    * Return a enum representing the name of the traversal class.
    * @return Enum representing traversal.
    */
-  virtual TraversalOptions getTraversalType() = 0;
+  virtual TraversalOption getTraversalType() = 0;
 
   /**
    * Checks if the traversal is applicable to the current state of the domain.
    * @return true iff the traversal can be applied.
    */
   virtual bool isApplicable() = 0;
+
+  /**
+   * Returns the data Layout that has to be present in order to use the Traversal
+   * @return Required DataLayout
+   */
+  //virtual DataLayoutOption requiredDataLayout() = 0;
 };
 
 }  // namespace autopas

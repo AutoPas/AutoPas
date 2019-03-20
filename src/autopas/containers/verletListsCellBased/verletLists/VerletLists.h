@@ -10,7 +10,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
-#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -35,13 +35,6 @@ class VerletLists
   typedef FullParticleCell<Particle> ParticleCell;
   typedef typename VerletListHelpers<Particle>::SoAArraysType SoAArraysType;
   typedef typename VerletListHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
-
- private:
-  static const std::vector<TraversalOptions>& VLApplicableTraversals() {
-    // @todo: implement some traversals for this
-    static const std::vector<TraversalOptions> v{};
-    return v;
-  }
 
  public:
   /**
@@ -79,13 +72,15 @@ class VerletLists
    * Lists all traversal options applicable for the Verlet Lists container.
    * @return Vector of all applicable traversal options.
    */
-  static const std::vector<TraversalOptions>& allVLApplicableTraversals() {
+  static const std::vector<TraversalOption>& allVLApplicableTraversals() {
     // @FIXME This is a workaround because this container does not yet use traversals like it should
-    static const std::vector<TraversalOptions> v{TraversalOptions::dummyTraversal};
+    static const std::vector<TraversalOption> v{TraversalOption::dummyTraversal};
     return v;
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::verletLists; }
+  std::vector<TraversalOption> getAllTraversals() override { return allVLApplicableTraversals(); }
+
+  ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -180,15 +175,9 @@ class VerletLists
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    //    std::vector<TraversalOptions> allowedAndApplicable;
-    //
-    //    std::sort(traversalOptions.begin(), traversalOptions.end());
-    //    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
-    //    traversalOptions.begin(),
-    //                          traversalOptions.end(), std::back_inserter(allowedAndApplicable));
+  TraversalSelector<ParticleCell> generateTraversalSelector() override {
     // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
-    return TraversalSelector<ParticleCell>({0, 0, 0}, {dummyTraversal});
+    return TraversalSelector<ParticleCell>({0, 0, 0});
   }
 
   /**

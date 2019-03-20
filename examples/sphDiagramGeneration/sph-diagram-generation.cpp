@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
       boxMin, boxMax, cutoff);
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(
-      boxMin, boxMax, cutoff, autopas::TraversalOptions::c08, skin * cutoff, rebuildFrequency);
+      boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff, rebuildFrequency);
 
   addParticles(lcCont, numParticles);
 
@@ -195,7 +195,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   autopas::CellPairTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>> *traversal;
 
   switch (cont->getContainerType()) {
-    case autopas::ContainerOptions::linkedCells: {
+    case autopas::ContainerOption::linkedCells: {
       auto dims =
           dynamic_cast<
               autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(
@@ -214,12 +214,13 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
       break;
     }
-    case autopas::ContainerOptions::directSum: {
+
+    case autopas::ContainerOption::directSum: {
       traversal = new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
                                                   autopas::DataLayoutOption::aos, false>(func);
       break;
     }
-    case autopas::ContainerOptions::verletListsCells: {
+    case autopas::ContainerOption::verletListsCells: {
       auto dims = dynamic_cast<autopas::VerletListsCells<autopas::sph::SPHParticle> *>(cont)->getCellsPerDimension();
       std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
 

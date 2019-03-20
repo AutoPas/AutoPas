@@ -7,6 +7,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <testingHelpers/commonTypedefs.h>
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
@@ -16,9 +17,14 @@
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */
-class Newton3OnOffTest : public AutoPasTestBase {
+class Newton3OnOffTest : public AutoPasTestBase,
+                         public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {
  public:
-  Newton3OnOffTest() : mockFunctor(), autoPas() {}
+  Newton3OnOffTest() : mockFunctor() {}
+
+  void SetUp() override {}
+
+  void TearDown() override {}
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 
@@ -28,8 +34,12 @@ class Newton3OnOffTest : public AutoPasTestBase {
   double getVerletSkin() const { return 0.0; }
   unsigned int getVerletRebuildFrequency() const { return 1; }
 
- protected:
- public:
-  MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> mockFunctor;
-  autopas::AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
+  void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
+                         autopas::DataLayoutOption dataLayout);
+
+  template <class ParticleFunctor, class Container, class Traversal>
+  void iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
+               autopas::Newton3Option newton3, ParticleFunctor *f);
+
+  MockFunctor<Particle, FPCell> mockFunctor;
 };

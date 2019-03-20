@@ -41,7 +41,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    */
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const unsigned int rebuildFrequency,
-                        const std::vector<TraversalOptions>& applicableTraversals)
+                        const std::vector<TraversalOption>& applicableTraversals)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
         _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),

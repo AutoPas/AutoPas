@@ -1,5 +1,5 @@
 /**
- * @file DataLayoutOptions.h
+ * @file DataLayoutOption.h
  * @author F. Gratl
  * @date 1/18/19
  */

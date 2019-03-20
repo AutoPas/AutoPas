@@ -52,7 +52,7 @@ class ParticleContainerInterface {
    * Return a enum representing the name of the container class.
    * @return Enum representing the container.
    */
-  virtual ContainerOptions getContainerType() = 0;
+  virtual ContainerOption getContainerType() = 0;
 
   /**
    * Adds a particle to the container.
@@ -155,10 +155,18 @@ class ParticleContainerInterface {
 
   /**
    * Generates a traversal selector for this container type.
-   * @param traversalOptions vector of traversal options that shall be allowed.
    * @return Traversal selector for this container type.
    */
-  virtual TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) = 0;
+  virtual TraversalSelector<ParticleCell> generateTraversalSelector() = 0;
+
+  /**
+   * Generates a list of all traversals that are theoretically applicable to this container.
+   *
+   * Traversals might still be not applicable for other reasons so call traversal.isApplicable to be safe!
+   *
+   * @return Vector of traversal options.
+   */
+  virtual std::vector<TraversalOption> getAllTraversals() = 0;
 };
 
 }  // namespace autopas

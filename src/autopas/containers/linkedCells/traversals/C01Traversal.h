@@ -8,7 +8,7 @@
 
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
-#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 namespace autopas {
@@ -52,7 +52,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
-  TraversalOptions getTraversalType() override { return TraversalOptions::c01; }
+  TraversalOption getTraversalType() override { return TraversalOption::c01; }
 
  private:
   /**

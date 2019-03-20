@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "mocks/MockFunctor.h"
 
 // a place for typedefs that are commonly used in tests

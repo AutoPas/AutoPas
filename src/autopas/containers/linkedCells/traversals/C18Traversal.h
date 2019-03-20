@@ -8,7 +8,7 @@
 
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
-#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -58,7 +58,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
-  TraversalOptions getTraversalType() override { return TraversalOptions::c18; }
+  TraversalOption getTraversalType() override { return TraversalOption::c18; }
 
  private:
   /**

@@ -15,7 +15,7 @@ TEST_F(VerletListsCellsTest, VerletListConstructor) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOptions::c18, skin);
+  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOption::c18, skin);
 }
 
 TEST_F(VerletListsCellsTest, testVerletListBuild) {
@@ -23,7 +23,7 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOptions::c18, skin);
+  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOption::c18, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -55,7 +55,7 @@ TEST_F(VerletListsCellsTest, testVerletList) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOptions::c18, skin);
+  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOption::c18, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);

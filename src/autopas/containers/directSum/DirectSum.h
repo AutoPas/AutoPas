@@ -45,18 +45,20 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * Lists all traversal options applicable for the Direct Sum container.
    * @return Vector of all applicable traversal options.
    */
-  static const std::vector<TraversalOptions> &allDSApplicableTraversals() {
-    static const std::vector<TraversalOptions> v{TraversalOptions::directSumTraversal};
+  static const std::vector<TraversalOption> &allDSApplicableTraversals() {
+    static const std::vector<TraversalOption> v{TraversalOption::directSumTraversal};
     return v;
   }
 
-  ContainerOptions getContainerType() override { return ContainerOptions::directSum; }
+  std::vector<TraversalOption> getAllTraversals() override { return allDSApplicableTraversals(); }
+
+  ContainerOption getContainerType() override { return ContainerOption::directSum; }
 
   void addParticle(Particle &p) override {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getCell()->addParticle(p);
     } else {
-      utils::ExceptionHandler::exception("DirectSum: trying to add particle that is not in the bounding box.\n" +
+      utils::ExceptionHandler::exception("DirectSum: trying to add a particle that is not in the bounding box.\n" +
                                          p.toString());
     }
   }
@@ -66,7 +68,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
       getHaloCell()->addParticle(p);
     } else {  // particle is not outside of own box
       utils::ExceptionHandler::exception(
-          "DirectSum: trying to add particle that is not OUTSIDE of the "
+          "DirectSum: trying to add a halo particle that is not OUTSIDE of the "
           "bounding box.\n" +
           p.toString());
     }
@@ -79,12 +81,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with AoS", utils::StringUtils::to_string(traversal->getTraversalType()));
     if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::iteratePairwiseAoS");
+          "Trying to use a traversal of wrong type in DirectSum::iteratePairwiseAoS");
     }
   }
 
@@ -93,15 +94,14 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    AutoPasLog(debug, "Using traversal {} with SoA ", utils::StringUtils::to_string(traversal->getTraversalType()))
-        f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
+    f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
     f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 
     if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::iteratePairwiseSoA");
+          "Trying to use a traversal of wrong type in DirectSum::iteratePairwiseSoA");
     }
 
     f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
@@ -167,14 +167,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector(std::vector<TraversalOptions> traversalOptions) override {
-    std::vector<TraversalOptions> allowedAndApplicable;
-
-    std::sort(traversalOptions.begin(), traversalOptions.end());
-    std::set_intersection(this->_applicableTraversals.begin(), this->_applicableTraversals.end(),
-                          traversalOptions.begin(), traversalOptions.end(), std::back_inserter(allowedAndApplicable));
+  TraversalSelector<ParticleCell> generateTraversalSelector() override {
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelector<ParticleCell>({2, 0, 0}, allowedAndApplicable);
+    return TraversalSelector<ParticleCell>({2, 0, 0});
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

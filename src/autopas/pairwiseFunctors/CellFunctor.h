@@ -8,7 +8,7 @@
 #pragma once
 
 #include "autopas/iterators/SingleCellIterator.h"
-#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {

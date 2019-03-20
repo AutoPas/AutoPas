@@ -12,7 +12,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   int option, option_index;
   static struct option long_options[] = {{"box-length", required_argument, nullptr, 'b'},
                                          {"container", required_argument, nullptr, 'c'},
-                                         {"container-selector-strategy", required_argument, nullptr, 'k'},
+                                         {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"cutoff", required_argument, nullptr, 'C'},
                                          {"distribution-mean", required_argument, nullptr, 'm'},
                                          {"distribution-stddeviation", required_argument, nullptr, 'z'},
@@ -21,13 +21,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"help", no_argument, nullptr, 'h'},
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
-                                         {"no-newton3", no_argument, nullptr, '3'},
+                                         {"newton3", required_argument, nullptr, '3'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
-                                         {"traversal-selector-strategy", required_argument, nullptr, 'T'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
                                          {"log-level", required_argument, nullptr, 'l'},
@@ -41,7 +40,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
       case '3': {
-        newton3 = false;
+        newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
+        if (newton3Options.empty()) {
+          cerr << "Unknown Newton3 option: " << strArg << endl;
+          cerr << "Please use 'enabled' or 'disabled'!" << endl;
+          displayHelp = true;
+        }
         break;
       }
       case 'b': {
@@ -73,9 +77,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'd': {
-        dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(strArg);
-        if (dataLayoutOption == autopas::DataLayoutOption(-1)) {
-          cerr << "Unknown data layout : " << strArg << endl;
+        dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(strArg);
+        if (dataLayoutOptions.empty()) {
+          cerr << "Unknown data layouts: " << strArg << endl;
           cerr << "Please use 'AoS' or 'SoA'!" << endl;
           displayHelp = true;
         }
@@ -87,7 +91,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
           functorOption = lj12_6;
         } else {
-          cerr << "Unknown functor : " << strArg << endl;
+          cerr << "Unknown functor: " << strArg << endl;
           cerr << "Please use 'Lennard-Jones' or 'Lennard-Jones-AVX'" << endl;
           displayHelp = true;
         }
@@ -105,7 +109,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         } else if (strArg.find("gaus") != string::npos) {
           generatorOption = GeneratorOption::gaussian;
         } else {
-          cerr << "Unknown generator : " << strArg << endl;
+          cerr << "Unknown generator: " << strArg << endl;
           cerr << "Please use 'Grid' or 'Gaussian'" << endl;
           displayHelp = true;
         }
@@ -141,10 +145,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-      case 'k': {
-        containerSelectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (containerSelectorStrategy == autopas::SelectorStrategy(-1)) {
-          cerr << "Unknown Container Selector Strategy: " << strArg << endl;
+      case 'y': {
+        selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
+        if (selectorStrategy == autopas::SelectorStrategy(-1)) {
+          cerr << "Unknown Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
         }
@@ -181,7 +185,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             break;
           }
           default: {
-            cerr << "Unknown Log Level : " << strArg << endl;
+            cerr << "Unknown Log Level: " << strArg << endl;
             cerr << "Please use 'trace', 'debug', 'info', 'warning', 'error', 'critical' or 'off'." << endl;
             displayHelp = true;
           }
@@ -240,17 +244,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       case 't': {
         traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
-          cerr << "Unknown Traversal : " << strArg << endl;
+          cerr << "Unknown Traversal: " << strArg << endl;
           cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
-          displayHelp = true;
-        }
-        break;
-      }
-      case 'T': {
-        traversalSelectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (traversalSelectorStrategy == autopas::SelectorStrategy(-1)) {
-          cerr << "Unknown Traversal Selector Strategy: " << strArg << endl;
-          cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
         }
         break;
@@ -305,18 +300,24 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
+template <class T>
+std::string iterableToString(T arr) {
+  std::ostringstream ss;
+  for (auto a : arr) {
+    ss << autopas::utils::StringUtils::to_string(a) << ", ";
+  }
+  // deletes last comma
+  ss << "\b\b";
+  return ss.str();
+}
+
 void MDFlexParser::printConfig() {
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
-       << ":  ";
-  for (auto &op : containerOptions) {
-    cout << autopas::utils::StringUtils::to_string(op) << ", ";
-  }
-  // deletes last comma
-  cout << "\b\b  " << endl;
+       << ":  " << iterableToString(containerOptions) << endl;
 
   // if verlet lists are in the container options print verlet config data
-  if (find(containerOptions.begin(), containerOptions.end(), autopas::ContainerOptions::verletLists) !=
+  if (find(containerOptions.begin(), containerOptions.end(), autopas::ContainerOption::verletLists) !=
       containerOptions.end()) {
     cout << setw(valueOffset) << left << "Verlet rebuild frequency"
          << ":  " << verletRebuildFrequency << endl;
@@ -325,13 +326,13 @@ void MDFlexParser::printConfig() {
          << ":  " << verletSkinRadius << endl;
   }
 
-  if (containerOptions.size() > 1) {
-    cout << setw(valueOffset) << left << "Container Selector Strategy"
-         << ":  " << autopas::utils::StringUtils::to_string(containerSelectorStrategy) << endl;
+  if (containerOptions.size() > 1 or traversalOptions.size() > 1 or dataLayoutOptions.size() > 1) {
+    cout << setw(valueOffset) << left << "Selector Strategy"
+         << ":  " << autopas::utils::StringUtils::to_string(selectorStrategy) << endl;
   }
 
   cout << setw(valueOffset) << left << "Data Layout"
-       << ":  " << autopas::utils::StringUtils::to_string(dataLayoutOption) << endl;
+       << ":  " << iterableToString(dataLayoutOptions) << endl;
 
   cout << setw(valueOffset) << left << "Functor"
        << ":  ";
@@ -347,7 +348,7 @@ void MDFlexParser::printConfig() {
   }
 
   cout << setw(valueOffset) << left << "Newton3"
-       << ":  " << (newton3 ? "On" : "Off") << endl;
+       << ":  " << iterableToString(newton3Options) << endl;
 
   cout << setw(valueOffset) << left << "Cutoff radius"
        << ":  " << cutoff << endl;
@@ -393,17 +394,7 @@ void MDFlexParser::printConfig() {
   }
 
   cout << setw(valueOffset) << left << "Allowed traversals"
-       << ":  ";
-  for (auto &t : traversalOptions) {
-    cout << autopas::utils::StringUtils::to_string(t) << ", ";
-  }
-  // deletes last comma
-  cout << "\b\b  " << endl;
-
-  if (traversalOptions.size() > 1) {
-    cout << setw(valueOffset) << left << "Traversal Selector Strategy"
-         << ":  " << autopas::utils::StringUtils::to_string(traversalSelectorStrategy) << endl;
-  }
+       << ":  " << iterableToString(traversalOptions) << endl;
 
   cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
@@ -413,11 +404,11 @@ void MDFlexParser::printConfig() {
        << ":  " << tuningSamples << endl;
 }
 
-std::vector<autopas::ContainerOptions> MDFlexParser::getContainerOptions() const { return containerOptions; }
+std::vector<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 
-autopas::DataLayoutOption MDFlexParser::getDataLayoutOption() const { return dataLayoutOption; }
+vector<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
 
 MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const { return functorOption; }
 
@@ -429,7 +420,7 @@ double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
 
 size_t MDFlexParser::getParticlesTotal() const { return particlesTotal; }
 
-const vector<autopas::TraversalOptions> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
+const vector<autopas::TraversalOption> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
 
 unsigned int MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
@@ -456,8 +447,6 @@ unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 
-autopas::SelectorStrategy MDFlexParser::getTraversalSelectorStrategy() const { return traversalSelectorStrategy; }
+autopas::SelectorStrategy MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
 
-autopas::SelectorStrategy MDFlexParser::getContainerSelectorStrategy() const { return containerSelectorStrategy; }
-
-bool MDFlexParser::getNewton3() const { return newton3; }
+std::vector<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }

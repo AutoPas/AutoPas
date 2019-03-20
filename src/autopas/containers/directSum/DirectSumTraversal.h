@@ -9,7 +9,7 @@
 #include <vector>
 #include "DirectSumTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/options/DataLayoutOptions.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
@@ -37,7 +37,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
         _cellFunctor(CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout,
                                  useNewton3, true>(pairwiseFunctor)) {}
 
-  TraversalOptions getTraversalType() override { return TraversalOptions::directSumTraversal; }
+  TraversalOption getTraversalType() override { return TraversalOption::directSumTraversal; }
 
   bool isApplicable() override {
 #if defined(AUTOPAS_CUDA)

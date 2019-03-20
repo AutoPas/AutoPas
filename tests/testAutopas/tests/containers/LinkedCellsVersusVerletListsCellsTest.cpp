@@ -7,7 +7,7 @@
 #include "LinkedCellsVersusVerletListsCellsTest.h"
 
 LinkedCellsVersusVerletListsCellsTest::LinkedCellsVersusVerletListsCellsTest()
-    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOptions::c18, 0.1 * getCutoff(), 2),
+    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(), 2),
       _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
 
 void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, double rel_err_tolerance) {

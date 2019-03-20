@@ -8,10 +8,11 @@
 
 #include <string>
 #include <vector>
-#include "autopas/options/ContainerOptions.h"
-#include "autopas/options/DataLayoutOptions.h"
-#include "autopas/options/SelectorStrategies.h"
-#include "autopas/options/TraversalOptions.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/SelectorStrategie.h"
+#include "autopas/options/TraversalOption.h"
 
 namespace autopas {
 namespace utils {
@@ -21,11 +22,29 @@ namespace utils {
 namespace StringUtils {
 
 /**
+ * Converts a Newton3Option to its respective string representation.
+ * @param option
+ * @return The string representation or "Unknown option (<IntValue>)".
+ */
+inline std::string to_string(const Newton3Option &option) {
+  switch (option) {
+    case autopas::Newton3Option::enabled: {
+      return "enabled";
+    }
+    case autopas::Newton3Option::disabled: {
+      return "disabled";
+    }
+  }
+  // do not implement default case to provoke compiler warnings if new options are introduced.
+  return "Unknown option (" + std::to_string(option) + ")";
+}
+
+/**
  * Converts a SelectorStrategy to its respective string representation.
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(autopas::SelectorStrategy option) {
+inline std::string to_string(const autopas::SelectorStrategy &option) {
   switch (option) {
     case autopas::SelectorStrategy::fastestAbs: {
       return "Fastest-Absolute-Value";
@@ -46,7 +65,7 @@ inline std::string to_string(autopas::SelectorStrategy option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(DataLayoutOption option) {
+inline std::string to_string(const DataLayoutOption &option) {
   switch (option) {
     case autopas::DataLayoutOption::aos: {
       return "Array-of-Structures";
@@ -67,21 +86,21 @@ inline std::string to_string(DataLayoutOption option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(ContainerOptions option) {
+inline std::string to_string(const ContainerOption &option) {
   switch (option) {
-    case autopas::ContainerOptions::directSum: {
+    case autopas::ContainerOption::directSum: {
       return "DirectSum";
     }
-    case autopas::ContainerOptions::linkedCells: {
+    case autopas::ContainerOption::linkedCells: {
       return "LinkedCells";
     }
-    case autopas::ContainerOptions::verletLists: {
+    case autopas::ContainerOption::verletLists: {
       return "VerletLists";
     }
-    case autopas::ContainerOptions::verletListsCells: {
+    case autopas::ContainerOption::verletListsCells: {
       return "VerletListsCells";
     }
-    case autopas::ContainerOptions::verletClusterLists: {
+    case autopas::ContainerOption::verletClusterLists: {
       return "VerletClusterLists";
     }
   }
@@ -94,36 +113,36 @@ inline std::string to_string(ContainerOptions option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(TraversalOptions option) {
+inline std::string to_string(const TraversalOption &option) {
   switch (option) {
-    case autopas::TraversalOptions::dummyTraversal: {
+    case autopas::TraversalOption::dummyTraversal: {
       return "dummyTraversal";
     }
-    case autopas::TraversalOptions::c01: {
+    case autopas::TraversalOption::c01: {
       return "c01";
     }
-    case autopas::TraversalOptions::c08: {
+    case autopas::TraversalOption::c08: {
       return "c08";
     }
-    case autopas::TraversalOptions::c18: {
+    case autopas::TraversalOption::c18: {
       return "c18";
     }
-    case autopas::TraversalOptions::sliced: {
+    case autopas::TraversalOption::sliced: {
       return "sliced";
     }
-    case autopas::TraversalOptions::directSumTraversal: {
+    case autopas::TraversalOption::directSumTraversal: {
       return "directSum";
     }
-    case autopas::TraversalOptions::c01Verlet: {
+    case autopas::TraversalOption::c01Verlet: {
       return "verlet-c01";
     }
-    case autopas::TraversalOptions::c18Verlet: {
+    case autopas::TraversalOption::c18Verlet: {
       return "verlet-c18";
     }
-    case autopas::TraversalOptions::slicedVerlet: {
+    case autopas::TraversalOption::slicedVerlet: {
       return "verlet-sliced";
     }
-    case autopas::TraversalOptions::c01Cuda: {
+    case autopas::TraversalOption::c01Cuda: {
       return "cuda-c01";
     }
   }
@@ -159,43 +178,77 @@ inline std::vector<std::string> tokenize(const std::string &searchString, const 
  * Converts a string of options to a vector of enums. The options are expected to be lower case.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
+ * Possible options: enabled, disabled
+ *
+ * @param newton3OptionsString String containing newton3 options.
+ * @param ignoreUnknownOptions If set to false, a 'autopas::Newton3Option(-1)' will be inserted in the return vector
+ * for each not parsable word.
+ * @return Vector of Newton3Option enums. If no valid option was found and unknown options are ignored
+ * the empty vector is returned.
+ */
+inline std::vector<autopas::Newton3Option> parseNewton3Options(const std::string &newton3OptionsString,
+                                                               bool ignoreUnknownOptions = true) {
+  std::vector<autopas::Newton3Option> newton3Options;
+
+  auto words = tokenize(newton3OptionsString, delimiters);
+
+  for (auto &word : words) {
+    if (word.find("on") != std::string::npos or word.find("true") != std::string::npos or
+        word.find("enable") != std::string::npos) {
+      newton3Options.emplace_back(Newton3Option::enabled);
+    } else if (word.find("of") != std::string::npos or word.find("false") != std::string::npos or
+               word.find("disable") != std::string::npos) {
+      newton3Options.emplace_back(Newton3Option::disabled);
+    } else if (not ignoreUnknownOptions) {
+      newton3Options.emplace_back(autopas::Newton3Option(-1));
+    }
+  }
+
+  return newton3Options;
+}
+
+/**
+ * Converts a string of options to a vector of enums. The options are expected to be lower case.
+ * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
+ *
  * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced
  *
  * @param traversalOptionsString String containing traversal options.
- * @param ignoreUnknownOptions If set to false, a 'autopas::TraversalOptions(-1)' will be inserted in the return vector
+ * @param ignoreUnknownOptions If set to false, a 'autopas::TraversalOption(-1)' will be inserted in the return vector
  * for each not parsable word.
- * @return Vector of TraversalOption enums. If no valid option was found the empty vector is returned.
+ * @return Vector of TraversalOption enums. If no valid option was found and unknown options are ignored the empty
+ * vector is returned.
  */
-inline std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::string &traversalOptionsString,
-                                                                    bool ignoreUnknownOptions = true) {
-  std::vector<autopas::TraversalOptions> traversalOptions;
+inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::string &traversalOptionsString,
+                                                                   bool ignoreUnknownOptions = true) {
+  std::vector<autopas::TraversalOption> traversalOptions;
 
   auto words = tokenize(traversalOptionsString, delimiters);
 
   for (auto &word : words) {
     if (word.find("01") != std::string::npos) {
       if (word.find("cuda") != std::string::npos) {
-        traversalOptions.emplace_back(autopas::TraversalOptions::c01Cuda);
+        traversalOptions.emplace_back(autopas::TraversalOption::c01Cuda);
       } else if (word.find('v') != std::string::npos)
-        traversalOptions.emplace_back(autopas::TraversalOptions::c01Verlet);
+        traversalOptions.emplace_back(autopas::TraversalOption::c01Verlet);
       else
-        traversalOptions.emplace_back(autopas::TraversalOptions::c01);
+        traversalOptions.emplace_back(autopas::TraversalOption::c01);
     } else if (word.find("c08") != std::string::npos) {
-      traversalOptions.emplace_back(autopas::TraversalOptions::c08);
+      traversalOptions.emplace_back(autopas::TraversalOption::c08);
     } else if (word.find("18") != std::string::npos) {
       if (word.find('v') != std::string::npos)
-        traversalOptions.emplace_back(autopas::TraversalOptions::c18Verlet);
+        traversalOptions.emplace_back(autopas::TraversalOption::c18Verlet);
       else
-        traversalOptions.emplace_back(autopas::TraversalOptions::c18);
+        traversalOptions.emplace_back(autopas::TraversalOption::c18);
     } else if (word.find("dir") != std::string::npos) {
-      traversalOptions.emplace_back(autopas::TraversalOptions::directSumTraversal);
+      traversalOptions.emplace_back(autopas::TraversalOption::directSumTraversal);
     } else if (word.find("sli") != std::string::npos) {
       if (word.find('v') != std::string::npos)
-        traversalOptions.emplace_back(autopas::TraversalOptions::slicedVerlet);
+        traversalOptions.emplace_back(autopas::TraversalOption::slicedVerlet);
       else
-        traversalOptions.emplace_back(autopas::TraversalOptions::sliced);
+        traversalOptions.emplace_back(autopas::TraversalOption::sliced);
     } else if (not ignoreUnknownOptions) {
-      traversalOptions.emplace_back(autopas::TraversalOptions(-1));
+      traversalOptions.emplace_back(autopas::TraversalOption(-1));
     }
   }
   return traversalOptions;
@@ -208,31 +261,32 @@ inline std::vector<autopas::TraversalOptions> parseTraversalOptions(const std::s
  * Possible options: directSum, linkedCells, verletLists, vcells, vcluster
  *
  * @param containerOptionsString String containing container options.
- * @param ignoreUnknownOptions If set to false, a 'autopas::ContainerOptions(-1)' will be inserted in the return vector
+ * @param ignoreUnknownOptions If set to false, a 'autopas::ContainerOption(-1)' will be inserted in the return vector
  * for each not parsable word.
- * @return Vector of ContainerOption enums. If no valid option was found the empty vector is returned.
+ * @return Vector of ContainerOption enums. If no valid option was found and unknown options are ignored the empty
+ * vector is returned.
  */
-inline std::vector<autopas::ContainerOptions> parseContainerOptions(const std::string &containerOptionsString,
-                                                                    bool ignoreUnknownOptions = true) {
-  std::vector<autopas::ContainerOptions> containerOptions;
+inline std::vector<autopas::ContainerOption> parseContainerOptions(const std::string &containerOptionsString,
+                                                                   bool ignoreUnknownOptions = true) {
+  std::vector<autopas::ContainerOption> containerOptions;
 
   auto words = tokenize(containerOptionsString, delimiters);
 
   for (auto &word : words) {
     if (word.find("dir") != std::string::npos or word.find("ds") != std::string::npos) {
-      containerOptions.emplace_back(autopas::ContainerOptions::directSum);
+      containerOptions.emplace_back(autopas::ContainerOption::directSum);
     } else if (word.find("linked") != std::string::npos or word.find("lc") != std::string::npos) {
-      containerOptions.emplace_back(autopas::ContainerOptions::linkedCells);
+      containerOptions.emplace_back(autopas::ContainerOption::linkedCells);
     } else if (word.find('v') != std::string::npos) {
       if (word.find("cl") != std::string::npos) {
-        containerOptions.emplace_back(autopas::ContainerOptions::verletClusterLists);
+        containerOptions.emplace_back(autopas::ContainerOption::verletClusterLists);
       } else if (word.find("cel") != std::string::npos) {
-        containerOptions.emplace_back(autopas::ContainerOptions::verletListsCells);
+        containerOptions.emplace_back(autopas::ContainerOption::verletListsCells);
       } else {
-        containerOptions.emplace_back(autopas::ContainerOptions::verletLists);
+        containerOptions.emplace_back(autopas::ContainerOption::verletLists);
       }
     } else if (not ignoreUnknownOptions) {
-      containerOptions.emplace_back(autopas::ContainerOptions(-1));
+      containerOptions.emplace_back(autopas::ContainerOption(-1));
     }
   }
 
@@ -267,23 +321,32 @@ inline autopas::SelectorStrategy parseSelectorStrategy(const std::string &select
  *
  * Possible options: aos, soa
  *
- * @param dataLayoutString String containing the data layout option.
- * @return An enum representing the data layout. If no valid option was found 'autopas::DataLayoutOption(-1)' is
- * returned.
+
+ * @param dataLayoutsSting String containing the data layout option.
+ * @param ignoreUnknownOptions If set to false, a 'autopas::DataLayoutOption(-1)' will be inserted in the return vector
+ * for each not parsable word.
+ * @return An enum representing the data layout. If no valid option was found and unknown options are ignored the empty
+ * vector is returned.
  */
-inline autopas::DataLayoutOption parseDataLayout(const std::string &dataLayoutString) {
+inline std::vector<autopas::DataLayoutOption> parseDataLayout(const std::string &dataLayoutsSting,
+                                                              bool ignoreUnknownOptions = true) {
+  auto words = tokenize(dataLayoutsSting, delimiters);
+
   // hack to initialize the enum out of range as an error value.
-  auto dataLayout(autopas::DataLayoutOption(-1));
-  if (dataLayoutString.find("aos") != std::string::npos or
-      dataLayoutString.find("array-of-struct") != std::string::npos) {
-    dataLayout = autopas::DataLayoutOption::aos;
-  } else if (dataLayoutString.find("soa") != std::string::npos or
-             dataLayoutString.find("-of-array") != std::string::npos) {
-    dataLayout = autopas::DataLayoutOption::soa;
-  } else if (dataLayoutString.find("cuda") != std::string::npos) {
-    dataLayout = autopas::DataLayoutOption::cuda;
+  std::vector<autopas::DataLayoutOption> dataLayouts;
+
+  for (auto &word : words) {
+    if (word.find("aos") != std::string::npos or word.find("array-of-struct") != std::string::npos) {
+      dataLayouts.emplace_back(autopas::DataLayoutOption::aos);
+    } else if (word.find("soa") != std::string::npos or word.find("-of-array") != std::string::npos) {
+      dataLayouts.emplace_back(autopas::DataLayoutOption::soa);
+    } else if (word.find("cuda") != std::string::npos) {
+      dataLayouts.emplace_back(autopas::DataLayoutOption::cuda);
+    } else if (not ignoreUnknownOptions) {
+      dataLayouts.emplace_back(autopas::DataLayoutOption(-1));
+    }
   }
-  return dataLayout;
+  return dataLayouts;
 }
 }  // namespace StringUtils
 }  // namespace utils

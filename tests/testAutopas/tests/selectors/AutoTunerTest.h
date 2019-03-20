@@ -16,6 +16,18 @@ class AutoTunerTest : public AutoPasTestBase {
   AutoTunerTest() = default;
   ~AutoTunerTest() = default;
 
-  // @todo when SoA and Newton 3 are tuneable extend this.
-  void testTune(autopas::DataLayoutOption dataLayoutOption);
+  /**
+   * Map multiple runtimes to one configuration each.
+   */
+  using mapConfigTime = std::map<autopas::Configuration, std::vector<long>>;
+
+  /**
+   * Create a tuner with
+   * @param strategy
+   * @param configAndTimes
+   * @param expectedBest
+   * @param ignoredConfigAndTimes
+   */
+  void testFastest(autopas::SelectorStrategy strategy, mapConfigTime configAndTimes,
+                   autopas::Configuration expectedBest, mapConfigTime ignoredConfigAndTimes = {});
 };
