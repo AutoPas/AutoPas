@@ -365,7 +365,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   if (inTuningPhase) {
     auto start = std::chrono::high_resolution_clock::now();
     // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
-    switch (DataLayout) {
+    switch (traversal.get()->requiredDataLayout()) {
       case DataLayoutOption::aos:
         withStaticContainerType(container,
                                 [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
@@ -386,7 +386,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     //    traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
     addTimeMeasurement(*f, runtime);
   } else {
-    switch (DataLayout) {
+    switch (traversal.get()->requiredDataLayout()) {
       case DataLayoutOption::aos:
         withStaticContainerType(container,
                                 [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });

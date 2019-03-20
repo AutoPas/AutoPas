@@ -11,6 +11,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
@@ -137,6 +138,46 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
 
     f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
     f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
+  }
+
+  /**
+   * Function to iterate over all pairs of particles
+   * @tparam ParticleFunctor
+   * @tparam Traversal
+   * @param f functor that describes the pair-potential
+   * @param traversal the traversal that will be used
+   */
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+    AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
+    if (traversal->requiredDataLayout() == DataLayoutOption::soa) {
+      f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
+      f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
+    } else if (traversal->requiredDataLayout() == DataLayoutOption::cuda) {
+      f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
+      f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
+
+      f->deviceSoALoader((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
+      f->deviceSoALoader((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
+    }
+    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in DirectSum::iteratePairwise");
+    }
+
+    if (traversal->requiredDataLayout() == DataLayoutOption::soa) {
+      f->deviceSoAExtractor((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
+      f->deviceSoAExtractor((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
+    } else if (traversal->requiredDataLayout() == DataLayoutOption::cuda) {
+      f->deviceSoAExtractor((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
+      f->deviceSoAExtractor((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
+
+      f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
+      f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
+    }
   }
 
   void updateContainer() override {

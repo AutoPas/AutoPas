@@ -11,6 +11,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -141,6 +142,49 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
 
     extractSoAsCuda(f);
+  }
+
+  /**
+   * @copydoc DirectSum::iteratePairwise
+   */
+  template <class ParticleFunctor, class Traversal>
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+    AutoPasLog(debug, "Using traversal {} with Cuda ", utils::StringUtils::to_string(traversal->getTraversalType()))
+
+        switch (traversal->requiredDataLayout()) {
+      case DataLayoutOption::aos: {
+        break;
+      }
+      case DataLayoutOption::soa: {
+        loadSoAs(f);
+        break;
+      }
+      case DataLayoutOption::cuda: {
+        loadSoAsCuda(f);
+        break;
+      }
+    }
+    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
+      traversalInterface->traverseCellPairs(this->_cells);
+
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
+          traversal->getTraversalType());
+    }
+    switch (traversal->requiredDataLayout()) {
+      case DataLayoutOption::aos: {
+        break;
+      }
+      case DataLayoutOption::soa: {
+        extractSoAs(f);
+        break;
+      }
+      case DataLayoutOption::cuda: {
+        extractSoAsCuda(f);
+        break;
+      }
+    }
   }
 
   void updateContainer() override {
