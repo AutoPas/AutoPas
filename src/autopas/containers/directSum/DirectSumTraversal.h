@@ -49,6 +49,8 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
 #endif
   }
 
+  DataLayoutOption requiredDataLayout() override { return DataLayout; }
+
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.

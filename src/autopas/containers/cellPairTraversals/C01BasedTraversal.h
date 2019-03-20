@@ -56,6 +56,8 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
 #endif
   }
 
+  DataLayoutOption requiredDataLayout() override { return DataLayout; }
+
  protected:
   /**
    * The main traversal of the C01Traversal.

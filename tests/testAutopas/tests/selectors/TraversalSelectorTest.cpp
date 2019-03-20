@@ -19,11 +19,13 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   autopas::TraversalSelector<FPCell> traversalSelector({domainSize, domainSize, domainSize});
 
   // expect an exception if nothing is selected yet
-  EXPECT_THROW((traversalSelector.generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(autopas::TraversalOption(-1), functor)),
+  EXPECT_THROW((traversalSelector.generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(
+                   autopas::TraversalOption(-1), functor)),
                autopas::utils::ExceptionHandler::AutoPasException);
 
   for (auto &traversalOption : autopas::allTraversalOptions) {
-    auto traversal = traversalSelector.generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(traversalOption, functor);
+    auto traversal =
+        traversalSelector.generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(traversalOption, functor);
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())

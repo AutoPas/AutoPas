@@ -6,8 +6,11 @@
 
 #pragma once
 
-#include "autopas/options/TraversalOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/TraversalOption.h"
+#if defined(AUTOPAS_CUDA)
+#include "cuda_runtime.h"
+#endif
 
 namespace autopas {
 
@@ -37,7 +40,7 @@ class TraversalInterface {
    * Returns the data Layout that has to be present in order to use the Traversal
    * @return Required DataLayout
    */
-  //virtual DataLayoutOption requiredDataLayout() = 0;
+  virtual DataLayoutOption requiredDataLayout() = 0;
 };
 
 }  // namespace autopas

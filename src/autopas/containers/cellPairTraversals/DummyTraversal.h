@@ -31,6 +31,8 @@ class DummyTraversal : public CellPairTraversal<ParticleCell> {
   TraversalOption getTraversalType() override { return TraversalOption::dummyTraversal; }
 
   bool isApplicable() override { return true; }
+
+  DataLayoutOption requiredDataLayout() override { return DataLayoutOption::aos; }
 };
 
 }  // namespace autopas
