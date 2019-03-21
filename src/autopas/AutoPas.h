@@ -29,7 +29,11 @@ static unsigned int _instanceCounter = 0;
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
-  AutoPas(std::ostream& logOutputStream = std::cout)
+  /**
+   * Constructor for the autopas class.
+   * @param logOutputStream Stream where log output should go to. Default is std::out.
+   */
+  AutoPas(std::ostream &logOutputStream = std::cout)
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
         _cutoff(1),
