@@ -162,6 +162,7 @@ int main(int argc, char **argv) {
   auto functorChoice(parser.getFunctorOption());
   auto generatorChoice(parser.getGeneratorOption());
   auto logLevel(parser.getLogLevel());
+  string logFileName(parser.getLogFileName());
   auto measureFlops(parser.getMeasureFlops());
   auto newton3Options(parser.getNewton3Options());
   auto numIterations(parser.getIterations());
@@ -181,8 +182,19 @@ int main(int argc, char **argv) {
 
   startTotal = std::chrono::high_resolution_clock::now();
 
+  // select either std::out or a logfile for autopas log output.
+  // This does not affect md-flex output.
+  std::ofstream logFile;
+  std::streambuf *streamBuf;
+  if (logFileName.empty()) {
+    streamBuf = std::cout.rdbuf();
+  } else {
+    logFile.open(logFileName);
+    streamBuf = logFile.rdbuf();
+  }
+  std::ostream outputStream(streamBuf);
   // Initialization
-  autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas;
+  autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas(outputStream);
   autopas::Logger::get()->set_level(logLevel);
 
   autopas.setCutoff(cutoff);
@@ -297,6 +309,10 @@ int main(int argc, char **argv) {
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
     cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+  }
+
+  if (not logFileName.empty()) {
+    logFile.close();
   }
 
   return EXIT_SUCCESS;
