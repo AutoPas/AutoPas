@@ -62,7 +62,7 @@ void testRun(LJFunctor<Particle, FullParticleCell<Particle>> &func, FullParticle
   cout << "NumC1: " << fpc1.numParticles() << "; NumC2: " << fpc2.numParticles() << "; threads: " << num_threads
        << "; n3: " << newton3 << "; " << endl;
 
-  func.getCudaWrapper().setNumThreads(num_threads);
+  func.getCudaWrapper()->setNumThreads(num_threads);
   func.SoALoader(fpc1, fpc1._particleSoABuffer);
   func.SoALoader(fpc2, fpc2._particleSoABuffer);
   func.deviceSoALoader(fpc1._particleSoABuffer, fpc1._particleSoABufferDevice);

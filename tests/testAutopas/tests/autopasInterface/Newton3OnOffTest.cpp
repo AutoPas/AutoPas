@@ -53,7 +53,10 @@ INSTANTIATE_TEST_SUITE_P(
                   if (traversalOption == autopas::TraversalOption::c01 /*and autopas::autopas_get_max_threads() > 1*/) {
                     continue;
                   }
-
+                  if (traversalOption == autopas::TraversalOption::c01Cuda) {
+                    // Traversal provides no AoS and SoA Traversal
+                    continue;
+                  }
                   std::stringstream name;
 
                   name << autopas::utils::StringUtils::to_string(containerOption);
@@ -226,7 +229,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 template <class ParticleFunctor, class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
                                autopas::Newton3Option newton3, ParticleFunctor *f) {
-  switch (dataLayout) {
+  switch (traversal->requiredDataLayout()) {
     case autopas::DataLayoutOption::soa: {
       withStaticContainerType(container, [&](auto container) {
         container->iteratePairwiseSoA(f, traversal.get(), newton3 == autopas::Newton3Option::enabled);

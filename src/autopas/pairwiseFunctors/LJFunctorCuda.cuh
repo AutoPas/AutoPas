@@ -87,15 +87,18 @@ public:
 			unsigned int offsets_size, int* offsets, cudaStream_t stream);
 
 	template<typename floatType>
-	void CellVerletTraversalNoN3Wrapper(floatType* posX, floatType* posY, floatType* posZ,
-			floatType* forceX, floatType* forceY, floatType* forceZ,unsigned int cids_size,
-			unsigned int* cids, unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
+	void CellVerletTraversalNoN3Wrapper(floatType* posX, floatType* posY,
+			floatType* posZ, floatType* forceX, floatType* forceY,
+			floatType* forceZ, unsigned int cids_size, unsigned int* cids,
+			unsigned int others_size, unsigned int* other_ids,
+			cudaStream_t stream);
 
 	template<typename floatType>
-	void CellVerletTraversalN3Wrapper(floatType* posX, floatType* posY, floatType* posZ,
-			floatType* forceX, floatType* forceY, floatType* forceZ,unsigned int cids_size,
-			unsigned int* cids, unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
-
+	void CellVerletTraversalN3Wrapper(floatType* posX, floatType* posY,
+			floatType* posZ, floatType* forceX, floatType* forceY,
+			floatType* forceZ, unsigned int cids_size, unsigned int* cids,
+			unsigned int others_size, unsigned int* other_ids,
+			cudaStream_t stream);
 
 private:
 	int numRequiredBlocks(int n) {

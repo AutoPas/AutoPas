@@ -500,7 +500,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 #endif
   }
 #if defined(AUTOPAS_CUDA)
-  CudaWrapper &getCudaWrapper() { return _cudawrapper; }
+  CudaWrapper *getCudaWrapper() override { return &_cudawrapper; }
 #endif
 
   /**

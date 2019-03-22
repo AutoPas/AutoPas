@@ -320,6 +320,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
       }
       break;
     }
+#if defined(AUTOPAS_CUDA)
     case DataLayoutOption::cuda: {
       if (_currentConfig->_newton3 == Newton3Option::enabled) {
         if (isTuning) {
@@ -340,6 +341,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
       }
       break;
     }
+#endif
     default:
       utils::ExceptionHandler::exception("AutoTuner: Unknown data layout : {}", _currentConfig->_dataLayout);
   }

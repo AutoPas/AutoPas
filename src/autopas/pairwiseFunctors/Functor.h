@@ -11,6 +11,9 @@
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoA.h"
+#if defined(AUTOPAS_CUDA)
+#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#endif
 
 namespace autopas {
 
@@ -201,6 +204,17 @@ class Functor {
    * @return true if and only if this functor is relevant for auto-tuning.
    */
   virtual bool isRelevantForTuning() = 0;
+
+#if defined(AUTOPAS_CUDA)
+  /**
+   * Provides an interface for traversals to directly access Cuda Functions
+   * @return Pointer to CudaWrapper of the Functor
+   */
+  virtual CudaWrapper *getCudaWrapper() {
+    utils::ExceptionHandler::exception("Functor::getCudaWrapper: not implemented");
+    return NULL;
+  }
+#endif
 };
 
 /**

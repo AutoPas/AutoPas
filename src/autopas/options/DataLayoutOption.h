@@ -20,7 +20,9 @@ enum DataLayoutOption { aos, soa, cuda };
 static const std::vector<DataLayoutOption> allDataLayoutOptions = {
     DataLayoutOption::aos,
     DataLayoutOption::soa,
+#if defined(AUTOPAS_CUDA)
     DataLayoutOption::cuda,
+#endif
 };
 
 }  // namespace autopas

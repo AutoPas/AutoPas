@@ -104,11 +104,11 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     case TraversalOption::c01Verlet: {
       return std::make_unique<C01TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
           _dims, &pairwiseFunctor);
-    } /*
-     case TraversalOption::c01Cuda: {
-       return std::make_unique<C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-           _dims, &pairwiseFunctor);
-     }*/
+    }
+    case TraversalOption::c01Cuda: {
+      return std::make_unique<C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor);
+    }
     case TraversalOption::dummyTraversal: {
       return std::make_unique<DummyTraversal<ParticleCell>>(_dims);
     }

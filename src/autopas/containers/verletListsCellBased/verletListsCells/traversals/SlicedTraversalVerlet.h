@@ -51,6 +51,8 @@ class SlicedTraversalVerlet
                                                              useNewton3>::verlet_storage_type &verlet) override;
 
   TraversalOption getTraversalType() override { return TraversalOption::slicedVerlet; }
+
+  bool isApplicable() override { return not(DataLayout == DataLayoutOption::cuda); }
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

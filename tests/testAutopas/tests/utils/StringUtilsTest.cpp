@@ -19,8 +19,13 @@ TEST(StringUtilsTest, parseContainerOptionsTest) {
 }
 
 TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
+#if defined(AUTOPAS_CUDA)
   testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "cuda, soa, aos",
                                                autopas::utils::StringUtils::parseDataLayout);
+#else
+  testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "soa, aos",
+                                               autopas::utils::StringUtils::parseDataLayout);
+#endif
 }
 
 TEST(StringUtilsTest, parseSelectorOptionsTest) {
