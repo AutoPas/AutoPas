@@ -29,7 +29,11 @@ static unsigned int _instanceCounter = 0;
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
-  AutoPas()
+  /**
+   * Constructor for the autopas class.
+   * @param logOutputStream Stream where log output should go to. Default is std::out.
+   */
+  AutoPas(std::ostream &logOutputStream = std::cout)
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
         _cutoff(1),
@@ -47,7 +51,7 @@ class AutoPas {
     _instanceCounter++;
     if (_instanceCounter == 1) {
       // initialize the Logger
-      autopas::Logger::create();
+      autopas::Logger::create(logOutputStream);
       // The logger is normally only flushed on successful program termination.
       // This line ensures flushing when log messages of level warning or more severe are created.
       autopas::Logger::get()->flush_on(spdlog::level::warn);
