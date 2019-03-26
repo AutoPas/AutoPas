@@ -89,7 +89,7 @@ do
             # workaround because there is no traversal for Verlet clusters with newton 3 yet.
             if [[ ${container} =~ 'VerletCluster' ]];
             then
-                noNewton3="--no-newton3"
+                noNewton3="--newton3 off"
             else
                 noNewton3=""
             fi
