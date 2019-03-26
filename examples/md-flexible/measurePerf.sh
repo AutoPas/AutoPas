@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#should abort on errors!
+set -e
 export LC_NUMERIC=en_US.UTF-8
 
 if [[ "$#" -lt 1 ]]
