@@ -322,8 +322,7 @@ void MDFlexParser::printConfig() {
        << ":  " << iterableToString(containerOptions) << endl;
 
   // if verlet lists are in the container options print verlet config data
-  if (find(containerOptions.begin(), containerOptions.end(), autopas::ContainerOption::verletLists) !=
-      containerOptions.end()) {
+  if (iterableToString(containerOptions).find("erlet") != std::string::npos) {
     cout << setw(valueOffset) << left << "Verlet rebuild frequency"
          << ":  " << verletRebuildFrequency << endl;
 
