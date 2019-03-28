@@ -9,7 +9,7 @@
 #include <thread>
 #include "autopas/utils/Timer.h"
 
-TEST(DISABLED_TimerTest, testTimer) {
+TEST(TimerTest, testTimer) {
   autopas::utils::Timer timer;
   timer.start();
   auto time = timer.stop();
@@ -21,6 +21,6 @@ TEST(DISABLED_TimerTest, testTimer) {
   std::this_thread::sleep_for(50ms);
 
   time = timer.stop();
-  // time should be close to 10ms
+  // time should be close to 50ms
   ASSERT_NEAR(time, .05, .03);
 }

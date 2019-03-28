@@ -7,31 +7,18 @@
 #include "utils/Timer.h"
 #include <iostream>
 
-using namespace std;
+using namespace std::chrono;
 
-autopas::utils::Timer::Timer() : _startTime{} {
-  struct timespec info {};
-  if (clock_getres(CLOCK_REALTIME, &info)) {
-    std::cout << "Could not retrieve time resolution!" << endl;
-  }
-}
+autopas::utils::Timer::Timer() : _startTime{} {}
 
 autopas::utils::Timer::~Timer() = default;
 
-void autopas::utils::Timer::start() {
-  if (clock_gettime(CLOCK_REALTIME, &_startTime)) {
-    std::cout << "Could not retrieve time!" << endl;
-  }
-}
+void autopas::utils::Timer::start() noexcept { _startTime = high_resolution_clock::now(); }
 
 double autopas::utils::Timer::stop() {
-  struct timespec time {};
-  if (clock_gettime(CLOCK_REALTIME, &time)) {
-    std::cout << "Could not retrieve time!" << endl;
-  }
+  const high_resolution_clock::time_point time(high_resolution_clock::now());
 
-  double diff = time.tv_sec - _startTime.tv_sec;
-  diff += ((double)(time.tv_nsec - _startTime.tv_nsec)) / 1000000000.0;
+  const duration<double> diff = duration_cast<duration<double>>(time - _startTime);
 
-  return diff;
+  return diff.count();
 }
