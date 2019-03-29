@@ -348,6 +348,10 @@ class AutoPas {
     }
   }
 
+  const Configuration getCurrentConfig() const {
+    return _autoTuner->getCurrentConfig();
+  }
+
  private:
   /**
    * Lower corner of the container.
