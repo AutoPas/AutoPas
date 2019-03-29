@@ -48,14 +48,17 @@ class AutoPas {
         _allowedNewton3Options(allNewton3Options) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
-    _instanceCounter++;
-    if (_instanceCounter == 1) {
-      // initialize the Logger
-      autopas::Logger::create(logOutputStream);
-      // The logger is normally only flushed on successful program termination.
-      // This line ensures flushing when log messages of level warning or more severe are created.
-      autopas::Logger::get()->flush_on(spdlog::level::warn);
-    }
+    //    _instanceCounter++;
+    //    if (_instanceCounter == 1) {
+    //      // initialize the Logger
+    //      autopas::Logger::create(logOutputStream);
+    //      // The logger is normally only flushed on successful program termination.
+    //      // This line ensures flushing when log messages of level warning or more severe are created.
+    //      autopas::Logger::get()->flush_on(spdlog::level::warn);
+    //    }
+    autopas::Logger::unregister();
+    autopas::Logger::create(logOutputStream);
+    autopas::Logger::get()->flush_on(spdlog::level::warn);
   }
 
   ~AutoPas() {
