@@ -23,6 +23,7 @@ enum TraversalOption {
   c18Verlet = 6,
   c01Verlet = 7,
   c01Cuda = 8,
+  ClusterToClusterVerlet = 9,
   dummyTraversal = 666,
 };
 

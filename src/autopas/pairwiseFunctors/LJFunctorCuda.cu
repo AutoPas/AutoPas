@@ -733,21 +733,20 @@ template<typename floatType, int block_size>
 __global__
 void CellVerletTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 		floatType* forceX, floatType* forceY, floatType* forceZ,
-		unsigned int* cids, unsigned int others_size, unsigned int* other_ids) {
+		unsigned int others_size, unsigned int* other_ids) {
 
-	int own_cid = cids[blockIdx.x];
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
 	typename vec3<floatType>::Type myposition = { getInfinity<floatType>(),
 			getInfinity<floatType>(), getInfinity<floatType>() };
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
-	int index = 32 * own_cid + threadIdx.x;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	myposition.x = posX[index];
 	myposition.y = posY[index];
 	myposition.z = posZ[index];
 	//other cells
-	for (auto other_index = 0; other_index < others_size; ++other_index) {
-		const int cell2Start = 32 * other_ids[other_index];
+	for (auto other_index = 0; other_ids[other_index] != UINT_MAX; ++other_index) {
+		const int cell2Start = blockDim.x * other_ids[other_index];
 
 		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
 		__syncthreads();
@@ -764,28 +763,24 @@ void CellVerletTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 template<typename floatType>
 void CudaWrapper::CellVerletTraversalNoN3Wrapper(floatType* posX,
 		floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, unsigned int cids_size, unsigned int* cids,
-		unsigned int others_size, unsigned int* other_ids,
-		cudaStream_t stream) {
+		floatType* forceZ, unsigned int ncells, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		CellVerletTraversalNoN3<floatType, 32> <<<cids_size, 32, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
-				other_ids);
+		CellVerletTraversalNoN3<floatType, 32> <<<ncells, 32, 0, stream>>>(posX,
+				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
 		break;
 	case 64:
-		CellVerletTraversalNoN3<floatType, 64> <<<cids_size, 64, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
-				other_ids);
+		CellVerletTraversalNoN3<floatType, 64> <<<ncells, 64, 0, stream>>>(posX,
+				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
 		break;
 	case 96:
-		CellVerletTraversalNoN3<floatType, 96> <<<cids_size, 96, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
-				other_ids);
+		CellVerletTraversalNoN3<floatType, 96> <<<ncells, 96, 0, stream>>>(posX,
+				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
-				"cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
+				"cuda Kernel size not available for Verlet cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
 				_num_threads);
 		break;
 	}
@@ -794,22 +789,21 @@ void CudaWrapper::CellVerletTraversalNoN3Wrapper(floatType* posX,
 
 template void CudaWrapper::CellVerletTraversalNoN3Wrapper<float>(float* posX,
 		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		unsigned int cids_size, unsigned int* cids, unsigned int others_size,
-		unsigned int* other_ids, cudaStream_t stream);
+		unsigned int ncells, unsigned int others_size, unsigned int* other_ids,
+		cudaStream_t stream);
 
 template void CudaWrapper::CellVerletTraversalNoN3Wrapper<double>(double* posX,
 		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, unsigned int cids_size, unsigned int* cids,
-		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
+		double* forceZ, unsigned int ncells, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream);
 
 template<typename floatType, int block_size>
 __global__
 void CellVerletTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 		floatType* forceX, floatType* forceY, floatType* forceZ,
-		unsigned int* cids, unsigned int others_size, unsigned int* other_ids) {
+		unsigned int others_size, unsigned int* other_ids) {
 	const int mask = block_size - 1;
 
-	int own_cid = cids[blockIdx.x];
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
 	__shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
 
@@ -817,14 +811,14 @@ void CellVerletTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 			getInfinity<floatType>(), getInfinity<floatType>() };
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
-	int index = 32 * own_cid + threadIdx.x;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	myposition.x = posX[index];
 	myposition.y = posY[index];
 	myposition.z = posZ[index];
 
 	//other cells
-	for (auto other_index = 0; other_index < others_size; ++other_index) {
-		const int cell2Start = 32 * other_ids[other_index];
+	for (auto other_index = 0; other_ids[other_index] != UINT_MAX; ++other_index) {
+		const int cell2Start = blockDim.x * other_ids[other_index];
 
 		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
 		cell2_forces_shared[threadIdx.x] = {0,0,0};
@@ -850,28 +844,24 @@ void CellVerletTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 template<typename floatType>
 void CudaWrapper::CellVerletTraversalN3Wrapper(floatType* posX, floatType* posY,
 		floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, unsigned int cids_size, unsigned int* cids,
-		unsigned int others_size, unsigned int* other_ids,
-		cudaStream_t stream) {
+		floatType* forceZ, unsigned int ncells, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		CellVerletTraversalN3<floatType, 32> <<<cids_size, 32, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
-				other_ids);
+		CellVerletTraversalN3<floatType, 32> <<<ncells, 32, 0, stream>>>(posX,
+				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
 		break;
 	case 64:
-		CellVerletTraversalN3<floatType, 64> <<<cids_size, 64, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
-				other_ids);
+		CellVerletTraversalN3<floatType, 64> <<<ncells, 64, 0, stream>>>(posX,
+				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
 		break;
 	case 96:
-		CellVerletTraversalN3<floatType, 96> <<<cids_size, 96, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, others_size,
-				other_ids);
+		CellVerletTraversalN3<floatType, 96> <<<ncells, 96, 0, stream>>>(posX,
+				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
-				"cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
+				"cuda Kernel size not available for Verlet cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
 				_num_threads);
 		break;
 	}
@@ -880,13 +870,13 @@ void CudaWrapper::CellVerletTraversalN3Wrapper(floatType* posX, floatType* posY,
 
 template void CudaWrapper::CellVerletTraversalN3Wrapper<float>(float* posX,
 		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		unsigned int cids_size, unsigned int* cids, unsigned int others_size,
-		unsigned int* other_ids, cudaStream_t stream);
+		unsigned int ncells, unsigned int others_size, unsigned int* other_ids,
+		cudaStream_t stream);
 
 template void CudaWrapper::CellVerletTraversalN3Wrapper<double>(double* posX,
 		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, unsigned int cids_size, unsigned int* cids,
-		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
+		double* forceZ, unsigned int ncells, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream);
 
 template<typename floatType>
 void CudaWrapper::loadConstants(floatType cutoffsquare, floatType epsilon24,
