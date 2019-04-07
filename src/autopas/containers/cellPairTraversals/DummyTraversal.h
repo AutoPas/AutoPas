@@ -32,7 +32,13 @@ class DummyTraversal : public CellPairTraversal<ParticleCell> {
 
   bool isApplicable() override { return true; }
 
-  DataLayoutOption requiredDataLayout() override { return DataLayoutOption::aos; }
+  void initTraversal(std::vector<ParticleCell> &cells) override {
+    // do nothing
+  }
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {
+    // do nothing
+  }
 };
 
 }  // namespace autopas

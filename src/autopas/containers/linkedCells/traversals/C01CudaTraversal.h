@@ -71,7 +71,9 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
 #endif
   }
 
-  DataLayoutOption requiredDataLayout() override { return DataLayoutOption::aos; }
+  void initTraversal(std::vector<ParticleCell> &cells) override {}
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {}
 
  private:
   /**
@@ -140,7 +142,7 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
 #if defined(AUTOPAS_CUDA)
   _nonHaloCells.copyHostToDevice(nonHaloCells.size(), nonHaloCells.data());
 #endif
-}  // namespace autopas
+}
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(

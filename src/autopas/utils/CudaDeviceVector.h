@@ -105,7 +105,7 @@ class CudaDeviceVector {
    */
   CudaDeviceVector() {}
   /**
-   * @brief Dummy construcor.
+   * @brief Dummy constructor.
    * @param max initial maximal vector size
    */
   CudaDeviceVector(size_t max) {}

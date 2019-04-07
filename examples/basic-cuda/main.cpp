@@ -1,7 +1,7 @@
 /**
  * @file main.cpp
- * @date 17.01.2018
- * @author tchipev
+ * @date 2.01.2019
+ * @author jspahl
  */
 
 #include <iostream>
@@ -100,6 +100,7 @@ void run(int numParticles) {
   typedef LJFunctor<Particle, FullParticleCell<Particle>> Func;
   Func func(cutoff, 1.0, 1.0, 0.0);
 
+  // number of threads used per block by the device
   vector<int> v = {32, 64, 128, 256, 512, 1024};
   for (auto it : v) {
     testRun(func, fpc1, fpc2, it, false);

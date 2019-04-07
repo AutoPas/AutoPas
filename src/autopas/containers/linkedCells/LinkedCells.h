@@ -153,22 +153,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @copydoc DirectSum::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
     AutoPasLog(debug, "Using traversal {} with Cuda ", utils::StringUtils::to_string(traversal->getTraversalType()))
 
-        switch (traversal->requiredDataLayout()) {
-      case DataLayoutOption::aos: {
-        break;
-      }
-      case DataLayoutOption::soa: {
-        loadSoAs(f);
-        break;
-      }
-      case DataLayoutOption::cuda: {
-        loadSoAsCuda(f);
-        break;
-      }
-    }
+        traversal->initTraversal(this->_cells);
     if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
 
@@ -177,19 +165,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
           "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
     }
-    switch (traversal->requiredDataLayout()) {
-      case DataLayoutOption::aos: {
-        break;
-      }
-      case DataLayoutOption::soa: {
-        extractSoAs(f);
-        break;
-      }
-      case DataLayoutOption::cuda: {
-        extractSoAsCuda(f);
-        break;
-      }
-    }
+    traversal->endTraversal(this->_cells);
   }
 
   void updateContainer() override {

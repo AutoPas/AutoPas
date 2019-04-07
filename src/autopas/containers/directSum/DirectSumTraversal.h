@@ -11,6 +11,7 @@
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/DataLayoutConverter.h"
 #if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
 #endif
@@ -35,7 +36,8 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   DirectSumTraversal(PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout,
-                                 useNewton3, true>(pairwiseFunctor)) {}
+                                 useNewton3, true>(pairwiseFunctor)),
+        _dataLayoutConverter(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() override { return TraversalOption::directSumTraversal; }
 
@@ -49,7 +51,17 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
 #endif
   }
 
-  DataLayoutOption requiredDataLayout() override { return DataLayout; }
+  void initTraversal(std::vector<ParticleCell> &cells) override {
+    for (auto &cell : cells) {
+      _dataLayoutConverter.loadDataLayout(cell);
+    }
+  }
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {
+    for (auto &cell : cells) {
+      _dataLayoutConverter.storeDataLayout(cell);
+    }
+  }
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -63,6 +75,11 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
    */
   CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3, true>
       _cellFunctor;
+
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

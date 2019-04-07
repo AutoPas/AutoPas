@@ -132,7 +132,7 @@ class VerletListsCells
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwiseSoACuda(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
-    utils::ExceptionHandler::exception("VerletList Cuda not implemented");
+    utils::ExceptionHandler::exception("VerletListCells Cuda not implemented");
   }
 
   /**

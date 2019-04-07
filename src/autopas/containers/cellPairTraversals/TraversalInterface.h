@@ -35,12 +35,6 @@ class TraversalInterface {
    * @return true iff the traversal can be applied.
    */
   virtual bool isApplicable() = 0;
-
-  /**
-   * Returns the data Layout that has to be present in order to use the Traversal
-   * @return Required DataLayout
-   */
-  virtual DataLayoutOption requiredDataLayout() = 0;
 };
 
 }  // namespace autopas

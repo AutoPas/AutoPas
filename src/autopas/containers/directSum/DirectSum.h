@@ -146,20 +146,13 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @tparam Traversal
    * @param f functor that describes the pair-potential
    * @param traversal the traversal that will be used
+   * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
     AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
-    if (traversal->requiredDataLayout() == DataLayoutOption::soa) {
-      f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
-      f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
-    } else if (traversal->requiredDataLayout() == DataLayoutOption::cuda) {
-      f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
-      f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
 
-      f->deviceSoALoader((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
-      f->deviceSoALoader((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
-    }
+    traversal->initTraversal(this->_cells);
     if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
 
@@ -167,17 +160,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in DirectSum::iteratePairwise");
     }
-
-    if (traversal->requiredDataLayout() == DataLayoutOption::soa) {
-      f->deviceSoAExtractor((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
-      f->deviceSoAExtractor((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
-    } else if (traversal->requiredDataLayout() == DataLayoutOption::cuda) {
-      f->deviceSoAExtractor((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
-      f->deviceSoAExtractor((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
-
-      f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
-      f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
-    }
+    traversal->endTraversal(this->_cells);
   }
 
   void updateContainer() override {

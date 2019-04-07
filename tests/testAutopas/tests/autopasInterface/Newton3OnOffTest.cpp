@@ -229,7 +229,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 template <class ParticleFunctor, class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
                                autopas::Newton3Option newton3, ParticleFunctor *f) {
-  switch (traversal->requiredDataLayout()) {
+  switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       withStaticContainerType(container, [&](auto container) {
         container->iteratePairwiseSoA(f, traversal.get(), newton3 == autopas::Newton3Option::enabled);
