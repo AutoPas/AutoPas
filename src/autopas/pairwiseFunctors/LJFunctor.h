@@ -479,8 +479,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   void endTraversal(bool newton3) override {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Already postprocessed, please don't call endTraversal(bool newton3) twice without calling "
-          "initTraversal().");
+          "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
       _upotSum += _aosThreadData[i].upotSum;
@@ -507,8 +506,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException(
-          "Not yet postprocessed, please call endTraversal first.");
+      throw utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
     }
     return _upotSum;
   }
@@ -524,8 +522,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException(
-          "Not yet postprocessed, please call endTraversal first.");
+      throw utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
