@@ -36,8 +36,9 @@ class MyMoleculeFP64 : public ParticleFP64 {
 };
 
 template <class ParticleCell, class Particle>
-void fillSpaceWithGrid(ParticleCell &pc, std::array<typename Particle::ParticleFloatingPointType, 3> boxMin, std::array<typename Particle::ParticleFloatingPointType, 3> boxMax, typename Particle::ParticleFloatingPointType gridsize,
-                       int maxN = 10000) {
+void fillSpaceWithGrid(ParticleCell &pc, std::array<typename Particle::ParticleFloatingPointType, 3> boxMin,
+                       std::array<typename Particle::ParticleFloatingPointType, 3> boxMax,
+                       typename Particle::ParticleFloatingPointType gridsize, int maxN = 10000) {
   int i = 0;
 
   for (typename Particle::ParticleFloatingPointType x = boxMin[0]; x < boxMax[0]; x += gridsize) {

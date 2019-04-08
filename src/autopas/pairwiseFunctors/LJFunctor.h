@@ -63,8 +63,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
   explicit LJFunctor(floatPrecision cutoff, floatPrecision epsilon, floatPrecision sigma, floatPrecision shift,
-                     std::array<floatPrecision, 3> lowCorner = {0., 0., 0.}, std::array<floatPrecision, 3> highCorner = {0., 0., 0.},
-                     bool duplicatedCalculation = true)
+                     std::array<floatPrecision, 3> lowCorner = {0., 0., 0.},
+                     std::array<floatPrecision, 3> highCorner = {0., 0., 0.}, bool duplicatedCalculation = true)
       : _cutoffsquare{cutoff * cutoff},
         _epsilon24{epsilon * (floatPrecision)24.0},
         _sigmasquare{sigma * sigma},
@@ -168,7 +168,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
     // the local redeclaration of the following values helps the auto-generation of various compilers.
-    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
+                         shift6 = _shift6;
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
       // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
@@ -188,9 +189,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     floatPrecision virialSumZ = 0.;
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
-    	floatPrecision fxacc = 0.;
-    	floatPrecision fyacc = 0.;
-    	floatPrecision fzacc = 0.;
+      floatPrecision fxacc = 0.;
+      floatPrecision fyacc = 0.;
+      floatPrecision fzacc = 0.;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -301,11 +302,12 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     floatPrecision virialSumY = 0.;
     floatPrecision virialSumZ = 0.;
 
-    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
+                         shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
-    	floatPrecision fxacc = 0;
-    	floatPrecision fyacc = 0;
-    	floatPrecision fzacc = 0;
+      floatPrecision fxacc = 0;
+      floatPrecision fyacc = 0;
+      floatPrecision fzacc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -722,7 +724,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
+                         shift6 = _shift6;
 
     const std::array<floatPrecision, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
     const std::array<floatPrecision, 3> highCorner = {_highCorner[0], _highCorner[1], _highCorner[2]};
@@ -974,7 +977,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     floatPrecision __remainingTo64[4];
   };
   // make sure of the size of AoSThreadData
-  //static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
+  // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   floatPrecision _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
