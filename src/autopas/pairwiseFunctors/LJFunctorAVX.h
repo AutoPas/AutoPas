@@ -405,8 +405,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   void postProcessGlobalValues(bool newton3) {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Already postprocessed, please don't call postProcessGlobalValues(bool newton3) twice without calling "
-          "resetGlobalValues().");
+          "Already postprocessed, please don't call endTraversal(bool newton3) twice without calling "
+          "initTraversal().");
     }
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
       _upotSum += _aosThreadData[i].upotSum;
@@ -434,7 +434,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
     if (not _postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Not yet postprocessed, please call postProcessGlobalValues first.");
+          "Not yet postprocessed, please call endTraversal first.");
     }
     return _upotSum;
   }
@@ -451,7 +451,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
     if (not _postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Not yet postprocessed, please call postProcessGlobalValues first.");
+          "Not yet postprocessed, please call endTraversal first.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }

@@ -463,7 +463,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
-  void resetGlobalValues() {
+  void initTraversal() override {
     _upotSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
@@ -473,14 +473,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   }
 
   /**
-   * postprocesses global values, e.g. upot and virial
+   * Postprocesses global values, e.g. upot and virial
    * @param newton3
    */
-  void postProcessGlobalValues(bool newton3) {
+  void endTraversal(bool newton3) override {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Already postprocessed, please don't call postProcessGlobalValues(bool newton3) twice without calling "
-          "resetGlobalValues().");
+          "Already postprocessed, please don't call endTraversal(bool newton3) twice without calling "
+          "initTraversal().");
     }
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
       _upotSum += _aosThreadData[i].upotSum;
@@ -508,7 +508,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
     if (not _postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Not yet postprocessed, please call postProcessGlobalValues first.");
+          "Not yet postprocessed, please call endTraversal first.");
     }
     return _upotSum;
   }
@@ -525,7 +525,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
     if (not _postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Not yet postprocessed, please call postProcessGlobalValues first.");
+          "Not yet postprocessed, please call endTraversal first.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
