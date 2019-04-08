@@ -43,6 +43,7 @@ template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = Functo
           bool calculateGlobals = false, bool relevantForTuning = true>
 class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
   using SoAArraysType = typename Particle::SoAArraysType;
+  using floatPrecision = typename Particle::ParticleFloatingPointType;
 
  public:
   /**
@@ -61,13 +62,13 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(double cutoff, double epsilon, double sigma, double shift,
-                     std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
+  explicit LJFunctor(floatPrecision cutoff, floatPrecision epsilon, floatPrecision sigma, floatPrecision shift,
+                     std::array<floatPrecision, 3> lowCorner = {0., 0., 0.}, std::array<floatPrecision, 3> highCorner = {0., 0., 0.},
                      bool duplicatedCalculation = true)
       : _cutoffsquare{cutoff * cutoff},
-        _epsilon24{epsilon * 24.0},
+        _epsilon24{epsilon * (floatPrecision)24.0},
         _sigmasquare{sigma * sigma},
-        _shift6{shift * 6.0},
+        _shift6{shift * (floatPrecision)6.0},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
@@ -108,16 +109,16 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
-    double dr2 = ArrayMath::dot(dr, dr);
+    floatPrecision dr2 = ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffsquare) return;
 
-    double invdr2 = 1. / dr2;
-    double lj6 = _sigmasquare * invdr2;
+    floatPrecision invdr2 = 1. / dr2;
+    floatPrecision lj6 = _sigmasquare * invdr2;
     lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
+    floatPrecision lj12 = lj6 * lj6;
+    floatPrecision lj12m6 = lj12 - lj6;
+    floatPrecision fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = ArrayMath::mulScalar(dr, fac);
     i.addF(f);
     if (newton3) {
@@ -126,14 +127,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
     if (calculateGlobals) {
       auto virial = ArrayMath::mul(dr, f);
-      double upot = _epsilon24 * lj12m6 + _shift6;
+      floatPrecision upot = _epsilon24 * lj12m6 + _shift6;
 
       const int threadnum = autopas_get_thread_num();
       if (_duplicatedCalculations) {
         // for non-newton3 the division is in the post-processing step.
         if (newton3) {
           upot *= 0.5;
-          virial = ArrayMath::mulScalar(virial, 0.5);
+          virial = ArrayMath::mulScalar(virial, (floatPrecision)0.5);
         }
         if (autopas::utils::inBox(i.getR(), _lowCorner, _highCorner)) {
           _aosThreadData[threadnum].upotSum += upot;
@@ -167,7 +168,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
     // the local redeclaration of the following values helps the auto-generation of various compilers.
-    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
       // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
@@ -181,42 +182,42 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       }
     }
 
-    double upotSum = 0.;
-    double virialSumX = 0.;
-    double virialSumY = 0.;
-    double virialSumZ = 0.;
+    floatPrecision upotSum = 0.;
+    floatPrecision virialSumX = 0.;
+    floatPrecision virialSumY = 0.;
+    floatPrecision virialSumZ = 0.;
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
-      double fxacc = 0.;
-      double fyacc = 0.;
-      double fzacc = 0.;
+    	floatPrecision fxacc = 0.;
+    	floatPrecision fyacc = 0.;
+    	floatPrecision fzacc = 0.;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        const double drx = xptr[i] - xptr[j];
-        const double dry = yptr[i] - yptr[j];
-        const double drz = zptr[i] - zptr[j];
+        const floatPrecision drx = xptr[i] - xptr[j];
+        const floatPrecision dry = yptr[i] - yptr[j];
+        const floatPrecision drz = zptr[i] - zptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const floatPrecision drx2 = drx * drx;
+        const floatPrecision dry2 = dry * dry;
+        const floatPrecision drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const floatPrecision dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > cutoffsquare) ? 0. : 1.;
+        const floatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
-        const double invdr2 = 1. / dr2;
-        const double lj2 = sigmasquare * invdr2;
-        const double lj6 = lj2 * lj2 * lj2;
-        const double lj12 = lj6 * lj6;
-        const double lj12m6 = lj12 - lj6;
-        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const floatPrecision invdr2 = 1. / dr2;
+        const floatPrecision lj2 = sigmasquare * invdr2;
+        const floatPrecision lj6 = lj2 * lj2 * lj2;
+        const floatPrecision lj12 = lj6 * lj6;
+        const floatPrecision lj12m6 = lj12 - lj6;
+        const floatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
-        const double fx = drx * fac;
-        const double fy = dry * fac;
-        const double fz = drz * fac;
+        const floatPrecision fx = drx * fac;
+        const floatPrecision fy = dry * fac;
+        const floatPrecision fz = drz * fac;
 
         fxacc += fx;
         fyacc += fy;
@@ -228,10 +229,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         fzptr[j] -= fz;
 
         if (calculateGlobals) {
-          const double virialx = drx * fx;
-          const double virialy = dry * fy;
-          const double virialz = drz * fz;
-          const double upot = (epsilon24 * lj12m6 + shift6) * mask;
+          const floatPrecision virialx = drx * fx;
+          const floatPrecision virialy = dry * fy;
+          const floatPrecision virialz = drz * fz;
+          const floatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
           // these calculations assume that this functor is not called for halo cells!
           upotSum += upot;
@@ -295,43 +296,43 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         return;
       }*/
     }
-    double upotSum = 0.;
-    double virialSumX = 0.;
-    double virialSumY = 0.;
-    double virialSumZ = 0.;
+    floatPrecision upotSum = 0.;
+    floatPrecision virialSumX = 0.;
+    floatPrecision virialSumY = 0.;
+    floatPrecision virialSumZ = 0.;
 
-    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
-      double fxacc = 0;
-      double fyacc = 0;
-      double fzacc = 0;
+    	floatPrecision fxacc = 0;
+    	floatPrecision fyacc = 0;
+    	floatPrecision fzacc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        const double drx = x1ptr[i] - x2ptr[j];
-        const double dry = y1ptr[i] - y2ptr[j];
-        const double drz = z1ptr[i] - z2ptr[j];
+        const floatPrecision drx = x1ptr[i] - x2ptr[j];
+        const floatPrecision dry = y1ptr[i] - y2ptr[j];
+        const floatPrecision drz = z1ptr[i] - z2ptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const floatPrecision drx2 = drx * drx;
+        const floatPrecision dry2 = dry * dry;
+        const floatPrecision drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const floatPrecision dr2 = drx2 + dry2 + drz2;
 
-        const double mask = (dr2 > cutoffsquare) ? 0. : 1.;
+        const floatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
-        const double invdr2 = 1. / dr2;
-        const double lj2 = sigmasquare * invdr2;
-        const double lj6 = lj2 * lj2 * lj2;
-        const double lj12 = lj6 * lj6;
-        const double lj12m6 = lj12 - lj6;
-        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const floatPrecision invdr2 = 1. / dr2;
+        const floatPrecision lj2 = sigmasquare * invdr2;
+        const floatPrecision lj6 = lj2 * lj2 * lj2;
+        const floatPrecision lj12 = lj6 * lj6;
+        const floatPrecision lj12m6 = lj12 - lj6;
+        const floatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
 
-        const double fx = drx * fac;
-        const double fy = dry * fac;
-        const double fz = drz * fac;
+        const floatPrecision fx = drx * fac;
+        const floatPrecision fy = dry * fac;
+        const floatPrecision fz = drz * fac;
 
         fxacc += fx;
         fyacc += fy;
@@ -343,10 +344,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         }
 
         if (calculateGlobals) {
-          double virialx = drx * fx;
-          double virialy = dry * fy;
-          double virialz = drz * fz;
-          double upot = (epsilon24 * lj12m6 + shift6) * mask;
+          floatPrecision virialx = drx * fx;
+          floatPrecision virialy = dry * fy;
+          floatPrecision virialz = drz * fz;
+          floatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
           upotSum += upot;
           virialSumX += virialx;
@@ -359,7 +360,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       fz1ptr[i] += fzacc;
     }
     if (calculateGlobals) {
-      double energyfactor = 1.;
+      floatPrecision energyfactor = 1.;
       if (_duplicatedCalculations) {
         // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
         // that we do not add the energy multiple times!
@@ -417,19 +418,23 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     cudaStream_t stream = _streams.getStreamRandom();
 
     if (newton3) {
-      _cudawrapper.SoAFunctorN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
-                                       device_handle.template get<Particle::AttributeNames::posY>().get(),
-                                       device_handle.template get<Particle::AttributeNames::posZ>().get(),
-                                       device_handle.template get<Particle::AttributeNames::forceX>().get(),
-                                       device_handle.template get<Particle::AttributeNames::forceY>().get(),
-                                       device_handle.template get<Particle::AttributeNames::forceZ>().get(), stream);
+      _cudawrapper.SoAFunctorN3Wrapper(LJFunctorCudaSoA<typename Particle::ParticleFloatingPointType>(
+                                           size, device_handle.template get<Particle::AttributeNames::posX>().get(),
+                                           device_handle.template get<Particle::AttributeNames::posY>().get(),
+                                           device_handle.template get<Particle::AttributeNames::posZ>().get(),
+                                           device_handle.template get<Particle::AttributeNames::forceX>().get(),
+                                           device_handle.template get<Particle::AttributeNames::forceY>().get(),
+                                           device_handle.template get<Particle::AttributeNames::forceZ>().get()),
+                                       stream);
     } else {
-      _cudawrapper.SoAFunctorNoN3Wrapper(size, device_handle.template get<Particle::AttributeNames::posX>().get(),
-                                         device_handle.template get<Particle::AttributeNames::posY>().get(),
-                                         device_handle.template get<Particle::AttributeNames::posZ>().get(),
-                                         device_handle.template get<Particle::AttributeNames::forceX>().get(),
-                                         device_handle.template get<Particle::AttributeNames::forceY>().get(),
-                                         device_handle.template get<Particle::AttributeNames::forceZ>().get(), stream);
+      _cudawrapper.SoAFunctorNoN3Wrapper(LJFunctorCudaSoA<typename Particle::ParticleFloatingPointType>(
+                                             size, device_handle.template get<Particle::AttributeNames::posX>().get(),
+                                             device_handle.template get<Particle::AttributeNames::posY>().get(),
+                                             device_handle.template get<Particle::AttributeNames::posZ>().get(),
+                                             device_handle.template get<Particle::AttributeNames::forceX>().get(),
+                                             device_handle.template get<Particle::AttributeNames::forceY>().get(),
+                                             device_handle.template get<Particle::AttributeNames::forceZ>().get()),
+                                         stream);
     }
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
@@ -455,45 +460,54 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
     if (newton3) {
       if (size1 > size2) {
-        _cudawrapper.SoAFunctorN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::posY>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::posZ>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceX>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceY>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceZ>().get(),
-                                             size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::posY>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::posZ>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::forceX>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::forceY>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::forceZ>().get(),
-                                             stream);
+        _cudawrapper.SoAFunctorN3PairWrapper(
+            LJFunctorCudaSoA<typename Particle::ParticleFloatingPointType>(
+                size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                device_handle1.template get<Particle::AttributeNames::forceZ>().get()),
+            LJFunctorCudaSoA<typename Particle::ParticleFloatingPointType>(
+                size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                device_handle2.template get<Particle::AttributeNames::posZ>().get(),
+                device_handle2.template get<Particle::AttributeNames::forceX>().get(),
+                device_handle2.template get<Particle::AttributeNames::forceY>().get(),
+                device_handle2.template get<Particle::AttributeNames::forceZ>().get()),
+            stream);
       } else {
-        _cudawrapper.SoAFunctorN3PairWrapper(size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::posY>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::posZ>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::forceX>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::forceY>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::forceZ>().get(),
-                                             size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::posY>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::posZ>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceX>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceY>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceZ>().get(),
-                                             stream);
+        _cudawrapper.SoAFunctorN3PairWrapper(
+            LJFunctorCudaSoA<typename Particle::ParticleFloatingPointType>(
+                size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
+                device_handle2.template get<Particle::AttributeNames::posY>().get(),
+                device_handle2.template get<Particle::AttributeNames::posZ>().get(),
+                device_handle2.template get<Particle::AttributeNames::forceX>().get(),
+                device_handle2.template get<Particle::AttributeNames::forceY>().get(),
+                device_handle2.template get<Particle::AttributeNames::forceZ>().get()),
+            LJFunctorCudaSoA<typename Particle::ParticleFloatingPointType>(
+                size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+                device_handle1.template get<Particle::AttributeNames::posY>().get(),
+                device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+                device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+                device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+                device_handle1.template get<Particle::AttributeNames::forceZ>().get()),
+            stream);
       }
     } else {
-      _cudawrapper.SoAFunctorNoN3PairWrapper(size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::posY>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::posZ>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceX>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceY>().get(),
-                                             device_handle1.template get<Particle::AttributeNames::forceZ>().get(),
-                                             size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::posY>().get(),
-                                             device_handle2.template get<Particle::AttributeNames::posZ>().get(),
-                                             stream);
+      _cudawrapper.SoAFunctorNoN3PairWrapper(
+          LJFunctorCudaSoA<typename Particle::ParticleFloatingPointType>(
+              size1, device_handle1.template get<Particle::AttributeNames::posX>().get(),
+              device_handle1.template get<Particle::AttributeNames::posY>().get(),
+              device_handle1.template get<Particle::AttributeNames::posZ>().get(),
+              device_handle1.template get<Particle::AttributeNames::forceX>().get(),
+              device_handle1.template get<Particle::AttributeNames::forceY>().get(),
+              device_handle1.template get<Particle::AttributeNames::forceZ>().get()),
+          LJFunctorCudaSoA<typename Particle::ParticleFloatingPointType>(
+              size2, device_handle2.template get<Particle::AttributeNames::posX>().get(),
+              device_handle2.template get<Particle::AttributeNames::posY>().get(),
+              device_handle2.template get<Particle::AttributeNames::posZ>().get()),
+          stream);
     }
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
@@ -663,7 +677,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * Get the potential Energy
    * @return the potential Energy
    */
-  double getUpot() {
+  floatPrecision getUpot() {
     if (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
           "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
@@ -680,7 +694,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * Get the virial
    * @return the virial
    */
-  double getVirial() {
+  floatPrecision getVirial() {
     if (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
@@ -708,26 +722,26 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    const double cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare, shift6 = _shift6;
 
-    const std::array<double, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
-    const std::array<double, 3> highCorner = {_highCorner[0], _highCorner[1], _highCorner[2]};
+    const std::array<floatPrecision, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
+    const std::array<floatPrecision, 3> highCorner = {_highCorner[0], _highCorner[1], _highCorner[2]};
 
-    double upotSum = 0.;
-    double virialSumX = 0.;
-    double virialSumY = 0.;
-    double virialSumZ = 0.;
+    floatPrecision upotSum = 0.;
+    floatPrecision virialSumX = 0.;
+    floatPrecision virialSumY = 0.;
+    floatPrecision virialSumZ = 0.;
 
     for (size_t i = iFrom; i < iTo; ++i) {
-      double fxacc = 0;
-      double fyacc = 0;
-      double fzacc = 0;
+      floatPrecision fxacc = 0;
+      floatPrecision fyacc = 0;
+      floatPrecision fzacc = 0;
       const size_t listSizeI = neighborList[i].size();
       const size_t *const __restrict__ currentList = neighborList[i].data();
 
       // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
       bool inbox1;
-      double inbox1Mul = 0.;
+      floatPrecision inbox1Mul = 0.;
       if (duplicatedCalculations) {  // only for duplicated calculations we need this value
         inbox1 = autopas::utils::inBox({xptr[i], yptr[i], zptr[i]}, lowCorner, highCorner);
         inbox1Mul = inbox1 ? 1. : 0.;
@@ -755,7 +769,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       // if the size of the verlet list is larger than the given size vecsize,
       // we will use a vectorized version.
       if (listSizeI >= vecsize) {
-        alignas(64) std::array<double, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
+        alignas(64) std::array<floatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
         // broadcast of the position of particle i
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
           xtmp[tmpj] = xptr[i];
@@ -780,28 +794,28 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           for (size_t j = 0; j < vecsize; j++) {
             // const size_t j = currentList[jNeighIndex];
 
-            const double drx = xtmp[j] - xArr[j];
-            const double dry = ytmp[j] - yArr[j];
-            const double drz = ztmp[j] - zArr[j];
+            const floatPrecision drx = xtmp[j] - xArr[j];
+            const floatPrecision dry = ytmp[j] - yArr[j];
+            const floatPrecision drz = ztmp[j] - zArr[j];
 
-            const double drx2 = drx * drx;
-            const double dry2 = dry * dry;
-            const double drz2 = drz * drz;
+            const floatPrecision drx2 = drx * drx;
+            const floatPrecision dry2 = dry * dry;
+            const floatPrecision drz2 = drz * drz;
 
-            const double dr2 = drx2 + dry2 + drz2;
+            const floatPrecision dr2 = drx2 + dry2 + drz2;
 
-            const double mask = (dr2 <= cutoffsquare) ? 1. : 0.;
+            const floatPrecision mask = (dr2 <= cutoffsquare) ? 1. : 0.;
 
-            const double invdr2 = 1. / dr2 * mask;
-            const double lj2 = sigmasquare * invdr2;
-            const double lj6 = lj2 * lj2 * lj2;
-            const double lj12 = lj6 * lj6;
-            const double lj12m6 = lj12 - lj6;
-            const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+            const floatPrecision invdr2 = 1. / dr2 * mask;
+            const floatPrecision lj2 = sigmasquare * invdr2;
+            const floatPrecision lj6 = lj2 * lj2 * lj2;
+            const floatPrecision lj12 = lj6 * lj6;
+            const floatPrecision lj12m6 = lj12 - lj6;
+            const floatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
 
-            const double fx = drx * fac;
-            const double fy = dry * fac;
-            const double fz = drz * fac;
+            const floatPrecision fx = drx * fac;
+            const floatPrecision fy = dry * fac;
+            const floatPrecision fz = drz * fac;
 
             fxacc += fx;
             fyacc += fy;
@@ -812,20 +826,20 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
               fzArr[j] = fz;
             }
             if (calculateGlobals) {
-              double virialx = drx * fx;
-              double virialy = dry * fy;
-              double virialz = drz * fz;
-              double upot = (epsilon24 * lj12m6 + shift6) * mask;
+              floatPrecision virialx = drx * fx;
+              floatPrecision virialy = dry * fy;
+              floatPrecision virialz = drz * fz;
+              floatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
               if (duplicatedCalculations) {
                 // for non-newton3 the division is in the post-processing step.
-                double inbox2Mul = 0.;
+                floatPrecision inbox2Mul = 0.;
                 if (newton3) {
                   bool inbox2 = xArr[j] >= lowCorner[0] and xArr[j] < highCorner[0] and yArr[j] >= lowCorner[1] and
                                 yArr[j] < highCorner[1] and zArr[j] >= lowCorner[2] and zArr[j] < highCorner[2];
                   inbox2Mul = inbox2 ? 0.5 : 0.;
                 }
-                double inboxMul = inbox1Mul + inbox2Mul;
+                floatPrecision inboxMul = inbox1Mul + inbox2Mul;
                 upotSum += upot * inboxMul;
                 virialSumX += virialx * inboxMul;
                 virialSumY += virialy * inboxMul;
@@ -857,28 +871,28 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
 
-        const double drx = xptr[i] - xptr[j];
-        const double dry = yptr[i] - yptr[j];
-        const double drz = zptr[i] - zptr[j];
+        const floatPrecision drx = xptr[i] - xptr[j];
+        const floatPrecision dry = yptr[i] - yptr[j];
+        const floatPrecision drz = zptr[i] - zptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const floatPrecision drx2 = drx * drx;
+        const floatPrecision dry2 = dry * dry;
+        const floatPrecision drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const floatPrecision dr2 = drx2 + dry2 + drz2;
 
         if (dr2 > cutoffsquare) continue;
 
-        const double invdr2 = 1. / dr2;
-        const double lj2 = sigmasquare * invdr2;
-        const double lj6 = lj2 * lj2 * lj2;
-        const double lj12 = lj6 * lj6;
-        const double lj12m6 = lj12 - lj6;
-        const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+        const floatPrecision invdr2 = 1. / dr2;
+        const floatPrecision lj2 = sigmasquare * invdr2;
+        const floatPrecision lj6 = lj2 * lj2 * lj2;
+        const floatPrecision lj12 = lj6 * lj6;
+        const floatPrecision lj12m6 = lj12 - lj6;
+        const floatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
 
-        const double fx = drx * fac;
-        const double fy = dry * fac;
-        const double fz = drz * fac;
+        const floatPrecision fx = drx * fac;
+        const floatPrecision fy = dry * fac;
+        const floatPrecision fz = drz * fac;
 
         fxacc += fx;
         fyacc += fy;
@@ -889,10 +903,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           fzptr[j] -= fz;
         }
         if (calculateGlobals) {
-          double virialx = drx * fx;
-          double virialy = dry * fy;
-          double virialz = drz * fz;
-          double upot = (epsilon24 * lj12m6 + shift6);
+          floatPrecision virialx = drx * fx;
+          floatPrecision virialy = dry * fy;
+          floatPrecision virialz = drz * fz;
+          floatPrecision upot = (epsilon24 * lj12m6 + shift6);
 
           if (duplicatedCalculations) {
             // for non-newton3 the division is in the post-processing step.
@@ -952,22 +966,22 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
 
     // variables
-    std::array<double, 3> virialSum;
-    double upotSum;
+    std::array<floatPrecision, 3> virialSum;
+    floatPrecision upotSum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[4];
+    floatPrecision __remainingTo64[4];
   };
   // make sure of the size of AoSThreadData
-  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
+  //static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
+  floatPrecision _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
-  double _upotSum;
+  floatPrecision _upotSum;
   // sum of the virial, only calculated if calculateGlobals is true
-  std::array<double, 3> _virialSum;
+  std::array<floatPrecision, 3> _virialSum;
 
   // thread buffer for aos
   std::vector<AoSThreadData> _aosThreadData;
@@ -975,7 +989,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   // bool that defines whether duplicate calculations are happening
   bool _duplicatedCalculations;
   // lower and upper corner of the domain of the current process
-  std::array<double, 3> _lowCorner, _highCorner;
+  std::array<floatPrecision, 3> _lowCorner, _highCorner;
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
