@@ -389,7 +389,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
-  void resetGlobalValues() {
+  void initTraversal() override {
     _upotSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
@@ -402,7 +402,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * postprocesses global values, e.g. upot and virial
    * @param newton3
    */
-  void postProcessGlobalValues(bool newton3) {
+  void endTraversal(bool newton3) override {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, please don't call endTraversal(bool newton3) twice without calling "
