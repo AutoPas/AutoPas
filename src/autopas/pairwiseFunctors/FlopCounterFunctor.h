@@ -250,20 +250,28 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
+#if defined(AUTOPAS_CUDA)
     // estimate flops on GPU
     size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
     _distanceCalculations += size * size;
     _kernelCalls += size * size;
+#else
+    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+#endif
   }
 
   void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
                    CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
+#if defined(AUTOPAS_CUDA)
     // estimate flops on GPU
     size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
     size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
 
     _distanceCalculations += size1 * size2;
     _kernelCalls += size1 * size2;
+#else
+    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+#endif
   }
 
   /**
