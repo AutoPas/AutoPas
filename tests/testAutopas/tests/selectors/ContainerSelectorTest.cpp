@@ -10,10 +10,11 @@
 TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
   const double cutoff = 1;
+  const double cellSize = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, verletSkin,
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, cellSize, verletSkin,
                                                                  verletRebuildFrequency);
 
   // expect an exception if nothing is selected yet

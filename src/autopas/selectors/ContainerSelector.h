@@ -35,15 +35,17 @@ class ContainerSelector {
    * Constructor for the ContainerSelecor class.
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
-   * @param cutoff  Cutoff radius to be used in this container.
+   * @param cutoff Cutoff radius to be used in this container.
+   * @param cellSize Cell size to be used in this container.
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
   ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                    double verletSkin, unsigned int verletRebuildFrequency)
+                    double cellSize, double verletSkin, unsigned int verletRebuildFrequency)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
+        _cellSize(cellSize),
         _verletSkin(verletSkin),
         _verletRebuildFrequency(verletRebuildFrequency),
         _currentContainer(nullptr) {}
@@ -71,6 +73,7 @@ class ContainerSelector {
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
+  double _cellSize;
   double _verletSkin;
   unsigned int _verletRebuildFrequency;
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
@@ -87,7 +90,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       break;
     }
     case linkedCells: {
-      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
+      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _cellSize);
       break;
     }
     case verletLists: {

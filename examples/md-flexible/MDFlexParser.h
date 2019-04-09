@@ -25,6 +25,7 @@ class MDFlexParser {
   std::vector<autopas::ContainerOption> getContainerOptions() const;
   autopas::SelectorStrategy getSelectorStrategy() const;
   double getCutoff() const;
+  double getCellSize() const;
   vector<autopas::DataLayoutOption> getDataLayoutOptions() const;
   double getDistributionMean() const;
   double getDistributionStdDev() const;
@@ -60,6 +61,7 @@ class MDFlexParser {
  private:
   double boxLength = -1;
   double cutoff = 1.;
+  double cellSize = 1.;
   double distributionMean = 5.;
   double distributionStdDev = 2.;
   FunctorOption functorOption = FunctorOption::lj12_6;
