@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 
   C08Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, true> traversalc08N3(
       lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  C01Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> C01CudaN3(
+  C01Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> C01Cuda(
       lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalLCcuda(
       lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &C01CudaN3);
+    lc.iteratePairwise(&func, &C01Cuda);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
