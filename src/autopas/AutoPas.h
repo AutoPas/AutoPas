@@ -207,7 +207,13 @@ class AutoPas {
    * Set cutoff radius.
    * @param cutoff
    */
-  void setCutoff(double cutoff) { AutoPas::_cutoff = cutoff; }
+  void setCutoff(double cutoff) {
+    if (cutoff <= 0.0) {
+      AutoPasLog(error, "Cutoff <= 0.0: {}", cutoff);
+      utils::ExceptionHandler::exception("Error: Cutoff <= 0.0!");
+    }
+    AutoPas::_cutoff = cutoff;
+  }
 
   /**
    * Get cell size.
@@ -219,7 +225,13 @@ class AutoPas {
    * Set cell size.
    * @param cellSize
    */
-  void setCellSize(double cellSize) { AutoPas::_cellSize = cellSize; }
+  void setCellSize(double cellSize) {
+    if (cellSize <= 0.0) {
+      AutoPasLog(error, "cell size <= 0.0: {}", cellSize);
+      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+    }
+    AutoPas::_cellSize = cellSize;
+  }
 
   /**
    * Get length added to the cutoff for the Verlet lists' skin.
