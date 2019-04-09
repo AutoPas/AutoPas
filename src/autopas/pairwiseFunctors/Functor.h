@@ -38,6 +38,19 @@ class Functor {
   virtual ~Functor() = default;
 
   /**
+   * This function is called at the start of each traversal.
+   * Use it for resetting global values or initializing them.
+   */
+  virtual void initTraversal(){};
+
+  /**
+   * This function is called at the end of each traversal.
+   * You may accumulate values in this step.
+   * @param newton3
+   */
+  virtual void endTraversal(bool newton3){};
+
+  /**
    * @brief Functor for arrays of structures (AoS).
    *
    * This functor should calculate the forces or any other pair-wise interaction
