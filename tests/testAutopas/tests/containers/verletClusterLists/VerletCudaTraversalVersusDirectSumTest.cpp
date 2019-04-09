@@ -38,7 +38,7 @@ void VerletCudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
   }
 }
 
-template <bool useNewton3>
+template <bool useNewton3, autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos>
 void VerletCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   fillContainerWithMolecules(numMolecules, _directSum);
   // now fill second container with the molecules from the first one, because
@@ -60,8 +60,8 @@ void VerletCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, do
 
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, useNewton3>
       traversalDS(&func);
-  _directSum.iteratePairwiseAoS(&func, &traversalDS, useNewton3);
-  _verletCluster.iteratePairwiseAoS(&func, &traversalVerletCluster, useNewton3);
+  _directSum.iteratePairwise(&func, &traversalDS, useNewton3);
+  _verletCluster.iteratePairwise(&func, &traversalVerletCluster, useNewton3);
   _verletCluster.deleteDummyParticles();
 
   auto itDirect = _directSum.begin();
@@ -89,7 +89,6 @@ void VerletCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, do
     }
   }
 }
-#if defined(AUTOPAS_CUDA)
 TEST_F(VerletCudaTraversalVersusDirectSumTest, test100) {
   unsigned long numMolecules = 100;
 
@@ -153,4 +152,3 @@ TEST_F(VerletCudaTraversalVersusDirectSumTest, testN31000) {
   double rel_err_tolerance = 1.5e-12;
   test<true>(numMolecules, rel_err_tolerance);
 }
-#endif

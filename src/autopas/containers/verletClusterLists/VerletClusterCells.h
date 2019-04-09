@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell<Particle>> {
+class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<Particle>> {
   /**
    * the index type to access the particle cells
    */
@@ -45,10 +45,11 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
    * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param clusterSize size of clusters
    */
-  VerletClusterCluster(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
-                       double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 32)
+  VerletClusterCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+                     double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 32)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
                                                                 allVCLApplicableTraversals()),
+        _firstHaloClusterId(1),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -86,6 +87,33 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
    * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
+  void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
+    if (needsRebuild()) {
+      this->rebuild();
+    }
+#if defined(AUTOPAS_CUDA)
+    if (auto* cudawrapper = f->getCudaWrapper()) {
+      cudawrapper->setNumThreads(_clusterSize);
+    }
+#endif
+    traversal->initTraversal(_clusters);
+    traversal->traverseCellPairs(_clusters, _neighborCellIds);
+    traversal->endTraversal(_clusters);
+
+    // we iterated, so increase traversal counter
+    _traversalsSinceLastRebuild++;
+  }
+
+  /**
+   * Function to iterate over all pairs of particles.
+   * This function only handles short-range interactions.
+   * @tparam the type of ParticleFunctor
+   * @tparam Traversal
+   * @param f functor that describes the pair-potential
+   * @param traversal not used
+   * @param useNewton3 whether newton 3 optimization should be used
+   */
+  template <class ParticleFunctor, class Traversal>
   void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
     if (needsRebuild()) {
       this->rebuild();
@@ -108,6 +136,7 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
     if (needsRebuild()) {
       this->rebuild();
     }
+
     loadSoAs(f);
     traversal->traverseCellPairs(_clusters, _neighborCellIds);
     extractSoAs(f);
@@ -144,17 +173,24 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
    * @copydoc VerletLists::addParticle()
    */
   void addParticle(Particle& p) override {
-    _neighborListIsValid = false;
-    _clusters[0].resize(_dummyStarts[0]);
-    // add particle somewhere, because lists will be rebuild anyways
-    _clusters[0].addParticle(p);
-    ++_dummyStarts[0];
+    if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+      _neighborListIsValid = false;
+      _clusters[0].resize(_dummyStarts[0]);
+      // add particle somewhere, because lists will be rebuild anyways
+      _clusters[0].addParticle(p);
+      ++_dummyStarts[0];
+    } else {
+      utils::ExceptionHandler::exception(
+          "VerletCluster: trying to add particle that is not inside the bounding box.\n" + p.toString());
+    }
   }
 
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
   void addHaloParticle(Particle& haloParticle) override {
+    _neighborListIsValid = false;
+    _haloInsertQueue.push_back(haloParticle);
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
@@ -162,6 +198,7 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
+    _clusters.resize(_firstHaloClusterId);
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.deleteHaloParticles not yet implemented.");
   }
 
@@ -236,12 +273,18 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
 
     // get all particles and clear clusters
     std::vector<Particle> invalidParticles;
-    for (auto& cluster : _clusters) {
-      for (index_t i = 0; i < cluster._particles.size(); ++i) {
-        if (utils::inBox(cluster._particles[i].getR(), _boxMin, _boxMax))
-          invalidParticles.push_back(cluster._particles[i]);
+    index_t i = 0;
+    for (; i < _firstHaloClusterId; ++i) {
+      for (auto& p : _clusters[i]._particles) {
+        invalidParticles.push_back(p);
       }
-      cluster.clear();
+      _clusters[i].clear();
+    }
+    for (; i < _clusters.size(); ++i) {
+      for (auto& p : _clusters[i]._particles) {
+        _haloInsertQueue.push_back(p);
+      }
+      _clusters[i].clear();
     }
 
     // estimate particle density
@@ -262,7 +305,6 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
 
     // resize to number of grids
     _clusters.resize(sizeGrid);
-    _dummyStarts.resize(sizeGrid);
     _neighborCellIds.clear();
 
     // put particles into grid cells
@@ -272,18 +314,29 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
       _clusters[index].addParticle(particle);
     }
 
-    index_t numClusters = 0;
+    index_t numOwnClusters = 0;
     // sort by last dimension
     for (auto& cluster : _clusters) {
       cluster.sortByDim(2);
-      numClusters += ((cluster.numParticles()) / _clusterSize) + 1;
+      numOwnClusters += ((cluster.numParticles()) / _clusterSize) + 1;
     }
-    numClusters = std::max((index_t)1, numClusters);
+    numOwnClusters = std::max((index_t)1, numOwnClusters);
 
-    _clusters.resize(numClusters);
-    _neighborCellIds.resize(numClusters, {});
-    _boundingBoxes.resize(numClusters, {_boxMax[0] + 8 * _cutoff, _boxMax[1] + 8 * _cutoff, _boxMax[2] + 8 * _cutoff,
-                                        _boxMin[0] - 8 * _cutoff, _boxMin[1] - 8 * _cutoff, _boxMin[2] - 8 * _cutoff});
+    _firstHaloClusterId = numOwnClusters;
+
+    _clusters.resize(numOwnClusters + 6);
+
+    // put Halo particles into border Cells
+    for (auto& haloParticle : _haloInsertQueue) {
+      _clusters[_firstHaloClusterId + 1].addParticle(haloParticle);
+    }
+
+    _haloInsertQueue.clear();
+    _dummyStarts.resize(_clusters.size(), 0);
+    _neighborCellIds.resize(_clusters.size(), {});
+    _boundingBoxes.resize(_clusters.size(),
+                          {_boxMax[0] + 8 * _cutoff, _boxMax[1] + 8 * _cutoff, _boxMax[2] + 8 * _cutoff,
+                           _boxMin[0] - 8 * _cutoff, _boxMin[1] - 8 * _cutoff, _boxMin[2] - 8 * _cutoff});
 
     index_t cid = sizeGrid;
     for (index_t i = 0; i < sizeGrid; ++i) {
@@ -316,8 +369,8 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
       }
     }
 
-    for (index_t i = 0; i < numClusters; ++i) {
-      for (index_t j = i + 1; j < numClusters; ++j) {
+    for (index_t i = 0; i < numOwnClusters; ++i) {
+      for (index_t j = i + 1; j < numOwnClusters; ++j) {
         if (boxesOverlap(_boundingBoxes[i], _boundingBoxes[j])) {
           _neighborCellIds[i].push_back(j);
         }
@@ -353,71 +406,17 @@ class VerletClusterCluster : public ParticleContainer<Particle, FullParticleCell
     return true;
   }
 
-  /**
-   * Iterate over all cells and load the data in the SoAs.
-   * @tparam ParticleFunctor
-   * @param functor
-   */
-  template <class ParticleFunctor>
-  void loadSoAs(ParticleFunctor* functor) {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < this->_clusters.size(); ++i) {
-      functor->SoALoader(this->_clusters[i], this->_clusters[i]._particleSoABuffer);
-    }
-  }
-
-  /**
-   * Iterate over all cells and fetch the data from the SoAs.
-   * @tparam ParticleFunctor
-   * @param functor
-   */
-  template <class ParticleFunctor>
-  void extractSoAs(ParticleFunctor* functor) {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < this->_clusters.size(); ++i) {
-      functor->SoAExtractor(this->_clusters[i], this->_clusters[i]._particleSoABuffer);
-    }
-  }
-
-  // TODO parallel
-  /**
-   * Iterate over all cells and load the data from the SoAs to the GPU.
-   * @tparam ParticleFunctor
-   * @param functor
-   */
-  template <class ParticleFunctor>
-  void loadSoAsCuda(ParticleFunctor* functor) {
-    for (size_t i = 0; i < this->_clusters.size(); ++i) {
-      functor->SoALoader(this->_clusters[i], this->_clusters[i]._particleSoABuffer);
-      functor->deviceSoALoader(this->_clusters[i]._particleSoABuffer, this->_clusters[i]._particleSoABufferDevice);
-    }
-  }
-
-  // TODO parallel
-  /**
-   * Iterate over all cells and fetch the data from the GPU to the SoAs.
-   * @tparam ParticleFunctor
-   * @param functor
-   */
-  template <class ParticleFunctor>
-  void extractSoAsCuda(ParticleFunctor* functor) {
-    for (size_t i = 0; i < this->_clusters.size(); ++i) {
-      functor->deviceSoAExtractor(this->_clusters[i]._particleSoABuffer, this->_cells[i]._particleSoABufferDevice);
-      functor->SoAExtractor(this->_clusters[i], this->_clusters[i]._particleSoABuffer);
-    }
-  }
-
   /// internal storage, particles are split into a grid in xy-dimension and then cut in z dimension
   std::vector<FullParticleCell<Particle>> _clusters;
 
+  /// first Cluster ID to be a Halo Cluster
+  index_t _firstHaloClusterId;
+
   /// indeces where dummy particles in the cells start
   std::vector<index_t> _dummyStarts;
+
+  /// Stores Halo Particles to be inserted
+  std::vector<Particle> _haloInsertQueue;
 
   // id of neighbor clusters of a clusters
   std::vector<std::vector<index_t>> _neighborCellIds;

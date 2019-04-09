@@ -1,31 +1,31 @@
 /**
- * @file VerletClusterListsTest.cpp
- * @author nguyen
- * @date 21.10.18
+ * @file VerletClusterCellsTest.cpp
+ * @author jspahl
+ * @date 6.4.19
  */
 
-#include "VerletClusterClusterTest.h"
-#include "autopas/containers/verletClusterLists/VerletClusterCluster.h"
+#include "VerletClusterCellsTest.h"
+#include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterClusterTraversal.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Invoke;
 
-TEST_F(VerletClusterClusterTest, VerletListConstructor) {
+TEST_F(VerletClusterCellsTest, VerletListConstructor) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletClusterCluster<Particle> verletLists(min, max, cutoff, skin);
+  autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin);
 }
 
-TEST_F(VerletClusterClusterTest, testVerletListBuild) {
+TEST_F(VerletClusterCellsTest, testVerletListBuild) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletClusterCluster<Particle> verletLists(min, max, cutoff, skin);
+  autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);

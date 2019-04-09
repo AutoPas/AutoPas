@@ -1,9 +1,8 @@
 /**
- * @file VerletClusterListsTest.h
- * @author nguyen
- * @date 21.10.18
+ * @file VerletClusterCellsTest.h
+ * @author jspahl
+ * @date 6.4.19
  */
-
 #pragma once
 
 #include <gtest/gtest.h>
@@ -16,4 +15,4 @@
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class VerletClusterClusterTest : public AutoPasTestBase {};
+class VerletClusterCellsTest : public AutoPasTestBase {};

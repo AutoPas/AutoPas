@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
-#include "autopas/containers/verletClusterLists/VerletClusterCluster.h"
+#include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class VerletCudaTraversalVersusDirectSumTest : public AutoPasTestBase {
@@ -34,9 +34,9 @@ class VerletCudaTraversalVersusDirectSumTest : public AutoPasTestBase {
       unsigned long numMolecules,
       autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
 
-  template <bool useNewton3>
+  template <bool useNewton3, autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos>
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
   autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
-  autopas::VerletClusterCluster<autopas::MoleculeLJ> _verletCluster;
+  autopas::VerletClusterCells<autopas::MoleculeLJ> _verletCluster;
 };
