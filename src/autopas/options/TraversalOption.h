@@ -23,7 +23,8 @@ enum TraversalOption {
   c18Verlet = 6,
   c01Verlet = 7,
   c01Cuda = 8,
-  ClusterToClusterVerlet = 9,
+  verletTraversal = 9,
+  ClusterToClusterVerlet = 10,
   dummyTraversal = 666,
 };
 
@@ -40,6 +41,8 @@ static const std::vector<TraversalOption> allTraversalOptions = {
     TraversalOption::c18Verlet,
     TraversalOption::c01Verlet,
     TraversalOption::c01Cuda,
+    TraversalOption::verletTraversal,
+    TraversalOption::ClusterToClusterVerlet,
 };
 
 }  // namespace autopas

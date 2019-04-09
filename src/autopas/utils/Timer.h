@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ctime>
+#include <chrono>
 
 namespace autopas {
 namespace utils {
@@ -24,7 +24,7 @@ class Timer {
   /**
    * start the timer.
    */
-  void start();
+  void start() noexcept;
 
   /**
    * stops the timer and returns the time elapsed in seconds since the last call
@@ -34,7 +34,7 @@ class Timer {
   double stop();
 
  private:
-  struct timespec _startTime;
+  std::chrono::high_resolution_clock::time_point _startTime;
 };
 }  // namespace utils
 }  // namespace autopas

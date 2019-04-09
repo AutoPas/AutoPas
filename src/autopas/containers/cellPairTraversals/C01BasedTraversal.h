@@ -8,6 +8,7 @@
 
 #include <autopas/utils/WrapOpenMP.h>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -32,31 +33,19 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {}
+      : CellPairTraversal<ParticleCell>(dims), _dataLayoutConverter(pairwiseFunctor) {}
 
-  /**
-   * C01 traversals are only usable if useNewton3 is disabled.
-   *
-   * This is because the cell functor in the c01 traversal is hardcoded to not allow newton 3 even if only one thread is
-   * used.
-   *
-   * @return
-   */
-  bool isApplicable() override {
-#if defined(AUTOPAS_CUDA)
-    int nDevices;
-    cudaGetDeviceCount(&nDevices);
-    if (DataLayout == DataLayoutOption::cuda) {
-      return nDevices > 0;
-    } else {
-      return not useNewton3;
+  void initTraversal(std::vector<ParticleCell>& cells) override {
+    for (auto& cell : cells) {
+      _dataLayoutConverter.loadDataLayout(cell);
     }
-#else
-    return not useNewton3;
-#endif
   }
 
-  DataLayoutOption requiredDataLayout() override { return DataLayout; }
+  void endTraversal(std::vector<ParticleCell>& cells) override {
+    for (auto& cell : cells) {
+      _dataLayoutConverter.storeDataLayout(cell);
+    }
+  }
 
  protected:
   /**
@@ -68,6 +57,12 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   template <typename LoopBody>
   inline void c01Traversal(LoopBody&& loopBody);
+
+ private:
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

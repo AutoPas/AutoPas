@@ -1,7 +1,7 @@
 /**
  * @file main.cpp
- * @date 17.01.2018
- * @author tchipev
+ * @date 2.01.2019
+ * @author jspahl
  */
 
 #include <iostream>
@@ -15,11 +15,11 @@
 using namespace std;
 using namespace autopas;
 
-class MyMoleculeFP32 : public ParticleFP64 {
+class MyMoleculeFP64 : public ParticleFP64 {
  public:
-  MyMoleculeFP32() : ParticleFP64() {}
+  MyMoleculeFP64() : ParticleFP64() {}
 
-  MyMoleculeFP32(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : ParticleFP64(r, v, i) {}
+  MyMoleculeFP64(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : ParticleFP64(r, v, i) {}
 
   void print() {
     cout << "Molecule with position: ";
@@ -33,19 +33,17 @@ class MyMoleculeFP32 : public ParticleFP64 {
     }
     cout << "ID: " << getID() << endl;
   }
-
-  typedef autopas::utils::SoAType<size_t, float, float, float, float, float, float>::Type SoAArraysType;
-  typedef autopas::utils::CudaSoAType<size_t, float, float, float, float, float, float>::Type CudaDeviceArraysType;
 };
 
 template <class ParticleCell, class Particle>
-void fillSpaceWithGrid(ParticleCell &pc, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double gridsize,
-                       int maxN = 10000) {
+void fillSpaceWithGrid(ParticleCell &pc, std::array<typename Particle::ParticleFloatingPointType, 3> boxMin,
+                       std::array<typename Particle::ParticleFloatingPointType, 3> boxMax,
+                       typename Particle::ParticleFloatingPointType gridsize, int maxN = 10000) {
   int i = 0;
 
-  for (double x = boxMin[0]; x < boxMax[0]; x += gridsize) {
-    for (double y = boxMin[1]; y < boxMax[1]; y += gridsize) {
-      for (double z = boxMin[2]; z < boxMax[2]; z += gridsize) {
+  for (typename Particle::ParticleFloatingPointType x = boxMin[0]; x < boxMax[0]; x += gridsize) {
+    for (typename Particle::ParticleFloatingPointType y = boxMin[1]; y < boxMax[1]; y += gridsize) {
+      for (typename Particle::ParticleFloatingPointType z = boxMin[2]; z < boxMax[2]; z += gridsize) {
         Particle m({x, y, z}, {0., 0., 0.}, static_cast<unsigned long>(i));
         pc.addParticle(m);
         if (++i >= maxN) {
@@ -81,15 +79,15 @@ void testRun(LJFunctor<Particle, FullParticleCell<Particle>> &func, FullParticle
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   auto soloT = std::chrono::duration_cast<std::chrono::microseconds>(mid - start).count();
   auto pairT = std::chrono::duration_cast<std::chrono::microseconds>(stop - mid).count();
-  cout << "->" << duration << "microseconds; (" << soloT << ", " << pairT << ")" << endl;
+  cout << "->" << duration << " microseconds; (" << soloT << ", " << pairT << ")" << endl;
 }
 
 template <typename Particle>
 void run(int numParticles) {
   autopas::Logger::create();
 
-  std::array<double, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
-  double cutoff = 100.0;
+  std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
+  typename Particle::ParticleFloatingPointType cutoff = 100.0;
 
   FullParticleCell<Particle> fpc1;
   FullParticleCell<Particle> fpc2;
@@ -100,6 +98,7 @@ void run(int numParticles) {
   typedef LJFunctor<Particle, FullParticleCell<Particle>> Func;
   Func func(cutoff, 1.0, 1.0, 0.0);
 
+  // number of threads used per block by the device
   vector<int> v = {32, 64, 128, 256, 512, 1024};
   for (auto it : v) {
     testRun(func, fpc1, fpc2, it, false);
@@ -119,7 +118,7 @@ int main(int argc, char **argv) {
   run<ParticleFP64>(numParticles);
 
   cout << "Test single precision" << endl;
-  run<MyMoleculeFP32>(numParticles);
+  run<ParticleFP32>(numParticles);
 
   return EXIT_SUCCESS;
 }

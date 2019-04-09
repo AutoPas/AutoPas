@@ -30,6 +30,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
                                          {"log-level", required_argument, nullptr, 'l'},
+                                         {"log-file", required_argument, nullptr, 'L'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk", required_argument, nullptr, 'w'},
@@ -192,6 +193,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'L': {
+        logFileName = strArg;
+        break;
+      }
       case 'm': {
         try {
           distributionMean = stod(strArg);
@@ -317,8 +322,7 @@ void MDFlexParser::printConfig() {
        << ":  " << iterableToString(containerOptions) << endl;
 
   // if verlet lists are in the container options print verlet config data
-  if (find(containerOptions.begin(), containerOptions.end(), autopas::ContainerOption::verletLists) !=
-      containerOptions.end()) {
+  if (iterableToString(containerOptions).find("erlet") != std::string::npos) {
     cout << setw(valueOffset) << left << "Verlet rebuild frequency"
          << ":  " << verletRebuildFrequency << endl;
 
@@ -450,3 +454,5 @@ autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 autopas::SelectorStrategy MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
 
 std::vector<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
+
+const string &MDFlexParser::getLogFileName() const { return logFileName; }

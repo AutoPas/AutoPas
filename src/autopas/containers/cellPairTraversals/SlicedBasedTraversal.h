@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -38,7 +39,11 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims), _dimsPerLength{}, _sliceThickness{}, locks() {
+      : CellPairTraversal<ParticleCell>(dims),
+        _dimsPerLength{},
+        _sliceThickness{},
+        locks(),
+        _dataLayoutConverter(pairwiseFunctor) {
     rebuild(dims);
   }
 
@@ -56,8 +61,17 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
 #endif
   }
 
-  DataLayoutOption requiredDataLayout() override { return DataLayout; }
+  void initTraversal(std::vector<ParticleCell> &cells) override {
+    for (auto &cell : cells) {
+      _dataLayoutConverter.loadDataLayout(cell);
+    }
+  }
 
+  void endTraversal(std::vector<ParticleCell> &cells) override {
+    for (auto &cell : cells) {
+      _dataLayoutConverter.storeDataLayout(cell);
+    }
+  }
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  protected:
@@ -79,6 +93,11 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::vector<unsigned long> _sliceThickness;
   std::vector<AutoPasLock> locks;
+
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

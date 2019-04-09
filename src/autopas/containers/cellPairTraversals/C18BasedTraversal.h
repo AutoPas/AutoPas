@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -31,7 +32,7 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {}
+      : CellPairTraversal<ParticleCell>(dims), _dataLayoutConverter(pairwiseFunctor) {}
 
   /**
    * C18 traversals are always usable.
@@ -47,7 +48,17 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
 #endif
   }
 
-  DataLayoutOption requiredDataLayout() override { return DataLayout; }
+  void initTraversal(std::vector<ParticleCell>& cells) override {
+    for (auto& cell : cells) {
+      _dataLayoutConverter.loadDataLayout(cell);
+    }
+  }
+
+  void endTraversal(std::vector<ParticleCell>& cells) override {
+    for (auto& cell : cells) {
+      _dataLayoutConverter.storeDataLayout(cell);
+    }
+  }
 
  protected:
   /**
@@ -56,6 +67,12 @@ class C18BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   template <typename LoopBody>
   inline void c18Traversal(LoopBody&& loopBody);
+
+ private:
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

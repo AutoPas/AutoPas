@@ -48,7 +48,9 @@ class VerletClusterClusterTraversal : public CellPairTraversal<ParticleCell> {
 #endif
   }
 
-  DataLayoutOption requiredDataLayout() override { return DataLayout; }
+  void initTraversal(std::vector<ParticleCell> &cells) override {}
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {}
 
   /**
    * This function interacts all cells with the other cells with their index in neighborCellIds

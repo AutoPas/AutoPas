@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#should abort on errors!
+set -e
 export LC_NUMERIC=en_US.UTF-8
 
 if [[ "$#" -lt 1 ]]
@@ -67,82 +69,87 @@ do
         VLSkin=(0)
     fi
 
-    for dataLayout in AoS SoA cuda;
+    for dataLayout in AoS SoA;
     do
         separate "${dataLayout}"
 
-        for iVL in `seq 0 $(( ${#VLRebuild[@]} - 1 ))` ;
+        for newton3Opt in on off ;
         do
-            configPrinted=false
 
-            # since this loop only has one iteration for non verlet container only print for verlet
-            if [[ ${container} =~ 'Verlet' ]];
-            then
-                separate "VLRebuild: ${VLRebuild[$iVL]} VLSkin: ${VLSkin[$iVL]}"
-                filename="runtimes_${container}_${dataLayout}_${VLRebuild[$iVL]}_${VLSkin[$iVL]}.csv"
-            else
-                filename="runtimes_${container}_${dataLayout}.csv"
-            fi
+            separate "Newton 3 ${newton3Opt}"
 
-            # workaround because there is no traversal for Verlet clusters with newton 3 yet.
-            if [[ ${container} =~ 'VerletCluster' ]];
-            then
-                noNewton3="--no-newton3"
-            else
-                noNewton3=""
-            fi
-
-            # iterate over molecules with the correct repetition
-            for i in `seq 0 $(( ${#Mols[@]} - 1 ))` ;
+            # loop for different verlet rebuild frequencies and skins
+            for iVL in `seq 0 $(( ${#VLRebuild[@]} - 1 ))` ;
             do
-                thisReps=${Reps[$i]}
-                # Direct sum is slow for huge number of particles -> limit number of iterations
-                if [[ ${container} = 'DirectSum' && ${Mols[$i]} -ge 2048 ]];
+                configPrinted=false
+
+                # since this loop only has one iteration for non verlet container only print for verlet
+                if [[ ${container} =~ 'Verlet' ]];
                 then
-                    thisReps=3
+                    separate "VLRebuild: ${VLRebuild[$iVL]} VLSkin: ${VLSkin[$iVL]}"
+                    filename="runtimes_${container}_${dataLayout}_N3${newton3Opt}_${VLRebuild[$iVL]}_${VLSkin[$iVL]}.csv"
+                else
+                    filename="runtimes_${container}_${dataLayout}_N3${newton3Opt}.csv"
                 fi
 
-                separate "Particles: ${Mols[$i]} Iterations: ${thisReps}"
+                # workaround because there is no traversal for Verlet clusters with newton 3 yet.
+                if [[ ${container} =~ 'VerletCluster' && ${newton3Opt} =~ 'on' ]];
+                then
+                    continue
+                fi
 
-                # workaround because bash3 does not support declare -A
-                t=traversals__${container}
-
-                output=$(${EXECUTABLE} \
-                    --container ${container} \
-                    --traversal ${!t} \
-                    --data-layout ${dataLayout} \
-                    --cutoff 1 \
-                    --box-length 10 \
-                    --particles-generator uniform \
-                    --particles-total ${Mols[$i]} \
-                    --iterations ${thisReps} \
-                    --tuning-interval $(( ${thisReps} + 1 )) \
-                    --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
-                    --verlet-skin-radius ${VLSkin[$iVL]} \
-                    --no-flops \
-                    ${noNewton3}
-                )
-
-                printf "${output}\n"
-
-                if [[ "${SILENT}" = false ]] ; then
-                    if [[ "${configPrinted}" = false ]] ; then
-                        configPrinted=true
-                        # print all output lines until, excluding, "Using" (this is the whole config part)
-                        allMols=${Mols[@]}
-                        allIterations=${Reps[@]}
-                        sed '/Using/Q' <<< "${output}" | sed -e "s|\( *total[ :]*\)[0-9]*|\1${allMols}|" -e "s|\(Iterations[ :]*\)[0-9]*|\1${allIterations}|" >> ${filename}
-                        echo >> ${filename}
-                        printf "%12s%15s%15s%15s%24s\n" "NumParticles" "GFLOPs/s" "MFUPs/s" "Time[micros]" "SingleIteration[micros]" >> ${filename}
+                # iterate over molecules with the correct repetition
+                for i in `seq 0 $(( ${#Mols[@]} - 1 ))` ;
+                do
+                    thisReps=${Reps[$i]}
+                    # Direct sum is slow for huge number of particles -> limit number of iterations
+                    if [[ ${container} = 'DirectSum' && ${Mols[$i]} -ge 2048 ]];
+                    then
+                        thisReps=3
                     fi
 
-                    gflops=$(echo "$output" | sed --quiet -e 's|GFLOPs/sec.*: \(.*\)|\1|gp')
-                    mfups=$(echo "$output" | sed --quiet -e 's|MFUPs/sec.*: \(.*\)|\1|gp')
-                    timeTotal=$(echo "$output" | sed --quiet -e 's|Time total.*: \(.*\) .*s (.*|\1|gp')
-                    timeOne=$(echo "$output" | sed --quiet -e 's|One iteration.*: \(.*\) .*s (.*|\1|gp')
+                    separate "Particles: ${Mols[$i]} Iterations: ${thisReps}"
 
-                    printf "%12d%15.2f%15.2f%15.2f%24.2f\n" "${Mols[$i]}" "$gflops" "$mfups" "$timeTotal" "$timeOne"  >> ${filename}
-                fi
+                    # workaround because bash3 does not support declare -A
+                    t=traversals__${container}
+
+                    output=$(${EXECUTABLE} \
+                        --container ${container} \
+                        --traversal ${!t} \
+                        --data-layout ${dataLayout} \
+                        --cutoff 1 \
+                        --box-length 10 \
+                        --particles-generator uniform \
+                        --particles-total ${Mols[$i]} \
+                        --iterations ${thisReps} \
+                        --tuning-interval $(( ${thisReps} + 1 )) \
+                        --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
+                        --verlet-skin-radius ${VLSkin[$iVL]} \
+                        --no-flops \
+                        --newton3 ${newton3Opt}
+                    )
+
+                    printf "${output}\n"
+
+                    if [[ "${SILENT}" = false ]] ; then
+                        if [[ "${configPrinted}" = false ]] ; then
+                            configPrinted=true
+                            # print all output lines until, excluding, "Using" (this is the whole config part)
+                            allMols=${Mols[@]}
+                            allIterations=${Reps[@]}
+                            sed '/Using/Q' <<< "${output}" | sed -e "s|\( *total[ :]*\)[0-9]*|\1${allMols}|" -e "s|\(Iterations[ :]*\)[0-9]*|\1${allIterations}|" >> ${filename}
+                            echo >> ${filename}
+                            printf "%12s%15s%15s%15s%24s\n" "NumParticles" "GFLOPs/s" "MFUPs/s" "Time[micros]" "SingleIteration[micros]" >> ${filename}
+                        fi
+
+                        gflops=$(echo "$output" | sed --quiet -e 's|GFLOPs/sec.*: \(.*\)|\1|gp')
+                        mfups=$(echo "$output" | sed --quiet -e 's|MFUPs/sec.*: \(.*\)|\1|gp')
+                        timeTotal=$(echo "$output" | sed --quiet -e 's|Time total.*: \(.*\) .*s (.*|\1|gp')
+                        timeOne=$(echo "$output" | sed --quiet -e 's|One iteration.*: \(.*\) .*s (.*|\1|gp')
+
+                        printf "%12d%15.2f%15.2f%15.2f%24.2f\n" "${Mols[$i]}" "$gflops" "$mfups" "$timeTotal" "$timeOne"  >> ${filename}
+                    fi
+                done
             done
         done
     done

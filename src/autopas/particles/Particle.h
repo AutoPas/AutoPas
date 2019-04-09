@@ -25,8 +25,6 @@ namespace autopas {
 template <typename floatType>
 class ParticleBase {
  public:
-  typedef floatType ParticleFloatingPointType;
-
   ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
 
   /**
@@ -135,6 +133,11 @@ class ParticleBase {
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
+
+  /**
+   * Floating Point Type used for this particle
+   */
+  typedef floatType ParticleFloatingPointType;
 
   /**
    * the type for the soa storage

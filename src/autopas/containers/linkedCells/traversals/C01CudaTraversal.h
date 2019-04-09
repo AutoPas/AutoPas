@@ -14,7 +14,7 @@
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 #if defined(AUTOPAS_CUDA)
-#include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "autopas/utils/CudaStreamHandler.h"
@@ -71,7 +71,9 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
 #endif
   }
 
-  DataLayoutOption requiredDataLayout() override { return DataLayoutOption::aos; }
+  void initTraversal(std::vector<ParticleCell> &cells) override {}
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {}
 
  private:
   /**
@@ -140,7 +142,7 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
 #if defined(AUTOPAS_CUDA)
   _nonHaloCells.copyHostToDevice(nonHaloCells.size(), nonHaloCells.data());
 #endif
-}  // namespace autopas
+}
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
@@ -164,6 +166,11 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
   if (maxParticlesInCell == 0) {
     return;
   }
+  if (!_functor->getCudaWrapper()) {
+    _functor->CudaFunctor(_storageCell._particleSoABufferDevice, useNewton3);
+    return;
+  }
+
   _functor->getCudaWrapper()->setNumThreads(((maxParticlesInCell - 1) / 32 + 1) * 32);
   _deviceCellSizes.copyHostToDevice(cellSizePartialSum.size(), cellSizePartialSum.data());
   _functor->deviceSoALoader(_storageCell._particleSoABuffer, _storageCell._particleSoABufferDevice);
@@ -173,22 +180,38 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
 
   if (useNewton3) {
     _functor->getCudaWrapper()->LinkedCellsTraversalN3Wrapper(
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posX>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posY>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posZ>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceX>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceY>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceZ>().get(),
+        LJFunctorCudaSoA<typename ParticleCell::ParticleType::ParticleFloatingPointType>(
+            cellSizePartialSum.back(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posX>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posY>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posZ>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceX>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceY>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceZ>()
+                .get()),
         _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(), _deviceCellSizes.get(),
         _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
   } else {
     _functor->getCudaWrapper()->LinkedCellsTraversalNoN3Wrapper(
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posX>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posY>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posZ>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceX>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceY>().get(),
-        _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceZ>().get(),
+        LJFunctorCudaSoA<typename ParticleCell::ParticleType::ParticleFloatingPointType>(
+            cellSizePartialSum.back(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posX>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posY>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posZ>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceX>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceY>()
+                .get(),
+            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceZ>()
+                .get()),
         _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(), _deviceCellSizes.get(),
         _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
   }

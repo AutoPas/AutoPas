@@ -70,8 +70,12 @@ class VerletListsCells
 
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
 
+  TraversalSelector<ParticleCell> generateTraversalSelector() override {
+    // Function needs to be overwritten
+    return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+  }
   /**
-   * Function to iterate over all pairs of particles.
+   * Function to iterate over all pairs of particles. (Only AoS)
    * This function only handles short-range interactions.
    * @tparam the type of ParticleFunctor
    * @tparam Traversal
@@ -80,7 +84,7 @@ class VerletListsCells
    * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild(useNewton3)) {
       updateVerletLists(useNewton3);
     }
@@ -103,36 +107,6 @@ class VerletListsCells
 
     // we iterated, so increase traversal counter
     this->_traversalsSinceLastRebuild++;
-  }
-
-  /**
-   * Dummy function. (Uses AoS instead)
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    iteratePairwiseAoS(f, traversal, useNewton3);
-  }
-
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    return TraversalSelector<ParticleCell>(this->getCellsPerDimension());
-  }
-
-  /**
-   * Dummy function. Throws exception
-   * @tparam ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoACuda(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
-    utils::ExceptionHandler::exception("VerletList Cuda not implemented");
   }
 
   /**
@@ -192,12 +166,12 @@ class VerletListsCells
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, true>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &traversal);
         } else {
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &traversal);
         }
         break;
       }
@@ -206,12 +180,12 @@ class VerletListsCells
           auto traversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, true>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &traversal);
         } else {
           auto traversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &traversal);
         }
         break;
       }
@@ -220,7 +194,7 @@ class VerletListsCells
           auto traversal = C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &traversal);
         } else {
           utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");
         }

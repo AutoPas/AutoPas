@@ -74,7 +74,7 @@ class VerletLists
    */
   static const std::vector<TraversalOption>& allVLApplicableTraversals() {
     // @FIXME This is a workaround because this container does not yet use traversals like it should
-    static const std::vector<TraversalOption> v{TraversalOption::dummyTraversal};
+    static const std::vector<TraversalOption> v{TraversalOption::verletTraversal};
     return v;
   }
 
@@ -95,44 +95,26 @@ class VerletLists
   }
 
   /**
-   * @copydoc LinkedCells::iteratePairwiseAoS
+   * @copydoc LinkedCells::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {  // if we need to rebuild the list, we should rebuild it!
-      rebuild(useNewton3);
-    }
-    this->iterateVerletListsAoS(f, useNewton3);
-    // we iterated, so increase traversal counter
-    this->_traversalsSinceLastRebuild++;
-  }
-
-  /**
-   * @copydoc LinkedCells::iteratePairwiseSoA
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (needsRebuild()) {
       rebuild(useNewton3);
-      generateSoAListFromAoSVerletLists();
-    } else if (not _soaListIsValid) {
+    }
+    if (not _soaListIsValid) {
       generateSoAListFromAoSVerletLists();
     }
-    iterateVerletListsSoA(f, useNewton3);
-    this->_traversalsSinceLastRebuild++;
-  }
 
-  /**
-   * Dummy function. Just throws exception
-   * @tparam ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoACuda(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
-    utils::ExceptionHandler::exception("VerletList Cuda not implemented");
+    if (auto* traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell>*>(traversal)) {
+      traversalInterface->initTraversal(this->_linkedCells.getCells());
+      traversalInterface->iterateVerletLists(_aosNeighborLists, _soaNeighborLists);
+      traversalInterface->endTraversal(this->_linkedCells.getCells());
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in VerletLists::iteratePairwise");
+    }
+    this->_traversalsSinceLastRebuild++;
   }
 
   /**
@@ -170,14 +152,14 @@ class VerletLists
                      typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>,
                      DataLayoutOption::aos, true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                   &validityCheckerFunctor);
-    this->_linkedCells.iteratePairwiseAoS(&validityCheckerFunctor, &traversal, useNewton3);
+    this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal, useNewton3);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector() override {
     // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
-    return TraversalSelector<ParticleCell>({0, 0, 0});
+    return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 
   /**
@@ -206,14 +188,14 @@ class VerletLists
         auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                       DataLayoutOption::aos, true>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-        this->_linkedCells.iteratePairwiseAoS(&f, &traversal);
+        this->_linkedCells.iteratePairwise(&f, &traversal);
         break;
       }
       case BuildVerletListType::VerletSoA: {
         auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                       DataLayoutOption::soa, true>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-        this->_linkedCells.iteratePairwiseSoA(&f, &traversal);
+        this->_linkedCells.iteratePairwise(&f, &traversal);
         break;
       }
       default:

@@ -33,6 +33,7 @@ class MDFlexParser {
   size_t getIterations() const;
   bool getMeasureFlops() const;
   std::vector<autopas::Newton3Option> getNewton3Options() const;
+  const string &getLogFileName() const;
   spdlog::level::level_enum getLogLevel() const;
   double getParticleSpacing() const;
   size_t getParticlesTotal() const;
@@ -72,6 +73,7 @@ class MDFlexParser {
   unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
   string writeVTK = "";
+  string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
 };

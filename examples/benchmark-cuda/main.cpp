@@ -104,48 +104,48 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwiseAoS(&func, &traversalAoS);
+    dir.iteratePairwise(&func, &traversalAoS);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "DsAoS: " << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
-       << "microseconds" << endl;
+       << " microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwiseSoA(&func, &traversalSoA);
+    dir.iteratePairwise(&func, &traversalSoA);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "DsSoA: " << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
-       << "microseconds" << endl;
+       << " microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwiseSoACuda(&func, &traversalCuda);
+    dir.iteratePairwise(&func, &traversalCuda);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "DsCuda:" << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
-       << "microseconds" << endl;
+       << " microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwiseSoACuda(&func, &traversalCudaN3);
+    dir.iteratePairwise(&func, &traversalCudaN3);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "DsCudaN3:" << maxIterations << " iterations with " << dir.getNumParticles()
-       << " particles took: " << duration << "microseconds" << endl;
+       << " particles took: " << duration << " microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwiseSoA(&func, &traversalc08N3);
+    lc.iteratePairwise(&func, &traversalc08N3);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "LcSoAN3:" << maxIterations << " iterations with " << lc.getNumParticles() << " particles took: " << duration
-       << "microseconds" << endl;
+       << " microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
@@ -154,16 +154,16 @@ int main(int argc, char **argv) {
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "LcCudaN3:" << maxIterations << " iterations with " << lc.getNumParticles() << " particles took: " << duration
-       << "microseconds" << endl;
+       << " microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwiseAoS(&func, &traversalLCcuda);
+    lc.iteratePairwise(&func, &traversalLCcuda);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "LcTraversalCudaNoN3:" << maxIterations << " iterations with " << lc.getNumParticles()
-       << " particles took: " << duration << "microseconds" << endl;
+       << " particles took: " << duration << " microseconds" << endl;
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
@@ -172,6 +172,6 @@ int main(int argc, char **argv) {
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "LcTraversalCudaN3:" << maxIterations << " iterations with " << lc.getNumParticles()
-       << " particles took: " << duration << "microseconds" << endl;
+       << " particles took: " << duration << " microseconds" << endl;
   return EXIT_SUCCESS;
 }

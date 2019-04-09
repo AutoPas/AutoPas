@@ -15,17 +15,6 @@ namespace autopas {
 __constant__ constants<float> global_constants_float;
 __constant__ constants<double> global_constants_double;
 
-template<typename floatType>
-class soa {
-public:
-	floatType* posX;
-	floatType* posY;
-	floatType* posZ;
-	floatType* forceX;
-	floatType* forceY;
-	floatType* forceZ;
-};
-
 template<typename T>
 __device__ inline constants<T>& getConstants() {
 	return global_constants_float;
@@ -119,26 +108,25 @@ inline typename vec3<floatType>::Type bodyBodyFN3(
 
 template<typename floatType, int block_size>
 __global__
-void SoAFunctorNoN3(int N, floatType* posX, floatType* posY, floatType* posZ,
-		floatType* forceX, floatType* forceY, floatType* forceZ) {
+void SoAFunctorNoN3(LJFunctorCudaSoA<floatType> cell1) {
 	__shared__ typename vec3<floatType>::Type block_pos[block_size];
 	int i, tile;
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 	typename vec3<floatType>::Type myposition = { 0, 0, 0 };
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
-	if (tid < N) {
-		myposition.x = posX[tid];
-		myposition.y = posY[tid];
-		myposition.z = posZ[tid];
+	if (tid < cell1._size) {
+		myposition.x = cell1._posX[tid];
+		myposition.y = cell1._posY[tid];
+		myposition.z = cell1._posZ[tid];
 	}
 
-	for (i = block_size, tile = 0; i < N; i += block_size, ++tile) {
+	for (i = block_size, tile = 0; i < cell1._size; i += block_size, ++tile) {
 		int idx = tile * block_size + threadIdx.x;
 
-		block_pos[threadIdx.x] = {posX[idx], posY[idx], posZ[idx]};
+		block_pos[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
 		__syncthreads();
-		if (tid < N) {
+		if (tid < cell1._size) {
 			for (int j = 0; j < blockDim.x; ++j) {
 				myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
 			}
@@ -147,10 +135,10 @@ void SoAFunctorNoN3(int N, floatType* posX, floatType* posY, floatType* posZ,
 	}
 	{
 		int idx = tile * block_size + threadIdx.x;
-		block_pos[threadIdx.x] = {posX[idx], posY[idx], posZ[idx]};
+		block_pos[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
 		__syncthreads();
 
-		const int size = N - tile * blockDim.x;
+		const int size = cell1._size - tile * blockDim.x;
 		for (int j = 0; j < size; ++j) {
 			myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
 		}
@@ -158,51 +146,48 @@ void SoAFunctorNoN3(int N, floatType* posX, floatType* posY, floatType* posZ,
 		__syncthreads();
 	}
 
-	atomicAdd(forceX + tid, myf.x);
-	atomicAdd(forceY + tid, myf.y);
-	atomicAdd(forceZ + tid, myf.z);
+	atomicAdd(cell1._forceX + tid, myf.x);
+	atomicAdd(cell1._forceY + tid, myf.y);
+	atomicAdd(cell1._forceZ + tid, myf.z);
 }
 
 template<typename floatType, int block_size>
 __global__
-void SoAFunctorNoN3Pair(int N, floatType* posX, floatType* posY,
-		floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, int M, floatType* posX2, floatType* posY2,
-		floatType* posZ2) {
+void SoAFunctorNoN3Pair(LJFunctorCudaSoA<floatType> cell1,
+		LJFunctorCudaSoA<floatType> cell2) {
 	__shared__ typename vec3<floatType>::Type block_pos[block_size];
 	int i, tile;
 	int tid = blockIdx.x * block_size + threadIdx.x;
 	typename vec3<floatType>::Type myposition;
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
-	if (tid < N) {
-		myposition.x = posX[tid];
-		myposition.y = posY[tid];
-		myposition.z = posZ[tid];
+	if (tid < cell1._size) {
+		myposition.x = cell1._posX[tid];
+		myposition.y = cell1._posY[tid];
+		myposition.z = cell1._posZ[tid];
 	}
 
-	for (i = 0, tile = 0; i < M; i += block_size, ++tile) {
+	for (i = 0, tile = 0; i < cell2._size; i += block_size, ++tile) {
 		int idx = tile * block_size + threadIdx.x;
 
-		if (idx < M)
-			block_pos[threadIdx.x] = {posX2[idx], posY2[idx], posZ2[idx]};
+		if (idx < cell2._size)
+			block_pos[threadIdx.x] = {cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx]};
 		__syncthreads();
 
-		const int size = min(block_size, M - i);
+		const int size = min(block_size, cell2._size - i);
 		for (int j = 0; j < size; ++j) {
 			myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
 		}
 		__syncthreads();
 	}
-	atomicAdd(forceX + tid, myf.x);
-	atomicAdd(forceY + tid, myf.y);
-	atomicAdd(forceZ + tid, myf.z);
+	atomicAdd(cell1._forceX + tid, myf.x);
+	atomicAdd(cell1._forceY + tid, myf.y);
+	atomicAdd(cell1._forceZ + tid, myf.z);
 }
 
 template<typename floatType, int block_size, bool NMisMultipleBlockSize = false>
 __global__
-void SoAFunctorN3(int N, floatType* posX, floatType* posY, floatType* posZ,
-		floatType* forceX, floatType* forceY, floatType* forceZ) {
+void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
 	static_assert((block_size & (block_size - 1)) == 0, "block size must be power of 2");
 	__shared__ typename vec3<floatType>::Type cell1_pos_shared[block_size];
 	__shared__ typename vec3<floatType>::Type cell1_forces_shared[block_size];
@@ -213,15 +198,15 @@ void SoAFunctorN3(int N, floatType* posX, floatType* posY, floatType* posZ,
 	int i, tile;
 	const int mask = block_size - 1;
 
-	if (not NMisMultipleBlockSize && tid < N) {
-		myposition.x = posX[tid];
-		myposition.y = posY[tid];
-		myposition.z = posZ[tid];
+	if (not NMisMultipleBlockSize && tid < cell1._size) {
+		myposition.x = cell1._posX[tid];
+		myposition.y = cell1._posY[tid];
+		myposition.z = cell1._posZ[tid];
 	}
 
 	for (i = 0, tile = 0; tile < blockIdx.x; i += block_size, ++tile) {
 		int idx = tile * block_size + threadIdx.x;
-		cell1_pos_shared[threadIdx.x] = {posX[idx], posY[idx], posZ[idx]};
+		cell1_pos_shared[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
 		cell1_forces_shared[threadIdx.x] = {0,0,0};
 		__syncthreads();
 
@@ -232,15 +217,15 @@ void SoAFunctorN3(int N, floatType* posX, floatType* posY, floatType* posZ,
 		}
 		__syncthreads();
 
-		atomicAdd(forceX + idx, cell1_forces_shared[threadIdx.x].x);
-		atomicAdd(forceY + idx, cell1_forces_shared[threadIdx.x].y);
-		atomicAdd(forceZ + idx, cell1_forces_shared[threadIdx.x].z);
+		atomicAdd(cell1._forceX + idx, cell1_forces_shared[threadIdx.x].x);
+		atomicAdd(cell1._forceY + idx, cell1_forces_shared[threadIdx.x].y);
+		atomicAdd(cell1._forceZ + idx, cell1_forces_shared[threadIdx.x].z);
 		__syncthreads();
 	}
 
 	{
 		int idx = blockIdx.x * block_size + threadIdx.x;
-		cell1_pos_shared[threadIdx.x] = {posX[idx], posY[idx], posZ[idx]};
+		cell1_pos_shared[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
 		cell1_forces_shared[threadIdx.x] = {0,0,0};
 		__syncthreads();
 
@@ -250,21 +235,21 @@ void SoAFunctorN3(int N, floatType* posX, floatType* posY, floatType* posZ,
 		}
 		__syncthreads();
 
-		atomicAdd(forceX + idx, cell1_forces_shared[threadIdx.x].x);
-		atomicAdd(forceY + idx, cell1_forces_shared[threadIdx.x].y);
-		atomicAdd(forceZ + idx, cell1_forces_shared[threadIdx.x].z);
+		atomicAdd(cell1._forceX + idx, cell1_forces_shared[threadIdx.x].x);
+		atomicAdd(cell1._forceY + idx, cell1_forces_shared[threadIdx.x].y);
+		atomicAdd(cell1._forceZ + idx, cell1_forces_shared[threadIdx.x].z);
 		__syncthreads();
 	}
 
-	atomicAdd(forceX + tid, myf.x);
-	atomicAdd(forceY + tid, myf.y);
-	atomicAdd(forceZ + tid, myf.z);
+	atomicAdd(cell1._forceX + tid, myf.x);
+	atomicAdd(cell1._forceY + tid, myf.y);
+	atomicAdd(cell1._forceZ + tid, myf.z);
 }
 
 template<typename floatType, int block_size, bool NMisMultipleBlockSize = false>
 __global__
-void SoAFunctorN3Pair(int N, soa<floatType> cell1, int M,
-		soa<floatType> cell2) {
+void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1,
+		LJFunctorCudaSoA<floatType> cell2) {
 	static_assert((block_size & (block_size - 1)) == 0, "block size must be power of 2");
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
 	__shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
@@ -275,14 +260,14 @@ void SoAFunctorN3Pair(int N, soa<floatType> cell1, int M,
 	int i, tile;
 	const int mask = block_size - 1;
 
-	if (not NMisMultipleBlockSize && tid < N) {
-		myposition.x = cell1.posX[tid];
-		myposition.y = cell1.posY[tid];
-		myposition.z = cell1.posZ[tid];
+	if (not NMisMultipleBlockSize && tid < cell1._size) {
+		myposition.x = cell1._posX[tid];
+		myposition.y = cell1._posY[tid];
+		myposition.z = cell1._posZ[tid];
 	}
-	for (i = block_size, tile = 0; i <= M; i += block_size, ++tile) {
+	for (i = block_size, tile = 0; i <= cell2._size; i += block_size, ++tile) {
 		int idx = tile * block_size + threadIdx.x;
-		cell2_pos_shared[threadIdx.x] = {cell2.posX[idx], cell2.posY[idx], cell2.posZ[idx]};
+		cell2_pos_shared[threadIdx.x] = {cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx]};
 		cell2_forces_shared[threadIdx.x] = {0,0,0};
 		__syncthreads();
 
@@ -294,71 +279,70 @@ void SoAFunctorN3Pair(int N, soa<floatType> cell1, int M,
 		}
 		__syncthreads();
 
-		atomicAdd(cell2.forceX + idx, cell2_forces_shared[threadIdx.x].x);
-		atomicAdd(cell2.forceY + idx, cell2_forces_shared[threadIdx.x].y);
-		atomicAdd(cell2.forceZ + idx, cell2_forces_shared[threadIdx.x].z);
+		atomicAdd(cell2._forceX + idx, cell2_forces_shared[threadIdx.x].x);
+		atomicAdd(cell2._forceY + idx, cell2_forces_shared[threadIdx.x].y);
+		atomicAdd(cell2._forceZ + idx, cell2_forces_shared[threadIdx.x].z);
 		__syncthreads();
 	}
-	if ((not NMisMultipleBlockSize) && (i > M)) {
+	if ((not NMisMultipleBlockSize) && (i > cell2._size)) {
 		int idx = tile * block_size + threadIdx.x;
-		if (idx < M) {
-			cell2_pos_shared[threadIdx.x] = {cell2.posX[idx], cell2.posY[idx], cell2.posZ[idx]};
+		if (idx < cell2._size) {
+			cell2_pos_shared[threadIdx.x] = {cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx]};
 			cell2_forces_shared[threadIdx.x] = {0,0,0};
 		}
 		__syncthreads();
 
-		const int size = block_size + M - i;
+		const int size = block_size + cell2._size - i;
 		for (int j = 0; j < size; ++j) {
 			const int offset = (j + threadIdx.x) % size;
 			myf = bodyBodyFN3<floatType>(myposition, cell2_pos_shared[offset],
 					myf, cell2_forces_shared + offset);
 		}
 		__syncthreads();
-		if (idx < M) {
-			atomicAdd(cell2.forceX + idx, cell2_forces_shared[threadIdx.x].x);
-			atomicAdd(cell2.forceY + idx, cell2_forces_shared[threadIdx.x].y);
-			atomicAdd(cell2.forceZ + idx, cell2_forces_shared[threadIdx.x].z);
+		if (idx < cell2._size) {
+			atomicAdd(cell2._forceX + idx, cell2_forces_shared[threadIdx.x].x);
+			atomicAdd(cell2._forceY + idx, cell2_forces_shared[threadIdx.x].y);
+			atomicAdd(cell2._forceZ + idx, cell2_forces_shared[threadIdx.x].z);
 			__syncthreads();
 		}
 	}
 
-	atomicAdd(cell1.forceX + tid, myf.x);
-	atomicAdd(cell1.forceY + tid, myf.y);
-	atomicAdd(cell1.forceZ + tid, myf.z);
+	atomicAdd(cell1._forceX + tid, myf.x);
+	atomicAdd(cell1._forceY + tid, myf.y);
+	atomicAdd(cell1._forceZ + tid, myf.z);
 }
 
 template<typename floatType>
-void CudaWrapper::SoAFunctorNoN3Wrapper(int N, floatType* posX, floatType* posY,
-		floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, cudaStream_t stream) {
+void CudaWrapper::SoAFunctorNoN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
+		cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorNoN3<floatType, 32> <<<numRequiredBlocks(N), 32, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
+		SoAFunctorNoN3<floatType, 32> <<<numRequiredBlocks(cell1._size), 32, 0,
+				stream>>>(cell1);
 		break;
 	case 64:
-		SoAFunctorNoN3<floatType, 64> <<<numRequiredBlocks(N), 64, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
+		SoAFunctorNoN3<floatType, 64> <<<numRequiredBlocks(cell1._size), 64, 0,
+				stream>>>(cell1);
 		break;
 	case 96:
-		SoAFunctorNoN3<floatType, 96> <<<numRequiredBlocks(N), 96, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
+		SoAFunctorNoN3<floatType, 96> <<<numRequiredBlocks(cell1._size), 96, 0,
+				stream>>>(cell1);
 		break;
 	case 128:
-		SoAFunctorNoN3<floatType, 128> <<<numRequiredBlocks(N), 128, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
+		SoAFunctorNoN3<floatType, 128> <<<numRequiredBlocks(cell1._size), 128,
+				0, stream>>>(cell1);
 		break;
 	case 256:
-		SoAFunctorNoN3<floatType, 256> <<<numRequiredBlocks(N), 256, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
+		SoAFunctorNoN3<floatType, 256> <<<numRequiredBlocks(cell1._size), 256,
+				0, stream>>>(cell1);
 		break;
 	case 512:
-		SoAFunctorNoN3<floatType, 512> <<<numRequiredBlocks(N), 512, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
+		SoAFunctorNoN3<floatType, 512> <<<numRequiredBlocks(cell1._size), 512,
+				0, stream>>>(cell1);
 		break;
 	case 1024:
-		SoAFunctorNoN3<floatType, 1024> <<<numRequiredBlocks(N), 1024, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
+		SoAFunctorNoN3<floatType, 1024> <<<numRequiredBlocks(cell1._size), 1024,
+				0, stream>>>(cell1);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -368,53 +352,42 @@ void CudaWrapper::SoAFunctorNoN3Wrapper(int N, floatType* posX, floatType* posY,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-template void CudaWrapper::SoAFunctorNoN3Wrapper<float>(int N, float* posX,
-		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		cudaStream_t stream);
-template void CudaWrapper::SoAFunctorNoN3Wrapper<double>(int N, double* posX,
-		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, cudaStream_t stream);
+template void CudaWrapper::SoAFunctorNoN3Wrapper<float>(
+		LJFunctorCudaSoA<float> cell1, cudaStream_t stream);
+template void CudaWrapper::SoAFunctorNoN3Wrapper<double>(
+		LJFunctorCudaSoA<double> cell1, cudaStream_t stream);
 
 template<typename floatType>
-void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, floatType* posX,
-		floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, int M, floatType* posX2, floatType* posY2,
-		floatType* posZ2, cudaStream_t stream) {
+void CudaWrapper::SoAFunctorNoN3PairWrapper(LJFunctorCudaSoA<floatType> cell1,
+		LJFunctorCudaSoA<floatType> cell2, cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorNoN3Pair<floatType, 32> <<<numRequiredBlocks(N), 32, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ, M, posX2, posY2,
-				posZ2);
+		SoAFunctorNoN3Pair<floatType, 32> <<<numRequiredBlocks(cell1._size), 32,
+				0, stream>>>(cell1, cell2);
 		break;
 	case 64:
-		SoAFunctorNoN3Pair<floatType, 64> <<<numRequiredBlocks(N), 64, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ, M, posX2, posY2,
-				posZ2);
+		SoAFunctorNoN3Pair<floatType, 64> <<<numRequiredBlocks(cell1._size), 64,
+				0, stream>>>(cell1, cell2);
 		break;
 	case 96:
-		SoAFunctorNoN3Pair<floatType, 96> <<<numRequiredBlocks(N), 96, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ, M, posX2, posY2,
-				posZ2);
+		SoAFunctorNoN3Pair<floatType, 96> <<<numRequiredBlocks(cell1._size), 96,
+				0, stream>>>(cell1, cell2);
 		break;
 	case 128:
-		SoAFunctorNoN3Pair<floatType, 128> <<<numRequiredBlocks(N), 128, 0,
-				stream>>>(N, posX, posY, posZ, forceX, forceY, forceZ, M, posX2,
-				posY2, posZ2);
+		SoAFunctorNoN3Pair<floatType, 128> <<<numRequiredBlocks(cell1._size),
+				128, 0, stream>>>(cell1, cell2);
 		break;
 	case 256:
-		SoAFunctorNoN3Pair<floatType, 256> <<<numRequiredBlocks(N), 256, 0,
-				stream>>>(N, posX, posY, posZ, forceX, forceY, forceZ, M, posX2,
-				posY2, posZ2);
+		SoAFunctorNoN3Pair<floatType, 256> <<<numRequiredBlocks(cell1._size),
+				256, 0, stream>>>(cell1, cell2);
 		break;
 	case 512:
-		SoAFunctorNoN3Pair<floatType, 512> <<<numRequiredBlocks(N), 512, 0,
-				stream>>>(N, posX, posY, posZ, forceX, forceY, forceZ, M, posX2,
-				posY2, posZ2);
+		SoAFunctorNoN3Pair<floatType, 512> <<<numRequiredBlocks(cell1._size),
+				512, 0, stream>>>(cell1, cell2);
 		break;
 	case 1024:
-		SoAFunctorNoN3Pair<floatType, 1024> <<<numRequiredBlocks(N), 1024, 0,
-				stream>>>(N, posX, posY, posZ, forceX, forceY, forceZ, M, posX2,
-				posY2, posZ2);
+		SoAFunctorNoN3Pair<floatType, 1024> <<<numRequiredBlocks(cell1._size),
+				1024, 0, stream>>>(cell1, cell2);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -424,102 +397,81 @@ void CudaWrapper::SoAFunctorNoN3PairWrapper(int N, floatType* posX,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-template void CudaWrapper::SoAFunctorNoN3PairWrapper<float>(int N, float* posX,
-		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		int M, float* posX2, float* posY2, float* posZ2, cudaStream_t stream);
-template void CudaWrapper::SoAFunctorNoN3PairWrapper<double>(int N,
-		double* posX, double* posY, double* posZ, double* forceX,
-		double* forceY, double* forceZ, int M, double* posX2, double* posY2,
-		double* posZ2, cudaStream_t stream);
-
-template<typename floatType>
-void CudaWrapper::SoAFunctorN3Wrapper(int N, floatType* posX, floatType* posY,
-		floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, cudaStream_t stream) {
-	switch (_num_threads) {
-	case 32:
-		SoAFunctorN3<floatType, 32> <<<numRequiredBlocks(N), 32, 0, stream>>>(N,
-				posX, posY, posZ, forceX, forceY, forceZ);
-		break;
-	case 64:
-		SoAFunctorN3<floatType, 64> <<<numRequiredBlocks(N), 64, 0, stream>>>(N,
-				posX, posY, posZ, forceX, forceY, forceZ);
-		break;
-	case 128:
-		SoAFunctorN3<floatType, 128> <<<numRequiredBlocks(N), 128, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
-		break;
-	case 256:
-		SoAFunctorN3<floatType, 256> <<<numRequiredBlocks(N), 256, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
-		break;
-	case 512:
-		SoAFunctorN3<floatType, 512> <<<numRequiredBlocks(N), 512, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
-		break;
-	case 1024:
-		SoAFunctorN3<floatType, 1024> <<<numRequiredBlocks(N), 1024, 0, stream>>>(
-				N, posX, posY, posZ, forceX, forceY, forceZ);
-		break;
-	default:
-		autopas::utils::ExceptionHandler::exception(
-				std::string("cuda Kernel size not available"));
-		break;
-	}
-	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
-}
-
-template void CudaWrapper::SoAFunctorN3Wrapper<float>(int N, float* posX,
-		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
+template void CudaWrapper::SoAFunctorNoN3PairWrapper<float>(
+		LJFunctorCudaSoA<float> cell1, LJFunctorCudaSoA<float> cell2,
 		cudaStream_t stream);
-template void CudaWrapper::SoAFunctorN3Wrapper<double>(int N, double* posX,
-		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, cudaStream_t stream);
+template void CudaWrapper::SoAFunctorNoN3PairWrapper<double>(
+		LJFunctorCudaSoA<double> cell1, LJFunctorCudaSoA<double> cell2,
+		cudaStream_t stream);
 
 template<typename floatType>
-void CudaWrapper::SoAFunctorN3PairWrapper(int N, floatType* posX,
-		floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, int M, floatType* posX2, floatType* posY2,
-		floatType* posZ2, floatType* forceX2, floatType* forceY2,
-		floatType* forceZ2, cudaStream_t stream) {
-	soa<floatType> cell1;
-	cell1.posX = posX;
-	cell1.posY = posY;
-	cell1.posZ = posZ;
-	cell1.forceX = forceX;
-	cell1.forceY = forceY;
-	cell1.forceZ = forceZ;
-	soa<floatType> cell2;
-	cell2.posX = posX2;
-	cell2.posY = posY2;
-	cell2.posZ = posZ2;
-	cell2.forceX = forceX2;
-	cell2.forceY = forceY2;
-	cell2.forceZ = forceZ2;
+void CudaWrapper::SoAFunctorN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
+		cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		SoAFunctorN3Pair<floatType, 32> <<<numRequiredBlocks(N), 32, 0, stream>>>(
-				N, cell1, M, cell2);
+		SoAFunctorN3<floatType, 32> <<<numRequiredBlocks(cell1._size), 32, 0,
+				stream>>>(cell1);
 		break;
 	case 64:
-		SoAFunctorN3Pair<floatType, 64> <<<numRequiredBlocks(N), 64, 0, stream>>>(
-				N, cell1, M, cell2);
+		SoAFunctorN3<floatType, 64> <<<numRequiredBlocks(cell1._size), 64, 0,
+				stream>>>(cell1);
 		break;
 	case 128:
-		SoAFunctorN3Pair<floatType, 128> <<<numRequiredBlocks(N), 128, 0, stream>>>(
-				N, cell1, M, cell2);
+		SoAFunctorN3<floatType, 128> <<<numRequiredBlocks(cell1._size), 128, 0,
+				stream>>>(cell1);
 		break;
 	case 256:
-		SoAFunctorN3Pair<floatType, 256> <<<numRequiredBlocks(N), 256, 0, stream>>>(
-				N, cell1, M, cell2);
+		SoAFunctorN3<floatType, 256> <<<numRequiredBlocks(cell1._size), 256, 0,
+				stream>>>(cell1);
 		break;
 	case 512:
-		SoAFunctorN3Pair<floatType, 512> <<<numRequiredBlocks(N), 512, 0, stream>>>(
-				N, cell1, M, cell2);
+		SoAFunctorN3<floatType, 512> <<<numRequiredBlocks(cell1._size), 512, 0,
+				stream>>>(cell1);
 		break;
 	case 1024:
-		SoAFunctorN3Pair<floatType, 1024> <<<numRequiredBlocks(N), 1024, 0,
-				stream>>>(N, cell1, M, cell2);
+		SoAFunctorN3<floatType, 1024> <<<numRequiredBlocks(cell1._size), 1024,
+				0, stream>>>(cell1);
+		break;
+	default:
+		autopas::utils::ExceptionHandler::exception(
+				std::string("cuda Kernel size not available"));
+		break;
+	}
+	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
+}
+
+template void CudaWrapper::SoAFunctorN3Wrapper<float>(
+		LJFunctorCudaSoA<float> cell1, cudaStream_t stream);
+template void CudaWrapper::SoAFunctorN3Wrapper<double>(
+		LJFunctorCudaSoA<double> cell1, cudaStream_t stream);
+
+template<typename floatType>
+void CudaWrapper::SoAFunctorN3PairWrapper(LJFunctorCudaSoA<floatType> cell1,
+		LJFunctorCudaSoA<floatType> cell2, cudaStream_t stream) {
+	switch (_num_threads) {
+	case 32:
+		SoAFunctorN3Pair<floatType, 32> <<<numRequiredBlocks(cell1._size), 32,
+				0, stream>>>(cell1, cell2);
+		break;
+	case 64:
+		SoAFunctorN3Pair<floatType, 64> <<<numRequiredBlocks(cell1._size), 64,
+				0, stream>>>(cell1, cell2);
+		break;
+	case 128:
+		SoAFunctorN3Pair<floatType, 128> <<<numRequiredBlocks(cell1._size), 128,
+				0, stream>>>(cell1, cell2);
+		break;
+	case 256:
+		SoAFunctorN3Pair<floatType, 256> <<<numRequiredBlocks(cell1._size), 256,
+				0, stream>>>(cell1, cell2);
+		break;
+	case 512:
+		SoAFunctorN3Pair<floatType, 512> <<<numRequiredBlocks(cell1._size), 512,
+				0, stream>>>(cell1, cell2);
+		break;
+	case 1024:
+		SoAFunctorN3Pair<floatType, 1024> <<<numRequiredBlocks(cell1._size),
+				1024, 0, stream>>>(cell1, cell2);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -530,19 +482,16 @@ void CudaWrapper::SoAFunctorN3PairWrapper(int N, floatType* posX,
 
 }
 
-template void CudaWrapper::SoAFunctorN3PairWrapper<float>(int N, float* posX,
-		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		int M, float* posX2, float* posY2, float* posZ2, float* forceX2,
-		float* forceY2, float* forceZ2, cudaStream_t stream);
-template void CudaWrapper::SoAFunctorN3PairWrapper<double>(int N, double* posX,
-		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, int M, double* posX2, double* posY2, double* posZ2,
-		double* forceX2, double* forceY2, double* forceZ2, cudaStream_t stream);
+template void CudaWrapper::SoAFunctorN3PairWrapper<float>(
+		LJFunctorCudaSoA<float> cell1, LJFunctorCudaSoA<float> cell2,
+		cudaStream_t stream);
+template void CudaWrapper::SoAFunctorN3PairWrapper<double>(
+		LJFunctorCudaSoA<double> cell1, LJFunctorCudaSoA<double> cell2,
+		cudaStream_t stream);
 
 template<typename floatType, int block_size>
 __global__
-void LinkedCellsTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
-		floatType* forceX, floatType* forceY, floatType* forceZ,
+void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell,
 		unsigned int* cids, size_t* cellSizes, unsigned int offsets_size,
 		int* offsets) {
 
@@ -554,9 +503,9 @@ void LinkedCellsTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 
 	int index = cellSizes[own_cid] + threadIdx.x;
 	if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
-		myposition.x = posX[index];
-		myposition.y = posY[index];
-		myposition.z = posZ[index];
+		myposition.x = cell._posX[index];
+		myposition.y = cell._posY[index];
+		myposition.z = cell._posZ[index];
 	}
 	//other cells
 	for (auto other_index = 0; other_index < offsets_size; ++other_index) {
@@ -564,7 +513,7 @@ void LinkedCellsTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 		const int cell2Start = cellSizes[other_id];
 		const int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
 
-		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
+		cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start+threadIdx.x], cell._posY[cell2Start+threadIdx.x], cell._posZ[cell2Start+threadIdx.x]};
 		__syncthreads();
 		for (int j = 0; j < sizeCell2; ++j) {
 			myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
@@ -572,16 +521,15 @@ void LinkedCellsTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 		__syncthreads();
 	}
 	if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
-		atomicAdd(forceX + index, myf.x);
-		atomicAdd(forceY + index, myf.y);
-		atomicAdd(forceZ + index, myf.z);
+		atomicAdd(cell._forceX + index, myf.x);
+		atomicAdd(cell._forceY + index, myf.y);
+		atomicAdd(cell._forceZ + index, myf.z);
 	}
 }
 
 template<typename floatType, int block_size>
 __global__
-void LinkedCellsTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
-		floatType* forceX, floatType* forceY, floatType* forceZ,
+void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell,
 		unsigned int* cids, size_t* cellSizes, unsigned int offsets_size,
 		int* offsets) {
 
@@ -595,9 +543,9 @@ void LinkedCellsTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 
 	int index = cellSizes[own_cid] + threadIdx.x;
 	if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
-		myposition.x = posX[index];
-		myposition.y = posY[index];
-		myposition.z = posZ[index];
+		myposition.x = cell._posX[index];
+		myposition.y = cell._posY[index];
+		myposition.z = cell._posZ[index];
 	}
 	//other cells
 	for (auto other_index = 0; other_index < offsets_size; ++other_index) {
@@ -605,7 +553,7 @@ void LinkedCellsTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 		const int cell2Start = cellSizes[other_id];
 		const int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
 
-		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
+		cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start+threadIdx.x], cell._posY[cell2Start+threadIdx.x], cell._posZ[cell2Start+threadIdx.x]};
 		cell2_forces_shared[threadIdx.x] = {0,0,0};
 		__syncthreads();
 		for (int j = 0; j < sizeCell2; ++j) {
@@ -616,11 +564,11 @@ void LinkedCellsTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 		}
 		__syncthreads();
 
-		atomicAdd(forceX + cell2Start + threadIdx.x,
+		atomicAdd(cell._forceX + cell2Start + threadIdx.x,
 				cell2_forces_shared[threadIdx.x].x);
-		atomicAdd(forceY + cell2Start + threadIdx.x,
+		atomicAdd(cell._forceY + cell2Start + threadIdx.x,
 				cell2_forces_shared[threadIdx.x].y);
-		atomicAdd(forceZ + cell2Start + threadIdx.x,
+		atomicAdd(cell._forceZ + cell2Start + threadIdx.x,
 				cell2_forces_shared[threadIdx.x].z);
 		__syncthreads();
 	}
@@ -629,7 +577,7 @@ void LinkedCellsTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 		const int cell1Start = cellSizes[own_cid];
 		const int sizeCell1 = cellSizes[own_cid + 1] - cell1Start;
 
-		cell2_pos_shared[threadIdx.x] = {posX[cell1Start+threadIdx.x], posY[cell1Start+threadIdx.x], posZ[cell1Start+threadIdx.x]};
+		cell2_pos_shared[threadIdx.x] = {cell._posX[cell1Start+threadIdx.x], cell._posY[cell1Start+threadIdx.x], cell._posZ[cell1Start+threadIdx.x]};
 		__syncthreads();
 		for (int j = 0; j < sizeCell1; ++j) {
 			myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
@@ -637,33 +585,29 @@ void LinkedCellsTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 		__syncthreads();
 	}
 	if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
-		atomicAdd(forceX + index, myf.x);
-		atomicAdd(forceY + index, myf.y);
-		atomicAdd(forceZ + index, myf.z);
+		atomicAdd(cell._forceX + index, myf.x);
+		atomicAdd(cell._forceY + index, myf.y);
+		atomicAdd(cell._forceZ + index, myf.z);
 	}
 }
 
 template<typename floatType>
-void CudaWrapper::LinkedCellsTraversalNoN3Wrapper(floatType* posX,
-		floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, unsigned int cids_size, unsigned int* cids,
-		unsigned int cellSizes_size, size_t* cellSizes,
+void CudaWrapper::LinkedCellsTraversalNoN3Wrapper(
+		LJFunctorCudaSoA<floatType> cell1, unsigned int cids_size,
+		unsigned int* cids, unsigned int cellSizes_size, size_t* cellSizes,
 		unsigned int offsets_size, int* offsets, cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
 		LinkedCellsTraversalNoN3<floatType, 32> <<<cids_size, 32, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
-				offsets_size, offsets);
+				cell1, cids, cellSizes, offsets_size, offsets);
 		break;
 	case 64:
 		LinkedCellsTraversalNoN3<floatType, 64> <<<cids_size, 64, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
-				offsets_size, offsets);
+				cell1, cids, cellSizes, offsets_size, offsets);
 		break;
 	case 96:
 		LinkedCellsTraversalNoN3<floatType, 96> <<<cids_size, 96, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
-				offsets_size, offsets);
+				cell1, cids, cellSizes, offsets_size, offsets);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -674,39 +618,33 @@ void CudaWrapper::LinkedCellsTraversalNoN3Wrapper(floatType* posX,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-template void CudaWrapper::LinkedCellsTraversalNoN3Wrapper<float>(float* posX,
-		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
-		size_t* cellSizes, unsigned int offsets_size, int* offsets,
-		cudaStream_t stream);
+template void CudaWrapper::LinkedCellsTraversalNoN3Wrapper<float>(
+		LJFunctorCudaSoA<float> cell1, unsigned int cids_size,
+		unsigned int* cids, unsigned int cellSizes_size, size_t* cellSizes,
+		unsigned int offsets_size, int* offsets, cudaStream_t stream);
 
-template void CudaWrapper::LinkedCellsTraversalNoN3Wrapper<double>(double* posX,
-		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, unsigned int cids_size, unsigned int* cids,
-		unsigned int cellSizes_size, size_t* cellSizes,
+template void CudaWrapper::LinkedCellsTraversalNoN3Wrapper<double>(
+		LJFunctorCudaSoA<double> cell1, unsigned int cids_size,
+		unsigned int* cids, unsigned int cellSizes_size, size_t* cellSizes,
 		unsigned int offsets_size, int* offsets, cudaStream_t stream);
 
 template<typename floatType>
-void CudaWrapper::LinkedCellsTraversalN3Wrapper(floatType* posX,
-		floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, unsigned int cids_size, unsigned int* cids,
-		unsigned int cellSizes_size, size_t* cellSizes,
+void CudaWrapper::LinkedCellsTraversalN3Wrapper(
+		LJFunctorCudaSoA<floatType> cell1, unsigned int cids_size,
+		unsigned int* cids, unsigned int cellSizes_size, size_t* cellSizes,
 		unsigned int offsets_size, int* offsets, cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
 		LinkedCellsTraversalN3<floatType, 32> <<<cids_size, 32, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
-				offsets_size, offsets);
+				cell1, cids, cellSizes, offsets_size, offsets);
 		break;
 	case 64:
 		LinkedCellsTraversalN3<floatType, 64> <<<cids_size, 64, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
-				offsets_size, offsets);
+				cell1, cids, cellSizes, offsets_size, offsets);
 		break;
 	case 96:
 		LinkedCellsTraversalN3<floatType, 96> <<<cids_size, 96, 0, stream>>>(
-				posX, posY, posZ, forceX, forceY, forceZ, cids, cellSizes,
-				offsets_size, offsets);
+				cell1, cids, cellSizes, offsets_size, offsets);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -717,22 +655,19 @@ void CudaWrapper::LinkedCellsTraversalN3Wrapper(floatType* posX,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-template void CudaWrapper::LinkedCellsTraversalN3Wrapper<float>(float* posX,
-		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
-		size_t* cellSizes, unsigned int offsets_size, int* offsets,
-		cudaStream_t stream);
+template void CudaWrapper::LinkedCellsTraversalN3Wrapper<float>(
+		LJFunctorCudaSoA<float> cell1, unsigned int cids_size,
+		unsigned int* cids, unsigned int cellSizes_size, size_t* cellSizes,
+		unsigned int offsets_size, int* offsets, cudaStream_t stream);
 
-template void CudaWrapper::LinkedCellsTraversalN3Wrapper<double>(double* posX,
-		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, unsigned int cids_size, unsigned int* cids,
-		unsigned int cellSizes_size, size_t* cellSizes,
+template void CudaWrapper::LinkedCellsTraversalN3Wrapper<double>(
+		LJFunctorCudaSoA<double> cell1, unsigned int cids_size,
+		unsigned int* cids, unsigned int cellSizes_size, size_t* cellSizes,
 		unsigned int offsets_size, int* offsets, cudaStream_t stream);
 
 template<typename floatType, int block_size>
 __global__
-void CellVerletTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
-		floatType* forceX, floatType* forceY, floatType* forceZ,
+void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell1,
 		unsigned int others_size, unsigned int* other_ids) {
 
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
@@ -741,42 +676,44 @@ void CellVerletTraversalNoN3(floatType* posX, floatType* posY, floatType* posZ,
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
-	myposition.x = posX[index];
-	myposition.y = posY[index];
-	myposition.z = posZ[index];
+	myposition.x = cell1._posX[index];
+	myposition.y = cell1._posY[index];
+	myposition.z = cell1._posZ[index];
+
 	//other cells
-	for (auto other_index = 0; other_ids[other_index] != UINT_MAX; ++other_index) {
+	for (auto other_index = 0; other_ids[other_index] != UINT_MAX;
+			++other_index) {
 		const int cell2Start = blockDim.x * other_ids[other_index];
 
-		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
+		cell2_pos_shared[threadIdx.x] = {cell1._posX[cell2Start+threadIdx.x], cell1._posY[cell2Start+threadIdx.x], cell1._posZ[cell2Start+threadIdx.x]};
 		__syncthreads();
 		for (int j = 0; j < block_size; ++j) {
 			myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
 		}
 		__syncthreads();
 	}
-	atomicAdd(forceX + index, myf.x);
-	atomicAdd(forceY + index, myf.y);
-	atomicAdd(forceZ + index, myf.z);
+	atomicAdd(cell1._forceX + index, myf.x);
+	atomicAdd(cell1._forceY + index, myf.y);
+	atomicAdd(cell1._forceZ + index, myf.z);
 }
 
 template<typename floatType>
-void CudaWrapper::CellVerletTraversalNoN3Wrapper(floatType* posX,
-		floatType* posY, floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, unsigned int ncells, unsigned int others_size,
-		unsigned int* other_ids, cudaStream_t stream) {
+void CudaWrapper::CellVerletTraversalNoN3Wrapper(
+		LJFunctorCudaSoA<floatType> cell1, unsigned int ncells,
+		unsigned int others_size, unsigned int* other_ids,
+		cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		CellVerletTraversalNoN3<floatType, 32> <<<ncells, 32, 0, stream>>>(posX,
-				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
+		CellVerletTraversalNoN3<floatType, 32> <<<ncells, 32, 0, stream>>>(
+				cell1, others_size, other_ids);
 		break;
 	case 64:
-		CellVerletTraversalNoN3<floatType, 64> <<<ncells, 64, 0, stream>>>(posX,
-				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
+		CellVerletTraversalNoN3<floatType, 64> <<<ncells, 64, 0, stream>>>(
+				cell1, others_size, other_ids);
 		break;
 	case 96:
-		CellVerletTraversalNoN3<floatType, 96> <<<ncells, 96, 0, stream>>>(posX,
-				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
+		CellVerletTraversalNoN3<floatType, 96> <<<ncells, 96, 0, stream>>>(
+				cell1, others_size, other_ids);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -787,20 +724,17 @@ void CudaWrapper::CellVerletTraversalNoN3Wrapper(floatType* posX,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-template void CudaWrapper::CellVerletTraversalNoN3Wrapper<float>(float* posX,
-		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		unsigned int ncells, unsigned int others_size, unsigned int* other_ids,
-		cudaStream_t stream);
+template void CudaWrapper::CellVerletTraversalNoN3Wrapper<float>(
+		LJFunctorCudaSoA<float> cell1, unsigned int ncells,
+		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
 
-template void CudaWrapper::CellVerletTraversalNoN3Wrapper<double>(double* posX,
-		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, unsigned int ncells, unsigned int others_size,
-		unsigned int* other_ids, cudaStream_t stream);
+template void CudaWrapper::CellVerletTraversalNoN3Wrapper<double>(
+		LJFunctorCudaSoA<double> cell1, unsigned int ncells,
+		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
 
 template<typename floatType, int block_size>
 __global__
-void CellVerletTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
-		floatType* forceX, floatType* forceY, floatType* forceZ,
+void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell1,
 		unsigned int others_size, unsigned int* other_ids) {
 	const int mask = block_size - 1;
 
@@ -812,15 +746,16 @@ void CellVerletTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
-	myposition.x = posX[index];
-	myposition.y = posY[index];
-	myposition.z = posZ[index];
+	myposition.x = cell1._posX[index];
+	myposition.y = cell1._posY[index];
+	myposition.z = cell1._posZ[index];
 
 	//other cells
-	for (auto other_index = 0; other_ids[other_index] != UINT_MAX; ++other_index) {
+	for (auto other_index = 0; other_ids[other_index] != UINT_MAX;
+			++other_index) {
 		const int cell2Start = blockDim.x * other_ids[other_index];
 
-		cell2_pos_shared[threadIdx.x] = {posX[cell2Start+threadIdx.x], posY[cell2Start+threadIdx.x], posZ[cell2Start+threadIdx.x]};
+		cell2_pos_shared[threadIdx.x] = {cell1._posX[cell2Start+threadIdx.x], cell1._posY[cell2Start+threadIdx.x], cell1._posZ[cell2Start+threadIdx.x]};
 		cell2_forces_shared[threadIdx.x] = {0,0,0};
 		__syncthreads();
 		for (int j = 0; j < block_size; ++j) {
@@ -836,28 +771,28 @@ void CellVerletTraversalN3(floatType* posX, floatType* posY, floatType* posZ,
 		}
 		__syncthreads();
 	}
-	atomicAdd(forceX + index, myf.x);
-	atomicAdd(forceY + index, myf.y);
-	atomicAdd(forceZ + index, myf.z);
+	atomicAdd(cell1._forceX + index, myf.x);
+	atomicAdd(cell1._forceY + index, myf.y);
+	atomicAdd(cell1._forceZ + index, myf.z);
 }
 
 template<typename floatType>
-void CudaWrapper::CellVerletTraversalN3Wrapper(floatType* posX, floatType* posY,
-		floatType* posZ, floatType* forceX, floatType* forceY,
-		floatType* forceZ, unsigned int ncells, unsigned int others_size,
-		unsigned int* other_ids, cudaStream_t stream) {
+void CudaWrapper::CellVerletTraversalN3Wrapper(
+		LJFunctorCudaSoA<floatType> cell1, unsigned int ncells,
+		unsigned int others_size, unsigned int* other_ids,
+		cudaStream_t stream) {
 	switch (_num_threads) {
 	case 32:
-		CellVerletTraversalN3<floatType, 32> <<<ncells, 32, 0, stream>>>(posX,
-				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
+		CellVerletTraversalN3<floatType, 32> <<<ncells, 32, 0, stream>>>(cell1,
+				others_size, other_ids);
 		break;
 	case 64:
-		CellVerletTraversalN3<floatType, 64> <<<ncells, 64, 0, stream>>>(posX,
-				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
+		CellVerletTraversalN3<floatType, 64> <<<ncells, 64, 0, stream>>>(cell1,
+				others_size, other_ids);
 		break;
 	case 96:
-		CellVerletTraversalN3<floatType, 96> <<<ncells, 96, 0, stream>>>(posX,
-				posY, posZ, forceX, forceY, forceZ, others_size, other_ids);
+		CellVerletTraversalN3<floatType, 96> <<<ncells, 96, 0, stream>>>(cell1,
+				others_size, other_ids);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -868,15 +803,13 @@ void CudaWrapper::CellVerletTraversalN3Wrapper(floatType* posX, floatType* posY,
 	autopas::utils::CudaExceptionHandler::checkLastCudaCall();
 }
 
-template void CudaWrapper::CellVerletTraversalN3Wrapper<float>(float* posX,
-		float* posY, float* posZ, float* forceX, float* forceY, float* forceZ,
-		unsigned int ncells, unsigned int others_size, unsigned int* other_ids,
-		cudaStream_t stream);
+template void CudaWrapper::CellVerletTraversalN3Wrapper<float>(
+		LJFunctorCudaSoA<float> cell1, unsigned int ncells,
+		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
 
-template void CudaWrapper::CellVerletTraversalN3Wrapper<double>(double* posX,
-		double* posY, double* posZ, double* forceX, double* forceY,
-		double* forceZ, unsigned int ncells, unsigned int others_size,
-		unsigned int* other_ids, cudaStream_t stream);
+template void CudaWrapper::CellVerletTraversalN3Wrapper<double>(
+		LJFunctorCudaSoA<double> cell1, unsigned int ncells,
+		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
 
 template<typename floatType>
 void CudaWrapper::loadConstants(floatType cutoffsquare, floatType epsilon24,

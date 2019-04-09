@@ -88,11 +88,6 @@ class FullParticleCell : public ParticleCell<Particle> {
   SoA<SoAArraysType> _particleSoABuffer;
 
   /**
-   * device AoS Buffer
-   */
-  double* _particlesDevice;
-
-  /**
    * device particle SoABuffer
    */
   CudaSoA<typename Particle::CudaDeviceArraysType> _particleSoABufferDevice;
