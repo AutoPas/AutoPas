@@ -13,7 +13,7 @@
 
 typedef autopas::VerletLists<autopas::sph::SPHParticle> Container;
 typedef autopas::TraversalVerlet<autopas::FullParticleCell<autopas::sph::SPHParticle>,
-                              autopas::sph::SPHCalcHydroForceFunctor, autopas::DataLayoutOption::aos, false>
+                                 autopas::sph::SPHCalcHydroForceFunctor, autopas::DataLayoutOption::aos, false>
     VerletTraversal;
 
 std::map<std::array<int, 3>, std::vector<autopas::sph::SPHParticle*>> sph_verlet_particle_list;
