@@ -73,7 +73,6 @@ class VerletLists
    * @return Vector of all applicable traversal options.
    */
   static const std::vector<TraversalOption>& allVLApplicableTraversals() {
-    // @FIXME This is a workaround because this container does not yet use traversals like it should
     static const std::vector<TraversalOption> v{TraversalOption::verletTraversal};
     return v;
   }
