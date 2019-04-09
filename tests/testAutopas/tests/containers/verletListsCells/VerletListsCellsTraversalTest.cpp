@@ -47,11 +47,11 @@ void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
   autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
                                  true>
       traversalSliN3FLOPS(dim, &flopsSliN3);
-  _verletListsCells.iteratePairwiseAoS(&flopsC01, &traversalC01FLOPS, false);
-  _verletListsCells.iteratePairwiseAoS(&flopsC18, &traversalC18FLOPS, false);
-  _verletListsCells.iteratePairwiseAoS(&flopsSli, &traversalSliFLOPS, false);
-  _verletListsCells.iteratePairwiseAoS(&flopsC18N3, &traversalC18N3FLOPS, true);
-  _verletListsCells.iteratePairwiseAoS(&flopsSliN3, &traversalSliN3FLOPS, true);
+  _verletListsCells.iteratePairwise(&flopsC01, &traversalC01FLOPS, false);
+  _verletListsCells.iteratePairwise(&flopsC18, &traversalC18FLOPS, false);
+  _verletListsCells.iteratePairwise(&flopsSli, &traversalSliFLOPS, false);
+  _verletListsCells.iteratePairwise(&flopsC18N3, &traversalC18N3FLOPS, true);
+  _verletListsCells.iteratePairwise(&flopsSliN3, &traversalSliN3FLOPS, true);
 
   ASSERT_EQ(flopsC18.getKernelCalls(), flopsC01.getKernelCalls());
   ASSERT_EQ(flopsC18.getKernelCalls(), flopsSli.getKernelCalls());

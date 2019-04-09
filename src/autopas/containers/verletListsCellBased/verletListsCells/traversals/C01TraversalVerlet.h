@@ -46,7 +46,7 @@ class C01TraversalVerlet
 
   TraversalOption getTraversalType() override { return TraversalOption::c01Verlet; }
 
-  bool isApplicable() override { return (not useNewton3) and (not(DataLayout == DataLayoutOption::cuda)); }
+  bool isApplicable() override { return (not useNewton3) && (DataLayout == DataLayoutOption::aos); }
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

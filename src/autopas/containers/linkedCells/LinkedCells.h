@@ -88,68 +88,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
   /**
-   * Function to iterate over all pairs of particles in an array of structures setting. This function only handles
-   * short-range interactions.
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: {}",
-          traversal->getTraversalType());
-    }
-  }
-
-  /**
-   * Function to iterate over all pairs of particles in an structure of arrays setting. This function only handles
-   * short-range interactions. It is often better vectorizable than iteratePairwiseAoS.
-   * @tparam ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    loadSoAs(f);
-
-    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoA. TraversalID: {}",
-          traversal->getTraversalType());
-    }
-
-    extractSoAs(f);
-  }
-
-  /**
-   * @copydoc DirectSum::iteratePairwiseSoACuda
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoACuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
-    AutoPasLog(debug, "Using traversal {} with Cuda ", utils::StringUtils::to_string(traversal->getTraversalType()))
-        loadSoAsCuda(f);
-    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoACuda. TraversalID: {}",
-          traversal->getTraversalType());
-    }
-
-    extractSoAsCuda(f);
-  }
-
-  /**
    * @copydoc DirectSum::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>

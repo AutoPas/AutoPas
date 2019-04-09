@@ -37,7 +37,7 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
 
   autopas::C18TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
       verletLists.getCellsPerDimension(), &emptyFunctor);
-  verletLists.iteratePairwiseAoS(&emptyFunctor, &traversal, true);
+  verletLists.iteratePairwise(&emptyFunctor, &traversal, true);
 
   std::vector<Particle*> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
@@ -70,7 +70,7 @@ TEST_F(VerletListsCellsTest, testVerletList) {
 
   autopas::C18TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
       verletLists.getCellsPerDimension(), &mockFunctor);
-  verletLists.iteratePairwiseAoS(&mockFunctor, &traversal, true);
+  verletLists.iteratePairwise(&mockFunctor, &traversal, true);
 
   std::vector<Particle*> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);

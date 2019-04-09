@@ -78,69 +78,6 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void deleteHaloParticles() override { getHaloCell()->clear(); }
 
   /**
-   * @copydoc LinkedCells::iteratePairwiseAoS
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in DirectSum::iteratePairwiseAoS");
-    }
-  }
-
-  /**
-   * @copydoc LinkedCells::iteratePairwiseSoA
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
-    f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
-
-    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in DirectSum::iteratePairwiseSoA");
-    }
-
-    f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
-    f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
-  }
-
-  /**
-   * Function to iterate over all pairs of particles in an structure of arrays setting on the gpu
-   * @tparam ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoACuda(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
-    AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
-    f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
-    f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
-
-    f->deviceSoALoader((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
-    f->deviceSoALoader((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
-
-    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::iteratePairwiseSoACuda");
-    }
-
-    f->deviceSoAExtractor((*getCell())._particleSoABuffer, getCell()->_particleSoABufferDevice);
-    f->deviceSoAExtractor((*getHaloCell())._particleSoABuffer, getHaloCell()->_particleSoABufferDevice);
-
-    f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
-    f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
-  }
-
-  /**
    * Function to iterate over all pairs of particles
    * @tparam ParticleFunctor
    * @tparam Traversal

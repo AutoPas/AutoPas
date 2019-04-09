@@ -52,6 +52,28 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
+  /**
+   * C01 traversals are only usable if useNewton3 is disabled.
+   *
+   * This is because the cell functor in the c01 traversal is hardcoded to not allow newton 3 even if only one thread is
+   * used.
+   *
+   * @return
+   */
+  bool isApplicable() override {
+#if defined(AUTOPAS_CUDA)
+    int nDevices;
+    cudaGetDeviceCount(&nDevices);
+    if (DataLayout == DataLayoutOption::cuda) {
+      return (not useNewton3) and (nDevices > 0);
+    } else {
+      return not useNewton3;
+    }
+#else
+    return not useNewton3;
+#endif
+  }
+
   TraversalOption getTraversalType() override { return TraversalOption::c01; }
 
  private:

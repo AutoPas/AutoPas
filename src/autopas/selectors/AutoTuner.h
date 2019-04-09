@@ -367,20 +367,10 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   if (inTuningPhase) {
     auto start = std::chrono::high_resolution_clock::now();
     // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
-    switch (DataLayout) {
-      case DataLayoutOption::aos:
-        withStaticContainerType(container,
-                                [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
-        break;
-      case DataLayoutOption::soa:
-        withStaticContainerType(container,
-                                [&](auto container) { container->iteratePairwiseSoA(f, traversal.get(), useNewton3); });
-        break;
-      case DataLayoutOption::cuda:
-        withStaticContainerType(
-            container, [&](auto container) { container->iteratePairwiseSoACuda(f, traversal.get(), useNewton3); });
-        break;
-    }
+
+    withStaticContainerType(container,
+                            [&](auto container) { container->iteratePairwise(f, traversal.get(), useNewton3); });
+
     auto stop = std::chrono::high_resolution_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
     AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
@@ -388,20 +378,8 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     //    traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
     addTimeMeasurement(*f, runtime);
   } else {
-    switch (DataLayout) {
-      case DataLayoutOption::aos:
-        withStaticContainerType(container,
-                                [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
-        break;
-      case DataLayoutOption::soa:
-        withStaticContainerType(container,
-                                [&](auto container) { container->iteratePairwiseSoA(f, traversal.get(), useNewton3); });
-        break;
-      case DataLayoutOption::cuda:
-        withStaticContainerType(
-            container, [&](auto container) { container->iteratePairwiseSoACuda(f, traversal.get(), useNewton3); });
-        break;
-    }
+    withStaticContainerType(container,
+                            [&](auto container) { container->iteratePairwise(f, traversal.get(), useNewton3); });
   }
 }
 

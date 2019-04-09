@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
       dummyTraversal({0, 0, 0}, &func);
 
   // iterate to rebuild
-  cont.iteratePairwiseAoS(&func, &dummyTraversal, useNewton3);
+  cont.iteratePairwise(&func, &dummyTraversal, useNewton3);
 
   int newNumParticles = 0;
   for (auto iter = cont.begin(); iter.isValid(); ++iter) {

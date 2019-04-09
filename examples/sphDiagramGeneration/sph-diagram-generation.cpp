@@ -252,7 +252,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwiseAoS(func, traversal, useNewton3);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
 
   double elapsedTime = t.stop();
 
@@ -261,7 +261,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwiseSoA(func, traversal, useNewton3);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
 
   elapsedTime = t.stop();
 

@@ -14,7 +14,7 @@
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 #if defined(AUTOPAS_CUDA)
-#include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "autopas/utils/CudaStreamHandler.h"
@@ -166,6 +166,11 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
   if (maxParticlesInCell == 0) {
     return;
   }
+  if (!_functor->getCudaWrapper()) {
+    _functor->CudaFunctor(_storageCell._particleSoABufferDevice, useNewton3);
+    return;
+  }
+
   _functor->getCudaWrapper()->setNumThreads(((maxParticlesInCell - 1) / 32 + 1) * 32);
   _deviceCellSizes.copyHostToDevice(cellSizePartialSum.size(), cellSizePartialSum.data());
   _functor->deviceSoALoader(_storageCell._particleSoABuffer, _storageCell._particleSoABufferDevice);

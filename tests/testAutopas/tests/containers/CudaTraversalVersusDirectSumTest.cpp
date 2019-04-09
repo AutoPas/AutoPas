@@ -58,8 +58,8 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
       traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, useNewton3>
       traversalDS(&func);
-  _directSum.iteratePairwiseAoS(&func, &traversalDS);
-  _linkedCells.iteratePairwiseAoS(&func, &traversalLJ);
+  _directSum.iteratePairwise(&func, &traversalDS);
+  _linkedCells.iteratePairwise(&func, &traversalLJ);
 
   auto itDirect = _directSum.begin();
   auto itLinked = _linkedCells.begin();

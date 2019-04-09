@@ -210,10 +210,7 @@ class Functor {
    * Provides an interface for traversals to directly access Cuda Functions
    * @return Pointer to CudaWrapper of the Functor
    */
-  virtual CudaWrapper *getCudaWrapper() {
-    utils::ExceptionHandler::exception("Functor::getCudaWrapper: not implemented");
-    return NULL;
-  }
+  virtual CudaWrapper *getCudaWrapper() { return NULL; }
 #endif
 };
 

@@ -30,8 +30,8 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
       traversalVerletLJ(_verletListsCells.getCellsPerDimension(), &func);
   autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
       traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  _verletListsCells.iteratePairwiseAoS(&func, &traversalVerletLJ);
-  _linkedCells.iteratePairwiseAoS(&func, &traversalLinkedLJ);
+  _verletListsCells.iteratePairwise(&func, &traversalVerletLJ);
+  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
 
   std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id
@@ -61,8 +61,8 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
       traversalVerletFLOPS(_verletListsCells.getCellsPerDimension(), &flopsVerlet);
   autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
       traversalLinkedFLOPS(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
-  _verletListsCells.iteratePairwiseAoS(&flopsVerlet, &traversalVerletFLOPS);
-  _linkedCells.iteratePairwiseAoS(&flopsLinked, &traversalLinkedFLOPS);
+  _verletListsCells.iteratePairwise(&flopsVerlet, &traversalVerletFLOPS);
+  _linkedCells.iteratePairwise(&flopsLinked, &traversalLinkedFLOPS);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
   ASSERT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());

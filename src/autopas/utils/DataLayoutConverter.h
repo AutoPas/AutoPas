@@ -20,6 +20,11 @@ namespace utils {
 template <class Functor, DataLayoutOption dataLayout>
 class DataLayoutConverter {
  public:
+  /**
+   * Constructor
+   * @tparam Functor Functor Type
+   * @param functor responsible for the conversion
+   */
   DataLayoutConverter(Functor* functor) : _functor(functor) {}
 
   /**
@@ -69,7 +74,9 @@ class DataLayoutConverter {
   }
 
  private:
-  /// Functor to convert cells
+  /**
+   *  Functor to convert cells
+   */
   Functor* _functor;
 };
 
