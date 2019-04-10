@@ -7,7 +7,7 @@ if (USE_VECTORIZATION)
     set(VECTOR_INSTRUCTIONS "NATIVE" CACHE STRING "Vector instruction set to use (${VECTOR_INSTRUCTIONS_OPTIONS}).")
     # let ccmake and cmake-gui offer the options
     set_property(CACHE VECTOR_INSTRUCTIONS PROPERTY STRINGS ${VECTOR_INSTRUCTIONS_OPTIONS})
-            
+
     if(ENABLE_CUDA)
     target_compile_options(autopas
         PUBLIC
@@ -25,6 +25,8 @@ if (USE_VECTORIZATION)
         $<$<AND:$<STREQUAL:${VECTOR_INSTRUCTIONS},KNL>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-xMIC-AVX512>
         )
     else()
+        # the else branch can be removed once we enforce cmake >=3.12
+        # see: https://gitlab.kitware.com/cmake/cmake/issues/17952
         target_compile_options(autopas
         PUBLIC
         # openmp simd
