@@ -45,6 +45,21 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
   TraversalOption getTraversalType() override { return TraversalOption::c08; }
 
+  /**
+   * C08 traversals are always usable.
+   * @return
+   */
+  bool isApplicable() override {
+    int nDevices = 0;
+#if defined(AUTOPAS_CUDA)
+    cudaGetDeviceCount(&nDevices);
+#endif
+    if (DataLayout == DataLayoutOption::cuda)
+      return nDevices > 0;
+    else
+      return true;
+  }
+
  private:
   C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
 };

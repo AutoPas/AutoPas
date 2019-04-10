@@ -48,17 +48,15 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   bool isApplicable() override {
-#if defined(AUTOPAS_CUDA)
     if (DataLayout == DataLayoutOption::cuda) {
-      int nDevices;
+      int nDevices = 0;
+#if defined(AUTOPAS_CUDA)
       cudaGetDeviceCount(&nDevices);
+#endif
       return (this->_sliceThickness.size() > 0) && (nDevices > 0);
     } else {
       return this->_sliceThickness.size() > 0;
     }
-#else
-    return this->_sliceThickness.size() > 0;
-#endif
   }
 
   void initTraversal(std::vector<ParticleCell> &cells) override {

@@ -42,13 +42,14 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   TraversalOption getTraversalType() override { return TraversalOption::directSumTraversal; }
 
   bool isApplicable() override {
+    int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
-    int nDevices;
     cudaGetDeviceCount(&nDevices);
-    return (not(DataLayout == DataLayoutOption::cuda)) || nDevices > 0;
-#else
-    return true;
 #endif
+    if (DataLayout == DataLayoutOption::cuda)
+      return nDevices > 0;
+    else
+      return true;
   }
 
   void initTraversal(std::vector<ParticleCell> &cells) override {
