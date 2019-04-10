@@ -92,9 +92,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
-    AutoPasLog(debug, "Using traversal {} with Cuda ", utils::StringUtils::to_string(traversal->getTraversalType()))
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
-        traversal->initTraversal(this->_cells);
+    traversal->initTraversal(this->_cells);
     if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
 

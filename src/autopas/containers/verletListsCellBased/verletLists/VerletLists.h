@@ -65,7 +65,6 @@ class VerletLists
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
             boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals()),
         _soaListIsValid(false),
-        _soa(),
         _buildVerletListType(buildVerletListType) {}
 
   /**
@@ -101,11 +100,12 @@ class VerletLists
     if (needsRebuild()) {
       rebuild(useNewton3);
     }
-    if (not _soaListIsValid) {
-      generateSoAListFromAoSVerletLists();
-    }
 
     if (auto* traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell>*>(traversal)) {
+      if (not _soaListIsValid and traversalInterface->getDataLayout() == DataLayoutOption::soa) {
+        // only do this if we need it, i.e., if we are using soa!
+        generateSoAListFromAoSVerletLists();
+      }
       traversalInterface->initTraversal(this->_linkedCells.getCells());
       traversalInterface->iterateVerletLists(_aosNeighborLists, _soaNeighborLists);
       traversalInterface->endTraversal(this->_linkedCells.getCells());
@@ -272,9 +272,6 @@ class VerletLists
 
   // specifies if the SoA neighbor list is currently valid
   bool _soaListIsValid;
-
-  /// global SoA of verlet lists
-  SoA<typename Particle::SoAArraysType> _soa;
 
   /// specifies how the verlet lists are build
   BuildVerletListType _buildVerletListType;
