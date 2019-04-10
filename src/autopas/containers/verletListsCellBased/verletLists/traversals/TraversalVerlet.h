@@ -78,9 +78,7 @@ class TraversalVerlet
       typename VerletListHelpers<typename ParticleCell::ParticleType>::VerletListParticleCellType LinkedParticleCell;
 
  public:
-  DataLayoutOption getDataLayout() override {
-    return DataLayout;
-  }
+  DataLayoutOption getDataLayout() override { return DataLayout; }
 
   /**
    * Constructor for Verlet Traversal
