@@ -103,6 +103,9 @@ inline std::string to_string(const ContainerOption &option) {
     case autopas::ContainerOption::verletClusterLists: {
       return "VerletClusterLists";
     }
+    case autopas::ContainerOption::verletClusterCells: {
+      return "VerletClusterCells";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown option (" + std::to_string(option) + ")";
@@ -268,7 +271,7 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
  * Converts a string of options to a vector of enums. The options are expected to be lower case.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
- * Possible options: directSum, linkedCells, verletLists, vcells, vcluster
+ * Possible options: directSum, linkedCells, verletLists, vcells, vcluster, vclustercells
  *
  * @param containerOptionsString String containing container options.
  * @param ignoreUnknownOptions If set to false, a 'autopas::ContainerOption(-1)' will be inserted in the return vector
@@ -289,7 +292,10 @@ inline std::vector<autopas::ContainerOption> parseContainerOptions(const std::st
       containerOptions.emplace_back(autopas::ContainerOption::linkedCells);
     } else if (word.find('v') != std::string::npos) {
       if (word.find("cl") != std::string::npos) {
-        containerOptions.emplace_back(autopas::ContainerOption::verletClusterLists);
+        if (word.find("cell") != std::string::npos)
+          containerOptions.emplace_back(autopas::ContainerOption::verletClusterCells);
+        else
+          containerOptions.emplace_back(autopas::ContainerOption::verletClusterLists);
       } else if (word.find("cel") != std::string::npos) {
         containerOptions.emplace_back(autopas::ContainerOption::verletListsCells);
       } else {

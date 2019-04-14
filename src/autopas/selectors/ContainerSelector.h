@@ -11,6 +11,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
@@ -108,8 +109,15 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
                                                                  _verletRebuildFrequency);
       break;
     }
+    case verletClusterCells: {
+      // @todo determine verletSkin and verletRebuildFrequency and cluster size (multiple of 32) via tuning
+      int clusterSize = 32;
+      container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin,
+                                                                 _verletRebuildFrequency, clusterSize);
+      break;
+    }
     default: {
-      utils::ExceptionHandler::exception("Container type {} is not a known type!",
+      utils::ExceptionHandler::exception("Container Selector: Container type {} is not a known type!",
                                          utils::StringUtils::to_string(containerChoice));
     }
   }

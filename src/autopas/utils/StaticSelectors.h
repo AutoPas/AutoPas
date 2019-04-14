@@ -9,6 +9,7 @@
 #include <memory>
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
@@ -44,6 +45,9 @@ void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle, Particl
       return;
     case ContainerOption::verletClusterLists:
       function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(container_ptr));
+      return;
+    case ContainerOption::verletClusterCells:
+      function(dynamic_cast<autopas::VerletClusterCells<Particle> *>(container_ptr));
       return;
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticSelectorMacros.h. Type: {}",

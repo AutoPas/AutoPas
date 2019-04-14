@@ -10,6 +10,7 @@
 #include <cmath>
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -75,7 +76,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
   std::vector<TraversalOption> getAllTraversals() override { return allVCLApplicableTraversals(); }
 
-  ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
+  ContainerOption getContainerType() override { return ContainerOption::verletClusterCells; }
 
   /**
    * Function to iterate over all pairs of particles.
@@ -88,13 +89,18 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
+    auto* traversalInterface = dynamic_cast<VerletClusterTraversalInterface<FullParticleCell<Particle>>*>(traversal);
+    if (!traversalInterface) {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
+    }
     if (needsRebuild()) {
       this->rebuild();
-      traversal->rebuild(_cellsPerDim, _clusterSize, _clusters, _boundingBoxes);
+      traversalInterface->rebuild(_cellsPerDim, _clusterSize, _clusters, _boundingBoxes);
     }
 
     traversal->initTraversal(_clusters);
-    traversal->traverseCellPairs(_clusters);
+    traversalInterface->traverseCellPairs(_clusters);
     traversal->endTraversal(_clusters);
 
     // we iterated, so increase traversal counter

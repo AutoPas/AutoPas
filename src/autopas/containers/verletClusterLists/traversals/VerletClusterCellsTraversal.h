@@ -8,6 +8,7 @@
 
 #include <vector>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #if defined(AUTOPAS_CUDA)
@@ -25,7 +26,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell> {
+class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
+                                    public VerletClusterTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -52,7 +54,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   void rebuild(const std::array<unsigned long, 3> &dims, unsigned int clusterSize, std::vector<ParticleCell> &cells,
-               std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes) {
+               std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes) override {
     this->_cellsPerDimension = dims;
     _clusterSize = clusterSize;
     const size_t cellsSize = cells.size();
@@ -99,7 +101,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell> {
 #endif
       return;
     }
-  };
+  }
 
   void initTraversal(std::vector<ParticleCell> &cells) override {
     switch (DataLayout) {
@@ -162,7 +164,22 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell> {
    * @param cells containing the particles
    * @param neighborCellIds Stores the neighbor ids for each cell in cells
    */
-  void traverseCellPairs(std::vector<ParticleCell> &cells);
+  void traverseCellPairs(std::vector<ParticleCell> &cells) override {
+    switch (DataLayout) {
+      case DataLayoutOption::aos: {
+        traverseCellPairsCPU(cells);
+        return;
+      }
+      case DataLayoutOption::soa: {
+        traverseCellPairsCPU(cells);
+        return;
+      }
+      case DataLayoutOption::cuda: {
+        traverseCellPairsGPU(cells);
+        return;
+      }
+    }
+  }
 
  private:
   void traverseCellPairsCPU(std::vector<ParticleCell> &cells);
@@ -205,25 +222,6 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell> {
 
   size_t _clusterSize;
 };
-
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
-  switch (DataLayout) {
-    case DataLayoutOption::aos: {
-      traverseCellPairsCPU(cells);
-      return;
-    }
-    case DataLayoutOption::soa: {
-      traverseCellPairsCPU(cells);
-      return;
-    }
-    case DataLayoutOption::cuda: {
-      traverseCellPairsGPU(cells);
-      return;
-    }
-  }
-}
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 void VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairsCPU(
