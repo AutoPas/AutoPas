@@ -324,11 +324,11 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     _firstHaloClusterId = numOwnClusters;
 
-    _clusters.resize(numOwnClusters + 6);
+    _clusters.resize(numOwnClusters);
 
     // put Halo particles into border Cells
     for (auto& haloParticle : _haloInsertQueue) {
-      _clusters[_firstHaloClusterId + 1].addParticle(haloParticle);
+      //_clusters[_firstHaloClusterId + 1].addParticle(haloParticle);
     }
 
     _haloInsertQueue.clear();

@@ -6,7 +6,7 @@
 
 #include "VerletClusterCellsTest.h"
 #include "autopas/containers/verletClusterLists/VerletClusterCells.h"
-#include "autopas/containers/verletClusterLists/traversals/VerletClusterClusterTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -36,7 +36,7 @@ TEST_F(VerletClusterCellsTest, testVerletListBuild) {
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
-  autopas::VerletClusterClusterTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
+  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
       &emptyFunctor);
   verletLists.iteratePairwiseAoS(&emptyFunctor, &dummyTraversal, false);
 }

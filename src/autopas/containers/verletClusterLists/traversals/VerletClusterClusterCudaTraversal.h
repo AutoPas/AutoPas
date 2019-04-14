@@ -85,7 +85,7 @@ class VerletClusterClusterCuda : public CellPairTraversal<ParticleCell> {
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void VerletClusterClusterTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
+void VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells, std::vector<std::vector<size_t>> &neighborCellIds) {
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception(

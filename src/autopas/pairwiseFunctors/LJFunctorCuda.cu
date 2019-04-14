@@ -668,7 +668,7 @@ template void CudaWrapper::LinkedCellsTraversalN3Wrapper<double>(
 template<typename floatType, int block_size>
 __global__
 void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell1,
-		unsigned int others_size, unsigned int* other_ids) {
+		unsigned int* other_ids) {
 
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
 	typename vec3<floatType>::Type myposition = { getInfinity<floatType>(),
@@ -700,20 +700,20 @@ void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell1,
 template<typename floatType>
 void CudaWrapper::CellVerletTraversalNoN3Wrapper(
 		LJFunctorCudaSoA<floatType> cell1, unsigned int ncells,
-		unsigned int others_size, unsigned int* other_ids,
+		unsigned int clusterSize, unsigned int* other_ids,
 		cudaStream_t stream) {
-	switch (_num_threads) {
+	switch (clusterSize) {
 	case 32:
 		CellVerletTraversalNoN3<floatType, 32> <<<ncells, 32, 0, stream>>>(
-				cell1, others_size, other_ids);
+				cell1,  other_ids);
 		break;
 	case 64:
 		CellVerletTraversalNoN3<floatType, 64> <<<ncells, 64, 0, stream>>>(
-				cell1, others_size, other_ids);
+				cell1,  other_ids);
 		break;
 	case 96:
 		CellVerletTraversalNoN3<floatType, 96> <<<ncells, 96, 0, stream>>>(
-				cell1, others_size, other_ids);
+				cell1,  other_ids);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -735,7 +735,7 @@ template void CudaWrapper::CellVerletTraversalNoN3Wrapper<double>(
 template<typename floatType, int block_size>
 __global__
 void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell1,
-		unsigned int others_size, unsigned int* other_ids) {
+	 unsigned int* other_ids) {
 	const int mask = block_size - 1;
 
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
@@ -779,20 +779,20 @@ void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell1,
 template<typename floatType>
 void CudaWrapper::CellVerletTraversalN3Wrapper(
 		LJFunctorCudaSoA<floatType> cell1, unsigned int ncells,
-		unsigned int others_size, unsigned int* other_ids,
+		unsigned int clusterSize, unsigned int* other_ids,
 		cudaStream_t stream) {
-	switch (_num_threads) {
+	switch (clusterSize) {
 	case 32:
 		CellVerletTraversalN3<floatType, 32> <<<ncells, 32, 0, stream>>>(cell1,
-				others_size, other_ids);
+				 other_ids);
 		break;
 	case 64:
 		CellVerletTraversalN3<floatType, 64> <<<ncells, 64, 0, stream>>>(cell1,
-				others_size, other_ids);
+				 other_ids);
 		break;
 	case 96:
 		CellVerletTraversalN3<floatType, 96> <<<ncells, 96, 0, stream>>>(cell1,
-				others_size, other_ids);
+				 other_ids);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(

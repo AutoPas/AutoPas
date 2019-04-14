@@ -5,7 +5,7 @@
  */
 
 #include "VerletCudaTraversalVersusDirectSumTest.h"
-#include "autopas/containers/verletClusterLists/traversals/VerletClusterClusterTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
 
 VerletCudaTraversalVersusDirectSumTest::VerletCudaTraversalVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _verletCluster(getBoxMin(), getBoxMax(), getCutoff()) {}
@@ -54,8 +54,8 @@ void VerletCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, do
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::VerletClusterClusterTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
-                                         useNewton3>
+  autopas::VerletClusterCellsTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                                       useNewton3>
       traversalVerletCluster(&func);
 
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, useNewton3>
