@@ -35,20 +35,6 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
   explicit C08BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims), _dataLayoutConverter(pairwiseFunctor) {}
 
-  /**
-   * C08 traversals are always usable.
-   * @return
-   */
-  bool isApplicable() override {
-#if defined(AUTOPAS_CUDA)
-    int nDevices;
-    cudaGetDeviceCount(&nDevices);
-    return (not(DataLayout == DataLayoutOption::cuda)) || nDevices > 0;
-#else
-    return true;
-#endif
-  }
-
   void initTraversal(std::vector<ParticleCell>& cells) override {
     for (auto& cell : cells) {
       _dataLayoutConverter.loadDataLayout(cell);

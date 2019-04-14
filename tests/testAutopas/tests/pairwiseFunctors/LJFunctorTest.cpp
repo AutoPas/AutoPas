@@ -195,16 +195,16 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   EXPECT_THROW(functor.getUpot(), exception_type);
   EXPECT_THROW(functor.getVirial(), exception_type);
 
-  EXPECT_NO_THROW(functor.resetGlobalValues());
+  EXPECT_NO_THROW(functor.initTraversal());
 
-  EXPECT_NO_THROW(functor.postProcessGlobalValues(true));
-  EXPECT_NO_THROW(functor.resetGlobalValues());
-  EXPECT_NO_THROW(functor.postProcessGlobalValues(true));
+  EXPECT_NO_THROW(functor.endTraversal(true));
+  EXPECT_NO_THROW(functor.initTraversal());
+  EXPECT_NO_THROW(functor.endTraversal(true));
   // repeated postprocessing is not allowed
-  EXPECT_THROW(functor.postProcessGlobalValues(true), exception_type);
+  EXPECT_THROW(functor.endTraversal(true), exception_type);
 
-  EXPECT_NO_THROW(functor.resetGlobalValues());
-  EXPECT_NO_THROW(functor.postProcessGlobalValues(true));
+  EXPECT_NO_THROW(functor.initTraversal());
+  EXPECT_NO_THROW(functor.endTraversal(true));
 }
 
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
@@ -241,13 +241,13 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
   Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
 
-  functor.resetGlobalValues();
+  functor.initTraversal();
 
   functor.AoSFunctor(p1, p2, newton3);
   if (not newton3) {
     functor.AoSFunctor(p2, p1, newton3);
   }
-  functor.postProcessGlobalValues(newton3);
+  functor.endTraversal(newton3);
 
   double upot = functor.getUpot();
   double virial = functor.getVirial();
@@ -328,7 +328,7 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
     }
   }
 
-  functor.resetGlobalValues();
+  functor.initTraversal();
 
   functor.SoALoader(cell1, cell1._particleSoABuffer);
   functor.SoALoader(cell2, cell2._particleSoABuffer);
@@ -362,7 +362,7 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
   functor.SoAExtractor(cell1, cell1._particleSoABuffer);
   functor.SoAExtractor(cell2, cell2._particleSoABuffer);
 
-  functor.postProcessGlobalValues(newton3);
+  functor.endTraversal(newton3);
 
   double upot = functor.getUpot();
   double virial = functor.getVirial();
@@ -432,7 +432,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(
       cutoff, epsilon, sigma, shift, lowCorner, highCorner, duplicatedCalculation);
 
-  functor.resetGlobalValues();
+  functor.initTraversal();
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
 #if defined(AUTOPAS_OPENMP)
@@ -453,7 +453,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
       functor.AoSFunctor(p3, p4, newton3);
     }
   }
-  functor.postProcessGlobalValues(newton3);
+  functor.endTraversal(newton3);
 
   double upot = functor.getUpot();
   double virial = functor.getVirial();

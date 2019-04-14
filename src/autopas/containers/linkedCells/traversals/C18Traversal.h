@@ -60,6 +60,21 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
 
   TraversalOption getTraversalType() override { return TraversalOption::c18; }
 
+  /**
+   * C18 traversal is always usable.
+   * @return
+   */
+  bool isApplicable() override {
+    int nDevices = 0;
+#if defined(AUTOPAS_CUDA)
+    cudaGetDeviceCount(&nDevices);
+#endif
+    if (DataLayout == DataLayoutOption::cuda)
+      return nDevices > 0;
+    else
+      return true;
+  }
+
  private:
   /**
    * Computes pairs used in processBaseCell()

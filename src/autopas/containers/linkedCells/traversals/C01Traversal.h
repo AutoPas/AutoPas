@@ -61,17 +61,15 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @return
    */
   bool isApplicable() override {
+    int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
-    int nDevices;
     cudaGetDeviceCount(&nDevices);
+#endif
     if (DataLayout == DataLayoutOption::cuda) {
       return (not useNewton3) and (nDevices > 0);
     } else {
       return not useNewton3;
     }
-#else
-    return not useNewton3;
-#endif
   }
 
   TraversalOption getTraversalType() override { return TraversalOption::c01; }

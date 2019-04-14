@@ -65,7 +65,6 @@ class VerletLists
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
             boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals()),
         _soaListIsValid(false),
-        _soa(),
         _buildVerletListType(buildVerletListType) {}
 
   /**
@@ -101,11 +100,12 @@ class VerletLists
     if (needsRebuild()) {
       rebuild(useNewton3);
     }
-    if (not _soaListIsValid) {
-      generateSoAListFromAoSVerletLists();
-    }
 
     if (auto* traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell>*>(traversal)) {
+      if (not _soaListIsValid and traversalInterface->getDataLayout() == DataLayoutOption::soa) {
+        // only do this if we need it, i.e., if we are using soa!
+        generateSoAListFromAoSVerletLists();
+      }
       traversalInterface->initTraversal(this->_linkedCells.getCells());
       traversalInterface->iterateVerletLists(_aosNeighborLists, _soaNeighborLists);
       traversalInterface->endTraversal(this->_linkedCells.getCells());
@@ -206,82 +206,6 @@ class VerletLists
   }
 
   /**
-   * iterate over the verlet lists using the AoS traversal
-   * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3
-   */
-  template <class ParticleFunctor>
-  void iterateVerletListsAoS(ParticleFunctor* f, const bool useNewton3) {
-    // @todo optimize iterateVerletListsAoS, e.g. by using openmp-capable
-    /// traversals
-
-#if defined(AUTOPAS_OPENMP)
-    if (not useNewton3) {
-      size_t buckets = _aosNeighborLists.bucket_count();
-      // @todo find a sensible chunk size
-#pragma omp parallel for schedule(dynamic)
-      for (size_t b = 0; b < buckets; b++) {
-        auto endIter = _aosNeighborLists.end(b);
-        for (auto it = _aosNeighborLists.begin(b); it != endIter; ++it) {
-          Particle& i = *(it->first);
-          for (auto j_ptr : it->second) {
-            Particle& j = *j_ptr;
-            f->AoSFunctor(i, j, false);
-          }
-        }
-      }
-    } else
-#endif
-    {
-      for (auto& list : _aosNeighborLists) {
-        Particle& i = *list.first;
-        for (auto j_ptr : list.second) {
-          Particle& j = *j_ptr;
-          f->AoSFunctor(i, j, useNewton3);
-        }
-      }
-    }
-  }
-
-  /**
-   * iterate over the verlet lists using the SoA traversal
-   * @tparam ParticleFunctor
-   * @param f
-   * @param useNewton3
-   */
-  template <class ParticleFunctor>
-  void iterateVerletListsSoA(ParticleFunctor* f, const bool useNewton3) {
-    // @todo optimize iterateVerletListsSoA, e.g. by using traversals with
-    /// openmp possibilities
-
-    // load data from cells into soa
-    loadVerletSoA(f);
-
-    // @todo here you can (sort of) use traversals, by modifying iFrom and iTo.
-    const size_t iFrom = 0;
-    const size_t iTo = _soaNeighborLists.size();
-
-#if defined(AUTOPAS_OPENMP)
-    if (not useNewton3) {
-      // @todo find a sensible chunk size
-      const size_t chunkSize = std::max((iTo - iFrom) / (omp_get_max_threads() * 10), 1ul);
-#pragma omp parallel for schedule(dynamic, chunkSize)
-      for (size_t i = iFrom; i < iTo; i++) {
-        f->SoAFunctor(_soa, _soaNeighborLists, i, i + 1, useNewton3);
-      }
-    } else
-#endif
-    {
-      // iterate over SoA
-      f->SoAFunctor(_soa, _soaNeighborLists, iFrom, iTo, useNewton3);
-    }
-
-    // extract SoA
-    extractVerletSoA(f);
-  }
-
-  /**
    * update the AoS id maps.
    * The Id Map is used to map the id of a particle to the actual particle
    * @return
@@ -297,38 +221,6 @@ class VerletLists
     }
 
     return i;
-  }
-
-  /**
-   * Load the particle information from the cell and store it in the global SoA
-   * using functor.SoALoader(...)
-   * @tparam ParticleFunctor the type of the functor
-   * @param functor the SoAExtractor method of this functor is used. use the
-   * actual
-   */
-  template <class ParticleFunctor>
-  void loadVerletSoA(ParticleFunctor* functor) {
-    size_t offset = 0;
-    for (auto& cell : this->_linkedCells.getCells()) {
-      functor->SoALoader(cell, _soa, offset);
-      offset += cell.numParticles();
-    }
-  }
-
-  /**
-   * Extracts the particle information from the global SoA using
-   * functor.SoAExtractor(...)
-   * @tparam ParticleFunctor the type of the functor
-   * @param functor the SoAExtractor method of this functor is used. use the
-   * actual
-   */
-  template <class ParticleFunctor>
-  void extractVerletSoA(ParticleFunctor* functor) {
-    size_t offset = 0;
-    for (auto& cell : this->_linkedCells.getCells()) {
-      functor->SoAExtractor(cell, _soa, offset);
-      offset += cell.numParticles();
-    }
   }
 
   /**
@@ -380,9 +272,6 @@ class VerletLists
 
   // specifies if the SoA neighbor list is currently valid
   bool _soaListIsValid;
-
-  /// global SoA of verlet lists
-  SoA<typename Particle::SoAArraysType> _soa;
 
   /// specifies how the verlet lists are build
   BuildVerletListType _buildVerletListType;

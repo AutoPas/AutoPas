@@ -51,6 +51,12 @@ class VerletTraversalInterface {
    * @param cells content of the container the Traversal is to be called on
    */
   virtual void endTraversal(std::vector<LinkedParticleCell>& cells) = 0;
+
+  /**
+   * Returns data layout.
+   * @return dataLayout
+   */
+  virtual DataLayoutOption getDataLayout() = 0;
 };
 
 /**
@@ -72,6 +78,8 @@ class TraversalVerlet
       typename VerletListHelpers<typename ParticleCell::ParticleType>::VerletListParticleCellType LinkedParticleCell;
 
  public:
+  DataLayoutOption getDataLayout() override { return DataLayout; }
+
   /**
    * Constructor for Verlet Traversal
    * @param dims dimensions of the underlying container
