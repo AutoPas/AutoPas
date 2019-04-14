@@ -69,7 +69,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   static const std::vector<TraversalOption>& allVCLApplicableTraversals() {
     // traversal not used but prevents usage of newton3
-    static const std::vector<TraversalOption> v{TraversalOption::ClusterToClusterVerlet};
+    static const std::vector<TraversalOption> v{TraversalOption::verletClusterCellsTraversal};
     return v;
   }
 
@@ -90,82 +90,14 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
     if (needsRebuild()) {
       this->rebuild();
+      traversal->rebuild(_cellsPerDim, _clusterSize, _clusters, _boundingBoxes);
     }
-#if defined(AUTOPAS_CUDA)
-    if (auto* cudawrapper = f->getCudaWrapper()) {
-      cudawrapper->setNumThreads(_clusterSize);
-    }
-#endif
+
     traversal->initTraversal(_clusters);
-    traversal->traverseCellPairs(_clusters, _neighborCellIds);
+    traversal->traverseCellPairs(_clusters);
     traversal->endTraversal(_clusters);
 
     // we iterated, so increase traversal counter
-    _traversalsSinceLastRebuild++;
-  }
-
-  /**
-   * Function to iterate over all pairs of particles.
-   * This function only handles short-range interactions.
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal not used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
-    if (needsRebuild()) {
-      this->rebuild();
-    }
-    traversal->traverseCellPairs(_clusters, _neighborCellIds);
-    // we iterated, so increase traversal counter
-    _traversalsSinceLastRebuild++;
-  }
-
-  /**
-   * Function to iterate over all pairs of particles using SoAs
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal not used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {
-      this->rebuild();
-    }
-
-    loadSoAs(f);
-    traversal->traverseCellPairs(_clusters, _neighborCellIds);
-    extractSoAs(f);
-
-    _traversalsSinceLastRebuild++;
-  }
-
-  /**
-   * Function to iterate over all pairs of particles using Cuda
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal not used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoACuda(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = false) {
-    if (needsRebuild()) {
-      this->rebuild();
-    }
-#if defined(AUTOPAS_CUDA)
-    if (auto* cudawrapper = f->getCudaWrapper()) {
-      cudawrapper->setNumThreads(_clusterSize);
-    }
-#endif
-    loadSoAsCuda(f);
-    traversal->traverseCellPairs(_clusters, _neighborCellIds);
-    extractSoAsCuda(f);
-
     _traversalsSinceLastRebuild++;
   }
 
@@ -273,18 +205,12 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     // get all particles and clear clusters
     std::vector<Particle> invalidParticles;
-    index_t i = 0;
-    for (; i < _firstHaloClusterId; ++i) {
-      for (auto& p : _clusters[i]._particles) {
-        invalidParticles.push_back(p);
+    for (auto& cluster : _clusters) {
+      for (index_t i = 0; i < cluster._particles.size(); ++i) {
+        if (utils::inBox(cluster._particles[i].getR(), _boxMin, _boxMax))
+          invalidParticles.push_back(cluster._particles[i]);
       }
-      _clusters[i].clear();
-    }
-    for (; i < _clusters.size(); ++i) {
-      for (auto& p : _clusters[i]._particles) {
-        _haloInsertQueue.push_back(p);
-      }
-      _clusters[i].clear();
+      cluster.clear();
     }
 
     // estimate particle density
@@ -305,7 +231,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     // resize to number of grids
     _clusters.resize(sizeGrid);
-    _neighborCellIds.clear();
+    _dummyStarts.resize(sizeGrid);
 
     // put particles into grid cells
     for (auto& particle : invalidParticles) {
@@ -314,29 +240,17 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       _clusters[index].addParticle(particle);
     }
 
-    index_t numOwnClusters = 0;
+    index_t numClusters = 0;
     // sort by last dimension
     for (auto& cluster : _clusters) {
       cluster.sortByDim(2);
-      numOwnClusters += ((cluster.numParticles()) / _clusterSize) + 1;
+      numClusters += ((cluster.numParticles()) / _clusterSize) + 1;
     }
-    numOwnClusters = std::max((index_t)1, numOwnClusters);
+    numClusters = std::max((index_t)1, numClusters);
 
-    _firstHaloClusterId = numOwnClusters;
-
-    _clusters.resize(numOwnClusters);
-
-    // put Halo particles into border Cells
-    for (auto& haloParticle : _haloInsertQueue) {
-      //_clusters[_firstHaloClusterId + 1].addParticle(haloParticle);
-    }
-
-    _haloInsertQueue.clear();
-    _dummyStarts.resize(_clusters.size(), 0);
-    _neighborCellIds.resize(_clusters.size(), {});
-    _boundingBoxes.resize(_clusters.size(),
-                          {_boxMax[0] + 8 * _cutoff, _boxMax[1] + 8 * _cutoff, _boxMax[2] + 8 * _cutoff,
-                           _boxMin[0] - 8 * _cutoff, _boxMin[1] - 8 * _cutoff, _boxMin[2] - 8 * _cutoff});
+    _clusters.resize(numClusters);
+    _boundingBoxes.resize(numClusters, {_boxMax[0] + 8 * _cutoff, _boxMax[1] + 8 * _cutoff, _boxMax[2] + 8 * _cutoff,
+                                        _boxMin[0] - 8 * _cutoff, _boxMin[1] - 8 * _cutoff, _boxMin[2] - 8 * _cutoff});
 
     index_t cid = sizeGrid;
     for (index_t i = 0; i < sizeGrid; ++i) {
@@ -369,14 +283,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       }
     }
 
-    for (index_t i = 0; i < numOwnClusters; ++i) {
-      for (index_t j = i + 1; j < numOwnClusters; ++j) {
-        if (boxesOverlap(_boundingBoxes[i], _boundingBoxes[j])) {
-          _neighborCellIds[i].push_back(j);
-        }
-      }
-    }
-
     _neighborListIsValid = true;
     _traversalsSinceLastRebuild = 0;
   }
@@ -394,18 +300,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
-  /**
-   * Returns true if the two boxes are within one cutoff
-   * @return true if the boxes are withon one cutoff
-   */
-  inline bool boxesOverlap(std::array<typename Particle::ParticleFloatingPointType, 6>& box1,
-                           std::array<typename Particle::ParticleFloatingPointType, 6>& box2) {
-    for (int i = 0; i < 3; ++i) {
-      if (box1[0 + i] > box2[3 + i] || box1[3 + i] < box2[0 + i]) return false;
-    }
-    return true;
-  }
-
   /// internal storage, particles are split into a grid in xy-dimension and then cut in z dimension
   std::vector<FullParticleCell<Particle>> _clusters;
 
@@ -417,9 +311,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
   /// Stores Halo Particles to be inserted
   std::vector<Particle> _haloInsertQueue;
-
-  // id of neighbor clusters of a clusters
-  std::vector<std::vector<index_t>> _neighborCellIds;
 
   // number of particles in a cluster
   unsigned int _clusterSize;

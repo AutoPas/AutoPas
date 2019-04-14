@@ -1,7 +1,7 @@
 /**
- * @file CudaTraversalVersusDirectSumTest.h
+ * @file VerletClusterCellsTraversalVersusDirectSumTest.h
  * @author jspahl
- * @date 11.03.19
+ * @date 3.04.19
  */
 
 #pragma once
@@ -13,11 +13,11 @@
 #include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class VerletCudaTraversalVersusDirectSumTest : public AutoPasTestBase {
+class VerletClusterCellsTraversalVersusDirectSumTest : public AutoPasTestBase {
  public:
-  VerletCudaTraversalVersusDirectSumTest();
+  VerletClusterCellsTraversalVersusDirectSumTest();
 
-  ~VerletCudaTraversalVersusDirectSumTest() override = default;
+  ~VerletClusterCellsTraversalVersusDirectSumTest() override = default;
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 

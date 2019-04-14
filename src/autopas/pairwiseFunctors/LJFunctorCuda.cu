@@ -667,53 +667,53 @@ template void CudaWrapper::LinkedCellsTraversalN3Wrapper<double>(
 
 template<typename floatType, int block_size>
 __global__
-void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell1,
-		unsigned int* other_ids) {
+void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell,
+		unsigned int others_size, unsigned int* other_ids) {
 
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
 	typename vec3<floatType>::Type myposition = { getInfinity<floatType>(),
 			getInfinity<floatType>(), getInfinity<floatType>() };
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
-	int index = blockIdx.x * blockDim.x + threadIdx.x;
-	myposition.x = cell1._posX[index];
-	myposition.y = cell1._posY[index];
-	myposition.z = cell1._posZ[index];
+	unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
+	myposition.x = cell._posX[index];
+	myposition.y = cell._posY[index];
+	myposition.z = cell._posZ[index];
 
 	//other cells
-	for (auto other_index = 0; other_ids[other_index] != UINT_MAX;
-			++other_index) {
-		const int cell2Start = blockDim.x * other_ids[other_index];
+	for (auto other_index = others_size * blockIdx.x;
+			other_ids[other_index] < UINT_MAX; ++other_index) {
+		const unsigned int cell2Start = blockDim.x * other_ids[other_index];
 
-		cell2_pos_shared[threadIdx.x] = {cell1._posX[cell2Start+threadIdx.x], cell1._posY[cell2Start+threadIdx.x], cell1._posZ[cell2Start+threadIdx.x]};
+		cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start+threadIdx.x], cell._posY[cell2Start+threadIdx.x], cell._posZ[cell2Start+threadIdx.x]};
 		__syncthreads();
 		for (int j = 0; j < block_size; ++j) {
 			myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
 		}
 		__syncthreads();
 	}
-	atomicAdd(cell1._forceX + index, myf.x);
-	atomicAdd(cell1._forceY + index, myf.y);
-	atomicAdd(cell1._forceZ + index, myf.z);
+	atomicAdd(cell._forceX + index, myf.x);
+	atomicAdd(cell._forceY + index, myf.y);
+	atomicAdd(cell._forceZ + index, myf.z);
 }
 
 template<typename floatType>
 void CudaWrapper::CellVerletTraversalNoN3Wrapper(
 		LJFunctorCudaSoA<floatType> cell1, unsigned int ncells,
-		unsigned int clusterSize, unsigned int* other_ids,
-		cudaStream_t stream) {
+		unsigned int clusterSize, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream) {
 	switch (clusterSize) {
 	case 32:
 		CellVerletTraversalNoN3<floatType, 32> <<<ncells, 32, 0, stream>>>(
-				cell1,  other_ids);
+				cell1, others_size, other_ids);
 		break;
 	case 64:
 		CellVerletTraversalNoN3<floatType, 64> <<<ncells, 64, 0, stream>>>(
-				cell1,  other_ids);
+				cell1, others_size, other_ids);
 		break;
 	case 96:
 		CellVerletTraversalNoN3<floatType, 96> <<<ncells, 96, 0, stream>>>(
-				cell1,  other_ids);
+				cell1, others_size, other_ids);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -726,17 +726,19 @@ void CudaWrapper::CellVerletTraversalNoN3Wrapper(
 
 template void CudaWrapper::CellVerletTraversalNoN3Wrapper<float>(
 		LJFunctorCudaSoA<float> cell1, unsigned int ncells,
-		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
+		unsigned int clusterSize, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream);
 
 template void CudaWrapper::CellVerletTraversalNoN3Wrapper<double>(
 		LJFunctorCudaSoA<double> cell1, unsigned int ncells,
-		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
+		unsigned int clusterSize, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream);
 
 template<typename floatType, int block_size>
 __global__
-void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell1,
-	 unsigned int* other_ids) {
-	const int mask = block_size - 1;
+void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell,
+		unsigned int others_size, unsigned int* other_ids) {
+	const unsigned int mask = block_size - 1;
 
 	__shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
 	__shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
@@ -746,53 +748,73 @@ void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell1,
 	typename vec3<floatType>::Type myf = { 0, 0, 0 };
 
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
-	myposition.x = cell1._posX[index];
-	myposition.y = cell1._posY[index];
-	myposition.z = cell1._posZ[index];
+	myposition.x = cell._posX[index];
+	myposition.y = cell._posY[index];
+	myposition.z = cell._posZ[index];
 
 	//other cells
-	for (auto other_index = 0; other_ids[other_index] != UINT_MAX;
-			++other_index) {
-		const int cell2Start = blockDim.x * other_ids[other_index];
+	for (auto other_index = others_size * blockIdx.x;
+			other_ids[other_index] != UINT_MAX; ++other_index) {
+		const unsigned int cell2Start = blockDim.x * other_ids[other_index];
 
-		cell2_pos_shared[threadIdx.x] = {cell1._posX[cell2Start+threadIdx.x], cell1._posY[cell2Start+threadIdx.x], cell1._posZ[cell2Start+threadIdx.x]};
+		cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start+threadIdx.x], cell._posY[cell2Start+threadIdx.x], cell._posZ[cell2Start+threadIdx.x]};
 		cell2_forces_shared[threadIdx.x] = {0,0,0};
 		__syncthreads();
 		for (int j = 0; j < block_size; ++j) {
-			int offset = 0;
+			unsigned int offset = 0;
 			if ((block_size & (block_size - 1)) == 0) {
 				offset = (j + threadIdx.x) & mask;
 			} else {
 				offset = (j + threadIdx.x) % block_size;
 			}
-			myf = bodyBodyFN3<floatType, true>(myposition,
+			myf = bodyBodyFN3<floatType, false>(myposition,
 					cell2_pos_shared[offset], myf,
 					cell2_forces_shared + offset);
 		}
 		__syncthreads();
+
+		atomicAdd(cell._forceX + cell2Start + threadIdx.x,
+				cell2_forces_shared[threadIdx.x].x);
+		atomicAdd(cell._forceY + cell2Start + threadIdx.x,
+				cell2_forces_shared[threadIdx.x].y);
+		atomicAdd(cell._forceZ + cell2Start + threadIdx.x,
+				cell2_forces_shared[threadIdx.x].z);
+		__syncthreads();
 	}
-	atomicAdd(cell1._forceX + index, myf.x);
-	atomicAdd(cell1._forceY + index, myf.y);
-	atomicAdd(cell1._forceZ + index, myf.z);
+
+	//same cluster without N3
+	{
+		const unsigned int cellStart = blockIdx.x * blockDim.x;
+
+		cell2_pos_shared[threadIdx.x] = {cell._posX[cellStart+threadIdx.x], cell._posY[cellStart+threadIdx.x], cell._posZ[cellStart+threadIdx.x]};
+		__syncthreads();
+		for (int j = 0; j < block_size; ++j) {
+			myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
+		}
+		__syncthreads();
+	}
+	atomicAdd(cell._forceX + index, myf.x);
+	atomicAdd(cell._forceY + index, myf.y);
+	atomicAdd(cell._forceZ + index, myf.z);
 }
 
 template<typename floatType>
 void CudaWrapper::CellVerletTraversalN3Wrapper(
 		LJFunctorCudaSoA<floatType> cell1, unsigned int ncells,
-		unsigned int clusterSize, unsigned int* other_ids,
-		cudaStream_t stream) {
+		unsigned int clusterSize, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream) {
 	switch (clusterSize) {
 	case 32:
 		CellVerletTraversalN3<floatType, 32> <<<ncells, 32, 0, stream>>>(cell1,
-				 other_ids);
+				others_size, other_ids);
 		break;
 	case 64:
 		CellVerletTraversalN3<floatType, 64> <<<ncells, 64, 0, stream>>>(cell1,
-				 other_ids);
+				others_size, other_ids);
 		break;
 	case 96:
 		CellVerletTraversalN3<floatType, 96> <<<ncells, 96, 0, stream>>>(cell1,
-				 other_ids);
+				others_size, other_ids);
 		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
@@ -805,11 +827,13 @@ void CudaWrapper::CellVerletTraversalN3Wrapper(
 
 template void CudaWrapper::CellVerletTraversalN3Wrapper<float>(
 		LJFunctorCudaSoA<float> cell1, unsigned int ncells,
-		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
+		unsigned int clusterSize, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream);
 
 template void CudaWrapper::CellVerletTraversalN3Wrapper<double>(
 		LJFunctorCudaSoA<double> cell1, unsigned int ncells,
-		unsigned int others_size, unsigned int* other_ids, cudaStream_t stream);
+		unsigned int clusterSize, unsigned int others_size,
+		unsigned int* other_ids, cudaStream_t stream);
 
 template<typename floatType>
 void CudaWrapper::loadConstants(floatType cutoffsquare, floatType epsilon24,

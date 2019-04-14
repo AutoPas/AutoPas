@@ -1,21 +1,21 @@
 /**
- * @file CudaTraversalVersusDirectSumTest.cpp
+ * @file VerletClusterCellsTraversalVersusDirectSumTest.cpp
  * @author jspahl
- * @date 11.03.19
+ * @date 3.04.19
  */
 
-#include "VerletCudaTraversalVersusDirectSumTest.h"
+#include "VerletClusterCellsTraversalVersusDirectSumTest.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
 
-VerletCudaTraversalVersusDirectSumTest::VerletCudaTraversalVersusDirectSumTest()
+VerletClusterCellsTraversalVersusDirectSumTest::VerletClusterCellsTraversalVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _verletCluster(getBoxMin(), getBoxMax(), getCutoff()) {}
 
-double VerletCudaTraversalVersusDirectSumTest::fRand(double fMin, double fMax) const {
+double VerletClusterCellsTraversalVersusDirectSumTest::fRand(double fMin, double fMax) const {
   double f = static_cast<double>(rand()) / RAND_MAX;
   return fMin + f * (fMax - fMin);
 }
 
-std::array<double, 3> VerletCudaTraversalVersusDirectSumTest::randomPosition(
+std::array<double, 3> VerletClusterCellsTraversalVersusDirectSumTest::randomPosition(
     const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) const {
   std::array<double, 3> r{};
   for (int d = 0; d < 3; ++d) {
@@ -24,7 +24,7 @@ std::array<double, 3> VerletCudaTraversalVersusDirectSumTest::randomPosition(
   return r;
 }
 
-void VerletCudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
+void VerletClusterCellsTraversalVersusDirectSumTest::fillContainerWithMolecules(
     unsigned long numMolecules,
     autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
   srand(42);  // fixed seedpoint
@@ -39,7 +39,7 @@ void VerletCudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
 }
 
 template <bool useNewton3, autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos>
-void VerletCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
+void VerletClusterCellsTraversalVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   fillContainerWithMolecules(numMolecules, _directSum);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
@@ -54,8 +54,7 @@ void VerletCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, do
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::VerletClusterCellsTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
-                                       useNewton3>
+  autopas::VerletClusterCellsTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3>
       traversalVerletCluster(&func);
 
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, useNewton3>
@@ -89,7 +88,7 @@ void VerletCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, do
     }
   }
 }
-TEST_F(VerletCudaTraversalVersusDirectSumTest, test100) {
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_100) {
   unsigned long numMolecules = 100;
 
   // empirically determined and set near the minimal possible value
@@ -100,7 +99,7 @@ TEST_F(VerletCudaTraversalVersusDirectSumTest, test100) {
   test<false>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(VerletCudaTraversalVersusDirectSumTest, test500) {
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_500) {
   unsigned long numMolecules = 500;
 
   // empirically determined and set near the minimal possible value
@@ -111,7 +110,7 @@ TEST_F(VerletCudaTraversalVersusDirectSumTest, test500) {
   test<false>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(VerletCudaTraversalVersusDirectSumTest, test1000) {
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_1000) {
   unsigned long numMolecules = 1000;
 
   // empirically determined and set near the minimal possible value
@@ -121,7 +120,7 @@ TEST_F(VerletCudaTraversalVersusDirectSumTest, test1000) {
   test<false>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(VerletCudaTraversalVersusDirectSumTest, testN3100) {
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_100) {
   unsigned long numMolecules = 100;
 
   // empirically determined and set near the minimal possible value
@@ -132,7 +131,7 @@ TEST_F(VerletCudaTraversalVersusDirectSumTest, testN3100) {
   test<true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(VerletCudaTraversalVersusDirectSumTest, testN3500) {
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_500) {
   unsigned long numMolecules = 500;
 
   // empirically determined and set near the minimal possible value
@@ -143,7 +142,7 @@ TEST_F(VerletCudaTraversalVersusDirectSumTest, testN3500) {
   test<true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(VerletCudaTraversalVersusDirectSumTest, testN31000) {
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_1000) {
   unsigned long numMolecules = 1000;
 
   // empirically determined and set near the minimal possible value
@@ -151,4 +150,88 @@ TEST_F(VerletCudaTraversalVersusDirectSumTest, testN31000) {
   // (and OK to do so)
   double rel_err_tolerance = 1.5e-12;
   test<true>(numMolecules, rel_err_tolerance);
+}
+
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testSoA_1000) {
+  unsigned long numMolecules = 1000;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1.5e-12;
+  test<false, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance);
+}
+
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3SoA_1000) {
+  unsigned long numMolecules = 1000;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1.5e-12;
+  test<true, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance);
+}
+
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCuda_100) {
+  unsigned long numMolecules = 100;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1e-13;
+
+  test<false, autopas::DataLayoutOption::cuda>(numMolecules, rel_err_tolerance);
+}
+
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCuda_500) {
+  unsigned long numMolecules = 500;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1e-12;
+
+  test<false, autopas::DataLayoutOption::cuda>(numMolecules, rel_err_tolerance);
+}
+
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCuda_1000) {
+  unsigned long numMolecules = 1000;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1.5e-12;
+  test<false, autopas::DataLayoutOption::cuda>(numMolecules, rel_err_tolerance);
+}
+
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCudaN3_100) {
+  unsigned long numMolecules = 100;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1e-13;
+
+  test<true, autopas::DataLayoutOption::cuda>(numMolecules, rel_err_tolerance);
+}
+
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCudaN3_500) {
+  unsigned long numMolecules = 500;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1e-12;
+
+  test<true, autopas::DataLayoutOption::cuda>(numMolecules, rel_err_tolerance);
+}
+
+TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCudaN3_1000) {
+  unsigned long numMolecules = 1000;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1.5e-12;
+  test<true, autopas::DataLayoutOption::cuda>(numMolecules, rel_err_tolerance);
 }

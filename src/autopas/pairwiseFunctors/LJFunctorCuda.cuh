@@ -139,12 +139,12 @@ public:
 
 	template<typename floatType>
 	void CellVerletTraversalNoN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
-			unsigned int ncells, unsigned int others_size,
+			unsigned int ncells,unsigned int clusterSize, unsigned int others_size,
 			unsigned int* other_ids, cudaStream_t stream);
 
 	template<typename floatType>
 	void CellVerletTraversalN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
-			unsigned int ncells, unsigned int others_size,
+			unsigned int ncells, unsigned int clusterSize, unsigned int others_size,
 			unsigned int* other_ids, cudaStream_t stream);
 
 private:
