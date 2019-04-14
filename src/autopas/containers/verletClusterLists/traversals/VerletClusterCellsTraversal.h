@@ -239,7 +239,6 @@ void VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, DataLayout, useN
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 void VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairsGPU(
     std::vector<ParticleCell> &cells) {
-
 #ifdef AUTOPAS_CUDA
   if (!_functor->getCudaWrapper()) {
     _functor->CudaFunctor(_storageCell._particleSoABufferDevice, useNewton3);

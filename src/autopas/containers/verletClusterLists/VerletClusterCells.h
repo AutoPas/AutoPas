@@ -58,7 +58,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
         _cutoffSqr(cutoff * cutoff),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false) {
+        _needsRebuild(false) {
     _clusters.resize(1);
     _dummyStarts.resize(1, 0);
   }
@@ -106,7 +106,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   void addParticle(Particle& p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-      _neighborListIsValid = false;
+      _needsRebuild = false;
       _clusters[0].resize(_dummyStarts[0]);
       // add particle somewhere, because lists will be rebuild anyways
       _clusters[0].addParticle(p);
@@ -121,7 +121,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @copydoc VerletLists::addHaloParticle()
    */
   void addHaloParticle(Particle& haloParticle) override {
-    _neighborListIsValid = false;
+    _needsRebuild = false;
     _haloInsertQueue.push_back(haloParticle);
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
@@ -139,7 +139,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   void updateContainer() override {
     AutoPasLog(debug, "updating container");
-    _neighborListIsValid = false;
+    _needsRebuild = false;
   }
 
   bool isContainerUpdateNeeded() override {
@@ -156,9 +156,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild() {
-    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
+    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _needsRebuild);
     // if the neighbor list is NOT valid or we have not rebuild for _rebuildFrequency steps
-    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency);
+    return (not _needsRebuild) or (_traversalsSinceLastRebuild >= _rebuildFrequency);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -182,7 +182,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     for (size_t i = 0; i < _dummyStarts.size(); ++i) {
       _clusters[i].resize(_dummyStarts[i]);
     }
-    _neighborListIsValid = false;
+    _needsRebuild = false;
   }
 
  protected:
@@ -283,7 +283,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       }
     }
 
-    _neighborListIsValid = true;
     _traversalsSinceLastRebuild = 0;
   }
 
@@ -343,7 +342,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   unsigned int _rebuildFrequency;
 
   // specifies if the neighbor list is currently valid
-  bool _neighborListIsValid;
+  bool _needsRebuild;
 };
 
 }  // namespace autopas

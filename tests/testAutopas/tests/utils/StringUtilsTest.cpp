@@ -9,7 +9,7 @@
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOption>(
       autopas::allTraversalOptions,
-      "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced, cuda-c01, verlet-lists",
+      "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced, cuda-c01, verlet-lists, verlet-cluster-cells",
       autopas::utils::StringUtils::parseTraversalOptions);
 }
 

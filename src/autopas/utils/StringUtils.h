@@ -148,6 +148,9 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::verletTraversal: {
       return "verlet-lists";
     }
+    case autopas::TraversalOption::verletClusterCellsTraversal: {
+      return "verlet-cluster-cells";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown option (" + std::to_string(option) + ")";
@@ -231,6 +234,8 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
   for (auto &word : words) {
     if (word.find("verlet-lists") != std::string::npos) {
       traversalOptions.emplace_back(autopas::TraversalOption::verletTraversal);
+    } else if (word.find("verlet-cluster-cells") != std::string::npos) {
+      traversalOptions.emplace_back(autopas::TraversalOption::verletClusterCellsTraversal);
     } else if (word.find("01") != std::string::npos) {
       if (word.find("cuda") != std::string::npos) {
         traversalOptions.emplace_back(autopas::TraversalOption::c01Cuda);

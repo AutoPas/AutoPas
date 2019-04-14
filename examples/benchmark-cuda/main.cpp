@@ -9,38 +9,13 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
+#include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
 
 using namespace std;
 using namespace autopas;
 
-class MyMolecule : public Particle {
- public:
-  MyMolecule() : Particle(), _myvar(0) {}
-
-  MyMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i, int myvar)
-      : Particle(r, v, i), _myvar(myvar) {}
-
-  void print() {
-    cout << "Molecule with position: ";
-    for (auto &r : getR()) {
-      cout << r << ", ";
-    }
-    cout << "and force: ";
-
-    for (auto &f : getF()) {
-      cout << f << ", ";
-    }
-    cout << "ID: " << getID();
-    cout << " myvar: " << _myvar << endl;
-  }
-
-  // typedef autopas::utils::SoAType<size_t, float, float, float, float, float, float>::Type SoAArraysType;
-  // typedef autopas::utils::CudaSoAType<size_t, float, float, float, float, float, float>::Type CudaDeviceArraysType;
-
- private:
-  int _myvar;
-};
+typedef ParticleFP64 MyMolecule;
 
 template <class Container>
 void fillSpaceWithGrid(Container &pc, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double gridsize,
@@ -51,7 +26,7 @@ void fillSpaceWithGrid(Container &pc, std::array<double, 3> boxMin, std::array<d
     for (double y = boxMin[1]; y < boxMax[1]; y += gridsize) {
       for (double z = boxMin[2]; z < boxMax[2]; z += gridsize) {
         std::array<double, 3> arr({x, y, z});
-        MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), i);
+        MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i));
         pc.addParticle(m);
         if (++i >= maxN) {
           return;
@@ -73,9 +48,11 @@ int main(int argc, char **argv) {
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
+  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 10, 32);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.8, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
+  fillSpaceWithGrid<>(vcc, boxMin, boxMax, 0.8, numParticles);
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
 
@@ -94,6 +71,11 @@ int main(int argc, char **argv) {
       lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalLCcudaN3(
       lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+
+  VerletClusterCellsTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalvcccudaNoN3(
+      &func);
+  VerletClusterCellsTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalvcccudaN3(
+      &func);
 
   dir.iteratePairwise(&func, &traversalAoS);
   lc.iteratePairwise(&func, &traversalc08N3);
@@ -173,5 +155,16 @@ int main(int argc, char **argv) {
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
   cout << "LcTraversalCudaN3:" << maxIterations << " iterations with " << lc.getNumParticles()
        << " particles took: " << duration << " microseconds" << endl;
+
+  vcc.iteratePairwise(&func, &traversalvcccudaNoN3);
+  start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < maxIterations; ++i) {
+    vcc.iteratePairwise(&func, &traversalvcccudaNoN3);
+  }
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+  cout << "VccTraversalCudaNoN3:" << maxIterations << " iterations with " << lc.getNumParticles()
+       << " particles took: " << duration << " microseconds" << endl;
+
   return EXIT_SUCCESS;
 }
