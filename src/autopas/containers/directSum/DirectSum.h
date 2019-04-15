@@ -29,6 +29,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class DirectSum : public ParticleContainer<Particle, ParticleCell> {
+  using ParticleFloatType = typename Particle::ParticleFloatingPointType;
+
  public:
   /**
    * Constructor of the DirectSum class
@@ -36,7 +38,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param boxMax
    * @param cutoff
    */
-  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
+  DirectSum(const std::array<ParticleFloatType, 3> boxMin, const std::array<ParticleFloatType, 3> boxMax,
+            ParticleFloatType cutoff)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
@@ -138,8 +141,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<ParticleFloatType, 3> lowerCorner,
+                                                      std::array<ParticleFloatType, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     std::vector<size_t> cellsOfInterest;

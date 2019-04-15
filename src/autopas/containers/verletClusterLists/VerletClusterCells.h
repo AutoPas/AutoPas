@@ -25,6 +25,7 @@ namespace autopas {
  */
 template <class Particle>
 class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<Particle>> {
+  using ParticleFloatType = typename Particle::ParticleFloatingPointType;
   /**
    * the index type to access the particle cells
    */
@@ -46,8 +47,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param clusterSize size of clusters
    */
-  VerletClusterCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
-                     double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 32)
+  VerletClusterCells(const std::array<ParticleFloatType, 3> boxMin, const std::array<ParticleFloatType, 3> boxMax,
+                     ParticleFloatType cutoff, ParticleFloatType skin = 0, unsigned int rebuildFrequency = 1,
+                     int clusterSize = 32)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
                                                                 allVCLApplicableTraversals()),
         _firstHaloClusterId(1),
@@ -59,7 +61,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
         _cutoffSqr(cutoff * cutoff),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _needsRebuild(false) {
+        _isValid(false) {
     _clusters.resize(1);
     _dummyStarts.resize(1, 0);
   }
@@ -112,7 +114,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   void addParticle(Particle& p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-      _needsRebuild = false;
+      _isValid = false;
       _clusters[0].resize(_dummyStarts[0]);
       // add particle somewhere, because lists will be rebuild anyways
       _clusters[0].addParticle(p);
@@ -127,7 +129,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @copydoc VerletLists::addHaloParticle()
    */
   void addHaloParticle(Particle& haloParticle) override {
-    _needsRebuild = false;
+    _isValid = false;
     _haloInsertQueue.push_back(haloParticle);
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
@@ -145,7 +147,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   void updateContainer() override {
     AutoPasLog(debug, "updating container");
-    _needsRebuild = false;
+    _isValid = false;
   }
 
   bool isContainerUpdateNeeded() override {
@@ -162,9 +164,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
   bool needsRebuild() {
-    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _needsRebuild);
+    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _isValid);
     // if the neighbor list is NOT valid or we have not rebuild for _rebuildFrequency steps
-    return (not _needsRebuild) or (_traversalsSinceLastRebuild >= _rebuildFrequency);
+    return (not _isValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -172,8 +174,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
         new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(&this->_clusters));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<ParticleFloatType, 3> lowerCorner,
+                                                      std::array<ParticleFloatType, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     // @todo implement this if bounding boxes are here
@@ -188,7 +190,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     for (size_t i = 0; i < _dummyStarts.size(); ++i) {
       _clusters[i].resize(_dummyStarts[i]);
     }
-    _needsRebuild = false;
+    _isValid = false;
   }
 
  protected:
@@ -201,8 +203,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   void rebuild() {
     deleteDummyParticles();
     // get the dimensions and volumes of the box
-    std::array<double, 3> boxSize{};
-    double volume = 1.0;
+    std::array<ParticleFloatType, 3> boxSize{};
+    ParticleFloatType volume = 1.0;
 
     for (int d = 0; d < 3; ++d) {
       boxSize[d] = _boxMax[d] - _boxMin[d];
@@ -220,7 +222,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     // estimate particle density
-    double density = (double)invalidParticles.size() / volume;
+    ParticleFloatType density = (ParticleFloatType)invalidParticles.size() / volume;
 
     // guess optimal grid side length
     _gridSideLength = std::cbrt(_clusterSize / density);
@@ -290,6 +292,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     _traversalsSinceLastRebuild = 0;
+    _isValid = true;
   }
 
  private:
@@ -320,25 +323,25 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   // number of particles in a cluster
   unsigned int _clusterSize;
 
-  std::array<double, 3> _boxMin;
-  std::array<double, 3> _boxMax;
+  std::array<ParticleFloatType, 3> _boxMin;
+  std::array<ParticleFloatType, 3> _boxMax;
 
   // bounding boxes of all clusters (xmin,ymin,zmin,xmax,ymax,zmax) including skin and cutoff
   std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> _boundingBoxes;
 
   // side length of xy-grid and reciprocal
-  double _gridSideLength;
-  double _gridSideLengthReciprocal;
+  ParticleFloatType _gridSideLength;
+  ParticleFloatType _gridSideLengthReciprocal;
 
   // dimensions of grid
   std::array<index_t, 3> _cellsPerDim;
 
   /// skin radius
-  double _skin;
+  ParticleFloatType _skin;
 
   /// cutoff
-  double _cutoff;
-  double _cutoffSqr;
+  ParticleFloatType _cutoff;
+  ParticleFloatType _cutoffSqr;
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
@@ -348,7 +351,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   unsigned int _rebuildFrequency;
 
   // specifies if the neighbor list is currently valid
-  bool _needsRebuild;
+  bool _isValid;
 };
 
 }  // namespace autopas

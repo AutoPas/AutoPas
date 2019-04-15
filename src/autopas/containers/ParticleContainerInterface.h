@@ -22,6 +22,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class ParticleContainerInterface {
+  using ParticleFloatType = typename Particle::ParticleFloatingPointType;
+
  public:
   /**
    * Default constructor
@@ -101,44 +103,44 @@ class ParticleContainerInterface {
    * @return Iterator to iterate over all particles in a specific region.
    */
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      std::array<ParticleFloatType, 3> lowerCorner, std::array<ParticleFloatType, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool incSearchRegion = false) = 0;
 
   /**
    * Get the upper corner of the container.
    * @return Upper corner of the container.
    */
-  virtual const std::array<double, 3> &getBoxMax() const = 0;
+  virtual const std::array<ParticleFloatType, 3> &getBoxMax() const = 0;
 
   /**
    * Set the upper corner of the container.
    * @param boxMax Upper corner to be set.
    */
-  virtual void setBoxMax(const std::array<double, 3> &boxMax) = 0;
+  virtual void setBoxMax(const std::array<ParticleFloatType, 3> &boxMax) = 0;
 
   /**
    * Get the lower corner of the container.
    * @return Lower corner of the container.
    */
-  virtual const std::array<double, 3> &getBoxMin() const = 0;
+  virtual const std::array<ParticleFloatType, 3> &getBoxMin() const = 0;
 
   /**
    * Set the lower corner of the container.
    * @param boxMin Lower corner to be set.
    */
-  virtual void setBoxMin(const std::array<double, 3> &boxMin) = 0;
+  virtual void setBoxMin(const std::array<ParticleFloatType, 3> &boxMin) = 0;
 
   /**
    * Return the cutoff of the container.
    * @return Cutoff radius.
    */
-  virtual double getCutoff() const = 0;
+  virtual ParticleFloatType getCutoff() const = 0;
 
   /**
    * Set the cutoff of the container.
    * @param cutoff
    */
-  virtual void setCutoff(double cutoff) = 0;
+  virtual void setCutoff(ParticleFloatType cutoff) = 0;
 
   /**
    * Updates the container.

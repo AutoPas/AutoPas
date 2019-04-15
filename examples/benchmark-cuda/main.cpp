@@ -5,6 +5,7 @@
  */
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
@@ -15,17 +16,20 @@
 using namespace std;
 using namespace autopas;
 
-typedef ParticleFP64 MyMolecule;
+typedef ParticleFP32 MyMolecule;
+typedef MyMolecule::ParticleFloatingPointType precision;
+
+int numSamples = 100;
 
 template <class Container>
-void fillSpaceWithGrid(Container &pc, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double gridsize,
-                       int maxN = 10000) {
+void fillSpaceWithGrid(Container& pc, std::array<precision, 3> boxMin, std::array<precision, 3> boxMax,
+                       precision gridsize, int maxN = 10000) {
   int i = 0;
 
-  for (double x = boxMin[0]; x < boxMax[0]; x += gridsize) {
-    for (double y = boxMin[1]; y < boxMax[1]; y += gridsize) {
-      for (double z = boxMin[2]; z < boxMax[2]; z += gridsize) {
-        std::array<double, 3> arr({x, y, z});
+  for (precision x = boxMin[0]; x < boxMax[0]; x += gridsize) {
+    for (precision y = boxMin[1]; y < boxMax[1]; y += gridsize) {
+      for (precision z = boxMin[2]; z < boxMax[2]; z += gridsize) {
+        std::array<precision, 3> arr({x, y, z});
         MyMolecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i));
         pc.addParticle(m);
         if (++i >= maxN) {
@@ -36,23 +40,44 @@ void fillSpaceWithGrid(Container &pc, std::array<double, 3> boxMin, std::array<d
   }
 }
 
-int main(int argc, char **argv) {
+template <class Container, class Traversal, class Functor>
+void run(Container& pc, Traversal* t, Functor* f) {
+  auto start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < numSamples; ++i) {
+    pc.iteratePairwise(f, t, false);
+  }
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+  cout << pc.getContainerType() << ", " << setw(2) << t->getTraversalType() << ", " << setw(8) << duration << "ms"
+       << endl;
+}
+
+template <class Container, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+void build(Container& pc, PairwiseFunctor* pairwiseFunctor, TraversalOption traversalType) {
+  auto traversalSelector = pc.generateTraversalSelector();
+
+  // auto traversal = pc.generateTraversalSelector().generateTraversal<PairwiseFunctor, DataLayout,
+  // useNewton3>(traversalType, pairwiseFunctor); run(pc, traversal, pairwiseFunctor);
+}
+
+int main(int argc, char** argv) {
   autopas::Logger::create();
-  int maxIterations = 5;
   long numParticles = 10000;
 
-  std::array<double, 3> boxMin({0., 0., 0.}), boxMax({33., 33., 33.});
-  double cutoff = 3.0;
-  double epsilon = 2.0;
-  double sigma = 0.4;
+  std::array<precision, 3> boxMin({0., 0., 0.}), boxMax({33., 33., 33.});
+  precision cutoff = 3.0;
+  precision epsilon = 2.0;
+  precision sigma = 0.4;
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
-  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 10, 32);
+  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 101, 32);
+  VerletClusterCells<MyMolecule> vcc2(boxMin, boxMax, cutoff, 0.1, 101, 96);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.8, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
   fillSpaceWithGrid<>(vcc, boxMin, boxMax, 0.8, numParticles);
+  fillSpaceWithGrid<>(vcc2, boxMin, boxMax, 0.8, numParticles);
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
 
@@ -77,94 +102,14 @@ int main(int argc, char **argv) {
   VerletClusterCellsTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalvcccudaN3(
       &func);
 
-  dir.iteratePairwise(&func, &traversalAoS);
-  lc.iteratePairwise(&func, &traversalc08N3);
+  // build<LinkedCells<MyMolecule, FullParticleCell<MyMolecule>>, Func, DataLayoutOption::soa, true>(lc, &func,
+  // TraversalOption::c18);
+  run(lc, &traversalc08N3, &func);
+  run(lc, &traversalLCcuda, &func);
+  run(lc, &traversalLCcudaN3, &func);
 
-  auto start = std::chrono::high_resolution_clock::now();
-  auto stop = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<int64_t, micro>::rep duration;
-
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwise(&func, &traversalAoS);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "DsAoS: " << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
-       << " microseconds" << endl;
-
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwise(&func, &traversalSoA);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "DsSoA: " << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
-       << " microseconds" << endl;
-
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwise(&func, &traversalCuda);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "DsCuda:" << maxIterations << " iterations with " << dir.getNumParticles() << " particles took: " << duration
-       << " microseconds" << endl;
-
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwise(&func, &traversalCudaN3);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "DsCudaN3:" << maxIterations << " iterations with " << dir.getNumParticles()
-       << " particles took: " << duration << " microseconds" << endl;
-
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &traversalc08N3);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "LcSoAN3:" << maxIterations << " iterations with " << lc.getNumParticles() << " particles took: " << duration
-       << " microseconds" << endl;
-
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &C01Cuda);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "LcCudaN3:" << maxIterations << " iterations with " << lc.getNumParticles() << " particles took: " << duration
-       << " microseconds" << endl;
-
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &traversalLCcuda);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "LcTraversalCudaNoN3:" << maxIterations << " iterations with " << lc.getNumParticles()
-       << " particles took: " << duration << " microseconds" << endl;
-
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &traversalLCcudaN3);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "LcTraversalCudaN3:" << maxIterations << " iterations with " << lc.getNumParticles()
-       << " particles took: " << duration << " microseconds" << endl;
-
-  vcc.iteratePairwise(&func, &traversalvcccudaNoN3);
-  start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < maxIterations; ++i) {
-    vcc.iteratePairwise(&func, &traversalvcccudaNoN3);
-  }
-  stop = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << "VccTraversalCudaNoN3:" << maxIterations << " iterations with " << lc.getNumParticles()
-       << " particles took: " << duration << " microseconds" << endl;
+  run(vcc, &traversalvcccudaNoN3, &func);
+  run(vcc2, &traversalvcccudaN3, &func);
 
   return EXIT_SUCCESS;
 }

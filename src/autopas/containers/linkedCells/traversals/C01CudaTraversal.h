@@ -161,6 +161,7 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
     const size_t size = cells[i].numParticles();
 
     maxParticlesInCell = std::max(maxParticlesInCell, size);
+
     cellSizePartialSum.push_back(cellSizePartialSum.back() + size);
   }
   if (maxParticlesInCell == 0) {

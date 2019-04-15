@@ -32,6 +32,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
+  using ParticleFloatType = typename Particle::ParticleFloatingPointType;
+
  public:
   /**
    * Constructor of the LinkedCells class
@@ -40,7 +42,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @param cutoff
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff)
+  LinkedCells(const std::array<ParticleFloatType, 3> boxMin, const std::array<ParticleFloatType, 3> boxMax,
+              const ParticleFloatType cutoff)
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff) {}
 
@@ -126,7 +129,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 
-        std::array<double, 3> cellLowerCorner = {}, cellUpperCorner = {};
+        std::array<ParticleFloatType, 3> cellLowerCorner = {}, cellUpperCorner = {};
         this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
 
         for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
@@ -160,8 +163,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 #pragma omp parallel for shared(outlierFound) num_threads(numThreads)
 #endif
     for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin{0., 0., 0.};
-      std::array<double, 3> boxmax{0., 0., 0.};
+      std::array<ParticleFloatType, 3> boxmin{0., 0., 0.};
+      std::array<ParticleFloatType, 3> boxmax{0., 0., 0.};
       _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
 
       for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
@@ -186,8 +189,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<ParticleFloatType, 3> lowerCorner,
+                                                      std::array<ParticleFloatType, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     size_t startIndex;

@@ -24,6 +24,8 @@ namespace autopas {
  */
 template <class ParticleCell>
 class CellBlock3D : public CellBorderAndFlagManager {
+  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
+
  public:
   /**
    * the index type to access the particle cells
@@ -36,8 +38,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param bMax higher corner of the cellblock
    * @param interactionLength minimal size of each cell
    */
-  CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
-              double interactionLength) {
+  CellBlock3D(std::vector<ParticleCell> &vec, const std::array<ParticleFloatType, 3> bMin,
+              const std::array<ParticleFloatType, 3> bMax, ParticleFloatType interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength);
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
@@ -93,8 +95,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param bMax new higher corner of the cellblock
    * @param interactionLength new minimal size of each cell
    */
-  void rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
-               double interactionLength);
+  void rebuild(std::vector<ParticleCell> &vec, const std::array<ParticleFloatType, 3> &bMin,
+               const std::array<ParticleFloatType, 3> &bMax, ParticleFloatType interactionLength);
 
   // this class doesn't actually know about particles
   /**
@@ -102,7 +104,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param pos the position for which the cell is needed
    * @return cell at the given position
    */
-  ParticleCell &getContainingCell(const std::array<double, 3> &pos) const;
+  ParticleCell &getContainingCell(const std::array<ParticleFloatType, 3> &pos) const;
 
   /**
    * Get the lower and upper corner of the cell at the 1d index index1d
@@ -110,7 +112,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param boxmin the lower corner (out)
    * @param boxmax the upper corner (out)
    */
-  void getCellBoundingBox(index_t index1d, std::array<double, 3> &boxmin, std::array<double, 3> &boxmax);
+  void getCellBoundingBox(index_t index1d, std::array<ParticleFloatType, 3> &boxmin,
+                          std::array<ParticleFloatType, 3> &boxmax);
 
   /**
    * Get the lower and upper corner of the cell at the 3d index index3d
@@ -118,22 +121,22 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param boxmin the lower corner (out)
    * @param boxmax the upper corner (out)
    */
-  void getCellBoundingBox(const std::array<index_t, 3> &index3d, std::array<double, 3> &boxmin,
-                          std::array<double, 3> &boxmax);
+  void getCellBoundingBox(const std::array<index_t, 3> &index3d, std::array<ParticleFloatType, 3> &boxmin,
+                          std::array<ParticleFloatType, 3> &boxmax);
 
   /**
    * get the 3d index of the cellblock for a given position
    * @param pos the position
    * @return the 3d index
    */
-  std::array<index_t, 3> get3DIndexOfPosition(const std::array<double, 3> &pos) const;
+  std::array<index_t, 3> get3DIndexOfPosition(const std::array<ParticleFloatType, 3> &pos) const;
 
   /**
    * get the 1d index of the cellblock for a given position
    * @param pos the position
    * @return the 1d index
    */
-  index_t get1DIndexOfPosition(const std::array<double, 3> &pos) const;
+  index_t get1DIndexOfPosition(const std::array<ParticleFloatType, 3> &pos) const;
 
   /**
    * get the dimension of the cellblock including the haloboxes
@@ -147,7 +150,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param position the given position
    * @return true if the position is inside the halo region
    */
-  bool checkInHalo(std::array<double, 3> position) const;
+  bool checkInHalo(std::array<ParticleFloatType, 3> position) const;
 
   /**
    * deletes all particles in the halo cells of the managed cell block
@@ -192,7 +195,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param allowedDistance the maximal distance to the position
    * @return a container of references to nearby halo cells
    */
-  std::vector<ParticleCell *> getNearbyHaloCells(std::array<double, 3> position, double allowedDistance) {
+  std::vector<ParticleCell *> getNearbyHaloCells(std::array<ParticleFloatType, 3> position,
+                                                 ParticleFloatType allowedDistance) {
     auto index3d = get3DIndexOfPosition(position);
     std::array<int, 3> diff = {0, 0, 0};
     auto currentIndex = index3d;
@@ -211,7 +215,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
             isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] && currentIndex[i] >= 0;
           }
           if (isPossibleHaloCell && isValidCell) {
-            std::array<std::array<double, 3>, 2> boxBound{};
+            std::array<std::array<ParticleFloatType, 3>, 2> boxBound{};
             getCellBoundingBox(index3d, boxBound[0], boxBound[1]);
             bool close = true;
             for (int i = 0; i < 3; i++) {
@@ -240,13 +244,13 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * Get the lower corner of the halo region.
    * @return Coordinates of the lower corner.
    */
-  std::array<double, 3> getHaloBoxMin() { return _haloBoxMin; }
+  std::array<ParticleFloatType, 3> getHaloBoxMin() { return _haloBoxMin; }
 
   /**
    * Get the upper corner of the halo region.
    * @return Coordinates of the upper corner.
    */
-  std::array<double, 3> getHaloBoxMax() { return _haloBoxMax; }
+  std::array<ParticleFloatType, 3> getHaloBoxMax() { return _haloBoxMax; }
 
  private:
   std::array<index_t, 3> index3D(index_t index1d) const;
@@ -256,31 +260,31 @@ class CellBlock3D : public CellBorderAndFlagManager {
   index_t _numCells;
   std::vector<ParticleCell> *_vec1D;
 
-  std::array<double, 3> _boxMin, _boxMax;
-  std::array<double, 3> _haloBoxMin, _haloBoxMax;
+  std::array<ParticleFloatType, 3> _boxMin, _boxMax;
+  std::array<ParticleFloatType, 3> _haloBoxMin, _haloBoxMax;
 
-  double _interactionLength;
+  ParticleFloatType _interactionLength;
   //	int _cellsPerInteractionLength; = 1 hardcode to 1 for now, because flag
   // manager will also need to be adapted
 
-  std::array<double, 3> _cellLength;
+  std::array<ParticleFloatType, 3> _cellLength;
 
   // 1 over above. Since this value is needed for sorting particles in cells, it
   // is computed quite often
-  std::array<double, 3> _cellLengthReciprocal;
+  std::array<ParticleFloatType, 3> _cellLengthReciprocal;
 
   //	CellBorderAndFlagManager _cellBorderAndFlagManager;
 };
 
 template <class ParticleCell>
 inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::get1DIndexOfPosition(
-    const std::array<double, 3> &pos) const {
+    const std::array<ParticleFloatType, 3> &pos) const {
   return index1D(get3DIndexOfPosition(pos));
 }
 
 template <class ParticleCell>
 inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::get3DIndexOfPosition(
-    const std::array<double, 3> &pos) const {
+    const std::array<ParticleFloatType, 3> &pos) const {
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (int dim = 0; dim < 3; dim++) {
@@ -304,8 +308,10 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
 }
 
 template <class ParticleCell>
-inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
-                                               const std::array<double, 3> &bMax, double interactionLength) {
+inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec,
+                                               const std::array<ParticleFloatType, 3> &bMin,
+                                               const std::array<ParticleFloatType, 3> &bMax,
+                                               ParticleFloatType interactionLength) {
   _vec1D = &vec;
   _boxMin = bMin;
   _boxMax = bMax;
@@ -314,7 +320,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   // compute cell length
   _numCells = 1;
   for (int d = 0; d < 3; ++d) {
-    double diff = _boxMax[d] - _boxMin[d];
+    ParticleFloatType diff = _boxMax[d] - _boxMin[d];
     auto cellsPerDim = static_cast<index_t>(std::floor(diff / _interactionLength));
     // at least one central cell
     cellsPerDim = std::max(cellsPerDim, 1ul);
@@ -342,15 +348,16 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 }
 
 template <class ParticleCell>
-inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const index_t index1d, std::array<double, 3> &boxmin,
-                                                          std::array<double, 3> &boxmax) {
+inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const index_t index1d,
+                                                          std::array<ParticleFloatType, 3> &boxmin,
+                                                          std::array<ParticleFloatType, 3> &boxmax) {
   this->getCellBoundingBox(this->index3D(index1d), boxmin, boxmax);
 }
 
 template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const std::array<index_t, 3> &index3d,
-                                                          std::array<double, 3> &boxmin,
-                                                          std::array<double, 3> &boxmax) {
+                                                          std::array<ParticleFloatType, 3> &boxmin,
+                                                          std::array<ParticleFloatType, 3> &boxmax) {
   for (int d = 0; d < 3; d++) {
     // defaults
     boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
@@ -375,7 +382,7 @@ inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const std::array<index
 }
 
 template <class ParticleCell>
-inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::array<double, 3> &pos) const {
+inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::array<ParticleFloatType, 3> &pos) const {
   auto ind = get1DIndexOfPosition(pos);
   return getCell(ind);
 }
@@ -403,7 +410,7 @@ inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::in
 }
 
 template <class ParticleCell>
-bool CellBlock3D<ParticleCell>::checkInHalo(std::array<double, 3> position) const {
+bool CellBlock3D<ParticleCell>::checkInHalo(std::array<ParticleFloatType, 3> position) const {
   return autopas::utils::inBox(position, _haloBoxMin, _haloBoxMax) &&
          autopas::utils::notInBox(position, _boxMin, _boxMax);
 }
