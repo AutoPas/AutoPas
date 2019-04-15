@@ -15,7 +15,6 @@ void testC01Traversal(const std::array<size_t, 3>& edgeLength) {
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
   autopas::Particle defaultParticle;
 
-  //  GridGenerator::fillWithParticles(cells, {edgeLength[0], edgeLength[1], edgeLength[2]}, defaultParticle);
   GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
 #ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
