@@ -342,11 +342,17 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     auto start = std::chrono::high_resolution_clock::now();
     // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
     if (useSoA) {
-      withStaticContainerType(container,
-                              [&](auto container) { container->iteratePairwiseSoA(f, traversal.get(), useNewton3); });
+      withStaticContainerType(container, [&](auto container) {
+        f->initTraversal();
+        container->iteratePairwiseSoA(f, traversal.get(), useNewton3);
+        f->endTraversal(useNewton3);
+      });
     } else {
-      withStaticContainerType(container,
-                              [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
+      withStaticContainerType(container, [&](auto container) {
+        f->initTraversal();
+        container->iteratePairwiseAoS(f, traversal.get(), useNewton3);
+        f->endTraversal(useNewton3);
+      });
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
@@ -356,11 +362,17 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     addTimeMeasurement(*f, runtime);
   } else {
     if (useSoA) {
-      withStaticContainerType(container,
-                              [&](auto container) { container->iteratePairwiseSoA(f, traversal.get(), useNewton3); });
+      withStaticContainerType(container, [&](auto container) {
+        f->initTraversal();
+        container->iteratePairwiseSoA(f, traversal.get(), useNewton3);
+        f->endTraversal(useNewton3);
+      });
     } else {
-      withStaticContainerType(container,
-                              [&](auto container) { container->iteratePairwiseAoS(f, traversal.get(), useNewton3); });
+      withStaticContainerType(container, [&](auto container) {
+        f->initTraversal();
+        container->iteratePairwiseAoS(f, traversal.get(), useNewton3);
+        f->endTraversal(useNewton3);
+      });
     }
   }
 }

@@ -15,13 +15,12 @@ void testC01Traversal(const std::array<size_t, 3>& edgeLength) {
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
   autopas::Particle defaultParticle;
 
-  GridGenerator::fillWithParticles(cells, {edgeLength[0], edgeLength[1], edgeLength[2]}, defaultParticle);
+  GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
 #ifdef AUTOPAS_OPENMP
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::C01Traversal<FPCell, MFunctor, false, false> C01Traversal({edgeLength[0], edgeLength[1], edgeLength[2]},
-                                                                     &functor);
+  autopas::C01Traversal<FPCell, MFunctor, false, false> C01Traversal(edgeLength, &functor);
 
   // every particle interacts with 26 others. First and last layer of each dim is covered by previous interactions
   EXPECT_CALL(functor, AoSFunctor(_, _, false))
