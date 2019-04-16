@@ -172,6 +172,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3SoA_1000) {
   test<true, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance);
 }
 
+#ifdef AUTOPAS_CUDA
 TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCuda_100) {
   unsigned long numMolecules = 100;
 
@@ -235,3 +236,4 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCudaN3_1000) {
   double rel_err_tolerance = 1.5e-12;
   test<true, autopas::DataLayoutOption::cuda>(numMolecules, rel_err_tolerance);
 }
+#endif
