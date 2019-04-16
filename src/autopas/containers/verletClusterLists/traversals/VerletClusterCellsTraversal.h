@@ -54,7 +54,8 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   }
 
   void rebuild(const std::array<unsigned long, 3> &dims, unsigned int clusterSize, std::vector<ParticleCell> &cells,
-               std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes) override {
+               std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes,
+               typename Particle::ParticleFloatingPointType distance) override {
     this->_cellsPerDimension = dims;
     _clusterSize = clusterSize;
     const size_t cellsSize = cells.size();
@@ -64,7 +65,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     if (DataLayout == DataLayoutOption::aos or DataLayout == DataLayoutOption::soa) {
       for (size_t i = 0; i < cellsSize; ++i) {
         for (size_t j = i + 1; j < cellsSize; ++j) {
-          if (boxesOverlap(boundingBoxes[i], boundingBoxes[j])) {
+          if (boxesOverlap(boundingBoxes[i], boundingBoxes[j], distance)) {
             _neighborCellIds[i].push_back(j);
           }
         }
@@ -73,9 +74,18 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     } else if (DataLayout == DataLayoutOption::cuda) {
       for (size_t i = 0; i < cellsSize; ++i) {
         for (size_t j = i + 1; j < cellsSize; ++j) {
-          if (boxesOverlap(boundingBoxes[i], boundingBoxes[j])) {
-            _neighborCellIds[i].push_back(j);
-            if (not useNewton3) _neighborCellIds[j].push_back(i);
+          if (boxesOverlap(boundingBoxes[i], boundingBoxes[j], distance)) {
+            if (useNewton3) {
+              // load balance greedy
+              if (_neighborCellIds[i].size() < _neighborCellIds[j].size())
+                _neighborCellIds[i].push_back(j);
+              else
+                _neighborCellIds[j].push_back(i);
+
+            } else {
+              _neighborCellIds[i].push_back(j);
+              _neighborCellIds[j].push_back(i);
+            }
           }
         }
         // self
@@ -187,13 +197,17 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   void traverseCellPairsGPU(std::vector<ParticleCell> &cells);
 
   /**
-   * Returns true if the two boxes are overlapping
+   * Returns true if the two boxes are within distance
+   * @param box1
+   * @param box2
+   * @param distance betwwen the boxes to return true
    * @return true if the boxes are overlapping
    */
   inline bool boxesOverlap(std::array<typename Particle::ParticleFloatingPointType, 6> &box1,
-                           std::array<typename Particle::ParticleFloatingPointType, 6> &box2) {
+                           std::array<typename Particle::ParticleFloatingPointType, 6> &box2,
+                           typename Particle::ParticleFloatingPointType distance) {
     for (int i = 0; i < 3; ++i) {
-      if (box1[0 + i] > box2[3 + i] || box1[3 + i] < box2[0 + i]) return false;
+      if (box1[0 + i] - distance > box2[3 + i] || box1[3 + i] + distance < box2[0 + i]) return false;
     }
     return true;
   }

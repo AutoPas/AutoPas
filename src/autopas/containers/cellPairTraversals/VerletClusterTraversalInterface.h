@@ -28,10 +28,12 @@ class VerletClusterTraversalInterface {
    * @param dims dimension of the container
    * @param cells in the container
    * @param boundingBoxes of the cells
+   * @param distance Maximum distance between interacting cells
    */
   virtual void rebuild(const std::array<unsigned long, 3> &dims, unsigned int clusterSize,
                        std::vector<ParticleCell> &cells,
-                       std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes) = 0;
+                       std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes,
+                       typename Particle::ParticleFloatingPointType distance) = 0;
 
   /**
    * This function interacts all cells with the other cells with their index in neighborCellIds

@@ -609,6 +609,22 @@ void CudaWrapper::LinkedCellsTraversalNoN3Wrapper(
 		LinkedCellsTraversalNoN3<floatType, 96> <<<cids_size, 96, 0, stream>>>(
 				cell1, cids, cellSizes, offsets_size, offsets);
 		break;
+	case 128:
+		LinkedCellsTraversalNoN3<floatType, 128> <<<cids_size, 128, 0, stream>>>(
+				cell1, cids, cellSizes, offsets_size, offsets);
+		break;
+	case 256:
+		LinkedCellsTraversalNoN3<floatType, 256> <<<cids_size, 256, 0, stream>>>(
+				cell1, cids, cellSizes, offsets_size, offsets);
+		break;
+	case 512:
+		LinkedCellsTraversalNoN3<floatType, 512> <<<cids_size, 512, 0, stream>>>(
+				cell1, cids, cellSizes, offsets_size, offsets);
+		break;
+	case 1024:
+		LinkedCellsTraversalNoN3<floatType, 1024> <<<cids_size, 1024, 0, stream>>>(
+				cell1, cids, cellSizes, offsets_size, offsets);
+		break;
 	default:
 		autopas::utils::ExceptionHandler::exception(
 				"cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in a cell. Requested: {}",
@@ -713,6 +729,22 @@ void CudaWrapper::CellVerletTraversalNoN3Wrapper(
 		break;
 	case 96:
 		CellVerletTraversalNoN3<floatType, 96> <<<ncells, 96, 0, stream>>>(
+				cell1, others_size, other_ids);
+		break;
+	case 128:
+		CellVerletTraversalNoN3<floatType, 128> <<<ncells, 128, 0, stream>>>(
+				cell1, others_size, other_ids);
+		break;
+	case 256:
+		CellVerletTraversalNoN3<floatType, 256> <<<ncells, 256, 0, stream>>>(
+				cell1, others_size, other_ids);
+		break;
+	case 512:
+		CellVerletTraversalNoN3<floatType, 512> <<<ncells, 512, 0, stream>>>(
+				cell1, others_size, other_ids);
+		break;
+	case 1024:
+		CellVerletTraversalNoN3<floatType, 1024> <<<ncells, 1024, 0, stream>>>(
 				cell1, others_size, other_ids);
 		break;
 	default:

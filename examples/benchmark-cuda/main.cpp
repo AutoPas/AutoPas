@@ -62,22 +62,26 @@ void build(Container& pc, PairwiseFunctor* pairwiseFunctor, TraversalOption trav
 
 int main(int argc, char** argv) {
   autopas::Logger::create();
-  long numParticles = 10000;
+  long numParticles = 200000;
+
+  if (argc == 2) {
+    numSamples = stoi(argv[1]);
+  }
 
   std::array<precision, 3> boxMin({0., 0., 0.}), boxMax({33., 33., 33.});
-  precision cutoff = 3.0;
+  precision cutoff = 1.0;
   precision epsilon = 2.0;
   precision sigma = 0.4;
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
-  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 101, 32);
-  VerletClusterCells<MyMolecule> vcc2(boxMin, boxMax, cutoff, 0.1, 101, 96);
+  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 101, 256);
+  VerletClusterCells<MyMolecule> vcc2(boxMin, boxMax, cutoff, 0.1, 101, 1024);
 
-  fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.8, numParticles);
-  fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
-  fillSpaceWithGrid<>(vcc, boxMin, boxMax, 0.8, numParticles);
-  fillSpaceWithGrid<>(vcc2, boxMin, boxMax, 0.8, numParticles);
+  fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.3, numParticles);
+  fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.3, numParticles);
+  fillSpaceWithGrid<>(vcc, boxMin, boxMax, 0.3, numParticles);
+  fillSpaceWithGrid<>(vcc2, boxMin, boxMax, 0.3, numParticles);
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
 
@@ -109,7 +113,7 @@ int main(int argc, char** argv) {
   run(lc, &traversalLCcudaN3, &func);
 
   run(vcc, &traversalvcccudaNoN3, &func);
-  run(vcc2, &traversalvcccudaN3, &func);
+  run(vcc2, &traversalvcccudaNoN3, &func);
 
   return EXIT_SUCCESS;
 }

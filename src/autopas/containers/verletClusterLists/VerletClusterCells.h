@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
@@ -26,10 +27,6 @@ namespace autopas {
 template <class Particle>
 class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<Particle>> {
   using ParticleFloatType = typename Particle::ParticleFloatingPointType;
-  /**
-   * the index type to access the particle cells
-   */
-  typedef std::size_t index_t;
 
  public:
   /**
@@ -58,12 +55,12 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
         _boxMax(boxMax),
         _skin(skin),
         _cutoff(cutoff),
-        _cutoffSqr(cutoff * cutoff),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _isValid(false) {
-    _clusters.resize(1);
-    _dummyStarts.resize(1, 0);
+        _isValid(false),
+        _cellBorderFlagManager(&_firstHaloClusterId) {
+    this->_cells.resize(1);
+    _dummyStarts[0] = 0;
   }
 
   /**
@@ -98,12 +95,12 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     }
     if (needsRebuild()) {
       this->rebuild();
-      traversalInterface->rebuild(_cellsPerDim, _clusterSize, _clusters, _boundingBoxes);
+      traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, _cutoff + _skin);
     }
 
-    traversal->initTraversal(_clusters);
-    traversalInterface->traverseCellPairs(_clusters);
-    traversal->endTraversal(_clusters);
+    traversal->initTraversal(this->_cells);
+    traversalInterface->traverseCellPairs(this->_cells);
+    traversal->endTraversal(this->_cells);
 
     // we iterated, so increase traversal counter
     _traversalsSinceLastRebuild++;
@@ -115,9 +112,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   void addParticle(Particle& p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
-      _clusters[0].resize(_dummyStarts[0]);
+      this->_cells[0].resize(_dummyStarts[0]);
       // add particle somewhere, because lists will be rebuild anyways
-      _clusters[0].addParticle(p);
+      this->_cells[0].addParticle(p);
       ++_dummyStarts[0];
     } else {
       utils::ExceptionHandler::exception(
@@ -130,17 +127,18 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   void addHaloParticle(Particle& haloParticle) override {
     _isValid = false;
-    _haloInsertQueue.push_back(haloParticle);
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
+    if (autopas::utils::notInBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
+      _haloInsertQueue.push_back(haloParticle);
+    } else {
+      utils::ExceptionHandler::exception(
+          "VerletCluster: trying to add halo particle that is inside the bounding box.\n" + haloParticle.toString());
+    }
   }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles
    */
-  void deleteHaloParticles() override {
-    _clusters.resize(_firstHaloClusterId);
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.deleteHaloParticles not yet implemented.");
-  }
+  void deleteHaloParticles() override { this->_cells.resize(_firstHaloClusterId); }
 
   /**
    * @copydoc VerletLists::updateContainer()
@@ -148,10 +146,21 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   void updateContainer() override {
     AutoPasLog(debug, "updating container");
     _isValid = false;
+    rebuild();
   }
 
   bool isContainerUpdateNeeded() override {
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");
+    size_t i = 0;
+    for (i = 0; i < _firstHaloClusterId; ++i) {
+      for (auto& p : this->_cells[i]._particles) {
+        if (autopas::utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) return true;
+      }
+    }
+    for (; i < this->_cells.size(); ++i) {
+      for (auto& p : this->_cells[i]._particles) {
+        if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) return true;
+      }
+    }
     return false;
   }
 
@@ -170,25 +179,28 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(&this->_clusters));
+    return ParticleIteratorWrapper<Particle>(new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(
+        &this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
   ParticleIteratorWrapper<Particle> getRegionIterator(std::array<ParticleFloatType, 3> lowerCorner,
                                                       std::array<ParticleFloatType, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
-    // @todo implement this if bounding boxes are here
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
-    return ParticleIteratorWrapper<Particle>();
+    std::vector<size_t> cellsOfInterest;
+    for (size_t i = 0; i < _boundingBoxes.size(); ++i) {
+      if (boxesOverlap(lowerCorner, higherCorner, _boundingBoxes[i])) cellsOfInterest.push_back(i);
+    }
+    return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, FullParticleCell<Particle>>(
+        &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
   }
 
   /**
    * Deletes all Dummy Particles in the container
    */
   void deleteDummyParticles() {
-    for (size_t i = 0; i < _dummyStarts.size(); ++i) {
-      _clusters[i].resize(_dummyStarts[i]);
+    for (auto& pair : _dummyStarts) {
+      this->_cells[pair.first].resize(pair.second);
     }
     _isValid = false;
   }
@@ -202,6 +214,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   void rebuild() {
     deleteDummyParticles();
+    _boundingBoxes.clear();
     // get the dimensions and volumes of the box
     std::array<ParticleFloatType, 3> boxSize{};
     ParticleFloatType volume = 1.0;
@@ -213,12 +226,19 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     // get all particles and clear clusters
     std::vector<Particle> invalidParticles;
-    for (auto& cluster : _clusters) {
-      for (index_t i = 0; i < cluster._particles.size(); ++i) {
-        if (utils::inBox(cluster._particles[i].getR(), _boxMin, _boxMax))
-          invalidParticles.push_back(cluster._particles[i]);
+    size_t i = 0;
+    for (i = 0; i < _firstHaloClusterId; ++i) {
+      for (auto& p : this->_cells[i]._particles) {
+        invalidParticles.push_back(p);
       }
-      cluster.clear();
+      this->_cells[i].clear();
+    }
+
+    for (; i < this->_cells.size(); ++i) {
+      for (auto& p : this->_cells[i]._particles) {
+        _haloInsertQueue.push_back(p);
+      }
+      this->_cells[i].clear();
     }
 
     // estimate particle density
@@ -229,73 +249,96 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     _gridSideLengthReciprocal = 1 / _gridSideLength;
 
     // get cells per dimension
-    index_t sizeGrid = 1;
+    size_t sizeGrid = 1;
     for (int d = 0; d < 2; d++) {
-      _cellsPerDim[d] = static_cast<index_t>(std::ceil(boxSize[d] * _gridSideLengthReciprocal));
+      _cellsPerDim[d] = static_cast<size_t>(std::ceil(boxSize[d] * _gridSideLengthReciprocal));
 
       sizeGrid *= _cellsPerDim[d];
     }
-    _cellsPerDim[2] = static_cast<index_t>(1);
+    _cellsPerDim[2] = static_cast<size_t>(1);
 
     // resize to number of grids
-    _clusters.resize(sizeGrid);
-    _dummyStarts.resize(sizeGrid);
+    this->_cells.resize(sizeGrid);
+    _dummyStarts.clear();
 
     // put particles into grid cells
     for (auto& particle : invalidParticles) {
       int index = (int)((particle.getR()[0] - _boxMin[0]) * _gridSideLengthReciprocal) +
                   (int)((particle.getR()[1] - _boxMin[1]) * _gridSideLengthReciprocal) * _cellsPerDim[0];
-      _clusters[index].addParticle(particle);
+      this->_cells[index].addParticle(particle);
     }
 
-    index_t numClusters = 0;
+    size_t numOwnClusters = 0;
+    size_t numHaloClusters = 0;
+
     // sort by last dimension
-    for (auto& cluster : _clusters) {
-      cluster.sortByDim(2);
-      numClusters += ((cluster.numParticles()) / _clusterSize) + 1;
-    }
-    numClusters = std::max((index_t)1, numClusters);
-
-    _clusters.resize(numClusters);
-    _boundingBoxes.resize(numClusters, {_boxMax[0] + 8 * _cutoff, _boxMax[1] + 8 * _cutoff, _boxMax[2] + 8 * _cutoff,
-                                        _boxMin[0] - 8 * _cutoff, _boxMin[1] - 8 * _cutoff, _boxMin[2] - 8 * _cutoff});
-
-    index_t cid = sizeGrid;
-    for (index_t i = 0; i < sizeGrid; ++i) {
-      index_t dummyStart = _clusters[i].numParticles() % _clusterSize;
-      // no cell with only dummy particles except when grid already empty
-      if (dummyStart == 0 && !(_clusters[i].numParticles() == 0)) {
-        dummyStart = _clusterSize;
-      }
-      for (index_t clusterStart = dummyStart; clusterStart < _clusters[i].numParticles();
-           clusterStart += _clusterSize) {
-        for (index_t pid = 0; pid < _clusterSize; ++pid) {
-          Particle& p = _clusters[i]._particles[clusterStart + pid];
-          expandBoundingBox(_boundingBoxes[cid], p);
-          _clusters[cid].addParticle(p);
-        }
-        ++cid;
-      }
-      _clusters[i].resize(dummyStart);
-      for (auto& p : _clusters[i]._particles) {
-        expandBoundingBox(_boundingBoxes[i], p);
-      }
-      _dummyStarts[i] = dummyStart;
-      for (index_t pid = dummyStart; pid < _clusterSize; ++pid) {
-        Particle dummyParticle =
-            Particle({_boxMax[0] + 8 * _cutoff + static_cast<typename Particle::ParticleFloatingPointType>(i),
-                      _boxMax[1] + 8 * _cutoff + static_cast<typename Particle::ParticleFloatingPointType>(pid),
-                      _boxMax[2] + 8 * _cutoff},
-                     {0., 0., 0.}, ULONG_MAX);
-        _clusters[i].addParticle(dummyParticle);
-      }
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
+      this->_cells[i].sortByDim(2);
+      numOwnClusters += ((this->_cells[i].numParticles()) / _clusterSize) + 1;
     }
 
+    _firstHaloClusterId = numOwnClusters;
+
+    size_t sizeHaloGrid = 1;
+    this->_cells.resize(numOwnClusters + sizeHaloGrid);
+
+    // put halo particles into grid cells
+    for (auto& haloParticle : _haloInsertQueue) {
+      int index = _firstHaloClusterId;
+      this->_cells[index].addParticle(haloParticle);
+    }
+
+    // sort halo cells
+    for (size_t i = 0; i < sizeHaloGrid; ++i) {
+      this->_cells[_firstHaloClusterId + i].sortByDim(2);
+      numHaloClusters += ((this->_cells[_firstHaloClusterId + i].numParticles()) / _clusterSize) + 1;
+    }
+
+    this->_cells.resize(numOwnClusters + numHaloClusters);
+    _boundingBoxes.resize(this->_cells.size(),
+                          {_boxMax[0] + 8 * _cutoff, _boxMax[1] + 8 * _cutoff, _boxMax[2] + 8 * _cutoff,
+                           _boxMin[0] - 8 * _cutoff, _boxMin[1] - 8 * _cutoff, _boxMin[2] - 8 * _cutoff});
+    splitZ(0, sizeGrid);
+    splitZ(_firstHaloClusterId, _firstHaloClusterId + sizeHaloGrid);
+
+    _haloInsertQueue.clear();
     _traversalsSinceLastRebuild = 0;
     _isValid = true;
   }
 
  private:
+  void splitZ(size_t start, size_t end) {
+    size_t cid = end;
+    for (size_t i = start; i < end; ++i) {
+      size_t dummyStart = this->_cells[i].numParticles() % _clusterSize;
+      // no cell with only dummy particles except when grid already empty
+      if (dummyStart == 0 && !(this->_cells[i].numParticles() == 0)) {
+        dummyStart = _clusterSize;
+      }
+      for (size_t clusterStart = dummyStart; clusterStart < this->_cells[i].numParticles();
+           clusterStart += _clusterSize) {
+        for (size_t pid = 0; pid < _clusterSize; ++pid) {
+          Particle& p = this->_cells[i]._particles[clusterStart + pid];
+          expandBoundingBox(_boundingBoxes[cid], p);
+          this->_cells[cid].addParticle(p);
+        }
+        ++cid;
+      }
+      this->_cells[i].resize(dummyStart);
+      for (auto& p : this->_cells[i]._particles) {
+        expandBoundingBox(_boundingBoxes[i], p);
+      }
+      _dummyStarts[i] = dummyStart;
+      for (size_t pid = dummyStart; pid < _clusterSize; ++pid) {
+        Particle dummyParticle =
+            Particle({_boxMax[0] + 8 * _cutoff + static_cast<typename Particle::ParticleFloatingPointType>(i),
+                      _boxMax[1] + 8 * _cutoff + static_cast<typename Particle::ParticleFloatingPointType>(pid),
+                      _boxMax[2] + 8 * _cutoff},
+                     {0., 0., 0.}, ULONG_MAX);
+        this->_cells[i].addParticle(dummyParticle);
+      }
+    }
+  }
   /**
    * Expands a bounding Box such the Particle is in it
    * @param box
@@ -303,19 +346,32 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   void expandBoundingBox(std::array<typename Particle::ParticleFloatingPointType, 6>& box, Particle& p) {
     for (int i = 0; i < 3; ++i) {
-      box[i] = std::min(box[i], p.getR()[i] - _skin - _cutoff);
-      box[3 + i] = std::max(box[3 + i], p.getR()[i] + _skin + _cutoff);
+      box[i] = std::min(box[i], p.getR()[i]);
+      box[3 + i] = std::max(box[3 + i], p.getR()[i]);
     }
   }
 
-  /// internal storage, particles are split into a grid in xy-dimension and then cut in z dimension
-  std::vector<FullParticleCell<Particle>> _clusters;
+  /**
+   * Returns true if the two boxes are within distance
+   * @param box1
+   * @param box2
+   * @param distance betwwen the boxes to return true
+   * @return true if the boxes are overlapping
+   */
+  inline bool boxesOverlap(std::array<ParticleFloatType, 3>& box1lowerCorner,
+                           std::array<ParticleFloatType, 3>& box1higherCorner,
+                           std::array<typename Particle::ParticleFloatingPointType, 6>& box2) {
+    for (int i = 0; i < 3; ++i) {
+      if (box1lowerCorner[0 + i] > box2[3 + i] || box1higherCorner[i] < box2[0 + i]) return false;
+    }
+    return true;
+  }
 
   /// first Cluster ID to be a Halo Cluster
-  index_t _firstHaloClusterId;
+  size_t _firstHaloClusterId;
 
   /// indeces where dummy particles in the cells start
-  std::vector<index_t> _dummyStarts;
+  std::unordered_map<size_t, size_t> _dummyStarts;
 
   /// Stores Halo Particles to be inserted
   std::vector<Particle> _haloInsertQueue;
@@ -334,14 +390,13 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   ParticleFloatType _gridSideLengthReciprocal;
 
   // dimensions of grid
-  std::array<index_t, 3> _cellsPerDim;
+  std::array<size_t, 3> _cellsPerDim;
 
   /// skin radius
   ParticleFloatType _skin;
 
   /// cutoff
   ParticleFloatType _cutoff;
-  ParticleFloatType _cutoffSqr;
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
@@ -352,6 +407,17 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
   // specifies if the neighbor list is currently valid
   bool _isValid;
+
+  class VerletClusterCellsCellBorderAndFlagManager : public CellBorderAndFlagManager {
+   public:
+    VerletClusterCellsCellBorderAndFlagManager(size_t* firstHaloClusterId) { _firstHaloClusterId = firstHaloClusterId; }
+    bool isHaloCell(size_t index1d) const override { return *_firstHaloClusterId <= index1d; }
+
+    bool isOwningCell(size_t index1d) const override { return index1d < *_firstHaloClusterId; }
+
+   private:
+    size_t* _firstHaloClusterId;
+  } _cellBorderFlagManager;
 };
 
 }  // namespace autopas
