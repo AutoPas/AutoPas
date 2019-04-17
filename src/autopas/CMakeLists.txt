@@ -5,7 +5,7 @@ file(GLOB_RECURSE MY_SRC
 
 ADD_LIBRARY(autopas STATIC
         ${MY_SRC}
-        )
+        containers/directSum/DirectSumKokkosTraversal.h)
 
 target_link_libraries(autopas
         PUBLIC
