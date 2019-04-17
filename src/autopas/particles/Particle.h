@@ -146,11 +146,19 @@ class ParticleBase {
       typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType>::Type
           SoAArraysType;
 
+#if defined(AUTOPAS_CUDA)
   /**
-   * The Storage Arrays for Cuda
+   * The type for storage arrays for Cuda
    */
   typedef typename autopas::utils::CudaSoAType<size_t, floatType, floatType, floatType, floatType, floatType,
                                                floatType>::Type CudaDeviceArraysType;
+#else
+  /**
+   * The type for storage arrays for Cuda
+   * empty if compiled without Cuda Support
+   */
+  typedef typename autopas::utils::CudaSoAType<>::Type CudaDeviceArraysType;
+#endif
 
  protected:
   /**
