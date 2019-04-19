@@ -12,7 +12,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoA.h"
 #if defined(AUTOPAS_CUDA)
-#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 #endif
 
 namespace autopas {
@@ -223,7 +223,16 @@ class Functor {
    * Provides an interface for traversals to directly access Cuda Functions
    * @return Pointer to CudaWrapper of the Functor
    */
-  virtual CudaWrapper *getCudaWrapper() { return NULL; }
+  virtual CudaWrapperInterface<typename Particle::ParticleFloatingPointType> *getCudaWrapper() { return NULL; }
+
+  /**
+   * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
+   * @return unique pointer to the object
+   */
+  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>> createFunctorCudaSoA(
+      CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
+  }
 #endif
 };
 

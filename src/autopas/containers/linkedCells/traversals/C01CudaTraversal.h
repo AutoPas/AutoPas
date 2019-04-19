@@ -9,13 +9,11 @@
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/CudaDeviceVector.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 #if defined(AUTOPAS_CUDA)
-#include "autopas/pairwiseFunctors/Functor.h"
-#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #endif
@@ -171,50 +169,24 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
     _functor->CudaFunctor(_storageCell._particleSoABufferDevice, useNewton3);
     return;
   }
+  unsigned int requiredThreads = ((maxParticlesInCell - 1) / 32 + 1) * 32;
 
-  _functor->getCudaWrapper()->setNumThreads(((maxParticlesInCell - 1) / 32 + 1) * 32);
   _deviceCellSizes.copyHostToDevice(cellSizePartialSum.size(), cellSizePartialSum.data());
   _functor->deviceSoALoader(_storageCell._particleSoABuffer, _storageCell._particleSoABufferDevice);
 
   // wait for copies to be done
   utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 
+  auto cudaSoA = _functor->createFunctorCudaSoA(_storageCell._particleSoABufferDevice);
+
   if (useNewton3) {
     _functor->getCudaWrapper()->LinkedCellsTraversalN3Wrapper(
-        LJFunctorCudaSoA<typename ParticleCell::ParticleType::ParticleFloatingPointType>(
-            cellSizePartialSum.back(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posX>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posY>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posZ>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceX>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceY>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceZ>()
-                .get()),
-        _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(), _deviceCellSizes.get(),
-        _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
+        cudaSoA.get(), requiredThreads, _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(),
+        _deviceCellSizes.get(), _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
   } else {
     _functor->getCudaWrapper()->LinkedCellsTraversalNoN3Wrapper(
-        LJFunctorCudaSoA<typename ParticleCell::ParticleType::ParticleFloatingPointType>(
-            cellSizePartialSum.back(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posX>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posY>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posZ>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceX>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceY>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceZ>()
-                .get()),
-        _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(), _deviceCellSizes.get(),
-        _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
+        cudaSoA.get(), requiredThreads, _nonHaloCells.size(), _nonHaloCells.get(), _deviceCellSizes.size(),
+        _deviceCellSizes.get(), _deviceCellOffsets.size(), _deviceCellOffsets.get(), 0);
   }
   utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 

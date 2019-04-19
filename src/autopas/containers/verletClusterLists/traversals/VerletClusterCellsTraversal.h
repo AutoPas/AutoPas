@@ -256,35 +256,15 @@ void VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, DataLayout, useN
     _functor->CudaFunctor(_storageCell._particleSoABufferDevice, useNewton3);
     return;
   }
-  LJFunctorCudaSoA<typename ParticleCell::ParticleType::ParticleFloatingPointType> CudaSoAStorage(
-      _storageCell.numParticles(),
-      _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posX>().get(),
-      _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posY>().get(),
-      _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posZ>().get(),
-      _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceX>().get(),
-      _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceY>().get(),
-      _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceZ>().get());
+
+  auto cudaSoA = _functor->createFunctorCudaSoA(_storageCell._particleSoABufferDevice);
 
   if (useNewton3) {
-    _functor->getCudaWrapper()->CellVerletTraversalN3Wrapper(CudaSoAStorage, cells.size(), _clusterSize,
+    _functor->getCudaWrapper()->CellVerletTraversalN3Wrapper(cudaSoA.get(), cells.size(), _clusterSize,
                                                              _neighborMatrixDim, _neighborMatrix.get(), 0);
   } else {
-    _functor->getCudaWrapper()->CellVerletTraversalNoN3Wrapper(
-        LJFunctorCudaSoA<typename ParticleCell::ParticleType::ParticleFloatingPointType>(
-            _storageCell.numParticles(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posX>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posY>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::posZ>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceX>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceY>()
-                .get(),
-            _storageCell._particleSoABufferDevice.template get<ParticleCell::ParticleType::AttributeNames::forceZ>()
-                .get()),
-        cells.size(), _clusterSize, _neighborMatrixDim, _neighborMatrix.get(), 0);
+    _functor->getCudaWrapper()->CellVerletTraversalNoN3Wrapper(cudaSoA.get(), cells.size(), _clusterSize,
+                                                               _neighborMatrixDim, _neighborMatrix.get(), 0);
   }
   utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 #endif
