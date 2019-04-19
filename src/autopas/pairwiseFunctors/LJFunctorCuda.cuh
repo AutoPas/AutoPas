@@ -8,6 +8,7 @@
 #pragma once
 
 #include "cuda_runtime.h"
+#include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 
 namespace autopas {
 
@@ -16,7 +17,7 @@ namespace autopas {
  * @tparam floatType of all vectors
  */
 template<typename floatType>
-class LJFunctorCudaSoA{
+class LJFunctorCudaSoA: public FunctorCudaSoA<floatType> {
 public:
 	/**
 	 * Constructor for only positions
@@ -73,7 +74,15 @@ public:
  * @tparam floatType of constants
  */
 template<typename floatType>
-struct constants {
+class LJFunctorConstants: public FunctorCudaConstants<floatType> {
+public:
+	LJFunctorConstants() {
+
+	}
+	LJFunctorConstants(floatType csq, floatType ep24, floatType sqs,
+			floatType sh6) :
+			cutoffsquare(csq), epsilon24(ep24), sigmasquare(sqs), shift6(sh6) {
+	}
 	floatType cutoffsquare;
 	floatType epsilon24;
 	floatType sigmasquare;
@@ -94,60 +103,43 @@ template<> struct vec3<double> {
 	typedef double3 Type;
 };
 
-class CudaWrapper {
+template<typename floatType>
+class LJFunctorCudaWrapper: public CudaWrapperInterface<floatType> {
 public:
-	CudaWrapper() {
+	LJFunctorCudaWrapper() {
 		_num_threads = 32;
 	}
-	virtual ~CudaWrapper() {
+	virtual ~LJFunctorCudaWrapper() {
 
 	}
 
-	void setNumThreads(int num_threads) {
+	void setNumThreads(int num_threads) override {
 		_num_threads = num_threads;
 	}
 
-	template<typename floatType>
-	void loadConstants(floatType cutoffsquare, floatType epsilon24,
-			floatType sigmasquare);
+	void loadConstants(FunctorCudaConstants<floatType>* constants) override;
 
-	template<typename floatType>
-	void SoAFunctorNoN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
-			cudaStream_t stream = 0);
-	template<typename floatType>
-	void SoAFunctorNoN3PairWrapper(LJFunctorCudaSoA<floatType> cell1,
-			LJFunctorCudaSoA<floatType> cell2, cudaStream_t stream);
+	void SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+			cudaStream_t stream = 0) override;
+	void SoAFunctorNoN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base,
+			FunctorCudaSoA<floatType>* cell2Base, cudaStream_t stream) override;
 
-	template<typename floatType>
-	void SoAFunctorN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
-			cudaStream_t stream = 0);
-	template<typename floatType>
-	void SoAFunctorN3PairWrapper(LJFunctorCudaSoA<floatType> cell1,
-			LJFunctorCudaSoA<floatType> cell2, cudaStream_t stream);
+	void SoAFunctorN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+			cudaStream_t stream = 0) override;
+	void SoAFunctorN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base,
+			FunctorCudaSoA<floatType>* cell2Base, cudaStream_t stream) override;
 
-	template<typename floatType>
-	void LinkedCellsTraversalNoN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
-			unsigned int cids_size, unsigned int* cids,
+	void LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+			unsigned int reqThreads, unsigned int cids_size, unsigned int* cids,
 			unsigned int cellSizes_size, size_t* cellSizes,
-			unsigned int offsets_size, int* offsets, cudaStream_t stream);
+			unsigned int offsets_size, int* offsets, cudaStream_t stream)
+					override;
 
-	template<typename floatType>
-	void LinkedCellsTraversalN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
-			unsigned int cids_size, unsigned int* cids,
+	void LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+			unsigned int reqThreads, unsigned int cids_size, unsigned int* cids,
 			unsigned int cellSizes_size, size_t* cellSizes,
-			unsigned int offsets_size, int* offsets, cudaStream_t stream);
-
-	template<typename floatType>
-	void CellVerletTraversalNoN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
-			unsigned int cids_size, unsigned int* cids,
-			unsigned int others_size, unsigned int* other_ids,
-			cudaStream_t stream);
-
-	template<typename floatType>
-	void CellVerletTraversalN3Wrapper(LJFunctorCudaSoA<floatType> cell1,
-			unsigned int cids_size, unsigned int* cids,
-			unsigned int others_size, unsigned int* other_ids,
-			cudaStream_t stream);
+			unsigned int offsets_size, int* offsets, cudaStream_t stream)
+					override;
 
 private:
 	int numRequiredBlocks(int n) {
