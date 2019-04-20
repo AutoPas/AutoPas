@@ -60,14 +60,22 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   void initTraversal(std::vector<ParticleCell> &cells) override {
-    for (auto &cell : cells) {
-      _dataLayoutConverter.loadDataLayout(cell);
+#ifdef AUTOPAS_OPENMP
+    // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      _dataLayoutConverter.loadDataLayout(cells[i]);
     }
   }
 
   void endTraversal(std::vector<ParticleCell> &cells) override {
-    for (auto &cell : cells) {
-      _dataLayoutConverter.storeDataLayout(cell);
+#ifdef AUTOPAS_OPENMP
+    // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      _dataLayoutConverter.storeDataLayout(cells[i]);
     }
   }
   void rebuild(const std::array<unsigned long, 3> &dims) override;
