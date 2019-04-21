@@ -12,8 +12,53 @@
 
 namespace autopas {
 
+#define CREATESWITCHCASE(blockSize, gridSize, function, params)                \
+  case blockSize:                                                              \
+    function<floatType, blockSize><<<gridSize, blockSize, 0, stream>>> params; \
+    break;
+
+#define CREATESWITCHCASES(gridSize, function, params) \
+  CREATESWITCHCASE(32, gridSize, function, params)    \
+  CREATESWITCHCASE(64, gridSize, function, params)    \
+  CREATESWITCHCASE(96, gridSize, function, params)    \
+  CREATESWITCHCASE(128, gridSize, function, params)   \
+  CREATESWITCHCASE(160, gridSize, function, params)   \
+  CREATESWITCHCASE(192, gridSize, function, params)   \
+  CREATESWITCHCASE(224, gridSize, function, params)   \
+  CREATESWITCHCASE(256, gridSize, function, params)   \
+  CREATESWITCHCASE(288, gridSize, function, params)   \
+  CREATESWITCHCASE(320, gridSize, function, params)   \
+  CREATESWITCHCASE(352, gridSize, function, params)   \
+  CREATESWITCHCASE(384, gridSize, function, params)   \
+  CREATESWITCHCASE(416, gridSize, function, params)   \
+  CREATESWITCHCASE(448, gridSize, function, params)   \
+  CREATESWITCHCASE(480, gridSize, function, params)   \
+  CREATESWITCHCASE(512, gridSize, function, params)   \
+  CREATESWITCHCASE(544, gridSize, function, params)   \
+  CREATESWITCHCASE(576, gridSize, function, params)   \
+  CREATESWITCHCASE(608, gridSize, function, params)   \
+  CREATESWITCHCASE(640, gridSize, function, params)   \
+  CREATESWITCHCASE(672, gridSize, function, params)   \
+  CREATESWITCHCASE(704, gridSize, function, params)   \
+  CREATESWITCHCASE(736, gridSize, function, params)   \
+  CREATESWITCHCASE(768, gridSize, function, params)   \
+  CREATESWITCHCASE(800, gridSize, function, params)   \
+  CREATESWITCHCASE(832, gridSize, function, params)   \
+  CREATESWITCHCASE(864, gridSize, function, params)   \
+  CREATESWITCHCASE(896, gridSize, function, params)   \
+  CREATESWITCHCASE(928, gridSize, function, params)   \
+  CREATESWITCHCASE(960, gridSize, function, params)   \
+  CREATESWITCHCASE(992, gridSize, function, params)   \
+  CREATESWITCHCASE(1024, gridSize, function, params)
+
 __constant__ LJFunctorConstants<float> global_constants_float;
 __constant__ LJFunctorConstants<double> global_constants_double;
+
+__constant__ unsigned int linkedCellsOffsetsSize;
+__constant__ int linkedCellsOffsets[27];
+
+__constant__ unsigned int verletMatrixSize;
+__constant__ unsigned int* verletMatrix;
 
 template <typename T>
 __device__ inline LJFunctorConstants<T>& getConstants() {
@@ -180,7 +225,6 @@ __global__ void SoAFunctorNoN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorC
 
 template <typename floatType, int block_size, bool NMisMultipleBlockSize = false>
 __global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
-  static_assert((block_size & (block_size - 1)) == 0, "block size must be power of 2");
   __shared__ typename vec3<floatType>::Type cell1_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell1_forces_shared[block_size];
   int tid = blockIdx.x * block_size + threadIdx.x;
@@ -203,7 +247,12 @@ __global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
     __syncthreads();
 
     for (int j = 0; j < block_size; ++j) {
-      const int offset = (j + threadIdx.x) & mask;
+      unsigned int offset;
+      if ((block_size & (block_size - 1)) == 0) {
+        offset = (j + threadIdx.x) & mask;
+      } else {
+        offset = (j + threadIdx.x) % mask;
+      }
       myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[offset], myf, cell1_forces_shared + offset);
     }
     __syncthreads();
@@ -238,7 +287,6 @@ __global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
 
 template <typename floatType, int block_size, bool NMisMultipleBlockSize = false>
 __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCudaSoA<floatType> cell2) {
-  static_assert((block_size & (block_size - 1)) == 0, "block size must be power of 2");
   __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
   int tid = blockIdx.x * block_size + threadIdx.x;
@@ -260,7 +308,12 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
     __syncthreads();
 
     for (int j = 0; j < block_size; ++j) {
-      const int offset = (j + threadIdx.x) & mask;
+      unsigned int offset;
+      if ((block_size & (block_size - 1)) == 0) {
+        offset = (j + threadIdx.x) & mask;
+      } else {
+        offset = (j + threadIdx.x) % mask;
+      }
       myf = bodyBodyFN3<floatType, true>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset);
     }
     __syncthreads();
@@ -303,27 +356,7 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<float
 
   std::cout << "Here" << std::endl;
   switch (_num_threads) {
-    case 32:
-      SoAFunctorNoN3<floatType, 32><<<numRequiredBlocks(cell1._size), 32, 0, stream>>>(cell1);
-      break;
-    case 64:
-      SoAFunctorNoN3<floatType, 64><<<numRequiredBlocks(cell1._size), 64, 0, stream>>>(cell1);
-      break;
-    case 96:
-      SoAFunctorNoN3<floatType, 96><<<numRequiredBlocks(cell1._size), 96, 0, stream>>>(cell1);
-      break;
-    case 128:
-      SoAFunctorNoN3<floatType, 128><<<numRequiredBlocks(cell1._size), 128, 0, stream>>>(cell1);
-      break;
-    case 256:
-      SoAFunctorNoN3<floatType, 256><<<numRequiredBlocks(cell1._size), 256, 0, stream>>>(cell1);
-      break;
-    case 512:
-      SoAFunctorNoN3<floatType, 512><<<numRequiredBlocks(cell1._size), 512, 0, stream>>>(cell1);
-      break;
-    case 1024:
-      SoAFunctorNoN3<floatType, 1024><<<numRequiredBlocks(cell1._size), 1024, 0, stream>>>(cell1);
-      break;
+    CREATESWITCHCASES(numRequiredBlocks(cell1._size), SoAFunctorNoN3, (cell1));
     default:
       autopas::utils::ExceptionHandler::exception(std::string("cuda Kernel size not available"));
       break;
@@ -339,27 +372,7 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3PairWrapper(FunctorCudaSoA<f
   LJFunctorCudaSoA<floatType> cell2 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell2Base);
 
   switch (_num_threads) {
-    case 32:
-      SoAFunctorNoN3Pair<floatType, 32><<<numRequiredBlocks(cell1._size), 32, 0, stream>>>(cell1, cell2);
-      break;
-    case 64:
-      SoAFunctorNoN3Pair<floatType, 64><<<numRequiredBlocks(cell1._size), 64, 0, stream>>>(cell1, cell2);
-      break;
-    case 96:
-      SoAFunctorNoN3Pair<floatType, 96><<<numRequiredBlocks(cell1._size), 96, 0, stream>>>(cell1, cell2);
-      break;
-    case 128:
-      SoAFunctorNoN3Pair<floatType, 128><<<numRequiredBlocks(cell1._size), 128, 0, stream>>>(cell1, cell2);
-      break;
-    case 256:
-      SoAFunctorNoN3Pair<floatType, 256><<<numRequiredBlocks(cell1._size), 256, 0, stream>>>(cell1, cell2);
-      break;
-    case 512:
-      SoAFunctorNoN3Pair<floatType, 512><<<numRequiredBlocks(cell1._size), 512, 0, stream>>>(cell1, cell2);
-      break;
-    case 1024:
-      SoAFunctorNoN3Pair<floatType, 1024><<<numRequiredBlocks(cell1._size), 1024, 0, stream>>>(cell1, cell2);
-      break;
+    CREATESWITCHCASES(numRequiredBlocks(cell1._size), SoAFunctorNoN3Pair, (cell1, cell2));
     default:
       autopas::utils::ExceptionHandler::exception(std::string("cuda Kernel size not available"));
       break;
@@ -372,24 +385,7 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorN3Wrapper(FunctorCudaSoA<floatTy
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
 
   switch (_num_threads) {
-    case 32:
-      SoAFunctorN3<floatType, 32><<<numRequiredBlocks(cell1._size), 32, 0, stream>>>(cell1);
-      break;
-    case 64:
-      SoAFunctorN3<floatType, 64><<<numRequiredBlocks(cell1._size), 64, 0, stream>>>(cell1);
-      break;
-    case 128:
-      SoAFunctorN3<floatType, 128><<<numRequiredBlocks(cell1._size), 128, 0, stream>>>(cell1);
-      break;
-    case 256:
-      SoAFunctorN3<floatType, 256><<<numRequiredBlocks(cell1._size), 256, 0, stream>>>(cell1);
-      break;
-    case 512:
-      SoAFunctorN3<floatType, 512><<<numRequiredBlocks(cell1._size), 512, 0, stream>>>(cell1);
-      break;
-    case 1024:
-      SoAFunctorN3<floatType, 1024><<<numRequiredBlocks(cell1._size), 1024, 0, stream>>>(cell1);
-      break;
+    CREATESWITCHCASES(numRequiredBlocks(cell1._size), SoAFunctorN3, (cell1));
     default:
       autopas::utils::ExceptionHandler::exception(std::string("cuda Kernel size not available"));
       break;
@@ -405,24 +401,7 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorN3PairWrapper(FunctorCudaSoA<flo
   LJFunctorCudaSoA<floatType> cell2 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell2Base);
 
   switch (_num_threads) {
-    case 32:
-      SoAFunctorN3Pair<floatType, 32><<<numRequiredBlocks(cell1._size), 32, 0, stream>>>(cell1, cell2);
-      break;
-    case 64:
-      SoAFunctorN3Pair<floatType, 64><<<numRequiredBlocks(cell1._size), 64, 0, stream>>>(cell1, cell2);
-      break;
-    case 128:
-      SoAFunctorN3Pair<floatType, 128><<<numRequiredBlocks(cell1._size), 128, 0, stream>>>(cell1, cell2);
-      break;
-    case 256:
-      SoAFunctorN3Pair<floatType, 256><<<numRequiredBlocks(cell1._size), 256, 0, stream>>>(cell1, cell2);
-      break;
-    case 512:
-      SoAFunctorN3Pair<floatType, 512><<<numRequiredBlocks(cell1._size), 512, 0, stream>>>(cell1, cell2);
-      break;
-    case 1024:
-      SoAFunctorN3Pair<floatType, 1024><<<numRequiredBlocks(cell1._size), 1024, 0, stream>>>(cell1, cell2);
-      break;
+    CREATESWITCHCASES(numRequiredBlocks(cell1._size), SoAFunctorN3Pair, (cell1, cell2));
     default:
       autopas::utils::ExceptionHandler::exception(std::string("cuda Kernel size not available"));
       break;
@@ -533,34 +512,7 @@ void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(FunctorCud
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
 
   switch (reqThreads) {
-    case 32:
-      LinkedCellsTraversalNoN3<floatType, 32>
-          <<<cids_size, 32, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
-    case 64:
-      LinkedCellsTraversalNoN3<floatType, 64>
-          <<<cids_size, 64, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
-    case 96:
-      LinkedCellsTraversalNoN3<floatType, 96>
-          <<<cids_size, 96, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
-    case 128:
-      LinkedCellsTraversalNoN3<floatType, 128>
-          <<<cids_size, 128, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
-    case 256:
-      LinkedCellsTraversalNoN3<floatType, 256>
-          <<<cids_size, 256, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
-    case 512:
-      LinkedCellsTraversalNoN3<floatType, 512>
-          <<<cids_size, 512, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
-    case 1024:
-      LinkedCellsTraversalNoN3<floatType, 1024>
-          <<<cids_size, 1024, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
+    CREATESWITCHCASES(cids_size, LinkedCellsTraversalNoN3, (cell1, cids, cellSizes, offsets_size, offsets));
     default:
       autopas::utils::ExceptionHandler::exception(
           "Linked Cells NoN3: cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles "
@@ -580,18 +532,7 @@ void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaS
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
 
   switch (reqThreads) {
-    case 32:
-      LinkedCellsTraversalN3<floatType, 32>
-          <<<cids_size, 32, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
-    case 64:
-      LinkedCellsTraversalN3<floatType, 64>
-          <<<cids_size, 64, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
-    case 96:
-      LinkedCellsTraversalN3<floatType, 96>
-          <<<cids_size, 96, 0, stream>>>(cell1, cids, cellSizes, offsets_size, offsets);
-      break;
+    CREATESWITCHCASES(cids_size, LinkedCellsTraversalN3, (cell1, cids, cellSizes, offsets_size, offsets));
     default:
       autopas::utils::ExceptionHandler::exception(
           "Linked Cells N3:cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in "
@@ -639,27 +580,7 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalNoN3Wrapper(FunctorCuda
                                                                      cudaStream_t stream) {
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
   switch (clusterSize) {
-    case 32:
-      CellVerletTraversalNoN3<floatType, 32><<<ncells, 32, 0, stream>>>(cell1, others_size, other_ids);
-      break;
-    case 64:
-      CellVerletTraversalNoN3<floatType, 64><<<ncells, 64, 0, stream>>>(cell1, others_size, other_ids);
-      break;
-    case 96:
-      CellVerletTraversalNoN3<floatType, 96><<<ncells, 96, 0, stream>>>(cell1, others_size, other_ids);
-      break;
-    case 128:
-      CellVerletTraversalNoN3<floatType, 128><<<ncells, 128, 0, stream>>>(cell1, others_size, other_ids);
-      break;
-    case 256:
-      CellVerletTraversalNoN3<floatType, 256><<<ncells, 256, 0, stream>>>(cell1, others_size, other_ids);
-      break;
-    case 512:
-      CellVerletTraversalNoN3<floatType, 512><<<ncells, 512, 0, stream>>>(cell1, others_size, other_ids);
-      break;
-    case 1024:
-      CellVerletTraversalNoN3<floatType, 1024><<<ncells, 1024, 0, stream>>>(cell1, others_size, other_ids);
-      break;
+    CREATESWITCHCASES(ncells, CellVerletTraversalNoN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
           "cuda Kernel size not available for Verlet cells available 32, 64, 96. Too many particles in a cell. "
@@ -736,15 +657,7 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalN3Wrapper(FunctorCudaSo
                                                                    cudaStream_t stream) {
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
   switch (clusterSize) {
-    case 32:
-      CellVerletTraversalN3<floatType, 32><<<ncells, 32, 0, stream>>>(cell1, others_size, other_ids);
-      break;
-    case 64:
-      CellVerletTraversalN3<floatType, 64><<<ncells, 64, 0, stream>>>(cell1, others_size, other_ids);
-      break;
-    case 96:
-      CellVerletTraversalN3<floatType, 96><<<ncells, 96, 0, stream>>>(cell1, others_size, other_ids);
-      break;
+    CREATESWITCHCASES(ncells, CellVerletTraversalN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
           "cuda Kernel size not available for Verlet cells available 32, 64, 96. Too many particles in a cell. "
@@ -772,6 +685,12 @@ template <typename T>
 void LJFunctorCudaWrapper<T>::loadConstants(FunctorCudaConstants<T>* constants) {
   autopas::utils::ExceptionHandler::exception("Cuda constants with unknown Type loaded");
 }
+/*
+template <typename T>
+void LJFunctorCudaWrapper<T>::loadLinkedCellsOffsets(unsigned int offsets_size,
+        int* offsets) {
+  autopas::utils::ExceptionHandler::exception("Cuda constants with unknown Type loaded");
+}*/
 
 template class LJFunctorCudaWrapper<float>;
 template class LJFunctorCudaWrapper<double>;
