@@ -57,9 +57,6 @@ __constant__ LJFunctorConstants<double> global_constants_double;
 __constant__ unsigned int linkedCellsOffsetsSize;
 __constant__ int linkedCellsOffsets[27];
 
-__constant__ unsigned int verletMatrixSize;
-__constant__ unsigned int* verletMatrix;
-
 template <typename T>
 __device__ inline LJFunctorConstants<T>& getConstants() {
   return global_constants_float;
@@ -83,8 +80,8 @@ __device__ inline typename vec3<floatType>::Type bodyBodyF(typename vec3<floatTy
                                                            typename vec3<floatType>::Type j,
                                                            typename vec3<floatType>::Type fi) {
   floatType drx = i.x - j.x;
-  floatType dry = i.y - j.y;
   floatType drz = i.z - j.z;
+  floatType dry = i.y - j.y;
 
   floatType dr2 = drx * drx + dry * dry + drz * drz;
 
@@ -112,8 +109,8 @@ __device__ inline typename vec3<floatType>::Type bodyBodyFN3(typename vec3<float
                                                              typename vec3<floatType>::Type fi,
                                                              typename vec3<floatType>::Type* fj) {
   floatType drx = i.x - j.x;
-  floatType dry = i.y - j.y;
   floatType drz = i.z - j.z;
+  floatType dry = i.y - j.y;
 
   floatType dr2 = drx * drx + dry * dry + drz * drz;
 
@@ -410,8 +407,7 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorN3PairWrapper(FunctorCudaSoA<flo
 }
 
 template <typename floatType, int block_size>
-__global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsigned int* cids, size_t* cellSizes,
-                                         unsigned int offsets_size, int* offsets) {
+__global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsigned int* cids, size_t* cellSizes) {
   int own_cid = cids[blockIdx.x];
   __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
@@ -424,11 +420,12 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsig
     myposition.y = cell._posY[index];
     myposition.z = cell._posZ[index];
   }
+
   // other cells
-  for (auto other_index = 0; other_index < offsets_size; ++other_index) {
-    const int other_id = own_cid + offsets[other_index];
-    const int cell2Start = cellSizes[other_id];
-    const int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
+  for (auto other_index = 0; other_index < linkedCellsOffsetsSize; ++other_index) {
+    const int other_id = own_cid + linkedCellsOffsets[other_index];
+    const size_t cell2Start = cellSizes[other_id];
+    const unsigned int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
 
     cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
                                      cell._posZ[cell2Start + threadIdx.x]};
@@ -446,8 +443,7 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsig
 }
 
 template <typename floatType, int block_size>
-__global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned int* cids, size_t* cellSizes,
-                                       unsigned int offsets_size, int* offsets) {
+__global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned int* cids, size_t* cellSizes) {
   int own_cid = cids[blockIdx.x];
   __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
@@ -463,9 +459,9 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigne
     myposition.z = cell._posZ[index];
   }
   // other cells
-  for (auto other_index = 0; other_index < offsets_size; ++other_index) {
-    const int other_id = own_cid + offsets[other_index];
-    const int cell2Start = cellSizes[other_id];
+  for (auto other_index = 0; other_index < linkedCellsOffsetsSize; ++other_index) {
+    const int other_id = own_cid + linkedCellsOffsets[other_index];
+    const size_t cell2Start = cellSizes[other_id];
     const int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
 
     cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
@@ -507,15 +503,14 @@ template <typename floatType>
 void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
                                                                       unsigned int reqThreads, unsigned int cids_size,
                                                                       unsigned int* cids, unsigned int cellSizes_size,
-                                                                      size_t* cellSizes, unsigned int offsets_size,
-                                                                      int* offsets, cudaStream_t stream) {
+                                                                      size_t* cellSizes, cudaStream_t stream) {
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
 
   switch (reqThreads) {
-    CREATESWITCHCASES(cids_size, LinkedCellsTraversalNoN3, (cell1, cids, cellSizes, offsets_size, offsets));
+    CREATESWITCHCASES(cids_size, LinkedCellsTraversalNoN3, (cell1, cids, cellSizes));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "Linked Cells NoN3: cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles "
+          "Linked Cells NoN3: cuda Kernel size not available for Linked cells available. Too many particles "
           "in a cell. Requested: {}",
           reqThreads);
       break;
@@ -527,15 +522,14 @@ template <typename floatType>
 void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
                                                                     unsigned int reqThreads, unsigned int cids_size,
                                                                     unsigned int* cids, unsigned int cellSizes_size,
-                                                                    size_t* cellSizes, unsigned int offsets_size,
-                                                                    int* offsets, cudaStream_t stream) {
+                                                                    size_t* cellSizes, cudaStream_t stream) {
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
 
   switch (reqThreads) {
-    CREATESWITCHCASES(cids_size, LinkedCellsTraversalN3, (cell1, cids, cellSizes, offsets_size, offsets));
+    CREATESWITCHCASES(cids_size, LinkedCellsTraversalN3, (cell1, cids, cellSizes));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "Linked Cells N3:cuda Kernel size not available for Linked cells available 32, 64, 96. Too many particles in "
+          "Linked Cells N3:cuda Kernel size not available for Linked cells available. Too many particles in "
           "a cell. Requested: {}",
           reqThreads);
       break;
@@ -544,7 +538,7 @@ void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaS
 }
 
 template <typename floatType, int block_size>
-__global__ void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsigned int others_size,
+__global__ void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell, const unsigned int others_size,
                                         unsigned int* other_ids) {
   __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
@@ -558,10 +552,10 @@ __global__ void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsign
 
   // other cells
   for (auto other_index = others_size * blockIdx.x; other_ids[other_index] < UINT_MAX; ++other_index) {
-    const unsigned int cell2Start = blockDim.x * other_ids[other_index];
+    const size_t cell2Start = blockDim.x * other_ids[other_index];
 
-    cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
-                                     cell._posZ[cell2Start + threadIdx.x]};
+    const size_t own_particle = cell2Start + threadIdx.x;
+    cell2_pos_shared[threadIdx.x] = {cell._posX[own_particle], cell._posY[own_particle], cell._posZ[own_particle]};
     __syncthreads();
     for (int j = 0; j < block_size; ++j) {
       myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
@@ -583,7 +577,7 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalNoN3Wrapper(FunctorCuda
     CREATESWITCHCASES(ncells, CellVerletTraversalNoN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells available 32, 64, 96. Too many particles in a cell. "
+          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
           "Requested: {}",
           _num_threads);
       break;
@@ -660,7 +654,7 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalN3Wrapper(FunctorCudaSo
     CREATESWITCHCASES(ncells, CellVerletTraversalN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells available 32, 64, 96. Too many particles in a cell. "
+          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
           "Requested: {}",
           _num_threads);
       break;
@@ -678,19 +672,26 @@ void LJFunctorCudaWrapper<float>::loadConstants(FunctorCudaConstants<float>* con
 template <>
 void LJFunctorCudaWrapper<double>::loadConstants(FunctorCudaConstants<double>* constants) {
   LJFunctorConstants<double>* c = static_cast<LJFunctorConstants<double>*>(constants);
-  cudaMemcpyToSymbol(global_constants_double, c, sizeof(LJFunctorConstants<double>));
+  autopas::utils::CudaExceptionHandler::checkErrorCode(
+      cudaMemcpyToSymbol(global_constants_double, c, sizeof(LJFunctorConstants<double>)));
 }
 
 template <typename T>
 void LJFunctorCudaWrapper<T>::loadConstants(FunctorCudaConstants<T>* constants) {
   autopas::utils::ExceptionHandler::exception("Cuda constants with unknown Type loaded");
 }
-/*
+
 template <typename T>
-void LJFunctorCudaWrapper<T>::loadLinkedCellsOffsets(unsigned int offsets_size,
-        int* offsets) {
-  autopas::utils::ExceptionHandler::exception("Cuda constants with unknown Type loaded");
-}*/
+void LJFunctorCudaWrapper<T>::loadLinkedCellsOffsets(unsigned int offsets_size, int* offsets) {
+  if (offsets_size > 27) {
+    autopas::utils::ExceptionHandler::exception(
+        "LJFunctorCudaWrapper does not support linked cells with >27 neighbors");
+  }
+  autopas::utils::CudaExceptionHandler::checkErrorCode(
+      cudaMemcpyToSymbol(linkedCellsOffsetsSize, &offsets_size, sizeof(unsigned int)));
+  autopas::utils::CudaExceptionHandler::checkErrorCode(
+      cudaMemcpyToSymbol(linkedCellsOffsets, offsets, offsets_size * sizeof(int)));
+}
 
 template class LJFunctorCudaWrapper<float>;
 template class LJFunctorCudaWrapper<double>;

@@ -46,12 +46,18 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   TraversalOption getTraversalType() override { return TraversalOption::verletClusterCellsTraversal; }
 
   bool isApplicable() override {
-    int nDevices = 0;
+    if (DataLayout == DataLayoutOption::cuda) {
+      int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
-    cudaGetDeviceCount(&nDevices);
+      cudaGetDeviceCount(&nDevices);
+      if (not _functor->getCudaWrapper()) return false;
 #endif
-    return nDevices > 0;
+      return nDevices > 0;
+    } else
+      return true;
   }
+
+  std::pair<DataLayoutOption, bool> getSignature() override { return std::make_pair(DataLayout, useNewton3); }
 
   void rebuild(const std::array<unsigned long, 3> &dims, unsigned int clusterSize, std::vector<ParticleCell> &cells,
                std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes,
@@ -126,10 +132,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         return;
       }
       case DataLayoutOption::cuda: {
-        size_t size = 0;
-        for (auto &cell : cells) {
-          _functor->SoALoader(cell, _storageCell._particleSoABuffer, size);
-          size += cell.numParticles();
+        _storageCell._particleSoABuffer.resizeArrays(cells.size() * _clusterSize);
+        for (size_t i = 0; i < cells.size(); ++i) {
+          _functor->SoALoader(cells[i], _storageCell._particleSoABuffer, i * _clusterSize);
         }
 
         _functor->deviceSoALoader(_storageCell._particleSoABuffer, _storageCell._particleSoABufferDevice);
@@ -147,6 +152,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         return;
       }
       case DataLayoutOption::soa: {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for
+#endif
         for (size_t i = 0; i < cells.size(); ++i) {
           _functor->SoAExtractor(cells[i], cells[i]._particleSoABuffer);
         }
@@ -154,15 +162,15 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         return;
       }
       case DataLayoutOption::cuda: {
-        // Extract
         _functor->deviceSoAExtractor(_storageCell._particleSoABuffer, _storageCell._particleSoABufferDevice);
 #ifdef AUTOPAS_CUDA
         utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 #endif
-        size_t size = 0;
-        for (auto &cell : cells) {
-          _functor->SoAExtractor(cell, _storageCell._particleSoABuffer, size);
-          size += cell.numParticles();
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for
+#endif
+        for (size_t i = 0; i < cells.size(); ++i) {
+          _functor->SoAExtractor(cells[i], _storageCell._particleSoABuffer, i * _clusterSize);
         }
         return;
       }
@@ -234,7 +242,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   size_t _neighborMatrixDim;
   utils::CudaDeviceVector<unsigned int> _neighborMatrix;
 
-  size_t _clusterSize;
+  unsigned int _clusterSize;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

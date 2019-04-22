@@ -35,13 +35,11 @@ class CudaWrapperInterface {
 
   virtual void LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1, unsigned int reqThreads,
                                                unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
-                                               size_t* cellSizes, unsigned int offsets_size, int* offsets,
-                                               cudaStream_t stream) = 0;
+                                               size_t* cellSizes, cudaStream_t stream) = 0;
 
   virtual void LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1, unsigned int reqThreads,
                                              unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
-                                             size_t* cellSizes, unsigned int offsets_size, int* offsets,
-                                             cudaStream_t stream) = 0;
+                                             size_t* cellSizes, cudaStream_t stream) = 0;
 
   virtual void CellVerletTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int ncells,
                                               unsigned int clusterSize, unsigned int others_size,
@@ -50,6 +48,8 @@ class CudaWrapperInterface {
   virtual void CellVerletTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int ncells,
                                             unsigned int clusterSize, unsigned int others_size, unsigned int* other_ids,
                                             cudaStream_t stream) = 0;
+
+  virtual void loadLinkedCellsOffsets(unsigned int offsets_size, int* offsets) = 0;
 };
 
 }  // namespace autopas

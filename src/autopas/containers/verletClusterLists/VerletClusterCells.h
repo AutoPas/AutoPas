@@ -96,6 +96,10 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     if (needsRebuild()) {
       this->rebuild();
       traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, _cutoff + _skin);
+      _lastTraversalSig = traversalInterface->getSignature();
+    } else if (traversalInterface->getSignature() != _lastTraversalSig) {
+      traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, _cutoff + _skin);
+      _lastTraversalSig = traversalInterface->getSignature();
     }
 
     traversal->initTraversal(this->_cells);
@@ -226,19 +230,18 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     // get all particles and clear clusters
     std::vector<Particle> invalidParticles;
-    size_t i = 0;
-    for (i = 0; i < _firstHaloClusterId; ++i) {
+
+    for (size_t i = 0; i < _firstHaloClusterId; ++i) {
       for (auto& p : this->_cells[i]._particles) {
         invalidParticles.push_back(p);
       }
       this->_cells[i].clear();
     }
-
-    for (; i < this->_cells.size(); ++i) {
-      for (auto& p : this->_cells[i]._particles) {
+    for (size_t j = _firstHaloClusterId; j < this->_cells.size(); ++j) {
+      for (auto& p : this->_cells[j]._particles) {
         _haloInsertQueue.push_back(p);
       }
-      this->_cells[i].clear();
+      this->_cells[j].clear();
     }
 
     // estimate particle density
@@ -262,19 +265,24 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     _dummyStarts.clear();
 
     // put particles into grid cells
-    for (auto& particle : invalidParticles) {
-      int index = (int)((particle.getR()[0] - _boxMin[0]) * _gridSideLengthReciprocal) +
-                  (int)((particle.getR()[1] - _boxMin[1]) * _gridSideLengthReciprocal) * _cellsPerDim[0];
-      this->_cells[index].addParticle(particle);
+    for (size_t i = 0; i < invalidParticles.size(); ++i) {
+      int index = (int)((invalidParticles[i].getR()[0] - _boxMin[0]) * _gridSideLengthReciprocal) +
+                  (int)((invalidParticles[i].getR()[1] - _boxMin[1]) * _gridSideLengthReciprocal) * _cellsPerDim[0];
+      this->_cells[index].addParticle(invalidParticles[i]);
     }
 
     size_t numOwnClusters = 0;
     size_t numHaloClusters = 0;
 
     // sort by last dimension
+
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       this->_cells[i].sortByDim(2);
-      numOwnClusters += ((this->_cells[i].numParticles()) / _clusterSize) + 1;
+      size_t numParticles = this->_cells[i].numParticles();
+      if (numParticles)
+        numOwnClusters += ((numParticles + _clusterSize - 1) / _clusterSize);
+      else
+        ++numOwnClusters;
     }
 
     _firstHaloClusterId = numOwnClusters;
@@ -291,7 +299,11 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     // sort halo cells
     for (size_t i = 0; i < sizeHaloGrid; ++i) {
       this->_cells[_firstHaloClusterId + i].sortByDim(2);
-      numHaloClusters += ((this->_cells[_firstHaloClusterId + i].numParticles()) / _clusterSize) + 1;
+      size_t numParticles = this->_cells[_firstHaloClusterId + i].numParticles();
+      if (numParticles)
+        numHaloClusters += ((numParticles + _clusterSize - 1) / _clusterSize);
+      else
+        ++numHaloClusters;
     }
 
     this->_cells.resize(numOwnClusters + numHaloClusters);
@@ -407,6 +419,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
   // specifies if the neighbor list is currently valid
   bool _isValid;
+
+  /// Signature of the last Traversal to trigger rebuild when a new one is used
+  std::pair<DataLayoutOption, bool> _lastTraversalSig;
 
   class VerletClusterCellsCellBorderAndFlagManager : public CellBorderAndFlagManager {
    public:

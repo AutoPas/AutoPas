@@ -75,13 +75,11 @@ int main(int argc, char** argv) {
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
-  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 101, 256);
-  VerletClusterCells<MyMolecule> vcc2(boxMin, boxMax, cutoff, 0.1, 101, 1024);
+  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 210, 64);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.3, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.3, numParticles);
   fillSpaceWithGrid<>(vcc, boxMin, boxMax, 0.3, numParticles);
-  fillSpaceWithGrid<>(vcc2, boxMin, boxMax, 0.3, numParticles);
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
 
@@ -108,12 +106,12 @@ int main(int argc, char** argv) {
 
   // build<LinkedCells<MyMolecule, FullParticleCell<MyMolecule>>, Func, DataLayoutOption::soa, true>(lc, &func,
   // TraversalOption::c18);
-  run(lc, &traversalc08N3, &func);
+  // run(lc, &traversalc08N3, &func);
   run(lc, &traversalLCcuda, &func);
   run(lc, &traversalLCcudaN3, &func);
 
   run(vcc, &traversalvcccudaNoN3, &func);
-  run(vcc2, &traversalvcccudaNoN3, &func);
+  run(vcc, &traversalvcccudaN3, &func);
 
   return EXIT_SUCCESS;
 }

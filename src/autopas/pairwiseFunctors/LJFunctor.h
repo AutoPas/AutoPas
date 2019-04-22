@@ -935,10 +935,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    floatPrecision __remainingTo64[4];
+    floatPrecision __remainingTo64[(64 - 4 * sizeof(floatPrecision)) / sizeof(floatPrecision)];
   };
   // make sure of the size of AoSThreadData
-  // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
+  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   floatPrecision _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 

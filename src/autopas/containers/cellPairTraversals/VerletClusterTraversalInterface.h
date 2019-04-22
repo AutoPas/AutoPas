@@ -41,6 +41,12 @@ class VerletClusterTraversalInterface {
    * @param neighborCellIds Stores the neighbor ids for each cell in cells
    */
   virtual void traverseCellPairs(std::vector<ParticleCell> &cells) = 0;
+
+  /**
+   * This function returns the Data Layout Option and use of newton3 to identify a Traversal object
+   * @return pair with DataLayoutOption and use of newton3
+   */
+  virtual std::pair<DataLayoutOption, bool> getSignature() = 0;
 };
 
 }  // namespace autopas

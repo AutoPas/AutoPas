@@ -118,13 +118,11 @@ class LJFunctorCudaWrapper : public CudaWrapperInterface<floatType> {
 
   void LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int reqThreads,
                                        unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
-                                       size_t* cellSizes, unsigned int offsets_size, int* offsets,
-                                       cudaStream_t stream) override;
+                                       size_t* cellSizes, cudaStream_t stream) override;
 
   void LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int reqThreads,
                                      unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
-                                     size_t* cellSizes, unsigned int offsets_size, int* offsets,
-                                     cudaStream_t stream) override;
+                                     size_t* cellSizes, cudaStream_t stream) override;
 
   void CellVerletTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int ncells,
                                       unsigned int clusterSize, unsigned int others_size, unsigned int* other_ids,
@@ -132,6 +130,8 @@ class LJFunctorCudaWrapper : public CudaWrapperInterface<floatType> {
 
   void CellVerletTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int ncells, unsigned int clusterSize,
                                     unsigned int others_size, unsigned int* other_ids, cudaStream_t stream) override;
+
+  void loadLinkedCellsOffsets(unsigned int offsets_size, int* offsets) override;
 
  private:
   int numRequiredBlocks(int n) { return ((n - 1) / _num_threads) + 1; }
