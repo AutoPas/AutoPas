@@ -8,6 +8,11 @@
 
 namespace autopas {
 
-double MoleculeLJ::EPSILON;
-double MoleculeLJ::SIGMA;
+template <typename floatType>
+floatType MoleculeLJBase<floatType>::EPSILON;
+template <typename floatType>
+floatType MoleculeLJBase<floatType>::SIGMA;
+
+template class MoleculeLJBase<float>;
+template class MoleculeLJBase<double>;
 }  // namespace autopas
