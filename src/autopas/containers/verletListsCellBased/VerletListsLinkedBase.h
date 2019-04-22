@@ -23,6 +23,7 @@ namespace autopas {
 template <class Particle, class LinkedParticleCell, class LinkedSoAArraysType = typename Particle::SoAArraysType>
 class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCell<Particle>> {
   typedef FullParticleCell<Particle> ParticleCell;
+  using floatType = typename Particle::ParticleFloatingPointType;
 
  public:
   /**
@@ -39,8 +40,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param applicableTraversals all applicable traversals
    */
-  VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                        const double skin, const unsigned int rebuildFrequency,
+  VerletListsLinkedBase(const std::array<floatType, 3> boxMin, const std::array<floatType, 3> boxMax,
+                        const floatType cutoff, const floatType skin, const unsigned int rebuildFrequency,
                         const std::vector<TraversalOption>& applicableTraversals)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
         _linkedCells(boxMin, boxMax, cutoff + skin),
@@ -110,8 +111,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
 #pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getCells().size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin{0., 0., 0.};
-      std::array<double, 3> boxmax{0., 0., 0.};
+      std::array<floatType, 3> boxmin{0., 0., 0.};
+      std::array<floatType, 3> boxmax{0., 0., 0.};
       _linkedCells.getCellBlock().getCellBoundingBox(cellIndex1d, boxmin, boxmax);
       boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
       boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
@@ -170,8 +171,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<floatType, 3> lowerCorner,
+                                                      std::array<floatType, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, true);
@@ -208,7 +209,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   LinkedCells<Particle, LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
 
   /// skin radius
-  double _skin;
+  floatType _skin;
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;

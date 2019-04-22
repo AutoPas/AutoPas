@@ -18,6 +18,8 @@ namespace autopas {
  */
 template <class Particle>
 class VerletListsCellsHelpers {
+  using floatType = typename Particle::ParticleFloatingPointType;
+
  public:
   /// Verlet list storage
   typedef std::vector<std::vector<std::pair<Particle*, std::vector<Particle*>>>> VerletList_storage_type;
@@ -40,14 +42,14 @@ class VerletListsCellsHelpers {
      * @param cutoffskin
      */
     VerletListGeneratorFunctor(VerletList_storage_type& verletLists,
-                               std::unordered_map<Particle*, std::pair<size_t, size_t>>& cellMap, double cutoffskin)
+                               std::unordered_map<Particle*, std::pair<size_t, size_t>>& cellMap, floatType cutoffskin)
         : _verletLists(verletLists), _cellMap(cellMap), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
 
     void AoSFunctor(Particle& i, Particle& j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
-      double distsquare = ArrayMath::dot(dist, dist);
+      floatType distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
@@ -63,7 +65,7 @@ class VerletListsCellsHelpers {
    private:
     VerletList_storage_type& _verletLists;
     std::unordered_map<Particle*, std::pair<size_t, size_t>>& _cellMap;
-    double _cutoffskinsquared;
+    floatType _cutoffskinsquared;
   };
 
 };  // class VerletListsCellsHelpers

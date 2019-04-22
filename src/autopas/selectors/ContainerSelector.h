@@ -31,6 +31,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class ContainerSelector {
+  using floatType = typename Particle::ParticleFloatingPointType;
+
  public:
   /**
    * Constructor for the ContainerSelecor class.
@@ -40,8 +42,8 @@ class ContainerSelector {
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
-  ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                    double verletSkin, unsigned int verletRebuildFrequency)
+  ContainerSelector(const std::array<floatType, 3> &boxMin, const std::array<floatType, 3> &boxMax, floatType cutoff,
+                    floatType verletSkin, unsigned int verletRebuildFrequency)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
@@ -70,9 +72,9 @@ class ContainerSelector {
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
       ContainerOption containerChoice);
 
-  std::array<double, 3> _boxMin, _boxMax;
-  double _cutoff;
-  double _verletSkin;
+  std::array<floatType, 3> _boxMin, _boxMax;
+  floatType _cutoff;
+  floatType _verletSkin;
   unsigned int _verletRebuildFrequency;
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
 };

@@ -45,7 +45,7 @@ void printMolecules(AutoPasTemplate &autopas) {
  */
 template <class Particle>
 void initContainerGrid(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, size_t particlesPerDim,
-                       double particelSpacing) {
+                       typename Particle::ParticleFloatingPointType particelSpacing) {
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.});
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
@@ -62,8 +62,10 @@ void initContainerGrid(autopas::AutoPas<Particle, FullParticleCell<Particle>> &a
 }
 
 template <class Particle>
-void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, double boxLength,
-                        size_t numParticles, double distributionMean, double distributionStdDev) {
+void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas,
+                        typename Particle::ParticleFloatingPointType boxLength, size_t numParticles,
+                        typename Particle::ParticleFloatingPointType distributionMean,
+                        typename Particle::ParticleFloatingPointType distributionStdDev) {
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.});
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMax({boxLength, boxLength, boxLength});
 
@@ -77,8 +79,8 @@ void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &
 }
 
 template <class Particle>
-void initContainerUniform(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, double boxLength,
-                          size_t numParticles) {
+void initContainerUniform(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas,
+                          typename Particle::ParticleFloatingPointType boxLength, size_t numParticles) {
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.});
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMax({boxLength, boxLength, boxLength});
 

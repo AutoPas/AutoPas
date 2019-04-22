@@ -42,6 +42,8 @@ enum TuningStrategy {
  */
 template <class Particle, class ParticleCell>
 class AutoTuner {
+  using floatType = typename Particle::ParticleFloatingPointType;
+
  public:
   /**
    * Constructor for the AutoTuner that generates all configurations from the given options.
@@ -58,7 +60,7 @@ class AutoTuner {
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
-  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
+  AutoTuner(std::array<floatType, 3> boxMin, std::array<floatType, 3> boxMax, floatType cutoff, floatType verletSkin,
             unsigned int verletRebuildFrequency, const std::vector<ContainerOption> &allowedContainerOptions,
             std::vector<TraversalOption> allowedTraversalOptions,
             const std::vector<DataLayoutOption> &allowedDataLayoutOptions,
@@ -123,7 +125,7 @@ class AutoTuner {
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
-  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
+  AutoTuner(std::array<floatType, 3> boxMin, std::array<floatType, 3> boxMax, floatType cutoff, floatType verletSkin,
             unsigned int verletRebuildFrequency, const std::set<Configuration> &allowedConfigurations,
             SelectorStrategy selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),

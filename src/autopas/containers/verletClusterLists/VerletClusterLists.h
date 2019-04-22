@@ -23,6 +23,7 @@ namespace autopas {
  */
 template <class Particle>
 class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<Particle>> {
+  using floatType = typename Particle::ParticleFloatingPointType;
   /**
    * the index type to access the particle cells
    */
@@ -44,8 +45,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param clusterSize size of clusters
    */
-  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
-                     double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
+  VerletClusterLists(const std::array<floatType, 3> boxMin, const std::array<floatType, 3> boxMax, floatType cutoff,
+                     floatType skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
                                                                 allVCLApplicableTraversals()),
         _clusterSize(clusterSize),
@@ -154,8 +155,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(&this->_clusters));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<floatType, 3> lowerCorner,
+                                                      std::array<floatType, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     // @todo implement this if bounding boxes are here
@@ -180,8 +181,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     // get the dimensions and volumes of the box
-    double boxSize[3]{};
-    double volume = 1.0;
+    floatType boxSize[3]{};
+    floatType volume = 1.0;
     for (int d = 0; d < 3; d++) {
       boxSize[d] = _boxMax[d] - _boxMin[d];
       volume *= boxSize[d];
@@ -189,7 +190,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     if (invalidParticles.size() > 0) {
       // estimate particle density
-      double density = invalidParticles.size() / volume;
+      floatType density = invalidParticles.size() / volume;
 
       // guess optimal grid side length
       _gridSideLength = std::cbrt(_clusterSize / density);
@@ -266,7 +267,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         else
           iNeighbors.resize(iSize);
         for (int yj = minY; yj <= maxY; yj++) {
-          double distY = std::max(0, std::abs(yi - yj) - 1) * _gridSideLength;
+          floatType distY = std::max(0, std::abs(yi - yj) - 1) * _gridSideLength;
           for (int xj = minX; xj <= maxX; xj++) {
             auto& jGrid = _clusters[index1D(xj, yj)];
 
@@ -275,8 +276,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
             index_t jSize = jGrid.numParticles() / _clusterSize;
 
             // calculate distance in xy-plane and skip if already longer than cutoff
-            double distX = std::max(0, std::abs(xi - xj) - 1) * _gridSideLength;
-            double distXYsqr = distX * distX + distY * distY;
+            floatType distX = std::max(0, std::abs(xi - xj) - 1) * _gridSideLength;
+            floatType distXYsqr = distX * distX + distY * distY;
             if (distXYsqr <= _cutoffSqr) {
               for (index_t zi = 0; zi < iSize; zi++) {
                 // bbox in z of iGrid
@@ -446,7 +447,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param pos the position of the particle
    * @return the index of the grid
    */
-  inline index_t get1DIndexOfPosition(const std::array<double, 3>& pos) const {
+  inline index_t get1DIndexOfPosition(const std::array<floatType, 3>& pos) const {
     std::array<index_t, 2> cellIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
@@ -482,22 +483,22 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   std::vector<FullParticleCell<Particle>> _clusters;
   int _clusterSize;
 
-  std::array<double, 3> _boxMin;
-  std::array<double, 3> _boxMax;
+  std::array<floatType, 3> _boxMin;
+  std::array<floatType, 3> _boxMax;
 
   // side length of xy-grid and reciprocal
-  double _gridSideLength;
-  double _gridSideLengthReciprocal;
+  floatType _gridSideLength;
+  floatType _gridSideLengthReciprocal;
 
   // dimensions of grid
   std::array<index_t, 3> _cellsPerDim;
 
   /// skin radius
-  double _skin;
+  floatType _skin;
 
   /// cutoff
-  double _cutoff;
-  double _cutoffSqr;
+  floatType _cutoff;
+  floatType _cutoffSqr;
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
