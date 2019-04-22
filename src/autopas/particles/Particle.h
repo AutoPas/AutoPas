@@ -21,6 +21,7 @@ namespace autopas {
  * basic Particle class
  * This class can be used to build your own Particle class. However, you are
  * free to not use it as well.
+ * @tparam floating point type to be used within this particle
  */
 template <typename floatType>
 class ParticleBase {

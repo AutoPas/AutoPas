@@ -38,12 +38,14 @@ void printMolecules(AutoPasTemplate &autopas) {
  * built. It consists of %`FullParticleCells` and is filled with
  * `PrintableMolecules`. The particles are aligned on a cuboid grid.
  *
+ * @tparam Particle Type
  * @param autopas AutoPas object that should be initialized
  * @param particlesPerDim Number of desired particles per dimension.
  * @param particelSpacing Space between two particles along each axis of space.
  */
-void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                       size_t particlesPerDim, double particelSpacing) {
+template <class Particle>
+void initContainerGrid(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, size_t particlesPerDim,
+                       double particelSpacing) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
@@ -53,14 +55,15 @@ void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<Prin
 
   autopas.init();
 
-  PrintableMolecule dummyParticle;
+  Particle dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
                                    {particelSpacing, particelSpacing, particelSpacing},
                                    {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
 }
 
-void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                        double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
+template <class Particle>
+void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, double boxLength,
+                        size_t numParticles, double distributionMean, double distributionStdDev) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
@@ -69,12 +72,13 @@ void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<Pri
 
   autopas.init();
 
-  PrintableMolecule dummyParticle;
+  Particle dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
 
-void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                          double boxLength, size_t numParticles) {
+template <class Particle>
+void initContainerUniform(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, double boxLength,
+                          size_t numParticles) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
@@ -83,7 +87,7 @@ void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<P
 
   autopas.init();
 
-  PrintableMolecule dummyParticle;
+  Particle dummyParticle;
   RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
 }
 

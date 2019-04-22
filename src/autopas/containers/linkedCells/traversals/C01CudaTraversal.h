@@ -135,7 +135,8 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
     }
   }
 #if defined(AUTOPAS_CUDA)
-  _functor->getCudaWrapper()->loadLinkedCellsOffsets(_cellOffsets.size(), _cellOffsets.data());
+  if (_functor->getCudaWrapper())
+    _functor->getCudaWrapper()->loadLinkedCellsOffsets(_cellOffsets.size(), _cellOffsets.data());
   _nonHaloCells.copyHostToDevice(nonHaloCells.size(), nonHaloCells.data());
 #endif
 }
