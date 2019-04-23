@@ -56,7 +56,7 @@ class RandomGenerator {
                                 unsigned long numParticles = 100ul);
 
   /**
-   * fills halo of given container with n = numParticles particles
+   * Fills the halo of the given container with n = numParticles particles.
    * @tparam Container
    * @tparam Particle Type of particle to be generated
    * @param container
