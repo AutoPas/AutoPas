@@ -31,7 +31,7 @@ class GridGenerator {
                                 const std::array<double, 3>& offset = {.5, .5, .5});
 
   /**
-   * fills a autopas object with a cuboid mesh of particles
+   * Fills an autopas object with a cuboid mesh of particles.
    * @tparam Particle Type of particle to be generated
    * @tparam ParticleCell
    * @param autoPas

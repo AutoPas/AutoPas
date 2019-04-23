@@ -12,7 +12,7 @@
 class GaussianGenerator {
  public:
   /**
-   * fills a autopas object with gaussian distributed particles
+   * Fills an autopas object with Gaussian distributed particles.
    * @tparam Particle Type of particle to be generated
    * @tparam ParticleCell
    * @param autoPas
