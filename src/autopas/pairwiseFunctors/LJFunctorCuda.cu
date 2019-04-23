@@ -301,7 +301,6 @@ template <typename floatType>
 void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, cudaStream_t stream) {
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
 
-  std::cout << "Here" << std::endl;
   switch (_num_threads) {
     case 32:
       SoAFunctorNoN3<floatType, 32><<<numRequiredBlocks(cell1._size), 32, 0, stream>>>(cell1);
