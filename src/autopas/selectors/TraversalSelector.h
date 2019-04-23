@@ -72,6 +72,9 @@ template <class PairwiseFunctor, bool useSoA, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor) {
   switch (traversalType) {
+    case TraversalOption::directSumKokkosTraversal: {
+
+    }
     case TraversalOption::directSumTraversal: {
       return std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);
     }

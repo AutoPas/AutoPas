@@ -42,6 +42,7 @@ include(clang-tidy)
 include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
+include(kokkos)
 
 include(version.cmake)
 
