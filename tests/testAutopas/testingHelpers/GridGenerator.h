@@ -26,8 +26,10 @@ class GridGenerator {
   template <class Particle, class ParticleCell>
   static void fillWithParticles(std::vector<ParticleCell> &cells, std::array<size_t, 3> particlesPerDim,
                                 Particle &defaultParicle = autopas::Particle(),
-                                std::array<double, 3> spacing = std::array<double, 3>{1, 1, 1},
-                                std::array<double, 3> offset = std::array<double, 3>{.5, .5, .5});
+                                std::array<typename Particle::ParticleFloatingPointType, 3> spacing =
+                                    std::array<typename Particle::ParticleFloatingPointType, 3>{1, 1, 1},
+                                std::array<typename Particle::ParticleFloatingPointType, 3> offset =
+                                    std::array<typename Particle::ParticleFloatingPointType, 3>{.5, .5, .5});
 
   /**
    * fills a autopas object with a cuboid mesh of particles
@@ -42,14 +44,17 @@ class GridGenerator {
   template <class Particle, class ParticleCell>
   static void fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas,
                                 std::array<size_t, 3> particlesPerDim, Particle &defaultParticle = autopas::Particle(),
-                                std::array<double, 3> spacing = std::array<double, 3>{1, 1, 1},
-                                std::array<double, 3> offset = std::array<double, 3>{.5, .5, .5});
+                                std::array<typename Particle::ParticleFloatingPointType, 3> spacing =
+                                    std::array<typename Particle::ParticleFloatingPointType, 3>{1, 1, 1},
+                                std::array<typename Particle::ParticleFloatingPointType, 3> offset =
+                                    std::array<typename Particle::ParticleFloatingPointType, 3>{.5, .5, .5});
 };
 
 template <class Particle, class ParticleCell>
 void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, std::array<size_t, 3> particlesPerDim,
-                                      Particle &defaultParicle, std::array<double, 3> spacing,
-                                      std::array<double, 3> offset) {
+                                      Particle &defaultParicle,
+                                      std::array<typename Particle::ParticleFloatingPointType, 3> spacing,
+                                      std::array<typename Particle::ParticleFloatingPointType, 3> offset) {
   size_t id = 0;
   size_t cellId = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
@@ -67,7 +72,8 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, std::arr
 template <class Particle, class ParticleCell>
 void GridGenerator::fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas,
                                       std::array<size_t, 3> particlesPerDim, Particle &defaultParticle,
-                                      std::array<double, 3> spacing, std::array<double, 3> offset) {
+                                      std::array<typename Particle::ParticleFloatingPointType, 3> spacing,
+                                      std::array<typename Particle::ParticleFloatingPointType, 3> offset) {
   size_t id = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {

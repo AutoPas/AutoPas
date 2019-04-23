@@ -114,8 +114,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
       std::array<floatType, 3> boxmin{0., 0., 0.};
       std::array<floatType, 3> boxmax{0., 0., 0.};
       _linkedCells.getCellBlock().getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
-      boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
+      boxmin = ArrayMath::addScalar(boxmin, -_skin / (floatType)2.);
+      boxmax = ArrayMath::addScalar(boxmax, +_skin / (floatType)2.);
       for (auto iter = _linkedCells.getCells()[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update

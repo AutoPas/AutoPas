@@ -35,6 +35,7 @@ class VerletLists
   typedef FullParticleCell<Particle> ParticleCell;
   typedef typename VerletListHelpers<Particle>::SoAArraysType SoAArraysType;
   typedef typename VerletListHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
+  using floatPrecision = typename Particle::ParticleFloatingPointType;
 
  public:
   /**
@@ -59,8 +60,8 @@ class VerletLists
    * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param buildVerletListType specifies how the verlet list should be build, see BuildVerletListType
    */
-  VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const unsigned int rebuildFrequency = 1,
+  VerletLists(const std::array<floatPrecision, 3> boxMin, const std::array<floatPrecision, 3> boxMax,
+              const floatPrecision cutoff, const floatPrecision skin, const unsigned int rebuildFrequency = 1,
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
             boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals()),

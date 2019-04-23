@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
-  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 210, 64);
+  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 100, 64);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.3, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.3, numParticles);
