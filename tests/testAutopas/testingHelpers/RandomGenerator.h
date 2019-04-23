@@ -12,7 +12,7 @@
 class RandomGenerator {
  private:
   /**
-   * returns a random number between fMin and fMax
+   * Returns a random number between fMin and fMax.
    * @param fMin min. number (inclusive)
    * @param fMax max. number (inclusive)
    * @return double
@@ -21,7 +21,7 @@ class RandomGenerator {
 
  public:
   /**
-   * returns a random position in the space between boxMin and boxMax
+   * Returns a random position in the space between boxMin and boxMax.
    * @param boxMin min. position
    * @param boxMax max. position
    * @return std::array<double, 3>
@@ -29,7 +29,7 @@ class RandomGenerator {
   static std::array<double, 3> randomPosition(const std::array<double, 3>& boxMin, const std::array<double, 3>& boxMax);
 
   /**
-   * fills the given container with random distributed particles
+   * Fills the given container with randomly distributed particles.
    * @tparam Container
    * @tparam Particle Type of particle to be generated
    * @param container
@@ -41,7 +41,7 @@ class RandomGenerator {
                                 unsigned long numParticles = 100ul);
 
   /**
-   * fills the given container with random distributed particles between boxMin and boxMax
+   * Fills the given container with randomly distributed particles between boxMin and boxMax.
    * @tparam Container
    * @tparam Particle Type of particle to be generated
    * @param container
