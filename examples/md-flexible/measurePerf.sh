@@ -81,13 +81,18 @@ do
             # loop for different verlet rebuild frequencies and skins
             for iVL in `seq 0 $(( ${#VLRebuild[@]} - 1 ))` ;
             do
-                for cellSize in 1.0  1.25  1.5  1.75  2.0  2.5  3.0;
+                for cellSize in 1.0  1.5  2.0;
                 do
-                    separate "Cell size ${cellSize}"
-
                     configPrinted=false
 
-                    filename="runtimes_${container}_${dataLayout}_N3${newton3Opt}_cs${cellSize}"
+                    filename="runtimes_${container}_${dataLayout}_N3${newton3Opt}"
+
+                    # print current cell size only if relevant 
+                    if [[ ${container} =~ 'LinkedCells' ]];
+                    then
+                        separate "Cell size ${cellSize}"
+                        filename="${filename}_cs${cellSize}"
+                    fi
 
                     # since this loop only has one iteration for non verlet container only print for verlet
                     if [[ ${container} =~ 'Verlet' ]];

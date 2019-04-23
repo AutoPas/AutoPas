@@ -24,10 +24,10 @@ TEST_F(CellBlock3DTest, test1x1x1) {
   testIndex(_cells_1x1x1, start, dr, numParts);
 }
 
-TEST_F(CellBlock3DTest, test1x1x1_cs) {
+TEST_F(CellBlock3DTest, test1x1x1_cs2) {
   std::array<double, 3> start = {-5., -5., -5.}, dr = {10.0, 10.0, 10.0};
   std::array<int, 3> numParts = {3, 3, 3};
-  testIndex(_cells_1x1x1_cs, start, dr, numParts);
+  testIndex(_cells_1x1x1_cs2, start, dr, numParts);
 }
 
 TEST_F(CellBlock3DTest, test2x2x2) {
@@ -36,10 +36,10 @@ TEST_F(CellBlock3DTest, test2x2x2) {
   testIndex(_cells_2x2x2, start, dr, numParts);
 }
 
-TEST_F(CellBlock3DTest, test2x2x2_cs) {
+TEST_F(CellBlock3DTest, test2x2x2_cs05) {
   std::array<double, 3> start = {-2.5, -2.5, -2.5}, dr = {5.0, 5.0, 5.0};
   std::array<int, 3> numParts = {4, 4, 4};
-  testIndex(_cells_2x2x2_cs, start, dr, numParts);
+  testIndex(_cells_2x2x2_cs05, start, dr, numParts);
 }
 
 TEST_F(CellBlock3DTest, test3x3x3) {
@@ -101,11 +101,11 @@ void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::Molecu
 TEST_F(CellBlock3DTest, testBoundaries) {
   testBoundary(_cells_1x1x1, {0., 0., 0.}, {10., 10., 10.});
 
-  testBoundary(_cells_1x1x1_cs, {0., 0., 0.}, {10., 10., 10.});
+  testBoundary(_cells_1x1x1_cs2, {0., 0., 0.}, {10., 10., 10.});
 
   testBoundary(_cells_2x2x2, {0., 0., 0.}, {10., 10., 10.});
 
-  testBoundary(_cells_2x2x2_cs, {0., 0., 0.}, {10., 10., 10.});
+  testBoundary(_cells_2x2x2_cs05, {0., 0., 0.}, {10., 10., 10.});
 
   testBoundary(_cells_3x3x3, {0., 0., 0.}, {10., 10., 10.});
 
