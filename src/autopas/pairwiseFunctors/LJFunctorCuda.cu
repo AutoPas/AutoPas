@@ -351,7 +351,6 @@ template <typename floatType>
 void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, cudaStream_t stream) {
   LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
 
-  std::cout << "Here" << std::endl;
   switch (_num_threads) {
     CREATESWITCHCASES(numRequiredBlocks(cell1._size), SoAFunctorNoN3, (cell1));
     default:
@@ -579,7 +578,7 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalNoN3Wrapper(FunctorCuda
       autopas::utils::ExceptionHandler::exception(
           "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
           "Requested: {}",
-          _num_threads);
+          clusterSize);
       break;
   }
   autopas::utils::CudaExceptionHandler::checkLastCudaCall();
@@ -656,7 +655,7 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalN3Wrapper(FunctorCudaSo
       autopas::utils::ExceptionHandler::exception(
           "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
           "Requested: {}",
-          _num_threads);
+          clusterSize);
       break;
   }
   autopas::utils::CudaExceptionHandler::checkLastCudaCall();

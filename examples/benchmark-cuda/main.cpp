@@ -62,7 +62,7 @@ void run(Container& pc, Traversal* t, Functor* f) {
   }
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-  cout << pc.getContainerType() << ", " << setw(2) << t->getTraversalType() << ", " << setw(12) << duration << "ms"
+  cout << pc.getContainerType() << ", " << setw(2) << t->getTraversalType() << ", " << setw(12) << duration << "micros"
        << endl;
 }
 
@@ -81,15 +81,15 @@ int main(int argc, char** argv) {
     numSamples = stoi(argv[1]);
   }
 
-  std::array<precision, 3> boxMin({0., 0., 0.}), boxMax({12., 12., 12.});
+  std::array<precision, 3> boxMin({0., 0., 0.}), boxMax({30., 30., 30.});
   precision cutoff = 3.0;
   precision epsilon = 2.0;
-  precision sigma = 0.4;
-  precision gridSize = 0.3;
+  precision sigma = 0.8;
+  precision gridSize = 0.7;
 
   DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
   LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
-  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 1000, 64);
+  VerletClusterCells<MyMolecule> vcc(boxMin, boxMax, cutoff, 0.1, 1000, 128);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, gridSize);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, gridSize);

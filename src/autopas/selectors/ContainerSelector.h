@@ -41,14 +41,17 @@ class ContainerSelector {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * @param verletClusterSize Specifies how many particles are in one cluster for cluster containers.
    */
   ContainerSelector(const std::array<floatType, 3> &boxMin, const std::array<floatType, 3> &boxMax, floatType cutoff,
-                    floatType verletSkin, unsigned int verletRebuildFrequency)
+                    floatType verletSkin, unsigned int verletRebuildFrequency, unsigned int verletClusterSize)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
         _verletSkin(verletSkin),
         _verletRebuildFrequency(verletRebuildFrequency),
+        _verletClusterSize(verletClusterSize),
+
         _currentContainer(nullptr) {}
 
   /**
@@ -76,6 +79,8 @@ class ContainerSelector {
   floatType _cutoff;
   floatType _verletSkin;
   unsigned int _verletRebuildFrequency;
+  unsigned int _verletClusterSize;
+
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
 };
 
@@ -113,9 +118,8 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
     }
     case verletClusterCells: {
       // @todo determine verletSkin and verletRebuildFrequency and cluster size (multiple of 32) via tuning
-      int clusterSize = 32;
       container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin,
-                                                                 _verletRebuildFrequency, clusterSize);
+                                                                 _verletRebuildFrequency, _verletClusterSize);
       break;
     }
     default: {

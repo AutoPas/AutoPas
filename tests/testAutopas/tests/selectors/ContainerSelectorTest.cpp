@@ -12,9 +12,10 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   const double cutoff = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
+  const unsigned int verletClusterSize = 32;
 
   autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, verletSkin,
-                                                                 verletRebuildFrequency);
+                                                                 verletRebuildFrequency, verletClusterSize);
 
   // expect an exception if nothing is selected yet
   EXPECT_THROW((containerSelector.getCurrentContainer()), autopas::utils::ExceptionHandler::AutoPasException);

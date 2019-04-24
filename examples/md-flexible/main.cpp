@@ -154,7 +154,7 @@ long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
 /**
  * Thios function runs the tests with the requested floating point ytpe
  */
-template <typename floatType>
+template <typename floatType, class FunctorChoice>
 int run(MDFlexParser &parser) {
   typedef PrintableMoleculeBase<floatType> PrintableMolecule;
 
@@ -179,6 +179,7 @@ int run(MDFlexParser &parser) {
   auto tuningInterval(parser.getTuningInterval());
   auto tuningSamples(parser.getTuningSamples());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
+  auto verletClusterSize(parser.getVerletClusterSize());
   auto verletSkinRadius(parser.getVerletSkinRadius());
   auto vtkFilename(parser.getWriteVTK());
 
@@ -213,6 +214,7 @@ int run(MDFlexParser &parser) {
   autopas.setAllowedTraversals(traversalOptions);
   autopas.setAllowedDataLayouts(dataLayoutOptions);
   autopas.setAllowedNewton3Options(newton3Options);
+  autopas.setVerletClusterSize(verletClusterSize);
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
@@ -262,22 +264,8 @@ int run(MDFlexParser &parser) {
   unsigned long flopsPerKernelCall = 0;
   cout << "Starting force calculation... " << endl;
 
-  switch (functorChoice) {
-    case MDFlexParser::FunctorOption::lj12_6: {
-      durationApply =
-          calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff, numIterations);
-      flopsPerKernelCall =
-          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-      break;
-    }
-    case MDFlexParser::FunctorOption::lj12_6_AVX: {
-      durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff,
-                                                                                                      numIterations);
-      flopsPerKernelCall =
-          LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-      break;
-    }
-  }
+  durationApply = calculate<FunctorChoice>(autopas, cutoff, numIterations);
+  flopsPerKernelCall = FunctorChoice::getNumFlopsPerKernelCall();
 
   stopTotal = std::chrono::high_resolution_clock::now();
   cout << "Force calculation done!" << endl;
@@ -330,5 +318,27 @@ int main(int argc, char **argv) {
   if (not parser.parseInput(argc, argv)) {
     exit(-1);
   }
-  return run<double>(parser);
+  switch (parser.getPrecisionOption()) {
+    case MDFlexParser::PrecisionOption::FP64:
+      switch (parser.getFunctorOption()) {
+        case MDFlexParser::FunctorOption::lj12_6: {
+          return run<double, autopas::LJFunctor<PrintableMoleculeBase<double>,
+                                                FullParticleCell<PrintableMoleculeBase<double>>>>(parser);
+        }
+        case MDFlexParser::FunctorOption::lj12_6_AVX: {
+          return run<double,
+                     LJFunctorAVX<PrintableMoleculeBase<double>, FullParticleCell<PrintableMoleculeBase<double>>>>(
+              parser);
+        }
+      }
+      break;
+    case MDFlexParser::PrecisionOption::FP32: {
+      if (parser.getFunctorOption() == MDFlexParser::FunctorOption::lj12_6_AVX) {
+        cout << "lj12_6_AVX has no FP32 version" << endl;
+        return EXIT_FAILURE;
+      }
+      return run<float, LJFunctor<PrintableMoleculeBase<float>, FullParticleCell<PrintableMoleculeBase<float>>>>(
+          parser);
+    } break;
+  }
 }

@@ -33,6 +33,7 @@ class Newton3OnOffTest : public AutoPasTestBase,
   double getCutoff() const { return 1.0; }
   double getVerletSkin() const { return 0.0; }
   unsigned int getVerletRebuildFrequency() const { return 1; }
+  unsigned int getClusterSize() const { return 64; }
 
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                          autopas::DataLayoutOption dataLayout);

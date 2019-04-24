@@ -61,14 +61,15 @@ class AutoTuner {
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<floatType, 3> boxMin, std::array<floatType, 3> boxMax, floatType cutoff, floatType verletSkin,
-            unsigned int verletRebuildFrequency, const std::vector<ContainerOption> &allowedContainerOptions,
+            unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
+            const std::vector<ContainerOption> &allowedContainerOptions,
             std::vector<TraversalOption> allowedTraversalOptions,
             const std::vector<DataLayoutOption> &allowedDataLayoutOptions,
             const std::vector<Newton3Option> &allowedNewton3Options, SelectorStrategy selectorStrategy,
             unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
-        _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency),
+        _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, verletClusterSize),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
         _selectorStrategy(selectorStrategy),
@@ -126,11 +127,12 @@ class AutoTuner {
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<floatType, 3> boxMin, std::array<floatType, 3> boxMax, floatType cutoff, floatType verletSkin,
-            unsigned int verletRebuildFrequency, const std::set<Configuration> &allowedConfigurations,
-            SelectorStrategy selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+            unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
+            const std::set<Configuration> &allowedConfigurations, SelectorStrategy selectorStrategy,
+            unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
-        _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency),
+        _containerSelector(boxMin, boxMax, cutoff, verletSkin, verletRebuildFrequency, verletClusterSize),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
         _selectorStrategy(selectorStrategy),

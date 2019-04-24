@@ -32,6 +32,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"log-level", required_argument, nullptr, 'l'},
                                          {"log-file", required_argument, nullptr, 'L'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
+                                         {"verlet-cluster-size", required_argument, nullptr, 'q'},
+                                         {"precision", required_argument, nullptr, 'p'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk", required_argument, nullptr, 'w'},
                                          {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
@@ -112,6 +114,18 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         } else {
           cerr << "Unknown generator: " << strArg << endl;
           cerr << "Please use 'Grid' or 'Gaussian'" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'p': {
+        if (strArg.find("float") != string::npos) {
+          precisionOption = PrecisionOption::FP32;
+        } else if (strArg.find("double") != string::npos) {
+          precisionOption = PrecisionOption::FP64;
+        } else {
+          cerr << "Unknown precision: " << strArg << endl;
+          cerr << "Please use 'float' or 'double'" << endl;
           displayHelp = true;
         }
         break;
@@ -260,6 +274,15 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           verletRebuildFrequency = (unsigned int)stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'q': {
+        try {
+          verletClusterSize = (unsigned int)stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing verlet-cluster-size: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -428,9 +451,13 @@ const vector<autopas::TraversalOption> &MDFlexParser::getTraversalOptions() cons
 
 unsigned int MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
+unsigned int MDFlexParser::getVerletClusterSize() const { return verletClusterSize; };
+
 double MDFlexParser::getVerletSkinRadius() const { return verletSkinRadius; }
 
 MDFlexParser::GeneratorOption MDFlexParser::getGeneratorOption() const { return generatorOption; }
+
+MDFlexParser::PrecisionOption MDFlexParser::getPrecisionOption() const { return precisionOption; }
 
 double MDFlexParser::getDistributionMean() const { return distributionMean; }
 
