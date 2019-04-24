@@ -208,7 +208,7 @@ inline std::vector<autopas::Newton3Option> parseNewton3Options(const std::string
  * Converts a string of options to a vector of enums. The options are expected to be lower case.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
- * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced
+ * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced, kokkos-directSum
  *
  * @param traversalOptionsString String containing traversal options.
  * @param ignoreUnknownOptions If set to false, a 'autopas::TraversalOption(-1)' will be inserted in the return vector
@@ -227,8 +227,7 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
       if(word.find("dir") != std::string::npos){
         traversalOptions.emplace_back(autopas::TraversalOption::directSumKokkosTraversal);
       }
-    }
-    if (word.find("01") != std::string::npos) {
+    }else if (word.find("01") != std::string::npos) {
       if (word.find('v') != std::string::npos)
         traversalOptions.emplace_back(autopas::TraversalOption::c01Verlet);
       else

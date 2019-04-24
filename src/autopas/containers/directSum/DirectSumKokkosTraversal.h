@@ -6,16 +6,11 @@
 
 #pragma once
 
-/*
-#ifndef AUTOPAS_DIRECTSUMKOKKOSTRAVERSAL_H
-#define AUTOPAS_DIRECTSUMKOKKOSTRAVERSAL_H
 
-#endif //AUTOPAS_DIRECTSUMKOKKOSTRAVERSAL_H
-*/
 #include <vector>
-#include <autopas/cells/ParticleCell.h>
+#include "DirectSumTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "DirectSumTraversal.h"
+#include "autopas/pairwiseFunctors/CellFunctor.h"
 
 
 namespace autopas {
@@ -35,6 +30,8 @@ namespace autopas {
 
 
         TraversalOption getTraversalType() override { return TraversalOption::directSumKokkosTraversal; }
+
+        bool isApplicable() override { return true; }
 
         void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
