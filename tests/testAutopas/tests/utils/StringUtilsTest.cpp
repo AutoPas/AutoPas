@@ -8,7 +8,7 @@
 
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOption>(autopas::allTraversalOptions,
-                                              "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced",
+                                              "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced, kokkos-directSum",
                                               autopas::utils::StringUtils::parseTraversalOptions);
 }
 
