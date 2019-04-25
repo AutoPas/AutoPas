@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cmath>
+#include <numeric>
 #include <vector>
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -63,8 +64,10 @@ class CellBlock3D : public CellBorderAndFlagManager {
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
-      if (index3d[i] == 0 or index3d[i] == _cellsPerDimensionWithHalo[i] - 1) {
+      if (index3d[i] < _cellsPerInteractionLength or
+          index3d[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
         isHaloCell = true;
+        break;
       }
     }
     return isHaloCell;
@@ -149,40 +152,12 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param position the given position
    * @return true if the position is inside the halo region
    */
-  bool checkInHalo(std::array<double, 3> position) const;
+  bool checkInHalo(const std::array<double, 3> &position) const;
 
   /**
    * deletes all particles in the halo cells of the managed cell block
    */
-  void clearHaloCells() {
-    // x: min and max of x
-    for (index_t i : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[0] - 1)}) {
-      for (index_t j = 0; j < _cellsPerDimensionWithHalo[1]; j++) {
-        for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
-          index_t index = index1D({i, j, k});
-          (*_vec1D)[index].clear();
-        }
-      }
-    }
-    // y: min and max of y
-    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {  // 0 and cells-1 already done in previous loop
-      for (index_t j : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[1] - 1)}) {
-        for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
-          index_t index = index1D({i, j, k});
-          (*_vec1D)[index].clear();
-        }
-      }
-    }
-    // z: min and max of z
-    for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {    // 0 and cells-1 already done in previous loop
-      for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1; j++) {  // 0 and cells-1 already done in previous loop
-        for (index_t k : {static_cast<index_t>(0), static_cast<index_t>(_cellsPerDimensionWithHalo[2] - 1)}) {
-          index_t index = index1D({i, j, k});
-          (*_vec1D)[index].clear();
-        }
-      }
-    }
-  }
+  void clearHaloCells();
 
   /**
    * Get the nearby halo cells.
@@ -194,7 +169,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param allowedDistance the maximal distance to the position
    * @return a container of references to nearby halo cells
    */
-  std::vector<ParticleCell *> getNearbyHaloCells(std::array<double, 3> position, double allowedDistance) {
+  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) {
     auto index3d = get3DIndexOfPosition(position);
     std::array<int, 3> diff = {0, 0, 0};
     auto currentIndex = index3d;
@@ -209,7 +184,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
           bool isPossibleHaloCell = false;
           bool isValidCell = true;
           for (int i = 0; i < 3; i++) {
-            isPossibleHaloCell |= currentIndex[i] == 0 || currentIndex[i] == _cellsPerDimensionWithHalo[i] - 1;
+            isPossibleHaloCell |= currentIndex[i] < _cellsPerInteractionLength ||
+                                  currentIndex[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength;
             isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] && currentIndex[i] >= 0;
           }
           if (isPossibleHaloCell && isValidCell) {
@@ -250,6 +226,12 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   std::array<double, 3> getHaloBoxMax() { return _haloBoxMax; }
 
+  /**
+   * Get the number of cells per interaction length
+   * @return unsigned long
+   */
+  unsigned long getCellsPerInteractionLength() { return _cellsPerInteractionLength; }
+
  private:
   std::array<index_t, 3> index3D(index_t index1d) const;
   index_t index1D(const std::array<index_t, 3> &index3d) const;
@@ -262,8 +244,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
   std::array<double, 3> _haloBoxMin, _haloBoxMax;
 
   double _interactionLength;
-  //	int _cellsPerInteractionLength; = 1 hardcode to 1 for now, because flag
-  // manager will also need to be adapted
+
+  unsigned long _cellsPerInteractionLength;
 
   std::array<double, 3> _cellLength;
 
@@ -285,18 +267,21 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
     const std::array<double, 3> &pos) const {
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
-  for (int dim = 0; dim < 3; dim++) {
-    const long int value = (static_cast<long int>(floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) + 1l;
+  for (size_t dim = 0; dim < 3; dim++) {
+    const long int value = (static_cast<long int>(floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
+                           _cellsPerInteractionLength;
     const index_t nonnegativeValue = static_cast<index_t>(std::max(value, 0l));
     const index_t nonLargerValue = std::min(nonnegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
+
     // todo this is a sanity check to prevent doubling of particles
     if (pos[dim] >= _boxMax[dim]) {
-      cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - 1;
-    } else if (pos[dim] < _boxMin[dim]) {
-      cellIndex[dim] = 0;
-    } else if (pos[dim] < _boxMax[dim] && cellIndex[dim] == _cellsPerDimensionWithHalo[dim] - 1) {
-      cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - 2;
+      cellIndex[dim] = std::max(cellIndex[dim], _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength);
+    } else if (pos[dim] < _boxMin[dim] && cellIndex[dim] == _cellsPerInteractionLength) {
+      --cellIndex[dim];
+    } else if (pos[dim] < _boxMax[dim] &&
+               cellIndex[dim] == _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength) {
+      cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength - 1;
     }
   }
 
@@ -314,6 +299,11 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   _boxMax = bMax;
   _interactionLength = interactionLength;
 
+  if (cellSize >= 1.0) {
+    _cellsPerInteractionLength = 1;
+  } else {
+    _cellsPerInteractionLength = ceil(1.0 / cellSize);
+  }
   // compute cell length
   _numCells = 1;
   for (int d = 0; d < 3; ++d) {
@@ -322,13 +312,14 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
     // at least one central cell
     cellsPerDim = std::max(cellsPerDim, 1ul);
 
-    _cellsPerDimensionWithHalo[d] = cellsPerDim + 2;
+    _cellsPerDimensionWithHalo[d] = cellsPerDim + 2 * _cellsPerInteractionLength;
 
     _cellLength[d] = diff / cellsPerDim;
+
     _cellLengthReciprocal[d] = cellsPerDim / diff;  // compute with least rounding possible
 
-    _haloBoxMin[d] = _boxMin[d] - _cellLength[d];
-    _haloBoxMax[d] = _boxMax[d] + _cellLength[d];
+    _haloBoxMin[d] = _boxMin[d] - _cellsPerInteractionLength * _cellLength[d];
+    _haloBoxMax[d] = _boxMax[d] + _cellsPerInteractionLength * _cellLength[d];
 
     _numCells *= _cellsPerDimensionWithHalo[d];
 
@@ -363,15 +354,15 @@ inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const std::array<index
     // correctly!
     if (index3d[d] == 0) {
       boxmin[d] = _haloBoxMin[d];
-      boxmax[d] = _boxMin[d];
-    } else if (index3d[d] == 1) {
+      boxmax[d] = this->_cellLength[d];
+    } else if (index3d[d] == _cellsPerInteractionLength) {
       boxmin[d] = _boxMin[d];
     }
     // no else!, as this might ALSO be 1
-    if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - 2) {
+    if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - _cellsPerInteractionLength - 1) {
       boxmax[d] = _boxMax[d];
     } else if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - 1) {
-      boxmin[d] = _boxMax[d];
+      boxmin[d] = _haloBoxMax[d] - this->_cellLength[d];
       boxmax[d] = _haloBoxMax[d];
     }
   }
@@ -406,8 +397,46 @@ inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::in
 }
 
 template <class ParticleCell>
-bool CellBlock3D<ParticleCell>::checkInHalo(std::array<double, 3> position) const {
+bool CellBlock3D<ParticleCell>::checkInHalo(const std::array<double, 3> &position) const {
   return autopas::utils::inBox(position, _haloBoxMin, _haloBoxMax) &&
          autopas::utils::notInBox(position, _boxMin, _boxMax);
+}
+
+template <class ParticleCell>
+void CellBlock3D<ParticleCell>::clearHaloCells() {
+  std::vector<index_t> haloSlices(2 * _cellsPerInteractionLength);
+  std::vector<index_t>::iterator mid(haloSlices.begin() + _cellsPerInteractionLength);
+  std::iota(haloSlices.begin(), mid, 0);
+
+  // x: min and max of x
+  std::iota(mid, haloSlices.end(), _cellsPerDimensionWithHalo[0] - _cellsPerInteractionLength);
+  for (index_t i : haloSlices) {
+    for (index_t j = 0; j < _cellsPerDimensionWithHalo[1]; j++) {
+      for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
+        index_t index = index1D({i, j, k});
+        (*_vec1D)[index].clear();
+      }
+    }
+  }
+  // y: min and max of y
+  std::iota(mid, haloSlices.end(), _cellsPerDimensionWithHalo[1] - _cellsPerInteractionLength);
+  for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {  // 0 and cells-1 already done in previous loop
+    for (index_t j : haloSlices) {
+      for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
+        index_t index = index1D({i, j, k});
+        (*_vec1D)[index].clear();
+      }
+    }
+  }
+  // z: min and max of z
+  std::iota(mid, haloSlices.end(), _cellsPerDimensionWithHalo[2] - _cellsPerInteractionLength);
+  for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {    // 0 and cells-1 already done in previous loop
+    for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1; j++) {  // 0 and cells-1 already done in previous loop
+      for (index_t k : haloSlices) {
+        index_t index = index1D({i, j, k});
+        (*_vec1D)[index].clear();
+      }
+    }
+  }
 }
 }  // namespace autopas
