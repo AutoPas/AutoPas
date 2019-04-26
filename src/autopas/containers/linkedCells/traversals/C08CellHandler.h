@@ -32,8 +32,11 @@ class C08CellHandler {
    * Constructor of the c08 traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
+   * @param cutoff Cutoff radius.
+   * @param cellLength cell length.
    */
-  explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension)
+  explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
+                          const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)),

@@ -89,8 +89,8 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       return std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
     }
     case TraversalOption::sliced: {
-      return std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims,
-                                                                                                  &pairwiseFunctor);
+      return std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+          _dims, &pairwiseFunctor, _cutoff, _cellLength);
     }
     case TraversalOption::c18: {
       return std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);

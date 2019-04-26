@@ -36,9 +36,18 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cutoff Cutoff radius.
+   * @param cellLength cell length.
    */
-  explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims), _dimsPerLength{}, _sliceThickness{}, locks() {
+  explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                                const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : CellPairTraversal<ParticleCell>(dims),
+        _dimsPerLength{},
+        _cutoff(cutoff),
+        _cellLength(cellLength),
+        _overlap(0ul),
+        _sliceThickness{},
+        locks() {
     rebuild(dims);
   }
 
@@ -61,6 +70,21 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   std::array<int, 3> _dimsPerLength;
 
   /**
+   * cutoff radius.
+   */
+  double _cutoff;
+
+  /**
+   * cell length in CellBlock3D.
+   */
+  std::array<double, 3> _cellLength;
+
+  /**
+   * overlap between interacting cells along longest axis
+   */
+  unsigned long _overlap;
+
+  /**
    * The number of cells per slice in the dimension that was sliced.
    */
   std::vector<unsigned long> _sliceThickness;
@@ -78,12 +102,14 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewto
   _dimsPerLength[2] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.first);
   _dimsPerLength[1] = 3 - (_dimsPerLength[0] + _dimsPerLength[2]);
 
+  _overlap = std::ceil(_cutoff / _cellLength[_dimsPerLength[0]]);
+
   // split domain across its longest dimension
 
   auto numSlices = (size_t)autopas_get_max_threads();
   auto minSliceThickness = this->_cellsPerDimension[_dimsPerLength[0]] / numSlices;
-  if (minSliceThickness < 2) {
-    minSliceThickness = 2;
+  if (minSliceThickness < _overlap + 1) {
+    minSliceThickness = _overlap + 1;
     numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
     AutoPasLog(debug, "Sliced traversal only using {} threads because the number of cells is too small.", numSlices);
   }
@@ -99,8 +125,9 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewto
   // decreases last _sliceThickness by one to account for the way we handle base cells
   --*--_sliceThickness.end();
 
-  locks.resize(numSlices);
+  locks.resize(numSlices * _overlap);
 }
+
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 template <typename LoopBody>
 void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::slicedTraversal(LoopBody &&loopBody) {
@@ -119,16 +146,18 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::sl
       myStartArray[_dimsPerLength[0]] += _sliceThickness[i];
     }
 
-    // all but the first slice need to lock their starting layer.
+    // all but the first slice need to lock their starting layers.
     if (slice > 0) {
-      locks[slice - 1].lock();
+      for (unsigned long i = 1ul; i <= _overlap; i++) {
+        locks[(slice * _overlap) - i].lock();
+      }
     }
-    for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]];
-         dimSlice < myStartArray[_dimsPerLength[0]] + _sliceThickness[slice]; ++dimSlice) {
+    const auto lastLayer = myStartArray[_dimsPerLength[0]] + _sliceThickness[slice];
+    for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]]; dimSlice < lastLayer; ++dimSlice) {
       // at the last layer request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
-      if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
-        locks[slice].lock();
+      if (slice != numSlices - 1 && dimSlice >= lastLayer - _overlap) {
+        locks[(slice * _overlap) + _overlap - (lastLayer - dimSlice)].lock();
       }
       for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[_dimsPerLength[1]] - 1; ++dimMedium) {
         for (unsigned long dimShort = 0; dimShort < this->_cellsPerDimension[_dimsPerLength[2]] - 1; ++dimShort) {
@@ -139,12 +168,14 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::sl
           loopBody(idArray[0], idArray[1], idArray[2]);
         }
       }
-      // at the end of the first layer release the lock
-      if (slice > 0 && dimSlice == myStartArray[_dimsPerLength[0]]) {
-        locks[slice - 1].unlock();
-      } else if (slice != numSlices - 1 && dimSlice == myStartArray[_dimsPerLength[0]] + _sliceThickness[slice] - 1) {
-        // clearing of the lock set on the last layer of each slice
-        locks[slice].unlock();
+      // at the end of the first layers release the lock
+      if (slice > 0 && dimSlice < myStartArray[_dimsPerLength[0]] + _overlap) {
+        locks[(slice * _overlap) - (_overlap - (dimSlice - myStartArray[_dimsPerLength[0]]))].unlock();
+      } else if (slice != numSlices - 1 && dimSlice == lastLayer - 1) {
+        // clearing of the locks set on the last layers of each slice
+        for (size_t i = (slice * _overlap); i < (slice + 1) * _overlap; ++i) {
+          locks[i].unlock();
+        }
       }
     }
   }
