@@ -42,8 +42,7 @@ class GridGenerator {
    * @param offset Offset to move all particles.
    */
   template <class Container, class Particle>
-  static void fillWithParticles(Container &container,
-                                std::array<size_t, 3> particlesPerDim,
+  static void fillWithParticles(Container &container, std::array<size_t, 3> particlesPerDim,
                                 const Particle &defaultParticle = autopas::Particle(),
                                 std::array<double, 3> spacing = std::array<double, 3>{1, 1, 1},
                                 std::array<double, 3> offset = std::array<double, 3>{.5, .5, .5});
@@ -68,9 +67,9 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, std::arr
 }
 
 template <class Container, class Particle>
-void GridGenerator::fillWithParticles(Container &container,
-                                      std::array<size_t, 3> particlesPerDim, const Particle &defaultParticle,
-                                      std::array<double, 3> spacing, std::array<double, 3> offset) {
+void GridGenerator::fillWithParticles(Container &container, std::array<size_t, 3> particlesPerDim,
+                                      const Particle &defaultParticle, std::array<double, 3> spacing,
+                                      std::array<double, 3> offset) {
   size_t id = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {

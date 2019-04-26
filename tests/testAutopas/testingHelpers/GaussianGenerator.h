@@ -14,7 +14,6 @@
  */
 class GaussianGenerator {
  public:
-
   /**
    * Fills any container (also AutoPas object) with randomly 3D gaussian distributed particles.
    *

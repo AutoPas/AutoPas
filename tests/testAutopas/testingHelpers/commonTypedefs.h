@@ -1,8 +1,8 @@
 /**
-* @file commonTypedefs.h
-* @author F. Gratl
-* @date 6/21/18
-*/
+ * @file commonTypedefs.h
+ * @author F. Gratl
+ * @date 6/21/18
+ */
 
 #pragma once
 
