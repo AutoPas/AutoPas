@@ -81,6 +81,11 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 template <typename LoopBody>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c01Traversal(LoopBody&& loopBody) {
+  // the following definitions are necessary to form a perfectly nested loop (Intel Compiler)
+  const unsigned long start_x = _overlap[0];
+  const unsigned long start_y = _overlap[1];
+  const unsigned long start_z = _overlap[2];
+
   const unsigned long end_x = this->_cellsPerDimension[0] - _overlap[0];
   const unsigned long end_y = this->_cellsPerDimension[1] - _overlap[1];
   const unsigned long end_z = this->_cellsPerDimension[2] - _overlap[2];
@@ -89,9 +94,9 @@ inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
   // @todo: find optimal chunksize
 #pragma omp parallel for schedule(dynamic) collapse(3)
 #endif
-  for (unsigned long z = _overlap[0]; z < end_z; ++z) {
-    for (unsigned long y = _overlap[1]; y < end_y; ++y) {
-      for (unsigned long x = _overlap[2]; x < end_x; ++x) {
+  for (unsigned long z = start_x; z < end_z; ++z) {
+    for (unsigned long y = start_y; y < end_y; ++y) {
+      for (unsigned long x = start_z; x < end_x; ++x) {
         loopBody(x, y, z);
       }
     }
