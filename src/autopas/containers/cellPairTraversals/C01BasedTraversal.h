@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include <autopas/utils/WrapOpenMP.h>
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
 
@@ -23,7 +22,7 @@ namespace autopas {
  * @tparam useSoA
  */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
+class C01BasedTraversal : public CBasedTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -35,11 +34,7 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
                              double cutoff = 1.0, const std::array<double, 3>& cellLength = {1.0, 1.0, 1.0})
-      : CellPairTraversal<ParticleCell>(dims), _cutoff(cutoff), _cellLength(cellLength) {
-    for (unsigned int d = 0; d < 3; d++) {
-      _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
-    }
-  }
+      : CBasedTraversal<ParticleCell>(dims, cutoff, cellLength) {}
 
   /**
    * C01 traversals are only usable if useNewton3 is disabled.
@@ -61,46 +56,13 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   template <typename LoopBody>
   inline void c01Traversal(LoopBody&& loopBody);
-
-  /**
-   * cutoff radius.
-   */
-  double _cutoff;
-
-  /**
-   * cell length in CellBlock3D.
-   */
-  std::array<double, 3> _cellLength;
-
-  /**
-   * overlap of interacting cells. Array allows asymmetric cell sizes.
-   */
-  std::array<unsigned long, 3> _overlap;
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 template <typename LoopBody>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c01Traversal(LoopBody&& loopBody) {
-  // the following definitions are necessary to form a perfectly nested loop (Intel Compiler)
-  const unsigned long start_x = _overlap[0];
-  const unsigned long start_y = _overlap[1];
-  const unsigned long start_z = _overlap[2];
-
-  const unsigned long end_x = this->_cellsPerDimension[0] - _overlap[0];
-  const unsigned long end_y = this->_cellsPerDimension[1] - _overlap[1];
-  const unsigned long end_z = this->_cellsPerDimension[2] - _overlap[2];
-
-#if defined(AUTOPAS_OPENMP)
-  // @todo: find optimal chunksize
-#pragma omp parallel for schedule(dynamic) collapse(3)
-#endif
-  for (unsigned long z = start_x; z < end_z; ++z) {
-    for (unsigned long y = start_y; y < end_y; ++y) {
-      for (unsigned long x = start_z; x < end_x; ++x) {
-        loopBody(x, y, z);
-      }
-    }
-  }
+  const auto offset = this->_overlap;
+  const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
+  this->cTraversal(std::forward<LoopBody>(loopBody), end, {1ul, 1ul, 1ul}, offset);
 }
-
 }  // namespace autopas
