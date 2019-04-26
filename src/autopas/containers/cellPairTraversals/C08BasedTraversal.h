@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -30,9 +31,16 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cutoff Cutoff radius.
+   * @param cellLength cell length.
    */
-  explicit C08BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {}
+  explicit C08BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
+                             const double cutoff = 1.0, const std::array<double, 3>& cellLength = {1.0, 1.0, 1.0})
+      : CellPairTraversal<ParticleCell>(dims), _cutoff(cutoff), _cellLength(cellLength) {
+    for (unsigned int d = 0; d < 3; d++) {
+      _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
+    }
+  }
 
   /**
    * C08 traversals are always usable.
@@ -47,23 +55,35 @@ class C08BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   template <typename LoopBody>
   inline void c08Traversal(LoopBody&& loopBody);
+
+  /**
+   * cutoff radius.
+   */
+  double _cutoff;
+
+  /**
+   * cell length in CellBlock3D.
+   */
+  std::array<double, 3> _cellLength;
+
+  /**
+   * overlap of interacting cells. Array allows asymmetric cell sizes.
+   */
+  std::array<unsigned long, 3> _overlap;
 };
 
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 template <typename LoopBody>
 inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c08Traversal(LoopBody&& loopBody) {
-  using std::array;
-  const array<unsigned long, 3> stride = {2, 2, 2};
-  array<unsigned long, 3> end = {};
-  for (int d = 0; d < 3; ++d) {
-    end[d] = this->_cellsPerDimension[d] - 1;
-  }
+  const auto stride = ArrayMath::addScalar(_overlap, 1ul);
+  const auto end = ArrayMath::sub(this->_cellsPerDimension, _overlap);
 
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
   {
-    for (unsigned long col = 0; col < 8; ++col) {
+    const unsigned long numColors = stride[0] * stride[1] * stride[2];
+    for (unsigned long col = 0; col < numColors; ++col) {
       std::array<unsigned long, 3> start = utils::ThreeDimensionalMapping::oneToThreeD(col, stride);
 
       // intel compiler demands following:

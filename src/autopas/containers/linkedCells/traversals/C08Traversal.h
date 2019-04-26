@@ -34,10 +34,13 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cutoff Cutoff radius.
+   * @param cellLength cell length.
    */
-  explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension) {}
+  explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor, cutoff, cellLength),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
