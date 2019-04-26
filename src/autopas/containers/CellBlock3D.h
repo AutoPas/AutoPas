@@ -282,11 +282,16 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
 
     // todo this is a sanity check to prevent doubling of particles
     if (pos[dim] >= _boxMax[dim]) {
+      // pos[dim] is located outside of the box. Make sure that cellIndex also references cell outside of the box.
       cellIndex[dim] = std::max(cellIndex[dim], _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength);
     } else if (pos[dim] < _boxMin[dim] && cellIndex[dim] == _cellsPerInteractionLength) {
+      // pos[dim] is located below the box (outside), but cellIndex references cell inside of the box. Correct cellIndex
+      // by subtracting 1.
       --cellIndex[dim];
     } else if (pos[dim] < _boxMax[dim] &&
                cellIndex[dim] == _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength) {
+      // pos[dim] is located inside of the box, but cellIndex references cell outside of the box. Correct cellIndex to
+      // last cell inside of the box.
       cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength - 1;
     }
   }
@@ -313,7 +318,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   // compute cell length
   _numCells = 1;
   for (int d = 0; d < 3; ++d) {
-    double diff = _boxMax[d] - _boxMin[d];
+    const double diff = _boxMax[d] - _boxMin[d];
     auto cellsPerDim = static_cast<index_t>(std::floor(diff / (_interactionLength * cellSize)));
     // at least one central cell
     cellsPerDim = std::max(cellsPerDim, 1ul);
