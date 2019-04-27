@@ -5,6 +5,7 @@
  */
 
 #include "C18TraversalTest.h"
+#include "testingHelpers/NumThreadGuard.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -13,13 +14,11 @@ void testC18Traversal(const std::array<size_t, 3> &edgeLength) {
   MFunctor functor;
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
-  autopas::Particle defaultParticle;
 
-  GridGenerator::fillWithParticles(cells, edgeLength, defaultParticle);
-#ifdef AUTOPAS_OPENMP
-  int numThreadsBefore = omp_get_max_threads();
-  omp_set_num_threads(4);
-#endif
+  GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
+
+  NumThreadGuard(4);
+
   autopas::C18Traversal<FPCell, MFunctor, false, true> C18Traversal(edgeLength, &functor);
 
   size_t boundaryXYcells = (edgeLength[2] - 1);
@@ -35,9 +34,6 @@ void testC18Traversal(const std::array<size_t, 3> &edgeLength) {
       .Times(boundaryXYinteractions + boundaryXinteractions + boundaryYinteractions + innercellinteractions);
 
   C18Traversal.traverseCellPairs(cells);
-#ifdef AUTOPAS_OPENMP
-  omp_set_num_threads(numThreadsBefore);
-#endif
 }
 
 TEST_F(C18TraversalTest, testTraversal10x10x10) {
