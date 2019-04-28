@@ -72,7 +72,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, use
   /**
    * Pairs for processBaseCell().
    */
-  std::vector<int> _cellOffsets;
+  std::vector<long> _cellOffsets;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -93,8 +93,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::com
         pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
         pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
         pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
-        const std::array<double, 3> posSquare = ArrayMath::mul(pos, pos);
-        if (posSquare[0] + posSquare[1] + posSquare[2] <= cutoffSquare) {
+        const double distSquare = ArrayMath::dot(pos, pos);
+        if (distSquare <= cutoffSquare) {
           const long offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
           _cellOffsets.push_back(offset);
         }

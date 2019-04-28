@@ -57,7 +57,7 @@ inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
   const std::array<unsigned long, 3> stride = {2ul * this->_overlap[0] + 1ul, 2ul * this->_overlap[1] + 1ul,
                                                this->_overlap[2] + 1ul};
   auto end(this->_cellsPerDimension);
-  --end[2];
+  end[2] -= this->_overlap[2];
   this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
 }
 
