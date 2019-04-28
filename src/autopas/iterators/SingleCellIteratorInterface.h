@@ -74,14 +74,14 @@ class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Parti
 
 /**
  * gets a static cell iterator from an iteratorwrapper of a cell.
- * @param iter the iterator to be defined
+ * @tparam cell_t
  * @param cell the cell for which the iterator should be get
- * @param body the body to be executed with the static iterator
+ * @return static cell iterator
  */
-#define AUTOPAS_WITH_STATIC_CELL_ITER(iter, cell, body)                                                  \
-  auto __wrapper = cell.begin();                                                                         \
-  auto __ptr = __wrapper.get();                                                                          \
-  {                                                                                                      \
-    auto iter = static_cast<typename std::remove_reference<decltype(cell)>::type::iterator_t &>(*__ptr); \
-    body;                                                                                                \
-  }
+template <typename cell_t>
+typename cell_t::iterator_t &getStaticCellIter(cell_t &cell) {
+  auto _wrapper = cell.begin();
+  auto _ptr = _wrapper.get();
+
+  return static_cast<typename cell_t::iterator_t &>(*_ptr);
+}

@@ -138,85 +138,79 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bi
 template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellAoSN3(
     ParticleCell &cell) {
-  AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell, {
-    for (; outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+  auto outer = getStaticCellIter(cell);
+  for (; outer.isValid(); ++outer) {
+    Particle &p1 = *outer;
 
-      auto inner = outer;
-      ++inner;
-      for (; inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
+    auto inner = outer;
+    ++inner;
+    for (; inner.isValid(); ++inner) {
+      Particle &p2 = *inner;
 
-        _functor->AoSFunctor(p1, p2, true);
-      }
+      _functor->AoSFunctor(p1, p2, true);
     }
-  })
+  }
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellAoSNoN3(
     ParticleCell &cell) {
-  AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell, {
-    auto innerStart = outer;
-    for (; outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
+  auto outer = getStaticCellIter(cell);
+  auto innerStart = outer;
 
-      // loop over everything until outer
-      auto inner = innerStart;
-      for (; inner != outer; ++inner) {
-        Particle &p2 = *inner;
+  for (; outer.isValid(); ++outer) {
+    Particle &p1 = *outer;
 
-        _functor->AoSFunctor(p1, p2, false);
-      }
-      // skip over the outer one
-      ++inner;
+    // loop over everything until outer
+    auto inner = innerStart;
+    for (; inner != outer; ++inner) {
+      Particle &p2 = *inner;
 
-      // loop over everything after outer
-      for (; inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
-        _functor->AoSFunctor(p1, p2, false);
-      }
+      _functor->AoSFunctor(p1, p2, false);
     }
-  })
+    // skip over the outer one
+    ++inner;
+
+    // loop over everything after outer
+    for (; inner.isValid(); ++inner) {
+      Particle &p2 = *inner;
+      _functor->AoSFunctor(p1, p2, false);
+    }
+  }
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2) {
-  AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell1, {
-    AUTOPAS_WITH_STATIC_CELL_ITER(innerStart, cell2, {
-      // body
-      for (; outer.isValid(); ++outer) {
-        Particle &p1 = *outer;
+  auto outer = getStaticCellIter(cell1);
+  auto innerStart = getStaticCellIter(cell2);
 
-        for (auto inner = innerStart; inner.isValid(); ++inner) {
-          Particle &p2 = *inner;
+  for (; outer.isValid(); ++outer) {
+    Particle &p1 = *outer;
 
-          _functor->AoSFunctor(p1, p2, true);
-        }
-      }
-    });
-  });
+    for (auto inner = innerStart; inner.isValid(); ++inner) {
+      Particle &p2 = *inner;
+
+      _functor->AoSFunctor(p1, p2, true);
+    }
+  }
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, useSoA, useNewton3, bidirectional>::processCellPairAoSNoN3(
     ParticleCell &cell1, ParticleCell &cell2) {
-  AUTOPAS_WITH_STATIC_CELL_ITER(outer, cell1, {
-    AUTOPAS_WITH_STATIC_CELL_ITER(innerStart, cell2, {
-      // body
-      for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
-        Particle &p1 = *outer;
+  auto innerStart = getStaticCellIter(cell2);
 
-        for (auto inner = innerStart; inner.isValid(); ++inner) {
-          Particle &p2 = *inner;
+  for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
+    Particle &p1 = *outer;
 
-          _functor->AoSFunctor(p1, p2, false);
-          if (bidirectional) _functor->AoSFunctor(p2, p1, false);
-        }
-      }
-    });
-  });
+    for (auto inner = innerStart; inner.isValid(); ++inner) {
+      Particle &p2 = *inner;
+
+      _functor->AoSFunctor(p1, p2, false);
+      if (bidirectional) _functor->AoSFunctor(p2, p1, false);
+    }
+  }
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, bool useSoA, bool useNewton3, bool bidirectional>
