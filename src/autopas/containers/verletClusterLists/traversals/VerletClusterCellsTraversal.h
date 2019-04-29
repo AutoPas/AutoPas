@@ -57,7 +57,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
       return true;
   }
 
-  std::pair<DataLayoutOption, bool> getSignature() override { return std::make_pair(DataLayout, useNewton3); }
+  std::tuple<TraversalOption, DataLayoutOption, bool> getSignature() override {
+    return std::make_tuple(getTraversalType(), DataLayout, useNewton3);
+  }
 
   void rebuild(const std::array<unsigned long, 3> &dims, unsigned int clusterSize, std::vector<ParticleCell> &cells,
                std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes,

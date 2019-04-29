@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <tuple>
 #include <vector>
 
 namespace autopas {
@@ -46,7 +47,7 @@ class VerletClusterTraversalInterface {
    * This function returns the Data Layout Option and use of newton3 to identify a Traversal object
    * @return pair with DataLayoutOption and use of newton3
    */
-  virtual std::pair<DataLayoutOption, bool> getSignature() = 0;
+  virtual std::tuple<TraversalOption, DataLayoutOption, bool> getSignature() = 0;
 };
 
 }  // namespace autopas

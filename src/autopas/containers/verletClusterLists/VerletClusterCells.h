@@ -51,10 +51,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
                                                                 allVCLApplicableTraversals()),
         _firstHaloClusterId(1),
         _clusterSize(clusterSize),
-        _boxMin(boxMin),
-        _boxMax(boxMax),
-        _skin(skin),
-        _cutoff(cutoff),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
         _isValid(false),
@@ -95,10 +91,10 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     }
     if (needsRebuild()) {
       this->rebuild();
-      traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, _cutoff + _skin);
+      traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, this->getCutoff());
       _lastTraversalSig = traversalInterface->getSignature();
     } else if (traversalInterface->getSignature() != _lastTraversalSig) {
-      traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, _cutoff + _skin);
+      traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, this->getCutoff());
       _lastTraversalSig = traversalInterface->getSignature();
     }
 
@@ -224,7 +220,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     ParticleFloatType volume = 1.0;
 
     for (int d = 0; d < 3; ++d) {
-      boxSize[d] = _boxMax[d] - _boxMin[d];
+      boxSize[d] = this->getBoxMax()[d] - this->getBoxMin()[d];
       volume *= boxSize[d];
     }
 
@@ -249,7 +245,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     // guess optimal grid side length
     _gridSideLength = std::cbrt((ParticleFloatType)_clusterSize / density);
-    _gridSideLength = std::min(_gridSideLength, _cutoff + _skin);
+    // no cells large than interaction radius
+    _gridSideLength = std::min(_gridSideLength, this->getCutoff());
     _gridSideLengthReciprocal = 1 / _gridSideLength;
 
     // get cells per dimension
@@ -267,8 +264,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     // put particles into grid cells
     for (size_t i = 0; i < invalidParticles.size(); ++i) {
-      int index = (int)((invalidParticles[i].getR()[0] - _boxMin[0]) * _gridSideLengthReciprocal) +
-                  (int)((invalidParticles[i].getR()[1] - _boxMin[1]) * _gridSideLengthReciprocal) * _cellsPerDim[0];
+      int index =
+          (int)((invalidParticles[i].getR()[0] - this->getBoxMin()[0]) * _gridSideLengthReciprocal) +
+          (int)((invalidParticles[i].getR()[1] - this->getBoxMin()[1]) * _gridSideLengthReciprocal) * _cellsPerDim[0];
       this->_cells[index].addParticle(invalidParticles[i]);
     }
 
@@ -288,18 +286,34 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     _firstHaloClusterId = numOwnClusters;
 
-    size_t sizeHaloGrid = 1;
+    size_t sizeHaloGrid = 6;  // depending which die of the domain
     this->_cells.resize(numOwnClusters + sizeHaloGrid);
 
     // put halo particles into grid cells
     for (auto& haloParticle : _haloInsertQueue) {
       int index = _firstHaloClusterId;
+      for (int i = 0; i < 3; ++i) {
+        if (haloParticle.getR()[i] < this->getBoxMin()[i]) {
+          index += 2 * i;
+          break;
+        } else if (haloParticle.getR()[i] > this->getBoxMax()[i]) {
+          index += 2 * i + 1;
+          break;
+        }
+      }
       this->_cells[index].addParticle(haloParticle);
     }
 
     // sort halo cells
+    for (int i = 0; i < 2; ++i) {
+      this->_cells[_firstHaloClusterId + i].sortByDim(i + 1);
+      this->_cells[_firstHaloClusterId + i + 1].sortByDim(i + 1);
+    }
+    this->_cells[_firstHaloClusterId + 4].sortByDim(0);
+    this->_cells[_firstHaloClusterId + 5].sortByDim(0);
+
+    // calculate number of required halo cells
     for (size_t i = 0; i < sizeHaloGrid; ++i) {
-      this->_cells[_firstHaloClusterId + i].sortByDim(2);
       size_t numParticles = this->_cells[_firstHaloClusterId + i].numParticles();
       if (numParticles)
         numHaloClusters += ((numParticles + _clusterSize - 1) / _clusterSize);
@@ -309,8 +323,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     this->_cells.resize(numOwnClusters + numHaloClusters);
     _boundingBoxes.resize(this->_cells.size(),
-                          {_boxMax[0] + 8 * _cutoff, _boxMax[1] + 8 * _cutoff, _boxMax[2] + 8 * _cutoff,
-                           _boxMin[0] - 8 * _cutoff, _boxMin[1] - 8 * _cutoff, _boxMin[2] - 8 * _cutoff});
+                          {this->getBoxMax()[0] + 8 * this->getCutoff(), this->getBoxMax()[1] + 8 * this->getCutoff(),
+                           this->getBoxMax()[2] + 8 * this->getCutoff(), this->getBoxMin()[0] - 8 * this->getCutoff(),
+                           this->getBoxMin()[1] - 8 * this->getCutoff(), this->getBoxMin()[2] - 8 * this->getCutoff()});
     splitZ(0, sizeGrid);
     splitZ(_firstHaloClusterId, _firstHaloClusterId + sizeHaloGrid);
 
@@ -343,11 +358,12 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       }
       _dummyStarts[i] = dummyStart;
       for (size_t pid = dummyStart; pid < _clusterSize; ++pid) {
-        Particle dummyParticle =
-            Particle({_boxMax[0] + 8 * _cutoff + static_cast<typename Particle::ParticleFloatingPointType>(i),
-                      _boxMax[1] + 8 * _cutoff + static_cast<typename Particle::ParticleFloatingPointType>(pid),
-                      _boxMax[2] + 8 * _cutoff},
-                     {0., 0., 0.}, ULONG_MAX);
+        Particle dummyParticle = Particle({this->getBoxMax()[0] + 8 * this->getCutoff() +
+                                               static_cast<typename Particle::ParticleFloatingPointType>(i),
+                                           this->getBoxMax()[1] + 8 * this->getCutoff() +
+                                               static_cast<typename Particle::ParticleFloatingPointType>(pid),
+                                           this->getBoxMax()[2] + 8 * this->getCutoff()},
+                                          {0., 0., 0.}, ULONG_MAX);
         this->_cells[i].addParticle(dummyParticle);
       }
     }
@@ -392,9 +408,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   // number of particles in a cluster
   unsigned int _clusterSize;
 
-  std::array<ParticleFloatType, 3> _boxMin;
-  std::array<ParticleFloatType, 3> _boxMax;
-
   // bounding boxes of all clusters (xmin,ymin,zmin,xmax,ymax,zmax) including skin and cutoff
   std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> _boundingBoxes;
 
@@ -404,12 +417,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
   // dimensions of grid
   std::array<size_t, 3> _cellsPerDim;
-
-  /// skin radius
-  ParticleFloatType _skin;
-
-  /// cutoff
-  ParticleFloatType _cutoff;
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
@@ -422,7 +429,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   bool _isValid;
 
   /// Signature of the last Traversal to trigger rebuild when a new one is used
-  std::pair<DataLayoutOption, bool> _lastTraversalSig;
+  std::tuple<TraversalOption, DataLayoutOption, bool> _lastTraversalSig;
 
   class VerletClusterCellsCellBorderAndFlagManager : public CellBorderAndFlagManager {
    public:
