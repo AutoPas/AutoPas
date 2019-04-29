@@ -20,7 +20,7 @@ class GridGenerator {
    * @tparam ParticleCell
    * @param cells
    * @param particlesPerDim Number of particles per dimension
-   * @param defaultParicle
+   * @param defaultParticle
    * @param spacing Factor for distance between two particles along one dimension (default is 1)
    * @param offset Offset to move all particles
    */
