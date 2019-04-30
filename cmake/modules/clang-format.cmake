@@ -2,7 +2,7 @@
 
 # get all project files
 set (INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src" "${PROJECT_SOURCE_DIR}/examples" "${PROJECT_SOURCE_DIR}/tests")
-file (GLOB_RECURSE ALL_SOURCE_FILES "*.cpp" "*.h")
+file (GLOB_RECURSE ALL_SOURCE_FILES "*.cpp" "*.h" "*.cuh" "*.cu")
 foreach (TMP_PATH ${ALL_SOURCE_FILES})
     set(_found FALSE)
     foreach (_incdir ${INCLUDE_DIRS})

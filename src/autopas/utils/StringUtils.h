@@ -73,6 +73,9 @@ inline std::string to_string(const DataLayoutOption &option) {
     case autopas::DataLayoutOption::soa: {
       return "Structure-of-Arrays";
     }
+    case autopas::DataLayoutOption::cuda: {
+      return "Structure-of-Arrays on Cuda capable device";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown option (" + std::to_string(option) + ")";
@@ -138,6 +141,12 @@ inline std::string to_string(const TraversalOption &option) {
     }
     case autopas::TraversalOption::slicedVerlet: {
       return "verlet-sliced";
+    }
+    case autopas::TraversalOption::c01Cuda: {
+      return "cuda-c01";
+    }
+    case autopas::TraversalOption::verletTraversal: {
+      return "verlet-lists";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -220,8 +229,12 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
   auto words = tokenize(traversalOptionsString, delimiters);
 
   for (auto &word : words) {
-    if (word.find("01") != std::string::npos) {
-      if (word.find('v') != std::string::npos)
+    if (word.find("verlet-lists") != std::string::npos) {
+      traversalOptions.emplace_back(autopas::TraversalOption::verletTraversal);
+    } else if (word.find("01") != std::string::npos) {
+      if (word.find("cuda") != std::string::npos) {
+        traversalOptions.emplace_back(autopas::TraversalOption::c01Cuda);
+      } else if (word.find('v') != std::string::npos)
         traversalOptions.emplace_back(autopas::TraversalOption::c01Verlet);
       else
         traversalOptions.emplace_back(autopas::TraversalOption::c01);
@@ -313,6 +326,7 @@ inline autopas::SelectorStrategy parseSelectorStrategy(const std::string &select
  *
  * Possible options: aos, soa
  *
+
  * @param dataLayoutsSting String containing the data layout option.
  * @param ignoreUnknownOptions If set to false, a 'autopas::DataLayoutOption(-1)' will be inserted in the return vector
  * for each not parsable word.
@@ -331,6 +345,8 @@ inline std::vector<autopas::DataLayoutOption> parseDataLayout(const std::string 
       dataLayouts.emplace_back(autopas::DataLayoutOption::aos);
     } else if (word.find("soa") != std::string::npos or word.find("-of-array") != std::string::npos) {
       dataLayouts.emplace_back(autopas::DataLayoutOption::soa);
+    } else if (word.find("cuda") != std::string::npos) {
+      dataLayouts.emplace_back(autopas::DataLayoutOption::cuda);
     } else if (not ignoreUnknownOptions) {
       dataLayouts.emplace_back(autopas::DataLayoutOption(-1));
     }

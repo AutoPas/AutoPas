@@ -8,6 +8,7 @@
 
 #include <autopas/utils/WrapOpenMP.h>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -22,7 +23,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
@@ -32,17 +33,27 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims) {}
+      : CellPairTraversal<ParticleCell>(dims), _dataLayoutConverter(pairwiseFunctor) {}
 
-  /**
-   * C01 traversals are only usable if useNewton3 is disabled.
-   *
-   * This is because the cell functor in the c01 traversal is hardcoded to not allow newton 3 even if only one thread is
-   * used.
-   *
-   * @return
-   */
-  bool isApplicable() override { return not useNewton3; }
+  void initTraversal(std::vector<ParticleCell>& cells) override {
+#ifdef AUTOPAS_OPENMP
+    // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      _dataLayoutConverter.loadDataLayout(cells[i]);
+    }
+  }
+
+  void endTraversal(std::vector<ParticleCell>& cells) override {
+#ifdef AUTOPAS_OPENMP
+    // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      _dataLayoutConverter.storeDataLayout(cells[i]);
+    }
+  }
 
  protected:
   /**
@@ -54,11 +65,18 @@ class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   template <typename LoopBody>
   inline void c01Traversal(LoopBody&& loopBody);
+
+ private:
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 template <typename LoopBody>
-inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::c01Traversal(LoopBody&& loopBody) {
+inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c01Traversal(
+    LoopBody&& loopBody) {
   const unsigned long end_x = this->_cellsPerDimension[0] - 1;
   const unsigned long end_y = this->_cellsPerDimension[1] - 1;
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
