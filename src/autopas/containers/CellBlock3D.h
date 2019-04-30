@@ -35,7 +35,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param bMin lower corner of the cellblock
    * @param bMax higher corner of the cellblock
    * @param interactionLength max. radius of interaction between particles
-   * @param cellSize cell size ralative to interactionLength
+   * @param cellSize cell size relative to interactionLength
    */
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
               double interactionLength, double cellSize = 1.0) {
