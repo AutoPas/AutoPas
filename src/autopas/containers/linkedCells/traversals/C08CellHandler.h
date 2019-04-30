@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C08CellHandler {
  public:
   /**
@@ -35,7 +35,7 @@ class C08CellHandler {
    */
   explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension)
       : _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
+            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(
                 pairwiseFunctor)),
         _cellPairOffsets{},
         _cellOffsets{} {
@@ -60,7 +60,7 @@ class C08CellHandler {
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellFunctor;
+  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellFunctor;
 
   /**
    * Pair sets for processBaseCell().
@@ -72,8 +72,8 @@ class C08CellHandler {
   std::array<unsigned long, 8> _cellOffsets;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::processBaseCell(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
   using std::pair;
 
@@ -98,8 +98,8 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::p
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::computeOffsets(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets(
     std::array<unsigned long, 3> cellsPerDimension) {
   using std::make_pair;
 

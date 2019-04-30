@@ -8,8 +8,12 @@
 #pragma once
 
 #include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoA.h"
+#if defined(AUTOPAS_CUDA)
+#include "autopas/pairwiseFunctors/FunctorCuda.cuh"
+#endif
 
 namespace autopas {
 
@@ -115,6 +119,55 @@ class Functor {
   }
 
   /**
+   * @brief Functor using Cuda on SoA in device Memory
+   *
+   * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
+   *
+   * @param device_handle soa in device memory
+   * @param newton3 defines whether or whether not to use newton
+   */
+  virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) {
+    utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3: not yet implemented");
+  }
+
+  /**
+   * @brief Functor using Cuda on SoAs in device Memory
+   *
+   * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
+   * the GPU
+   *
+   * @param device_handle1 first soa in device memory
+   * @param device_handle2 second soa in device memory
+   * @param newton3 defines whether or whether not to use newton
+   */
+  virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
+                           CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) {
+    utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3(two cells): not yet implemented");
+  }
+
+  /**
+   * @brief Copies the SoA data of the given cell to the Cuda device.
+   *
+   * @param soa  Structure of arrays where the data is loaded.
+   * @param device_handle soa in device memory where the data is copied to
+   */
+  virtual void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
+                               CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+    utils::ExceptionHandler::exception("Functor::CudaDeviceSoALoader: not yet implemented");
+  }
+
+  /**
+   * @brief Copies the data stored on the Cuda device back to the SoA overwrites the data in the soa
+   *
+   * @param soa  Structure of arrays where the data copied to.
+   * @param device_handle soa in device memory where the data is loaded from
+   */
+  virtual void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
+                                  CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+    utils::ExceptionHandler::exception("Functor::CudaDeviceSoAExtractor: not yet implemented");
+  }
+
+  /**
    * @brief Copies the AoS data of the given cell in the given soa.
    *
    * @param cell Cell from where the data is loaded.
@@ -164,6 +217,23 @@ class Functor {
    * @return true if and only if this functor is relevant for auto-tuning.
    */
   virtual bool isRelevantForTuning() = 0;
+
+#if defined(AUTOPAS_CUDA)
+  /**
+   * Provides an interface for traversals to directly access Cuda Functions
+   * @return Pointer to CudaWrapper of the Functor
+   */
+  virtual CudaWrapperInterface<typename Particle::ParticleFloatingPointType> *getCudaWrapper() { return NULL; }
+
+  /**
+   * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
+   * @return unique pointer to the object
+   */
+  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>> createFunctorCudaSoA(
+      CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
+    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
+  }
+#endif
 };
 
 /**

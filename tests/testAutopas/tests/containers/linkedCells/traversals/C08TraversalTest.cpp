@@ -20,8 +20,8 @@ void testC08Traversal(const std::array<size_t, 3>& edgeLength) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::C08Traversal<FPCell, MFunctor, false, true> c08Traversal({edgeLength[0], edgeLength[1], edgeLength[2]},
-                                                                    &functor);
+  autopas::C08Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> c08Traversal(
+      {edgeLength[0], edgeLength[1], edgeLength[2]}, &functor);
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions
