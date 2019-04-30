@@ -140,7 +140,7 @@ inline std::string to_string(const TraversalOption &option) {
       return "verlet-sliced";
     }
     case autopas::TraversalOption::directSumKokkosTraversal: {
-        return "kokkos-directSum";
+      return "kokkos-directSum";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -223,11 +223,11 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
   auto words = tokenize(traversalOptionsString, delimiters);
 
   for (auto &word : words) {
-    if(word.find("kokkos") != std::string::npos){
-      if(word.find("dir") != std::string::npos){
+    if (word.find("kokkos") != std::string::npos) {
+      if (word.find("dir") != std::string::npos) {
         traversalOptions.emplace_back(autopas::TraversalOption::directSumKokkosTraversal);
       }
-    }else if (word.find("01") != std::string::npos) {
+    } else if (word.find("01") != std::string::npos) {
       if (word.find('v') != std::string::npos)
         traversalOptions.emplace_back(autopas::TraversalOption::c01Verlet);
       else

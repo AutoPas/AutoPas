@@ -15,6 +15,10 @@ target_link_libraries(autopas
         $<$<AND:$<BOOL:${OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
         )
 
+if(KOKKOS_ENABLED)
+    target_link_libraries(autopas kokkos)
+endif(KOKKOS_ENABLED)
+
 # Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP target.
 # this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
 target_compile_definitions(autopas

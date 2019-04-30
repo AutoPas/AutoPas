@@ -10,11 +10,12 @@
 #include <numeric>
 #include <unordered_map>
 #include <vector>
+#include "../options/TraversalOption.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/containers/cellPairTraversals/TraversalInterface.h"
-#include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/directSum/DirectSumKokkosTraversal.h"
+#include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
@@ -28,7 +29,6 @@
 #include "autopas/utils/Logger.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/TrivialHash.h"
-#include "../options/TraversalOption.h"
 
 namespace autopas {
 
@@ -75,7 +75,8 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor) {
   switch (traversalType) {
     case TraversalOption::directSumKokkosTraversal: {
-      return std::make_unique<DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);
+      return std::make_unique<DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+          &pairwiseFunctor);
     }
     case TraversalOption::directSumTraversal: {
       return std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);

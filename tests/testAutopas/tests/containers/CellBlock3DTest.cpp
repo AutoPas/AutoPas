@@ -87,7 +87,9 @@ void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::Molecu
                   << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
               break;
-            default: { FAIL(); }
+            default: {
+              FAIL();
+            }
           }
         }
       }
