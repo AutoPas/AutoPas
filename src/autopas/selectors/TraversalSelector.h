@@ -40,7 +40,7 @@ class TraversalSelector {
   /**
    * Dummy constructor such that this class can be used in maps
    */
-  TraversalSelector() : _dims({0, 0, 0}) {}
+  TraversalSelector() : _dims{0, 0, 0} {}
   /**
    * Constructor of the TraversalSelector class.
    * @param dims Array with the dimension lengths of the domain.
