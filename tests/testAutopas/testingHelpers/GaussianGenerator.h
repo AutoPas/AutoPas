@@ -9,12 +9,16 @@
 #include <random>
 #include "autopas/AutoPas.h"
 
+/**
+ * Generator class for gaussian distributions
+ */
 class GaussianGenerator {
  public:
   /**
-   * Fills an autopas object with Gaussian distributed particles.
-   * @tparam Particle Type of particle to be generated
-   * @tparam ParticleCell
+   * Fills any container (also AutoPas object) with randomly 3D gaussian distributed particles.
+   *
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+   * @tparam Particle Type of the default particle.
    * @param autoPas
    * @param numParticles number of particles
    * @param defaultParticle inserted particle

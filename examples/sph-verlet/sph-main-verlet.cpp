@@ -12,9 +12,6 @@
 #include "autopas/sph/autopassph.h"
 
 typedef autopas::VerletLists<autopas::sph::SPHParticle> Container;
-typedef autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
-                              autopas::sph::SPHCalcHydroForceFunctor, false, false>
-    DummyTraversal;
 
 std::map<std::array<int, 3>, std::vector<autopas::sph::SPHParticle*>> sph_verlet_particle_list;
 
@@ -257,8 +254,10 @@ void densityPressureHydroForce(Container& sphSystem) {
     part->setDensity(part->getDensity() / 2);
   }
   std::cout << "calculation of density... started" << std::endl;
-  DummyTraversal dummyTraversal({0, 0, 0}, &hydroForceFunctor);
-  sphSystem.iteratePairwiseAoS(&densityFunctor, &dummyTraversal);
+  autopas::TraversalVerlet<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
+                           autopas::DataLayoutOption::aos, false>
+      densityTraversal({0, 0, 0}, &densityFunctor);
+  sphSystem.iteratePairwise(&densityFunctor, &densityTraversal, false);
   std::cout << "calculation of density... completed" << std::endl;
   // 1.3 delete halo particles, as their values are no longer valid
   // deleteHaloParticles(sphSystem);
@@ -282,7 +281,10 @@ void densityPressureHydroForce(Container& sphSystem) {
     part->setEngDot(0.);
   }
   std::cout << "calculation of hydroforces... started" << std::endl;
-  sphSystem.iteratePairwiseAoS(&hydroForceFunctor, &dummyTraversal);
+  autopas::TraversalVerlet<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcHydroForceFunctor,
+                           autopas::DataLayoutOption::aos, false>
+      hydroTraversal({0, 0, 0}, &hydroForceFunctor);
+  sphSystem.iteratePairwise(&hydroForceFunctor, &hydroTraversal, false);
   std::cout << "calculation of hydroforces... completed" << std::endl;
   // 0.3.3 delete halo particles, as their values are no longer valid
   // deleteHaloParticles(sphSystem);

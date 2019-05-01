@@ -51,7 +51,7 @@ function separate {
 # workaround because bash3 does not support declare -A
 traversals__DirectSum=directSumTraversal
 traversals__LinkedCells=c08
-traversals__VerletLists=c08ThisIsADummy
+traversals__VerletLists=verlet-lists
 traversals__VerletCells=verletC18
 traversals__VerletCluster=c01
 

@@ -9,32 +9,35 @@
 #include <array>
 #include "autopas/utils/inBox.h"
 
+/**
+ * Generator class for uniform distributions
+ */
 class RandomGenerator {
  private:
   /**
-   * Returns a random number between fMin and fMax.
-   * @param fMin min. number (inclusive)
-   * @param fMax max. number (inclusive)
-   * @return double
+   * Simple random function
+   * @param fMin
+   * @param fMax
+   * @return double between fMin and fMax
    */
   static double fRand(double fMin, double fMax);
 
  public:
   /**
-   * Returns a random position in the space between boxMin and boxMax.
-   * @param boxMin min. position
-   * @param boxMax max. position
-   * @return std::array<double, 3>
+   * Generate a random position within a given box.
+   * @param boxMin
+   * @param boxMax
+   * @return 3D array with random values
    */
   static std::array<double, 3> randomPosition(const std::array<double, 3>& boxMin, const std::array<double, 3>& boxMax);
 
   /**
-   * Fills the given container with randomly distributed particles.
-   * @tparam Container
-   * @tparam Particle Type of particle to be generated
+   * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+   * @tparam Particle Type of the default particle.
    * @param container
-   * @param defaultParticle inserted particle
-   * @param numParticles number of particles
+   * @param defaultParticle
+   * @param numParticles
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container& container, const Particle& defaultParticle,
@@ -56,13 +59,13 @@ class RandomGenerator {
                                 unsigned long numParticles = 100ul);
 
   /**
-   * Fills the halo of the given container with n = numParticles particles.
-   * @tparam Container
-   * @tparam Particle Type of particle to be generated
+   * Fills only a given part of a container (also AutoPas object) with randomly uniformly distributed particles.
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+   * @tparam Particle Type of the default particle.
    * @param container
-   * @param defaultParticle inserted particle
-   * @param haloWidth width of halo
-   * @param numParticles number of particles
+   * @param defaultParticle
+   * @param haloWidth
+   * @param numParticles
    */
   template <class Container, class Particle>
   static void fillWithHaloParticles(Container& container, const Particle& defaultParticle, double haloWidth,

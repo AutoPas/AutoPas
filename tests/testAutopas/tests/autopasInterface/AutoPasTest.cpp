@@ -175,6 +175,7 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdateVL) {
 
   // run once, builds verlet lists. (here for 0 particles)
   MockFunctor<Particle, FPCell> emptyFunctor;
+
   EXPECT_CALL(emptyFunctor, allowsNewton3()).WillRepeatedly(Return(true));
   EXPECT_CALL(emptyFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
   EXPECT_CALL(emptyFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));

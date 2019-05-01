@@ -225,7 +225,7 @@ class AutoTuner {
  private:
   void selectOptimalConfiguration();
 
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3, bool inTuningPhase>
+  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
   void iteratePairwiseTemplateHelper(PairwiseFunctor *f);
 
   /**
@@ -287,15 +287,19 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
     case DataLayoutOption::aos: {
       if (_currentConfig->_newton3 == Newton3Option::enabled) {
         if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/ true, /*tuning*/ true>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
+                                        /*tuning*/ true>(f);
         } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/ true, /*tuning*/ false>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
+                                        /*tuning*/ false>(f);
         }
       } else {
         if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/ false, /*tuning*/ true>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
+                                        /*tuning*/ true>(f);
         } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ false, /*Newton3*/ false, /*tuning*/ false>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
+                                        /*tuning*/ false>(f);
         }
       }
       break;
@@ -303,19 +307,45 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
     case DataLayoutOption::soa: {
       if (_currentConfig->_newton3 == Newton3Option::enabled) {
         if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/ true, /*tuning*/ true>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
+                                        /*tuning*/ true>(f);
         } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/ true, /*tuning*/ false>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
+                                        /*tuning*/ false>(f);
         }
       } else {
         if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/ false, /*tuning*/ true>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
+                                        /*tuning*/ true>(f);
         } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, /*SoA*/ true, /*Newton3*/ false, /*tuning*/ false>(f);
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
+                                        /*tuning*/ false>(f);
         }
       }
       break;
     }
+#if defined(AUTOPAS_CUDA)
+    case DataLayoutOption::cuda: {
+      if (_currentConfig->_newton3 == Newton3Option::enabled) {
+        if (isTuning) {
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ true,
+                                        /*tuning*/ true>(f);
+        } else {
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ true,
+                                        /*tuning*/ false>(f);
+        }
+      } else {
+        if (isTuning) {
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ false,
+                                        /*tuning*/ true>(f);
+        } else {
+          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ false,
+                                        /*tuning*/ false>(f);
+        }
+      }
+      break;
+    }
+#endif
     default:
       utils::ExceptionHandler::exception("AutoTuner: Unknown data layout : {}", _currentConfig->_dataLayout);
   }
@@ -328,32 +358,25 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
 }
 
 template <class Particle, class ParticleCell>
-template <class PairwiseFunctor, bool useSoA, bool useNewton3, bool inTuningPhase>
+template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
 void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f) {
   auto container = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {}", _currentConfig->toString());
 
   auto traversal =
-      _traversalSelectors[_currentConfig->_container].template generateTraversal<PairwiseFunctor, useSoA, useNewton3>(
-          _currentConfig->_traversal, *f);
+      _traversalSelectors[_currentConfig->_container]
+          .template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(_currentConfig->_traversal, *f);
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
     auto start = std::chrono::high_resolution_clock::now();
     // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
-    if (useSoA) {
-      withStaticContainerType(container, [&](auto container) {
-        f->initTraversal();
-        container->iteratePairwiseSoA(f, traversal.get(), useNewton3);
-        f->endTraversal(useNewton3);
-      });
-    } else {
-      withStaticContainerType(container, [&](auto container) {
-        f->initTraversal();
-        container->iteratePairwiseAoS(f, traversal.get(), useNewton3);
-        f->endTraversal(useNewton3);
-      });
-    }
+
+    f->initTraversal();
+    withStaticContainerType(container,
+                            [&](auto container) { container->iteratePairwise(f, traversal.get(), useNewton3); });
+    f->endTraversal(useNewton3);
+
     auto stop = std::chrono::high_resolution_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
     AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
@@ -361,19 +384,10 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     //    traversalSelector.addTimeMeasurement(*f, traversal->getTraversalType(), runtime);
     addTimeMeasurement(*f, runtime);
   } else {
-    if (useSoA) {
-      withStaticContainerType(container, [&](auto container) {
-        f->initTraversal();
-        container->iteratePairwiseSoA(f, traversal.get(), useNewton3);
-        f->endTraversal(useNewton3);
-      });
-    } else {
-      withStaticContainerType(container, [&](auto container) {
-        f->initTraversal();
-        container->iteratePairwiseAoS(f, traversal.get(), useNewton3);
-        f->endTraversal(useNewton3);
-      });
-    }
+    f->initTraversal();
+    withStaticContainerType(container,
+                            [&](auto container) { container->iteratePairwise(f, traversal.get(), useNewton3); });
+    f->endTraversal(useNewton3);
   }
 }
 
@@ -497,17 +511,17 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     case DataLayoutOption::aos: {
       switch (conf._newton3) {
         case Newton3Option::enabled: {
-          traversalApplicable =
-              _traversalSelectors[conf._container]
-                  .template generateTraversal<PairwiseFunctor, false, true>(conf._traversal, pairwiseFunctor)
-                  ->isApplicable();
+          traversalApplicable = _traversalSelectors[conf._container]
+                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::aos, true>(
+                                        conf._traversal, pairwiseFunctor)
+                                    ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
-          traversalApplicable =
-              _traversalSelectors[conf._container]
-                  .template generateTraversal<PairwiseFunctor, false, false>(conf._traversal, pairwiseFunctor)
-                  ->isApplicable();
+          traversalApplicable = _traversalSelectors[conf._container]
+                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::aos, false>(
+                                        conf._traversal, pairwiseFunctor)
+                                    ->isApplicable();
           break;
         }
       }
@@ -516,17 +530,36 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     case DataLayoutOption::soa: {
       switch (conf._newton3) {
         case Newton3Option::enabled: {
-          traversalApplicable =
-              _traversalSelectors[conf._container]
-                  .template generateTraversal<PairwiseFunctor, true, true>(conf._traversal, pairwiseFunctor)
-                  ->isApplicable();
+          traversalApplicable = _traversalSelectors[conf._container]
+                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::soa, true>(
+                                        conf._traversal, pairwiseFunctor)
+                                    ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
-          traversalApplicable =
-              _traversalSelectors[conf._container]
-                  .template generateTraversal<PairwiseFunctor, true, false>(conf._traversal, pairwiseFunctor)
-                  ->isApplicable();
+          traversalApplicable = _traversalSelectors[conf._container]
+                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::soa, false>(
+                                        conf._traversal, pairwiseFunctor)
+                                    ->isApplicable();
+          break;
+        }
+      }
+      break;
+    }
+    case DataLayoutOption::cuda: {
+      switch (conf._newton3) {
+        case Newton3Option::enabled: {
+          traversalApplicable = _traversalSelectors[conf._container]
+                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda, true>(
+                                        conf._traversal, pairwiseFunctor)
+                                    ->isApplicable();
+          break;
+        }
+        case Newton3Option::disabled: {
+          traversalApplicable = _traversalSelectors[conf._container]
+                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda, false>(
+                                        conf._traversal, pairwiseFunctor)
+                                    ->isApplicable();
           break;
         }
       }

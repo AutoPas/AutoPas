@@ -31,6 +31,14 @@ class DummyTraversal : public CellPairTraversal<ParticleCell> {
   TraversalOption getTraversalType() override { return TraversalOption::dummyTraversal; }
 
   bool isApplicable() override { return true; }
+
+  void initTraversal(std::vector<ParticleCell> &cells) override {
+    // do nothing
+  }
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {
+    // do nothing
+  }
 };
 
 }  // namespace autopas
