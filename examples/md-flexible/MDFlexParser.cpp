@@ -351,6 +351,9 @@ void MDFlexParser::printConfig() {
 
     cout << setw(valueOffset) << left << "Verlet skin radius"
          << ":  " << verletSkinRadius << endl;
+
+    cout << setw(valueOffset) << left << "Verlet cluster size"
+         << ":  " << verletClusterSize << endl;
   }
 
   if (containerOptions.size() > 1 or traversalOptions.size() > 1 or dataLayoutOptions.size() > 1) {
@@ -416,6 +419,20 @@ void MDFlexParser::printConfig() {
       cout << "Particles" << endl;
       cout << setw(valueOffset) << left << "  total"
            << ":  " << particlesTotal << endl;
+      break;
+    }
+  }
+  switch (precisionOption) {
+    case MDFlexParser::PrecisionOption::FP32: {
+      cout << setw(valueOffset) << left << "Particle precision"
+           << ":  "
+           << "float" << endl;
+      break;
+    }
+    case MDFlexParser::PrecisionOption::FP64: {
+      cout << setw(valueOffset) << left << "Particle precision"
+           << ":  "
+           << "double" << endl;
       break;
     }
   }

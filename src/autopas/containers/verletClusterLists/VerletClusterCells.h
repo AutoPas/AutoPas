@@ -89,14 +89,21 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
     }
+    // std::cout << traversal << "  " << traversalInterface << std::endl;
+
     if (needsRebuild()) {
       this->rebuild();
       traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, this->getCutoff());
       _lastTraversalSig = traversalInterface->getSignature();
-    } else if (traversalInterface->getSignature() != _lastTraversalSig) {
+    }
+    // TODO better way
+    if (true or traversalInterface->getSignature() != _lastTraversalSig) {
       traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, this->getCutoff());
       _lastTraversalSig = traversalInterface->getSignature();
     }
+    /*
+        std::cout << std::get<0>(_lastTraversalSig) << " " << std::get<1>(_lastTraversalSig) << " "
+                  << std::get<2>(_lastTraversalSig) << " " << std::endl;*/
 
     traversal->initTraversal(this->_cells);
     traversalInterface->traverseCellPairs(this->_cells);
@@ -150,10 +157,18 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   bool isContainerUpdateNeeded() override {
+    if (not _isValid) return true;
+
     size_t i = 0;
     for (i = 0; i < _firstHaloClusterId; ++i) {
-      for (auto& p : this->_cells[i]._particles) {
-        if (autopas::utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) return true;
+      auto dit = _dummyStarts.find(i);
+      unsigned int end = _clusterSize;
+      if (dit != _dummyStarts.end()) {
+        end = dit->second;
+      }
+      for (unsigned int j = 0; j < end; ++j) {
+        if (autopas::utils::notInBox(this->_cells[i]._particles[j].getR(), this->getBoxMin(), this->getBoxMax()))
+          return true;
       }
     }
     for (; i < this->_cells.size(); ++i) {
@@ -227,19 +242,17 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     // get all particles and clear clusters
     std::vector<Particle> invalidParticles;
 
-    for (size_t i = 0; i < _firstHaloClusterId; ++i) {
+    for (size_t i = 0; i < this->_cells.size(); ++i) {
       for (auto& p : this->_cells[i]._particles) {
-        invalidParticles.push_back(p);
+        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+          invalidParticles.push_back(p);
+
+        } else {
+          _haloInsertQueue.push_back(p);
+        }
       }
       this->_cells[i].clear();
     }
-    for (size_t j = _firstHaloClusterId; j < this->_cells.size(); ++j) {
-      for (auto& p : this->_cells[j]._particles) {
-        _haloInsertQueue.push_back(p);
-      }
-      this->_cells[j].clear();
-    }
-
     // estimate particle density
     ParticleFloatType density = (ParticleFloatType)invalidParticles.size() / volume;
 
@@ -305,6 +318,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     // sort halo cells
+
     for (int i = 0; i < 2; ++i) {
       this->_cells[_firstHaloClusterId + i].sortByDim(i + 1);
       this->_cells[_firstHaloClusterId + i + 1].sortByDim(i + 1);
@@ -358,6 +372,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       }
       _dummyStarts[i] = dummyStart;
       for (size_t pid = dummyStart; pid < _clusterSize; ++pid) {
+        // add dummy Pericles with ID ULONG_MAX
         Particle dummyParticle = Particle({this->getBoxMax()[0] + 8 * this->getCutoff() +
                                                static_cast<typename Particle::ParticleFloatingPointType>(i),
                                            this->getBoxMax()[1] + 8 * this->getCutoff() +

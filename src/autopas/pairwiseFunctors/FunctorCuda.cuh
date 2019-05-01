@@ -11,6 +11,40 @@
 
 namespace autopas {
 
+/**
+ * Wraps vectors of size 3 with the required precision
+ * @tparam T floating point Type
+ */
+template <typename T>
+struct vec3 {
+  typedef T Type;
+};
+template <>
+struct vec3<float> {
+  typedef float3 Type;
+};
+template <>
+struct vec3<double> {
+  typedef double3 Type;
+};
+
+/**
+ * Wraps vectors of size 4 with the required precision
+ * @tparam T floating point Type
+ */
+template <typename T>
+struct vec4 {
+  typedef T Type;
+};
+template <>
+struct vec4<float> {
+  typedef float4 Type;
+};
+template <>
+struct vec4<double> {
+  typedef double4 Type;
+};
+
 template <typename floatingPointType>
 class FunctorCudaSoA {};
 

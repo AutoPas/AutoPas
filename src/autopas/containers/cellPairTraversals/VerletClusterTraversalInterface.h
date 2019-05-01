@@ -33,7 +33,7 @@ class VerletClusterTraversalInterface {
    */
   virtual void rebuild(const std::array<unsigned long, 3> &dims, unsigned int clusterSize,
                        std::vector<ParticleCell> &cells,
-                       std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> boundingBoxes,
+                       std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> &boundingBoxes,
                        typename Particle::ParticleFloatingPointType distance) = 0;
 
   /**

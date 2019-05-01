@@ -81,27 +81,10 @@ class LJFunctorConstants : public FunctorCudaConstants<floatType> {
   floatType shift6;
 };
 
-/**
- * Wraps vectors of size 3 with the required precision
- * @tparam T floating point Type
- */
-template <typename T>
-struct vec3 {
-  typedef T Type;
-};
-template <>
-struct vec3<float> {
-  typedef float3 Type;
-};
-template <>
-struct vec3<double> {
-  typedef double3 Type;
-};
-
 template <typename floatType>
 class LJFunctorCudaWrapper : public CudaWrapperInterface<floatType> {
  public:
-  LJFunctorCudaWrapper() { _num_threads = 32; }
+  LJFunctorCudaWrapper() { _num_threads = 64; }
   virtual ~LJFunctorCudaWrapper() {}
 
   void setNumThreads(int num_threads) override { _num_threads = num_threads; }

@@ -176,7 +176,7 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
   EXPECT_EQ(numBoth - numDummyBoth, 550);
   EXPECT_EQ(numBoth, numOwn + numHalo);
 
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
+  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     iter->setR(RandomGenerator::randomPosition(min, max));
   }
   verletLists.iteratePairwise(&emptyFunctor, &verletClusterCellsTraversal, false);
@@ -311,10 +311,11 @@ TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
           } else {
             verletClusterCells.addParticle(p);
           }
-          EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
         }
       }
     }
+    verletClusterCells.updateContainer();
+    EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
   }
   {
     autopas::VerletClusterCells<Particle> verletClusterCells({0., 0., 0.}, {10., 10., 10.}, 3.);
@@ -334,10 +335,11 @@ TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
           } else {
             verletClusterCells.addParticle(p);
           }
-          EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
         }
       }
     }
+    verletClusterCells.updateContainer();
+    EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
   }
 }
 
@@ -347,17 +349,24 @@ TEST_F(VerletClusterCellsTest, testIsContainerUpdateNeeded) {
   double cutoff = 1.;
   autopas::VerletClusterCells<Particle> container(boxMin, boxMax, cutoff, 0, 2, 32);
 
-  EXPECT_FALSE(container.isContainerUpdateNeeded());
+  EXPECT_TRUE(container.isContainerUpdateNeeded());
 
-  Particle p({1, 1, 1}, {0, 0, 0}, 0);
+  Particle p({1, 1, 1}, {0, 0, 0}, 42);
   container.addParticle(p);
+  container.updateContainer();
+
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 
+  // Find particle in dummys and move to halo
+  for (auto iter = container.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    if (iter->getID() == 42) {
+      iter->setR({-1, -1, -1});
+    }
+  }
   // Particle moves to halo cell -> needs update
-  container.begin()->setR({-1, -1, -1});
   EXPECT_TRUE(container.isContainerUpdateNeeded());
 
-  // Particle still in halo cell, but no container update called -> still needs update
-  container.begin()->setR({-1.1, -0.9, -1});
-  EXPECT_TRUE(container.isContainerUpdateNeeded());
+  container.updateContainer();
+  // Particle still in halo cell and container update called -> no update
+  EXPECT_FALSE(container.isContainerUpdateNeeded());
 }

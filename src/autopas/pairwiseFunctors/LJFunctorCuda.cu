@@ -214,7 +214,7 @@ __global__ void SoAFunctorNoN3(LJFunctorCudaSoA<floatType> cell1) {
     block_pos[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
     __syncthreads();
     if (tid < cell1._size) {
-      for (int j = 0; j < blockDim.x; ++j) {
+      for (int j = 0; j < block_size; ++j) {
         myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
       }
     }
@@ -722,8 +722,8 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalNoN3Wrapper(FunctorCuda
     CREATESWITCHCASES(ncells, 0, CellVerletTraversalNoN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
-          "Requested: {}",
+          "cuda Kernel size not available for Verlet cells. "
+          "Requested Cluster Size: {}",
           clusterSize);
       break;
   }
@@ -814,8 +814,8 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalN3Wrapper(FunctorCudaSo
     CREATESWITCHCASES(ncells, 0, CellVerletTraversalN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
-          "Requested: {}",
+          "cuda Kernel size not available for Verlet cells. "
+          "Requested Cluster Size: {}",
           clusterSize);
       break;
   }

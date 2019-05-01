@@ -74,7 +74,7 @@ inline std::string to_string(const DataLayoutOption &option) {
       return "Structure-of-Arrays";
     }
     case autopas::DataLayoutOption::cuda: {
-      return "Structure-of-Arrays on Cuda capable device";
+      return "Structure-of-Arrays-on-Cuda-capable-device";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
