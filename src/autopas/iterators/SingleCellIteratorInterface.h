@@ -79,7 +79,7 @@ class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Parti
  * @return static cell iterator
  */
 template <typename cell_t>
-typename cell_t::iterator_t &getStaticCellIter(cell_t &cell) {
+typename cell_t::iterator_t getStaticCellIter(cell_t &cell) {
   auto _wrapper = cell.begin();
   auto _ptr = _wrapper.get();
 
