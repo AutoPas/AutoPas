@@ -9,6 +9,7 @@
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -33,9 +34,12 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, use
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cutoff Cutoff radius.
+   * @param cellLength cell length.
    */
-  explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+  explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor, cutoff, cellLength),
         _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
                 pairwiseFunctor)) {
