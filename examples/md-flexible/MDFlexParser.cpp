@@ -14,7 +14,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"container", required_argument, nullptr, 'c'},
                                          {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"cutoff", required_argument, nullptr, 'C'},
-                                         {"cell-size", required_argument, nullptr, 'a'},
+                                         {"cell-size-factor", required_argument, nullptr, 'a'},
                                          {"distribution-mean", required_argument, nullptr, 'm'},
                                          {"distribution-stddeviation", required_argument, nullptr, 'z'},
                                          {"data-layout", required_argument, nullptr, 'd'},
@@ -80,7 +80,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'a': {
         try {
-          cellSize = stod(strArg);
+          cellSizeFactor = stod(strArg);
         } catch (const exception &) {
           cerr << "Error parsing cell size: " << optarg << endl;
           displayHelp = true;
@@ -367,8 +367,8 @@ void MDFlexParser::printConfig() {
   cout << setw(valueOffset) << left << "Cutoff radius"
        << ":  " << cutoff << endl;
 
-  cout << setw(valueOffset) << left << "Cell size"
-       << ":  " << cellSize << endl;
+  cout << setw(valueOffset) << left << "Cell size factor"
+       << ":  " << cellSizeFactor << endl;
 
   cout << setw(valueOffset) << left << "Particle Generator"
        << ":  ";
@@ -425,7 +425,7 @@ std::vector<autopas::ContainerOption> MDFlexParser::getContainerOptions() const 
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 
-double MDFlexParser::getCellSize() const { return cellSize; }
+double MDFlexParser::getCellSizeFactor() const { return cellSizeFactor; }
 
 vector<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
 

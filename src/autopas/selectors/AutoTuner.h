@@ -48,7 +48,7 @@ class AutoTuner {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param cellSize Cell size to be used in this container.
+   * @param cellSizeFactor Cell size factor to be used in this container.
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainerOptions Vector of container types AutoPas can choose from.
@@ -59,7 +59,7 @@ class AutoTuner {
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
-  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSize,
+  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSizeFactor,
             double verletSkin, unsigned int verletRebuildFrequency,
             const std::vector<ContainerOption> &allowedContainerOptions,
             std::vector<TraversalOption> allowedTraversalOptions,
@@ -68,7 +68,7 @@ class AutoTuner {
             unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
-        _containerSelector(boxMin, boxMax, cutoff, cellSize, verletSkin, verletRebuildFrequency),
+        _containerSelector(boxMin, boxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
         _selectorStrategy(selectorStrategy),
@@ -118,7 +118,7 @@ class AutoTuner {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param cellSize Cell size to be used in this container.
+   * @param cellSizeFactor Cell size to be used in this container.
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
@@ -126,13 +126,13 @@ class AutoTuner {
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
-  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSize,
+  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSizeFactor,
             double verletSkin, unsigned int verletRebuildFrequency,
             const std::set<Configuration> &allowedConfigurations, SelectorStrategy selectorStrategy,
             unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
-        _containerSelector(boxMin, boxMax, cutoff, cellSize, verletSkin, verletRebuildFrequency),
+        _containerSelector(boxMin, boxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
         _selectorStrategy(selectorStrategy),

@@ -31,7 +31,7 @@ class Newton3OnOffTest : public AutoPasTestBase,
   std::array<double, 3> getBoxMax() const { return {3.0, 3.0, 3.0}; }
 
   double getCutoff() const { return 1.0; }
-  double getCellSize() const { return 1.0; }
+  double getCellSizeFactor() const { return 1.0; }
   double getVerletSkin() const { return 0.0; }
   unsigned int getVerletRebuildFrequency() const { return 1; }
 

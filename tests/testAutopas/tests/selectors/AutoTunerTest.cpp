@@ -14,13 +14,13 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // adaptive domain size so sliced is always applicable.
   bBoxMax[2] = autopas::autopas_get_max_threads() * 2;
   const double cutoff = 1;
-  const double cellSize = 1;
+  const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
   const unsigned int maxSamples = 2;
 
   autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
-  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, cellSize, verletSkin, verletRebuildFrequency,
+  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency,
                                                  autopas::allContainerOptions, autopas::allTraversalOptions,
                                                  autopas::allDataLayoutOptions, autopas::allNewton3Options,
                                                  autopas::SelectorStrategy::fastestAbs, 100, maxSamples);

@@ -35,11 +35,11 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param bMin lower corner of the cellblock
    * @param bMax higher corner of the cellblock
    * @param interactionLength max. radius of interaction between particles
-   * @param cellSize cell size relative to interactionLength
+   * @param cellSizeFactor cell size factor relative to interactionLength
    */
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
-              double interactionLength, double cellSize = 1.0) {
-    rebuild(vec, bMin, bMax, interactionLength, cellSize);
+              double interactionLength, double cellSizeFactor = 1.0) {
+    rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
         AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
@@ -93,10 +93,10 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param bMin new lower corner of the cellblock
    * @param bMax new higher corner of the cellblock
    * @param interactionLength max. radius of interaction between particles
-   * @param cellSize cell size ralative to interactionLength
+   * @param cellSizeFactor cell size factor relative to interactionLength
    */
   void rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
-               double interactionLength, double cellSize);
+               double interactionLength, double cellSizeFactor);
 
   // this class doesn't actually know about particles
   /**
@@ -308,7 +308,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
 template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
                                                const std::array<double, 3> &bMax, double interactionLength,
-                                               double cellSize) {
+                                               double cellSizeFactor) {
   _vec1D = &vec;
   _boxMin = bMin;
   _boxMax = bMax;
@@ -318,7 +318,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   _numCells = 1;
   for (int d = 0; d < 3; ++d) {
     double diff = _boxMax[d] - _boxMin[d];
-    auto cellsPerDim = static_cast<index_t>(std::floor(diff / (_interactionLength * cellSize)));
+    auto cellsPerDim = static_cast<index_t>(std::floor(diff / (_interactionLength * cellSizeFactor)));
     // at least one central cell
     cellsPerDim = std::max(cellsPerDim, 1ul);
 

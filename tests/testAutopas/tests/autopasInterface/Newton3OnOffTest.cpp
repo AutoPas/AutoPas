@@ -83,7 +83,7 @@ INSTANTIATE_TEST_SUITE_P(
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff(), getCellSize(),
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff(), getCellSizeFactor(),
                                                                  getVerletSkin(), getVerletRebuildFrequency());
 
   containerSelector.selectContainer(containerOption);

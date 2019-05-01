@@ -214,7 +214,7 @@ TEST_F(AutoPasTest, checkArgumentValidation) {
   EXPECT_NO_THROW(autoPas.setCutoff(0.5));
 
   // cell size
-  EXPECT_ANY_THROW(autoPas.setCellSize(-5.0));
-  EXPECT_ANY_THROW(autoPas.setCellSize(0.0));
-  EXPECT_NO_THROW(autoPas.setCellSize(0.5));
+  EXPECT_ANY_THROW(autoPas.setCellSizeFactor(-5.0));
+  EXPECT_ANY_THROW(autoPas.setCellSizeFactor(0.0));
+  EXPECT_NO_THROW(autoPas.setCellSizeFactor(0.5));
 }

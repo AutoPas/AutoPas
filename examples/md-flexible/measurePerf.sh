@@ -81,7 +81,7 @@ do
             # loop for different verlet rebuild frequencies and skins
             for iVL in `seq 0 $(( ${#VLRebuild[@]} - 1 ))` ;
             do
-                for cellSize in 1.0  1.5  2.0;
+                for cellSizeFactor in 1.0  1.5  2.0;
                 do
                     configPrinted=false
 
@@ -90,8 +90,8 @@ do
                     # print current cell size only if relevant 
                     if [[ ${container} =~ 'LinkedCells' ]];
                     then
-                        separate "Cell size ${cellSize}"
-                        filename="${filename}_cs${cellSize}"
+                        separate "Cell size ${cellSizeFactor}"
+                        filename="${filename}_cs${cellSizeFactor}"
                     fi
 
                     # since this loop only has one iteration for non verlet container only print for verlet
@@ -129,7 +129,7 @@ do
                             --traversal ${!t} \
                             --data-layout ${dataLayout} \
                             --cutoff 1 \
-                            --cell-size ${cellSize} \
+                            --cell-size ${cellSizeFactor} \
                             --box-length 10 \
                             --particles-generator uniform \
                             --particles-total ${Mols[$i]} \
