@@ -20,10 +20,10 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const unsigned int maxSamples = 2;
 
   autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
-  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency,
-                                                 autopas::allContainerOptions, autopas::allTraversalOptions,
-                                                 autopas::allDataLayoutOptions, autopas::allNewton3Options,
-                                                 autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
+  autopas::AutoTuner<Particle, FPCell> autoTuner(
+      bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency, autopas::allContainerOptions,
+      autopas::allTraversalOptions, autopas::allDataLayoutOptions, autopas::allNewton3Options,
+      autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
