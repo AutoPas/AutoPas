@@ -36,9 +36,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
-        _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, false, false>(
-                pairwiseFunctor)) {
+        _cellFunctor(pairwiseFunctor) {
     computeOffsets();
   }
 
