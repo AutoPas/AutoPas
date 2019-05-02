@@ -48,9 +48,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
     auto currentConfig = autoTuner.getCurrentConfig();
     if (collectedSamples == 1) {
-      EXPECT_NE(currentConfig, prevConfig);
+      EXPECT_NE(currentConfig, prevConfig)
+          << "currentConf: " << currentConfig.toString() << " == prevConfig: " << prevConfig.toString();
     } else {
-      EXPECT_EQ(currentConfig, prevConfig);
+      EXPECT_EQ(currentConfig, prevConfig)
+          << "currentConf: " << currentConfig.toString() << " != prevConfig: " << prevConfig.toString();
     }
     prevConfig = currentConfig;
   }
