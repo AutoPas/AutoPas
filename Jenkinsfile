@@ -9,8 +9,6 @@ pipeline{
         stage('setup'){
             steps{
                 echo 'Starting AutoPas Pipeline'
-                githubNotify context: 'build', description: 'build pending...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
-                githubNotify context: 'test', description: 'test pending...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
             }
         }
         stage("style check") {
@@ -114,7 +112,6 @@ pipeline{
             steps{
                 parallel(
                     "default": {
-                        githubNotify context: 'build', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                         container('autopas-gcc7-cmake-make') {
                             dir("build"){
                                 sh "cmake .."
@@ -217,25 +214,12 @@ pipeline{
                 always{
                     warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
                 }
-                success{
-                    githubNotify context: 'build', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
-                }
-                failure{
-                    githubNotify context: 'build', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                unstable{
-                    githubNotify context: 'build', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                aborted{
-                    githubNotify context: 'build', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
-                }
             }
         }
         stage("test") {
             steps{
                 parallel(
                     "default": {
-                        githubNotify context: 'test', description: 'test in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                         container('autopas-gcc7-cmake-make') {
                             dir("build"){
                                 //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
@@ -327,26 +311,11 @@ pipeline{
                     }
                 )
             }
-            post{
-                success{
-                    githubNotify context: 'test', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
-                }
-                failure{
-                    githubNotify context: 'test', description: currentBuild.description,  status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                unstable{
-                    githubNotify context: 'test', description: currentBuild.description,  status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                aborted{
-                    githubNotify context: 'test', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
-                }
-            }
         }
         stage("checkExamples") {
             steps{
                 parallel(
                     "default": {
-                        githubNotify context: 'checkExamples', description: 'checking examples in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                         container('autopas-gcc7-cmake-make') {
                             dir("build/examples") {
                                 sh 'ctest -C checkExamples -j8 --verbose'
@@ -431,20 +400,6 @@ pipeline{
                         }
                     }
                 )
-            }
-            post{
-                success{
-                    githubNotify context: 'checkExamples', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
-                }
-                failure{
-                    githubNotify context: 'checkExamples', description: currentBuild.description,  status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                unstable{
-                    githubNotify context: 'checkExamples', description: currentBuild.description,  status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                aborted{
-                    githubNotify context: 'checkExamples', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
-                }
             }
         }
 
