@@ -32,6 +32,16 @@ if(NOT CMAKE_BUILD_TYPE)
             "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+# CUDA options
+option(ENABLE_CUDA "Activates Cuda Components" OFF)
+if(ENABLE_CUDA)
+    message(STATUS "Cuda enabled.")
+    enable_language(CUDA)
+    set(CUDA_SEPARABLE_COMPILATION ON)
+else()
+    message(STATUS "Cuda disabled.")
+endif()
+
 ENABLE_TESTING()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
@@ -59,3 +69,4 @@ ADD_SUBDIRECTORY(tests)
 include(logging)
 include(other-compileroptions)
 include(vectorization)
+include(cuda)

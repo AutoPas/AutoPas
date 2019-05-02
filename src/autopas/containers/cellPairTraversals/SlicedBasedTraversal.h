@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -28,7 +29,7 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
@@ -38,12 +39,45 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims), _dimsPerLength{}, _sliceThickness{}, locks() {
+      : CellPairTraversal<ParticleCell>(dims),
+        _dimsPerLength{},
+        _sliceThickness{},
+        locks(),
+        _dataLayoutConverter(pairwiseFunctor) {
     rebuild(dims);
   }
 
-  bool isApplicable() override { return this->_sliceThickness.size() > 0; }
+  bool isApplicable() override {
+    if (DataLayout == DataLayoutOption::cuda) {
+      int nDevices = 0;
+#if defined(AUTOPAS_CUDA)
+      cudaGetDeviceCount(&nDevices);
+#endif
+      return (this->_sliceThickness.size() > 0) && (nDevices > 0);
+    } else {
+      return this->_sliceThickness.size() > 0;
+    }
+  }
 
+  void initTraversal(std::vector<ParticleCell> &cells) override {
+#ifdef AUTOPAS_OPENMP
+    // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      _dataLayoutConverter.loadDataLayout(cells[i]);
+    }
+  }
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {
+#ifdef AUTOPAS_OPENMP
+    // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      _dataLayoutConverter.storeDataLayout(cells[i]);
+    }
+  }
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  protected:
@@ -65,10 +99,15 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::vector<unsigned long> _sliceThickness;
   std::vector<AutoPasLock> locks;
+
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::rebuild(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::rebuild(
     const std::array<unsigned long, 3> &dims) {
   CellPairTraversal<ParticleCell>::rebuild(dims);
 
@@ -101,9 +140,9 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewto
 
   locks.resize(numSlices);
 }
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 template <typename LoopBody>
-void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::slicedTraversal(LoopBody &&loopBody) {
+void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = _sliceThickness.size();

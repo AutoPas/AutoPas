@@ -21,8 +21,8 @@ void testSlicedTraversal(const std::array<size_t, 3>& edgeLength) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({edgeLength[0], edgeLength[1], edgeLength[2]},
-                                                                          &functor);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal(
+      {edgeLength[0], edgeLength[1], edgeLength[2]}, &functor);
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions
@@ -60,7 +60,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({1, 1, 1}, nullptr);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({1, 1, 1}, nullptr);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
 #endif
@@ -75,7 +75,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({5, 5, 5}, nullptr);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({5, 5, 5}, nullptr);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
 #endif
@@ -90,7 +90,8 @@ TEST_F(SlicedTraversalTest, testIsApplicableOk) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({11, 11, 11}, nullptr);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({11, 11, 11},
+                                                                                                   nullptr);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
 #endif
@@ -105,7 +106,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableOkOnlyOneDim) {
   int numThreadsBefore = omp_get_max_threads();
   omp_set_num_threads(4);
 #endif
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({1, 1, 11}, nullptr);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({1, 1, 11}, nullptr);
 #ifdef AUTOPAS_OPENMP
   omp_set_num_threads(numThreadsBefore);
 #endif

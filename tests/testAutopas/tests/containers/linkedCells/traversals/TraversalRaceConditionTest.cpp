@@ -42,6 +42,10 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
       // Here only one traversal is tested.
       continue;
     }
+    if (traversalLC == autopas::TraversalOption::c01Cuda) {
+      // c01Cuda traversal does not work with DataLayout Option AoS used in this test.
+      continue;
+    }
     // @TODO: extend Simple Functor for SoA
     for (auto &dataLayout : /*autopas::allDataLayoutOptions*/ {autopas::DataLayoutOption::aos}) {
       autopas::AutoPas<Particle, FPCell> autoPas;

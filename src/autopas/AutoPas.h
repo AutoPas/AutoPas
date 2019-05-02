@@ -37,6 +37,7 @@ class AutoPas {
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
         _cutoff(1),
+        _cellSizeFactor(1),
         _verletSkin(0.2),
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
@@ -86,8 +87,9 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, _allowedContainers, _allowedTraversals,
-        _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy, _tuningInterval, _numSamples);
+        _boxMin, _boxMax, _cutoff, _cellSizeFactor, _verletSkin, _verletRebuildFrequency, _allowedContainers,
+        _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy, _tuningInterval,
+        _numSamples);
   }
 
   /**
@@ -205,7 +207,31 @@ class AutoPas {
    * Set cutoff radius.
    * @param cutoff
    */
-  void setCutoff(double cutoff) { AutoPas::_cutoff = cutoff; }
+  void setCutoff(double cutoff) {
+    if (cutoff <= 0.0) {
+      AutoPasLog(error, "Cutoff <= 0.0: {}", cutoff);
+      utils::ExceptionHandler::exception("Error: Cutoff <= 0.0!");
+    }
+    AutoPas::_cutoff = cutoff;
+  }
+
+  /**
+   * Get cell size factor (only relevant for LinkedCells).
+   * @return
+   */
+  double getCellSizeFactor() const { return _cellSizeFactor; }
+
+  /**
+   * Set cell size factor (only relevant for LinkedCells).
+   * @param cellSizeFactor
+   */
+  void setCellSizeFactor(double cellSizeFactor) {
+    if (cellSizeFactor <= 0.0) {
+      AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
+      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+    }
+    AutoPas::_cellSizeFactor = cellSizeFactor;
+  }
 
   /**
    * Get length added to the cutoff for the Verlet lists' skin.
@@ -367,6 +393,10 @@ class AutoPas {
    * Cutoff radius to be used in this container.
    */
   double _cutoff;
+  /**
+   * Cell size factor to be used in this container (only relevant for LinkedCells).
+   */
+  double _cellSizeFactor;
   /**
    * Length added to the cutoff for the verlet lists' skin.
    */
