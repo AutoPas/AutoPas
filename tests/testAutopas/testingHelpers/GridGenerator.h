@@ -27,8 +27,8 @@ class GridGenerator {
   template <class Particle, class ParticleCell>
   static void fillWithParticles(std::vector<ParticleCell> &cells, std::array<size_t, 3> particlesPerDim,
                                 const Particle &defaultParticle = autopas::Particle(),
-                                std::array<double, 3> spacing = std::array<double, 3>{1, 1, 1},
-                                std::array<double, 3> offset = std::array<double, 3>{.5, .5, .5});
+                                const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
+                                const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
 
   /**
    * Fills any container (also AutoPas object) with randomly 3D gaussian distributed particles.
@@ -44,14 +44,14 @@ class GridGenerator {
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, std::array<size_t, 3> particlesPerDim,
                                 const Particle &defaultParticle = autopas::Particle(),
-                                std::array<double, 3> spacing = std::array<double, 3>{1, 1, 1},
-                                std::array<double, 3> offset = std::array<double, 3>{.5, .5, .5});
+                                const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
+                                const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
 };
 
 template <class Particle, class ParticleCell>
 void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, std::array<size_t, 3> particlesPerDim,
-                                      const Particle &defaultParticle, std::array<double, 3> spacing,
-                                      std::array<double, 3> offset) {
+                                      const Particle &defaultParticle, const std::array<double, 3> &spacing,
+                                      const std::array<double, 3> &offset) {
   size_t id = 0;
   size_t cellId = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
@@ -68,8 +68,8 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, std::arr
 
 template <class Container, class Particle>
 void GridGenerator::fillWithParticles(Container &container, std::array<size_t, 3> particlesPerDim,
-                                      const Particle &defaultParticle, std::array<double, 3> spacing,
-                                      std::array<double, 3> offset) {
+                                      const Particle &defaultParticle, const std::array<double, 3> &spacing,
+                                      const std::array<double, 3> &offset) {
   size_t id = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
