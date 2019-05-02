@@ -6,46 +6,49 @@
 
 #include "CellBlock3DTest.h"
 
-TEST_F(CellBlock3DTest, test1x1x1) {
-  std::array<double, 3> start = {-5., -5., -5.}, dr = {10.0, 10.0, 10.0};
-  std::array<int, 3> numParts = {3, 3, 3};
-  auto mesh = getMesh(start, dr, numParts);
+void testIndex(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>>& cellBlock,
+               std::array<double, 3>& start, std::array<double, 3>& dr, std::array<int, 3>& numParts) {
+  auto mesh = CellBlock3DTest::getMesh(start, dr, numParts);
 
-  int counter = 0;
-  for (auto &m : mesh) {
-    unsigned long index = _cells_1x1x1.get1DIndexOfPosition(m);
+  unsigned long counter = 0ul;
+  for (auto& m : mesh) {
+    unsigned long index = cellBlock.get1DIndexOfPosition(m);
     ASSERT_EQ(index, counter);
     ++counter;
   }
+}
+
+TEST_F(CellBlock3DTest, test1x1x1) {
+  std::array<double, 3> start = {-5., -5., -5.}, dr = {10.0, 10.0, 10.0};
+  std::array<int, 3> numParts = {3, 3, 3};
+  testIndex(_cells_1x1x1, start, dr, numParts);
+}
+
+TEST_F(CellBlock3DTest, test1x1x1_cs2) {
+  std::array<double, 3> start = {-5., -5., -5.}, dr = {10.0, 10.0, 10.0};
+  std::array<int, 3> numParts = {3, 3, 3};
+  testIndex(_cells_1x1x1_cs2, start, dr, numParts);
 }
 
 TEST_F(CellBlock3DTest, test2x2x2) {
   std::array<double, 3> start = {-2.5, -2.5, -2.5}, dr = {5.0, 5.0, 5.0};
   std::array<int, 3> numParts = {4, 4, 4};
-  auto mesh = getMesh(start, dr, numParts);
+  testIndex(_cells_2x2x2, start, dr, numParts);
+}
 
-  int counter = 0;
-  for (auto &m : mesh) {
-    unsigned long index = _cells_2x2x2.get1DIndexOfPosition(m);
-    ASSERT_EQ(index, counter);
-    ++counter;
-  }
+TEST_F(CellBlock3DTest, test2x2x2_cs05) {
+  std::array<double, 3> start = {-2.5, -2.5, -2.5}, dr = {5.0, 5.0, 5.0};
+  std::array<int, 3> numParts = {4, 4, 4};
+  testIndex(_cells_2x2x2_cs05, start, dr, numParts);
 }
 
 TEST_F(CellBlock3DTest, test3x3x3) {
   std::array<double, 3> start = {-1.6, -1.6, -1.6}, dr = {3.3, 3.3, 3.3};
   std::array<int, 3> numParts = {5, 5, 5};
-  auto mesh = getMesh(start, dr, numParts);
-
-  int counter = 0;
-  for (auto &m : mesh) {
-    unsigned long index = _cells_3x3x3.get1DIndexOfPosition(m);
-    ASSERT_EQ(index, counter);
-    ++counter;
-  }
+  testIndex(_cells_3x3x3, start, dr, numParts);
 }
 
-void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
+void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>>& cellBlock,
                   std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
   std::array<std::array<double, 4>, 3> possibleShifts = {};
   for (unsigned short dim = 0; dim < 3; ++dim) {
@@ -98,7 +101,11 @@ void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::Molecu
 TEST_F(CellBlock3DTest, testBoundaries) {
   testBoundary(_cells_1x1x1, {0., 0., 0.}, {10., 10., 10.});
 
+  testBoundary(_cells_1x1x1_cs2, {0., 0., 0.}, {10., 10., 10.});
+
   testBoundary(_cells_2x2x2, {0., 0., 0.}, {10., 10., 10.});
+
+  testBoundary(_cells_2x2x2_cs05, {0., 0., 0.}, {10., 10., 10.});
 
   testBoundary(_cells_3x3x3, {0., 0., 0.}, {10., 10., 10.});
 
@@ -108,8 +115,9 @@ TEST_F(CellBlock3DTest, testBoundaries) {
 }
 
 std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3> start, std::array<double, 3> dr,
-                                                            std::array<int, 3> numParts) const {
+                                                            std::array<int, 3> numParts) {
   std::vector<std::array<double, 3>> ret;
+  ret.reserve(numParts[0] * numParts[1] * numParts[2]);
 
   for (int z = 0; z < numParts[2]; ++z) {
     for (int y = 0; y < numParts[1]; ++y) {

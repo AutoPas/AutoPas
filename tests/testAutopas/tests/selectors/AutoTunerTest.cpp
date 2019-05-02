@@ -14,15 +14,16 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // adaptive domain size so sliced is always applicable.
   bBoxMax[2] = autopas::autopas_get_max_threads() * 2;
   const double cutoff = 1;
+  const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
   const unsigned int maxSamples = 2;
 
   autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
-  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency,
-                                                 autopas::allContainerOptions, autopas::allTraversalOptions,
-                                                 autopas::allDataLayoutOptions, autopas::allNewton3Options,
-                                                 autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
+  autopas::AutoTuner<Particle, FPCell> autoTuner(
+      bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency, autopas::allContainerOptions,
+      autopas::allTraversalOptions, autopas::allDataLayoutOptions, autopas::allNewton3Options,
+      autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
@@ -72,7 +73,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   configs.emplace(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08, autopas::DataLayoutOption::aos,
                   autopas::Newton3Option::disabled);
 
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, configs,
+  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, configs,
                                                  autopas::SelectorStrategy::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -115,7 +116,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   configs.emplace(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08, autopas::DataLayoutOption::aos,
                   autopas::Newton3Option::enabled);
 
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, configs,
+  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, configs,
                                                  autopas::SelectorStrategy::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -148,7 +149,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   configs.emplace(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08, autopas::DataLayoutOption::aos,
                   autopas::Newton3Option::disabled);
 
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, configs,
+  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, configs,
                                                  autopas::SelectorStrategy::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -178,7 +179,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 TEST_F(AutoTunerTest, testNoConfig) {
   // wrap constructor call into lambda to avoid parser errors
   auto exp1 = []() {
-    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {},
+    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, {},
                                                    autopas::SelectorStrategy::fastestAbs, 1000, 3);
   };
 
@@ -186,7 +187,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
 
   // wrap constructor call into lambda to avoid parser errors
   auto exp2 = []() {
-    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {}, {}, {}, {},
+    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, {}, {}, {}, {},
                                                    autopas::SelectorStrategy::fastestAbs, 1000, 3);
   };
 
@@ -200,7 +201,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
   autopas::Configuration conf(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
                               autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {conf},
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, {conf},
                                              autopas::SelectorStrategy::fastestAbs, 1000, 3);
 
   EXPECT_EQ(conf, tuner.getCurrentConfig());
@@ -223,7 +224,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {confN3, confNoN3},
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, {confN3, confNoN3},
                                              autopas::SelectorStrategy::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
@@ -252,7 +253,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
 
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, {confN3, confNoN3},
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, {confN3, confNoN3},
                                              autopas::SelectorStrategy::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
