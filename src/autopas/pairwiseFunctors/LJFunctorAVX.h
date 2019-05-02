@@ -116,15 +116,20 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m256d x1 = _mm256_broadcast_sd(&xptr[i]);
       const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
       const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
+      
+      __m256d virialSumX = _mm256_setzero_pd();
+      __m256d virialSumY = _mm256_setzero_pd();
+      __m256d virialSumZ = _mm256_setzero_pd();
+      __m256d upotSum = _mm256_setzero_pd();
 
       // floor soa numParticles to multiple of vecLength
       unsigned int j = 0;
       for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc);
+        SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, upotSum);
       }
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0)
-        SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, rest);
+        SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, upotSum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -152,6 +157,97 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
 #endif
   }
+
+ // ###### Modify to calc globals #######
+ private:
+  template <bool newton3, bool masked>
+  inline void SoAKernel(size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
+                        double *const __restrict__ &x2ptr, double *const __restrict__ &y2ptr,
+                        double *const __restrict__ &z2ptr, double *const __restrict__ &fx2ptr,
+                        double *const __restrict__ &fy2ptr, double *const __restrict__ &fz2ptr,
+                        __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
+                        __m256d virialSumX, __m256d virialSumY, __m256d virialSumZ, __m256d upotSum,
+                        const unsigned int rest = 0) {
+#ifdef __AVX__
+    const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
+    const __m256d y2 = masked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&y2ptr[j]);
+    const __m256d z2 = masked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&z2ptr[j]);
+
+    const __m256d drx = _mm256_sub_pd(x1, x2);
+    const __m256d dry = _mm256_sub_pd(y1, y2);
+    const __m256d drz = _mm256_sub_pd(z1, z2);
+
+    const __m256d drx2 = _mm256_mul_pd(drx, drx);
+    const __m256d dry2 = _mm256_mul_pd(dry, dry);
+    const __m256d drz2 = _mm256_mul_pd(drz, drz);
+
+    const __m256d dr2PART = _mm256_add_pd(drx2, dry2);
+    const __m256d dr2 = _mm256_add_pd(dr2PART, drz2);
+
+    // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
+    // signaling = throw error if NaN is encountered
+    // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
+    const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
+
+    const __m256d invdr2 = _mm256_div_pd(_one, dr2);
+    const __m256d lj2 = _mm256_mul_pd(_sigmasquare, invdr2);
+    const __m256d lj4 = _mm256_mul_pd(lj2, lj2);
+    const __m256d lj6 = _mm256_mul_pd(lj2, lj4);
+    const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
+    const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
+    const __m256d lj12m6alj12 = _mm256_add_pd(lj12m6, lj12);
+    const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, _epsilon24);
+    const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
+
+    const __m256d facMasked = masked
+                                  ? _mm256_and_pd(fac, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                                  : _mm256_and_pd(fac, cutoffMask);
+
+    const __m256d fx = _mm256_mul_pd(drx, facMasked);
+    const __m256d fy = _mm256_mul_pd(dry, facMasked);
+    const __m256d fz = _mm256_mul_pd(drz, facMasked);
+
+    fxacc = _mm256_add_pd(fxacc, fx);
+    fyacc = _mm256_add_pd(fyacc, fy);
+    fzacc = _mm256_add_pd(fzacc, fz);
+
+    // if newton 3 is used subtract fD from particle j
+    if (newton3) {
+      const __m256d fx2 = masked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fx2ptr[j]);
+      const __m256d fy2 = masked ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fy2ptr[j]);
+      const __m256d fz2 = masked ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fz2ptr[j]);
+
+      const __m256d fx2new = _mm256_sub_pd(fx2, fx);
+      const __m256d fy2new = _mm256_sub_pd(fy2, fy);
+      const __m256d fz2new = _mm256_sub_pd(fz2, fz);
+
+      masked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new) : _mm256_store_pd(&fx2ptr[j], fx2new);
+      masked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new) : _mm256_store_pd(&fy2ptr[j], fy2new);
+      masked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new) : _mm256_store_pd(&fz2ptr[j], fz2new);
+    }
+
+    if (calculateGlobals) {
+      // Global Virial
+      const __m256d virialx = _mm256_mul_pd(fx, drx);
+      const __m256d virialy = _mm256_mul_pd(fy, dry);
+      const __m256d virialz = _mm256_mul_pd(fz, drz);
+
+      // Global Potential
+      const __m256d upotPART1 = _mm256_mul_pd(_epsilon24, lj12m6);
+      const __m256d shift6V = _mm256_set1_pd(_shift6);
+      const __m256d upotPART2 = _mm256_add_pd(shift6V, upotPART1);
+      const __m256d upot = _mm256_and_pd(upotPART2, cutoffMask); //AND vs MUL here ??
+
+
+      virialSumX = _mm256_add_pd(virialSumX, virialx);
+      virialSumY = _mm256_add_pd(virialSumY, virialy);
+      virialSumZ = _mm256_add_pd(virialSumZ, virialz);
+      upotSum = _mm256_add_pd(upotSum, upot);
+   
+    }
+#endif
+  }
+ // ###### End modify to calc globals #######
 
  private:
   template <bool newton3, bool masked>
