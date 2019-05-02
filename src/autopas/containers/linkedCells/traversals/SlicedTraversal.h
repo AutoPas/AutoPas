@@ -28,11 +28,11 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam DataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                         public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -42,7 +42,7 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor),
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension) {}
 
   /**
@@ -53,11 +53,11 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
   TraversalOption getTraversalType() override { return TraversalOption::sliced; }
 
  private:
-  C08CellHandler<ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellHandler;
+  C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-inline void SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+inline void SlicedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

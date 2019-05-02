@@ -3,8 +3,14 @@ file(GLOB_RECURSE MY_SRC
         "*.h"
         )
 
+file(GLOB_RECURSE CU_SRC
+        "*.cu"
+        "*.cuh"
+        )
+        
 ADD_LIBRARY(autopas STATIC
         ${MY_SRC}
+        $<$<BOOL:${ENABLE_CUDA}>:${CU_SRC}>
         )
 
 target_link_libraries(autopas
@@ -20,6 +26,11 @@ target_link_libraries(autopas
 target_compile_definitions(autopas
         PUBLIC
         $<$<BOOL:${OPENMP}>:AUTOPAS_OPENMP>
+        $<$<BOOL:${ENABLE_CUDA}>:AUTOPAS_CUDA>
         )
+        
+if(ENABLE_CUDA) 
+TARGET_INCLUDE_DIRECTORIES(autopas SYSTEM PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+endif()
 
 TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC ../.)

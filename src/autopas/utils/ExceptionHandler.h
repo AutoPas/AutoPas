@@ -75,12 +75,7 @@ class ExceptionHandler {
    * @note this is a variadic function, and can thus incorporate an arbitrary amount of arguments
    */
   template <typename First, typename... Args>
-  static void exception(std::string exceptionString, First first, Args... args)  // recursive variadic function
-  {
-    std::string s = fmt::format(exceptionString, first, args...);
-
-    exception(s);
-  }
+  static void exception(std::string exceptionString, First first, Args... args);  // recursive variadic function
 
   /**
    * Rethrows the current exception or prints it.
@@ -159,5 +154,12 @@ void ExceptionHandler::exception(const std::string e);  // NOLINT
  */
 template <>
 void ExceptionHandler::exception(const char* const e);  // NOLINT
+
+template <typename First, typename... Args>
+void ExceptionHandler::exception(std::string exceptionString, First first, Args... args) {
+  std::string s = fmt::format(exceptionString, first, args...);
+  exception(s);
+}
+
 }  // namespace utils
 }  // namespace autopas

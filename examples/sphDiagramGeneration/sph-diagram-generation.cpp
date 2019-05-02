@@ -205,21 +205,19 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
 
       if (useNewton3) {
-        traversal =
-            new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims,
-                                                                                                                  func);
+        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                              autopas::DataLayoutOption::aos, true>(dims, func);
       } else {
-        traversal =
-            new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-                dims, func);
+        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                              autopas::DataLayoutOption::aos, false>(dims, func);
       }
 
       break;
     }
+
     case autopas::ContainerOption::directSum: {
-      traversal =
-          new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-              func);
+      traversal = new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                                  autopas::DataLayoutOption::aos, false>(func);
       break;
     }
     case autopas::ContainerOption::verletListsCells: {
@@ -227,13 +225,11 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
 
       if (useNewton3) {
-        traversal =
-            new autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, true>(dims,
-                                                                                                                  func);
+        traversal = new autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                              autopas::DataLayoutOption::aos, true>(dims, func);
       } else {
-        traversal =
-            new autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor, false, false>(
-                dims, func);
+        traversal = new autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
+                                              autopas::DataLayoutOption::aos, false>(dims, func);
       }
       break;
     }
@@ -256,7 +252,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwiseAoS(func, traversal, useNewton3);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
 
   double elapsedTime = t.stop();
 
@@ -265,7 +261,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwiseSoA(func, traversal, useNewton3);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
 
   elapsedTime = t.stop();
 
