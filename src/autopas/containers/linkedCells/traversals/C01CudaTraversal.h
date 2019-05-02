@@ -125,16 +125,17 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewto
   _deviceCellOffsets.copyHostToDevice(_cellOffsets.size(), _cellOffsets.data());
 #endif
 
-  std::vector<unsigned int> nonHaloCells;
+  std::vector<unsigned int> nonHaloCells(this->_cellsPerDimension[0] * this->_cellsPerDimension[1] *
+                                         this->_cellsPerDimension[2]);
   const unsigned long end_x = this->_cellsPerDimension[0] - 1;
   const unsigned long end_y = this->_cellsPerDimension[1] - 1;
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
 
+  size_t i = 0;
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {
-      for (unsigned long x = 1; x < end_x; ++x) {
-        nonHaloCells.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension));
-      }
+      std::iota(nonHaloCells.begin() + i, nonHaloCells.begin() + i + end_x - 1,
+                utils::ThreeDimensionalMapping::threeToOneD(0ul, y, z, this->_cellsPerDimension));
     }
   }
 #if defined(AUTOPAS_CUDA)
