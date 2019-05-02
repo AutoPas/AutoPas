@@ -13,6 +13,8 @@ ADD_LIBRARY(autopas STATIC
         $<$<BOOL:${ENABLE_CUDA}>:${CU_SRC}>
         )
 
+target_compile_features(autopas PRIVATE cxx_std_17)
+
 target_link_libraries(autopas
         PUBLIC
         rt # required for Time.h
