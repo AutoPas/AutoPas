@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
 #include <iostream>
