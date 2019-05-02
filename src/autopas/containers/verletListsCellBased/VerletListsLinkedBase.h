@@ -47,7 +47,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false) {}
+        _neighborListIsValid(false),
+        _verletBuiltNewton3(false) {}
 
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticle

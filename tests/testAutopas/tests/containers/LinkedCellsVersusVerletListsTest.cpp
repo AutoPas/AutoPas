@@ -72,7 +72,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   _linkedCells->iteratePairwise(&flopsLinked, &traversalFLOPSLC, useNewton3);
   _verletLists->iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet, useNewton3);
 
-  if (not useNewton3 and dataLayoutOption == autopas::DataLayoutOption::soa and boxMax[0] == 10.) {
+  if (not useNewton3 and dataLayoutOption == autopas::DataLayoutOption::soa) {
     // special case if newton3 is disabled and soa are used: here linked cells will anyways partially use newton3 (for
     // the intra cell interactions), so linked cell kernel calls will be less than for verlet.
     EXPECT_LE(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls())
