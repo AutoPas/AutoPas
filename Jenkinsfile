@@ -79,7 +79,6 @@ pipeline{
         stage('gpu cloud') {
             agent { label 'openshift-autoscale-gpu' }
             steps{
-                githubNotify context: 'build-cuda', description: 'build in progress...',  status: 'PENDING', targetUrl: currentBuild.absoluteUrl
                 container('cuda-10') {
                     dir("build"){
                         sh "cmake -DENABLE_CUDA=ON .."
@@ -93,18 +92,6 @@ pipeline{
             post{
                 always{
                     warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog-cuda.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
-                }
-                success{
-                    githubNotify context: 'build-cuda', description: currentBuild.durationString,  status: 'SUCCESS', targetUrl: currentBuild.absoluteUrl
-                }
-                failure{
-                    githubNotify context: 'build-cuda', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                unstable{
-                    githubNotify context: 'build-cuda', description: currentBuild.description, status: 'FAILURE', targetUrl: currentBuild.absoluteUrl
-                }
-                aborted{
-                    githubNotify context: 'build-cuda', description: 'build aborted',  status: 'ERROR', targetUrl: currentBuild.absoluteUrl
                 }
             }
         }
