@@ -76,17 +76,19 @@ pipeline{
                 )
             }
         }
-        stage('build'){
+        stage('build and test'){
             parallel{
                 stage('gpu cloud') {
                     agent { label 'openshift-autoscale-gpu' }
                     steps{
                         container('cuda-10') {
-                            dir("build"){
+                            dir("build-cuda") {
                                 sh "cmake -DENABLE_CUDA=ON .."
                                 sh "make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
                                 sh "cat buildlog-cuda.txt"
                                 sh "./tests/testAutopas/runTests"
+                            }
+                            dir('build-cuda/examples') {
                                 sh "ctest -C checkExamples -j8 --verbose"
                             }
                         }
@@ -103,6 +105,10 @@ pipeline{
                             dir("build"){
                                 sh "cmake .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
+                            }
+                            dir("build/examples") {
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     }
@@ -113,6 +119,10 @@ pipeline{
                             dir("build-openmp"){
                                 sh "cmake -DOPENMP=ON .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                sh './tests/testAutopas/runTests'
+                            }
+                            dir("build-openmp/examples") {
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     }
@@ -123,6 +133,7 @@ pipeline{
                             dir("build-openmp-address-sanitizer"){
                                 sh "cmake -DOPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                sh './tests/testAutopas/runTests'
                             }
                         }
                     }
@@ -133,6 +144,7 @@ pipeline{
                             dir("build-addresssanitizer"){
                                 sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                sh './tests/testAutopas/runTests'
                             }
                         }
                     }
@@ -143,6 +155,7 @@ pipeline{
                             dir("build-addresssanitizer-release"){
                                 sh "cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                sh './tests/testAutopas/runTests'
                             }
                         }
                     }
@@ -154,6 +167,7 @@ pipeline{
                                 // this is for simple testing of our threading libraries.
                                 sh "cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                sh './tests/testAutopas/runTests'
                             }
                         }
                     }
@@ -164,6 +178,10 @@ pipeline{
                             dir("build-clang-ninja-openmp"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                sh './tests/testAutopas/runTests'
+                            }
+                            dir("build-clang-ninja-openmp/examples"){
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     }
@@ -174,6 +192,7 @@ pipeline{
                             dir("build-clang-ninja-addresssanitizer-debug"){
                                 sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                sh './tests/testAutopas/runTests'
                             }
                         }
                     }
@@ -184,6 +203,10 @@ pipeline{
                             dir("build-clang-ninja-addresssanitizer-release"){
                                 sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                sh './tests/testAutopas/runTests'
+                            }
+                            dir("build-clang-ninja-addresssanitizer-release/examples"){
+                                sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     }
@@ -194,6 +217,10 @@ pipeline{
                             dir("build-archer"){
                                 sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest --verbose'
+                            }
+                            dir("build-archer/examples"){
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     }
@@ -204,6 +231,10 @@ pipeline{
                             dir("build-intel"){
                                 sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DOPENMP=OFF ..'"
                                 sh "bash -i -c 'make -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
+                                sh "bash -i -c './tests/testAutopas/runTests'"
+                            }
+                            dir("build-intel/examples"){
+                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
                             }
                         }
                     }
@@ -214,6 +245,10 @@ pipeline{
                             dir("build-intel-ninja-openmp"){
                                 sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DOPENMP=ON ..'"
                                 sh "bash -i -c 'ninja -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
+                                sh "bash -i -c './tests/testAutopas/runTests'"
+                            }
+                            dir("build-intel-ninja-openmp/examples"){
+                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
                             }
                         }
                     }
@@ -225,193 +260,6 @@ pipeline{
                 }
             }
         }
-        stage("test") {
-            steps{
-                parallel(
-                    "default": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build"){
-                                //sh "env CTEST_OUTPUT_ON_FAILURE=1 make test"
-                                sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    "gcc openmp": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-openmp"){
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    "gcc openmp address-sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-openmp-address-sanitizer"){
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    "address sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-addresssanitizer"){
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    "address sanitizer release": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-addresssanitizer-release"){
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    "thread sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-threadsanitizer"){
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    /*dir("build-memorysanitizer"){
-                        sh './tests/testAutopas/runTests'
-                    }*/
-                    "clang openmp": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-openmp"){
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    "clang ninja address sanitizer": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-addresssanitizer-debug"){
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    "clang ninja address sanitizer release": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-addresssanitizer-release"){
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    },
-                    "archer": {
-                        container('autopas-archer'){
-                            dir("build-archer"){
-                                // needed to properly check all test cases (also just single ones)
-                                // I suspect that archer breaks when death tests are used
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest --verbose'
-                            }
-                        }
-                    },
-                    "intel": {
-                        container('autopas-intel18'){
-                            dir("build-intel"){
-                                sh "bash -i -c './tests/testAutopas/runTests'"
-                            }
-                        }
-                    },
-                    "intel openmp": {
-                        container('autopas-intel18'){
-                            dir("build-intel-ninja-openmp"){
-                                sh "bash -i -c './tests/testAutopas/runTests'"
-                            }
-                        }
-                    }
-                )
-            }
-        }
-        stage("checkExamples") {
-            steps{
-                parallel(
-                    "default": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build/examples") {
-                                sh 'ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },
-                    "gcc openmp": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-openmp/examples") {
-                                sh 'ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },
-                    /*"gcc openmp address-sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-openmp-address-sanitizer/examples"){
-                                sh 'ctest -C checkExamples -j8'
-                            }
-                        }
-                    },*/
-                    /*"address sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-addresssanitizer/examples"){
-                                sh 'ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },*/
-                    /*"address sanitizer release": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-addresssanitizer-release/examples"){
-                                sh 'ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },*/
-                    /*"thread sanitizer": {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-threadsanitizer/examples"){
-                                sh 'ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },*/
-                    "clang openmp": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-openmp/examples"){
-                                sh 'ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },
-                    /*"clang ninja address sanitizer": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-addresssanitizer-debug/examples"){
-                                sh 'ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },*/
-                    "clang ninja address sanitizer release": {
-                        container('autopas-clang6-cmake-ninja-make'){
-                            dir("build-clang-ninja-addresssanitizer-release/examples"){
-                                sh 'ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },
-                    "archer": {
-                        container('autopas-archer'){
-                            dir("build-archer/examples"){
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest -C checkExamples -j8 --verbose'
-                            }
-                        }
-                    },
-                    "intel": {
-                        container('autopas-intel18'){
-                            dir("build-intel/examples"){
-                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
-                            }
-                        }
-                    },
-                    "intel openmp": {
-                        container('autopas-intel18'){
-                            dir("build-intel-ninja-openmp/examples"){
-                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
-                            }
-                        }
-                    }
-                )
-            }
-        }
-
         stage("generate reports"){
             steps{
                 // get test results -- mainly to get number of tests
