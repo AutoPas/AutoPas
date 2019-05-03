@@ -86,10 +86,10 @@ pipeline{
                                 sh "cmake -DENABLE_CUDA=ON .."
                                 sh "make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
                                 sh "cat buildlog-cuda.txt"
-                                sh "./tests/testAutopas/runTests"
+                                sh label:'tests', script: "./tests/testAutopas/runTests"
                             }
                             dir('build-cuda/examples') {
-                                sh "ctest -C checkExamples -j8 --verbose"
+                                sh label:'examples', script: "ctest -C checkExamples -j8 --verbose"
                             }
                         }
                     }
