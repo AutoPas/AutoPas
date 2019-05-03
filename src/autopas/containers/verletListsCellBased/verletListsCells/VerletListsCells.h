@@ -53,7 +53,7 @@ class VerletListsCells
                    const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                                             allVLCApplicableTraversals()),
-        _buildTraversal(buildTraversal){}
+        _buildTraversal(buildTraversal) {}
 
   /**
    * Lists all traversal options applicable for the Verlet Lists Cells container.
@@ -207,7 +207,6 @@ class VerletListsCells
 
   // the traversal used to build the verletlists
   TraversalOption _buildTraversal;
-
 };
 
 }  // namespace autopas

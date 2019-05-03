@@ -14,7 +14,6 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
 
-
 namespace autopas {
 
 /**
