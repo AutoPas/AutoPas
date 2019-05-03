@@ -97,25 +97,28 @@ pipeline{
                         }
                     }
                 }
-                stage("build on default device") {
+                stage("default") {
                     steps{
-                        parallel(
-                            "default": {
-                                container('autopas-gcc7-cmake-make') {
-                                    dir("build"){
-                                        sh "cmake .."
-                                        sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                                    }
-                                }
-                            },
-                            "gcc openmp": {
-                                container('autopas-gcc7-cmake-make') {
-                                    dir("build-openmp"){
-                                        sh "cmake -DOPENMP=ON .."
-                                        sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                                    }
-                                }
-                            },
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build"){
+                                sh "cmake .."
+                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                            }
+                        }
+                    }
+                }
+                stage("gcc openmp") {
+                    steps{
+                        container('autopas-gcc7-cmake-make') {
+                            dir("build-openmp"){
+                                sh "cmake -DOPENMP=ON .."
+                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                            }
+                        }
+                    }
+                }
+
+                            /*
                             "gcc openmp address-sanitizer": {
                                 container('autopas-gcc7-cmake-make') {
                                     dir("build-openmp-address-sanitizer"){
@@ -197,12 +200,10 @@ pipeline{
                                     }
                                 }
                             }
-                        )
-                    }
-                    post{
-                        always{
-                            warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
-                        }
+                        )*/
+                post{
+                    always{
+                        warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
                     }
                 }
             }
