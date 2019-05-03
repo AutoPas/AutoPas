@@ -26,7 +26,7 @@ if(KOKKOS_ENABLED)
 
     add_definitions(-DKOKKOS_ENABLED="on" )
 
-
+    set(KOKKOS_DEVICE "Serial") #default: Serial
 
     add_subdirectory(${KOKKOS_INSTALL_PATH} ${PROJECT_BINARY_DIR}/kokkos)
     include_directories(${Kokkos_INCLUDE_DIRS_RET})

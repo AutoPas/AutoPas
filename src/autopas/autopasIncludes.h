@@ -58,6 +58,3 @@
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
-
-// kokkos
-#include "Kokkos_core.hpp"
