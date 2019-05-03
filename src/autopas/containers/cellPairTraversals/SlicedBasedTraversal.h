@@ -42,10 +42,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : CellPairTraversal<ParticleCell>(dims),
+        _overlap{},
         _dimsPerLength{},
         _cutoff(cutoff),
         _cellLength(cellLength),
-        _overlap{},
         _overlapLongestAxis(0),
         _sliceThickness{},
         locks() {
@@ -64,7 +64,12 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   template <typename LoopBody>
   inline void slicedTraversal(LoopBody &&loopBody);
 
- protected:
+  /**
+   * overlap of interacting cells. Array allows asymmetric cell sizes.
+   */
+  std::array<unsigned long, 3> _overlap;
+
+ private:
   /**
    * Store ids of dimensions ordered by number of cells per dimensions.
    */
@@ -79,11 +84,6 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * cell length in CellBlock3D.
    */
   std::array<double, 3> _cellLength;
-
-  /**
-   * overlap of interacting cells. Array allows asymmetric cell sizes.
-   */
-  std::array<unsigned long, 3> _overlap;
 
   /**
    * overlap of interacting cells along the longest axis.
