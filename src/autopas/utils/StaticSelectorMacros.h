@@ -6,6 +6,11 @@
 
 #pragma once
 
+/**
+ * Macro to execute the code defined in ... with a static bool.
+ * The bool will be renamed to be called c_BOOLNAME,
+ * where BOOLNAME is the name of the bool passed in this macro.
+ */
 #define AUTOPAS_WITH_STATIC_BOOL(theBool, ...) \
   {                                            \
     if (theBool) {                             \
