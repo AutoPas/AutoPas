@@ -9,7 +9,6 @@
 #include "testingHelpers/NumThreadGuard.h"
 
 using ::testing::_;
-using ::testing::AtLeast;
 
 void testSlicedTraversal(const std::array<size_t, 3>& edgeLength, unsigned long overlap = 1ul) {
   MFunctor functor;
@@ -29,27 +28,12 @@ void testSlicedTraversal(const std::array<size_t, 3>& edgeLength, unsigned long 
   slicedTraversal.traverseCellPairs(cells);
 }
 
-TEST_F(SlicedTraversalTest, testTraversalCube) {
-  std::array<size_t, 3> edgeLength = {10, 10, 10};
-  testSlicedTraversal(edgeLength);
-}
-
-TEST_F(SlicedTraversalTest, DISABLED_testTraversalCubeOverlap2) {
-  std::array<size_t, 3> edgeLength = {10, 10, 10};
-  testSlicedTraversal(edgeLength, 2);
-}
-
 /**
  * This test is the same as testTraversalCube except that the domain is too small for 4 threads.
  * It expects the sliced traversal to start less threads but still work.
  */
 TEST_F(SlicedTraversalTest, testTraversalCubeShrink) {
   std::array<size_t, 3> edgeLength = {3, 3, 3};
-  testSlicedTraversal(edgeLength);
-}
-
-TEST_F(SlicedTraversalTest, testTraversalCuboid) {
-  std::array<size_t, 3> edgeLength = {5, 7, 10};
   testSlicedTraversal(edgeLength);
 }
 
