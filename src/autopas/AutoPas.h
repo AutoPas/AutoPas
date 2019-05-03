@@ -11,6 +11,11 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/selectors/AutoTuner.h"
 
+// kokkos
+#ifdef KOKKOS_ENABLED
+#include "Kokkos_Core.hpp"
+#endif
+
 namespace autopas {
 
 /**
@@ -46,6 +51,8 @@ class AutoPas {
         _allowedTraversals(allTraversalOptions),
         _allowedDataLayouts(allDataLayoutOptions),
         _allowedNewton3Options(allNewton3Options) {
+    // initialize Kokkos
+
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -64,6 +71,9 @@ class AutoPas {
       // remove the Logger from the registry. Do this only if we have no other autopas instances running.
       autopas::Logger::unregister();
     }
+#ifdef KOKKOS_ENABLED
+    Kokkos::finalize();
+#endif
   }
 
   /**
@@ -88,6 +98,11 @@ class AutoPas {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, _allowedContainers, _allowedTraversals,
         _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy, _tuningInterval, _numSamples);
+#ifdef KOKKOS_ENABLED
+    int argc = 0;
+    char **argx = new char *[1];
+    Kokkos::initialize(argc, argx);
+#endif
   }
 
   /**
