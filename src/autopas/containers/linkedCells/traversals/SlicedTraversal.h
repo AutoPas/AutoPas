@@ -47,7 +47,7 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
                            const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor, cutoff,
                                                                                 cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength) {}
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()

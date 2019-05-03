@@ -40,7 +40,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, use
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                         const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>(dims, pairwiseFunctor, cutoff, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength) {}
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
