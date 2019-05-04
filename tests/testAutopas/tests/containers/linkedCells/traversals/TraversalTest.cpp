@@ -104,19 +104,19 @@ TEST_P(TraversalTest, testTraversaltest8x8x8_overlap2) {
   testTraversal(traversalOption, newton3, domain, 32, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest7x8x9) {
+TEST_P(TraversalTest, testTraversaltest6x7x8) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
-  std::array<size_t, 3> domain = {7ul, 8ul, 9ul};
+  std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
   const auto cutoff = 1.0;
 
   testTraversal(traversalOption, newton3, domain, 6, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest7x8x9_overlap2) {
+TEST_P(TraversalTest, testTraversaltest6x7x8_overlap2) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
-  std::array<size_t, 3> domain = {7ul, 8ul, 9ul};
+  std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
   const auto cutoff = 2.0;
 
   testTraversal(traversalOption, newton3, domain, 32, cutoff);
