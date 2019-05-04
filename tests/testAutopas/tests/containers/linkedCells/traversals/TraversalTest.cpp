@@ -134,8 +134,8 @@ TEST_P(TraversalTest, testTraversaltest7x8x9_overlap3) {
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
                          Combine(ValuesIn([]() -> std::vector<autopas::TraversalOption> {
                                    auto t = autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals();
-                                   std::remove(t.begin(), t.end(), autopas::TraversalOption::c01Cuda);
-                                   return t;
+                                   auto t_end = std::remove(t.begin(), t.end(), autopas::TraversalOption::c01Cuda);
+                                   return std::vector<autopas::TraversalOption>(t.begin(), t_end);
                                  }()),
                                  Bool()),
                          TraversalTest::PrintToStringParamName());
