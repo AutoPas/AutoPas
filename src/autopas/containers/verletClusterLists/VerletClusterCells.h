@@ -13,6 +13,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/CudaDeviceVector.h"
 
 namespace autopas {
 
@@ -89,21 +90,17 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
     }
-    // std::cout << traversal << "  " << traversalInterface << std::endl;
 
+    traversalInterface->setVerletListPointer(&_clusterSize, &_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
     if (needsRebuild()) {
       this->rebuild();
-      traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, this->getCutoff());
+      traversalInterface->rebuild(_cellsPerDim, this->_cells, _boundingBoxes, this->getCutoff());
       _lastTraversalSig = traversalInterface->getSignature();
     }
-    // TODO better way
-    if (true or traversalInterface->getSignature() != _lastTraversalSig) {
-      traversalInterface->rebuild(_cellsPerDim, _clusterSize, this->_cells, _boundingBoxes, this->getCutoff());
+    if (traversalInterface->getSignature() != _lastTraversalSig) {
+      traversalInterface->rebuild(_cellsPerDim, this->_cells, _boundingBoxes, this->getCutoff());
       _lastTraversalSig = traversalInterface->getSignature();
     }
-    /*
-        std::cout << std::get<0>(_lastTraversalSig) << " " << std::get<1>(_lastTraversalSig) << " "
-                  << std::get<2>(_lastTraversalSig) << " " << std::endl;*/
 
     traversal->initTraversal(this->_cells);
     traversalInterface->traverseCellPairs(this->_cells);
@@ -422,6 +419,12 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
   // number of particles in a cluster
   unsigned int _clusterSize;
+
+  // id of neighbor clusters of a clusters
+  std::vector<std::vector<size_t>> _neighborCellIds;
+
+  size_t _neighborMatrixDim;
+  utils::CudaDeviceVector<unsigned int> _neighborMatrix;
 
   // bounding boxes of all clusters (xmin,ymin,zmin,xmax,ymax,zmax) including skin and cutoff
   std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> _boundingBoxes;

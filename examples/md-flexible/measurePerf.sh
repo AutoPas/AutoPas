@@ -54,9 +54,10 @@ traversals__LinkedCells=c08
 traversals__VerletLists=verlet-lists
 traversals__VerletCells=verletC18
 traversals__VerletCluster=c01
+traversals__VerletClusterCells=verlet-cluster-cells
 
 # iterate over containers
-for container in DirectSum LinkedCells VerletLists VerletCluster VerletCells ;
+for container in DirectSum LinkedCells VerletLists VerletCluster VerletCells VerletClusterCells ;
 do
     separate "Container: ${container}"
     # only set verlet options if needed

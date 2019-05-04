@@ -11,6 +11,7 @@
 #include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/CudaDeviceVector.h"
 #if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
 #endif
@@ -40,8 +41,8 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         _functor(pairwiseFunctor),
         _cellFunctor(CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout,
                                  useNewton3, true>(pairwiseFunctor)),
-        _neighborMatrixDim(0),
-        _clusterSize(0) {}
+        _neighborMatrixDim(nullptr),
+        _clusterSize(nullptr) {}
 
   TraversalOption getTraversalType() override { return TraversalOption::verletClusterCellsTraversal; }
 
@@ -61,60 +62,71 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     return std::make_tuple(TraversalOption::verletClusterCellsTraversal, DataLayout, useNewton3);
   }
 
-  void rebuild(const std::array<unsigned long, 3> &dims, unsigned int clusterSize, std::vector<ParticleCell> &cells,
+  void setVerletListPointer(unsigned int *clusterSize, std::vector<std::vector<size_t>> *neighborCellIds,
+                            size_t *neighborMatrixDim, utils::CudaDeviceVector<unsigned int> *neighborMatrix) override {
+    _clusterSize = clusterSize;
+    _neighborCellIds = neighborCellIds;
+    _neighborMatrixDim = neighborMatrixDim;
+    _neighborMatrix = neighborMatrix;
+  }
+
+  void rebuild(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
                std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> &boundingBoxes,
                typename Particle::ParticleFloatingPointType distance) override {
     this->_cellsPerDimension = dims;
-    _clusterSize = clusterSize;
+
     const size_t cellsSize = cells.size();
-    _neighborCellIds.clear();
-    _neighborCellIds.resize(cellsSize, {});
+    _neighborCellIds->clear();
+    _neighborCellIds->resize(cellsSize, {});
 
     if (DataLayout == DataLayoutOption::aos or DataLayout == DataLayoutOption::soa) {
       for (size_t i = 0; i < cellsSize; ++i) {
         for (size_t j = i + 1; j < cellsSize; ++j) {
           if (boxesOverlap(boundingBoxes[i], boundingBoxes[j], distance)) {
-            _neighborCellIds[i].push_back(j);
+            (*_neighborCellIds)[i].push_back(j);
           }
         }
       }
       return;
     } else if (DataLayout == DataLayoutOption::cuda) {
+      size_t neighborMatrixDim = 0;
       for (size_t i = 0; i < cellsSize; ++i) {
         for (size_t j = i + 1; j < cellsSize; ++j) {
           if (boxesOverlap(boundingBoxes[i], boundingBoxes[j], distance)) {
             if (useNewton3) {
               // load balance greedy
-              if (_neighborCellIds[i].size() < _neighborCellIds[j].size())
-                _neighborCellIds[i].push_back(j);
+              if ((*_neighborCellIds)[i].size() < (*_neighborCellIds)[j].size())
+                (*_neighborCellIds)[i].push_back(j);
               else
-                _neighborCellIds[j].push_back(i);
+                (*_neighborCellIds)[j].push_back(i);
 
             } else {
-              _neighborCellIds[i].push_back(j);
-              _neighborCellIds[j].push_back(i);
+              (*_neighborCellIds)[i].push_back(j);
+              (*_neighborCellIds)[j].push_back(i);
             }
           }
         }
         // self
-        if (not useNewton3) _neighborCellIds[i].push_back(i);
-        _neighborMatrixDim = std::max(_neighborCellIds[i].size(), _neighborMatrixDim);
+        if (not useNewton3) (*_neighborCellIds)[i].push_back(i);
+        neighborMatrixDim = std::max((*_neighborCellIds)[i].size(), neighborMatrixDim);
       }
-      ++_neighborMatrixDim;
+      ++neighborMatrixDim;
 
       std::vector<unsigned int> neighborMatrix;
-      for (auto &neighborCellId : _neighborCellIds) {
+      for (auto &neighborCellId : (*_neighborCellIds)) {
         size_t j = 0;
         for (; j < neighborCellId.size(); ++j) {
           neighborMatrix.push_back(neighborCellId[j]);
         }
 
-        for (; j < _neighborMatrixDim; ++j) {
+        for (; j < neighborMatrixDim; ++j) {
           neighborMatrix.push_back(UINT_MAX);
         }
       }
+
+      *_neighborMatrixDim = neighborMatrixDim;
 #ifdef AUTOPAS_CUDA
-      _neighborMatrix.copyHostToDevice(neighborMatrix.size(), neighborMatrix.data());
+      _neighborMatrix->copyHostToDevice(neighborMatrix.size(), neighborMatrix.data());
       utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 #endif
       return;
@@ -134,9 +146,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         return;
       }
       case DataLayoutOption::cuda: {
-        _storageCell._particleSoABuffer.resizeArrays(cells.size() * _clusterSize);
+        _storageCell._particleSoABuffer.resizeArrays(cells.size() * *_clusterSize);
         for (size_t i = 0; i < cells.size(); ++i) {
-          _functor->SoALoader(cells[i], _storageCell._particleSoABuffer, i * _clusterSize);
+          _functor->SoALoader(cells[i], _storageCell._particleSoABuffer, i * *_clusterSize);
         }
 
         _functor->deviceSoALoader(_storageCell._particleSoABuffer, _storageCell._particleSoABufferDevice);
@@ -172,7 +184,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
 #pragma omp parallel for
 #endif
         for (size_t i = 0; i < cells.size(); ++i) {
-          _functor->SoAExtractor(cells[i], _storageCell._particleSoABuffer, i * _clusterSize);
+          _functor->SoAExtractor(cells[i], _storageCell._particleSoABuffer, i * *_clusterSize);
         }
         return;
       }
@@ -187,15 +199,15 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   void traverseCellPairs(std::vector<ParticleCell> &cells) override {
     switch (DataLayout) {
       case DataLayoutOption::aos: {
-        this->traverseCellPairsCPU(cells);
+        traverseCellPairsCPU(cells);
         return;
       }
       case DataLayoutOption::soa: {
-        this->traverseCellPairsCPU(cells);
+        traverseCellPairsCPU(cells);
         return;
       }
       case DataLayoutOption::cuda: {
-        this->traverseCellPairsGPU(cells);
+        traverseCellPairsGPU(cells);
         return;
       }
     }
@@ -204,7 +216,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
  private:
   void traverseCellPairsCPU(std::vector<ParticleCell> &cells) {
     for (size_t i = 0; i < cells.size(); ++i) {
-      for (auto &j : _neighborCellIds[i]) {
+      for (auto &j : (*_neighborCellIds)[i]) {
         _cellFunctor.processCellPair(cells[i], cells[j]);
       }
       _cellFunctor.processCell(cells[i]);
@@ -221,13 +233,15 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     auto cudaSoA = _functor->createFunctorCudaSoA(_storageCell._particleSoABufferDevice);
 
     if (useNewton3) {
-      _functor->getCudaWrapper()->CellVerletTraversalN3Wrapper(cudaSoA.get(), cells.size(), _clusterSize,
-                                                               _neighborMatrixDim, _neighborMatrix.get(), 0);
+      _functor->getCudaWrapper()->CellVerletTraversalN3Wrapper(cudaSoA.get(), cells.size(), *_clusterSize,
+                                                               *_neighborMatrixDim, _neighborMatrix->get(), 0);
     } else {
-      _functor->getCudaWrapper()->CellVerletTraversalNoN3Wrapper(cudaSoA.get(), cells.size(), _clusterSize,
-                                                                 _neighborMatrixDim, _neighborMatrix.get(), 0);
+      _functor->getCudaWrapper()->CellVerletTraversalNoN3Wrapper(cudaSoA.get(), cells.size(), *_clusterSize,
+                                                                 *_neighborMatrixDim, _neighborMatrix->get(), 0);
     }
     utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
+#else
+    utils::ExceptionHandler::exception("VerletClusterCellsTraversal was compiled without Cuda support");
 #endif
   }
 
@@ -258,18 +272,18 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3, true>
       _cellFunctor;
 
-  // id of neighbor clusters of a clusters
-  std::vector<std::vector<size_t>> _neighborCellIds;
-
   /**
    * SoA Storage cell containing SoAs and device Memory
    */
   ParticleCell _storageCell;
 
-  size_t _neighborMatrixDim;
-  utils::CudaDeviceVector<unsigned int> _neighborMatrix;
+  // id of neighbor clusters of a clusters
+  std::vector<std::vector<size_t>> *_neighborCellIds;
 
-  unsigned int _clusterSize;
+  size_t *_neighborMatrixDim;
+  utils::CudaDeviceVector<unsigned int> *_neighborMatrix;
+
+  unsigned int *_clusterSize;
 };
 
 }  // namespace autopas
