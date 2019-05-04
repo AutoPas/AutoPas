@@ -30,8 +30,10 @@ class TraversalTest : public AutoPasTestBase,
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto inputTuple = static_cast<ParamType>(info.param);
-      return autopas::utils::StringUtils::to_string(std::get<0>(inputTuple)) + "_" +
-             (std::get<1>(inputTuple) ? "N3on" : "N3off");
+      std::string traversal(autopas::utils::StringUtils::to_string(std::get<0>(inputTuple)));
+      // replace all '-' with '_', otherwise the test name is invalid
+      std::replace(traversal.begin(), traversal.end(), '-', '_');
+      return traversal + "_" + (std::get<1>(inputTuple) ? "N3on" : "N3off");
     }
   };
 
