@@ -7,9 +7,10 @@
 #include "StringUtilsTest.h"
 
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
-  testParseMultiple<autopas::TraversalOption>(autopas::allTraversalOptions,
-                                              "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced",
-                                              autopas::utils::StringUtils::parseTraversalOptions);
+  testParseMultiple<autopas::TraversalOption>(
+      autopas::allTraversalOptions,
+      "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced, cuda-c01, verlet-lists",
+      autopas::utils::StringUtils::parseTraversalOptions);
 }
 
 TEST(StringUtilsTest, parseContainerOptionsTest) {
@@ -19,8 +20,13 @@ TEST(StringUtilsTest, parseContainerOptionsTest) {
 }
 
 TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
+#if defined(AUTOPAS_CUDA)
+  testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "cuda, soa, aos",
+                                               autopas::utils::StringUtils::parseDataLayout);
+#else
   testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "soa, aos",
                                                autopas::utils::StringUtils::parseDataLayout);
+#endif
 }
 
 TEST(StringUtilsTest, parseSelectorOptionsTest) {

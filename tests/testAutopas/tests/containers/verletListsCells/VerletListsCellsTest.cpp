@@ -35,9 +35,9 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::C18TraversalVerlet<FPCell, MFunctor, false, true> traversal(verletLists.getCellsPerDimension(),
-                                                                       &emptyFunctor);
-  verletLists.iteratePairwiseAoS(&emptyFunctor, &traversal, true);
+  autopas::C18TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
+      verletLists.getCellsPerDimension(), &emptyFunctor);
+  verletLists.iteratePairwise(&emptyFunctor, &traversal, true);
 
   std::vector<Particle*> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
@@ -68,9 +68,9 @@ TEST_F(VerletListsCellsTest, testVerletList) {
   using ::testing::_;  // anything is ok
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
-  autopas::C18TraversalVerlet<FPCell, MFunctor, false, true> traversal(verletLists.getCellsPerDimension(),
-                                                                       &mockFunctor);
-  verletLists.iteratePairwiseAoS(&mockFunctor, &traversal, true);
+  autopas::C18TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
+      verletLists.getCellsPerDimension(), &mockFunctor);
+  verletLists.iteratePairwise(&mockFunctor, &traversal, true);
 
   std::vector<Particle*> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);

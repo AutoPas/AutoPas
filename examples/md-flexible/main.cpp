@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
   auto containerChoice(parser.getContainerOptions());
   auto selectorStrategy(parser.getSelectorStrategy());
   auto cutoff(parser.getCutoff());
-  auto cellSize(parser.getCellSize());
+  auto cellSizeFactor(parser.getCellSizeFactor());
   auto dataLayoutOptions(parser.getDataLayoutOptions());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
   autopas::Logger::get()->set_level(logLevel);
 
   autopas.setCutoff(cutoff);
-  autopas.setCellSize(cellSize);
+  autopas.setCellSizeFactor(cellSizeFactor);
   autopas.setVerletSkin(verletSkinRadius);
   autopas.setVerletRebuildFrequency(verletRebuildFrequency);
   autopas.setTuningInterval(tuningInterval);

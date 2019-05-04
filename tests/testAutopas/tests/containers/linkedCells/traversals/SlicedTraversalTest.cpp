@@ -19,7 +19,8 @@ void testSlicedTraversal(const std::array<size_t, 3>& edgeLength, unsigned long 
 
   NumThreadGuard(4);
 
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal(edgeLength, &functor, overlap);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal(edgeLength, &functor,
+                                                                                                   overlap);
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions
@@ -40,7 +41,7 @@ TEST_F(SlicedTraversalTest, testTraversalCubeShrink) {
 TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
   NumThreadGuard(4);
 
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({1, 1, 1}, nullptr);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({1, 1, 1}, nullptr);
 
   EXPECT_FALSE(slicedTraversal.isApplicable());
 }
@@ -48,7 +49,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
 TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
   NumThreadGuard(4);
 
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({5, 5, 5}, nullptr);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({5, 5, 5}, nullptr);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
 }
@@ -56,7 +57,8 @@ TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
 TEST_F(SlicedTraversalTest, testIsApplicableOk) {
   NumThreadGuard(4);
 
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({11, 11, 11}, nullptr);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({11, 11, 11},
+                                                                                                   nullptr);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
 }
@@ -64,7 +66,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableOk) {
 TEST_F(SlicedTraversalTest, testIsApplicableOkOnlyOneDim) {
   NumThreadGuard(4);
 
-  autopas::SlicedTraversal<FPCell, MFunctor, false, true> slicedTraversal({1, 1, 11}, nullptr);
+  autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({1, 1, 11}, nullptr);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
 }

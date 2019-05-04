@@ -14,16 +14,16 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // adaptive domain size so sliced is always applicable.
   bBoxMax[2] = autopas::autopas_get_max_threads() * 2;
   const double cutoff = 1;
-  const double cellSize = 1;
+  const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
   const unsigned int maxSamples = 2;
 
   autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
-  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, cellSize, verletSkin, verletRebuildFrequency,
-                                                 autopas::allContainerOptions, autopas::allTraversalOptions,
-                                                 autopas::allDataLayoutOptions, autopas::allNewton3Options,
-                                                 autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
+  autopas::AutoTuner<Particle, FPCell> autoTuner(
+      bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency, autopas::allContainerOptions,
+      autopas::allTraversalOptions, autopas::allDataLayoutOptions, autopas::allNewton3Options,
+      autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
@@ -33,7 +33,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
   // total number of possible configurations * number of samples + last iteration after tuning
   // number of configs manually counted
-  size_t expectedNumberOfIterations = 34 * maxSamples + 1;
+#ifndef AUTOPAS_CUDA
+  size_t expectedNumberOfIterations = 29 * maxSamples + 1;
+#else
+  size_t expectedNumberOfIterations = 41 * maxSamples + 1;
+#endif
 
   int collectedSamples = 0;
   int iterations = 0;

@@ -26,9 +26,11 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
   autopas::TraversalSelector<FPCell> ts(edgeLength, cutoff);
   std::unique_ptr<autopas::CellPairTraversal<FPCell>> Traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
-    Traversal = ts.generateTraversal<TraversalTest::CountFunctor, false, true>(traversalOption, functor);
+    Traversal = ts.generateTraversal<TraversalTest::CountFunctor, autopas::DataLayoutOption::aos, true>(traversalOption,
+                                                                                                        functor);
   } else {
-    Traversal = ts.generateTraversal<TraversalTest::CountFunctor, false, false>(traversalOption, functor);
+    Traversal = ts.generateTraversal<TraversalTest::CountFunctor, autopas::DataLayoutOption::aos, false>(
+        traversalOption, functor);
   }
 
   unsigned long cellId = 0;

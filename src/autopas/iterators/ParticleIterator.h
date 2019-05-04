@@ -86,7 +86,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
     if (_iteratorAcrossCells < cont->end()) {
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
       if (not isCellTypeBehaviorCorrect() or not _iteratorWithinOneCell.isValid()) {
-        next_non_empty_cell();
+        ParticleIterator::next_non_empty_cell();
       }
     }
   }
