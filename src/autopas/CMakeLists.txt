@@ -13,6 +13,7 @@ target_link_libraries(autopas
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         # Do not link against openmp when using archer
         $<$<AND:$<BOOL:${OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
+        $<$<BOOL:${ENABLE_KOKKOS}>:kokkos>
         )
 
 
@@ -25,3 +26,6 @@ target_compile_definitions(autopas
         )
 
 TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC ../.)
+
+# @TODO check if we really need this line
+target_include_directories(autopas SYSTEM PUBLIC ${Kokkos_INCLUDE_DIRS_RET})
