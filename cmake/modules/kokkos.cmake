@@ -14,10 +14,14 @@ if(ENABLE_KOKKOS)
     #set path to kokkos files
     # @FIXME: Check if path is valid and abort if not!
     set(KOKKOS_INSTALL_PATH "$ENV{HOME}/kokkos" CACHE STRING "Path to kokkos project root directory")
-
-    # @TODO: is this here on purpose?
+    #check, whether directory to kokkos exists, no check on functionality of the content
+    if(EXISTS "${KOKKOS_INSTALL_PATH}" AND IS_DIRECTORY "${KOKKOS_INSTALL_PATH}")
+        message(STATUS "Kokkos Directory found")
+    else()
+        message(FATAL_ERROR "Could not find Kokkos! Please set KOKKOS_INSTALL_PATH to the kokkos directory!")
+    endif()
     set(CMAKE_CXX_EXTENSIONS OFF)
-
+    #add_definitions(-DENABLE_KOKKOS="on" )
     # build kokkos
     add_subdirectory(${KOKKOS_INSTALL_PATH} ${PROJECT_BINARY_DIR}/kokkos)
 

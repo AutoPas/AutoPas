@@ -12,8 +12,8 @@
 #include "autopas/selectors/AutoTuner.h"
 
 // kokkos
-#ifdef KOKKOS_ENABLED
-#include "Kokkos_Core.hpp"
+#ifdef ENABLE_KOKKOS
+#include <Kokkos_Core.hpp>
 #endif
 
 namespace autopas {
@@ -71,7 +71,7 @@ class AutoPas {
       // remove the Logger from the registry. Do this only if we have no other autopas instances running.
       autopas::Logger::unregister();
     }
-#ifdef KOKKOS_ENABLED
+#ifdef ENABLE_KOKKOS
     Kokkos::finalize();
 #endif
   }
@@ -98,7 +98,7 @@ class AutoPas {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, _allowedContainers, _allowedTraversals,
         _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy, _tuningInterval, _numSamples);
-#ifdef KOKKOS_ENABLED
+#ifdef ENABLE_KOKKOS
     int argc = 0;
     char **argx = new char *[1];
     Kokkos::initialize(argc, argx);

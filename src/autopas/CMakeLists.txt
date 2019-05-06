@@ -27,5 +27,4 @@ target_compile_definitions(autopas
 
 TARGET_INCLUDE_DIRECTORIES(autopas PUBLIC ../.)
 
-# @TODO check if we really need this line
 target_include_directories(autopas SYSTEM PUBLIC ${Kokkos_INCLUDE_DIRS_RET})
