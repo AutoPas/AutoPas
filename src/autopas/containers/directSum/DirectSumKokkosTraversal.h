@@ -17,9 +17,21 @@
 
 namespace autopas {
 
+/**
+ * This sum defines the traversal typically used by the DirectSum container.
+ *
+ * @tparam ParticleCell the type of cells
+ * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam useSoA
+ * @tparam useNewton3
+ */
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell>,
                                  public DirectSumTraversalInterface<ParticleCell> {
+  /**
+   * Constructor for the DirectSum traversal.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   */
  public:
   DirectSumKokkosTraversal(PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
@@ -30,7 +42,10 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell>,
   TraversalOption getTraversalType() override { return TraversalOption::directSumKokkosTraversal; }
 
   bool isApplicable() override { return true; }
-
+  /**
+   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
+   * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
+   */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
  private:
@@ -43,17 +58,16 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell>,
 template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
 void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
-// Assume cell[0] is the main domain and cell[1] is the halo
-
+  // Assume cell[0] is the main domain and cell[1] is the halo
 
 #ifdef ENABLE_KOKKOS
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i){
 #endif
-    //@FIXME Kokkos cannot use non-const functions
+  //@FIXME Kokkos cannot use non-const functions
   //_cellFunctor.processCell(cells[0]);
   //_cellFunctor.processCellPair(cells[0], cells[1]);
 #ifdef ENABLE_KOKKOS
-  });
+                          });
 #endif
 }
 

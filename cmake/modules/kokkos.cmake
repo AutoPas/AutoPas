@@ -21,7 +21,7 @@ if(ENABLE_KOKKOS)
         message(FATAL_ERROR "Could not find Kokkos! Please set KOKKOS_INSTALL_PATH to the kokkos directory!")
     endif()
     set(CMAKE_CXX_EXTENSIONS OFF)
-    #add_definitions(-DENABLE_KOKKOS="on" )
+    add_definitions(-DENABLE_KOKKOS="on" )
     # build kokkos
     add_subdirectory(${KOKKOS_INSTALL_PATH} ${PROJECT_BINARY_DIR}/kokkos)
 
