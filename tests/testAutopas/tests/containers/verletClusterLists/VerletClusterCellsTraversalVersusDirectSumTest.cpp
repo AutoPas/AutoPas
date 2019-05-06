@@ -38,7 +38,7 @@ void VerletClusterCellsTraversalVersusDirectSumTest::fillContainerWithMolecules(
   }
 }
 
-template <bool useNewton3, autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos>
+template <bool useNewton3, autopas::DataLayoutOption dataLayout>
 void VerletClusterCellsTraversalVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   fillContainerWithMolecules(numMolecules, _directSum);
   // now fill second container with the molecules from the first one, because
@@ -96,7 +96,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_100) {
   // (and OK to do so)
   double rel_err_tolerance = 1e-13;
 
-  test<false>(numMolecules, rel_err_tolerance);
+  test<false, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance);
 }
 
 TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_500) {
@@ -107,7 +107,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_500) {
   // (and OK to do so)
   double rel_err_tolerance = 1e-12;
 
-  test<false>(numMolecules, rel_err_tolerance);
+  test<false, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance);
 }
 
 TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_1000) {
@@ -117,7 +117,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_1000) {
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 1.5e-12;
-  test<false>(numMolecules, rel_err_tolerance);
+  test<false, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance);
 }
 
 TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_100) {
@@ -128,7 +128,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_100) {
   // (and OK to do so)
   double rel_err_tolerance = 1e-13;
 
-  test<true>(numMolecules, rel_err_tolerance);
+  test<true, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance);
 }
 
 TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_500) {
@@ -139,7 +139,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_500) {
   // (and OK to do so)
   double rel_err_tolerance = 1e-12;
 
-  test<true>(numMolecules, rel_err_tolerance);
+  test<true, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance);
 }
 
 TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_1000) {
@@ -149,7 +149,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_1000) {
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 1.5e-12;
-  test<true>(numMolecules, rel_err_tolerance);
+  test<true, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance);
 }
 
 TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testSoA_1000) {
