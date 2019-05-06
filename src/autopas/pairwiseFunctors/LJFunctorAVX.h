@@ -102,6 +102,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
+    __m256d virialSumX = _mm256_setzero_pd();
+    __m256d virialSumY = _mm256_setzero_pd();
+    __m256d virialSumZ = _mm256_setzero_pd();
+    __m256d upotSum = _mm256_setzero_pd();
+
+
     // @TODO: Globlas
     //    bool isHaloCell1 = false;
     //    bool isHaloCell2 = false;
@@ -117,11 +123,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
       const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
       
-      __m256d virialSumX = _mm256_setzero_pd();
-      __m256d virialSumY = _mm256_setzero_pd();
-      __m256d virialSumZ = _mm256_setzero_pd();
-      __m256d upotSum = _mm256_setzero_pd();
-
       // floor soa numParticles to multiple of vecLength
       unsigned int j = 0;
       for (; j < (i & ~(vecLength - 1)); j += 4) {
@@ -154,6 +155,34 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       fxptr[i] += sumfx;
       fyptr[i] += sumfy;
       fzptr[i] += sumfz;
+    }
+
+    if (calculateGlobals) {
+      const int threadnum = autopas_get_thread_num();
+
+      // horizontally reduce virialSumX and virialSumY
+      const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
+      const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
+      const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
+      const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+
+      //horizontally reduce virialSumZ and upotSum
+      const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
+      const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
+      const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
+      const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+
+      double globals [4];
+      _mm_store_pd(&globals[0], hSumVirialxyVec);
+      _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+
+      // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
+      // AoS)
+      //TODO: TEST
+      _aosThreadData[threadnum].virialSum[0] += globals[0] * (newton3 ? 1 : 2);
+      _aosThreadData[threadnum].virialSum[1] += globals[1] * (newton3 ? 1 : 2);
+      _aosThreadData[threadnum].virialSum[2] += globals[2] * (newton3 ? 1 : 2);
+      _aosThreadData[threadnum].upotSum += globals[3] * (newton3 ? 1 : 2);
     }
 #endif
   }
