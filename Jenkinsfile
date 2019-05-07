@@ -77,6 +77,9 @@ pipeline{
             }
         }
         stage('build and test'){
+            options {
+                timeout(time: 2, unit: 'HOURS')
+            }
             parallel{
                 stage('gpu cloud') {
                     agent { label 'openshift-autoscale-gpu' }
