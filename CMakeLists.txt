@@ -38,6 +38,8 @@ if(ENABLE_CUDA)
     message(STATUS "Cuda enabled.")
     enable_language(CUDA)
     set(CUDA_SEPARABLE_COMPILATION ON)
+    #default compute capability
+    set(CUDA_COMPUTE_CAPABILITY "61")
 else()
     message(STATUS "Cuda disabled.")
 endif()
