@@ -168,10 +168,10 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useN
   _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
   auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
   for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
-  // decreases last _sliceThickness by one to account for the way we handle base cells
+  // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
   *--_sliceThickness.end() -= _overlapLongestAxis;
 
-  locks.resize(numSlices * _overlapLongestAxis);
+  locks.resize((numSlices - 1) * _overlapLongestAxis);
 }
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 template <typename LoopBody>
@@ -193,13 +193,13 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
 
     // all but the first slice need to lock their starting layers.
     if (slice > 0) {
-      for (unsigned long i = 1ul; i <= _overlapLongestAxis; i++) {
-        locks[(slice * _overlapLongestAxis) - i].lock();
+      for (unsigned long i = 0ul; i < _overlapLongestAxis; i++) {
+        locks[((slice - 1) * _overlapLongestAxis) + i].lock();
       }
     }
     const auto lastLayer = myStartArray[_dimsPerLength[0]] + _sliceThickness[slice];
     for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]]; dimSlice < lastLayer; ++dimSlice) {
-      // at the last layer request lock for the starting layer of the next
+      // at the last layers request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
       if (slice != numSlices - 1 && dimSlice >= lastLayer - _overlapLongestAxis) {
         locks[(slice * _overlapLongestAxis) + _overlapLongestAxis - (lastLayer - dimSlice)].lock();
@@ -217,8 +217,8 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
       }
       // at the end of the first layers release the lock
       if (slice > 0 && dimSlice < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis) {
-        locks[(slice * _overlapLongestAxis) - (_overlapLongestAxis - (dimSlice - myStartArray[_dimsPerLength[0]]))]
-            .unlock();
+        const unsigned long index = ((slice - 1) * _overlapLongestAxis) + (dimSlice - myStartArray[_dimsPerLength[0]]);
+        locks[index].unlock();
       } else if (slice != numSlices - 1 && dimSlice == lastLayer - 1) {
         // clearing of the locks set on the last layers of each slice
         for (size_t i = (slice * _overlapLongestAxis); i < (slice + 1) * _overlapLongestAxis; ++i) {
