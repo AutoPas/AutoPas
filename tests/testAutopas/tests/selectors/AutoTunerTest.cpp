@@ -53,10 +53,10 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     if (stillTuning) {
       if (collectedSamples == 1) {
         EXPECT_NE(currentConfig, prevConfig)
-                  << "current:" << currentConfig.toString() << ", previous: " << currentConfig.toString() << std::endl;
+            << "current:" << currentConfig.toString() << ", previous: " << currentConfig.toString() << std::endl;
       } else {
         EXPECT_EQ(currentConfig, prevConfig)
-                  << "current:" << currentConfig.toString() << ", previous: " << currentConfig.toString() << std::endl;
+            << "current:" << currentConfig.toString() << ", previous: " << currentConfig.toString() << std::endl;
       }
     }
     prevConfig = currentConfig;
