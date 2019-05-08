@@ -187,7 +187,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   }
 
   /**
-   * Specifies whether the neighbor lists need to be rebuild.
+   * Specifies whether the neighbor lists need to rebuild when using the given Newton 3 option.
    * @param useNewton3 if newton3 is gonna be used to traverse
    * @return True if the neighbor lists need to be rebuild, false otherwise.
    */
