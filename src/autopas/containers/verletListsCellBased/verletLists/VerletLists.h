@@ -166,8 +166,7 @@ class VerletLists
 
   /**
    * Update the verlet lists for AoS usage
-   * @param useNewton3 CURRENTLY NOT USED!
-   * @todo Build verlet lists according to newton 3.
+   * @param useNewton3
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
