@@ -23,9 +23,9 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
     _linkedCells->addParticle(*it);
   }
 
-  double eps = 1.0;
-  double sig = 1.0;
-  double shift = 0.0;
+  const double eps = 1.0;
+  const double sig = 1.0;
+  const double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
