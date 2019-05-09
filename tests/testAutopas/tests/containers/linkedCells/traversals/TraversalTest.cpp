@@ -59,7 +59,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
   traversalInterface->traverseCellPairs(cells);
 }
 
-TEST_P(TraversalTest, testTraversaltest2x2x2) {
+TEST_P(TraversalTest, testTraversal_2x2x2) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {2ul, 2ul, 2ul};
@@ -68,7 +68,7 @@ TEST_P(TraversalTest, testTraversaltest2x2x2) {
   testTraversal(traversalOption, newton3, domain, 6, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest2x3x4) {
+TEST_P(TraversalTest, testTraversal_2x3x4) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {2ul, 3ul, 4ul};
@@ -77,7 +77,7 @@ TEST_P(TraversalTest, testTraversaltest2x3x4) {
   testTraversal(traversalOption, newton3, domain, 6, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest3x3x3) {
+TEST_P(TraversalTest, testTraversal_3x3x3) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {3ul, 3ul, 3ul};
@@ -86,16 +86,16 @@ TEST_P(TraversalTest, testTraversaltest3x3x3) {
   testTraversal(traversalOption, newton3, domain, 6, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest10x10x10) {
+TEST_P(TraversalTest, testTraversal_8x8x8) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
-  std::array<size_t, 3> domain = {10ul, 10ul, 10ul};
+  std::array<size_t, 3> domain = {8ul, 8ul, 8ul};
   const auto cutoff = 1.0;
 
   testTraversal(traversalOption, newton3, domain, 6, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest8x8x8_overlap2) {
+TEST_P(TraversalTest, testTraversal_8x8x8_overlap2) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {8ul, 8ul, 8ul};
@@ -104,7 +104,7 @@ TEST_P(TraversalTest, testTraversaltest8x8x8_overlap2) {
   testTraversal(traversalOption, newton3, domain, 32, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest6x7x8) {
+TEST_P(TraversalTest, testTraversal_6x7x8) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
@@ -113,7 +113,7 @@ TEST_P(TraversalTest, testTraversaltest6x7x8) {
   testTraversal(traversalOption, newton3, domain, 6, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest6x7x8_overlap2) {
+TEST_P(TraversalTest, testTraversal_6x7x8_overlap2) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
@@ -122,7 +122,7 @@ TEST_P(TraversalTest, testTraversaltest6x7x8_overlap2) {
   testTraversal(traversalOption, newton3, domain, 32, cutoff);
 }
 
-TEST_P(TraversalTest, testTraversaltest7x8x9_overlap3) {
+TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {7ul, 8ul, 9ul};
