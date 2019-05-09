@@ -94,8 +94,11 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   FPCell cell1NoAVX(cell1AVX);
   FPCell cell2NoAVX(cell2AVX);
 
-  autopas::LJFunctor<Particle, FPCell> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
-  autopas::LJFunctorAVX<Particle, FPCell> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  
+  ljFunctorAVX.initTraversal();
+  ljFunctorNoAVX.initTraversal();
 
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after copy initialization.";
@@ -125,6 +128,15 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
 
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after extracting.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after extracting.";
+
+  ljFunctorAVX.endTraversal(newton3);
+  ljFunctorNoAVX.endTraversal(newton3);
+
+  double tolerance = 100.f;
+    // TODO: change tolerance or type for upot
+  EXPECT_NEAR(ljFunctorAVX.getUpot(), ljFunctorNoAVX.getUpot(), tolerance) << "global uPot";
+  tolerance = 1e-8;
+  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
@@ -138,10 +150,13 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   // copy cells
   FPCell cellNoAVX(cellAVX);
 
-  autopas::LJFunctor<Particle, FPCell> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
-  autopas::LJFunctorAVX<Particle, FPCell> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
+
+  ljFunctorAVX.initTraversal();
+  ljFunctorNoAVX.initTraversal();
 
   ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer);
   ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer);
@@ -159,6 +174,15 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   ljFunctorAVX.SoAExtractor(cellNoAVX, cellNoAVX._particleSoABuffer);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells 1 not equal after extracting.";
+
+  ljFunctorAVX.endTraversal(newton3);
+  ljFunctorNoAVX.endTraversal(newton3);
+
+  double tolerance = 100.f;
+    // TODO: change tolerance or type for upot
+  EXPECT_NEAR(ljFunctorAVX.getUpot(), ljFunctorNoAVX.getUpot(), tolerance) << "global uPot";
+  tolerance = 1e-8;
+  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
 TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellNewton3) { testLJFunctorVSLJFunctorAVXOneCell(true); }
