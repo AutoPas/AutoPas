@@ -132,10 +132,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   ljFunctorAVX.endTraversal(newton3);
   ljFunctorNoAVX.endTraversal(newton3);
 
-  double tolerance = 100.f;
-    // TODO: change tolerance or type for upot
+  double tolerance = 1e-8;
   EXPECT_NEAR(ljFunctorAVX.getUpot(), ljFunctorNoAVX.getUpot(), tolerance) << "global uPot";
-  tolerance = 1e-8;
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
@@ -178,10 +176,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   ljFunctorAVX.endTraversal(newton3);
   ljFunctorNoAVX.endTraversal(newton3);
 
-  double tolerance = 100.f;
-    // TODO: change tolerance or type for upot
+  double tolerance = 1e-8;
   EXPECT_NEAR(ljFunctorAVX.getUpot(), ljFunctorNoAVX.getUpot(), tolerance) << "global uPot";
-  tolerance = 1e-8;
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 

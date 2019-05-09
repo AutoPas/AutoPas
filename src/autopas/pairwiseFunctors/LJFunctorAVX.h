@@ -264,17 +264,17 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m256d virialz = _mm256_mul_pd(fz, drz);
 
       // Global Potential
-      double debug[4];
       const __m256d upotPART1 = _mm256_mul_pd(_epsilon24, lj12m6);
       const __m256d shift6V = _mm256_set1_pd(_shift6);
       const __m256d upotPART2 = _mm256_add_pd(shift6V, upotPART1);
-      const __m256d upot = _mm256_and_pd(upotPART2, cutoffMask);
+      const __m256d upot = masked
+                                  ? _mm256_and_pd(upotPART2, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                                  : _mm256_and_pd(upotPART2, cutoffMask);
 
       *virialSumX = _mm256_add_pd(*virialSumX, virialx);
       *virialSumY = _mm256_add_pd(*virialSumY, virialy);
       *virialSumZ = _mm256_add_pd(*virialSumZ, virialz);
       *upotSum = _mm256_add_pd(*upotSum, upot);
-   
     }
 #endif
   }
@@ -459,6 +459,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
       //horizontally reduce virialSumZ and upotSum
+      double debug[4];
+      _mm256_store_pd(debug, upotSum);
+      std::cout << "AVX UPOT: " << debug[0] << " " << debug[1] << " " << debug[2] << " " << debug[3] << " " << std::endl;
       const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
       const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
       const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
