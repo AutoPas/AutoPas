@@ -202,7 +202,7 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
       // at the last layers request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
       if (slice != numSlices - 1 && dimSlice >= lastLayer - _overlapLongestAxis) {
-        locks[(slice * _overlapLongestAxis) + _overlapLongestAxis - (lastLayer - dimSlice)].lock();
+        locks[((slice + 1) * _overlapLongestAxis) - (lastLayer - dimSlice)].lock();
       }
       for (unsigned long dimMedium = 0;
            dimMedium < this->_cellsPerDimension[_dimsPerLength[1]] - _overlap[_dimsPerLength[1]]; ++dimMedium) {
@@ -219,6 +219,13 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
       if (slice > 0 && dimSlice < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis) {
         const unsigned long index = ((slice - 1) * _overlapLongestAxis) + (dimSlice - myStartArray[_dimsPerLength[0]]);
         locks[index].unlock();
+        // if lastLayer is reached within overlap area, unlock all following locks
+        if (dimSlice == lastLayer - 1) {
+          for (unsigned long i = dimSlice + 1; i < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis; ++i) {
+            const unsigned long index = ((slice - 1) * _overlapLongestAxis) + (i - myStartArray[_dimsPerLength[0]]);
+            locks[index].unlock();
+          }
+        }
       } else if (slice != numSlices - 1 && dimSlice == lastLayer - 1) {
         // clearing of the locks set on the last layers of each slice
         for (size_t i = (slice * _overlapLongestAxis); i < (slice + 1) * _overlapLongestAxis; ++i) {
