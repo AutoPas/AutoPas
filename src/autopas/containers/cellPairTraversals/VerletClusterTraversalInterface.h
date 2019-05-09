@@ -49,7 +49,6 @@ class VerletClusterTraversalInterface {
   /**
    * This function interacts all cells with the other cells with their index in neighborCellIds
    * @param cells containing the particles
-   * @param neighborCellIds Stores the neighbor ids for each cell in cells
    */
   virtual void traverseCellPairs(std::vector<ParticleCell> &cells) = 0;
 

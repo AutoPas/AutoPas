@@ -52,6 +52,7 @@ class AutoTuner {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param allowedContainerOptions Vector of container types AutoPas can choose from.
    * @param allowedTraversalOptions Vector of traversals AutoPas can choose from.
    * @param allowedDataLayoutOptions Vector of data layouts AutoPas can choose from.
@@ -121,6 +122,7 @@ class AutoTuner {
    * @param cutoff  Cutoff radius to be used in this container.
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.

@@ -194,7 +194,6 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   /**
    * This function interacts all cells with the other cells with their index in neighborCellIds
    * @param cells containing the particles
-   * @param neighborCellIds Stores the neighbor ids for each cell in cells
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override {
     switch (DataLayout) {

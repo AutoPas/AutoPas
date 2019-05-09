@@ -1,5 +1,5 @@
 /**
- * @file VerletClusterCluster.h
+ * @file VerletClusterCells.h
  * @author jspahl
  * @date 25.3.19
  */
@@ -220,9 +220,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
  protected:
   /**
    * Recalculate grids and clusters,
-   * build verlet lists and
-   * pad clusters.
-   * @param useNewton3
+   * build verlet lists and pad clusters.
    */
   void rebuild() {
     deleteDummyParticles();

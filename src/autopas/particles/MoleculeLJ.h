@@ -59,6 +59,7 @@ class MoleculeLJBase : public ParticleBase<floatType> {
   static floatType EPSILON, SIGMA;
 };
 
+/// Alias for double precision LJ Moleclue
 typedef MoleculeLJBase<double> MoleculeLJ;
 
 }  // namespace autopas
