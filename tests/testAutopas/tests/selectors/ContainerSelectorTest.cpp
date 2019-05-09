@@ -6,6 +6,9 @@
 
 #include "ContainerSelectorTest.h"
 
+using ::testing::Combine;
+using ::testing::ValuesIn;
+
 // must be TEST_F because the logger which is called in the LC constructor is part of the fixture
 TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
@@ -28,9 +31,9 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   }
 }
 
-TEST_F(ContainerSelectorTest, testContainerConversion) {
-  auto from = autopas::ContainerOption::directSum;
-  auto to = autopas::ContainerOption::linkedCells;
+TEST_P(ContainerSelectorTest, testContainerConversion) {
+  auto from = std::get<0>(GetParam());
+  auto to = std::get<1>(GetParam());
 
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
   const double cutoff = 1;
@@ -74,3 +77,9 @@ TEST_F(ContainerSelectorTest, testContainerConversion) {
   // select container from which we want to convert to
   containerSelector.selectContainer(to);
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    Generated, ContainerSelectorTest,
+    Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> { return autopas::allContainerOptions; }()),
+            ValuesIn([]() -> std::vector<autopas::ContainerOption> { return autopas::allContainerOptions; }())),
+    ContainerSelectorTest::PrintToStringParamName());
