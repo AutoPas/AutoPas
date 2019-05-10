@@ -34,17 +34,18 @@ template <class Particle, class ParticleCell, class SoAArraysType = typename Par
 class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
  public:
   /**
-   * Constructor of the LinkedCells class
+   * Constructor of the LinkedCells class.
    * @param boxMin
    * @param boxMax
-   * @param cutoff
-   * @param cellSizeFactor cell size factor ralative to cutoff
+   * @param interactionLength cutoff + verlet skin.
+   * @param cellSizeFactor cell size factor relative to interactionLength.
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double interactionLength,
               const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, interactionLength,
+                                                                 allLCApplicableTraversals()),
+        _cellBlock(this->_cells, boxMin, boxMax, interactionLength, cellSizeFactor) {}
 
   /**
    * Lists all traversal options applicable for the Linked Cells container.

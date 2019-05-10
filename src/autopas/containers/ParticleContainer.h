@@ -42,10 +42,11 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * Constructor of ParticleContainer
    * @param boxMin
    * @param boxMax
-   * @param cutoff
+   * @param interactionLength cutoff + verlet skin
    * @param applicableTraversals Sorted vector of traversals applicable for this Container.
    */
-  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax,
+                    const double interactionLength,
                     std::vector<TraversalOption> applicableTraversals = DefaultApplicableTraversals())
       : _cells(),
         _applicableTraversals(
@@ -53,7 +54,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
             (std::sort(applicableTraversals.begin(), applicableTraversals.end()), applicableTraversals)),
         _boxMin(boxMin),
         _boxMax(boxMax),
-        _cutoff(cutoff) {}
+        _interactionLength(interactionLength) {}
 
   /**
    * destructor of ParticleContainer
@@ -100,16 +101,16 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
   /**
-   * Return the cutoff of the container
+   * Return the interaction length of the container.
    * @return
    */
-  double getCutoff() const override final { return _cutoff; }
+  double getInteractionLength() const override final { return _interactionLength; }
 
   /**
-   * Set the cutoff of the container
-   * @param cutoff
+   * Set the interaction length of the container.
+   * @param interactionLength
    */
-  void setCutoff(double cutoff) override final { _cutoff = cutoff; }
+  void setInteractionLength(double interactionLength) override final { _interactionLength = interactionLength; }
 
   /**
    * Checks if the given traversals are applicable to this traversal.
@@ -174,7 +175,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
  private:
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
-  double _cutoff;
+  double _interactionLength;
 };
 
 }  // namespace autopas
