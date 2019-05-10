@@ -75,25 +75,58 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
       }
     }
   }
-  std::vector<Particle> beforeList;
-  for (auto iter = containerSelector.getCurrentContainer()->begin(); iter.isValid(); ++iter) {
-    beforeList.push_back(*iter);
+  std::vector<Particle> beforeListInner, beforeListHalo,
+      beforeListHaloVerletOnly /*for particles only in verlet containers*/;
+  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid();
+       ++iter) {
+    beforeListInner.push_back(*iter);
+  }
+  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
+       ++iter) {
+    if (autopas::utils::inBox(iter->getR(), autopas::ArrayMath::sub(bBoxMin, std::array<double, 3>{cutoff}),
+                              autopas::ArrayMath::add(bBoxMin, std::array<double, 3>{cutoff}))) {
+      beforeListHalo.push_back(*iter);
+    } else {
+      beforeListHaloVerletOnly.push_back(*iter);
+    }
   }
 
   // select container to which we want to convert to
   containerSelector.selectContainer(to);
 
-  std::vector<Particle> afterList;
-  for (auto iter = containerSelector.getCurrentContainer()->begin(); iter.isValid(); ++iter) {
-    afterList.push_back(*iter);
+  std::vector<Particle> afterListInner, afterListHalo, afterListHaloVerletOnly;
+  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid();
+       ++iter) {
+    afterListInner.push_back(*iter);
+  }
+  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
+       ++iter) {
+    if (autopas::utils::inBox(iter->getR(), autopas::ArrayMath::sub(bBoxMin, std::array<double, 3>{cutoff}),
+                              autopas::ArrayMath::add(bBoxMin, std::array<double, 3>{cutoff}))) {
+      afterListHalo.push_back(*iter);
+    } else {
+      afterListHaloVerletOnly.push_back(*iter);
+    }
   }
 
-  ASSERT_EQ(afterList.size(), beforeList.size());
-  EXPECT_THAT(afterList, UnorderedElementsAreArray(beforeList));
+  EXPECT_THAT(afterListInner, UnorderedElementsAreArray(beforeListInner));
+  EXPECT_THAT(afterListHalo, UnorderedElementsAreArray(beforeListHalo));
+  if (autopas::utils::StringUtils::to_string(to).find("Verlet") != std::string::npos and
+      autopas::utils::StringUtils::to_string(from).find("Verlet") != std::string::npos) {
+    EXPECT_THAT(afterListHaloVerletOnly, UnorderedElementsAreArray(beforeListHaloVerletOnly));
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
     Generated, ContainerSelectorTest,
-    Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> { return autopas::allContainerOptions; }()),
-            ValuesIn([]() -> std::vector<autopas::ContainerOption> { return autopas::allContainerOptions; }())),
+    Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+              auto all = autopas::allContainerOptions;
+              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
+              return all;
+            }()),
+            ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+              auto all = autopas::allContainerOptions;
+              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
+              return all;
+            }())),
     ContainerSelectorTest::PrintToStringParamName());
