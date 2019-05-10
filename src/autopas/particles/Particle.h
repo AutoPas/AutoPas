@@ -36,7 +36,26 @@ class ParticleBase {
   ParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
+  /**
+   * Destructor of ParticleBase class
+   */
   virtual ~ParticleBase() = default;
+
+  /**
+   * Equality operator for ParticleBase class.
+   * @param rhs
+   * @return
+   */
+  bool operator==(const ParticleBase &rhs) const {
+    return std::tie(_r, _v, _f, _id) == std::tie(rhs._r, rhs._v, rhs._f, rhs._id);
+  }
+
+  /**
+   * Not-Equals operator for ParticleBase class.
+   * @param rhs
+   * @return
+   */
+  bool operator!=(const ParticleBase &rhs) const { return !(rhs == *this); }
 
   /**
    * get the force acting on the particle

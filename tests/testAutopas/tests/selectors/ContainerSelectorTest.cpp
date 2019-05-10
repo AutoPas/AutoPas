@@ -7,6 +7,7 @@
 #include "ContainerSelectorTest.h"
 
 using ::testing::Combine;
+using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 
 // must be TEST_F because the logger which is called in the LC constructor is part of the fixture
@@ -74,8 +75,21 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
       }
     }
   }
-  // select container from which we want to convert to
+  std::vector<Particle> beforeList;
+  for (auto iter = containerSelector.getCurrentContainer()->begin(); iter.isValid(); ++iter) {
+    beforeList.push_back(*iter);
+  }
+
+  // select container to which we want to convert to
   containerSelector.selectContainer(to);
+
+  std::vector<Particle> afterList;
+  for (auto iter = containerSelector.getCurrentContainer()->begin(); iter.isValid(); ++iter) {
+    afterList.push_back(*iter);
+  }
+
+  ASSERT_EQ(afterList.size(), beforeList.size());
+  EXPECT_THAT(afterList, UnorderedElementsAreArray(beforeList));
 }
 
 INSTANTIATE_TEST_SUITE_P(

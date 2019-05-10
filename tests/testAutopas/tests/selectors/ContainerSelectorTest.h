@@ -25,7 +25,7 @@ class ContainerSelectorTest
       std::string from_str(autopas::utils::StringUtils::to_string(std::get<0>(inputTuple)));
       std::string to_str(autopas::utils::StringUtils::to_string(std::get<1>(inputTuple)));
       // replace all '-' with '_', otherwise the test name is invalid
-      //std::replace(traversal.begin(), traversal.end(), '-', '_');
+      // std::replace(traversal.begin(), traversal.end(), '-', '_');
       return "from" + from_str + "To" + to_str;
     }
   };
