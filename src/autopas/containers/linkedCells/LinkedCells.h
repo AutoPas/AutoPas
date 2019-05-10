@@ -71,8 +71,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      utils::ExceptionHandler::exception("LinkedCells: trying to add particle that is not inside the bounding box.\n" +
-                                         p.toString());
+      utils::ExceptionHandler::exception(
+          "LinkedCells: Trying to add a particle that is not inside the bounding box.\n" + p.toString());
     }
   }
 
@@ -82,8 +82,16 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
       cell.addParticle(haloParticle);
     } else {
-      utils::ExceptionHandler::exception("LinkedCells: trying to add halo particle that is not in the halo box.\n" +
-                                         haloParticle.toString());
+      auto inInnerBox = autopas::utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax());
+      if (inInnerBox) {
+        utils::ExceptionHandler::exception(
+            "LinkedCells: Trying to add a halo particle that is actually in the bounding box.\n" +
+            haloParticle.toString());
+      } else {
+        AutoPasLog(trace,
+                   "LinkedCells: Trying to add a halo particle that is outside the halo box. Particle not added!\n{}",
+                   haloParticle.toString());
+      }
     }
   }
 
