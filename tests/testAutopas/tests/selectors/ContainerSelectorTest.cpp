@@ -120,11 +120,13 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
 INSTANTIATE_TEST_SUITE_P(
     Generated, ContainerSelectorTest,
     Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+              // return autopas::allContainerOptions;
               auto all = autopas::allContainerOptions;
               all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
               return all;
             }()),
             ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+              // return autopas::allContainerOptions;
               auto all = autopas::allContainerOptions;
               all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
               return all;
