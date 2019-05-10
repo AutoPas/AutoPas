@@ -92,6 +92,7 @@ pipeline{
                                 sh "./tests/testAutopas/runTests"
                             }
                             dir('build-cuda/examples') {
+                                sh "cmake ."
                                 sh "ctest -C checkExamples -j8 --verbose"
                             }
                         }
@@ -111,6 +112,7 @@ pipeline{
                                 sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                             }
                             dir("build/examples") {
+                                sh "cmake ."
                                 sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
@@ -125,6 +127,7 @@ pipeline{
                                 sh './tests/testAutopas/runTests'
                             }
                             dir("build-openmp/examples") {
+                                sh "cmake ."
                                 sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
@@ -184,6 +187,7 @@ pipeline{
                                 sh './tests/testAutopas/runTests'
                             }
                             dir("build-clang-ninja-openmp/examples"){
+                                sh "cmake ."
                                 sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
@@ -209,6 +213,7 @@ pipeline{
                                 sh './tests/testAutopas/runTests'
                             }
                             dir("build-clang-ninja-addresssanitizer-release/examples"){
+                                sh "cmake ."
                                 sh 'ctest -C checkExamples -j8 --verbose'
                             }
                         }
@@ -220,6 +225,7 @@ pipeline{
                             dir("build-archer"){
                                 sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
+                                sh "cmake ."
                                 sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest --verbose'
                             }
                             dir("build-archer/examples"){
@@ -237,6 +243,7 @@ pipeline{
                                 sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                             dir("build-intel/examples"){
+                                sh "cmake ."
                                 sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
                             }
                         }
@@ -251,6 +258,7 @@ pipeline{
                                 sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                             dir("build-intel-ninja-openmp/examples"){
+                                sh "cmake ."
                                 sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
                             }
                         }
