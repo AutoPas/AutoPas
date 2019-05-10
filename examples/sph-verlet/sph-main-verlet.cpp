@@ -194,7 +194,7 @@ void updateHaloParticles(Container& sphSystem, bool addParticles) {
   std::array<double, 3> requiredHaloMin{0., 0., 0.}, requiredHaloMax{0., 0., 0.};
   std::array<int, 3> diff{0, 0, 0};
   std::array<double, 3> shift{0., 0., 0.};
-  double cutoff = sphSystem.getCutoff();
+  double interactionLength = sphSystem.getInteractionLength();
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
@@ -205,7 +205,7 @@ void updateHaloParticles(Container& sphSystem, bool addParticles) {
         }
         // figure out from where we get our halo particles
         for (int i = 0; i < 3; ++i) {
-          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, shift[i]);
+          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], interactionLength, shift[i]);
         }
         if (addParticles) {
           sph_verlet_particle_list[diff].clear();

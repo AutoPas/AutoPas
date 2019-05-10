@@ -129,16 +129,16 @@ class ParticleContainerInterface {
   virtual void setBoxMin(const std::array<double, 3> &boxMin) = 0;
 
   /**
-   * Return the cutoff of the container.
-   * @return Cutoff radius.
+   * Return the interaction length of the container.
+   * @return
    */
-  virtual double getCutoff() const = 0;
+  virtual double getInteractionLength() const = 0;
 
   /**
-   * Set the cutoff of the container.
-   * @param cutoff
+   * Set the interaction length of the container.
+   * @param interactionLength
    */
-  virtual void setCutoff(double cutoff) = 0;
+  virtual void setInteractionLength(double cutoff) = 0;
 
   /**
    * Updates the container.

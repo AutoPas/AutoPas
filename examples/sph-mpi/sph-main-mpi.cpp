@@ -268,7 +268,7 @@ void updateHaloParticles(Container& sphSystem, MPI_Comm& comm, const std::array<
   std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
   std::array<int, 3> diff{0, 0, 0};
   std::array<double, 3> shift{0, 0, 0};
-  double cutoff = sphSystem.getCutoff();
+  double cutoff = sphSystem.getInteractionLength();
 
   std::vector<double> buffer;
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
@@ -319,7 +319,7 @@ void periodicBoundaryUpdate(Container& sphSystem, MPI_Comm& comm, std::array<dou
   std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
   std::array<int, 3> diff{0, 0, 0};
   std::array<double, 3> shift{0, 0, 0};
-  double cutoff = sphSystem.getCutoff();
+  double cutoff = sphSystem.getInteractionLength();
 
   std::vector<double> buffer;
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {

@@ -93,7 +93,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   autopas::MoleculeLJ defaultParticle;
   RandomGenerator::fillWithParticles(*container, defaultParticle, 100);
-  RandomGenerator::fillWithHaloParticles(*container, defaultParticle, container->getCutoff(), 10);
+  RandomGenerator::fillWithHaloParticles(*container, defaultParticle, container->getInteractionLength(), 10);
 
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
 

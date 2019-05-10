@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
 
   if (measureFlops) {
     FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-        autopas.getContainer()->getCutoff());
+        autopas.getCutoff());
     autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;

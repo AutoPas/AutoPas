@@ -14,7 +14,12 @@
 class LJFunctorCudaTest : public AutoPasTestBase {
  public:
   LJFunctorCudaTest()
-      : AutoPasTestBase(), _cutoff{1.}, _epsilon{2}, _sigma{0.05}, _lowCorner{0, 0, 0}, _highCorner{2, 1, 1} {}
+      : AutoPasTestBase(),
+        _interactionLength{1.},
+        _epsilon{2},
+        _sigma{0.05},
+        _lowCorner{0, 0, 0},
+        _highCorner{2, 1, 1} {}
 
   /**
    *  Maximum error allowed for comparisons.
@@ -71,7 +76,7 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    */
   bool particleEqual(Particle &p1, Particle &p2);
 
-  const double _cutoff;
+  const double _interactionLength;
   const double _epsilon;
   const double _sigma;
   const std::array<double, 3> _lowCorner;

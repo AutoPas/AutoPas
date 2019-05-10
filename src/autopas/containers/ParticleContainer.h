@@ -100,16 +100,8 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    */
   void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
-  /**
-   * Return the interaction length of the container.
-   * @return
-   */
   double getInteractionLength() const override final { return _interactionLength; }
 
-  /**
-   * Set the interaction length of the container.
-   * @param interactionLength
-   */
   void setInteractionLength(double interactionLength) override final { _interactionLength = interactionLength; }
 
   /**

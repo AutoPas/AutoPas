@@ -133,7 +133,8 @@ class VerletLists
 
     // particles can also simply be very close already:
     typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell> validityCheckerFunctor(
-        _aosNeighborLists, ((this->getCutoff() - this->_skin) * (this->getCutoff() - this->_skin)));
+        _aosNeighborLists,
+        ((this->getInteractionLength() - this->_skin) * (this->getInteractionLength() - this->_skin)));
 
     auto traversal =
         C08Traversal<LinkedParticleCell,
@@ -170,7 +171,7 @@ class VerletLists
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
-    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff());
+    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getInteractionLength());
 
     /// @todo autotune traversal
     switch (_buildVerletListType) {

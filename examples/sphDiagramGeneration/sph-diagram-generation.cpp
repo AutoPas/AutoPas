@@ -244,7 +244,7 @@ template <class Container, class Functor, class Traversal>
 void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
                                int numIterations, bool useNewton3) {
   // autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
-  //    flopFunctor(cont->getCutoff());
+  //    flopFunctor(cont->getInteractionLength());
 
   autopas::utils::Timer t;
 
