@@ -12,6 +12,7 @@
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/StaticSelectorMacros.h"
 
 namespace autopas {
 
@@ -50,14 +51,14 @@ class VerletLists
    * The neighbor lists are build using a search radius of cutoff + skin.
    * The rebuildFrequency should be chosen, s.t. the particles do not move more
    * than a distance of skin/2 between two rebuilds of the lists.
-   * @param boxMin the lower corner of the domain
-   * @param boxMax the upper corner of the domain
-   * @param cutoff the cutoff radius of the interaction
-   * @param skin the skin radius
-   * @param rebuildFrequency specifies after how many pair-wise traversals the
+   * @param boxMin The lower corner of the domain.
+   * @param boxMax The upper corner of the domain.
+   * @param cutoff The cutoff radius of the interaction.
+   * @param skin The skin radius.
+   * @param rebuildFrequency Specifies after how many pair-wise traversals the
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals.
-   * @param buildVerletListType specifies how the verlet list should be build, see BuildVerletListType
+   * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const unsigned int rebuildFrequency = 1,
@@ -81,24 +82,12 @@ class VerletLists
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
   /**
-   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
-   * @param useNewton3
-   */
-  void rebuild(bool useNewton3 = true) {
-    this->updateVerletListsAoS(useNewton3);
-    // the neighbor list is now valid
-    this->_neighborListIsValid = true;
-    this->_traversalsSinceLastRebuild = 0;
-  }
-
-  /**
    * @copydoc LinkedCells::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild()) {
-      rebuild(useNewton3);
+    if (this->needsRebuild()) {
+      rebuildVerletLists(useNewton3);
     }
 
     if (auto* traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell>*>(traversal)) {
@@ -161,21 +150,23 @@ class VerletLists
     return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 
-  /**
-   * specifies whether the neighbor lists need to be rebuild
-   * @return true if the neighbor lists need to be rebuild, false otherwise
-   */
-  bool needsRebuild() {
-    AutoPasLog(debug, "Neighborlist is valid: {}", this->_neighborListIsValid);
-    // if the neighbor list is NOT valid or we have not rebuilt since this->_rebuildFrequency steps
-    return (not this->_neighborListIsValid) or (this->_traversalsSinceLastRebuild >= this->_rebuildFrequency);
-  }
-
  protected:
   /**
-   * update the verlet lists for AoS usage
-   * @param useNewton3 CURRENTLY NOT USED!
-   * @todo Build verlet lists according to newton 3.
+   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
+   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @param useNewton3
+   */
+  void rebuildVerletLists(bool useNewton3 = true) {
+    this->_verletBuiltNewton3 = useNewton3;
+    this->updateVerletListsAoS(useNewton3);
+    // the neighbor list is now valid
+    this->_neighborListIsValid = true;
+    this->_traversalsSinceLastRebuild = 0;
+  }
+
+  /**
+   * Update the verlet lists for AoS usage
+   * @param useNewton3
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
@@ -184,17 +175,21 @@ class VerletLists
     /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
-        auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                      DataLayoutOption::aos, true>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-        this->_linkedCells.iteratePairwise(&f, &traversal);
+        AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
+          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                        DataLayoutOption::aos, c_useNewton3>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          this->_linkedCells.iteratePairwise(&f, &traversal);
+        })
         break;
       }
       case BuildVerletListType::VerletSoA: {
-        auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                      DataLayoutOption::soa, true>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-        this->_linkedCells.iteratePairwise(&f, &traversal);
+        AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
+          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                        DataLayoutOption::soa, c_useNewton3>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+          this->_linkedCells.iteratePairwise(&f, &traversal);
+        })
         break;
       }
       default:
@@ -238,7 +233,6 @@ class VerletLists
       // set the map
       _aos2soaMap[&(*iter)] = i;
     }
-    i = 0;
     size_t accumulatedListSize = 0;
     for (auto& aosList : _aosNeighborLists) {
       accumulatedListSize += aosList.second.size();
@@ -250,7 +244,6 @@ class VerletLists
         _soaNeighborLists[i_id][j] = _aos2soaMap.at(neighbor);
         j++;
       }
-      i++;
     }
     AutoPasLog(debug,
                "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "

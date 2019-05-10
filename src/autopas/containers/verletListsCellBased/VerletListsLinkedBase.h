@@ -47,7 +47,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false) {}
+        _neighborListIsValid(false),
+        _verletBuiltNewton3(false) {}
 
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticle
@@ -178,12 +179,31 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   }
 
   /**
-   * get the dimension of the used cellblock including the haloboxes.
+   * Get the dimension of the used cellblock including the haloboxes.
    * @return the dimensions of the used cellblock
    */
   const std::array<std::size_t, 3>& getCellsPerDimension() {
     return _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
   }
+
+  /**
+   * Specifies whether the neighbor lists need to rebuild when using the given Newton 3 option.
+   * @param useNewton3 Specifies if newton3 should be used.
+   * @return True if the neighbor lists need to be rebuild, false otherwise.
+   */
+  bool needsRebuild(bool useNewton3) {
+    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
+    // if the neighbor list is NOT valid, we have not rebuild for _rebuildFrequency steps or useNewton3 changed
+    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency) or
+           (useNewton3 != _verletBuiltNewton3);
+  }
+
+  /**
+   * Specifies whether the neighbor lists need to be rebuild.
+   * @note Assumes that the newton3 type has NOT changed!
+   * @return True if the neighbor lists need to be rebuild, false otherwise.
+   */
+  bool needsRebuild() { return needsRebuild(_verletBuiltNewton3); }
 
  protected:
   /**
@@ -219,6 +239,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
 
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid;
+
+  /// specifies if the current verlet list was built for newton3
+  bool _verletBuiltNewton3;
 };
 
 }  // namespace autopas

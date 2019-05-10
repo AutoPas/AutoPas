@@ -49,14 +49,15 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     stillTuning = autoTuner.iteratePairwise(&functor);
     ++iterations;
     ++collectedSamples;
-
     auto currentConfig = autoTuner.getCurrentConfig();
-    if (collectedSamples == 1) {
-      EXPECT_NE(currentConfig, prevConfig)
-          << "currentConf: " << currentConfig.toString() << " == prevConfig: " << prevConfig.toString();
-    } else {
-      EXPECT_EQ(currentConfig, prevConfig)
-          << "currentConf: " << currentConfig.toString() << " != prevConfig: " << prevConfig.toString();
+    if (stillTuning) {
+      if (collectedSamples == 1) {
+        EXPECT_NE(currentConfig, prevConfig)
+            << "current:" << currentConfig.toString() << ", previous: " << currentConfig.toString() << std::endl;
+      } else {
+        EXPECT_EQ(currentConfig, prevConfig)
+            << "current:" << currentConfig.toString() << ", previous: " << currentConfig.toString() << std::endl;
+      }
     }
     prevConfig = currentConfig;
   }
