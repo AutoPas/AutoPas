@@ -38,8 +38,16 @@ if(ENABLE_CUDA)
     message(STATUS "Cuda enabled.")
     enable_language(CUDA)
     set(CUDA_SEPARABLE_COMPILATION ON)
-    #default compute capability
-    set(CUDA_COMPUTE_CAPABILITY "61")
+    
+    #Get CUDA compute capability
+    set(CUDAPROGRAM ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/detectCudaComputeCapabilty)
+    set(CUDAFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/detectCudaComputeCapabilty.cu)
+    execute_process(COMMAND nvcc -lcuda ${CUDAFILE} -o ${CUDAPROGRAM})
+    execute_process(COMMAND ${CUDAPROGRAM}
+                    RESULT_VARIABLE CUDA_RETURN_CODE
+                    OUTPUT_VARIABLE CUDA_COMPUTE_CAPABILITY)
+    message(STATUS "Detected cuda compute capabilty: ${CUDA_COMPUTE_CAPABILITY}.")
+    file(REMOVE ${CUDAPROGRAM})
 else()
     message(STATUS "Cuda disabled.")
 endif()
