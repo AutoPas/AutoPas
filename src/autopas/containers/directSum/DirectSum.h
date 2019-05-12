@@ -90,7 +90,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
-    AutoPasLog(debug, "Using traversal {} with SoA ", traversal->getTraversalType());
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
     traversal->initTraversal(this->_cells);
     if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {

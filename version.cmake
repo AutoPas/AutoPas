@@ -1,4 +1,4 @@
-set(AUTOPAS_VERSION_MAJOR   0) #   CACHE STRING "AutoPas major version number.")
+set(AUTOPAS_VERSION_MAJOR   0) #  CACHE STRING "AutoPas major version number.")
 set(AUTOPAS_VERSION_MINOR   1) #  CACHE STRING "AutoPas minor version number.")
 set(AUTOPAS_VERSION_PATCH   0) #  CACHE STRING "AutoPas patch version number.")
 set(AUTOPAS_VERSION ${AUTOPAS_MAJOR_VERSION}.${AUTOPAS_MINOR_VERSION}.${AUTOPAS_PATCH_VERSION}) # CACHE STRING "AutoPas version")

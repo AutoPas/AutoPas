@@ -162,6 +162,7 @@ int run(MDFlexParser &parser) {
   auto containerChoice(parser.getContainerOptions());
   auto selectorStrategy(parser.getSelectorStrategy());
   auto cutoff(parser.getCutoff());
+  auto cellSizeFactor(parser.getCellSizeFactor());
   auto dataLayoutOptions(parser.getDataLayoutOptions());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
@@ -205,6 +206,7 @@ int run(MDFlexParser &parser) {
   autopas::Logger::get()->set_level(logLevel);
 
   autopas.setCutoff(cutoff);
+  autopas.setCellSizeFactor(cellSizeFactor);
   autopas.setVerletSkin(verletSkinRadius);
   autopas.setVerletRebuildFrequency(verletRebuildFrequency);
   autopas.setTuningInterval(tuningInterval);

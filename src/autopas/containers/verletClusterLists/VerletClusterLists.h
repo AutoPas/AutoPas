@@ -290,7 +290,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
 
-                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
                   if (distXYsqr + distZ * distZ <= _cutoffSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
@@ -302,7 +302,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
 
-                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
                   if (distXYsqr + distZ * distZ <= _cutoffSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
@@ -320,7 +320,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
 
-                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
                   if (distXYsqr + distZ * distZ <= _cutoffSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
@@ -332,7 +332,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
 
-                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
                   if (distXYsqr + distZ * distZ <= _cutoffSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }

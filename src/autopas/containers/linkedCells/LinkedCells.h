@@ -40,12 +40,13 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param cellSizeFactor cell size factor ralative to cutoff
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<ParticleFloatType, 3> boxMin, const std::array<ParticleFloatType, 3> boxMax,
-              const ParticleFloatType cutoff)
+              const ParticleFloatType cutoff, const ParticleFloatType cellSizeFactor = 1.0)
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff) {}
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
 
   /**
    * Lists all traversal options applicable for the Linked Cells container.

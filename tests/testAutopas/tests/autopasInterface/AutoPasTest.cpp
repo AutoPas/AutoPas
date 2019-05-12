@@ -206,3 +206,15 @@ TEST_F(AutoPasTest, checkNeedsContainerUpdateLC) {
   // lc should always return true.
   EXPECT_TRUE(autoPas.needsContainerUpdate());
 }
+
+TEST_F(AutoPasTest, checkArgumentValidation) {
+  // cutoff
+  EXPECT_ANY_THROW(autoPas.setCutoff(-5.0));
+  EXPECT_ANY_THROW(autoPas.setCutoff(0.0));
+  EXPECT_NO_THROW(autoPas.setCutoff(0.5));
+
+  // cell size
+  EXPECT_ANY_THROW(autoPas.setCellSizeFactor(-5.0));
+  EXPECT_ANY_THROW(autoPas.setCellSizeFactor(0.0));
+  EXPECT_NO_THROW(autoPas.setCellSizeFactor(0.5));
+}

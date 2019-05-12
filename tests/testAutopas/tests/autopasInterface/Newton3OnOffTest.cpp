@@ -29,61 +29,63 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
 // Use strings such that generated test names are readable
 INSTANTIATE_TEST_SUITE_P(
     Generated, Newton3OnOffTest,
-    Combine(ValuesIn([]() -> std::vector<std::string> {
-              // needed because CellBlock3D (called when building containers) logs always
-              autopas::Logger::create();
+    Combine(
+        ValuesIn([]() -> std::vector<std::string> {
+          // needed because CellBlock3D (called when building containers) logs always
+          autopas::Logger::create();
 
-              std::vector<std::string> ret;
+          std::vector<std::string> ret;
 
-              for (auto containerOption : autopas::allContainerOptions) {
-                // @TODO: let verlet lists support Newton 3
-                if (containerOption == autopas::ContainerOption::verletLists ||
-                    containerOption == autopas::ContainerOption::verletListsCells ||
-                    containerOption == autopas::ContainerOption::verletClusterLists) {
-                  continue;
-                }
+          for (auto containerOption : autopas::allContainerOptions) {
+            // @TODO: let verlet lists support Newton 3
+            if (containerOption == autopas::ContainerOption::verletLists ||
+                containerOption == autopas::ContainerOption::verletListsCells ||
+                containerOption == autopas::ContainerOption::verletClusterLists) {
+              continue;
+            }
 
-                autopas::ContainerSelector<Particle, FPCell> containerSelector({0, 0, 0}, {10, 10, 10}, 1, 0, 10, 64);
+            autopas::ContainerSelector<Particle, FPCell> containerSelector({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 10, 64);
 
-                containerSelector.selectContainer(containerOption);
+            containerSelector.selectContainer(containerOption);
 
-                auto container = containerSelector.getCurrentContainer();
+            auto container = containerSelector.getCurrentContainer();
 
-                for (auto traversalOption : container->getAllTraversals()) {
-                  if (traversalOption == autopas::TraversalOption::c01 /*and autopas::autopas_get_max_threads() > 1*/) {
-                    continue;
-                  }
-                  if (traversalOption == autopas::TraversalOption::c01Cuda) {
-                    // Traversal provides no AoS and SoA Traversal
-                    continue;
-                  }
-                  std::stringstream name;
-
-                  name << autopas::utils::StringUtils::to_string(containerOption);
-                  name << "+";
-                  name << autopas::utils::StringUtils::to_string(traversalOption);
-
-                  ret.push_back(name.str());
-                }
+            for (auto traversalOption : container->getAllTraversals()) {
+              if (traversalOption == autopas::TraversalOption::c01 /*and autopas::autopas_get_max_threads() > 1*/) {
+                continue;
               }
+              if (traversalOption == autopas::TraversalOption::c01Cuda) {
+                // Traversal provides no AoS and SoA Traversal
+                continue;
+              }
+              std::stringstream name;
 
-              autopas::Logger::unregister();
+              name << autopas::utils::StringUtils::to_string(containerOption);
+              name << "+";
+              name << autopas::utils::StringUtils::to_string(traversalOption);
 
-              return ret;
-            }()),
-            ValuesIn([]() {
-              std::vector<std::string> ret;
-              std::transform(
-                  autopas::allDataLayoutOptions.begin(), autopas::allDataLayoutOptions.end(), std::back_inserter(ret),
-                  [](autopas::DataLayoutOption d) -> std::string { return autopas::utils::StringUtils::to_string(d); });
-              return ret;
-            }())));
+              ret.push_back(name.str());
+            }
+          }
+
+          autopas::Logger::unregister();
+
+          return ret;
+        }()),
+        ValuesIn([]() {
+          std::vector<std::string> ret;
+          std::transform(
+              autopas::allDataLayoutOptions.begin(), autopas::allDataLayoutOptions.end(), std::back_inserter(ret),
+              [](autopas::DataLayoutOption d) -> std::string { return autopas::utils::StringUtils::to_string(d); });
+          return ret;
+        }())));
 
 // Count number of Functor calls with and without newton 3 and compare
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff(), getVerletSkin(),
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff(),
+                                                                 getCellSizeFactor(), getVerletSkin(),
                                                                  getVerletRebuildFrequency(), getClusterSize());
 
   containerSelector.selectContainer(containerOption);

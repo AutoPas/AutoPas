@@ -55,8 +55,9 @@ class VerletListHelpers {
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
+
       floatPrecision distsquare = ArrayMath::dot(dist, dist);
-      if (distsquare < _cutoffskinsquared)
+      if (distsquare < _cutoffskinsquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
         // specific cell and each cell is only accessed by one thread at a time
@@ -64,6 +65,10 @@ class VerletListHelpers {
         // also the list is not allowed to be resized!
 
         _verletListsAoS.at(&i).push_back(&j);
+        if (not newton3) {
+          _verletListsAoS.at(&j).push_back(&i);
+        }
+      }
     }
 
     /**

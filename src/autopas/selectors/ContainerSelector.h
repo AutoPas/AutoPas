@@ -38,16 +38,20 @@ class ContainerSelector {
    * Constructor for the ContainerSelecor class.
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
-   * @param cutoff  Cutoff radius to be used in this container.
+   * @param cutoff Cutoff radius to be used in this container.
+   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param verletClusterSize Specifies how many particles are in one cluster for cluster containers.
    */
+
   ContainerSelector(const std::array<floatType, 3> &boxMin, const std::array<floatType, 3> &boxMax, floatType cutoff,
-                    floatType verletSkin, unsigned int verletRebuildFrequency, unsigned int verletClusterSize)
+                    floatType cellSizeFactor, floatType verletSkin, unsigned int verletRebuildFrequency,
+                    unsigned int verletClusterSize)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
+        _cellSizeFactor(cellSizeFactor),
         _verletSkin(verletSkin),
         _verletRebuildFrequency(verletRebuildFrequency),
         _verletClusterSize(verletClusterSize),
@@ -77,7 +81,9 @@ class ContainerSelector {
 
   std::array<floatType, 3> _boxMin, _boxMax;
   floatType _cutoff;
+  floatType _cellSizeFactor;
   floatType _verletSkin;
+
   unsigned int _verletRebuildFrequency;
   unsigned int _verletClusterSize;
 
@@ -95,7 +101,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       break;
     }
     case linkedCells: {
-      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
+      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _cellSizeFactor);
       break;
     }
     case verletLists: {
