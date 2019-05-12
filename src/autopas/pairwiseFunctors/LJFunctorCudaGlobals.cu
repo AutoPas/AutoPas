@@ -1,11 +1,11 @@
 /**
  * @file LJFunctorCuda.cu
  *
- * @date 9.1.2019
+ * @date 26.4.2019
  * @author jspahl
  */
 #include <iostream>
-#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include "autopas/pairwiseFunctors/LJFunctorCudaGlobals.cuh"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "math_constants.h"
@@ -51,21 +51,16 @@ namespace autopas {
   CREATESWITCHCASE(768, gridSize, sharedMemSize, function, params)   \
   CREATESWITCHCASE(800, gridSize, sharedMemSize, function, params)   \
   CREATESWITCHCASE(832, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(864, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(896, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(928, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(960, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(992, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(1024, gridSize, sharedMemSize, function, params)
+  CREATESWITCHCASE(864, gridSize, sharedMemSize, function, params)
 
 /**
  * global constant with float precision
  */
-__constant__ LJFunctorConstants<float> global_constants_float;
+__constant__ LJFunctorGlobalsConstants<float> global_constants_float;
 /**
  * global constant with double precision
  */
-__constant__ LJFunctorConstants<double> global_constants_double;
+__constant__ LJFunctorGlobalsConstants<double> global_constants_double;
 
 /**
  * number of offsets in linkedCellsOffsets array
@@ -81,11 +76,11 @@ __constant__ int linkedCellsOffsets[27];
  * @return constants
  */
 template <typename T>
-__device__ inline LJFunctorConstants<T>& getConstants() {
+__device__ inline LJFunctorGlobalsConstants<T>& getConstants() {
   return global_constants_float;
 }
 template <>
-__device__ inline LJFunctorConstants<double>& getConstants<double>() {
+__device__ inline LJFunctorGlobalsConstants<double>& getConstants<double>() {
   return global_constants_double;
 }
 
@@ -102,18 +97,53 @@ __device__ inline double getInfinity<double>() {
   return CUDART_INF;
 }
 
+template <typename floatType>
+__device__ inline bool isOwn(typename vec3<floatType>::Type& i) {
+  bool isHaloCell = false;
+  isHaloCell |= i.x < getConstants<floatType>().boxMin.x | i.x >= getConstants<floatType>().boxMax.x;
+  isHaloCell |= i.y < getConstants<floatType>().boxMin.y | i.y >= getConstants<floatType>().boxMax.y;
+  isHaloCell |= i.z < getConstants<floatType>().boxMin.z | i.z >= getConstants<floatType>().boxMax.z;
+
+  return not isHaloCell;
+}
+
+template <typename floatType>
+__device__ inline bool isOwn(typename vec4<floatType>::Type& i) {
+  bool isHaloCell = false;
+  isHaloCell |= i.x < getConstants<floatType>().boxMin.x | i.x >= getConstants<floatType>().boxMax.x;
+  isHaloCell |= i.y < getConstants<floatType>().boxMin.y | i.y >= getConstants<floatType>().boxMax.y;
+  isHaloCell |= i.z < getConstants<floatType>().boxMin.z | i.z >= getConstants<floatType>().boxMax.z;
+
+  return not isHaloCell;
+}
+
+template <typename floatType, int blockSize>
+__device__ inline void reduceGlobalsShared(typename vec4<floatType>::Type* globals_shared) {
+  for (unsigned int s = blockSize / 2; s > 0; s >>= 1) {
+    if (threadIdx.x < s) {
+      globals_shared[threadIdx.x].x += globals_shared[threadIdx.x + s].x;
+      globals_shared[threadIdx.x].y += globals_shared[threadIdx.x + s].y;
+      globals_shared[threadIdx.x].z += globals_shared[threadIdx.x + s].z;
+      globals_shared[threadIdx.x].w += globals_shared[threadIdx.x + s].w;
+    }
+    __syncthreads();
+  }
+}
+
 /**
  * Calculates the lennard-jones interactions between two particles
  * @tparam floatType flaot number type used in this function
+ * @tparam halfGlobals true iff globals should be halfed on addition instead of post processing
  * @param i position of particle i
  * @param j position of particle j
  * @param fi force of particle i
  * @return updated force of particle i
  */
-template <typename floatType>
+template <typename floatType, bool halfGlobals = false>
 __device__ inline typename vec3<floatType>::Type bodyBodyF(typename vec3<floatType>::Type i,
-                                                           typename vec3<floatType>::Type j,
-                                                           typename vec3<floatType>::Type fi) {
+                                                           typename vec4<floatType>::Type j,
+                                                           typename vec3<floatType>::Type fi,
+                                                           typename vec4<floatType>::Type& globalsi) {
   floatType drx = i.x - j.x;
   floatType drz = i.z - j.z;
   floatType dry = i.y - j.y;
@@ -131,9 +161,27 @@ __device__ inline typename vec3<floatType>::Type bodyBodyF(typename vec3<floatTy
   floatType lj12m6 = lj12 - lj6;
   floatType fac = getConstants<floatType>().epsilon24 * (lj12 + lj12m6) * invdr2;
 
-  fi.x += drx * fac;
-  fi.y += dry * fac;
-  fi.z += drz * fac;
+  floatType fix = drx * fac;
+  floatType fiy = dry * fac;
+  floatType fiz = drz * fac;
+
+  if (isOwn<floatType>(i)) {
+    if (halfGlobals) {
+      globalsi.x += drx * fix * 0.5;
+      globalsi.y += dry * fiy * 0.5;
+      globalsi.z += drz * fiz * 0.5;
+      globalsi.w += 0.5 * (getConstants<floatType>().epsilon24 * lj12m6 + getConstants<floatType>().shift6);
+    } else {
+      globalsi.x += drx * fix;
+      globalsi.y += dry * fiy;
+      globalsi.z += drz * fiz;
+      globalsi.w += getConstants<floatType>().epsilon24 * lj12m6 + getConstants<floatType>().shift6;
+    }
+  }
+
+  fi.x += fix;
+  fi.y += fiy;
+  fi.z += fiz;
 
   return fi;
 }
@@ -150,9 +198,10 @@ __device__ inline typename vec3<floatType>::Type bodyBodyF(typename vec3<floatTy
  */
 template <typename floatType, bool n3AdditionSafe = false>
 __device__ inline typename vec3<floatType>::Type bodyBodyFN3(typename vec3<floatType>::Type i,
-                                                             typename vec3<floatType>::Type j,
+                                                             typename vec4<floatType>::Type j,
                                                              typename vec3<floatType>::Type fi,
-                                                             typename vec3<floatType>::Type* fj) {
+                                                             typename vec3<floatType>::Type* fj,
+                                                             typename vec4<floatType>::Type& globalsi) {
   floatType drx = i.x - j.x;
   floatType drz = i.z - j.z;
   floatType dry = i.y - j.y;
@@ -178,6 +227,18 @@ __device__ inline typename vec3<floatType>::Type bodyBodyFN3(typename vec3<float
   fi.y += dfy;
   fi.z += dfz;
 
+  floatType mask = 0.0;
+  if (isOwn<floatType>(i)) {
+    mask += 0.5;
+  }
+  if (isOwn<floatType>(j)) {
+    mask += 0.5;
+  }
+  globalsi.x += drx * dfx * mask;
+  globalsi.y += dry * dfy * mask;
+  globalsi.z += drz * dfz * mask;
+  globalsi.w += getConstants<floatType>().epsilon24 * lj12m6 + getConstants<floatType>().shift6 * mask;
+
   if (n3AdditionSafe) {
     fj->x -= dfx;
     fj->y -= dfy;
@@ -195,12 +256,14 @@ __device__ inline typename vec3<floatType>::Type bodyBodyFN3(typename vec3<float
  * @param cell1 particle storage
  */
 template <typename floatType, int block_size>
-__global__ void SoAFunctorNoN3(LJFunctorCudaSoA<floatType> cell1) {
-  __shared__ typename vec3<floatType>::Type block_pos[block_size];
+__global__ void SoAFunctorNoN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
+  __shared__ typename vec4<floatType>::Type block_pos[block_size];
+
   int i, tile;
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  typename vec3<floatType>::Type myposition = {0, 0, 0};
+  typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
+                                               getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
   if (tid < cell1._size) {
     myposition.x = cell1._posX[tid];
@@ -208,14 +271,17 @@ __global__ void SoAFunctorNoN3(LJFunctorCudaSoA<floatType> cell1) {
     myposition.z = cell1._posZ[tid];
   }
 
+  typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
+
   for (i = block_size, tile = 0; i < cell1._size; i += block_size, ++tile) {
     int idx = tile * block_size + threadIdx.x;
 
     block_pos[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
     __syncthreads();
+
     if (tid < cell1._size) {
       for (int j = 0; j < block_size; ++j) {
-        myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
+        myf = bodyBodyF<floatType>(myposition, block_pos[j], myf, myglobals);
       }
     }
     __syncthreads();
@@ -223,15 +289,31 @@ __global__ void SoAFunctorNoN3(LJFunctorCudaSoA<floatType> cell1) {
   {
     int idx = tile * block_size + threadIdx.x;
     block_pos[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
+
     __syncthreads();
 
-    const int size = cell1._size - tile * blockDim.x;
+    const int size = cell1._size - tile * block_size;
     for (int j = 0; j < size; ++j) {
-      myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
+      myf = bodyBodyF<floatType>(myposition, block_pos[j], myf, myglobals);
     }
 
     __syncthreads();
   }
+
+  // reduce globals
+  block_pos[threadIdx.x] = myglobals;
+  __syncthreads();
+
+  reduceGlobalsShared<floatType, block_size>(block_pos);
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    atomicAdd(cell1._globals, block_pos[0].x);
+    atomicAdd(cell1._globals + 1, block_pos[0].y);
+    atomicAdd(cell1._globals + 2, block_pos[0].z);
+    atomicAdd(cell1._globals + 3, block_pos[0].w);
+  }
+  __syncthreads();
 
   atomicAdd(cell1._forceX + tid, myf.x);
   atomicAdd(cell1._forceY + tid, myf.y);
@@ -246,12 +328,14 @@ __global__ void SoAFunctorNoN3(LJFunctorCudaSoA<floatType> cell1) {
  * @paran cell2 second particle storage
  */
 template <typename floatType, int block_size>
-__global__ void SoAFunctorNoN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCudaSoA<floatType> cell2) {
-  __shared__ typename vec3<floatType>::Type block_pos[block_size];
+__global__ void SoAFunctorNoN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFunctorCudaGlobalsSoA<floatType> cell2) {
+  __shared__ typename vec4<floatType>::Type block_pos[block_size];
   int i, tile;
   int tid = blockIdx.x * block_size + threadIdx.x;
-  typename vec3<floatType>::Type myposition;
+  typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
+                                               getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
+  typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
 
   if (tid < cell1._size) {
     myposition.x = cell1._posX[tid];
@@ -267,10 +351,26 @@ __global__ void SoAFunctorNoN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorC
 
     const int size = min(block_size, cell2._size - i);
     for (int j = 0; j < size; ++j) {
-      myf = bodyBodyF<floatType>(myposition, block_pos[j], myf);
+      myf = bodyBodyF<floatType>(myposition, block_pos[j], myf, myglobals);
     }
     __syncthreads();
   }
+
+  // reduce globals
+  block_pos[threadIdx.x] = myglobals;
+  __syncthreads();
+
+  reduceGlobalsShared<floatType, block_size>(block_pos);
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    atomicAdd(cell1._globals, block_pos[0].x);
+    atomicAdd(cell1._globals + 1, block_pos[0].y);
+    atomicAdd(cell1._globals + 2, block_pos[0].z);
+    atomicAdd(cell1._globals + 3, block_pos[0].w);
+  }
+  __syncthreads();
+
   atomicAdd(cell1._forceX + tid, myf.x);
   atomicAdd(cell1._forceY + tid, myf.y);
   atomicAdd(cell1._forceZ + tid, myf.z);
@@ -283,13 +383,16 @@ __global__ void SoAFunctorNoN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorC
  * @param cell1 particle data
  */
 template <typename floatType, int block_size, bool NMisMultipleBlockSize = false>
-__global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
-  __shared__ typename vec3<floatType>::Type cell1_pos_shared[block_size];
+__global__ void SoAFunctorN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
+  __shared__ typename vec4<floatType>::Type cell1_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell1_forces_shared[block_size];
+
   int tid = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
+  typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
+
   int i, tile;
   const int mask = block_size - 1;
 
@@ -312,7 +415,7 @@ __global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
       } else {
         offset = (j + threadIdx.x) % mask;
       }
-      myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[offset], myf, cell1_forces_shared + offset);
+      myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[offset], myf, cell1_forces_shared + offset, myglobals);
     }
     __syncthreads();
 
@@ -329,7 +432,7 @@ __global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
     __syncthreads();
 
     for (int j = threadIdx.x - 1; j >= 0; --j) {
-      myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[j], myf, cell1_forces_shared + j);
+      myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[j], myf, cell1_forces_shared + j, myglobals);
     }
     __syncthreads();
 
@@ -337,6 +440,20 @@ __global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
     atomicAdd(cell1._forceY + idx, cell1_forces_shared[threadIdx.x].y);
     atomicAdd(cell1._forceZ + idx, cell1_forces_shared[threadIdx.x].z);
     __syncthreads();
+  }
+
+  // reduce globals
+  cell1_pos_shared[threadIdx.x] = myglobals;
+  __syncthreads();
+
+  reduceGlobalsShared<floatType, block_size>(cell1_pos_shared);
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    atomicAdd(cell1._globals, cell1_pos_shared[0].x);
+    atomicAdd(cell1._globals + 1, cell1_pos_shared[0].y);
+    atomicAdd(cell1._globals + 2, cell1_pos_shared[0].z);
+    atomicAdd(cell1._globals + 3, cell1_pos_shared[0].w);
   }
 
   atomicAdd(cell1._forceX + tid, myf.x);
@@ -352,13 +469,16 @@ __global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
  * @paran cell2 second particle storage
  */
 template <typename floatType, int block_size, bool NMisMultipleBlockSize = false>
-__global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCudaSoA<floatType> cell2) {
-  __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+__global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFunctorCudaGlobalsSoA<floatType> cell2) {
+  __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
+
   int tid = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
+  typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
+
   int i, tile;
   const int mask = block_size - 1;
 
@@ -380,7 +500,8 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
       } else {
         offset = (j + threadIdx.x) % mask;
       }
-      myf = bodyBodyFN3<floatType, true>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset);
+      myf = bodyBodyFN3<floatType, true>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
+                                         myglobals);
     }
     __syncthreads();
 
@@ -400,7 +521,7 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
     const int size = block_size + cell2._size - i;
     for (int j = 0; j < size; ++j) {
       const int offset = (j + threadIdx.x) % size;
-      myf = bodyBodyFN3<floatType>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset);
+      myf = bodyBodyFN3<floatType>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset, myglobals);
     }
     __syncthreads();
     if (idx < cell2._size) {
@@ -409,6 +530,20 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
       atomicAdd(cell2._forceZ + idx, cell2_forces_shared[threadIdx.x].z);
       __syncthreads();
     }
+  }
+
+  // reduce globals
+  cell2_pos_shared[threadIdx.x] = myglobals;
+  __syncthreads();
+
+  reduceGlobalsShared<floatType, block_size>(cell2_pos_shared);
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    atomicAdd(cell1._globals, cell2_pos_shared[0].x);
+    atomicAdd(cell1._globals + 1, cell2_pos_shared[0].y);
+    atomicAdd(cell1._globals + 2, cell2_pos_shared[0].z);
+    atomicAdd(cell1._globals + 3, cell2_pos_shared[0].w);
   }
 
   atomicAdd(cell1._forceX + tid, myf.x);
@@ -423,8 +558,9 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
  * @param stream cuda stream to start kernel on
  */
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+void LJFunctorCudaGlobalsWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+                                                                   cudaStream_t stream) {
+  LJFunctorCudaGlobalsSoA<floatType> cell1 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell1Base);
 
   switch (_num_threads) {
     CREATESWITCHCASES(numRequiredBlocks(cell1._size), 0, SoAFunctorNoN3, (cell1));
@@ -443,11 +579,11 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<float
  * @param stream cuda stream to start kernel on
  */
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base,
-                                                                FunctorCudaSoA<floatType>* cell2Base,
-                                                                cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
-  LJFunctorCudaSoA<floatType> cell2 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell2Base);
+void LJFunctorCudaGlobalsWrapper<floatType>::SoAFunctorNoN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base,
+                                                                       FunctorCudaSoA<floatType>* cell2Base,
+                                                                       cudaStream_t stream) {
+  LJFunctorCudaGlobalsSoA<floatType> cell1 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell1Base);
+  LJFunctorCudaGlobalsSoA<floatType> cell2 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell2Base);
 
   switch (_num_threads) {
     CREATESWITCHCASES(numRequiredBlocks(cell1._size), 0, SoAFunctorNoN3Pair, (cell1, cell2));
@@ -465,8 +601,9 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3PairWrapper(FunctorCudaSoA<f
  * @param stream cuda stream to start kernel on
  */
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::SoAFunctorN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+void LJFunctorCudaGlobalsWrapper<floatType>::SoAFunctorN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+                                                                 cudaStream_t stream) {
+  LJFunctorCudaGlobalsSoA<floatType> cell1 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell1Base);
 
   switch (_num_threads) {
     CREATESWITCHCASES(numRequiredBlocks(cell1._size), 0, SoAFunctorN3, (cell1));
@@ -485,11 +622,11 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorN3Wrapper(FunctorCudaSoA<floatTy
  * @param stream cuda stream to start kernel on
  */
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::SoAFunctorN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base,
-                                                              FunctorCudaSoA<floatType>* cell2Base,
-                                                              cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
-  LJFunctorCudaSoA<floatType> cell2 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell2Base);
+void LJFunctorCudaGlobalsWrapper<floatType>::SoAFunctorN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base,
+                                                                     FunctorCudaSoA<floatType>* cell2Base,
+                                                                     cudaStream_t stream) {
+  LJFunctorCudaGlobalsSoA<floatType> cell1 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell1Base);
+  LJFunctorCudaGlobalsSoA<floatType> cell2 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell2Base);
 
   switch (_num_threads) {
     CREATESWITCHCASES(numRequiredBlocks(cell1._size), 0, SoAFunctorN3Pair, (cell1, cell2));
@@ -509,12 +646,14 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorN3PairWrapper(FunctorCudaSoA<flo
  * @param cellSizes sizes of the cells by id
  */
 template <typename floatType, int block_size>
-__global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsigned int* cids, size_t* cellSizes) {
+__global__ void LinkedCellsTraversalNoN3(LJFunctorCudaGlobalsSoA<floatType> cell, unsigned int* cids,
+                                         size_t* cellSizes) {
   unsigned int own_cid = cids[blockIdx.x];
-  __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+  __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
+  typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
 
   int index = cellSizes[own_cid] + threadIdx.x;
   if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
@@ -533,7 +672,7 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsig
                                      cell._posZ[cell2Start + threadIdx.x]};
     __syncthreads();
     for (int j = 0; j < sizeCell2; ++j) {
-      myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
+      myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf, myglobals);
     }
     __syncthreads();
   }
@@ -541,6 +680,20 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsig
     atomicAdd(cell._forceX + index, myf.x);
     atomicAdd(cell._forceY + index, myf.y);
     atomicAdd(cell._forceZ + index, myf.z);
+  }
+
+  // reduce globals
+  cell2_pos_shared[threadIdx.x] = myglobals;
+  __syncthreads();
+
+  reduceGlobalsShared<floatType, block_size>(cell2_pos_shared);
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    atomicAdd(cell._globals, cell2_pos_shared[0].x);
+    atomicAdd(cell._globals + 1, cell2_pos_shared[0].y);
+    atomicAdd(cell._globals + 2, cell2_pos_shared[0].z);
+    atomicAdd(cell._globals + 3, cell2_pos_shared[0].w);
   }
 }
 
@@ -553,14 +706,15 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsig
  * @param cellSizes sizes of the cells by id
  */
 template <typename floatType, int block_size>
-__global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned int* cids, size_t* cellSizes) {
+__global__ void LinkedCellsTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, unsigned int* cids, size_t* cellSizes) {
   unsigned int own_cid = cids[blockIdx.x];
-  __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+  __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
 
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
+  typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
 
   int index = cellSizes[own_cid] + threadIdx.x;
   if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
@@ -580,7 +734,8 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigne
     __syncthreads();
     for (int j = 0; j < sizeCell2; ++j) {
       const int offset = (j + threadIdx.x) % sizeCell2;
-      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset);
+      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
+                                          myglobals);
     }
     __syncthreads();
 
@@ -598,10 +753,25 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigne
                                      cell._posZ[cell1Start + threadIdx.x]};
     __syncthreads();
     for (int j = 0; j < sizeCell1; ++j) {
-      myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
+      myf = bodyBodyF<floatType, true>(myposition, cell2_pos_shared[j], myf, myglobals);
     }
     __syncthreads();
   }
+
+  // reduce globals
+  cell2_pos_shared[threadIdx.x] = myglobals;
+  __syncthreads();
+
+  reduceGlobalsShared<floatType, block_size>(cell2_pos_shared);
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    atomicAdd(cell._globals, cell2_pos_shared[0].x);
+    atomicAdd(cell._globals + 1, cell2_pos_shared[0].y);
+    atomicAdd(cell._globals + 2, cell2_pos_shared[0].z);
+    atomicAdd(cell._globals + 3, cell2_pos_shared[0].w);
+  }
+
   if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
     atomicAdd(cell._forceX + index, myf.x);
     atomicAdd(cell._forceY + index, myf.y);
@@ -621,11 +791,12 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigne
  * @param stream cuda stream to start the kernel on
  */
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
-                                                                      unsigned int reqThreads, unsigned int cids_size,
-                                                                      unsigned int* cids, unsigned int cellSizes_size,
-                                                                      size_t* cellSizes, cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+void LJFunctorCudaGlobalsWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+                                                                             unsigned int reqThreads,
+                                                                             unsigned int cids_size, unsigned int* cids,
+                                                                             unsigned int cellSizes_size,
+                                                                             size_t* cellSizes, cudaStream_t stream) {
+  LJFunctorCudaGlobalsSoA<floatType> cell1 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell1Base);
 
   switch (reqThreads) {
     CREATESWITCHCASES(cids_size, 0, LinkedCellsTraversalNoN3, (cell1, cids, cellSizes));
@@ -651,11 +822,12 @@ void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(FunctorCud
  * @param stream cuda stream to start the kernel on
  */
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
-                                                                    unsigned int reqThreads, unsigned int cids_size,
-                                                                    unsigned int* cids, unsigned int cellSizes_size,
-                                                                    size_t* cellSizes, cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+void LJFunctorCudaGlobalsWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+                                                                           unsigned int reqThreads,
+                                                                           unsigned int cids_size, unsigned int* cids,
+                                                                           unsigned int cellSizes_size,
+                                                                           size_t* cellSizes, cudaStream_t stream) {
+  LJFunctorCudaGlobalsSoA<floatType> cell1 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell1Base);
 
   switch (reqThreads) {
     CREATESWITCHCASES(cids_size, 0, LinkedCellsTraversalN3, (cell1, cids, cellSizes));
@@ -678,10 +850,11 @@ void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaS
  * @param other_ids array of neighbor cells ids for a cell i (others_size * i) terminated by UINT_MAX
  */
 template <typename floatType, int block_size>
-__global__ void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell, const unsigned int others_size,
+__global__ void CellVerletTraversalNoN3(LJFunctorCudaGlobalsSoA<floatType> cell, const unsigned int others_size,
                                         unsigned int* other_ids) {
-  __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+  __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
   typename vec3<floatType>::Type myf = {0, 0, 0};
+  typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
 
   unsigned int index = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {cell._posX[index], cell._posY[index], cell._posZ[index]};
@@ -693,10 +866,25 @@ __global__ void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell, const 
     cell2_pos_shared[threadIdx.x] = {cell._posX[own_particle], cell._posY[own_particle], cell._posZ[own_particle]};
     __syncthreads();
     for (int j = 0; j < block_size; ++j) {
-      myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
+      myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf, myglobals);
     }
     __syncthreads();
   }
+
+  // reduce globals
+  cell2_pos_shared[threadIdx.x] = myglobals;
+  __syncthreads();
+
+  reduceGlobalsShared<floatType, block_size>(cell2_pos_shared);
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    atomicAdd(cell._globals, cell2_pos_shared[0].x);
+    atomicAdd(cell._globals + 1, cell2_pos_shared[0].y);
+    atomicAdd(cell._globals + 2, cell2_pos_shared[0].z);
+    atomicAdd(cell._globals + 3, cell2_pos_shared[0].w);
+  }
+
   atomicAdd(cell._forceX + index, myf.x);
   atomicAdd(cell._forceY + index, myf.y);
   atomicAdd(cell._forceZ + index, myf.z);
@@ -713,17 +901,16 @@ __global__ void CellVerletTraversalNoN3(LJFunctorCudaSoA<floatType> cell, const 
  * @param stream cuda stream to start the kernel on
  */
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::CellVerletTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
-                                                                     unsigned int ncells, unsigned int clusterSize,
-                                                                     unsigned int others_size, unsigned int* other_ids,
-                                                                     cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+void LJFunctorCudaGlobalsWrapper<floatType>::CellVerletTraversalNoN3Wrapper(
+    FunctorCudaSoA<floatType>* cell1Base, unsigned int ncells, unsigned int clusterSize, unsigned int others_size,
+    unsigned int* other_ids, cudaStream_t stream) {
+  LJFunctorCudaGlobalsSoA<floatType> cell1 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell1Base);
   switch (clusterSize) {
     CREATESWITCHCASES(ncells, 0, CellVerletTraversalNoN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells. "
-          "Requested Cluster Size: {}",
+          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
+          "Requested: {}",
           clusterSize);
       break;
   }
@@ -739,14 +926,15 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalNoN3Wrapper(FunctorCuda
  * @param other_ids array of neighbor cells ids for a cell i (others_size * i) terminated by UINT_MAX
  */
 template <typename floatType, int block_size>
-__global__ void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned int others_size,
+__global__ void CellVerletTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, unsigned int others_size,
                                       unsigned int* other_ids) {
   const unsigned int mask = block_size - 1;
 
-  __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
+  __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
 
   typename vec3<floatType>::Type myf = {0, 0, 0};
+  typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
 
   int index = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {cell._posX[index], cell._posY[index], cell._posZ[index]};
@@ -767,7 +955,8 @@ __global__ void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned
       } else {
         offset = (j + threadIdx.x) % block_size;
       }
-      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset);
+      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
+                                          myglobals);
     }
     __syncthreads();
 
@@ -785,10 +974,25 @@ __global__ void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned
                                      cell._posZ[cellStart + threadIdx.x]};
     __syncthreads();
     for (int j = 0; j < block_size; ++j) {
-      myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf);
+      myf = bodyBodyF<floatType, true>(myposition, cell2_pos_shared[j], myf, myglobals);
     }
     __syncthreads();
   }
+
+  // reduce globals
+  cell2_pos_shared[threadIdx.x] = myglobals;
+  __syncthreads();
+
+  reduceGlobalsShared<floatType, block_size>(cell2_pos_shared);
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    atomicAdd(cell._globals, cell2_pos_shared[0].x);
+    atomicAdd(cell._globals + 1, cell2_pos_shared[0].y);
+    atomicAdd(cell._globals + 2, cell2_pos_shared[0].z);
+    atomicAdd(cell._globals + 3, cell2_pos_shared[0].w);
+  }
+
   atomicAdd(cell._forceX + index, myf.x);
   atomicAdd(cell._forceY + index, myf.y);
   atomicAdd(cell._forceZ + index, myf.z);
@@ -805,17 +1009,18 @@ __global__ void CellVerletTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned
  * @param stream cuda stream to start the kernel on
  */
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::CellVerletTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
-                                                                   unsigned int ncells, unsigned int clusterSize,
-                                                                   unsigned int others_size, unsigned int* other_ids,
-                                                                   cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+void LJFunctorCudaGlobalsWrapper<floatType>::CellVerletTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+                                                                          unsigned int ncells, unsigned int clusterSize,
+                                                                          unsigned int others_size,
+                                                                          unsigned int* other_ids,
+                                                                          cudaStream_t stream) {
+  LJFunctorCudaGlobalsSoA<floatType> cell1 = *static_cast<LJFunctorCudaGlobalsSoA<floatType>*>(cell1Base);
   switch (clusterSize) {
     CREATESWITCHCASES(ncells, 0, CellVerletTraversalN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells. "
-          "Requested Cluster Size: {}",
+          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
+          "Requested: {}",
           clusterSize);
       break;
   }
@@ -827,10 +1032,10 @@ void LJFunctorCudaWrapper<floatType>::CellVerletTraversalN3Wrapper(FunctorCudaSo
  * @param constants LJ FP32 constants
  */
 template <>
-void LJFunctorCudaWrapper<float>::loadConstants(FunctorCudaConstants<float>* constants) {
-  LJFunctorConstants<float>* c = static_cast<LJFunctorConstants<float>*>(constants);
+void LJFunctorCudaGlobalsWrapper<float>::loadConstants(FunctorCudaConstants<float>* constants) {
+  LJFunctorGlobalsConstants<float>* c = static_cast<LJFunctorGlobalsConstants<float>*>(constants);
 
-  cudaMemcpyToSymbol(global_constants_float, c, sizeof(LJFunctorConstants<float>));
+  cudaMemcpyToSymbol(global_constants_float, c, sizeof(LJFunctorGlobalsConstants<float>));
 }
 
 /**
@@ -838,10 +1043,10 @@ void LJFunctorCudaWrapper<float>::loadConstants(FunctorCudaConstants<float>* con
  * @param constants LJ FP64 constants
  */
 template <>
-void LJFunctorCudaWrapper<double>::loadConstants(FunctorCudaConstants<double>* constants) {
-  LJFunctorConstants<double>* c = static_cast<LJFunctorConstants<double>*>(constants);
+void LJFunctorCudaGlobalsWrapper<double>::loadConstants(FunctorCudaConstants<double>* constants) {
+  LJFunctorGlobalsConstants<double>* c = static_cast<LJFunctorGlobalsConstants<double>*>(constants);
   autopas::utils::CudaExceptionHandler::checkErrorCode(
-      cudaMemcpyToSymbol(global_constants_double, c, sizeof(LJFunctorConstants<double>)));
+      cudaMemcpyToSymbol(global_constants_double, c, sizeof(LJFunctorGlobalsConstants<double>)));
 }
 
 /**
@@ -849,7 +1054,7 @@ void LJFunctorCudaWrapper<double>::loadConstants(FunctorCudaConstants<double>* c
  * @param constants
  */
 template <typename T>
-void LJFunctorCudaWrapper<T>::loadConstants(FunctorCudaConstants<T>* constants) {
+void LJFunctorCudaGlobalsWrapper<T>::loadConstants(FunctorCudaConstants<T>* constants) {
   autopas::utils::ExceptionHandler::exception("Cuda constants with unknown Type loaded");
 }
 
@@ -859,10 +1064,10 @@ void LJFunctorCudaWrapper<T>::loadConstants(FunctorCudaConstants<T>* constants) 
  * @param offsets offsets to neighbor cells
  */
 template <typename T>
-void LJFunctorCudaWrapper<T>::loadLinkedCellsOffsets(unsigned int offsets_size, int* offsets) {
+void LJFunctorCudaGlobalsWrapper<T>::loadLinkedCellsOffsets(unsigned int offsets_size, int* offsets) {
   if (offsets_size > 27) {
     autopas::utils::ExceptionHandler::exception(
-        "LJFunctorCudaWrapper does not support linked cells with >27 neighbors");
+        "LJFunctorCudaGlobalsWrapper does not support linked cells with >27 neighbors");
   }
   autopas::utils::CudaExceptionHandler::checkErrorCode(
       cudaMemcpyToSymbol(linkedCellsOffsetsSize, &offsets_size, sizeof(unsigned int)));
@@ -871,8 +1076,8 @@ void LJFunctorCudaWrapper<T>::loadLinkedCellsOffsets(unsigned int offsets_size, 
 }
 
 // Instantiation of Wrapper with float precision
-template class LJFunctorCudaWrapper<float>;
+template class LJFunctorCudaGlobalsWrapper<float>;
 // Instantiation of Wrapper with double precision
-template class LJFunctorCudaWrapper<double>;
+template class LJFunctorCudaGlobalsWrapper<double>;
 
 }  // namespace autopas

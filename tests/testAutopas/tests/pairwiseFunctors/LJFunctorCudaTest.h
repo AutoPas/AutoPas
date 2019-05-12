@@ -30,7 +30,7 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    *
    * @param newton3
    */
-  template <typename ParticleType, bool useNewton3>
+  template <typename ParticleType, bool useNewton3, bool calculateGlobals>
   void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2);
 
   /**
@@ -42,7 +42,7 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    *
    * @param newton3
    */
-  template <typename ParticleType, bool useNewton3>
+  template <typename ParticleType, bool useNewton3, bool calculateGlobals>
   void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles);
 
   /**

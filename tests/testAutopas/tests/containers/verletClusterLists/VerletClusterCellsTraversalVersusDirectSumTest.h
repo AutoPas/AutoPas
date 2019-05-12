@@ -34,7 +34,8 @@ class VerletClusterCellsTraversalVersusDirectSumTest : public AutoPasTestBase {
       unsigned long numMolecules,
       autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
 
-  template <bool useNewton3, autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos>
+  template <bool useNewton3, autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos,
+            bool calculateGlobals = false>
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
   autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;

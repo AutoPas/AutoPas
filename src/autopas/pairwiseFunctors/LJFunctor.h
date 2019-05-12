@@ -16,6 +16,8 @@
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)
 #include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include "autopas/pairwiseFunctors/LJFunctorCudaGlobals.cuh"
+#include "autopas/utils/CudaDeviceVector.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #else
 #include "autopas/utils/ExceptionHandler.h"
@@ -93,8 +95,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       _aosThreadData.resize(autopas_get_max_threads());
     }
 #if defined(AUTOPAS_CUDA)
-    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _epsilon24, _sigmasquare, _shift6);
-    _cudawrapper.loadConstants(&constants);
+    if (calculateGlobals) {
+      LJFunctorGlobalsConstants<floatPrecision> constants(_cutoffsquare, _epsilon24, _sigmasquare, _shift6, lowCorner,
+                                                          highCorner);
+      _cudawrapper.loadConstants(&constants);
+    } else {
+      LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _epsilon24, _sigmasquare, _shift6);
+      _cudawrapper.loadConstants(&constants);
+    }
 #endif
   }
 
@@ -469,14 +477,25 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
   std::unique_ptr<FunctorCudaSoA<floatPrecision>> createFunctorCudaSoA(
       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-    return std::make_unique<LJFunctorCudaSoA<floatPrecision>>(
-        device_handle.template get<Particle::AttributeNames::posX>().size(),
-        device_handle.template get<Particle::AttributeNames::posX>().get(),
-        device_handle.template get<Particle::AttributeNames::posY>().get(),
-        device_handle.template get<Particle::AttributeNames::posZ>().get(),
-        device_handle.template get<Particle::AttributeNames::forceX>().get(),
-        device_handle.template get<Particle::AttributeNames::forceY>().get(),
-        device_handle.template get<Particle::AttributeNames::forceZ>().get());
+    if (calculateGlobals) {
+      return std::make_unique<LJFunctorCudaGlobalsSoA<floatPrecision>>(
+          device_handle.template get<Particle::AttributeNames::posX>().size(),
+          device_handle.template get<Particle::AttributeNames::posX>().get(),
+          device_handle.template get<Particle::AttributeNames::posY>().get(),
+          device_handle.template get<Particle::AttributeNames::posZ>().get(),
+          device_handle.template get<Particle::AttributeNames::forceX>().get(),
+          device_handle.template get<Particle::AttributeNames::forceY>().get(),
+          device_handle.template get<Particle::AttributeNames::forceZ>().get(), _cudaGlobals.get());
+    } else {
+      return std::make_unique<LJFunctorCudaSoA<floatPrecision>>(
+          device_handle.template get<Particle::AttributeNames::posX>().size(),
+          device_handle.template get<Particle::AttributeNames::posX>().get(),
+          device_handle.template get<Particle::AttributeNames::posY>().get(),
+          device_handle.template get<Particle::AttributeNames::posZ>().get(),
+          device_handle.template get<Particle::AttributeNames::forceX>().get(),
+          device_handle.template get<Particle::AttributeNames::forceY>().get(),
+          device_handle.template get<Particle::AttributeNames::forceZ>().get());
+    }
   }
 #endif
 
@@ -503,6 +522,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         size, soa.template begin<Particle::AttributeNames::forceY>());
     device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
         size, soa.template begin<Particle::AttributeNames::forceZ>());
+
 #else
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
 #endif
@@ -612,6 +632,12 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
       _aosThreadData[i].setZero();
     }
+#if defined(AUTOPAS_CUDA)
+    if (calculateGlobals) {
+      std::array<floatPrecision, 4> globals{0, 0, 0, 0};
+      _cudaGlobals.copyHostToDevice(4, globals.data());
+    }
+#endif
   }
 
   /**
@@ -623,19 +649,29 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
-    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-      _upotSum += _aosThreadData[i].upotSum;
-      _virialSum = ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+    if (calculateGlobals) {
+#if defined(AUTOPAS_CUDA)
+      std::array<floatPrecision, 4> globals{0, 0, 0, 0};
+      _cudaGlobals.copyDeviceToHost(4, globals.data());
+      _virialSum[0] += globals[0];
+      _virialSum[1] += globals[1];
+      _virialSum[2] += globals[2];
+      _upotSum += globals[3];
+#endif
+      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
+        _upotSum += _aosThreadData[i].upotSum;
+        _virialSum = ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+      }
+      if (not newton3) {
+        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+        // here.
+        _upotSum *= 0.5;
+        _virialSum = ArrayMath::mulScalar(_virialSum, (floatPrecision)0.5);
+      }
+      // we have always calculated 6*upot, so we divide by 6 here!
+      _upotSum /= 6.;
+      _postProcessed = true;
     }
-    if (not newton3) {
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-      // here.
-      _upotSum *= 0.5;
-      _virialSum = ArrayMath::mulScalar(_virialSum, (floatPrecision)0.5);
-    }
-    // we have always calculated 6*upot, so we divide by 6 here!
-    _upotSum /= 6.;
-    _postProcessed = true;
   }
 
   /**
@@ -959,8 +995,13 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   bool _postProcessed;
 
 #if defined(AUTOPAS_CUDA)
+  using CudaWrapperType = typename std::conditional<calculateGlobals, LJFunctorCudaGlobalsWrapper<floatPrecision>,
+                                                    LJFunctorCudaWrapper<floatPrecision>>::type;
   // contains wrapper functions for cuda calls
-  LJFunctorCudaWrapper<floatPrecision> _cudawrapper;
+  CudaWrapperType _cudawrapper;
+
+  // contains device globals
+  utils::CudaDeviceVector<floatPrecision> _cudaGlobals;
 
   // Handles all cuda streams
   utils::CudaStreamHandler _streams;
