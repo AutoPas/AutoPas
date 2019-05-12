@@ -35,25 +35,25 @@ class MoleculeLJBase : public ParticleBase<floatType> {
    * get epsilon (characteristic energy of the lj potential)
    * @return epsilon
    */
-  static floatType getEpsilon() { return EPSILON; }
+  static floatType getEpsilon();
 
   /**
    * set epsilon (characteristic energy of the lj potential)
    * @param epsilon
    */
-  static void setEpsilon(floatType epsilon) { EPSILON = epsilon; }
+  static void setEpsilon(floatType epsilon);
 
   /**
    * get sigma (characteristic length of the lj potential)
    * @return sigma
    */
-  static floatType getSigma() { return SIGMA; }
+  static floatType getSigma();
 
   /**
    * set sigma (characteristic length of the lj potential)
    * @param sigma
    */
-  static void setSigma(floatType sigma) { SIGMA = sigma; }
+  static void setSigma(floatType sigma);
 
  private:
   static floatType EPSILON, SIGMA;
