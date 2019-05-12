@@ -94,11 +94,11 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     traversalInterface->setVerletListPointer(&_clusterSize, &_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
     if (needsRebuild()) {
       this->rebuild();
-      traversalInterface->rebuild(_cellsPerDim, this->_cells, _boundingBoxes, this->getCutoff());
+      traversalInterface->rebuildVerlet(_cellsPerDim, this->_cells, _boundingBoxes, this->getCutoff());
       _lastTraversalSig = traversalInterface->getSignature();
     }
     if (traversalInterface->getSignature() != _lastTraversalSig) {
-      traversalInterface->rebuild(_cellsPerDim, this->_cells, _boundingBoxes, this->getCutoff());
+      traversalInterface->rebuildVerlet(_cellsPerDim, this->_cells, _boundingBoxes, this->getCutoff());
       _lastTraversalSig = traversalInterface->getSignature();
     }
 

@@ -166,7 +166,6 @@ int run(MDFlexParser &parser) {
   auto dataLayoutOptions(parser.getDataLayoutOptions());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
-  auto functorChoice(parser.getFunctorOption());
   auto generatorChoice(parser.getGeneratorOption());
   auto logLevel(parser.getLogLevel());
   string logFileName(parser.getLogFileName());

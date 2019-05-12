@@ -70,9 +70,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     _neighborMatrix = neighborMatrix;
   }
 
-  void rebuild(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
-               std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> &boundingBoxes,
-               typename Particle::ParticleFloatingPointType distance) override {
+  void rebuildVerlet(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
+                     std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> &boundingBoxes,
+                     typename Particle::ParticleFloatingPointType distance) override {
     this->_cellsPerDimension = dims;
 
     const size_t cellsSize = cells.size();
