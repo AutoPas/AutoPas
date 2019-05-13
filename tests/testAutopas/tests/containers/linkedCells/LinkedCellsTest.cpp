@@ -16,7 +16,7 @@ TEST_F(LinkedCellsTest, testParticleAdding) {
       for (double z : {-1.5, -.5, 0., 5., 9.999, 10., 10.5, 11.5}) {
         autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
         if (x == -1.5 or y == -1.5 or z == -1.5 or x == 11.5 or y == 11.5 or z == 11.5) {
-          EXPECT_ANY_THROW(linkedCells.addParticle(p));      // outside, therefore not ok!
+          EXPECT_ANY_THROW(linkedCells.addParticle(p));     // outside, therefore not ok!
           EXPECT_NO_THROW(linkedCells.addHaloParticle(p));  // much outside, still ok!
         } else if (x == 10. or y == 10. or z == 10. or x == -.5 or y == -.5 or z == -.5 or x == 10.5 or y == 10.5 or
                    z == 10.5) {
