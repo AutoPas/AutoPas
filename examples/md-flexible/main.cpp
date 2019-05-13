@@ -147,7 +147,7 @@ long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
   return durationCalc;
 }
 
-int main(int argc, char **argv) {
+int     main(int argc, char **argv) {
   // Parsing
   MDFlexParser parser;
   if (not parser.parseInput(argc, argv)) {
@@ -209,6 +209,30 @@ int main(int argc, char **argv) {
   autopas.setAllowedTraversals(traversalOptions);
   autopas.setAllowedDataLayouts(dataLayoutOptions);
   autopas.setAllowedNewton3Options(newton3Options);
+
+
+
+
+    switch (generatorChoice) {
+        case MDFlexParser::GeneratorOption::grid: {
+            initContainerGrid(autopas, particlesPerDim, particleSpacing);
+            particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
+            break;
+        }
+        case MDFlexParser::GeneratorOption::uniform: {
+            initContainerUniform(autopas, boxLength, particlesTotal);
+            break;
+        }
+        case MDFlexParser::GeneratorOption::gaussian: {
+            initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
+            break;
+        }
+        default:
+            std::cerr << "Unknown generator choice" << std::endl;
+            return -1;
+    }
+
+
 
 
   Simulation<PrintableMolecule,FullParticleCell<PrintableMolecule>> Simulation(autopas);

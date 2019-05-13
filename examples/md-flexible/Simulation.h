@@ -11,6 +11,7 @@
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
+#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "MDFlexParser.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
@@ -30,6 +31,62 @@ public:
     Simulation();
 
     Simulation(const AutoPas<Particle, ParticleCell> &autopas);
+
+    /**
+    * @brief Constructs a container and fills it with particles.
+    *
+    * According to the options passed, a %DirectSum or %'LinkedCells' container is
+    * built. It consists of %`FullParticleCells` and is filled with
+    * `PrintableMolecules`. The particles are aligned on a cuboid grid.
+    *
+    * @param autopas AutoPas object that should be initialized
+    * @param particlesPerDim Number of desired particles per dimension.
+    * @param particelSpacing Space between two particles along each axis of space.
+    */
+    void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                           size_t particlesPerDim, double particelSpacing) {
+        std::array<double, 3> boxMin({0., 0., 0.});
+        std::array<double, 3> boxMax(
+                {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
+
+        autopas.setBoxMin(boxMin);
+        autopas.setBoxMax(boxMax);
+
+        autopas.init();
+
+        PrintableMolecule dummyParticle;
+        GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
+                                         {particelSpacing, particelSpacing, particelSpacing},
+                                         {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
+    }
+
+    void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                            double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
+        std::array<double, 3> boxMin({0., 0., 0.});
+        std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
+
+        autopas.setBoxMin(boxMin);
+        autopas.setBoxMax(boxMax);
+
+        autopas.init();
+
+        PrintableMolecule dummyParticle;
+        GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
+    }
+
+    void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                              double boxLength, size_t numParticles) {
+        std::array<double, 3> boxMin({0., 0., 0.});
+        std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
+
+        autopas.setBoxMin(boxMin);
+        autopas.setBoxMax(boxMax);
+
+        autopas.init();
+
+        PrintableMolecule dummyParticle;
+        RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
+    }
 
     /** @brief This function is needed to create functors with the actual type through templates.
      * @tparam FunctorChoice
@@ -61,18 +118,44 @@ public:
             return durationCalc;
         }
 
-
-
     /** @brief This function processes the main simulation loop
      * -calls the time discretization class(calculate fores, etc ...)
      * -do the output each timestep
      */
     void simulate();
+
+
+
+
     /** @brief This function
      * -sets/initializes the simulation domain with the particles generators
      */
-    void initialize(){
+    void initialize(MDFlexParser parser){
+        auto generatorChoice=parser.getGeneratorOption();
+        auto particlesPerDim=parser.getParticlesPerDim();
+        auto particleSpacing=parser.getParticleSpacing();
+        auto particlesTotal=parser.getParticlesTotal();
+        auto distributionMean=parser.getDistributionMean();
+        auto distributionStdDev=parser.getDistributionStdDev();
+        auto boxLength=parser.getBoxLength();
 
+        switch (generatorChoice) {
+            case MDFlexParser::GeneratorOption::grid: {
+                initContainerGrid(_autopas, particlesPerDim, particleSpacing);
+                particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
+                break;
+            }
+            case MDFlexParser::GeneratorOption::uniform: {
+                initContainerUniform(_autopas, boxLength, particlesTotal);
+                break;
+            }
+            case MDFlexParser::GeneratorOption::gaussian: {
+                initContainerGauss(_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
+                break;
+            }
+            default:
+                throw "Unknown generetor Choice";
+        }
     }
 
     virtual ~Simulation();
