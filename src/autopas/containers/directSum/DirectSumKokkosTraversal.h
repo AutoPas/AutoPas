@@ -11,7 +11,7 @@
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 
-#ifdef ENABLE_KOKKOS
+#ifdef AUTOPAS_KOKKOS
 #include <Kokkos_Core.hpp>
 #endif
 
@@ -60,13 +60,17 @@ void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>
     std::vector<ParticleCell> &cells) {
   // Assume cell[0] is the main domain and cell[1] is the halo
 
-#ifdef ENABLE_KOKKOS
+#ifdef AUTOPAS_KOKKOS
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i){
-#endif
-  //@FIXME Kokkos cannot use non-const functions
-  //_cellFunctor.processCell(cells[0]);
-  //_cellFunctor.processCellPair(cells[0], cells[1]);
-#ifdef ENABLE_KOKKOS
+
+                              //@FIXME Kokkos cannot use non-const functions
+                              // typedef Kokkos::View<CellFunctor<typename ParticleCell::ParticleType, ParticleCell,
+                              // PairwiseFunctor, useSoA, useNewton3>(
+                              //              pairwiseFunctor)*>   ViewVectorType;
+                              // ViewVectorType functor( "functor", 1);
+                              //_cellFunctor.processCell(cells[0]);
+                              //_cellFunctor.processCellPair(cells[0], cells[1]);
+
                           });
 #endif
 }

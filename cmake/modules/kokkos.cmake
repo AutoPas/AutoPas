@@ -1,4 +1,4 @@
-option(ENABLE_KOKKOS "Activate Kokkos in Autopas." OFF)
+option(AUTOPAS_KOKKOS "Activate Kokkos in Autopas." OFF)
 
 #set_property(CACHE KOKKOS_DEVICE PROPERTY STRINGS "Serial;OpenMP;Cuda")
 
@@ -8,11 +8,10 @@ option(ENABLE_KOKKOS "Activate Kokkos in Autopas." OFF)
 #            "Choose the appropiate kokkos_device, options are: Serial OpenMP Cuda." FORCE)
 #endif(NOT KOKKOS_DEVICE)
 
-if(ENABLE_KOKKOS)
+if(AUTOPAS_KOKKOS)
     message(STATUS "Kokkos enabled.")
 
     #set path to kokkos files
-    # @FIXME: Check if path is valid and abort if not!
     set(KOKKOS_INSTALL_PATH "$ENV{HOME}/kokkos" CACHE STRING "Path to kokkos project root directory")
     #check, whether directory to kokkos exists, no check on functionality of the content
     if(EXISTS "${KOKKOS_INSTALL_PATH}" AND IS_DIRECTORY "${KOKKOS_INSTALL_PATH}")
@@ -21,7 +20,7 @@ if(ENABLE_KOKKOS)
         message(FATAL_ERROR "Could not find Kokkos! Please set KOKKOS_INSTALL_PATH to the kokkos directory!")
     endif()
     set(CMAKE_CXX_EXTENSIONS OFF)
-    add_definitions(-DENABLE_KOKKOS="on" )
+
     # build kokkos
     add_subdirectory(${KOKKOS_INSTALL_PATH} ${PROJECT_BINARY_DIR}/kokkos)
 
