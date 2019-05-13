@@ -89,7 +89,6 @@ pipeline{
                                 sh "cmake -DENABLE_CUDA=ON .."
                                 sh "make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
                                 sh "cat buildlog-cuda.txt"
-                                sh "cmake ."
                                 sh "./tests/testAutopas/runTests"
                             }
                             dir('build-cuda/examples') {
@@ -109,7 +108,6 @@ pipeline{
                             dir("build"){
                                 sh "cmake .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                                sh "cmake ."
                                 sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                             }
                             dir("build/examples") {
@@ -124,7 +122,6 @@ pipeline{
                             dir("build-openmp"){
                                 sh "cmake -DOPENMP=ON .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                                sh "cmake ."
                                 sh './tests/testAutopas/runTests'
                             }
                             dir("build-openmp/examples") {
@@ -184,7 +181,6 @@ pipeline{
                             dir("build-clang-ninja-openmp"){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                                sh "cmake ."
                                 sh './tests/testAutopas/runTests'
                             }
                             dir("build-clang-ninja-openmp/examples"){
@@ -210,7 +206,6 @@ pipeline{
                             dir("build-clang-ninja-addresssanitizer-release"){
                                 sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                                sh "cmake ."
                                 sh './tests/testAutopas/runTests'
                             }
                             dir("build-clang-ninja-addresssanitizer-release/examples"){
@@ -225,7 +220,6 @@ pipeline{
                             dir("build-archer"){
                                 sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                                sh "cmake ."
                                 sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest --verbose'
                             }
                             dir("build-archer/examples"){
@@ -240,7 +234,6 @@ pipeline{
                             dir("build-intel"){
                                 sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DOPENMP=OFF ..'"
                                 sh "bash -i -c 'make -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
-                                sh "cmake ."
                                 sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                             dir("build-intel/examples"){
@@ -255,7 +248,6 @@ pipeline{
                             dir("build-intel-ninja-openmp"){
                                 sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DOPENMP=ON ..'"
                                 sh "bash -i -c 'ninja -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
-                                sh "cmake ."
                                 sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                             dir("build-intel-ninja-openmp/examples"){
