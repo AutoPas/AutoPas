@@ -6,7 +6,7 @@ file(GLOB_RECURSE MY_SRC
 
 ADD_EXECUTABLE(md-flexible
         ${MY_SRC}
-        Simulation.cpp Simulation.h)
+        Simulation.cpp Simulation.h TimeDiscretization.h)
 
 TARGET_LINK_LIBRARIES(md-flexible
         autopas)
