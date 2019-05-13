@@ -4,6 +4,8 @@
  * @author F. Gratl
  */
 
+#include "Simulation.h"
+
 #include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
 #include <fstream>
@@ -60,7 +62,7 @@ void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<Prin
 }
 
 void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                        double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
+                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
@@ -208,24 +210,11 @@ int main(int argc, char **argv) {
   autopas.setAllowedDataLayouts(dataLayoutOptions);
   autopas.setAllowedNewton3Options(newton3Options);
 
-  switch (generatorChoice) {
-    case MDFlexParser::GeneratorOption::grid: {
-      initContainerGrid(autopas, particlesPerDim, particleSpacing);
-      particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
-      break;
-    }
-    case MDFlexParser::GeneratorOption::uniform: {
-      initContainerUniform(autopas, boxLength, particlesTotal);
-      break;
-    }
-    case MDFlexParser::GeneratorOption::gaussian: {
-      initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
-      break;
-    }
-    default:
-      std::cerr << "Unknown generator choice" << std::endl;
-      return -1;
-  }
+
+  Simulation<PrintableMolecule,FullParticleCell<PrintableMolecule>> Simulation(autopas);
+  Simulation.initialize();
+  Simulation.simulate();
+
 
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
