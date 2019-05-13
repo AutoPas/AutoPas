@@ -48,11 +48,13 @@ class VerletListsCells
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param buildTraversal the traversal used to build the verletlists
+   * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
+                   const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1,
+                   const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                                            allVLCApplicableTraversals()),
+                                                            allVLCApplicableTraversals(), cellSizeFactor),
         _buildTraversal(buildTraversal) {}
 
   /**

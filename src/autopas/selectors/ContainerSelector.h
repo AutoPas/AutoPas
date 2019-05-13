@@ -95,14 +95,15 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
     }
     case verletLists: {
       // @todo determine verletSkin and verletRebuildFrequency via tuning
-      container =
-          std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
+      container = std::make_unique<VerletLists<Particle>>(
+          _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency,
+          VerletLists<Particle>::BuildVerletListType::VerletSoA, _cellSizeFactor);
       break;
     }
     case verletListsCells: {
       // @todo determine verletSkin and verletRebuildFrequency via tuning
       container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::c08,
-                                                               _verletSkin, _verletRebuildFrequency);
+                                                               _verletSkin, _verletRebuildFrequency, _cellSizeFactor);
       break;
     }
     case verletClusterLists: {
