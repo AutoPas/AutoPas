@@ -36,8 +36,8 @@ class AutoPas {
   AutoPas(std::ostream &logOutputStream = std::cout)
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
-        _cutoff(1),
-        _cellSizeFactor(1),
+        _cutoff(1.),
+        _cellSizeFactor(1.),
         _verletSkin(0.2),
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
