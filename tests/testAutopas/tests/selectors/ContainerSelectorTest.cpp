@@ -51,8 +51,8 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   {
     auto container = containerSelector.getCurrentContainer();
     auto getPossible1D = [&](double min, double max) -> auto {
-      return std::array<double,6>{min - cutoff - verletSkin,       min - cutoff, min, max, max + cutoff - 1e-3,
-                                           min - cutoff - verletSkin - 1e-3};
+      return std::array<double, 6>{min - cutoff - verletSkin,       min - cutoff, min, max, max + cutoff - 1e-3,
+                                   min - cutoff - verletSkin - 1e-3};
     };
     size_t id = 0;
     for (auto x : getPossible1D(bBoxMin[0], bBoxMax[0])) {
