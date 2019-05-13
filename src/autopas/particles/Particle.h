@@ -55,7 +55,7 @@ class ParticleBase {
    * @param rhs
    * @return
    */
-  bool operator!=(const ParticleBase &rhs) const { return !(rhs == *this); }
+  bool operator!=(const ParticleBase &rhs) const { return not(rhs == *this); }
 
   /**
    * get the force acting on the particle

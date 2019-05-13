@@ -50,14 +50,14 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   // fill witch problematic particles
   {
     auto container = containerSelector.getCurrentContainer();
-    auto getPossible1D = [&](double min, double max) -> auto {
+    auto getPossible1DPositions = [&](double min, double max) -> auto {
       return std::array<double, 6>{min - cutoff - verletSkin,       min - cutoff, min, max, max + cutoff - 1e-3,
                                    min - cutoff - verletSkin - 1e-3};
     };
     size_t id = 0;
-    for (auto x : getPossible1D(bBoxMin[0], bBoxMax[0])) {
-      for (auto y : getPossible1D(bBoxMin[1], bBoxMax[1])) {
-        for (auto z : getPossible1D(bBoxMin[2], bBoxMax[2])) {
+    for (auto x : getPossible1DPositions(bBoxMin[0], bBoxMax[0])) {
+      for (auto y : getPossible1DPositions(bBoxMin[1], bBoxMax[1])) {
+        for (auto z : getPossible1DPositions(bBoxMin[2], bBoxMax[2])) {
           std::array<double, 3> pos{x, y, z};
           Particle p(pos, {0., 0., 0.}, id);
           if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
@@ -67,6 +67,8 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
                                       autopas::ArrayMath::add(bBoxMin, std::array<double, 3>{cutoff})) or
                 autopas::utils::StringUtils::to_string(container->getContainerType()).find("Verlet") !=
                     std::string::npos) {
+              /// @todo: the above string comparison will most likely be unnecessary once the verlet interface is
+              /// properly introduced.
               container->addHaloParticle(p);
             }
           }
@@ -84,7 +86,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
        ++iter) {
     if (autopas::utils::inBox(iter->getR(), autopas::ArrayMath::sub(bBoxMin, std::array<double, 3>{cutoff}),
-                              autopas::ArrayMath::add(bBoxMin, std::array<double, 3>{cutoff}))) {
+                              autopas::ArrayMath::add(bBoxMax, std::array<double, 3>{cutoff}))) {
       beforeListHalo.push_back(*iter);
     } else {
       beforeListHaloVerletOnly.push_back(*iter);
@@ -102,7 +104,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
        ++iter) {
     if (autopas::utils::inBox(iter->getR(), autopas::ArrayMath::sub(bBoxMin, std::array<double, 3>{cutoff}),
-                              autopas::ArrayMath::add(bBoxMin, std::array<double, 3>{cutoff}))) {
+                              autopas::ArrayMath::add(bBoxMax, std::array<double, 3>{cutoff}))) {
       afterListHalo.push_back(*iter);
     } else {
       afterListHaloVerletOnly.push_back(*iter);
@@ -121,12 +123,14 @@ INSTANTIATE_TEST_SUITE_P(
     Generated, ContainerSelectorTest,
     Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> {
               // return autopas::allContainerOptions;
+              /// @todo: uncomment above lines and remove below lines to enable testing of verletClusterLists.
               auto all = autopas::allContainerOptions;
               all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
               return all;
             }()),
             ValuesIn([]() -> std::vector<autopas::ContainerOption> {
               // return autopas::allContainerOptions;
+              /// @todo: uncomment above lines and remove below lines to enable testing of verletClusterLists.
               auto all = autopas::allContainerOptions;
               all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
               return all;
