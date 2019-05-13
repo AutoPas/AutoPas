@@ -45,8 +45,10 @@ if(ENABLE_CUDA)
     execute_process(COMMAND nvcc -lcuda ${CUDAFILE} -o ${CUDAPROGRAM})
     execute_process(COMMAND ${CUDAPROGRAM}
                     RESULT_VARIABLE CUDA_RETURN_CODE
-                    OUTPUT_VARIABLE CUDA_COMPUTE_CAPABILITY)
-    message(STATUS "Detected cuda compute capabilty: ${CUDA_COMPUTE_CAPABILITY}.")
+		    OUTPUT_VARIABLE DETECTED_CCC)
+    
+    set(CUDA_COMPUTE_CAPABILITY ${DETECTED_CCC})
+    message(STATUS "Detected cuda compute capabilty: ${DETECTED_CCC}")
     file(REMOVE ${CUDAPROGRAM})
 else()
     message(STATUS "Cuda disabled.")
