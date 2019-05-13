@@ -100,8 +100,14 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    */
   void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
+   */
   double getInteractionLength() const override final { return _interactionLength; }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setInteractionLength()
+   */
   void setInteractionLength(double interactionLength) override final { _interactionLength = interactionLength; }
 
   /**

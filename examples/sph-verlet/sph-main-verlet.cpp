@@ -205,7 +205,8 @@ void updateHaloParticles(Container& sphSystem, bool addParticles) {
         }
         // figure out from where we get our halo particles
         for (int i = 0; i < 3; ++i) {
-          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], interactionLength, shift[i]);
+          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], interactionLength,
+                          shift[i]);
         }
         if (addParticles) {
           sph_verlet_particle_list[diff].clear();

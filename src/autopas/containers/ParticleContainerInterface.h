@@ -138,7 +138,7 @@ class ParticleContainerInterface {
    * Set the interaction length of the container.
    * @param interactionLength
    */
-  virtual void setInteractionLength(double cutoff) = 0;
+  virtual void setInteractionLength(double interactionLength) = 0;
 
   /**
    * Updates the container.
