@@ -24,25 +24,82 @@ void defaultInit(AutoPasT& autoPas) {
   // init autopas
   autoPas.init();
 }
-auto identifyAndSendLeavingParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) { return std::vector<Molecule>{}; }
 
-auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) { return std::vector<Molecule>{}; }
+std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule>& leavingParticles) {
+  std::vector<Molecule> enteringParticles{leavingParticles};
+  for (auto& p : enteringParticles) {
+    auto pos = p.getR();
+    for (auto dim = 0; dim < 3; dim++) {
+      if (pos[dim] < boxMin[dim]) {
+        // should at most be boxMax
+        pos[dim] = std::min(std::nextafter(boxMax[dim], -1), pos[dim] + (boxMax[dim] - boxMin[dim]));
+      } else if (pos[dim] >= boxMax[dim]) {
+        // should at least be boxMin
+        pos[dim] = std::max(boxMin[dim], pos[dim] - (boxMax[dim] - boxMin[dim]));
+      }
+    }
+    p.setR(pos);
+  }
+  return enteringParticles;
+}
 
-void addEnteringParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> enteringParticles) {}
+auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) {
+  std::vector<Molecule> haloParticles;
 
-void addHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> haloParticles) {}
+  for (short x : {-1, 0, 1}) {
+    for (short y : {-1, 0, 1}) {
+      for (short z : {-1, 0, 1}) {
+        std::array<short, 3> direction{x, y, z};
+        std::array<double, 3> min{}, max{}, shiftVec{};
+        for (size_t dim = 0; dim < 3; ++dim) {
+          // The search domain has to be enlarged as the position of the particles is not certain.
+          if (direction[dim] == -1) {
+            min[dim] = boxMin[dim] - skin;
+            max[dim] = boxMin[dim] + cutoff + skin;
+          } else if (direction[dim] == 1) {
+            min[dim] = boxMax[dim] - cutoff - skin;
+            max[dim] = boxMax[dim] + skin;
+          } else {  // 0
+            min[dim] = boxMin[dim] - skin;
+            min[dim] = boxMax[dim] + skin;
+          }
+          shiftVec[dim] = -(boxMax[dim] - boxMin[dim]) * direction[dim];
+        }
+        // here it is important to only iterate over the owned particles!
+        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOnly); iter.isValid();
+             ++iter) {
+          auto particleCopy = *iter;
+          particleCopy.addR(shiftVec);
+          haloParticles.push_back(particleCopy);
+        }
+      }
+    }
+  }
+
+  return haloParticles;
+}
+
+void addEnteringParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> enteringParticles) {
+  for (auto& p : enteringParticles) {
+    autoPas.addParticle(p);
+  }
+}
+
+void addHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> haloParticles) {
+  for (auto& p : haloParticles) {
+    autoPas.addHaloParticle(p);
+  }
+}
 
 template <typename Functor>
 void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor) {
-  // 1. update Container
-  autoPas.updateContainer();
+  // 1. update Container; return value is vector of invalid = leaving particles!
+  auto invalidParticles = autoPas.updateContainer();
 
   // 2. leaving and entering particles
-  // 2a. identify and send leaving particles (iteration over halo)
-  auto leavingParticles = identifyAndSendLeavingParticles(autoPas);
-
+  const auto& sendLeavingParticles = invalidParticles;
   // 2b. get+add entering particles (addParticle)
-  const auto& enteringParticles = leavingParticles;
+  const auto& enteringParticles = convertToEnteringParticles(sendLeavingParticles);
   addEnteringParticles(autoPas, enteringParticles);
 
   // 3. halo particles

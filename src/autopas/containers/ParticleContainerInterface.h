@@ -143,8 +143,9 @@ class ParticleContainerInterface {
   /**
    * Updates the container.
    * This resorts particles into appropriate cells and moves them to the halo, if necessary.
+   * @todo: update doc
    */
-  virtual void updateContainer() = 0;
+  virtual std::vector<Particle> updateContainer() = 0;
 
   /**
    * Check whether a container is valid, i.e. whether it is safe to use

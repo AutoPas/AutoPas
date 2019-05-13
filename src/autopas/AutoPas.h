@@ -96,8 +96,13 @@ class AutoPas {
    * Updates the internal container.
    * This is needed e.g. for linked-cells if particles move from one cell to another.
    * It resorts particles into appropriate cells and moves them to the halo, if necessary.
+   * @todo update doc
+   * @return A vector of invalid particles that do no belong in the current container.
+   * @todo c++17: __attribute__((warn_unused_result)) should be replaced with [[nodiscard]]
    */
-  void updateContainer() { _autoTuner->getContainer()->updateContainer(); }
+  std::vector<Particle> updateContainer() __attribute__((warn_unused_result)) {
+    _autoTuner->getContainer()->updateContainer();
+  }
 
   /**
    * Returns a pointer to the actual container.
