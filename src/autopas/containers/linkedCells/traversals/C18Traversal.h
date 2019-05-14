@@ -97,10 +97,10 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   std::vector<std::vector<std::vector<unsigned long>>> _cellOffsets;
 
   /**
-   * returns the array index for current position pos.
+   * Returns the index in the offsets array for the given position.
    * @param pos current position in dimension dim
    * @param dim current dimension
-   * @return
+   * @return Index for the _cellOffsets Array.
    */
   unsigned int getIndex(unsigned long pos, unsigned int dim) const;
 };

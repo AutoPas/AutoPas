@@ -124,7 +124,7 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
   using std::make_pair;
 
   //////////////////////////////
-  // TODO: Replace following lines with vector to support asymmetric cells
+  // @TODO: Replace following lines with vector to support asymmetric cells
   const unsigned long ov1 = _overlap[0] + 1;
   const unsigned long ov1_squared = ov1 * ov1;
   //////////////////////////////

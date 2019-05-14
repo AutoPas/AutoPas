@@ -280,7 +280,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
     const index_t nonLargerValue = std::min(nonnegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
 
-    // todo this is a sanity check to prevent doubling of particles
+    // this is a sanity check to prevent doubling of particles
     if (pos[dim] >= _boxMax[dim]) {
       // pos[dim] is located outside of the box. Make sure that cellIndex also references cell outside of the box.
       cellIndex[dim] = std::max(cellIndex[dim], _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength);
