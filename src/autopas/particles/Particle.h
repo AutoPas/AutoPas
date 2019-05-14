@@ -25,7 +25,7 @@ namespace autopas {
 template <typename floatType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
+  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0), _isOwned{true} {}
 
   /**
    * Constructor of the Particle class
@@ -34,7 +34,7 @@ class ParticleBase {
    * @param id id of the particle
    */
   ParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _isOwned{true} {}
 
   /**
    * Destructor of ParticleBase class
