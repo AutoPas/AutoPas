@@ -61,7 +61,7 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) {
             max[dim] = boxMax[dim] + skin;
           } else {  // 0
             min[dim] = boxMin[dim] - skin;
-            min[dim] = boxMax[dim] + skin;
+            max[dim] = boxMax[dim] + skin;
           }
           shiftVec[dim] = -(boxMax[dim] - boxMin[dim]) * direction[dim];
         }
