@@ -110,7 +110,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d upotSum = _mm256_setzero_pd();
 
 
-    // @TODO: Globlas
     //    bool isHaloCell1 = false;
     //    bool isHaloCell2 = false;
 
@@ -180,7 +179,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
       // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
       // AoS)
-      //TODO: TEST
       _aosThreadData[threadnum].virialSum[0] += globals[0] * (newton3 ? 1 : 2);
       _aosThreadData[threadnum].virialSum[1] += globals[1] * (newton3 ? 1 : 2);
       _aosThreadData[threadnum].virialSum[2] += globals[2] * (newton3 ? 1 : 2);
@@ -189,7 +187,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 #endif
   }
 
- // ###### Modify to calc globals #######
  private:
   template <bool newton3, bool masked>
   inline void SoAKernel(size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
@@ -278,74 +275,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
 #endif
   }
- // ###### End modify to calc globals #######
 
- private:
-  template <bool newton3, bool masked>
-  inline void SoAKernel(size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
-                        double *const __restrict__ &x2ptr, double *const __restrict__ &y2ptr,
-                        double *const __restrict__ &z2ptr, double *const __restrict__ &fx2ptr,
-                        double *const __restrict__ &fy2ptr, double *const __restrict__ &fz2ptr, __m256d &fxacc,
-                        __m256d &fyacc, __m256d &fzacc, const unsigned int rest = 0) {
-#ifdef __AVX__
-    const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
-    const __m256d y2 = masked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&y2ptr[j]);
-    const __m256d z2 = masked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&z2ptr[j]);
-
-    const __m256d drx = _mm256_sub_pd(x1, x2);
-    const __m256d dry = _mm256_sub_pd(y1, y2);
-    const __m256d drz = _mm256_sub_pd(z1, z2);
-
-    const __m256d drx2 = _mm256_mul_pd(drx, drx);
-    const __m256d dry2 = _mm256_mul_pd(dry, dry);
-    const __m256d drz2 = _mm256_mul_pd(drz, drz);
-
-    const __m256d dr2PART = _mm256_add_pd(drx2, dry2);
-    const __m256d dr2 = _mm256_add_pd(dr2PART, drz2);
-
-    // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
-    // signaling = throw error if NaN is encountered
-    // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
-    const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
-
-    const __m256d invdr2 = _mm256_div_pd(_one, dr2);
-    const __m256d lj2 = _mm256_mul_pd(_sigmasquare, invdr2);
-    const __m256d lj4 = _mm256_mul_pd(lj2, lj2);
-    const __m256d lj6 = _mm256_mul_pd(lj2, lj4);
-    const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
-    const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
-    const __m256d lj12m6alj12 = _mm256_add_pd(lj12m6, lj12);
-    const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, _epsilon24);
-    const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
-
-    const __m256d facMasked = masked
-                                  ? _mm256_and_pd(fac, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                                  : _mm256_and_pd(fac, cutoffMask);
-
-    const __m256d fx = _mm256_mul_pd(drx, facMasked);
-    const __m256d fy = _mm256_mul_pd(dry, facMasked);
-    const __m256d fz = _mm256_mul_pd(drz, facMasked);
-
-    fxacc = _mm256_add_pd(fxacc, fx);
-    fyacc = _mm256_add_pd(fyacc, fy);
-    fzacc = _mm256_add_pd(fzacc, fz);
-
-    // if newton 3 is used subtract fD from particle j
-    if (newton3) {
-      const __m256d fx2 = masked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fx2ptr[j]);
-      const __m256d fy2 = masked ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fy2ptr[j]);
-      const __m256d fz2 = masked ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fz2ptr[j]);
-
-      const __m256d fx2new = _mm256_sub_pd(fx2, fx);
-      const __m256d fy2new = _mm256_sub_pd(fy2, fy);
-      const __m256d fz2new = _mm256_sub_pd(fz2, fz);
-
-      masked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new) : _mm256_store_pd(&fx2ptr[j], fx2new);
-      masked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new) : _mm256_store_pd(&fy2ptr[j], fy2new);
-      masked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new) : _mm256_store_pd(&fz2ptr[j], fz2new);
-    }
-#endif
-  }
 
  public:
   /**
@@ -374,7 +304,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d upotSum = _mm256_setzero_pd();
 
-    // @@TODO: Globlas
     // Copied from pairwiseFunctor/LJFunctor.h:264-281
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -459,9 +388,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
       //horizontally reduce virialSumZ and upotSum
-      double debug[4];
-      _mm256_store_pd(debug, upotSum);
-      std::cout << "AVX UPOT: " << debug[0] << " " << debug[1] << " " << debug[2] << " " << debug[3] << " " << std::endl;
       const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
       const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
       const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
