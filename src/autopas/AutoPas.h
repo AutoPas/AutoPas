@@ -216,13 +216,13 @@ class AutoPas {
   }
 
   /**
-   * Get cell size factor (only relevant for LinkedCells).
+   * Get cell size factor (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */
   double getCellSizeFactor() const { return _cellSizeFactor; }
 
   /**
-   * Set cell size factor (only relevant for LinkedCells).
+   * Set cell size factor (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @param cellSizeFactor
    */
   void setCellSizeFactor(double cellSizeFactor) {
@@ -394,7 +394,7 @@ class AutoPas {
    */
   double _cutoff;
   /**
-   * Cell size factor to be used in this container (only relevant for LinkedCells).
+   * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
   double _cellSizeFactor;
   /**

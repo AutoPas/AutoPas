@@ -48,7 +48,8 @@ class AutoTuner {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells).
+   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
+   * VerletListsCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedContainerOptions Vector of container types AutoPas can choose from.
@@ -118,7 +119,8 @@ class AutoTuner {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param cellSizeFactor Cell size to be used in this container (only relevant for LinkedCells).
+   * @param cellSizeFactor Cell size to be used in this container (only relevant for LinkedCells, VerletLists and
+   * VerletListsCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
