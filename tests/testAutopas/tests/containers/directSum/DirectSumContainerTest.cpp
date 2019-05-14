@@ -125,10 +125,9 @@ TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
 
   // the particles should now be inside of invalidParticles vector!
   EXPECT_EQ(movedIDs.size(), invalidParticles.size());
-  for(auto& particle : invalidParticles){
+  for (auto& particle : invalidParticles) {
     EXPECT_EQ(movedIDs.count(particle.getID()), 1);
   }
-
 }
 
 TEST_F(DirectSumContainerTest, testUpdateContainerHalo) {
