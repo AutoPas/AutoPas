@@ -10,6 +10,7 @@
 #include <array>
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/selectors/TraversalSelector.h"
+#include "autopas/utils/AutoPasMacros.h"
 
 namespace autopas {
 
@@ -145,7 +146,7 @@ class ParticleContainerInterface {
    * This resorts particles into appropriate cells and moves them to the halo, if necessary.
    * @todo: update doc
    */
-  virtual std::vector<Particle> updateContainer() = 0;
+  virtual std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() = 0;
 
   /**
    * Check whether a container is valid, i.e. whether it is safe to use

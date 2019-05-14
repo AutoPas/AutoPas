@@ -16,6 +16,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/AutoPasMacros.h"
 
 namespace autopas {
 
@@ -100,7 +101,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     traversal->endTraversal(this->_cells);
   }
 
-  std::vector<Particle> updateContainer() override {
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
 

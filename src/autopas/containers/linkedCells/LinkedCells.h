@@ -116,7 +116,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     traversal->endTraversal(this->_cells);
   }
 
-  std::vector<Particle> updateContainer() override {
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
     auto haloIter = this->begin(IteratorBehavior::haloOnly);
     if (haloIter.isValid()) {
       utils::ExceptionHandler::exception(

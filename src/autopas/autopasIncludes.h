@@ -18,6 +18,7 @@
 #include "autopas/utils/StaticSelectors.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/AutoPasMacros.h"
 
 // particles
 #include "autopas/particles/MoleculeLJ.h"

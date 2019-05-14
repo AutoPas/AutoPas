@@ -125,7 +125,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * @copydoc VerletLists::updateContainer()
    */
-  std::vector<Particle> updateContainer() override {
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
     AutoPasLog(debug, "updating container");
     _neighborListIsValid = false;
   }

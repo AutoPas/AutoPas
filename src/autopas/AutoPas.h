@@ -98,9 +98,8 @@ class AutoPas {
    * It resorts particles into appropriate cells and moves them to the halo, if necessary.
    * @todo update doc
    * @return A vector of invalid particles that do no belong in the current container.
-   * @todo c++17: __attribute__((warn_unused_result)) should be replaced with [[nodiscard]]
    */
-  std::vector<Particle> updateContainer() __attribute__((warn_unused_result)) {
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
     _autoTuner->getContainer()->updateContainer();
   }
 
