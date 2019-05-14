@@ -37,7 +37,9 @@ class MockVerletLists : public autopas::VerletLists<Particle> {
 
   void addParticleVerletLists(Particle& p) { autopas::VerletLists<Particle>::addParticle(p); }
   void addHaloParticleVerletLists(Particle& p) { autopas::VerletLists<Particle>::addHaloParticle(p); }
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainerVerletLists() { return autopas::VerletLists<Particle>::updateContainer(); }
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainerVerletLists() {
+    return autopas::VerletLists<Particle>::updateContainer();
+  }
 
   friend class VerletListsTest_testRebuildFrequencyAlways_Test;
   friend class VerletListsTest_testRebuildFrequencyEvery3_Test;
