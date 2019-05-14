@@ -117,14 +117,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
-    auto haloIter = this->begin(IteratorBehavior::haloOnly);
-    if (haloIter.isValid()) {
-      utils::ExceptionHandler::exception(
-          "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
-          haloIter->toString());
-    }
-
+    this->deleteHaloParticles();
+    std::vector<Particle> invalidParticles;
 #ifdef AUTOPAS_OPENMP
+#pragma omp declare reduction(vecMerge : std::vector<Particle> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 #pragma omp parallel
 #endif  // AUTOPAS_OPENMP
     {
@@ -156,8 +152,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
           addParticle(p);
         else
-          addHaloParticle(p);
+          invalidParticles.push_back(p);
     }
+    return invalidParticles;
   }
 
   bool isContainerUpdateNeeded() override {
