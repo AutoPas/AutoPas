@@ -148,6 +148,8 @@ class ParticleBase {
     return text.str();
   }
 
+  bool isOwned() { return _isOwned; }
+
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
@@ -196,6 +198,11 @@ class ParticleBase {
    * Particle id.
    */
   unsigned long _id;
+
+  /**
+   * Defines whether the particle is owned by the current process
+   */
+  bool _isOwned;
 };
 /**
  * Particle with all variables in 32 bit precision
