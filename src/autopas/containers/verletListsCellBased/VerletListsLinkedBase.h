@@ -95,7 +95,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @copydoc autopas::ParticleContainerInterface::updateContainer()
    * @note This function invalidates the neighbor lists.
    */
-  void updateContainer() override {
+  std::vector<Particle> updateContainer() override {
     AutoPasLog(debug, "updating container");
     _neighborListIsValid = false;
     _linkedCells.updateContainer();

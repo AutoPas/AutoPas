@@ -116,7 +116,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     traversal->endTraversal(this->_cells);
   }
 
-  void updateContainer() override {
+  std::vector<Particle> updateContainer() override {
     auto haloIter = this->begin(IteratorBehavior::haloOnly);
     if (haloIter.isValid()) {
       utils::ExceptionHandler::exception(
