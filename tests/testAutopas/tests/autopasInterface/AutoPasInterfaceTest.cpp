@@ -114,7 +114,26 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* func
   autoPas.iteratePairwise(functor);
 }
 
-void testVerletInterface(autopas::ContainerOption containerOption) {
+template <typename Functor>
+void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor) {
+  std::array<Molecule, 2> molecules{};
+  size_t numParticles = 0;
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    ASSERT_LT(numParticles, 2) << "Too many particles owned by this container.";
+    molecules[numParticles] = *iter;
+  }
+  ASSERT_EQ(numParticles, 2) << "The container should own exactly two particles!";
+
+  for (auto& mol : molecules) {
+    ASSERT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 32512.)
+        << "wrong force calculated.";  // this value should be correct already
+  }
+
+  EXPECT_DOUBLE_EQ(functor->getUpot(), 12435. /*todo: fix value*/) << "wrong upot calculated";
+  EXPECT_DOUBLE_EQ(functor->getVirial(), 123514. /*todo: fix value*/) << "wrong virial calculated";
+}
+
+void testInterface(autopas::ContainerOption containerOption) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
   autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
@@ -125,30 +144,38 @@ void testVerletInterface(autopas::ContainerOption containerOption) {
   double distance = .5;
   std::array<double, 3> pos1{9.99, 5., 5.};
   std::array<double, 3> distVec{0., distance, 0.};
-  std::array<double, 3> pos2 = autopas::ArrayMath::sub(pos1, distVec);
+  std::array<double, 3> pos2 = autopas::ArrayMath::add(pos1, distVec);
 
-  Molecule particle1(pos1, {0., 0., 0.}, 0);
-  Molecule particle2(pos2, {0., 0., 0.}, 1);
+  {
+    Molecule particle1(pos1, {0., 0., 0.}, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, 1);
 
-  // add the two particles!
-  autoPas.addParticle(particle1);
-  autoPas.addParticle(particle2);
+    // add the two particles!
+    autoPas.addParticle(particle1);
+    autoPas.addParticle(particle2);
+  }
 
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, eps, sigma, shift, boxMin, boxMax, true);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
+  doAssertions(autoPas, &functor);
+
   // update positions a bit and do loop again
-  std::array<double, 3> moveVec{skin / 3., 0., 0.};
-  for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    iter->setR(autopas::ArrayMath::add(iter->getR(), moveVec));
+  {
+    std::array<double, 3> moveVec{skin / 3., 0., 0.};
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      iter->setR(autopas::ArrayMath::add(iter->getR(), moveVec));
+    }
   }
 
   // do second simulation loop
   doSimulationLoop(autoPas, &functor);
+
+  doAssertions(autoPas, &functor);
 }
 
 TEST_F(AutoPasInterfaceTest, InterfaceTest) {
   // this test checks the correct behavior of the autopas interface.
-  testVerletInterface(autopas::ContainerOption::linkedCells);
+  testInterface(autopas::ContainerOption::linkedCells);
 }
