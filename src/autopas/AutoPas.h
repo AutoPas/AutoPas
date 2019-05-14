@@ -100,7 +100,7 @@ class AutoPas {
    * @return A vector of invalid particles that do no belong in the current container.
    */
   std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
-    _autoTuner->getContainer()->updateContainer();
+    return _autoTuner->getContainer()->updateContainer();
   }
 
   /**
