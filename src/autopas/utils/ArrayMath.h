@@ -85,6 +85,23 @@ class ArrayMath {
   }
 
   /**
+   * Subtracts a scalar s from each element of array a and returns the result.
+   * @tparam T floating point type
+   * @tparam SIZE size of the array a
+   * @param a the array
+   * @param s the scalar to be subtracted from each element of a
+   * @return array who's elements are a[i]-s
+   */
+  template <class T, std::size_t SIZE>
+  static std::array<T, SIZE> subScalar(const std::array<T, SIZE> &a, T s) {
+    std::array<T, SIZE> result;
+    for (std::size_t d = 0; d < SIZE; ++d) {
+      result[d] = a[d] - s;
+    }
+    return result;
+  }
+
+  /**
    * Multiplies a scalar s to each element of array a and returns the result.
    * @tparam T floating point type
    * @tparam SIZE size of the array a
