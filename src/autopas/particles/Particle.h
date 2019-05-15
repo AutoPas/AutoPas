@@ -200,7 +200,7 @@ class ParticleBase {
   unsigned long _id;
 
   /**
-   * Defines whether the particle is owned by the current process
+   * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    */
   bool _isOwned;
 };

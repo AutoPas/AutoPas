@@ -120,11 +120,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     this->deleteHaloParticles();
     std::vector<Particle> invalidParticles;
 #ifdef AUTOPAS_OPENMP
-#pragma omp declare reduction(vecMerge : std::vector<Particle> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-#pragma omp parallel reduction(vecMerge : invalidParticles)
+#pragma omp parallel
 #endif  // AUTOPAS_OPENMP
     {
-      std::vector<Particle> myInvalidParticles;
+      // private for each thread!
+      std::vector<Particle> myInvalidParticles, myInvalidNotOwnedParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp for
 #endif  // AUTOPAS_OPENMP
@@ -146,13 +146,21 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       // implicit barrier here
       // the barrier is needed because iterators are not threadsafe w.r.t. addParticle()
 
-      // this loop is executed for every thread
-      for (auto &&p : myInvalidParticles)
+      // this loop is executed for every thread and thus parallel. Don't use #pragma omp for here!
+      for (auto &&p : myInvalidParticles) {
         // if not in halo
-        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
+        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
           addParticle(p);
-        else
-          invalidParticles.push_back(p);
+        } else {
+          myInvalidNotOwnedParticles.push_back(p);
+        }
+      }
+#pragma omp critical
+      {
+        // merge private vectors to global one.
+        invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
+                                myInvalidNotOwnedParticles.end());
+      }
     }
     return invalidParticles;
   }

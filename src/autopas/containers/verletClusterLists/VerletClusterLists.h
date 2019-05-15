@@ -123,6 +123,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   void deleteHaloParticles() override {
     // quick and dirty: iterate over all particles and delete halo particles
+    // @todo: make this proper
     for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       if (not iter->isOwned()) {
         iter.deleteCurrentParticle();
@@ -140,6 +141,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     // next find invalid particles
     std::vector<Particle> invalidParticles;
+    /// @todo: parallelize
     for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       if (not utils::inBox(iter->getR(), _boxMin, _boxMax)) {
         invalidParticles.push_back(*iter);
