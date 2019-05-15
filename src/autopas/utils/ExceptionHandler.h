@@ -52,7 +52,6 @@ class ExceptionHandler {
   template <class Exception>
   static void exception(const Exception e) {
     std::lock_guard<std::mutex> guard(exceptionMutex);
-    std::exception_ptr p;
     switch (_behavior) {
       case throwException:
         throw e;  // NOLINT

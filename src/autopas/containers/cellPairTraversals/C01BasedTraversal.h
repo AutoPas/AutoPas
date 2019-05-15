@@ -7,9 +7,8 @@
 #pragma once
 
 #include <autopas/utils/WrapOpenMP.h>
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
 
@@ -24,16 +23,19 @@ namespace autopas {
  * @tparam useSoA
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C01BasedTraversal : public CellPairTraversal<ParticleCell> {
+class C01BasedTraversal : public CBasedTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cutoff Cutoff radius.
+   * @param cellLength cell length.
    */
-  explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims), _dataLayoutConverter(pairwiseFunctor) {}
+  explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
+                             double cutoff = 1.0, const std::array<double, 3>& cellLength = {1.0, 1.0, 1.0})
+      : CBasedTraversal<ParticleCell>(dims, cutoff, cellLength), _dataLayoutConverter(pairwiseFunctor) {}
 
   void initTraversal(std::vector<ParticleCell>& cells) override {
 #ifdef AUTOPAS_OPENMP
@@ -77,21 +79,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout
 template <typename LoopBody>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c01Traversal(
     LoopBody&& loopBody) {
-  const unsigned long end_x = this->_cellsPerDimension[0] - 1;
-  const unsigned long end_y = this->_cellsPerDimension[1] - 1;
-  const unsigned long end_z = this->_cellsPerDimension[2] - 1;
-
-#if defined(AUTOPAS_OPENMP)
-  // @todo: find optimal chunksize
-#pragma omp parallel for schedule(dynamic) collapse(3)
-#endif
-  for (unsigned long z = 1; z < end_z; ++z) {
-    for (unsigned long y = 1; y < end_y; ++y) {
-      for (unsigned long x = 1; x < end_x; ++x) {
-        loopBody(x, y, z);
-      }
-    }
-  }
+  const auto offset = this->_overlap;
+  const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
+  this->cTraversal(std::forward<LoopBody>(loopBody), end, {1ul, 1ul, 1ul}, offset);
 }
-
 }  // namespace autopas

@@ -12,6 +12,7 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -72,8 +73,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      utils::ExceptionHandler::exception("LinkedCells: trying to add particle that is not inside the bounding box.\n" +
-                                         p.toString());
+      utils::ExceptionHandler::exception(
+          "LinkedCells: Trying to add a particle that is not inside the bounding box.\n" + p.toString());
     }
   }
 
@@ -83,8 +84,16 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
       cell.addParticle(haloParticle);
     } else {
-      utils::ExceptionHandler::exception("LinkedCells: trying to add halo particle that is not in the halo box.\n" +
-                                         haloParticle.toString());
+      auto inInnerBox = autopas::utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax());
+      if (inInnerBox) {
+        utils::ExceptionHandler::exception(
+            "LinkedCells: Trying to add a halo particle that is actually in the bounding box.\n" +
+            haloParticle.toString());
+      } else {
+        AutoPasLog(trace,
+                   "LinkedCells: Trying to add a halo particle that is outside the halo box. Particle not added!\n{}",
+                   haloParticle.toString());
+      }
     }
   }
 
@@ -181,7 +190,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo());
+    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
+                                           this->getCellBlock().getCellLength());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -197,11 +207,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     // this is needed when used through verlet lists since particles can move over cell borders.
     // only lower corner needed since we increase the upper corner anyways.
     if (incSearchRegion) {
-      startIndex = this->_cellBlock.get1DIndexOfPosition({
-          lowerCorner[0] - 1,
-          lowerCorner[1] - 1,
-          lowerCorner[2] - 1,
-      });
+      startIndex = this->_cellBlock.get1DIndexOfPosition(ArrayMath::subScalar(lowerCorner, 1.0));
     } else {
       startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
     }

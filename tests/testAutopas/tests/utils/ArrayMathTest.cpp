@@ -64,6 +64,15 @@ TEST(ArrayMathTest, testAddScalar) {
   }
 }
 
+TEST(ArrayMathTest, testSubScalar) {
+  std::array<double, 3> a({1.1, 2.2, 3.3});
+  std::array<double, 3> correctResult({-0.9, 0.2, 1.3});
+  std::array<double, 3> result = ArrayMath::subScalar(a, 2.0);
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_NEAR(result[d], correctResult[d], 1e-15);
+  }
+}
+
 TEST(ArrayMathTest, testMulScalar) {
   std::array<double, 3> a({1.1, 2.2, 3.3});
   std::array<double, 3> correctResult({2.2, 4.4, 6.6});

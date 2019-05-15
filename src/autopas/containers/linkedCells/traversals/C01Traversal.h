@@ -10,7 +10,9 @@
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
+
 namespace autopas {
 
 /**
@@ -31,11 +33,15 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   /**
    * Constructor of the c01 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
-   * y and z direction.
+   * y and z direction (incl. halo).
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cutoff cutoff radius
+   * @param cellLength cell length in CellBlock3D
    */
-  explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
+  explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
+                                                                                 cellLength),
         _cellFunctor(pairwiseFunctor) {
     computeOffsets();
   }
@@ -86,7 +92,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   /**
    * Pairs for processBaseCell().
    */
-  std::vector<int> _cellOffsets;
+  std::vector<long> _cellOffsets;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -97,11 +103,22 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets() {
-  for (int z = -1; z <= 1; ++z) {
-    for (int y = -1; y <= 1; ++y) {
-      for (int x = -1; x <= 1; ++x) {
-        int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
-        _cellOffsets.push_back(offset);
+  _cellOffsets.reserve(this->_overlap[0] * this->_overlap[1] * this->_overlap[2] * 3);
+
+  const auto cutoffSquare(this->_cutoff * this->_cutoff);
+
+  for (long z = -this->_overlap[0]; z <= static_cast<long>(this->_overlap[0]); ++z) {
+    for (long y = -this->_overlap[1]; y <= static_cast<long>(this->_overlap[1]); ++y) {
+      for (long x = -this->_overlap[2]; x <= static_cast<long>(this->_overlap[2]); ++x) {
+        std::array<double, 3> pos = {};
+        pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
+        pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
+        pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
+        const double distSquare = ArrayMath::dot(pos, pos);
+        if (distSquare <= cutoffSquare) {
+          const long offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
+          _cellOffsets.push_back(offset);
+        }
       }
     }
   }
@@ -115,7 +132,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
 
   const size_t num_pairs = this->_cellOffsets.size();
   for (size_t j = 0; j < num_pairs; ++j) {
-    unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
+    const unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
