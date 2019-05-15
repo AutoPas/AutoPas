@@ -155,7 +155,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
           myInvalidNotOwnedParticles.push_back(p);
         }
       }
+#ifdef AUTOPAS_OPENMP
 #pragma omp critical
+#endif
       {
         // merge private vectors to global one.
         invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
