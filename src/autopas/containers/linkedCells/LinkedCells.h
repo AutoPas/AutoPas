@@ -12,6 +12,7 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -188,7 +189,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo());
+    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
+                                           this->getCellBlock().getCellLength());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -204,11 +206,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     // this is needed when used through verlet lists since particles can move over cell borders.
     // only lower corner needed since we increase the upper corner anyways.
     if (incSearchRegion) {
-      startIndex = this->_cellBlock.get1DIndexOfPosition({
-          lowerCorner[0] - 1,
-          lowerCorner[1] - 1,
-          lowerCorner[2] - 1,
-      });
+      startIndex = this->_cellBlock.get1DIndexOfPosition(ArrayMath::subScalar(lowerCorner, 1.0));
     } else {
       startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
     }
