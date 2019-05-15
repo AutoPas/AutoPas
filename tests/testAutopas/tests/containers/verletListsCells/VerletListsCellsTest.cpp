@@ -8,15 +8,6 @@
 
 using ::testing::_;
 using ::testing::AtLeast;
-using ::testing::Invoke;
-
-TEST_F(VerletListsCellsTest, VerletListConstructor) {
-  std::array<double, 3> min = {1, 1, 1};
-  std::array<double, 3> max = {3, 3, 3};
-  double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOption::c18, skin);
-}
 
 void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizefactor) {
   std::array<double, 3> min = {1, 1, 1};
@@ -50,19 +41,12 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
 
 TEST_F(VerletListsCellsTest, testVerletListBuild) {
   MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctor, 1.0);
 
   MockFunctor<Particle, FPCell> emptyFunctor_cs2;
-  EXPECT_CALL(emptyFunctor_cs2, AoSFunctor(_, _, true)).Times(AtLeast(1));
+  EXPECT_CALL(emptyFunctor_cs2, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctor_cs2, 2.0);
-}
-
-TEST_F(VerletListsCellsTest, testVerletList) {
-  MockFunctor<Particle, FPCell> mockFunctor;
-  EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
-
-  applyFunctor(mockFunctor, 1.0);
 }

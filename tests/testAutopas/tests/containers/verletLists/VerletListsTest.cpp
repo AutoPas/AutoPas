@@ -73,45 +73,11 @@ TEST_P(VerletListsTest, testVerletListBuild) {
   verletLists.addParticle(p2);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(1);
 
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
                                                                                                   &emptyFunctor);
   verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
-
-  auto& list = verletLists.getVerletListsAoS();
-
-  EXPECT_EQ(list.size(), 2);
-  int partners = 0;
-  for (const auto& i : list) {
-    partners += i.second.size();
-  }
-  EXPECT_EQ(partners, 1);
-}
-
-TEST_P(VerletListsTest, testVerletList) {
-  std::array<double, 3> min = {1, 1, 1};
-  std::array<double, 3> max = {3, 3, 3};
-  double cutoff = 1.;
-  double skin = 0.2;
-  const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(
-      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
-
-  std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
-  verletLists.addParticle(p);
-  std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
-  verletLists.addParticle(p2);
-
-  MockFunctor<Particle, FPCell> mockFunctor;
-  using ::testing::_;  // anything is ok
-  EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
-
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &mockFunctor);
-  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal, true);
 
   auto& list = verletLists.getVerletListsAoS();
 
@@ -269,11 +235,11 @@ TEST_F(VerletListsTest, testRebuildFrequencyAlways) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
                                                                                                   &emptyFunctor);
-  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(4);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  const unsigned int numIterations = 4;
+  EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(numIterations);
+  for (unsigned int i = 0; i < numIterations; i++) {
+    mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  }
 }
 
 TEST_F(VerletListsTest, testRebuildFrequencyEvery3) {
