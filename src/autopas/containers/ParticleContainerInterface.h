@@ -143,8 +143,9 @@ class ParticleContainerInterface {
 
   /**
    * Updates the container.
-   * This resorts particles into appropriate cells and moves them to the halo, if necessary.
-   * @todo: update doc
+   * This deletes halo particles, resorts particles into appropriate cells and might remove particles from the
+   * container, if necessary.
+   * @return A vector of invalid particles that do not belong into the container.
    */
   virtual std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() = 0;
 
