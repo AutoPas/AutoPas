@@ -121,7 +121,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     std::vector<Particle> invalidParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp declare reduction(vecMerge : std::vector<Particle> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-#pragma omp parallel
+#pragma omp parallel reduction(vecMerge : invalidParticles)
 #endif  // AUTOPAS_OPENMP
     {
       std::vector<Particle> myInvalidParticles;
