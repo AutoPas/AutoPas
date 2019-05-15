@@ -5,40 +5,14 @@
  */
 
 #include "LinkedCellsVersusDirectSumTest.h"
+#include "testingHelpers/RandomGenerator.h"
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
 
-double LinkedCellsVersusDirectSumTest::fRand(double fMin, double fMax) const {
-  double f = static_cast<double>(rand()) / RAND_MAX;
-  return fMin + f * (fMax - fMin);
-}
-
-std::array<double, 3> LinkedCellsVersusDirectSumTest::randomPosition(const std::array<double, 3> &boxMin,
-                                                                     const std::array<double, 3> &boxMax) const {
-  std::array<double, 3> r{};
-  for (int d = 0; d < 3; ++d) {
-    r[d] = fRand(boxMin[d], boxMax[d]);
-  }
-  return r;
-}
-
-void LinkedCellsVersusDirectSumTest::fillContainerWithMolecules(
-    unsigned long numMolecules,
-    autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
-  srand(42);  // fixed seedpoint
-
-  std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
-
-  for (unsigned long i = 0; i < numMolecules; ++i) {
-    auto id = static_cast<unsigned long>(i);
-    autopas::MoleculeLJ m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
-    cont.addParticle(m);
-  }
-}
-
 void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
-  fillContainerWithMolecules(numMolecules, _directSum);
+  autopas::MoleculeLJ defaultParticle;
+  RandomGenerator::fillWithParticles(_directSum, defaultParticle, numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _directSum.begin(); it.isValid(); ++it) {
@@ -75,7 +49,7 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
   }
 
   for (size_t i = 0; i < numMolecules; ++i) {
-    for (int d = 0; d < 3; ++d) {
+    for (unsigned int d = 0; d < 3; ++d) {
       double f1 = forcesDirect[i][d];
       double f2 = forcesLinked[i][d];
       double abs_err = std::abs(f1 - f2);
