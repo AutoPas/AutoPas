@@ -253,8 +253,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     // guess optimal grid side length
     _gridSideLength = std::cbrt((ParticleFloatType)_clusterSize / density);
-    // no cells large than interaction radius
-    _gridSideLength = std::min(_gridSideLength, this->getCutoff());
+
     _gridSideLengthReciprocal = 1 / _gridSideLength;
 
     // get cells per dimension
