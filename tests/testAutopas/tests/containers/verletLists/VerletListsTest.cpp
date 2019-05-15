@@ -10,13 +10,16 @@
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Invoke;
+using ::testing::Values;
 
-TEST_F(VerletListsTest, testAddParticleNumParticle) {
+TEST_P(VerletListsTest, testAddParticleNumParticle) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists(
+      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
   EXPECT_EQ(verletLists.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -30,12 +33,14 @@ TEST_F(VerletListsTest, testAddParticleNumParticle) {
   EXPECT_EQ(verletLists.getNumParticles(), 2);
 }
 
-TEST_F(VerletListsTest, testDeleteAllParticles) {
+TEST_P(VerletListsTest, testDeleteAllParticles) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists(
+      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
   EXPECT_EQ(verletLists.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -51,12 +56,14 @@ TEST_F(VerletListsTest, testDeleteAllParticles) {
   EXPECT_EQ(verletLists.getNumParticles(), 0);
 }
 
-TEST_F(VerletListsTest, testVerletListBuild) {
+TEST_P(VerletListsTest, testVerletListBuild) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists(
+      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -82,12 +89,14 @@ TEST_F(VerletListsTest, testVerletListBuild) {
   EXPECT_EQ(partners, 1);
 }
 
-TEST_F(VerletListsTest, testVerletList) {
+TEST_P(VerletListsTest, testVerletList) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists(
+      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -114,12 +123,14 @@ TEST_F(VerletListsTest, testVerletList) {
   EXPECT_EQ(partners, 1);
 }
 
-TEST_F(VerletListsTest, testVerletListInSkin) {
+TEST_P(VerletListsTest, testVerletListInSkin) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists(
+      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {1.4, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -146,12 +157,14 @@ TEST_F(VerletListsTest, testVerletListInSkin) {
   EXPECT_EQ(partners, 1);
 }
 
-TEST_F(VerletListsTest, testVerletListBuildTwice) {
+TEST_P(VerletListsTest, testVerletListBuildTwice) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists(
+      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -179,12 +192,14 @@ TEST_F(VerletListsTest, testVerletListBuildTwice) {
   EXPECT_EQ(partners, 1);
 }
 
-TEST_F(VerletListsTest, testVerletListBuildFarAway) {
+TEST_P(VerletListsTest, testVerletListBuildFarAway) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists(
+      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -214,12 +229,14 @@ TEST_F(VerletListsTest, testVerletListBuildFarAway) {
   ASSERT_EQ(partners, 1);
 }
 
-TEST_F(VerletListsTest, testVerletListBuildHalo) {
+TEST_P(VerletListsTest, testVerletListBuildHalo) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists(
+      min, max, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {0.9, 0.9, 0.9};
   Particle p(r, {0., 0., 0.}, 0);
@@ -239,7 +256,6 @@ TEST_F(VerletListsTest, testVerletListBuildHalo) {
   auto& list = verletLists.getVerletListsAoS();
 
   ASSERT_EQ(list.size(), 2);
-  EXPECT_EQ(list.size(), 2);
   int partners = 0;
   for (const auto& i : list) {
     partners += i.second.size();
@@ -353,8 +369,11 @@ TEST_F(VerletListsTest, testForceRebuild) {
                                   true);  // rebuild happens here
 }
 
-TEST_F(VerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+TEST_P(VerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3,
+                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
@@ -374,8 +393,11 @@ TEST_F(VerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
   EXPECT_TRUE(verletLists.checkNeighborListsAreValid());
 }
 
-TEST_F(VerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+TEST_P(VerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3,
+                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
 
@@ -400,8 +422,11 @@ TEST_F(VerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
   EXPECT_TRUE(verletLists.checkNeighborListsAreValid());
 }
 
-TEST_F(VerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+TEST_P(VerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3,
+                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
 
@@ -426,12 +451,17 @@ TEST_F(VerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
   EXPECT_FALSE(verletLists.checkNeighborListsAreValid());
 }
 
-TEST_F(VerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+TEST_P(VerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
+  const double cutoff = 2.;
+  const double skin = 0.3;
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, 3,
+                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
 
-  // addtwo particles in proper distance
+  // add two particles in proper distance
   Particle p({1.1, 1.1, 1.1}, {0., 0., 0.}, 1);
   verletLists.addParticle(p);
   Particle p2({7.5, 1.1, 1.1}, {0., 0., 0.}, 2);
@@ -441,20 +471,23 @@ TEST_F(VerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
                                                                                                   &emptyFunctor);
   // this will build the verlet list
   verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
-
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
       // this sets the particle more than skin/2 outside of cell (xmax_cell=2.3)
-      iter->setR({2.7, 1.1, 1.1});
+      const double cellLength = 10.0 / (static_cast<int>(10.0 / ((cutoff + skin) * cellSizeFactor)));
+      iter->setR({cellLength + skin, 1.1, 1.1});
     }
   }
 
-  // check validity - should return true
+  // check validity - should return false
   EXPECT_FALSE(verletLists.checkNeighborListsAreValid());
 }
 
-TEST_F(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+TEST_P(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3,
+                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
 
@@ -493,8 +526,11 @@ void moveUpdateAndExpectEqual(Container& container, Particle& particle, std::arr
   }
 };
 
-TEST_F(VerletListsTest, testUpdateHaloParticle) {
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+TEST_P(VerletListsTest, testUpdateHaloParticle) {
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3,
+                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
@@ -539,12 +575,14 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
   EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
 }
 
-TEST_F(VerletListsTest, testIsContainerNeeded) {
+TEST_P(VerletListsTest, testIsContainerUpdateNeeded) {
   std::array<double, 3> boxMin{0, 0, 0};
   std::array<double, 3> boxMax{10, 10, 10};
   double cutoff = 1.;
   double skin = 1.;
-  autopas::VerletLists<Particle> container(boxMin, boxMax, cutoff, skin);
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> container(
+      boxMin, boxMax, cutoff, skin, 1, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 
@@ -553,16 +591,22 @@ TEST_F(VerletListsTest, testIsContainerNeeded) {
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 
   // Particle moves to different cell -> needs update
-  container.begin()->setR({2.5, 1, 1});
-  EXPECT_TRUE(container.isContainerUpdateNeeded());
+  const double cellLength = 10.0 / (static_cast<int>(10.0 / ((cutoff + skin) * cellSizeFactor)));
+  container.begin()->setR({1.0 + cellLength, 1.0, 1.0});
+  EXPECT_TRUE(container.isContainerUpdateNeeded()) << "cellLength: " << cellLength;
 
   // Particle moves to halo cell -> needs update
   container.begin()->setR({-1, -1, -1});
   EXPECT_TRUE(container.isContainerUpdateNeeded());
 }
 
-TEST_F(VerletListsTest, LoadExtractSoA) {
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+TEST_P(VerletListsTest, LoadExtractSoA) {
+  const double cutoff = 2.;
+  const double skin = 0.3;
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, 3,
+                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
@@ -570,16 +614,20 @@ TEST_F(VerletListsTest, LoadExtractSoA) {
   MockFunctor<Particle, FPCell> mockFunctor;
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::soa, false> dummyTraversal({0, 0, 0},
                                                                                                    &mockFunctor);
-
-  EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(216);  // 6*6*6=216 cells
-  EXPECT_CALL(mockFunctor, SoAExtractorVerlet(_, _, _)).Times(216);
+  const size_t dimWithHalo = 10 / ((cutoff + skin) * cellSizeFactor) + 2ul;
+  const size_t numCells = dimWithHalo * dimWithHalo * dimWithHalo;
+  EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(numCells);
+  EXPECT_CALL(mockFunctor, SoAExtractorVerlet(_, _, _)).Times(numCells);
   EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _, _)).Times(1);
   verletLists.iteratePairwise(&mockFunctor, &dummyTraversal, false);
 }
 
-TEST_F(VerletListsTest, LoadExtractSoALJ) {
-  double cutoff = 2.;
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3 /*skin*/, 3);
+TEST_P(VerletListsTest, LoadExtractSoALJ) {
+  const double cutoff = 2.;
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3 /*skin*/, 3,
+                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
@@ -590,11 +638,16 @@ TEST_F(VerletListsTest, LoadExtractSoALJ) {
   verletLists.iteratePairwise(&ljFunctor, &dummyTraversal, false);
 }
 
-TEST_F(VerletListsTest, SoAvsAoSLJ) {
-  double cutoff = 2.;
-  autopas::VerletLists<Particle> verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3, 3);
+TEST_P(VerletListsTest, SoAvsAoSLJ) {
+  const double cutoff = 2.;
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Particle> verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3, 3,
+                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                              cellSizeFactor);
 
-  autopas::VerletLists<Particle> verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3, 3);
+  autopas::VerletLists<Particle> verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3, 3,
+                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                              cellSizeFactor);
 
   RandomGenerator::fillWithParticles(verletLists1, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
   RandomGenerator::fillWithParticles(verletLists2, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
@@ -611,14 +664,13 @@ TEST_F(VerletListsTest, SoAvsAoSLJ) {
   auto iter2 = verletLists2.begin();
 
   for (; iter1.isValid() && iter2.isValid(); ++iter1, ++iter2) {
-    ASSERT_NEAR(iter1->getR()[0], iter2->getR()[0], fabs(iter1->getR()[0] * 1e-7));
-    ASSERT_NEAR(iter1->getR()[1], iter2->getR()[1], fabs(iter1->getR()[1] * 1e-7));
-    ASSERT_NEAR(iter1->getR()[2], iter2->getR()[2], fabs(iter1->getR()[2] * 1e-7));
-
-    EXPECT_NEAR(iter1->getF()[0], iter2->getF()[0], fabs(iter1->getF()[0] * 1e-7));
-    EXPECT_NEAR(iter1->getF()[1], iter2->getF()[1], fabs(iter1->getF()[1] * 1e-7));
-    EXPECT_NEAR(iter1->getF()[2], iter2->getF()[2], fabs(iter1->getF()[2] * 1e-7));
+    for (unsigned int dim = 0; dim < 3; dim++) {
+      ASSERT_NEAR(iter1->getR()[dim], iter2->getR()[dim], fabs(iter1->getR()[dim] * 1e-7));
+      EXPECT_NEAR(iter1->getF()[dim], iter2->getF()[dim], fabs(iter1->getF()[dim] * 1e-7));
+    }
   }
   EXPECT_FALSE(iter1.isValid());
   EXPECT_FALSE(iter2.isValid());
 }
+
+INSTANTIATE_TEST_SUITE_P(Generated, VerletListsTest, Values(1.0, 2.0), VerletListsTest::PrintToStringParamName());
