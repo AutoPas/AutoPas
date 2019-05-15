@@ -11,14 +11,6 @@ using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Invoke;
 
-TEST_F(VerletListsTest, VerletListConstructor) {
-  std::array<double, 3> min = {1, 1, 1};
-  std::array<double, 3> max = {3, 3, 3};
-  double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin);
-}
-
 TEST_F(VerletListsTest, testAddParticleNumParticle) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
