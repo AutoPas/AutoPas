@@ -53,13 +53,33 @@ class MoleculeLJ : public Particle {
    */
   static void setSigma(double sigma) { SIGMA = sigma; }
 
-  /**
-   * the type for the soa storage
+  /**get mass
+   * @return Mass
    */
+  static double getMass() { return MASS;}
+
+    /**set mass
+   * @param Mass
+   */
+  static void setMass(double mass) {MASS = mass;}
+
+    /**
+     * the type for the soa storage
+     */
   typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
- private:
-  static double EPSILON, SIGMA;
+    /**get OldForce
+    * @return OldForce
+    */
+  static double getOldf() {return OLDF;}
+
+    /**set OldForce
+    * @param OldForce
+    */
+  static void setOldf(double oldf) { OLDF = oldf;}
+
+private:
+  static double EPSILON, SIGMA, MASS, OLDF;
 };
 
 }  // namespace autopas

@@ -82,10 +82,7 @@ public:
         classe: timeintegration -
 
 
-        #pragma omp parallel
-        for(auto iter = _autopas->getContainer().begin(); iter.isValid(); ++iter) {
-            // user code:
-            auto position = iter->getR();
+
         }
     }
 
