@@ -13,10 +13,6 @@
 #include "testingHelpers/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
-#ifdef AUTOPAS_OPENMP
-#include <omp.h>
-#endif
-
 class C18TraversalTest : public AutoPasTestBase {
  public:
   C18TraversalTest() = default;

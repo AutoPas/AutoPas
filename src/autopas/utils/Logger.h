@@ -45,8 +45,7 @@
  * @param fmt Message with formatting tokens
  * @param ... Formatting arguments
  */
-#define AutoPasLog(lvl, fmt, ...) \
-  { spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__); }
+#define AutoPasLog(lvl, fmt, ...) spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__);
 
 #endif
 

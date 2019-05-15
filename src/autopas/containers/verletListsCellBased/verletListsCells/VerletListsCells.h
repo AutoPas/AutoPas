@@ -53,8 +53,7 @@ class VerletListsCells
                    const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                                             allVLCApplicableTraversals()),
-        _buildTraversal(buildTraversal),
-        _verletBuiltNewton3(false) {}
+        _buildTraversal(buildTraversal) {}
 
   /**
    * Lists all traversal options applicable for the Verlet Lists Cells container.
@@ -85,7 +84,7 @@ class VerletListsCells
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (needsRebuild(useNewton3)) {
+    if (this->needsRebuild(useNewton3)) {
       updateVerletLists(useNewton3);
     }
 
@@ -110,25 +109,13 @@ class VerletListsCells
   }
 
   /**
-   * Specifies whether the neighbor lists need to be rebuild.
-   * @param useNewton3 if newton3 is gonna be used to traverse
-   * @return true if the neighbor lists need to be rebuild, false otherwise
-   */
-  bool needsRebuild(bool useNewton3) {
-    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", this->_neighborListIsValid);
-    // if the neighbor list is NOT valid, we have not rebuild for _rebuildFrequency steps or useNewton3 changed
-    return (not this->_neighborListIsValid) or (this->_traversalsSinceLastRebuild >= this->_rebuildFrequency) or
-           (useNewton3 != this->_verletBuiltNewton3);
-  }
-
-  /**
    * Get the neighbors list of a particle.
    * @param particle
    * @param useNewton3
    * @return the neighbor list of the particle
    */
   std::vector<Particle*>& getVerletList(Particle* particle, bool useNewton3 = true) {
-    if (needsRebuild(useNewton3)) {
+    if (this->needsRebuild(useNewton3)) {
       updateVerletLists(useNewton3);
     }
     auto indices = _cellMap[particle];
@@ -141,7 +128,7 @@ class VerletListsCells
    * @param useNewton3 use newton3?
    */
   void updateVerletLists(bool useNewton3) {
-    _verletBuiltNewton3 = useNewton3;
+    this->_verletBuiltNewton3 = useNewton3;
 
     // create a Verlet Lists for each cell
     _neighborLists.clear();
@@ -220,9 +207,6 @@ class VerletListsCells
 
   // the traversal used to build the verletlists
   TraversalOption _buildTraversal;
-
-  // specifies if the current verlet list was built for newton3
-  bool _verletBuiltNewton3;
 };
 
 }  // namespace autopas
