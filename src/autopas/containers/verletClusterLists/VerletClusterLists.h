@@ -451,7 +451,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     std::array<index_t, 2> cellIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
-      const long int value = (static_cast<long int>(floor((pos[dim] - _boxMin[dim]) * _gridSideLengthReciprocal))) + 1l;
+      const long int value =
+          (static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _gridSideLengthReciprocal))) + 1l;
       const index_t nonnegativeValue = static_cast<index_t>(std::max(value, 0l));
       const index_t nonLargerValue = std::min(nonnegativeValue, _cellsPerDim[dim] - 1);
       cellIndex[dim] = nonLargerValue;
