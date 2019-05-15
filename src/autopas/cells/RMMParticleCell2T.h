@@ -29,14 +29,17 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
    */
   RMMParticleCell2T() = default;
 
-  void addParticle(Particle &m) override {
-    _particleSoABuffer.template push<Particle::AttributeNames::id>(m.getID());
-    _particleSoABuffer.template push<Particle::AttributeNames::posX>(m.getR()[0]);
-    _particleSoABuffer.template push<Particle::AttributeNames::posY>(m.getR()[1]);
-    _particleSoABuffer.template push<Particle::AttributeNames::posZ>(m.getR()[2]);
-    _particleSoABuffer.template push<Particle::AttributeNames::forceX>(m.getF()[0]);
-    _particleSoABuffer.template push<Particle::AttributeNames::forceY>(m.getF()[1]);
-    _particleSoABuffer.template push<Particle::AttributeNames::forceZ>(m.getF()[2]);
+  /**
+   * @copydoc ParticleCell::addParticle(Particle&)
+   */
+  void addParticle(Particle &p) override {
+    _particleSoABuffer.template push<Particle::AttributeNames::id>(p.getID());
+    _particleSoABuffer.template push<Particle::AttributeNames::posX>(p.getR()[0]);
+    _particleSoABuffer.template push<Particle::AttributeNames::posY>(p.getR()[1]);
+    _particleSoABuffer.template push<Particle::AttributeNames::posZ>(p.getR()[2]);
+    _particleSoABuffer.template push<Particle::AttributeNames::forceX>(p.getF()[0]);
+    _particleSoABuffer.template push<Particle::AttributeNames::forceY>(p.getF()[1]);
+    _particleSoABuffer.template push<Particle::AttributeNames::forceZ>(p.getF()[2]);
   }
 
   SingleCellIteratorWrapper<Particle> begin() override {

@@ -22,9 +22,12 @@ namespace autopas {
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-  void addParticle(Particle& m) override {
+  /**
+   * @copydoc ParticleCell::addParticle(Particle&)
+   */
+  void addParticle(Particle& p) override {
     particlesLock.lock();
-    _particles.push_back(m);
+    _particles.push_back(p);
     particlesLock.unlock();
   }
 

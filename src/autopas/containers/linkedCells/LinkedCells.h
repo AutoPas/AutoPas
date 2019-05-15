@@ -117,19 +117,15 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     traversal->endTraversal(this->_cells);
   }
 
-  void updateContainer() override {
-    auto haloIter = this->begin(IteratorBehavior::haloOnly);
-    if (haloIter.isValid()) {
-      utils::ExceptionHandler::exception(
-          "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
-          haloIter->toString());
-    }
-
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
+    this->deleteHaloParticles();
+    std::vector<Particle> invalidParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif  // AUTOPAS_OPENMP
     {
-      std::vector<Particle> myInvalidParticles;
+      // private for each thread!
+      std::vector<Particle> myInvalidParticles, myInvalidNotOwnedParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp for
 #endif  // AUTOPAS_OPENMP
@@ -151,14 +147,25 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       // implicit barrier here
       // the barrier is needed because iterators are not threadsafe w.r.t. addParticle()
 
-      // this loop is executed for every thread
-      for (auto &&p : myInvalidParticles)
+      // this loop is executed for every thread and thus parallel. Don't use #pragma omp for here!
+      for (auto &&p : myInvalidParticles) {
         // if not in halo
-        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
+        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
           addParticle(p);
-        else
-          addHaloParticle(p);
+        } else {
+          myInvalidNotOwnedParticles.push_back(p);
+        }
+      }
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      {
+        // merge private vectors to global one.
+        invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
+                                myInvalidNotOwnedParticles.end());
+      }
     }
+    return invalidParticles;
   }
 
   bool isContainerUpdateNeeded() override {

@@ -314,7 +314,7 @@ TEST_F(VerletListsTest, testForceRebuild) {
 
   // check that updateContainer() requires a rebuild
   EXPECT_CALL(mockVerletLists, updateContainer());
-  mockVerletLists.updateContainer();
+  auto invalidParticles = mockVerletLists.updateContainer();
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
   mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal,
                                   true);  // rebuild happens here

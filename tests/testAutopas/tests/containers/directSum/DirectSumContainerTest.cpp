@@ -116,11 +116,17 @@ TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
   }
 
   // now update the container!
-  directSum.updateContainer();
+  auto invalidParticles = directSum.updateContainer();
 
   // the particles should no longer be in the inner cells!
   for (auto iter = directSum.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     EXPECT_EQ(movedIDs.count(iter->getID()), 0);
+  }
+
+  // the particles should now be inside of invalidParticles vector!
+  EXPECT_EQ(movedIDs.size(), invalidParticles.size());
+  for (auto& particle : invalidParticles) {
+    EXPECT_EQ(movedIDs.count(particle.getID()), 1);
   }
 }
 
@@ -131,5 +137,12 @@ TEST_F(DirectSumContainerTest, testUpdateContainerHalo) {
   autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);
   directSum.addHaloParticle(p);
 
-  EXPECT_THROW(directSum.updateContainer();, autopas::utils::ExceptionHandler::AutoPasException);
+  // update container, will delete halo particles
+  auto invalidParticles = directSum.updateContainer();
+  // no particle should be returned
+  EXPECT_EQ(invalidParticles.size(), 0);
+
+  // no particle should remain
+  auto iter = directSum.begin();
+  EXPECT_FALSE(iter.isValid());
 }

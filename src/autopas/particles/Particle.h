@@ -25,7 +25,7 @@ namespace autopas {
 template <typename floatType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
+  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0), _isOwned{true} {}
 
   /**
    * Constructor of the Particle class
@@ -34,7 +34,7 @@ class ParticleBase {
    * @param id id of the particle
    */
   ParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _isOwned{true} {}
 
   /**
    * Destructor of ParticleBase class
@@ -149,6 +149,12 @@ class ParticleBase {
   }
 
   /**
+   * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
+   * @return true if the particle is owned by the current AutoPas object, false otherwise
+   */
+  bool isOwned() { return _isOwned; }
+
+  /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
@@ -196,6 +202,11 @@ class ParticleBase {
    * Particle id.
    */
   unsigned long _id;
+
+  /**
+   * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
+   */
+  bool _isOwned;
 };
 /**
  * Particle with all variables in 32 bit precision

@@ -12,6 +12,7 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
@@ -100,18 +101,18 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     traversal->endTraversal(this->_cells);
   }
 
-  void updateContainer() override {
-    if (getHaloCell()->isNotEmpty()) {
-      utils::ExceptionHandler::exception(
-          "DirectSum: Halo particles still present when updateContainer was called. Found {} particles",
-          getHaloCell()->numParticles());
-    }
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
+    // first we delete halo particles, as we don't want them here.
+    deleteHaloParticles();
+
+    std::vector<Particle> invalidParticles{};
     for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-        addHaloParticle(*iter);
+        invalidParticles.push_back(*iter);
         iter.deleteCurrentParticle();
       }
     }
+    return invalidParticles;
   }
 
   bool isContainerUpdateNeeded() override {
