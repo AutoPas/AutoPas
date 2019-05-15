@@ -66,17 +66,28 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void addHaloParticle(Particle &p) override {
-    if (utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-      getHaloCell()->addParticle(p);
-    } else {  // particle is not outside of own box
-      utils::ExceptionHandler::exception(
-          "DirectSum: trying to add a halo particle that is not OUTSIDE of the "
-          "bounding box.\n" +
-          p.toString());
+    Particle p_copy = p;
+    p_copy.setOwned(false);
+    if (utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
+      getHaloCell()->addParticle(p_copy);
+    } else {  // particle is in own box
+      // we are adding it to the inner box, but have marked it as not owned.
+      // halo particles can also be inside of the domain (assuming non-precise interfaces)
+      // here we could also check whether the particle is too far inside of the domain; we would need the verlet skin
+      // for that.
+      getCell()->addParticle(p_copy);
     }
   }
 
-  void deleteHaloParticles() override { getHaloCell()->clear(); }
+  void deleteHaloParticles() override {
+    getHaloCell()->clear();
+    // particles inside of a cell can also be halo particles (assuming non-precise interfaces)
+    for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
+      if (not iter->isOwned()) {
+        iter.deleteCurrentParticle();
+      }
+    }
+  }
 
   /**
    * Function to iterate over all pairs of particles
@@ -104,7 +115,6 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
-
     std::vector<Particle> invalidParticles{};
     for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
