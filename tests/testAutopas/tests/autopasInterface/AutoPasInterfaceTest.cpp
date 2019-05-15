@@ -14,7 +14,7 @@ constexpr std::array<double, 3> boxMax{10., 10., 10.};
 constexpr double eps = 1.;
 constexpr double sigma = 1.;
 constexpr double shift = 0.1;
-constexpr std::array<double, 3> zeroArr = {0.,0.,0.};
+constexpr std::array<double, 3> zeroArr = {0., 0., 0.};
 
 template <typename AutoPasT>
 void defaultInit(AutoPasT& autoPas) {
@@ -127,7 +127,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor)
   ASSERT_EQ(numParticles, 2) << "The container should own exactly two particles!";
 
   for (auto& mol : molecules) {
-    EXPECT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144.*390144)
+    EXPECT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144)
         << "wrong force calculated.";  // this value should be correct already
   }
 
@@ -157,7 +157,8 @@ void testInterface(autopas::ContainerOption containerOption) {
     autoPas.addParticle(particle2);
   }
 
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true/*calculate globals*/> functor(cutoff, eps, sigma, shift, boxMin, boxMax);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(
+      cutoff, eps, sigma, shift, boxMin, boxMax);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
