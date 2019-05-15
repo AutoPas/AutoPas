@@ -144,6 +144,11 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   }
 
   /**
+   * Deletes all Dummy Particles in the container
+   */
+  virtual void deleteDummyParticles() {}
+
+  /**
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */

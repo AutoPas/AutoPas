@@ -210,7 +210,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * Deletes all Dummy Particles in the container
    */
-  void deleteDummyParticles() {
+  void deleteDummyParticles() override {
     for (auto& pair : _dummyStarts) {
       this->_cells[pair.first].resize(pair.second);
     }

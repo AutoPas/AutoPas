@@ -45,10 +45,13 @@ if(ENABLE_CUDA)
     execute_process(COMMAND nvcc -lcuda ${CUDAFILE} -o ${CUDAPROGRAM})
     execute_process(COMMAND ${CUDAPROGRAM}
                     RESULT_VARIABLE CUDA_RETURN_CODE
-		    OUTPUT_VARIABLE DETECTED_CCC)
-    
-    set(CUDA_COMPUTE_CAPABILITY ${DETECTED_CCC})
-    message(STATUS "Detected cuda compute capabilty: ${DETECTED_CCC}")
+                    OUTPUT_VARIABLE DETECTED_CCC)
+                    
+    if (NOT (${CUDA_RETURN_CODE} EQUAL 0))
+        message(WARNING "Could not detect cuda compute capabilty!")
+    endif()
+    set(CUDA_COMPUTE_CAPABILITY ${DETECTED_CCC} CACHE STRING "Cuda compute capability of yout GPU")
+
     file(REMOVE ${CUDAPROGRAM})
 else()
     message(STATUS "Cuda disabled.")
@@ -64,6 +67,7 @@ include(clang-tidy)
 include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
+include(coloring)
 
 include(version.cmake)
 

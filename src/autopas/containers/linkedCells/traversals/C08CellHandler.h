@@ -27,18 +27,28 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C08CellHandler {
+  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
+
  public:
   /**
    * Constructor of the c08 traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
+   * @param cutoff Cutoff radius.
+   * @param cellLength cell length.
+   * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
-  explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension)
+  explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
+                          const ParticleFloatType cutoff = 1.0,
+                          const std::array<ParticleFloatType, 3> &cellLength = {1.0, 1.0, 1.0},
+                          const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(
                 pairwiseFunctor)),
         _cellPairOffsets{},
-        _cellOffsets{} {
+        _cutoff(cutoff),
+        _cellLength(cellLength),
+        _overlap(overlap) {
     computeOffsets(cellsPerDimension);
   }
 
@@ -52,7 +62,9 @@ class C08CellHandler {
 
  private:
   /**
-   * Computes pairs for the block used in processBaseCell()
+   * Computes pairs for the block used in processBaseCell().
+   * The algorithm used to generate the cell pairs can be visualized with a python script, which can be found in
+   * docs/C08TraversalScheme.py
    * @param cellsPerDimension
    */
   void computeOffsets(std::array<unsigned long, 3> cellsPerDimension);
@@ -65,11 +77,22 @@ class C08CellHandler {
   /**
    * Pair sets for processBaseCell().
    */
-  std::array<std::pair<unsigned long, unsigned long>, 14> _cellPairOffsets;
+  std::vector<std::pair<unsigned long, unsigned long>> _cellPairOffsets;
+
   /**
-   * Offsets for single cells
+   * cutoff radius.
    */
-  std::array<unsigned long, 8> _cellOffsets;
+  const ParticleFloatType _cutoff;
+
+  /**
+   * cell length in CellBlock3D.
+   */
+  const std::array<ParticleFloatType, 3> _cellLength;
+
+  /**
+   * overlap of interacting cells. Array allows asymmetric cell sizes.
+   */
+  const std::array<unsigned long, 3> _overlap;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
@@ -103,45 +126,80 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
     std::array<unsigned long, 3> cellsPerDimension) {
   using std::make_pair;
 
-  // origin
-  unsigned long o = utils::ThreeDimensionalMapping::threeToOneD(0ul, 0ul, 0ul, cellsPerDimension);
-  // displacement to right ...
-  unsigned long x = utils::ThreeDimensionalMapping::threeToOneD(1ul, 0ul, 0ul, cellsPerDimension);
-  unsigned long y = utils::ThreeDimensionalMapping::threeToOneD(0ul, 1ul, 0ul, cellsPerDimension);
-  unsigned long z = utils::ThreeDimensionalMapping::threeToOneD(0ul, 0ul, 1ul, cellsPerDimension);
-  unsigned long xy = utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 0ul, cellsPerDimension);
-  unsigned long yz = utils::ThreeDimensionalMapping::threeToOneD(0ul, 1ul, 1ul, cellsPerDimension);
-  unsigned long xz = utils::ThreeDimensionalMapping::threeToOneD(1ul, 0ul, 1ul, cellsPerDimension);
-  unsigned long xyz = utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, cellsPerDimension);
+  //////////////////////////////
+  // @TODO: Replace following lines with vector to support asymmetric cells
+  const unsigned long ov1 = _overlap[0] + 1;
+  const unsigned long ov1_squared = ov1 * ov1;
+  //////////////////////////////
 
-  int i = 0;
-  // if incrementing along X, the following order will be more cache-efficient:
-  _cellPairOffsets[i++] = make_pair(o, o);
-  _cellPairOffsets[i++] = make_pair(o, y);
-  _cellPairOffsets[i++] = make_pair(y, z);
-  _cellPairOffsets[i++] = make_pair(o, z);
-  _cellPairOffsets[i++] = make_pair(o, yz);
+  std::array<unsigned long, 3> overlap_1 = ArrayMath::addScalar(_overlap, 1ul);
 
-  _cellPairOffsets[i++] = make_pair(x, yz);
-  _cellPairOffsets[i++] = make_pair(x, y);
-  _cellPairOffsets[i++] = make_pair(x, z);
-  _cellPairOffsets[i++] = make_pair(o, x);
-  _cellPairOffsets[i++] = make_pair(o, xy);
-  _cellPairOffsets[i++] = make_pair(xy, z);
-  _cellPairOffsets[i++] = make_pair(y, xz);
-  _cellPairOffsets[i++] = make_pair(o, xz);
-  _cellPairOffsets[i++] = make_pair(o, xyz);
+  std::vector<unsigned long> cellOffsets;
+  cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
 
-  i = 0;
-  _cellOffsets[i++] = o;
-  _cellOffsets[i++] = y;
-  _cellOffsets[i++] = z;
-  _cellOffsets[i++] = yz;
+  _cellPairOffsets.clear();
 
-  _cellOffsets[i++] = x;
-  _cellOffsets[i++] = xy;
-  _cellOffsets[i++] = xz;
-  _cellOffsets[i++] = xyz;
+  const auto cutoffSquare(this->_cutoff * this->_cutoff);
+
+  // constants 0.0 and 1.0 with correct type
+  const ParticleFloatType zero = 0.0;
+  const ParticleFloatType one = 1.0;
+
+  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
+    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
+      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
+        cellOffsets.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension));
+      }
+    }
+  }
+  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
+    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
+      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
+        const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
+        // origin
+        {
+          // check whether cell is within cutoff radius
+          auto distVec =
+              ArrayMath::mul({std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
+          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          if (distSquare <= cutoffSquare) {
+            _cellPairOffsets.push_back(make_pair(cellOffsets[z], offset));
+          }
+        }
+        // back left
+        if (y != _overlap[1] and z != 0) {
+          // check whether cell is within cutoff radius
+          auto distVec = ArrayMath::mul(
+              {std::max(zero, x - one), std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)}, _cellLength);
+          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          if (distSquare <= cutoffSquare) {
+            _cellPairOffsets.push_back(make_pair(cellOffsets[ov1_squared - ov1 + z], offset));
+          }
+        }
+        // front right
+        if (x != _overlap[0] and (y != 0 or z != 0)) {
+          // check whether cell is within cutoff radius
+          auto distVec = ArrayMath::mul(
+              {std::max(zero, _overlap[0] - x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
+          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          if (distSquare <= cutoffSquare) {
+            _cellPairOffsets.push_back(make_pair(cellOffsets[ov1_squared * _overlap[0] + z], offset));
+          }
+        }
+        // back right
+        if (y != _overlap[1] and x != _overlap[0] and z != 0) {
+          // check whether cell is within cutoff radius
+          auto distVec = ArrayMath::mul(
+              {std::max(zero, _overlap[0] - x - one), std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)},
+              _cellLength);
+          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          if (distSquare <= cutoffSquare) {
+            _cellPairOffsets.push_back(make_pair(cellOffsets[ov1_squared * ov1 - ov1 + z], offset));
+          }
+        }
+      }
+    }
+  }
 }
 
 }  // namespace autopas

@@ -28,16 +28,23 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
+  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
+
  public:
   /**
    * Constructor of the c08 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cutoff Cutoff radius.
+   * @param cellLength cell length.
    */
-  explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension) {}
+  explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                        const ParticleFloatType cutoff = 1.0,
+                        const std::array<ParticleFloatType, 3> &cellLength = {1.0, 1.0, 1.0})
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
+                                                                                 cellLength),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
