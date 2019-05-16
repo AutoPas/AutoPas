@@ -9,6 +9,8 @@
 
 using ::testing::_;
 using ::testing::AtLeast;
+using ::testing::Each;
+using ::testing::Eq;
 using ::testing::Invoke;
 using ::testing::Values;
 
@@ -106,7 +108,6 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
   verletLists.addParticle(p2);
 
   MockFunctor<Particle, FPCell> mockFunctor;
-  using ::testing::_;  // anything is ok
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
@@ -381,6 +382,7 @@ TEST_P(VerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
       iter->setR({1.4, 1.1, 1.1});
+      break;
     }
   }
 
@@ -410,6 +412,7 @@ TEST_P(VerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
       iter->setR({1.6, 1.1, 1.1});
+      break;
     }
   }
 
@@ -442,6 +445,7 @@ TEST_P(VerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
       // this sets the particle more than skin/2 outside of cell (xmax_cell=2.3)
       const double cellLength = 10.0 / (static_cast<int>(10.0 / ((cutoff + skin) * cellSizeFactor)));
       iter->setR({cellLength + skin, 1.1, 1.1});
+      break;
     }
   }
 
@@ -472,6 +476,7 @@ TEST_P(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
     if (iter->getID() == 1) {
       // this sets the particle less than skin/2 outside of cell (xmax_cell=2.3)
       iter->setR({2.4, 1.1, 1.1});
+      break;
     }
   }
 
@@ -486,9 +491,7 @@ void moveUpdateAndExpectEqual(Container& container, Particle& particle, std::arr
   {
     auto iter = container.begin();
     auto r = iter->getR();
-    EXPECT_EQ(r[0], newPosition[0]);
-    EXPECT_EQ(r[1], newPosition[1]);
-    EXPECT_EQ(r[2], newPosition[2]);
+    EXPECT_THAT(r, Eq(newPosition));
   }
 };
 
@@ -507,7 +510,7 @@ TEST_P(VerletListsTest, testUpdateHaloParticle) {
   {
     auto iter = verletLists.begin();
     auto v = iter->getV();
-    for (int i = 0; i < 3; i++) EXPECT_EQ(v[i], 0.1);
+    EXPECT_THAT(v, Each(0.1));
   }
 
   // test different position, same cell

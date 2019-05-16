@@ -5,6 +5,7 @@
  */
 
 #include "VerletListsCellsTraversalTest.h"
+#include "testingHelpers/NumThreadGuard.h"
 
 VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
     : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(), 2),
@@ -54,11 +55,7 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
  * @param numMolecules number of molecules in the container
  */
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
-// @TODO: Replace #ifdef... by NumThreadGuard
-#ifdef AUTOPAS_OPENMP
-  int numThreadsBefore = omp_get_max_threads();
-  omp_set_num_threads(1);
-#endif
+  NumThreadGuard(1);
 
   RandomGenerator::fillWithParticles(_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
                                      numMolecules);
@@ -69,10 +66,6 @@ void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
   auto kCVerlet_cs2 = getKernelCallsAllTraversals(_verletListsCells_cs2, getCutoff());
 
   EXPECT_EQ(kCVerlet, kCVerlet_cs2);
-
-#ifdef AUTOPAS_OPENMP
-  omp_set_num_threads(numThreadsBefore);
-#endif
 }
 
 TEST_F(VerletListsCellsTraversalTest, test100) {
