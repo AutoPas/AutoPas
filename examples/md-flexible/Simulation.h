@@ -25,8 +25,7 @@ template<class Particle,class ParticleCell>
 class  Simulation {
 
 private:
-    AutoPas<Particle,ParticleCell>* _autopas;
-
+    AutoPas<Particle, ParticleCell> *_autopas;
 
 
 public:
@@ -56,50 +55,38 @@ public:
     void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
                               double boxLength, size_t numParticles);
 
-    /** @brief This function is needed to create functors with the actual type through templates.
-     * This function is used for the Force calculation with an desired Functor and "iterate Pairwise"
-     * @tparam FunctorChoice
-     * @tparam AutoPasTemplate
-     * @param autopas
-     * @param cutoff
-     * @param numIterations
-     * @return Time for all calculation iterations in microseconds.
-     */
-    template <class FunctorChoice, class AutoPasTemplate>
-    long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations);
+    /** @brief This function
+    * -sets/initializes the simulation domain with the particles generators
+    * @todo -initialized Velocities and Positions (and forces?)
+    */
+    void initialize(MDFlexParser parser);
+
 
     /** @brief This function processes the main simulation loop
      * -calls the time discretization class(calculate fores, etc ...)
      * -do the output each timestep
      */
-    void simulate(){
+    void simulate();
 
-
-
-
-        setautopas(time.intergration(autopas));
-
-        classe: timeintegration -
-
-
-
-        }
-    }
-
-    void calculateV();
-
-    void calculateX();
-
-
-
-
-
-
-    /** @brief This function
-     * -sets/initializes the simulation domain with the particles generators
-     * @todo -initialized Velocities and Positions (and forces?)
+    /**Getter for Autopas Oject
+     * @return Autpas Object
      */
-    void initialize(MDFlexParser parser){
+    AutoPas<Particle, ParticleCell> *getAutopas() const;
+
+
+    //setautopas(time.intergration(autopas));
+
+
+};
+
+template<class Particle, class ParticleCell>
+AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas() const {
+    return _autopas;
+}
+
+template<class Particle, class ParticleCell>
+void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
+    // @todo check if return ParticleTotal for main (used in VTkWriter)
         auto generatorChoice=parser.getGeneratorOption();
         auto particlesPerDim=parser.getParticlesPerDim();
         auto particleSpacing=parser.getParticleSpacing();
@@ -133,15 +120,6 @@ public:
     /**Getter for Autopas
      * @return autopasObject
      */
-    const AutoPas<Particle, ParticleCell> &getAutopas() const;
-
-
-};
-
-template<class Particle, class ParticleCell>
-const AutoPas<Particle, ParticleCell> &Simulation<Particle, ParticleCell>::getAutopas() const {
-    return _autopas;
-}
 
 template<class Particle, class ParticleCell>
 Simulation<Particle, ParticleCell>::Simulation(const AutoPas<Particle, ParticleCell> &autopas):_autopas(autopas) {}
@@ -194,29 +172,17 @@ void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<P
     RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
 }
 
+template<class Particle,class ParticleCell>
+void Simulation<Particle, ParticleCell>::simulate(){
+    /**@todo    -> return long -> simulation time
+     *          -> call TimeDiscretization constructor
+     *          -> TimeD.VerletStörmertime
+     *          -> copy/make equal both autopas objects(of simulate and TimeD) ???
+     *          -> output -> currentMemmory usage with current Iteration?
+     *          -> e
+     * */
 
-template <class Particle,class ParticleCell>
-template <class FunctorChoice, class AutoPasTemplate>
-long Simulation<Particle, ParticleCell>::calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
-
-    auto functor = FunctorChoice(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
-
-    std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
-
-    startCalc = std::chrono::high_resolution_clock::now();
-
-    // actual Calculation
-    for (unsigned int i = 0; i < numIterations; ++i) {
-        if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-            cout << "Iteration " << i << endl;
-            cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
-        }
-        autopas.iteratePairwise(&functor);
-    }
-    stopCalc = std::chrono::high_resolution_clock::now();
-
-    auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
-    return durationCalc;
 }
+
 
 #endif //AUTOPAS_SIMULATION_H

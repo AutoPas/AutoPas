@@ -30,8 +30,11 @@ public:
                                                                                           autopas(autopas),particle_delta_t(particle_delta_t) {}
 
     /**Applies one timestep in the Simulation with the Stoermer-Verlet Algorithm
+     * @tparam Particle
+     * @tparam ParticleCell
+     * @tparam FunctorChoice
      */
-    void VerletStörmerTime();
+    long VerletStörmerTime();
 
     /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
@@ -41,11 +44,10 @@ public:
      */
     void VSCalculateV();
 
-
-    //@todo  rückgabewert__long??? -> dementsprechen ob die Dauer der Berechnung relevant ist
-    long FunctorCalculate(double cutoff, size_t numIterations);
-
-
+    /**Proceeds the Calculation of Forces with the given functor and "autopas.iteratePairwise"
+     * @param cutoff
+     */
+    void VSCalculateF(double cutoff);
 
 
 private:
@@ -54,6 +56,8 @@ private:
      */
     FunctorChoice  Functor;
 
+    /** \brief Autopas Object
+     */
     AutoPas<Particle,ParticleCell>* autopas;
 
     /** \brief Duration of a timestep
@@ -63,42 +67,27 @@ private:
 };
 
 template <class Particle,class ParticleCell,class FunctorChoice>
-long TimeDiscretization<Particle, ParticleCell,FunctorChoice>::FunctorCalculate(double cutoff, size_t numIterations) {
-
-    auto functor = Functor(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
-
+long TimeDiscretization<Particle, ParticleCell,FunctorChoice>::VerletStörmerTime() {
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
-
     startCalc = std::chrono::high_resolution_clock::now();
-
-    // actual Calculation
-    for (unsigned int i = 0; i < numIterations; ++i) {
-        if (this->autopas::Logger::get()->level() <= this->autopas::Logger::LogLevel::debug) {
-            cout << "Iteration " << i << endl;
-            cout << "Current Memory usage: " << this->autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
-        }
-        this->autopas.iteratePairwise(&functor);
-    }
+    this->VSCalculateX();
+    this->VSCalculateF();
+    this->VSCalculateV();
     stopCalc = std::chrono::high_resolution_clock::now();
-
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
     return durationCalc;
 }
 
-/** Möglicherweise die durationCalc zurückgeben von der 3 Berechnungen -> return double
- *
- * @tparam Particle
- * @tparam ParticleCell
- * @tparam FunctorChoice
- */
+
 template <class Particle,class ParticleCell,class FunctorChoice>
-void TimeDiscretization<Particle, ParticleCell,FunctorChoice>::VerletStörmerTime() {
-    //calculate X
-    //calculate F
-    //calculate V
+void TimeDiscretization<Particle, ParticleCell,FunctorChoice>::VSCalculateF(double cutoff) {
+    auto functor = Functor(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
+    if (this->autopas::Logger::get()->level() <= this->autopas::Logger::LogLevel::debug) {
+        // cout << "Iteration " << i << endl;  --> man kann einfach mit delta_t und end_t die current iteration ausgeben
+        cout << "Current Memory usage: " << this->autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
+    }
+    this->autopas.iteratePairwise(&functor);
 }
-
-
 
 template <class Particle,class ParticleCell,class FunctorChoice>
 void TimeDiscretization<Particle, ParticleCell,FunctorChoice>::VSCalculateX() {
