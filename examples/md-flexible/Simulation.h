@@ -29,11 +29,9 @@ private:
 
 
 public:
-    Simulation();
-
     virtual ~Simulation();  //@todo
 
-    Simulation(const AutoPas<Particle, ParticleCell> &autopas);
+    explicit Simulation(const AutoPas<Particle, ParticleCell> &autopas);
 
     /**
     * @brief Constructs a container and fills it with particles.
@@ -78,6 +76,7 @@ public:
 
 
 };
+
 
 template<class Particle, class ParticleCell>
 AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas() const {

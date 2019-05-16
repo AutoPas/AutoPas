@@ -211,33 +211,10 @@ int     main(int argc, char **argv) {
   autopas.setAllowedNewton3Options(newton3Options);
 
 
-
-
-    switch (generatorChoice) {
-        case MDFlexParser::GeneratorOption::grid: {
-            initContainerGrid(autopas, particlesPerDim, particleSpacing);
-            particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
-            break;
-        }
-        case MDFlexParser::GeneratorOption::uniform: {
-            initContainerUniform(autopas, boxLength, particlesTotal);
-            break;
-        }
-        case MDFlexParser::GeneratorOption::gaussian: {
-            initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
-            break;
-        }
-        default:
-            std::cerr << "Unknown generator choice" << std::endl;
-            return -1;
-    }
-
-
-
-
   Simulation<PrintableMolecule,FullParticleCell<PrintableMolecule>> Simulation(autopas);
-  Simulation.initialize();
+  Simulation.initialize(parser);
   Simulation.simulate();
+    // @todo -> simulate gibt duration der Simulation zurück
 
 
   PrintableMolecule::setEpsilon(1.0);
