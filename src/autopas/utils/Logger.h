@@ -8,6 +8,7 @@
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <iostream>
 
@@ -81,7 +82,18 @@ class Logger {
   static void create(std::ostream& oss = std::cout) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
-    auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+    std::shared_ptr<spdlog::sinks::sink> ostream_sink;
+#ifdef COLORED_CONSOLE_LOGGING
+    if (oss.rdbuf() == std::cout.rdbuf()) {
+      ostream_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    } else if (oss.rdbuf() == std::cerr.rdbuf()) {
+      ostream_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
+    } else {
+      ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+    }
+#else
+    ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+#endif
     auto logger = std::make_shared<spdlog::logger>(loggerName(), ostream_sink);
     spdlog::register_logger(logger);
   }
