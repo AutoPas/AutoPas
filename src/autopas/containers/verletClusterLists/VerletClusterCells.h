@@ -408,7 +408,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   /// first Cluster ID to be a Halo Cluster
   size_t _firstHaloClusterId;
 
-  /// indeces where dummy particles in the cells start
+  /// indices where dummy particles in the cells start
   std::unordered_map<size_t, size_t> _dummyStarts;
 
   /// Stores Halo Particles to be inserted
