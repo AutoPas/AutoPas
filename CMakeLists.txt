@@ -50,7 +50,7 @@ if(ENABLE_CUDA)
     if (NOT (${CUDA_RETURN_CODE} EQUAL 0))
         message(WARNING "Could not detect cuda compute capabilty!")
     endif()
-    set(CUDA_COMPUTE_CAPABILITY ${DETECTED_CCC} CACHE STRING "Cuda compute capability of yout GPU")
+    set(CUDA_COMPUTE_CAPABILITY ${DETECTED_CCC} CACHE STRING "Cuda compute capability of your GPU")
 
     file(REMOVE ${CUDAPROGRAM})
 else()
