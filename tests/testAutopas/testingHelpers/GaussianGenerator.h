@@ -25,21 +25,21 @@ class GaussianGenerator {
    * @param distributionMean mean value / expected value
    * @param distributionStdDev standard deviation
    */
-  template <class Particle, class ParticleCell, typename precision = double>
+  template <class Particle, class ParticleCell>
   static void fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas, size_t numParticles,
-                                const Particle &defaultParticle = autopas::Particle(), precision distributionMean = 5.0,
-                                precision distributionStdDev = 2.0);
+                                const Particle &defaultParticle = autopas::Particle(), double distributionMean = 5.0,
+                                double distributionStdDev = 2.0);
 };
 
-template <class Particle, class ParticleCell, typename precision = double>
+template <class Particle, class ParticleCell>
 void GaussianGenerator::fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas, size_t numParticles,
-                                          const Particle &defaultParticle, precision distributionMean,
-                                          precision distributionStdDev) {
+                                          const Particle &defaultParticle, double distributionMean,
+                                          double distributionStdDev) {
   std::default_random_engine generator(42);
-  std::normal_distribution<precision> distribution(distributionMean, distributionStdDev);
+  std::normal_distribution<double> distribution(distributionMean, distributionStdDev);
 
   for (size_t id = 0; id < numParticles;) {
-    std::array<precision, 3> position = {distribution(generator), distribution(generator), distribution(generator)};
+    std::array<double, 3> position = {distribution(generator), distribution(generator), distribution(generator)};
     // only increment loop var (and place particle) if position is valid
     if (not autopas::utils::inBox(position, autoPas.getBoxMin(), autoPas.getBoxMax())) continue;
     Particle p(defaultParticle);
