@@ -2,12 +2,13 @@
 if(ENABLE_CUDA)
 set(CUDA_SEPARABLE_COMPILATION ON)
 
-set_property(CACHE CUDA_COMPUTE_CAPABILITY PROPERTY STRINGS "auto-detect;60;61;70;75")
-# set auto-detect as the default if it is not yet set.
+# set auto-detect as the default CUDA_COMPUTE_CAPABILITY if it is not yet set.
 if(NOT CUDA_COMPUTE_CAPABILITY)
     set(CUDA_COMPUTE_CAPABILITY "auto-detect" CACHE STRING
-            "Choose the type of cuda compute capability, options are: auto-detect 60 61 70 75." FORCE)
+            "Choose the cuda compute capability, options are: auto-detect 60 61 70 75." FORCE)
 endif()
+
+set_property(CACHE CUDA_COMPUTE_CAPABILITY PROPERTY STRINGS "auto-detect;60;61;70;75")
 
 if(CUDA_COMPUTE_CAPABILITY STREQUAL "auto-detect")
     #Get CUDA compute capability
