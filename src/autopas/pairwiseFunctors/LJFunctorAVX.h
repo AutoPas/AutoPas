@@ -109,7 +109,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d upotSum = _mm256_setzero_pd();
 
-
     //    bool isHaloCell1 = false;
     //    bool isHaloCell2 = false;
 
@@ -123,15 +122,17 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m256d x1 = _mm256_broadcast_sd(&xptr[i]);
       const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
       const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
-      
+
       // floor soa numParticles to multiple of vecLength
       unsigned int j = 0;
       for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum);
+        SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, &virialSumX,
+                               &virialSumY, &virialSumZ, &upotSum);
       }
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0)
-        SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+        SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, &virialSumX,
+                              &virialSumY, &virialSumZ, &upotSum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -167,13 +168,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
       const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
-      //horizontally reduce virialSumZ and upotSum
+      // horizontally reduce virialSumZ and upotSum
       const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
       const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
       const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
       const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
 
-      double globals [4];
+      double globals[4];
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
@@ -192,10 +193,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   inline void SoAKernel(size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
                         double *const __restrict__ &x2ptr, double *const __restrict__ &y2ptr,
                         double *const __restrict__ &z2ptr, double *const __restrict__ &fx2ptr,
-                        double *const __restrict__ &fy2ptr, double *const __restrict__ &fz2ptr,
-                        __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
-                        __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
-                        const unsigned int rest = 0) {
+                        double *const __restrict__ &fy2ptr, double *const __restrict__ &fz2ptr, __m256d &fxacc,
+                        __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ,
+                        __m256d *upotSum, const unsigned int rest = 0) {
 #ifdef __AVX__
     const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
     const __m256d y2 = masked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&y2ptr[j]);
@@ -264,9 +264,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m256d upotPART1 = _mm256_mul_pd(_epsilon24, lj12m6);
       const __m256d shift6V = _mm256_set1_pd(_shift6);
       const __m256d upotPART2 = _mm256_add_pd(shift6V, upotPART1);
-      const __m256d upot = masked
-                                  ? _mm256_and_pd(upotPART2, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                                  : _mm256_and_pd(upotPART2, cutoffMask);
+      const __m256d upot =
+          masked ? _mm256_and_pd(upotPART2, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                 : _mm256_and_pd(upotPART2, cutoffMask);
 
       *virialSumX = _mm256_add_pd(*virialSumX, virialx);
       *virialSumY = _mm256_add_pd(*virialSumY, virialy);
@@ -275,7 +275,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
 #endif
   }
-
 
  public:
   /**
@@ -338,19 +337,23 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       if (newton3) {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum);
+          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
+                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
+                                &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       } else {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum);
+          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
+                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
+                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -387,17 +390,16 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
       const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
-      //horizontally reduce virialSumZ and upotSum
+      // horizontally reduce virialSumZ and upotSum
       const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
       const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
       const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
       const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
 
       // globals = {virialX, virialY, virialZ, uPot}
-      double globals [4];
+      double globals[4];
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzUpotVec);
-
 
       double energyfactor = 1.;
       if (_duplicatedCalculations) {
@@ -414,7 +416,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
       _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
       _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
-
     }
 #endif
   }
