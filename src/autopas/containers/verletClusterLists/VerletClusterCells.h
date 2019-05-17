@@ -19,7 +19,7 @@ namespace autopas {
 
 /**
  * Particles are divided into clusters.
- * The VerletClusterLists class uses neighborhood lists for each cluster pair
+ * The VerletClusterCells class uses neighborhood lists for each cluster pair
  * to calculate pairwise interactions.
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
@@ -290,7 +290,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     _firstHaloClusterId = numOwnClusters;
 
-    size_t sizeHaloGrid = 6;  // depending which die of the domain
+    size_t sizeHaloGrid = 6;  // one halo cell per side of the domain to further cut later
     this->_cells.resize(numOwnClusters + sizeHaloGrid);
 
     // put halo particles into grid cells
@@ -363,7 +363,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       }
       _dummyStarts[i] = dummyStart;
       for (size_t pid = dummyStart; pid < _clusterSize; ++pid) {
-        // add dummy Pericles with ID ULONG_MAX
+        // add dummy Particles with ID ULONG_MAX
         Particle dummyParticle = Particle({this->getBoxMax()[0] + 8 * this->getCutoff() + static_cast<double>(i),
                                            this->getBoxMax()[1] + 8 * this->getCutoff() + static_cast<double>(pid),
                                            this->getBoxMax()[2] + 8 * this->getCutoff()},
@@ -402,7 +402,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   /// first Cluster ID to be a Halo Cluster
   size_t _firstHaloClusterId;
 
-  /// indeces where dummy particles in the cells start
+  /// indices where dummy particles in the cells start
   std::unordered_map<size_t, size_t> _dummyStarts;
 
   /// Stores Halo Particles to be inserted
