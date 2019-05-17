@@ -14,10 +14,12 @@
 #include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
+#include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
@@ -40,12 +42,16 @@ class TraversalSelector {
   /**
    * Dummy constructor such that this class can be used in maps
    */
-  TraversalSelector() : _dims({0, 0, 0}) {}
+  TraversalSelector() : _dims({0, 0, 0}), _cutoff(1.0), _cellLength({0.0, 0.0, 0.0}) {}
   /**
    * Constructor of the TraversalSelector class.
-   * @param dims Array with the dimension lengths of the domain.
+   * @param dims Array with the dimension lengths of the domain
+   * @param cutoff Cutoff radius
+   * @param cellLength cell length.
    */
-  TraversalSelector(const std::array<unsigned long, 3> &dims) : _dims(dims) {}
+  TraversalSelector(const std::array<unsigned long, 3> &dims, const double cutoff = 1.0,
+                    const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : _dims(dims), _cutoff(cutoff), _cellLength(cellLength) {}
 
   /**
    * Generates a given Traversal for the given properties.
@@ -56,7 +62,7 @@ class TraversalSelector {
    * @param pairwiseFunctor
    * @return Smartpointer to the traversal.
    */
-  template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
   std::unique_ptr<CellPairTraversal<ParticleCell>> generateTraversal(TraversalOption traversalType,
                                                                      PairwiseFunctor &pairwiseFunctor);
 
@@ -65,40 +71,59 @@ class TraversalSelector {
    * indicating whether or not the optimalTraversalOption is already initialized
    */
   const std::array<unsigned long, 3> _dims;
+
+  const double _cutoff;
+
+  const std::array<double, 3> _cellLength;
 };
 
 template <class ParticleCell>
-template <class PairwiseFunctor, bool useSoA, bool useNewton3>
+template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor) {
   switch (traversalType) {
+    // Direct sum
     case TraversalOption::directSumTraversal: {
-      return std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(&pairwiseFunctor);
+      return std::make_unique<DirectSumTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          &pairwiseFunctor);
     }
+    // Linked cell
     case TraversalOption::c08: {
-      return std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      return std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor, _cutoff, _cellLength);
     }
     case TraversalOption::sliced: {
-      return std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims,
-                                                                                                  &pairwiseFunctor);
+      return std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor, _cutoff, _cellLength);
     }
     case TraversalOption::c18: {
-      return std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      return std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor, _cutoff, _cellLength);
     }
     case TraversalOption::c01: {
-      return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims, &pairwiseFunctor);
+      return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor, _cutoff, _cellLength);
     }
+    // Verlet
     case TraversalOption::slicedVerlet: {
-      return std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(
+      return std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
           _dims, &pairwiseFunctor);
     }
     case TraversalOption::c18Verlet: {
-      return std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims,
-                                                                                                     &pairwiseFunctor);
+      return std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor);
     }
     case TraversalOption::c01Verlet: {
-      return std::make_unique<C01TraversalVerlet<ParticleCell, PairwiseFunctor, useSoA, useNewton3>>(_dims,
-                                                                                                     &pairwiseFunctor);
+      return std::make_unique<C01TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor);
+    }
+    case TraversalOption::c01Cuda: {
+      return std::make_unique<C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
+          _dims, &pairwiseFunctor);
+    }
+    case TraversalOption::verletTraversal: {
+      return std::make_unique<TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(_dims,
+                                                                                                      &pairwiseFunctor);
     }
     case TraversalOption::dummyTraversal: {
       return std::make_unique<DummyTraversal<ParticleCell>>(_dims);

@@ -32,21 +32,26 @@ void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC01(getCutoff()), flopsC18(getCutoff()), flopsSli(getCutoff());
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC18N3(getCutoff()), flopsSliN3(getCutoff());
-  autopas::C01TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalC01FLOPS(
-      dim, &flopsC01);
-  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalC18FLOPS(
-      dim, &flopsC18);
-  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, false> traversalSliFLOPS(
-      dim, &flopsSli);
-  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true> traversalC18N3FLOPS(
-      dim, &flopsC18N3);
-  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, false, true>
+  autopas::C01TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                              false>
+      traversalC01FLOPS(dim, &flopsC01);
+  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                              false>
+      traversalC18FLOPS(dim, &flopsC18);
+  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                                 false>
+      traversalSliFLOPS(dim, &flopsSli);
+  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                              true>
+      traversalC18N3FLOPS(dim, &flopsC18N3);
+  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                                 true>
       traversalSliN3FLOPS(dim, &flopsSliN3);
-  _verletListsCells.iteratePairwiseAoS(&flopsC01, &traversalC01FLOPS, false);
-  _verletListsCells.iteratePairwiseAoS(&flopsC18, &traversalC18FLOPS, false);
-  _verletListsCells.iteratePairwiseAoS(&flopsSli, &traversalSliFLOPS, false);
-  _verletListsCells.iteratePairwiseAoS(&flopsC18N3, &traversalC18N3FLOPS, true);
-  _verletListsCells.iteratePairwiseAoS(&flopsSliN3, &traversalSliN3FLOPS, true);
+  _verletListsCells.iteratePairwise(&flopsC01, &traversalC01FLOPS, false);
+  _verletListsCells.iteratePairwise(&flopsC18, &traversalC18FLOPS, false);
+  _verletListsCells.iteratePairwise(&flopsSli, &traversalSliFLOPS, false);
+  _verletListsCells.iteratePairwise(&flopsC18N3, &traversalC18N3FLOPS, true);
+  _verletListsCells.iteratePairwise(&flopsSliN3, &traversalSliN3FLOPS, true);
 
   ASSERT_EQ(flopsC18.getKernelCalls(), flopsC01.getKernelCalls());
   ASSERT_EQ(flopsC18.getKernelCalls(), flopsSli.getKernelCalls());

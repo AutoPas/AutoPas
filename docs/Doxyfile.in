@@ -4,9 +4,11 @@ STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen/
 INPUT                  = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@ \
                          @PROJECT_SOURCE_DIR@/src/ \
-                         @CMAKE_SOURCE_DIR@/docs
+                         @PROJECT_SOURCE_DIR@/tests/testAutopas/testingHelpers/ \
+                         @PROJECT_SOURCE_DIR@/docs
 FILE_PATTERNS          = *.h \
-                         *.cpp
+                         *.cpp \
+                         *.md
 RECURSIVE              = YES
 USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@
 HTML_HEADER            = @CMAKE_SOURCE_DIR@/docs/AutoPasHeader.html

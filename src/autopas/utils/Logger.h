@@ -44,8 +44,7 @@
  * @param fmt Message with formatting tokens
  * @param ... Formatting arguments
  */
-#define AutoPasLog(lvl, fmt, ...) \
-  { spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__); }
+#define AutoPasLog(lvl, fmt, ...) spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__);
 
 #endif
 
@@ -56,7 +55,7 @@ namespace autopas {
  */
 class Logger {
  private:
-  static inline const auto loggerName() { return "AutoPasLog"; };
+  static inline auto loggerName() { return "AutoPasLog"; };
 
  public:
   /**

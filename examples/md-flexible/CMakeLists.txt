@@ -11,6 +11,20 @@ ADD_EXECUTABLE(md-flexible
 TARGET_LINK_LIBRARIES(md-flexible
         autopas)
 
+#--- copy script files to build dir ---
+file(GLOB_RECURSE SCRIPTS RELATIVE ${CMAKE_SOURCE_DIR}
+        "*.sh"
+        "*.gp"
+        "*.py"
+        )
+
+foreach(script ${SCRIPTS})
+  configure_file(
+        ${CMAKE_SOURCE_DIR}/${script} 
+        ${CMAKE_BINARY_DIR}/${script} 
+        COPYONLY)
+endforeach(script)
+
 #-----------------test-----------------
 # add check for current target
 add_test(

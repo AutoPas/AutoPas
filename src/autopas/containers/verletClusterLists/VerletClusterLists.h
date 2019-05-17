@@ -75,7 +75,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
   /**
-   * Function to iterate over all pairs of particles.
+   * Function to iterate over all pairs of particles. (Only AoS)
    * This function only handles short-range interactions.
    * @tparam the type of ParticleFunctor
    * @tparam Traversal
@@ -84,7 +84,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoS(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
     if (useNewton3) {
       /// @todo implement newton3 for VerletClusterLists
       AutoPasLog(error, "Newton3 not implemented yet.");
@@ -97,19 +97,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     // we iterated, so increase traversal counter
     _traversalsSinceLastRebuild++;
-  }
-
-  /**
-   * Dummy function. (Uses AoS instead)
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal not used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoA(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    iteratePairwiseAoS(f, traversal, useNewton3);
   }
 
   /**
@@ -302,7 +289,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
 
-                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
                   if (distXYsqr + distZ * distZ <= _cutoffSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
@@ -314,7 +301,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
 
-                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
                   if (distXYsqr + distZ * distZ <= _cutoffSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
@@ -332,7 +319,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
 
-                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
                   if (distXYsqr + distZ * distZ <= _cutoffSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
@@ -344,7 +331,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
 
-                  float distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
+                  double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
                   if (distXYsqr + distZ * distZ <= _cutoffSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }

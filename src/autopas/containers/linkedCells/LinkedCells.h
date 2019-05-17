@@ -11,6 +11,8 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -37,19 +39,26 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param cellSizeFactor cell size factor ralative to cutoff
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff)
+  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+              const double cellSizeFactor = 1.0)
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff) {}
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
 
   /**
    * Lists all traversal options applicable for the Linked Cells container.
    * @return Vector of all applicable traversal options.
    */
   static const std::vector<TraversalOption> &allLCApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::c01, TraversalOption::c08, TraversalOption::c18,
-                                                TraversalOption::sliced};
+    static const std::vector<TraversalOption> v {
+      TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced
+#if defined(AUTOPAS_CUDA)
+          ,
+          TraversalOption::c01Cuda
+#endif
+    };
     return v;
   }
 
@@ -63,8 +72,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
-      utils::ExceptionHandler::exception("LinkedCells: trying to add particle that is not inside the bounding box.\n" +
-                                         p.toString());
+      utils::ExceptionHandler::exception(
+          "LinkedCells: Trying to add a particle that is not inside the bounding box.\n" + p.toString());
     }
   }
 
@@ -74,55 +83,38 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
       cell.addParticle(haloParticle);
     } else {
-      utils::ExceptionHandler::exception("LinkedCells: trying to add halo particle that is not in the halo box.\n" +
-                                         haloParticle.toString());
+      auto inInnerBox = autopas::utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax());
+      if (inInnerBox) {
+        utils::ExceptionHandler::exception(
+            "LinkedCells: Trying to add a halo particle that is actually in the bounding box.\n" +
+            haloParticle.toString());
+      } else {
+        AutoPasLog(trace,
+                   "LinkedCells: Trying to add a halo particle that is outside the halo box. Particle not added!\n{}",
+                   haloParticle.toString());
+      }
     }
   }
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
   /**
-   * Function to iterate over all pairs of particles in an array of structures setting. This function only handles
-   * short-range interactions.
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
+   * @copydoc DirectSum::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+
+    traversal->initTraversal(this->_cells);
     if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
+
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseAoS. TraversalID: {}",
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
     }
-  }
-
-  /**
-   * Function to iterate over all pairs of particles in an structure of arrays setting. This function only handles
-   * short-range interactions. It is often better vectorizable than iteratePairwiseAoS.
-   * @tparam ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    loadSoAs(f);
-
-    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwiseSoA. TraversalID: {}",
-          traversal->getTraversalType());
-    }
-
-    extractSoAs(f);
+    traversal->endTraversal(this->_cells);
   }
 
   void updateContainer() override {
@@ -197,7 +189,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo());
+    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
+                                           this->getCellBlock().getCellLength());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -213,11 +206,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     // this is needed when used through verlet lists since particles can move over cell borders.
     // only lower corner needed since we increase the upper corner anyways.
     if (incSearchRegion) {
-      startIndex = this->_cellBlock.get1DIndexOfPosition({
-          lowerCorner[0] - 1,
-          lowerCorner[1] - 1,
-          lowerCorner[2] - 1,
-      });
+      startIndex = this->_cellBlock.get1DIndexOfPosition(ArrayMath::subScalar(lowerCorner, 1.0));
     } else {
       startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
     }
@@ -264,38 +253,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
-
-  /**
-   * Iterate over all cells and load the data in the SoAs.
-   * @tparam ParticleFunctor
-   * @param functor
-   */
-  template <class ParticleFunctor>
-  void loadSoAs(ParticleFunctor *functor) {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < this->_cells.size(); ++i) {
-      functor->SoALoader(this->_cells[i], this->_cells[i]._particleSoABuffer);
-    }
-  }
-
-  /**
-   * Iterate over all cells and fetch the data from the SoAs.
-   * @tparam ParticleFunctor
-   * @param functor
-   */
-  template <class ParticleFunctor>
-  void extractSoAs(ParticleFunctor *functor) {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < this->_cells.size(); ++i) {
-      functor->SoAExtractor(this->_cells[i], this->_cells[i]._particleSoABuffer);
-    }
-  }
 };
 
 }  // namespace autopas
