@@ -34,8 +34,6 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                         public LinkedCellTraversalInterface<ParticleCell> {
-  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor of the sliced traversal.
@@ -46,8 +44,7 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
    * @param cellLength cell length.
    */
   explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const ParticleFloatType cutoff = 1.0,
-                           const std::array<ParticleFloatType, 3> &cellLength = {1.0, 1.0, 1.0})
+                           const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
                                                                                     cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}

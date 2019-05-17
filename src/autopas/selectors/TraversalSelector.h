@@ -39,8 +39,6 @@ namespace autopas {
  */
 template <class ParticleCell>
 class TraversalSelector {
-  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
-
  public:
   /**
    * Dummy constructor such that this class can be used in maps
@@ -52,8 +50,8 @@ class TraversalSelector {
    * @param cutoff Cutoff radius
    * @param cellLength cell length.
    */
-  TraversalSelector(const std::array<unsigned long, 3> &dims, const ParticleFloatType cutoff = 1.0,
-                    const std::array<ParticleFloatType, 3> &cellLength = {1.0, 1.0, 1.0})
+  TraversalSelector(const std::array<unsigned long, 3> &dims, const double cutoff = 1.0,
+                    const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : _dims(dims), _cutoff(cutoff), _cellLength(cellLength) {}
 
   /**
@@ -75,9 +73,9 @@ class TraversalSelector {
    */
   const std::array<unsigned long, 3> _dims;
 
-  const ParticleFloatType _cutoff;
+  const double _cutoff;
 
-  const std::array<ParticleFloatType, 3> _cellLength;
+  const std::array<double, 3> _cellLength;
 };
 
 template <class ParticleCell>

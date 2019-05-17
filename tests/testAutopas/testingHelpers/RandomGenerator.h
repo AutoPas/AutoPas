@@ -21,7 +21,7 @@ class RandomGenerator {
    * @param fMax
    * @return double between fMin and fMax
    */
-  template <typename floatType>
+  template <typename floatType = double>
   static floatType fRand(floatType fMin, floatType fMax);
 
  public:
@@ -32,7 +32,7 @@ class RandomGenerator {
    * @param boxMax
    * @return 3D array with random values
    */
-  template <typename floatType>
+  template <typename floatType = double>
   static std::array<floatType, 3> randomPosition(const std::array<floatType, 3>& boxMin,
                                                  const std::array<floatType, 3>& boxMax);
 
@@ -48,8 +48,7 @@ class RandomGenerator {
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container& container, const Particle& defaultParticle,
-                                const std::array<typename Particle::ParticleFloatingPointType, 3>& boxMin,
-                                const std::array<typename Particle::ParticleFloatingPointType, 3>& boxMax,
+                                const std::array<double, 3>& boxMin, const std::array<double, 3>& boxMax,
                                 unsigned long numParticles = 100ul);
 
   /**
@@ -62,8 +61,7 @@ class RandomGenerator {
    * @param numParticles
    */
   template <class Container, class Particle>
-  static void fillWithHaloParticles(Container& container, const Particle& defaultParticle,
-                                    typename Particle::ParticleFloatingPointType haloWidth,
+  static void fillWithHaloParticles(Container& container, const Particle& defaultParticle, double haloWidth,
                                     unsigned long numParticles = 100ul);
 
   /**
@@ -84,8 +82,7 @@ class RandomGenerator {
 
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container& container, const Particle& defaultParticle,
-                                        const std::array<typename Particle::ParticleFloatingPointType, 3>& boxMin,
-                                        const std::array<typename Particle::ParticleFloatingPointType, 3>& boxMax,
+                                        const std::array<double, 3>& boxMin, const std::array<double, 3>& boxMax,
                                         unsigned long numParticles) {
   srand(42);  // fixed seedpoint
 
@@ -98,8 +95,7 @@ void RandomGenerator::fillWithParticles(Container& container, const Particle& de
 }
 
 template <class Container, class Particle>
-void RandomGenerator::fillWithHaloParticles(Container& container, const Particle& defaultParticle,
-                                            typename Particle::ParticleFloatingPointType haloWidth,
+void RandomGenerator::fillWithHaloParticles(Container& container, const Particle& defaultParticle, double haloWidth,
                                             unsigned long numParticles) {
   srand(42);  // fixed seedpoint
 
@@ -113,7 +109,7 @@ void RandomGenerator::fillWithHaloParticles(Container& container, const Particle
   }
 
   for (unsigned long i = 0; i < numParticles; ++i) {
-    const auto pos = randomPosition<typename Particle::ParticleFloatingPointType>(haloBoxMax, haloBoxMax);
+    const auto pos = randomPosition<double>(haloBoxMax, haloBoxMax);
     // we only want  to add particles not in the actual box
     if (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) continue;
     Particle particle(defaultParticle);

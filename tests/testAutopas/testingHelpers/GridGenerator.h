@@ -24,13 +24,11 @@ class GridGenerator {
    * @param spacing Factor for distance between two particles along one dimension (default is 1)
    * @param offset Offset to move all particles
    */
-  template <class Particle, class ParticleCell>
+  template <class Particle, class ParticleCell, typename precision = double>
   static void fillWithParticles(std::vector<ParticleCell> &cells, std::array<size_t, 3> particlesPerDim,
                                 const Particle &defaultParticle = autopas::Particle(),
-                                const std::array<typename Particle::ParticleFloatingPointType, 3> &spacing =
-                                    std::array<typename Particle::ParticleFloatingPointType, 3>{1, 1, 1},
-                                const std::array<typename Particle::ParticleFloatingPointType, 3> &offset =
-                                    std::array<typename Particle::ParticleFloatingPointType, 3>{.5, .5, .5});
+                                const std::array<precision, 3> &spacing = std::array<precision, 3>{1, 1, 1},
+                                const std::array<precision, 3> &offset = std::array<precision, 3>{.5, .5, .5});
 
   /**
    * Fills any container (also AutoPas object) with randomly 3D gaussian distributed particles.
@@ -43,20 +41,17 @@ class GridGenerator {
    * @param spacing Factor for distance between two particles along one dimension (default is 1).
    * @param offset Offset to move all particles.
    */
-  template <class Container, class Particle>
+  template <class Container, class Particle, typename precision = double>
   static void fillWithParticles(Container &container, std::array<size_t, 3> particlesPerDim,
                                 const Particle &defaultParticle = autopas::Particle(),
-                                const std::array<typename Particle::ParticleFloatingPointType, 3> &spacing =
-                                    std::array<typename Particle::ParticleFloatingPointType, 3>{1, 1, 1},
-                                const std::array<typename Particle::ParticleFloatingPointType, 3> &offset =
-                                    std::array<typename Particle::ParticleFloatingPointType, 3>{.5, .5, .5});
+                                const std::array<precision, 3> &spacing = std::array<precision, 3>{1, 1, 1},
+                                const std::array<precision, 3> &offset = std::array<precision, 3>{.5, .5, .5});
 };
 
-template <class Particle, class ParticleCell>
+template <class Particle, class ParticleCell, typename precision = double>
 void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, std::array<size_t, 3> particlesPerDim,
-                                      const Particle &defaultParticle,
-                                      const std::array<typename Particle::ParticleFloatingPointType, 3> &spacing,
-                                      const std::array<typename Particle::ParticleFloatingPointType, 3> &offset) {
+                                      const Particle &defaultParticle, const std::array<precision, 3> &spacing,
+                                      const std::array<precision, 3> &offset) {
   size_t id = 0;
   size_t cellId = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
@@ -71,11 +66,10 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, std::arr
   }
 }
 
-template <class Container, class Particle>
+template <class Container, class Particle, typename precision = double>
 void GridGenerator::fillWithParticles(Container &container, std::array<size_t, 3> particlesPerDim,
-                                      const Particle &defaultParticle,
-                                      const std::array<typename Particle::ParticleFloatingPointType, 3> &spacing,
-                                      const std::array<typename Particle::ParticleFloatingPointType, 3> &offset) {
+                                      const Particle &defaultParticle, const std::array<precision, 3> &spacing,
+                                      const std::array<precision, 3> &offset) {
   size_t id = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {

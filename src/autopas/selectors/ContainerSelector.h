@@ -31,8 +31,6 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class ContainerSelector {
-  using floatType = typename Particle::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor for the ContainerSelecor class.
@@ -45,8 +43,8 @@ class ContainerSelector {
    * @param verletClusterSize Specifies how many particles are in one cluster for cluster containers.
    */
 
-  ContainerSelector(const std::array<floatType, 3> &boxMin, const std::array<floatType, 3> &boxMax, floatType cutoff,
-                    floatType cellSizeFactor, floatType verletSkin, unsigned int verletRebuildFrequency,
+  ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
+                    double cellSizeFactor, double verletSkin, unsigned int verletRebuildFrequency,
                     unsigned int verletClusterSize)
       : _boxMin(boxMin),
         _boxMax(boxMax),
@@ -79,10 +77,10 @@ class ContainerSelector {
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
       ContainerOption containerChoice);
 
-  std::array<floatType, 3> _boxMin, _boxMax;
-  floatType _cutoff;
-  floatType _cellSizeFactor;
-  floatType _verletSkin;
+  std::array<double, 3> _boxMin, _boxMax;
+  double _cutoff;
+  double _cellSizeFactor;
+  double _verletSkin;
 
   unsigned int _verletRebuildFrequency;
   unsigned int _verletClusterSize;

@@ -71,8 +71,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   }
 
   void rebuildVerlet(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
-                     std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> &boundingBoxes,
-                     typename Particle::ParticleFloatingPointType distance) override {
+                     std::vector<std::array<double, 6>> &boundingBoxes, double distance) override {
     this->_cellsPerDimension = dims;
 
     const size_t cellsSize = cells.size();
@@ -251,9 +250,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
    * @param distance betwwen the boxes to return true
    * @return true if the boxes are overlapping
    */
-  inline bool boxesOverlap(std::array<typename Particle::ParticleFloatingPointType, 6> &box1,
-                           std::array<typename Particle::ParticleFloatingPointType, 6> &box2,
-                           typename Particle::ParticleFloatingPointType distance) {
+  inline bool boxesOverlap(std::array<double, 6> &box1, std::array<double, 6> &box2, double distance) {
     for (int i = 0; i < 3; ++i) {
       if (box1[0 + i] - distance > box2[3 + i] || box1[3 + i] + distance < box2[0 + i]) return false;
     }

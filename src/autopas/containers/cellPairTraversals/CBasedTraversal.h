@@ -19,8 +19,6 @@ namespace autopas {
  */
 template <class ParticleCell>
 class CBasedTraversal : public CellPairTraversal<ParticleCell> {
-  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
-
  protected:
   /**
    * Constructor of the CBasedTraversal.
@@ -29,8 +27,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param cutoff Cutoff radius.
    * @param cellLength cell length.
    */
-  explicit CBasedTraversal(const std::array<unsigned long, 3>& dims, const ParticleFloatType cutoff,
-                           const std::array<ParticleFloatType, 3>& cellLength)
+  explicit CBasedTraversal(const std::array<unsigned long, 3>& dims, const double cutoff,
+                           const std::array<double, 3>& cellLength)
       : CellPairTraversal<ParticleCell>(dims), _cutoff(cutoff), _cellLength(cellLength) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
@@ -59,12 +57,12 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * cutoff radius.
    */
-  const ParticleFloatType _cutoff;
+  const double _cutoff;
 
   /**
    * cell length in CellBlock3D.
    */
-  const std::array<ParticleFloatType, 3> _cellLength;
+  const std::array<double, 3> _cellLength;
 
   /**
    * overlap of interacting cells. Array allows asymmetric cell sizes.

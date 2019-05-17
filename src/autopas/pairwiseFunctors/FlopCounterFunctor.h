@@ -24,8 +24,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell>
 class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
+  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
   typedef typename Particle::SoAArraysType SoAArraysType;
-  using floatPrecision = typename Particle::ParticleFloatingPointType;
 
  public:
   bool isRelevantForTuning() override { return false; }
@@ -34,7 +34,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(floatPrecision cutoffRadius)
+  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
       : autopas::Functor<Particle, ParticleCell>(),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
@@ -42,7 +42,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
-    floatPrecision dr2 = ArrayMath::dot(dr, dr);
+    double dr2 = ArrayMath::dot(dr, dr);
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
 #endif
@@ -56,9 +56,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    floatPrecision *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
-    floatPrecision *const __restrict__ y1ptr = soa.template begin<Particle::AttributeNames::posY>();
-    floatPrecision *const __restrict__ z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
+    SoAFloatPrecision *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
+    SoAFloatPrecision *const __restrict__ y1ptr = soa.template begin<Particle::AttributeNames::posY>();
+    SoAFloatPrecision *const __restrict__ z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -70,15 +70,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
         ++distanceCalculationsAcc;
 
-        const floatPrecision drx = x1ptr[i] - x1ptr[j];
-        const floatPrecision dry = y1ptr[i] - y1ptr[j];
-        const floatPrecision drz = z1ptr[i] - z1ptr[j];
+        const SoAFloatPrecision drx = x1ptr[i] - x1ptr[j];
+        const SoAFloatPrecision dry = y1ptr[i] - y1ptr[j];
+        const SoAFloatPrecision drz = z1ptr[i] - z1ptr[j];
 
-        const floatPrecision drx2 = drx * drx;
-        const floatPrecision dry2 = dry * dry;
-        const floatPrecision drz2 = drz * drz;
+        const SoAFloatPrecision drx2 = drx * drx;
+        const SoAFloatPrecision dry2 = dry * dry;
+        const SoAFloatPrecision drz2 = drz * drz;
 
-        const floatPrecision dr2 = drx2 + dry2 + drz2;
+        const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
         if (dr2 <= _cutoffSquare) ++kernelCallsAcc;
       }
@@ -93,12 +93,12 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
-    floatPrecision *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    floatPrecision *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    floatPrecision *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    floatPrecision *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    floatPrecision *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    floatPrecision *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    SoAFloatPrecision *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    SoAFloatPrecision *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    SoAFloatPrecision *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    SoAFloatPrecision *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    SoAFloatPrecision *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    SoAFloatPrecision *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -110,15 +110,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         ++distanceCalculationsAcc;
 
-        const floatPrecision drx = x1ptr[i] - x2ptr[j];
-        const floatPrecision dry = y1ptr[i] - y2ptr[j];
-        const floatPrecision drz = z1ptr[i] - z2ptr[j];
+        const SoAFloatPrecision drx = x1ptr[i] - x2ptr[j];
+        const SoAFloatPrecision dry = y1ptr[i] - y2ptr[j];
+        const SoAFloatPrecision drz = z1ptr[i] - z2ptr[j];
 
-        const floatPrecision drx2 = drx * drx;
-        const floatPrecision dry2 = dry * dry;
-        const floatPrecision drz2 = drz * drz;
+        const SoAFloatPrecision drx2 = drx * drx;
+        const SoAFloatPrecision dry2 = dry * dry;
+        const SoAFloatPrecision drz2 = drz * drz;
 
-        const floatPrecision dr2 = drx2 + dry2 + drz2;
+        const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
         if (dr2 <= _cutoffSquare) {
           ++kernelCallsAcc;
@@ -141,9 +141,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
     if (numParts == 0) return;
 
-    floatPrecision *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    floatPrecision *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    floatPrecision *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    SoAFloatPrecision *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    SoAFloatPrecision *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    SoAFloatPrecision *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     for (size_t i = iFrom; i < iTo; ++i) {
       const size_t listSizeI = neighborList[i].size();
@@ -168,7 +168,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
       // if the size of the verlet list is larger than the given size vecsize,
       // we will use a vectorized version.
       if (listSizeI >= vecsize) {
-        alignas(64) std::array<floatPrecision, vecsize> xtmp{}, ytmp{}, ztmp{}, xArr{}, yArr{}, zArr{};
+        alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp{}, ytmp{}, ztmp{}, xArr{}, yArr{}, zArr{};
 
         // broadcast of the position of particle i
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
@@ -196,15 +196,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
             ++distanceCalculationsAcc;
-            const floatPrecision drx = xtmp[j] - xArr[j];
-            const floatPrecision dry = ytmp[j] - yArr[j];
-            const floatPrecision drz = ztmp[j] - zArr[j];
+            const SoAFloatPrecision drx = xtmp[j] - xArr[j];
+            const SoAFloatPrecision dry = ytmp[j] - yArr[j];
+            const SoAFloatPrecision drz = ztmp[j] - zArr[j];
 
-            const floatPrecision drx2 = drx * drx;
-            const floatPrecision dry2 = dry * dry;
-            const floatPrecision drz2 = drz * drz;
+            const SoAFloatPrecision drx2 = drx * drx;
+            const SoAFloatPrecision dry2 = dry * dry;
+            const SoAFloatPrecision drz2 = drz * drz;
 
-            const floatPrecision dr2 = drx2 + dry2 + drz2;
+            const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
             const unsigned long mask = (dr2 <= _cutoffSquare) ? 1 : 0;
 
@@ -227,15 +227,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
         if (i == j) continue;
 
         ++distanceCalculationsAcc;
-        const floatPrecision drx = xptr[i] - xptr[j];
-        const floatPrecision dry = yptr[i] - yptr[j];
-        const floatPrecision drz = zptr[i] - zptr[j];
+        const SoAFloatPrecision drx = xptr[i] - xptr[j];
+        const SoAFloatPrecision dry = yptr[i] - yptr[j];
+        const SoAFloatPrecision drz = zptr[i] - zptr[j];
 
-        const floatPrecision drx2 = drx * drx;
-        const floatPrecision dry2 = dry * dry;
-        const floatPrecision drz2 = drz * drz;
+        const SoAFloatPrecision drx2 = drx * drx;
+        const SoAFloatPrecision dry2 = dry * dry;
+        const SoAFloatPrecision drz2 = drz * drz;
 
-        const floatPrecision dr2 = drx2 + dry2 + drz2;
+        const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
         if (dr2 <= _cutoffSquare) {
           ++kernelCallsAcc;
@@ -330,9 +330,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 
       if (cell.numParticles() == 0) return;
 
-      floatPrecision *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-      floatPrecision *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-      floatPrecision *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      SoAFloatPrecision *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+      SoAFloatPrecision *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+      SoAFloatPrecision *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
       auto cellIter = cell.begin();
       // load particles in SoAs
@@ -386,7 +386,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   static constexpr double numFlopsPerDistanceCalculation = 8.0;
 
  private:
-  floatPrecision _cutoffSquare;
+  double _cutoffSquare;
   unsigned long _distanceCalculations, _kernelCalls;
 };
 

@@ -26,7 +26,7 @@ class MoleculeLJBase : public ParticleBase<floatType> {
    * @param v velocity of the molecule
    * @param id id of the molecule
    */
-  explicit MoleculeLJBase(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id)
+  explicit MoleculeLJBase(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
       : ParticleBase<floatType>(r, v, id) {}
 
   virtual ~MoleculeLJBase() = default;
@@ -35,28 +35,28 @@ class MoleculeLJBase : public ParticleBase<floatType> {
    * get epsilon (characteristic energy of the lj potential)
    * @return epsilon
    */
-  static floatType getEpsilon();
+  static double getEpsilon() { return EPSILON; }
 
   /**
    * set epsilon (characteristic energy of the lj potential)
    * @param epsilon
    */
-  static void setEpsilon(floatType epsilon);
+  static void setEpsilon(double epsilon) { EPSILON = epsilon; }
 
   /**
    * get sigma (characteristic length of the lj potential)
    * @return sigma
    */
-  static floatType getSigma();
+  static double getSigma() { return SIGMA; }
 
   /**
    * set sigma (characteristic length of the lj potential)
    * @param sigma
    */
-  static void setSigma(floatType sigma);
+  static void setSigma(double sigma) { SIGMA = sigma; }
 
  private:
-  static floatType EPSILON, SIGMA;
+  static double EPSILON, SIGMA;
 };
 
 /// Alias for double precision LJ Moleclue

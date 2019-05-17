@@ -33,7 +33,6 @@ class VerletListsCells
   typedef VerletListsCellsHelpers<Particle> verlet_internal;
   typedef FullParticleCell<Particle> ParticleCell;
   typedef typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
-  using floatType = typename Particle::ParticleFloatingPointType;
 
  public:
   /**
@@ -50,9 +49,8 @@ class VerletListsCells
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param buildTraversal the traversal used to build the verletlists
    */
-  VerletListsCells(const std::array<floatType, 3> boxMin, const std::array<floatType, 3> boxMax, const floatType cutoff,
-                   const TraversalOption buildTraversal, const floatType skin = 0,
-                   const unsigned int rebuildFrequency = 1)
+  VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+                   const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                                             allVLCApplicableTraversals()),
         _buildTraversal(buildTraversal) {}

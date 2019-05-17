@@ -28,8 +28,6 @@ static unsigned int _instanceCounter = 0;
  */
 template <class Particle, class ParticleCell>
 class AutoPas {
-  using ParticleFloatType = typename Particle::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor for the autopas class.
@@ -166,7 +164,7 @@ class AutoPas {
    * @return iterator to iterate over all particles in a specific region
    */
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<ParticleFloatType, 3> lowerCorner, std::array<ParticleFloatType, 3> higherCorner,
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
@@ -181,37 +179,37 @@ class AutoPas {
    * Get the lower corner of the container.
    * @return lower corner of the container.
    */
-  std::array<ParticleFloatType, 3> getBoxMin() { return _autoTuner->getContainer()->getBoxMin(); }
+  std::array<double, 3> getBoxMin() { return _autoTuner->getContainer()->getBoxMin(); }
 
   /**
    * Get the upper corner of the container.
    * @return upper corner of the container.
    */
-  std::array<ParticleFloatType, 3> getBoxMax() { return _autoTuner->getContainer()->getBoxMax(); }
+  std::array<double, 3> getBoxMax() { return _autoTuner->getContainer()->getBoxMax(); }
 
   /**
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
-  void setBoxMin(const std::array<ParticleFloatType, 3> &boxMin) { AutoPas::_boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) { AutoPas::_boxMin = boxMin; }
 
   /**
    * Set coordinates of the upper corner of the domain.
    * @param boxMax
    */
-  void setBoxMax(const std::array<ParticleFloatType, 3> &boxMax) { AutoPas::_boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) { AutoPas::_boxMax = boxMax; }
 
   /**
    * Get cutoff radius.
    * @return
    */
-  ParticleFloatType getCutoff() const { return _cutoff; }
+  double getCutoff() const { return _cutoff; }
 
   /**
    * Set cutoff radius.
    * @param cutoff
    */
-  void setCutoff(ParticleFloatType cutoff) {
+  void setCutoff(double cutoff) {
     if (cutoff <= 0.0) {
       AutoPasLog(error, "Cutoff <= 0.0: {}", cutoff);
       utils::ExceptionHandler::exception("Error: Cutoff <= 0.0!");
@@ -229,7 +227,7 @@ class AutoPas {
    * Set cell size factor (only relevant for LinkedCells).
    * @param cellSizeFactor
    */
-  void setCellSizeFactor(ParticleFloatType cellSizeFactor) {
+  void setCellSizeFactor(double cellSizeFactor) {
     if (cellSizeFactor <= 0.0) {
       AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
@@ -241,13 +239,13 @@ class AutoPas {
    * Get length added to the cutoff for the Verlet lists' skin.
    * @return
    */
-  ParticleFloatType getVerletSkin() const { return _verletSkin; }
+  double getVerletSkin() const { return _verletSkin; }
 
   /**
    * Set length added to the cutoff for the Verlet lists' skin.
    * @param verletSkin
    */
-  void setVerletSkin(ParticleFloatType verletSkin) { AutoPas::_verletSkin = verletSkin; }
+  void setVerletSkin(double verletSkin) { AutoPas::_verletSkin = verletSkin; }
 
   /**
    * Get Verlet rebuild frequency.
@@ -400,23 +398,23 @@ class AutoPas {
   /**
    * Lower corner of the container.
    */
-  std::array<ParticleFloatType, 3> _boxMin;
+  std::array<double, 3> _boxMin;
   /**
    * Upper corner of the container.
    */
-  std::array<ParticleFloatType, 3> _boxMax;
+  std::array<double, 3> _boxMax;
   /**
    * Cutoff radius to be used in this container.
    */
-  ParticleFloatType _cutoff;
+  double _cutoff;
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells).
    */
-  ParticleFloatType _cellSizeFactor;
+  double _cellSizeFactor;
   /**
    * Length added to the cutoff for the verlet lists' skin.
    */
-  ParticleFloatType _verletSkin;
+  double _verletSkin;
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */

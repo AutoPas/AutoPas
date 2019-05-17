@@ -45,9 +45,9 @@ void printMolecules(AutoPasTemplate &autopas) {
  */
 template <class Particle>
 void initContainerGrid(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, size_t particlesPerDim,
-                       typename Particle::ParticleFloatingPointType particelSpacing) {
-  std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.});
-  std::array<typename Particle::ParticleFloatingPointType, 3> boxMax(
+                       double particelSpacing) {
+  std::array<double, 3> boxMin({0., 0., 0.});
+  std::array<double, 3> boxMax(
       {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
 
   autopas.setBoxMin(boxMin);
@@ -62,12 +62,10 @@ void initContainerGrid(autopas::AutoPas<Particle, FullParticleCell<Particle>> &a
 }
 
 template <class Particle>
-void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas,
-                        typename Particle::ParticleFloatingPointType boxLength, size_t numParticles,
-                        typename Particle::ParticleFloatingPointType distributionMean,
-                        typename Particle::ParticleFloatingPointType distributionStdDev) {
-  std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.});
-  std::array<typename Particle::ParticleFloatingPointType, 3> boxMax({boxLength, boxLength, boxLength});
+void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, double boxLength,
+                        size_t numParticles, double distributionMean, double distributionStdDev) {
+  std::array<double, 3> boxMin({0., 0., 0.});
+  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
   autopas.setBoxMin(boxMin);
   autopas.setBoxMax(boxMax);
@@ -79,10 +77,10 @@ void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &
 }
 
 template <class Particle>
-void initContainerUniform(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas,
-                          typename Particle::ParticleFloatingPointType boxLength, size_t numParticles) {
-  std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.});
-  std::array<typename Particle::ParticleFloatingPointType, 3> boxMax({boxLength, boxLength, boxLength});
+void initContainerUniform(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, double boxLength,
+                          size_t numParticles) {
+  std::array<double, 3> boxMin({0., 0., 0.});
+  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
   autopas.setBoxMin(boxMin);
   autopas.setBoxMax(boxMax);
@@ -154,10 +152,8 @@ long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
 /**
  * Thios function runs the tests with the requested floating point ytpe
  */
-template <typename floatType, class FunctorChoice>
+template <typename PrintableMolecule, class FunctorChoice>
 int run(MDFlexParser &parser) {
-  typedef PrintableMoleculeBase<floatType> PrintableMolecule;
-
   auto boxLength(parser.getBoxLength());
   auto containerChoice(parser.getContainerOptions());
   auto selectorStrategy(parser.getSelectorStrategy());
@@ -323,11 +319,13 @@ int main(int argc, char **argv) {
     case MDFlexParser::PrecisionOption::FP64:
       switch (parser.getFunctorOption()) {
         case MDFlexParser::FunctorOption::lj12_6: {
-          return run<double, autopas::LJFunctor<PrintableMoleculeBase<double>,
-                                                FullParticleCell<PrintableMoleculeBase<double>>>>(parser);
+          return run<
+              PrintableMoleculeBase<double>,
+              autopas::LJFunctor<PrintableMoleculeBase<double>, FullParticleCell<PrintableMoleculeBase<double>>>>(
+              parser);
         }
         case MDFlexParser::FunctorOption::lj12_6_AVX: {
-          return run<double,
+          return run<PrintableMoleculeBase<double>,
                      LJFunctorAVX<PrintableMoleculeBase<double>, FullParticleCell<PrintableMoleculeBase<double>>>>(
               parser);
         }
@@ -338,8 +336,8 @@ int main(int argc, char **argv) {
         cout << "lj12_6_AVX has no FP32 version" << endl;
         return EXIT_FAILURE;
       }
-      return run<float, LJFunctor<PrintableMoleculeBase<float>, FullParticleCell<PrintableMoleculeBase<float>>>>(
-          parser);
+      return run<PrintableMoleculeBase<float>,
+                 LJFunctor<PrintableMoleculeBase<float>, FullParticleCell<PrintableMoleculeBase<float>>>>(parser);
     } break;
   }
 }

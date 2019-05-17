@@ -19,7 +19,7 @@ class PrintableMoleculeBase : public autopas::MoleculeLJBase<floatType> {
  public:
   PrintableMoleculeBase() : autopas::MoleculeLJBase<floatType>() {}
 
-  PrintableMoleculeBase(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long i)
+  PrintableMoleculeBase(std::array<double, 3> r, std::array<double, 3> v, unsigned long i)
       : autopas::MoleculeLJBase<floatType>(r, v, i) {}
 
   /**

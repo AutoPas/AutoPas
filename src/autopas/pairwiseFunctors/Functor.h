@@ -223,15 +223,15 @@ class Functor {
    * Provides an interface for traversals to directly access Cuda Functions
    * @return Pointer to CudaWrapper of the Functor
    */
-  virtual CudaWrapperInterface<typename Particle::ParticleFloatingPointType> *getCudaWrapper() { return NULL; }
+  virtual CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() { return NULL; }
 
   /**
    * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
    * @return unique pointer to the object
    */
-  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>> createFunctorCudaSoA(
+  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>> createFunctorCudaSoA(
       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
-    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
+    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>>();
   }
 #endif
 };

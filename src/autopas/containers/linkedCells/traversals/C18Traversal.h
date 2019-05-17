@@ -29,8 +29,6 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
-  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor of the c18 traversal.
@@ -41,8 +39,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @param cellLength cell length.
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const ParticleFloatType cutoff = 1.0,
-                        const std::array<ParticleFloatType, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
                                                                                  cellLength),
         _cellFunctor(
@@ -126,12 +123,12 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
             if (std::abs(yArray + y) <= _overlap_s[1]) {
               for (long xArray = -_overlap_s[0]; xArray <= _overlap_s[0]; ++xArray) {
                 if (std::abs(xArray + x) <= _overlap_s[0]) {
-                  std::array<ParticleFloatType, 3> pos = {};
+                  std::array<double, 3> pos = {};
                   pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
                   pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
                   pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
                   // calculate distance between base cell and other cell
-                  const ParticleFloatType distSquare = ArrayMath::dot(pos, pos);
+                  const double distSquare = ArrayMath::dot(pos, pos);
                   // only add cell offset if cell is within cutoff radius
                   if (distSquare <= cutoffSquare) {
                     auto uoffset = static_cast<unsigned long>(offset);

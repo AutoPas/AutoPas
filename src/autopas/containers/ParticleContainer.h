@@ -26,8 +26,6 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
-  using ParticleFloatType = typename Particle::ParticleFloatingPointType;
-
  private:
   static const std::vector<TraversalOption> &DefaultApplicableTraversals() {
     static const std::vector<TraversalOption> v{};
@@ -47,8 +45,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * @param cutoff
    * @param applicableTraversals Sorted vector of traversals applicable for this Container.
    */
-  ParticleContainer(const std::array<ParticleFloatType, 3> boxMin, const std::array<ParticleFloatType, 3> boxMax,
-                    const ParticleFloatType cutoff,
+  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                     std::vector<TraversalOption> applicableTraversals = DefaultApplicableTraversals())
       : _cells(),
         _applicableTraversals(
@@ -82,37 +79,37 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * Get the upper corner of the container
    * @return upper corner of the container
    */
-  const std::array<ParticleFloatType, 3> &getBoxMax() const override final { return _boxMax; }
+  const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
 
   /**
    * Set the upper corner of the container
    * @param boxMax upper corner to be set
    */
-  void setBoxMax(const std::array<ParticleFloatType, 3> &boxMax) override final { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
 
   /**
    * Get the lower corner of the container
    * @return lower corner of the container
    */
-  const std::array<ParticleFloatType, 3> &getBoxMin() const override final { return _boxMin; }
+  const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
 
   /**
    * Set the lower corner of the container
    * @param boxMin lower corner to be set
    */
-  void setBoxMin(const std::array<ParticleFloatType, 3> &boxMin) override final { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
   /**
    * Return the cutoff of the container
    * @return
    */
-  ParticleFloatType getCutoff() const override final { return _cutoff; }
+  double getCutoff() const override final { return _cutoff; }
 
   /**
    * Set the cutoff of the container
    * @param cutoff
    */
-  void setCutoff(ParticleFloatType cutoff) override final { _cutoff = cutoff; }
+  void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
   /**
    * Checks if the given traversals are applicable to this traversal.
@@ -180,9 +177,9 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   const std::vector<TraversalOption> _applicableTraversals;
 
  private:
-  std::array<ParticleFloatType, 3> _boxMin;
-  std::array<ParticleFloatType, 3> _boxMax;
-  ParticleFloatType _cutoff;
+  std::array<double, 3> _boxMin;
+  std::array<double, 3> _boxMax;
+  double _cutoff;
 };
 
 }  // namespace autopas

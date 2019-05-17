@@ -27,8 +27,6 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C08CellHandler {
-  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor of the c08 traversal.
@@ -39,8 +37,7 @@ class C08CellHandler {
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
   explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
-                          const ParticleFloatType cutoff = 1.0,
-                          const std::array<ParticleFloatType, 3> &cellLength = {1.0, 1.0, 1.0},
+                          const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
                           const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _cellFunctor(
             CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(
@@ -82,12 +79,12 @@ class C08CellHandler {
   /**
    * cutoff radius.
    */
-  const ParticleFloatType _cutoff;
+  const double _cutoff;
 
   /**
    * cell length in CellBlock3D.
    */
-  const std::array<ParticleFloatType, 3> _cellLength;
+  const std::array<double, 3> _cellLength;
 
   /**
    * overlap of interacting cells. Array allows asymmetric cell sizes.
@@ -142,8 +139,8 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
   const auto cutoffSquare(this->_cutoff * this->_cutoff);
 
   // constants 0.0 and 1.0 with correct type
-  const ParticleFloatType zero = 0.0;
-  const ParticleFloatType one = 1.0;
+  const double zero = 0.0;
+  const double one = 1.0;
 
   for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {

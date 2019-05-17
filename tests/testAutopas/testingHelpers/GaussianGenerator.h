@@ -25,25 +25,21 @@ class GaussianGenerator {
    * @param distributionMean mean value / expected value
    * @param distributionStdDev standard deviation
    */
-  template <class Particle, class ParticleCell>
+  template <class Particle, class ParticleCell, typename precision = double>
   static void fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas, size_t numParticles,
-                                const Particle &defaultParticle = autopas::Particle(),
-                                typename Particle::ParticleFloatingPointType distributionMean = 5.0,
-                                typename Particle::ParticleFloatingPointType distributionStdDev = 2.0);
+                                const Particle &defaultParticle = autopas::Particle(), precision distributionMean = 5.0,
+                                precision distributionStdDev = 2.0);
 };
 
-template <class Particle, class ParticleCell>
+template <class Particle, class ParticleCell, typename precision = double>
 void GaussianGenerator::fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas, size_t numParticles,
-                                          const Particle &defaultParticle,
-                                          typename Particle::ParticleFloatingPointType distributionMean,
-                                          typename Particle::ParticleFloatingPointType distributionStdDev) {
+                                          const Particle &defaultParticle, precision distributionMean,
+                                          precision distributionStdDev) {
   std::default_random_engine generator(42);
-  std::normal_distribution<typename Particle::ParticleFloatingPointType> distribution(distributionMean,
-                                                                                      distributionStdDev);
+  std::normal_distribution<precision> distribution(distributionMean, distributionStdDev);
 
   for (size_t id = 0; id < numParticles;) {
-    std::array<typename Particle::ParticleFloatingPointType, 3> position = {
-        distribution(generator), distribution(generator), distribution(generator)};
+    std::array<precision, 3> position = {distribution(generator), distribution(generator), distribution(generator)};
     // only increment loop var (and place particle) if position is valid
     if (not autopas::utils::inBox(position, autoPas.getBoxMin(), autoPas.getBoxMax())) continue;
     Particle p(defaultParticle);

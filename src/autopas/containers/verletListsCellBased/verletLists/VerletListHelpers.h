@@ -19,14 +19,12 @@ namespace autopas {
  */
 template <class Particle>
 class VerletListHelpers {
-  using floatPrecision = typename Particle::ParticleFloatingPointType;
-
  public:
   /// AOS verlet list storage
   typedef std::unordered_map<Particle *, std::vector<Particle *>> AoS_verletlist_storage_type;
 
   /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-  typedef typename utils::SoAType<size_t, floatPrecision, floatPrecision, floatPrecision>::Type SoAArraysType;
+  typedef typename utils::SoAType<size_t, double, double, double>::Type SoAArraysType;
 
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
   enum AttributeNames : int { id, posX, posY, posZ };
@@ -40,7 +38,6 @@ class VerletListHelpers {
    */
   class VerletListGeneratorFunctor : public autopas::Functor<Particle, VerletListParticleCellType, SoAArraysType> {
     typedef VerletListParticleCellType ParticleCell;
-    using floatPrecision = typename Particle::ParticleFloatingPointType;
 
    public:
     /**
@@ -48,7 +45,7 @@ class VerletListHelpers {
      * @param verletListsAoS
      * @param cutoffskin
      */
-    VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, floatPrecision cutoffskin)
+    VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
         : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
@@ -56,7 +53,7 @@ class VerletListHelpers {
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
 
-      floatPrecision distsquare = ArrayMath::dot(dist, dist);
+      double distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
@@ -80,24 +77,24 @@ class VerletListHelpers {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.template begin<AttributeNames::id>());
-      floatPrecision *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-      floatPrecision *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-      floatPrecision *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
+      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
 
       size_t numPart = soa.getNumParticles();
       for (unsigned int i = 0; i < numPart; ++i) {
         auto &currentList = _verletListsAoS.at(idptr[i]);
 
         for (unsigned int j = i + 1; j < numPart; ++j) {
-          const floatPrecision drx = xptr[i] - xptr[j];
-          const floatPrecision dry = yptr[i] - yptr[j];
-          const floatPrecision drz = zptr[i] - zptr[j];
+          const double drx = xptr[i] - xptr[j];
+          const double dry = yptr[i] - yptr[j];
+          const double drz = zptr[i] - zptr[j];
 
-          const floatPrecision drx2 = drx * drx;
-          const floatPrecision dry2 = dry * dry;
-          const floatPrecision drz2 = drz * drz;
+          const double drx2 = drx * drx;
+          const double dry2 = dry * dry;
+          const double drz2 = drz * drz;
 
-          const floatPrecision dr2 = drx2 + dry2 + drz2;
+          const double dr2 = drx2 + dry2 + drz2;
 
           if (dr2 < _cutoffskinsquared) {
             currentList.push_back(idptr[j]);
@@ -118,14 +115,14 @@ class VerletListHelpers {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.template begin<AttributeNames::id>());
-      floatPrecision *const __restrict__ x1ptr = soa1.template begin<AttributeNames::posX>();
-      floatPrecision *const __restrict__ y1ptr = soa1.template begin<AttributeNames::posY>();
-      floatPrecision *const __restrict__ z1ptr = soa1.template begin<AttributeNames::posZ>();
+      double *const __restrict__ x1ptr = soa1.template begin<AttributeNames::posX>();
+      double *const __restrict__ y1ptr = soa1.template begin<AttributeNames::posY>();
+      double *const __restrict__ z1ptr = soa1.template begin<AttributeNames::posZ>();
 
       auto **const __restrict__ id2ptr = reinterpret_cast<Particle **const>(soa2.template begin<AttributeNames::id>());
-      floatPrecision *const __restrict__ x2ptr = soa2.template begin<AttributeNames::posX>();
-      floatPrecision *const __restrict__ y2ptr = soa2.template begin<AttributeNames::posY>();
-      floatPrecision *const __restrict__ z2ptr = soa2.template begin<AttributeNames::posZ>();
+      double *const __restrict__ x2ptr = soa2.template begin<AttributeNames::posX>();
+      double *const __restrict__ y2ptr = soa2.template begin<AttributeNames::posY>();
+      double *const __restrict__ z2ptr = soa2.template begin<AttributeNames::posZ>();
 
       size_t numPart1 = soa1.getNumParticles();
       for (unsigned int i = 0; i < numPart1; ++i) {
@@ -134,15 +131,15 @@ class VerletListHelpers {
         size_t numPart2 = soa2.getNumParticles();
 
         for (unsigned int j = 0; j < numPart2; ++j) {
-          const floatPrecision drx = x1ptr[i] - x2ptr[j];
-          const floatPrecision dry = y1ptr[i] - y2ptr[j];
-          const floatPrecision drz = z1ptr[i] - z2ptr[j];
+          const double drx = x1ptr[i] - x2ptr[j];
+          const double dry = y1ptr[i] - y2ptr[j];
+          const double drz = z1ptr[i] - z2ptr[j];
 
-          const floatPrecision drx2 = drx * drx;
-          const floatPrecision dry2 = dry * dry;
-          const floatPrecision drz2 = drz * drz;
+          const double drx2 = drx * drx;
+          const double dry2 = dry * dry;
+          const double drz2 = drz * drz;
 
-          const floatPrecision dr2 = drx2 + dry2 + drz2;
+          const double dr2 = drx2 + dry2 + drz2;
 
           if (dr2 < _cutoffskinsquared) {
             currentList.push_back(id2ptr[j]);
@@ -165,9 +162,9 @@ class VerletListHelpers {
       if (cell.numParticles() == 0) return;
 
       unsigned long *const __restrict__ idptr = soa.template begin<AttributeNames::id>();
-      floatPrecision *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-      floatPrecision *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-      floatPrecision *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
+      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
 
       auto cellIter = cell.begin();
       // load particles in SoAs
@@ -193,7 +190,7 @@ class VerletListHelpers {
 
    private:
     AoS_verletlist_storage_type &_verletListsAoS;
-    floatPrecision _cutoffskinsquared;
+    double _cutoffskinsquared;
   };
 
   /**
@@ -207,22 +204,20 @@ class VerletListHelpers {
    */
   template <class ParticleCell>
   class VerletListValidityCheckerFunctor : public autopas::Functor<Particle, ParticleCell, SoAArraysType> {
-    using floatPrecision = typename Particle::ParticleFloatingPointType;
-
    public:
     /**
      * Constructor
      * @param verletListsAoS
      * @param cutoffsquared
      */
-    VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, floatPrecision cutoffsquared)
+    VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
         : _verletListsAoS(verletListsAoS), _cutoffsquared(cutoffsquared), _valid(true) {}
 
     bool isRelevantForTuning() override { return false; }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
-      floatPrecision distsquare = ArrayMath::dot(dist, dist);
+      double distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffsquared) {
         // this is thread safe, we have variables on the stack
         auto found = std::find(_verletListsAoS[&i].begin(), _verletListsAoS[&i].end(), &j);
@@ -242,7 +237,7 @@ class VerletListHelpers {
 
    private:
     AoS_verletlist_storage_type &_verletListsAoS;
-    floatPrecision _cutoffsquared;
+    double _cutoffsquared;
 
     // needs to be thread safe
     std::atomic<bool> _valid;

@@ -23,8 +23,6 @@ namespace internal {
  */
 template <class Particle, class ParticleCell>
 class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
-  using ParticleFloatType = typename Particle::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor of the RegionParticleIterator.
@@ -37,8 +35,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit RegionParticleIterator(std::vector<ParticleCell> *cont, std::array<ParticleFloatType, 3> startRegion,
-                                  std::array<ParticleFloatType, 3> endRegion, std::vector<size_t> &indicesInRegion,
+  explicit RegionParticleIterator(std::vector<ParticleCell> *cont, std::array<double, 3> startRegion,
+                                  std::array<double, 3> endRegion, std::vector<size_t> &indicesInRegion,
                                   CellBorderAndFlagManager *flagManager = nullptr,
                                   IteratorBehavior behavior = haloAndOwned)
       : ParticleIterator<Particle, ParticleCell>(cont, flagManager, behavior),
@@ -129,8 +127,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     }
   }
 
-  std::array<ParticleFloatType, 3> _startRegion;
-  std::array<ParticleFloatType, 3> _endRegion;
+  std::array<double, 3> _startRegion;
+  std::array<double, 3> _endRegion;
   std::vector<size_t> _indicesInRegion;
   size_t _currentRegionIndex;
 };

@@ -27,8 +27,6 @@ namespace autopas {
  */
 template <class Particle>
 class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<Particle>> {
-  using ParticleFloatType = typename Particle::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor of the VerletClusterLists class.
@@ -45,9 +43,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param clusterSize size of clusters
    */
-  VerletClusterCells(const std::array<ParticleFloatType, 3> boxMin, const std::array<ParticleFloatType, 3> boxMax,
-                     ParticleFloatType cutoff, ParticleFloatType skin = 0, unsigned int rebuildFrequency = 1,
-                     int clusterSize = 32)
+  VerletClusterCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+                     double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 32)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
                                                                 allVCLApplicableTraversals()),
         _firstHaloClusterId(1),
@@ -195,8 +192,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
         &this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<ParticleFloatType, 3> lowerCorner,
-                                                      std::array<ParticleFloatType, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                      std::array<double, 3> higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     std::vector<size_t> cellsOfInterest;
@@ -226,8 +223,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     deleteDummyParticles();
     _boundingBoxes.clear();
     // get the dimensions and volumes of the box
-    std::array<ParticleFloatType, 3> boxSize{};
-    ParticleFloatType volume = 1.0;
+    std::array<double, 3> boxSize{};
+    double volume = 1.0;
 
     for (int d = 0; d < 3; ++d) {
       boxSize[d] = this->getBoxMax()[d] - this->getBoxMin()[d];
@@ -249,10 +246,10 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       this->_cells[i].clear();
     }
     // estimate particle density
-    ParticleFloatType density = (ParticleFloatType)invalidParticles.size() / volume;
+    double density = (double)invalidParticles.size() / volume;
 
     // guess optimal grid side length
-    _gridSideLength = std::cbrt((ParticleFloatType)_clusterSize / density);
+    _gridSideLength = std::cbrt((double)_clusterSize / density);
 
     _gridSideLengthReciprocal = 1 / _gridSideLength;
 
@@ -367,10 +364,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       _dummyStarts[i] = dummyStart;
       for (size_t pid = dummyStart; pid < _clusterSize; ++pid) {
         // add dummy Pericles with ID ULONG_MAX
-        Particle dummyParticle = Particle({this->getBoxMax()[0] + 8 * this->getCutoff() +
-                                               static_cast<typename Particle::ParticleFloatingPointType>(i),
-                                           this->getBoxMax()[1] + 8 * this->getCutoff() +
-                                               static_cast<typename Particle::ParticleFloatingPointType>(pid),
+        Particle dummyParticle = Particle({this->getBoxMax()[0] + 8 * this->getCutoff() + static_cast<double>(i),
+                                           this->getBoxMax()[1] + 8 * this->getCutoff() + static_cast<double>(pid),
                                            this->getBoxMax()[2] + 8 * this->getCutoff()},
                                           {0., 0., 0.}, ULONG_MAX);
         this->_cells[i].addParticle(dummyParticle);
@@ -382,7 +377,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @param box
    * @param p
    */
-  void expandBoundingBox(std::array<typename Particle::ParticleFloatingPointType, 6>& box, Particle& p) {
+  void expandBoundingBox(std::array<double, 6>& box, Particle& p) {
     for (int i = 0; i < 3; ++i) {
       box[i] = std::min(box[i], p.getR()[i]);
       box[3 + i] = std::max(box[3 + i], p.getR()[i]);
@@ -396,9 +391,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @param distance betwwen the boxes to return true
    * @return true if the boxes are overlapping
    */
-  inline bool boxesOverlap(std::array<ParticleFloatType, 3>& box1lowerCorner,
-                           std::array<ParticleFloatType, 3>& box1higherCorner,
-                           std::array<typename Particle::ParticleFloatingPointType, 6>& box2) {
+  inline bool boxesOverlap(std::array<double, 3>& box1lowerCorner, std::array<double, 3>& box1higherCorner,
+                           std::array<double, 6>& box2) {
     for (int i = 0; i < 3; ++i) {
       if (box1lowerCorner[0 + i] > box2[3 + i] || box1higherCorner[i] < box2[0 + i]) return false;
     }
@@ -424,11 +418,11 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   utils::CudaDeviceVector<unsigned int> _neighborMatrix;
 
   // bounding boxes of all clusters (xmin,ymin,zmin,xmax,ymax,zmax) including skin and cutoff
-  std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> _boundingBoxes;
+  std::vector<std::array<double, 6>> _boundingBoxes;
 
   // side length of xy-grid and reciprocal
-  ParticleFloatType _gridSideLength;
-  ParticleFloatType _gridSideLengthReciprocal;
+  double _gridSideLength;
+  double _gridSideLengthReciprocal;
 
   // dimensions of grid
   std::array<size_t, 3> _cellsPerDim;

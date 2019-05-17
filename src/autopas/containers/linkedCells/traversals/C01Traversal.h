@@ -29,8 +29,6 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
-  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor of the c01 traversal.
@@ -41,8 +39,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @param cellLength cell length in CellBlock3D
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const ParticleFloatType cutoff = 1.0,
-                        const std::array<ParticleFloatType, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
                                                                                  cellLength),
         _cellFunctor(pairwiseFunctor) {
@@ -113,11 +110,11 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
   for (long z = -this->_overlap[0]; z <= static_cast<long>(this->_overlap[0]); ++z) {
     for (long y = -this->_overlap[1]; y <= static_cast<long>(this->_overlap[1]); ++y) {
       for (long x = -this->_overlap[2]; x <= static_cast<long>(this->_overlap[2]); ++x) {
-        std::array<ParticleFloatType, 3> pos = {};
+        std::array<double, 3> pos = {};
         pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
         pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
         pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
-        const ParticleFloatType distSquare = ArrayMath::dot(pos, pos);
+        const double distSquare = ArrayMath::dot(pos, pos);
         if (distSquare <= cutoffSquare) {
           const long offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
           _cellOffsets.push_back(offset);

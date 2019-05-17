@@ -32,8 +32,7 @@ class VerletClusterTraversalInterface {
    * @param distance Maximum distance between interacting cells
    */
   virtual void rebuildVerlet(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
-                             std::vector<std::array<typename Particle::ParticleFloatingPointType, 6>> &boundingBoxes,
-                             typename Particle::ParticleFloatingPointType distance) = 0;
+                             std::vector<std::array<double, 6>> &boundingBoxes, double distance) = 0;
 
   /**
    * Sets pointer to the verlet lists stored in the container

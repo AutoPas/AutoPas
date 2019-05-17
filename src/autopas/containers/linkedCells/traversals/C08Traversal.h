@@ -28,8 +28,6 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
-  using ParticleFloatType = typename ParticleCell::ParticleType::ParticleFloatingPointType;
-
  public:
   /**
    * Constructor of the c08 traversal.
@@ -40,8 +38,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @param cellLength cell length.
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const ParticleFloatType cutoff = 1.0,
-                        const std::array<ParticleFloatType, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
                                                                                  cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
