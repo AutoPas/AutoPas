@@ -63,14 +63,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
           if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
             container->addParticle(p);
           } else {
-            if (autopas::utils::inBox(pos, autopas::ArrayMath::sub(bBoxMin, std::array<double, 3>{cutoff}),
-                                      autopas::ArrayMath::add(bBoxMin, std::array<double, 3>{cutoff})) or
-                autopas::utils::StringUtils::to_string(container->getContainerType()).find("Verlet") !=
-                    std::string::npos) {
-              /// @todo: the above string comparison will most likely be unnecessary once the verlet interface is
-              /// properly introduced.
-              container->addHaloParticle(p);
-            }
+            container->addHaloParticle(p);
           }
           ++id;
         }
