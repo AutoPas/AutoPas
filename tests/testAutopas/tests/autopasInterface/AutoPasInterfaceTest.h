@@ -9,8 +9,7 @@
 #include <gtest/gtest.h>
 #include "autopas/AutoPas.h"
 
-class AutoPasInterfaceTest : public testing::Test,
-                             public ::testing::WithParamInterface<autopas::ContainerOption> {
+class AutoPasInterfaceTest : public testing::Test, public ::testing::WithParamInterface<autopas::ContainerOption> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>

@@ -99,7 +99,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-    for(auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter){
+    for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       iter.deleteCurrentParticle();
     }
   }

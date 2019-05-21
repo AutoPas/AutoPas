@@ -158,9 +158,7 @@ class ParticleBase {
    * Set the owned state to the given value
    * @param owned
    */
-  void setOwned(bool owned){
-    _isOwned = owned;
-  }
+  void setOwned(bool owned) { _isOwned = owned; }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
