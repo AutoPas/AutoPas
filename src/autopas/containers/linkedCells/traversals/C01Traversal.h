@@ -42,7 +42,8 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
                         const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
                                                                                  cellLength),
-        _cellFunctor(pairwiseFunctor) {
+        _cellFunctor(pairwiseFunctor),
+        _pairwiseFunctor(pairwiseFunctor) {
     computeOffsets();
   }
 
@@ -99,6 +100,8 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, false, false>
       _cellFunctor;
+
+  PairwiseFunctor *_pairwiseFunctor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
@@ -129,16 +132,34 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
     std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
-
   const size_t num_pairs = this->_cellOffsets.size();
-  for (size_t j = 0; j < num_pairs; ++j) {
-    const unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
-    ParticleCell &otherCell = cells[otherIndex];
 
-    if (baseIndex == otherIndex) {
-      this->_cellFunctor.processCell(baseCell);
-    } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell);
+  if (DataLayout == DataLayoutOption::soa) {
+    ParticleCell combinationOfOtherCell;
+    size_t offset = 0;
+
+    for (size_t j = 0; j < num_pairs; ++j) {
+      const unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
+      ParticleCell &otherCell = cells[otherIndex];
+
+      if (baseIndex == otherIndex) {
+        this->_cellFunctor.processCell(baseCell);
+      } else {
+        _pairwiseFunctor->SoALoader(otherCell, combinationOfOtherCell._particleSoABuffer, offset);
+        offset += otherCell.numParticles();
+      }
+    }
+    this->_cellFunctor.processCellPair(baseCell, combinationOfOtherCell);
+  } else {
+    for (size_t j = 0; j < num_pairs; ++j) {
+      const unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
+      ParticleCell &otherCell = cells[otherIndex];
+
+      if (baseIndex == otherIndex) {
+        this->_cellFunctor.processCell(baseCell);
+      } else {
+        this->_cellFunctor.processCellPair(baseCell, otherCell);
+      }
     }
   }
 }

@@ -68,7 +68,6 @@ class C01BasedTraversal : public CBasedTraversal<ParticleCell> {
   template <typename LoopBody>
   inline void c01Traversal(LoopBody&& loopBody);
 
- private:
   /**
    * Data Layout Converter to be used with this traversal
    */
