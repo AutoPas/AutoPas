@@ -34,62 +34,6 @@ void printMolecules(AutoPasTemplate &autopas) {
 }
 
 /**
- * @brief Constructs a container and fills it with particles.
- *
- * According to the options passed, a %DirectSum or %'LinkedCells' container is
- * built. It consists of %`FullParticleCells` and is filled with
- * `PrintableMolecules`. The particles are aligned on a cuboid grid.
- *
- * @param autopas AutoPas object that should be initialized
- * @param particlesPerDim Number of desired particles per dimension.
- * @param particelSpacing Space between two particles along each axis of space.
- */
-void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                       size_t particlesPerDim, double particelSpacing) {
-  std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax(
-      {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  PrintableMolecule dummyParticle;
-  GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
-                                   {particelSpacing, particelSpacing, particelSpacing},
-                                   {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
-}
-
-void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
-  std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  PrintableMolecule dummyParticle;
-  GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
-}
-
-void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                          double boxLength, size_t numParticles) {
-  std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  PrintableMolecule dummyParticle;
-  RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
-}
-
-/**
  * Writes a VTK file for the current state of the AutoPas object
  * @tparam AutoPasTemplate Template for the templetized autopas type.
  * @param filename
@@ -116,36 +60,6 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
   vtkFile.close();
 }
 
-/**
- * This function is needed to create functors with the actual type through templates.
- * @tparam FunctorChoice
- * @tparam AutoPasTemplate
- * @param autopas
- * @param cutoff
- * @param numIterations
- * @return Time for all calculation iterations in microseconds.
- */
-template <class FunctorChoice, class AutoPasTemplate>
-long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
-  auto functor = FunctorChoice(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
-
-  std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
-
-  startCalc = std::chrono::high_resolution_clock::now();
-
-  // actual Calculation
-  for (unsigned int i = 0; i < numIterations; ++i) {
-    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      cout << "Iteration " << i << endl;
-      cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
-    }
-    autopas.iteratePairwise(&functor);
-  }
-  stopCalc = std::chrono::high_resolution_clock::now();
-
-  auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
-  return durationCalc;
-}
 
 int     main(int argc, char **argv) {
   // Parsing
@@ -153,35 +67,18 @@ int     main(int argc, char **argv) {
   if (not parser.parseInput(argc, argv)) {
     exit(-1);
   }
-
-  auto boxLength(parser.getBoxLength());
-  auto containerChoice(parser.getContainerOptions());
-  auto selectorStrategy(parser.getSelectorStrategy());
-  auto cutoff(parser.getCutoff());
-  auto dataLayoutOptions(parser.getDataLayoutOptions());
-  auto distributionMean(parser.getDistributionMean());
-  auto distributionStdDev(parser.getDistributionStdDev());
-  auto functorChoice(parser.getFunctorOption());
-  auto generatorChoice(parser.getGeneratorOption());
-  auto logLevel(parser.getLogLevel());
   string logFileName(parser.getLogFileName());
   auto measureFlops(parser.getMeasureFlops());
-  auto newton3Options(parser.getNewton3Options());
   auto numIterations(parser.getIterations());
-  auto particleSpacing(parser.getParticleSpacing());
-  auto particlesPerDim(parser.getParticlesPerDim());
   auto particlesTotal(parser.getParticlesTotal());
-  auto traversalOptions(parser.getTraversalOptions());
-  auto tuningInterval(parser.getTuningInterval());
-  auto tuningSamples(parser.getTuningSamples());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
-  auto verletSkinRadius(parser.getVerletSkinRadius());
   auto vtkFilename(parser.getWriteVTK());
+  auto logLevel(parser.getLogLevel());
 
   parser.printConfig();
 
+  //Simulationsdauer ausgerechnet in main.cpp:
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal;
-
   startTotal = std::chrono::high_resolution_clock::now();
 
   // select either std::out or a logfile for autopas log output.
@@ -195,25 +92,15 @@ int     main(int argc, char **argv) {
     streamBuf = logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
+  long DurationSimulation;
+
   // Initialization
   autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas(outputStream);
   autopas::Logger::get()->set_level(logLevel);
 
-  autopas.setCutoff(cutoff);
-  autopas.setVerletSkin(verletSkinRadius);
-  autopas.setVerletRebuildFrequency(verletRebuildFrequency);
-  autopas.setTuningInterval(tuningInterval);
-  autopas.setNumSamples(tuningSamples);
-  autopas.setSelectorStrategy(selectorStrategy);
-  autopas.setAllowedContainers(containerChoice);
-  autopas.setAllowedTraversals(traversalOptions);
-  autopas.setAllowedDataLayouts(dataLayoutOptions);
-  autopas.setAllowedNewton3Options(newton3Options);
-
-
   Simulation<PrintableMolecule,FullParticleCell<PrintableMolecule>> Simulation(autopas);
   Simulation.initialize(parser);
-  Simulation.simulate();
+  DurationSimulation = Simulation.simulate();
     // @todo -> simulate gibt duration der Simulation zurück
 
 
@@ -246,29 +133,32 @@ int     main(int argc, char **argv) {
   unsigned long flopsPerKernelCall = 0;
   cout << "Starting force calculation... " << endl;
 
-  switch (functorChoice) {
-    case MDFlexParser::FunctorOption::lj12_6: {
-      durationApply =
-          calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff, numIterations);
-      flopsPerKernelCall =
-          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-      break;
+    //@todo sachen die man brauch für statistiken behalten:
+    switch (functorChoice) {
+        case MDFlexParser::FunctorOption::lj12_6: {
+            this->setFunctor(LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>);
+
+            durationApply =
+                    calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff, numIterations);
+            flopsPerKernelCall =
+                    LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+            break;
+        }
+        case MDFlexParser::FunctorOption::lj12_6_AVX: {
+            durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff,
+                                                                                                            numIterations);
+            flopsPerKernelCall =
+                    LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+            break;
+        }
     }
-    case MDFlexParser::FunctorOption::lj12_6_AVX: {
-      durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff,
-                                                                                                      numIterations);
-      flopsPerKernelCall =
-          LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-      break;
-    }
-  }
 
   stopTotal = std::chrono::high_resolution_clock::now();
   cout << "Force calculation done!" << endl;
 
   //  printMolecules(autopas);
 
-  auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();
+  auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();  //@todo ob durationTotal von main oder von Simulation.h genommen wird
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
 

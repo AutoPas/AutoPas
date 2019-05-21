@@ -17,105 +17,83 @@
 //idee: Die TimeDiskretization Methode als Template weiterzugeben, und somit pro verschiede Diskretisierungsmethode eine Klasse/Functor zu schreiben
 
 
-template <class Particle,class ParticleCell, class FunctorChoice>
+template <class Particle>
 class TimeDiscretization {
 
 public:
+    TimeDiscretization(double particleDeltaT);
 
     virtual ~TimeDiscretization() {
     //@todo
     }
 
-    TimeDiscretization(FunctorChoice functor, AutoPas<Particle, ParticleCell> *autopas,double particle_delta_t) : Functor(functor),
-                                                                                          autopas(autopas),particle_delta_t(particle_delta_t) {}
-
-    /**Applies one timestep in the Simulation with the Stoermer-Verlet Algorithm
-     * @tparam Particle
-     * @tparam ParticleCell
-     * @tparam FunctorChoice
-     */
-    long VerletStörmerTime();
-
     /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
-    void VSCalculateX();
+    long VSCalculateX(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas);
 
     /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
-    void VSCalculateV();
+    long VSCalculateV(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas);
 
     /**Proceeds the Calculation of Forces with the given functor and "autopas.iteratePairwise"
      * @param cutoff
      */
-    void VSCalculateF(double cutoff);
+
+    double getParticleDeltaT() const;
 
 
 private:
-
-    /** \brief Force Calculation Functors
-     */
-    FunctorChoice  Functor;
-
-    /** \brief Autopas Object
-     */
-    AutoPas<Particle,ParticleCell>* autopas;
-
     /** \brief Duration of a timestep
      * */
     double particle_delta_t;        // @todo: add particle_delta, time_end -> main and parser
 
 };
 
-template <class Particle,class ParticleCell,class FunctorChoice>
-long TimeDiscretization<Particle, ParticleCell,FunctorChoice>::VerletStörmerTime() {
+template <class Particle>
+long TimeDiscretization<Particle>::VSCalculateX(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas) {
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
-    this->VSCalculateX();
-    this->VSCalculateF();
-    this->VSCalculateV();
+#pragma omp parallel
+    for (auto iter = autopas->getContainer().begin(); iter.isValid(); ++iter) {
+        auto r = iter->getR();
+        auto v = iter->getV();
+        auto m = autopas::MoleculeLJ::getMass();
+        auto f = iter->getF();
+        v = autopas::ArrayMath::mulScalar(v, this->particle_delta_t);
+        f= autopas::ArrayMath::mulScalar(f,(particle_delta_t * particle_delta_t / (2 * m)));
+        auto newR = autopas::ArrayMath::add(v,f);
+        iter->addR(newR);
+    }
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
     return durationCalc;
 }
 
 
-template <class Particle,class ParticleCell,class FunctorChoice>
-void TimeDiscretization<Particle, ParticleCell,FunctorChoice>::VSCalculateF(double cutoff) {
-    auto functor = Functor(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
-    if (this->autopas::Logger::get()->level() <= this->autopas::Logger::LogLevel::debug) {
-        // cout << "Iteration " << i << endl;  --> man kann einfach mit delta_t und end_t die current iteration ausgeben
-        cout << "Current Memory usage: " << this->autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
-    }
-    this->autopas.iteratePairwise(&functor);
-}
-
-template <class Particle,class ParticleCell,class FunctorChoice>
-void TimeDiscretization<Particle, ParticleCell,FunctorChoice>::VSCalculateX() {
+template <class Particle>
+long TimeDiscretization<Particle>::VSCalculateV(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas) {
+    std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
+    startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
-    for (auto iter = this->autopas->getContainer().begin(); iter.isValid(); ++iter) {
-        auto r = iter->getR();
-        auto v = iter->getV();
-        auto m = MoleculeLJ::getMass();
-        auto f = iter->getF();
-        v = ArrayMath::mulScalar(v, this->particle_delta_t);
-        f= ArrayMath::mulScalar(f,(particle_delta_t * particle_delta_t / (2 * m)));
-        auto newR = ArrayMath::add(v,f);
-        iter->addR(newR);
-    }
-}
-
-
-template <class Particle,class ParticleCell,class FunctorChoice>
-void TimeDiscretization<Particle, ParticleCell,FunctorChoice>::VSCalculateV() {
-#pragma omp parallel
-    for (auto iter = this->autopas->getContainer().begin(); iter.isValid(); ++iter) {
+    for (auto iter = autopas->getContainer().begin(); iter.isValid(); ++iter) {
         auto v =iter->getV();
-        auto m = MoleculeLJ::getMass();
+        auto m = autopas::MoleculeLJ::getMass();
         auto force = iter->getF();
-        auto old_force= MoleculeLJ::getOldf();  //@todo : implement right old_force interface (Particle -> inherent to MoleculeLJ -> PrintableMolecule)
-        auto newV= ArrayMath((ArrayMath::add(force,old_force)),particle_delta_t/(2*m));
+        auto old_force= autopas::MoleculeLJ::getOldf();  //@todo : implement right old_force interface (Particle -> inherent to MoleculeLJ -> PrintableMolecule)
+        auto newV= ArrayMath((autopas::ArrayMath::add(force,old_force)),particle_delta_t/(2*m));
         iter->addV(newV);
     }
+    stopCalc = std::chrono::high_resolution_clock::now();
+    auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
+    return durationCalc;
+}
+
+template<class Particle>
+TimeDiscretization<Particle>::TimeDiscretization(double particleDeltaT):particle_delta_t(particleDeltaT) {}
+
+template<class Particle>
+double TimeDiscretization<Particle>::getParticleDeltaT() const {
+    return particle_delta_t;
 }
 
 #endif //AUTOPAS_TIMEDISCRETIZATION_H
