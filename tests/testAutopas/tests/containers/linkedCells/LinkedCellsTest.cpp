@@ -23,8 +23,9 @@ TEST_F(LinkedCellsTest, testParticleAdding) {
           EXPECT_ANY_THROW(linkedCells.addParticle(p));     // outside, therefore not ok!
           EXPECT_NO_THROW(linkedCells.addHaloParticle(p));  // outside, therefore ok!
         } else {
-          EXPECT_NO_THROW(linkedCells.addParticle(p));       // inside, therefore ok!
-          EXPECT_ANY_THROW(linkedCells.addHaloParticle(p));  // inside, therefore not ok!
+          EXPECT_NO_THROW(linkedCells.addParticle(p));  // inside, therefore ok!
+          EXPECT_NO_THROW(
+              linkedCells.addHaloParticle(p));  // inside, but still ok, as halo particle can be inside of the domain!
         }
       }
     }
