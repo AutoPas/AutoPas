@@ -310,7 +310,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     // sort halo cells
-    size_t numExtraHaloClusters = 0;
     for (int i = 0; i < 2; ++i) {
       this->_cells[_firstHaloClusterId + 2 * i].sortByDim(i + 1);
       this->_cells[_firstHaloClusterId + 2 * i + 1].sortByDim(i + 1);
