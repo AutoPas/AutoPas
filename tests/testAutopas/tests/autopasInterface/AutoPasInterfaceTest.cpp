@@ -164,7 +164,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption) {
 
   doAssertions(autoPas, &functor);
 
-  // update positions a bit and do loop again
+  // update positions a bit (outside of domain!) and do loop again
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
@@ -199,10 +199,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
   defaultInit(autoPas);
 
   auto getPossible1DPositions = [&](double min, double max) -> auto {
-    return std::array<double, 8>{
-        // ensure that all particles are at most skin away from halo!
-        min - cutoff - skin,       min - cutoff, min, min + skin, max - skin, max, max + cutoff - 1e-3,
-        min - cutoff - skin - 1e-3};
+    // ensure that all particles are at most skin away from halo!
+    return std::array<double, 6>{min - cutoff, min, min + skin, max - skin, max, max + cutoff - 1e-3};
   };
   size_t id = 0;
   for (auto x : getPossible1DPositions(boxMin[0], boxMax[0])) {
@@ -224,6 +222,30 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
   if (alwaysAddAsHalo) {
     ASSERT_FALSE(autoPas.begin(autopas::IteratorBehavior::ownedOnly).isValid())
         << "for alwaysAddAsHalo=true, no owned particles should exist" << std::endl;
+  } else {
+    size_t count = 0;
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      ++count;
+    }
+    EXPECT_EQ(count, 3 * 3 * 3);
+  }
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+      ++count;
+    }
+    if (alwaysAddAsHalo) {
+      EXPECT_EQ(count, 6 * 6 * 6);
+    } else {
+      EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
+    }
+  }
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
+      ++count;
+    }
+    EXPECT_EQ(count, 6 * 6 * 6);
   }
 }
 
