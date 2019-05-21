@@ -4,7 +4,6 @@
  * @date 19.01.18
  */
 
-#include <iostream>
 #include <gtest/gtest.h>
 #include "autopas/selectors/GaussianProcess.h"
 

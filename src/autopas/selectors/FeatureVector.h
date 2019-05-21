@@ -84,6 +84,10 @@ class FeatureVector {
     return result;
   }
 
+  /**
+   * Add a DoubleFeature with given value to the vector
+   * @param doubleFeature
+   */
   void addFeature(double doubleFeature) { _vector.push_back(std::make_shared<DoubleFeature>(doubleFeature)); }
 };
 

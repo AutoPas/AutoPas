@@ -17,7 +17,7 @@ namespace autopas {
  * input-output pairs of the function should be provided as evidence.
  *
  * Currently the default mean is 0 and squared exponential kernel is used.
- * @TODO maybe offer some options.
+ * TODO: maybe offer some options.
  */
 class GaussianProcess {
  private:
@@ -112,7 +112,7 @@ class GaussianProcess {
     for (unsigned i = 0; i < newSize - 1; ++i) {
       _covMat(newSize - 1, i) = _covMat(i, newSize - 1) = kernel(input, _inputs[i]);
     }
-    _covMat(newSize - 1, newSize - 1) = kernel(input, input) + _sigma; // add fixed noise to diagonal
+    _covMat(newSize - 1, newSize - 1) = kernel(input, input) + _sigma;  // add fixed noise to diagonal
 
     // calculate needed matrix and vector for predictions
     _covMatInv = _covMat.inverse();
