@@ -263,7 +263,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     _cellsPerDim[2] = static_cast<size_t>(1);
 
     // resize to number of grids
-    this->_cells.resize(sizeGrid);
+    if (this->_cells.size() < sizeGrid) this->_cells.resize(sizeGrid);
     _dummyStarts.clear();
 
     // put particles into grid cells
@@ -279,7 +279,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     // sort by last dimension
 
-    for (size_t i = 0; i < this->_cells.size(); ++i) {
+#pragma omp parallel for schedule(guided) reduction(+ : numOwnClusters)
+    for (size_t i = 0; i < sizeGrid; ++i) {
       this->_cells[i].sortByDim(2);
       size_t numParticles = this->_cells[i].numParticles();
       if (numParticles)
@@ -291,7 +292,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     _firstHaloClusterId = numOwnClusters;
 
     size_t sizeHaloGrid = 6;  // one halo cell per side of the domain to further cut later
-    this->_cells.resize(numOwnClusters + sizeHaloGrid);
+    if (this->_cells.size() < (numOwnClusters + sizeHaloGrid)) this->_cells.resize(numOwnClusters + sizeHaloGrid);
 
     // put halo particles into grid cells
     for (auto& haloParticle : _haloInsertQueue) {
@@ -309,10 +310,10 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     // sort halo cells
-
+    size_t numExtraHaloClusters = 0;
     for (int i = 0; i < 2; ++i) {
-      this->_cells[_firstHaloClusterId + i].sortByDim(i + 1);
-      this->_cells[_firstHaloClusterId + i + 1].sortByDim(i + 1);
+      this->_cells[_firstHaloClusterId + 2 * i].sortByDim(i + 1);
+      this->_cells[_firstHaloClusterId + 2 * i + 1].sortByDim(i + 1);
     }
     this->_cells[_firstHaloClusterId + 4].sortByDim(0);
     this->_cells[_firstHaloClusterId + 5].sortByDim(0);
