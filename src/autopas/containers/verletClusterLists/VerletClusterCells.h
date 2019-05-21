@@ -278,8 +278,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     size_t numHaloClusters = 0;
 
     // sort by last dimension
-
+#if defined(AUTOPAS_OPENMP)
 #pragma omp parallel for schedule(guided) reduction(+ : numOwnClusters)
+#endif
     for (size_t i = 0; i < sizeGrid; ++i) {
       this->_cells[i].sortByDim(2);
       size_t numParticles = this->_cells[i].numParticles();
