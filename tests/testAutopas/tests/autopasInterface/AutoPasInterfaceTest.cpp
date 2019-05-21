@@ -135,7 +135,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor)
   EXPECT_DOUBLE_EQ(functor->getVirial(), 195072. /*todo: fix value*/) << "wrong virial calculated";
 }
 
-void testInterface(autopas::ContainerOption containerOption) {
+void testSimulationLoop(autopas::ContainerOption containerOption) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
   autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
@@ -179,7 +179,38 @@ void testInterface(autopas::ContainerOption containerOption) {
   doAssertions(autoPas, &functor);
 }
 
-TEST_F(AutoPasInterfaceTest, InterfaceTest) {
+TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
   // this test checks the correct behavior of the autopas interface.
-  testInterface(autopas::ContainerOption::linkedCells);
+  auto containerOption = GetParam();
+  testSimulationLoop(containerOption);
 }
+
+void testAdditionAndIteration(autopas::ContainerOption containerOption) {
+  // create AutoPas object
+  autopas::AutoPas<Molecule, FMCell> autoPas;
+  autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
+
+  defaultInit(autoPas);
+}
+
+TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTest) {
+  auto containerOption = GetParam();
+  testAdditionAndIteration(containerOption);
+}
+
+using ::testing::Combine;
+using ::testing::UnorderedElementsAreArray;
+using ::testing::ValuesIn;
+
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
+                         // proper indent
+                         ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+                           // return autopas::allContainerOptions;
+                           /// @todo: uncomment above lines and remove below lines to enable testing of
+                           /// verletClusterLists.
+                           auto all = autopas::allContainerOptions;
+                           all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists),
+                                     all.end());
+                           return all;
+                         }()),
+                         AutoPasInterfaceTest::PrintToStringParamName());
