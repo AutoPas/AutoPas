@@ -416,7 +416,7 @@ bool CellBlock3D<ParticleCell>::checkInHalo(const std::array<double, 3> &positio
 template <class ParticleCell>
 void CellBlock3D<ParticleCell>::clearHaloCells() {
   std::vector<index_t> haloSlices(2 * _cellsPerInteractionLength);
-  std::vector<index_t>::iterator mid(haloSlices.begin() + _cellsPerInteractionLength);
+  auto mid = haloSlices.begin() + _cellsPerInteractionLength;
   std::iota(haloSlices.begin(), mid, 0);
 
   // x: min and max of x

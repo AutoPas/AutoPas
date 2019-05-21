@@ -96,8 +96,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void deleteHaloParticles() override {
-    delete also particles close to boundary if marked as non-owned
-    _cellBlock.clearHaloCells();
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for(auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter){
+      iter.deleteCurrentParticle();
+    }
   }
 
   /**
