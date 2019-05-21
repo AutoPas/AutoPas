@@ -185,17 +185,56 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
   testSimulationLoop(containerOption);
 }
 
-void testAdditionAndIteration(autopas::ContainerOption containerOption) {
+/**
+ * Tests the addition and iteration over particles.
+ * @param containerOption
+ * @param alwaysAddAsHalo If this is true, all particles will be added as halo. This is to test, whether halo particles
+ * inside of the domain are handled properly!
+ */
+void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alwaysAddAsHalo) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
   autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
 
   defaultInit(autoPas);
+
+  auto getPossible1DPositions = [&](double min, double max) -> auto {
+    return std::array<double, 8>{
+        // ensure that all particles are at most skin away from halo!
+        min - cutoff - skin,       min - cutoff, min, min + skin, max - skin, max, max + cutoff - 1e-3,
+        min - cutoff - skin - 1e-3};
+  };
+  size_t id = 0;
+  for (auto x : getPossible1DPositions(boxMin[0], boxMax[0])) {
+    for (auto y : getPossible1DPositions(boxMin[1], boxMax[1])) {
+      for (auto z : getPossible1DPositions(boxMin[2], boxMax[2])) {
+        std::array<double, 3> pos{x, y, z};
+        Molecule p(pos, {0., 0., 0.}, id);
+        ++id;
+        // add the two particles!
+        if (autopas::utils::inBox(pos, boxMin, boxMax) and not alwaysAddAsHalo) {
+          autoPas.addParticle(p);
+        } else {
+          autoPas.addHaloParticle(p);
+        }
+      }
+    }
+  }
+
+  if (alwaysAddAsHalo) {
+    ASSERT_FALSE(autoPas.begin(autopas::IteratorBehavior::ownedOnly).isValid())
+        << "for alwaysAddAsHalo=true, no owned particles should exist" << std::endl;
+  }
 }
 
-TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTest) {
+TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTestNormal) {
   auto containerOption = GetParam();
-  testAdditionAndIteration(containerOption);
+  testAdditionAndIteration(containerOption, false);
+}
+
+TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTestHalo) {
+  auto containerOption = GetParam();
+  testAdditionAndIteration(containerOption, true);
 }
 
 using ::testing::Combine;
