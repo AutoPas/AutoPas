@@ -35,15 +35,11 @@ public:
      */
     long VSCalculateV(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas);
 
-    /**Proceeds the Calculation of Forces with the given functor and "autopas.iteratePairwise"
-     * @param cutoff
-     */
-
     double getParticleDeltaT() const;
 
 
 private:
-    /** \brief Duration of a timestep
+    /**  Duration of a timestep
      * */
     double particle_delta_t;        // @todo: add particle_delta, time_end -> main and parser
 

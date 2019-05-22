@@ -98,29 +98,21 @@ int     main(int argc, char **argv) {
     // Initialization
     autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas(outputStream);
     autopas::Logger::get()->set_level(logLevel);
-
     Simulation<PrintableMolecule, FullParticleCell<PrintableMolecule>> Simulation(autopas);
     Simulation.initialize(parser);
+    //Simulation
     DurationSimulation = Simulation.simulate();
     // @todo -> simulate gibt duration der Simulation zurück
-
 
     PrintableMolecule::setEpsilon(1.0);
     PrintableMolecule::setSigma(1.0);
     cout << endl;
     cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
     cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
-    if(GridGenerator == MDFlexParser::GeneratorOption::grid){
+    if(parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid){
         particlesTotal=particlesPerDim * particlesPerDim * particlesPerDim;
     }
-    
 
-    switch (GridGenerator){
-        case MDFlexParser::GeneratorOption::grid: {
-            particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
-            break;
-        }
-}
   if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
 
   // statistics for linked cells
@@ -144,25 +136,13 @@ int     main(int argc, char **argv) {
   unsigned long flopsPerKernelCall = 0;
   cout << "Starting force calculation... " << endl;
 
-    //@todo sachen die man brauch für statistiken behalten:
-    switch (functorChoice) {
-        case MDFlexParser::FunctorOption::lj12_6: {
-            this->setFunctor(LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>);
 
-            durationApply =
-                    calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff, numIterations);
-            flopsPerKernelCall =
-                    LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-            break;
-        }
-        case MDFlexParser::FunctorOption::lj12_6_AVX: {
-            durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff,
-                                                                                                            numIterations);
-            flopsPerKernelCall =
-                    LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-            break;
-        }
-    }
+   //@todo für statistiken:  flopsPerKernelCall =  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+    //if(MDFlexParser::FunctorOption::lj12_6==parser.getFunctorOption()){
+    //  flopsPerKernelCall =
+    //          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+    //} usw für weitere Funktoren
+
 
   stopTotal = std::chrono::high_resolution_clock::now();
   cout << "Force calculation done!" << endl;

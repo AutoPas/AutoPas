@@ -125,7 +125,6 @@ template<class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
 
     string logFileName(parser.getLogFileName());
-
     auto measureFlops(parser.getMeasureFlops());
     auto numIterations(parser.getIterations());
     auto particlesTotal(parser.getParticlesTotal());
@@ -158,7 +157,24 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     _autopas.setAllowedTraversals(traversalOptions);
     _autopas.setAllowedDataLayouts(dataLayoutOptions);
     _autopas.setAllowedNewton3Options(newton3Options);
-
+    switch (generatorChoice) {
+        case MDFlexParser::GeneratorOption::grid: {
+            initContainerGrid(autopas, particlesPerDim, particleSpacing); //particlesTotal wird in diesem fall in der main geupdated
+            break;
+        }
+        case MDFlexParser::GeneratorOption::uniform: {
+            initContainerUniform(autopas, boxLength, particlesTotal);
+            break;
+        }
+        case MDFlexParser::GeneratorOption::gaussian: {
+            initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
+            break;
+        }
+        default:
+            std::cerr << "Unknown generator choice" << std::endl;
+            return -1;
+    }
+    //initializes Functor
     switch (functorChoice) {
         case MDFlexParser::FunctorOption::lj12_6: {
             this->setFunctor(LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>);
@@ -167,12 +183,11 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
             this->setFunctor(LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>);
         }
     }
+    // @todo UNSICHER: müssen die Position nochmal berechnet werden nachdem GridGenerator
 
-
-        //  @todo initialize Velocities and Positions---JA oder NEIN?
-    TimeDiscretization td;
-    td.VSCalculateV(this->_autopas);
-    td.VSCalculateX(this->_autopas);
+    // @todo Velocity werte müssen initialisiert werden , später mit thermostat
+    //Force Values musst be filled
+    this->CalcF(this->Functor);
 
     }
 
