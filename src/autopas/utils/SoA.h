@@ -56,6 +56,14 @@ class SoA {
   }
 
   /**
+   * @brief appends an other SoA buffer.
+   * @param other other buffer.
+   */
+  void append(SoA<SoAArraysType> &other) {
+    append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+  }
+
+  /**
    * @brief Writes / updates values of attributes for a specific particle.
    * @tparam attributes Array of attributes to update.
    * @tparam ValueArrayType type of the array
@@ -129,7 +137,7 @@ class SoA {
    *
    * @return Number of particles.
    */
-  size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
+  inline constexpr size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
 
   /**
    * delete all particles in the soa
@@ -177,6 +185,22 @@ class SoA {
   // Stop of the recursive write_impl call
   template <class ValueArrayType>
   void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {}
+
+  // helper function to append a single array
+  template <std::size_t attribute>
+  void appendSingleArray(utils::SoAStorage<SoAArraysType> &valArrays) {
+    auto &currentVector = soaStorage.template get<attribute>();
+    auto &otherVector = valArrays.template get<attribute>();
+    currentVector.insert(currentVector.end(), otherVector.begin(), otherVector.end());
+  }
+
+  // actual implementation of append
+  template <std::size_t... Is>
+  void append_impl(utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+    // @TODO: This is a rather bad solution, but necessary since C++14 lacks fold expressions
+    // @TODO: C++17: replace by (appendSingleArray<Is>(valArrays),...);
+    int unusedArray[] = {(appendSingleArray<Is>(valArrays), 0)...};
+  }
 
   // ------------- members ---------------
 
