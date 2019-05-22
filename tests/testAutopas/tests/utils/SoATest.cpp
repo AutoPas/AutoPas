@@ -6,7 +6,7 @@
 
 #include "SoATest.h"
 
-TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle> soa; }
+TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle::SoAArraysType> soa; }
 
 TEST_F(SoATest, SoATypeTest) {
   static_assert(std::is_same<autopas::utils::SoAType<size_t, double, double, double>::Type,
