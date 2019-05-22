@@ -85,7 +85,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
           "nullptr!");
     }
 
-    if (not _iteratorWithinOneCell.isValid()) {
+    if (not _iteratorWithinOneCell.isValid() or not isCellTypeBehaviorCorrect()) {
       ParticleIterator::next_non_empty_cell();
     }
     // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
