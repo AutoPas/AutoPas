@@ -253,6 +253,31 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
     }
     EXPECT_EQ(count, 6 * 6 * 6);
   }
+
+  // check number of halo particles for region iterator
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::haloOnly); iter.isValid();
+         ++iter) {
+      ++count;
+      EXPECT_FALSE(iter->isOwned());
+    }
+    if (alwaysAddAsHalo) {
+      EXPECT_EQ(count, 6 * 6 * 6);
+    } else {
+      EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
+    }
+  }
+
+  // check number of particles
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::haloAndOwned); iter.isValid();
+         ++iter) {
+      ++count;
+    }
+    EXPECT_EQ(count, 6 * 6 * 6);
+  }
 }
 
 TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTestNormal) {
