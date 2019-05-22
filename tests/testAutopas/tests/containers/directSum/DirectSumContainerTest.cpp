@@ -19,8 +19,8 @@ TEST_F(DirectSumContainerTest, testParticleAdding) {
           EXPECT_ANY_THROW(directSum.addParticle(p));     // outside, therefore not ok!
           EXPECT_NO_THROW(directSum.addHaloParticle(p));  // outside, therefore ok!
         } else {
-          EXPECT_NO_THROW(directSum.addParticle(p));       // inside, therefore ok!
-          EXPECT_ANY_THROW(directSum.addHaloParticle(p));  // inside, therefore not ok!
+          EXPECT_NO_THROW(directSum.addParticle(p));      // inside, therefore ok!
+          EXPECT_NO_THROW(directSum.addHaloParticle(p));  // inside, but ok, as we have inprecise boundaries!
         }
       }
     }
