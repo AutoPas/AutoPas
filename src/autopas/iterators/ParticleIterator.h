@@ -167,9 +167,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
       case haloAndOwned:
         return true;
       case haloOnly:
-        return _flagManager->isHaloCell(_iteratorAcrossCells - _vectorOfCells->begin());
+        return _flagManager->cellCanContainHaloParticles(_iteratorAcrossCells - _vectorOfCells->begin());
       case ownedOnly:
-        return _flagManager->isOwningCell(_iteratorAcrossCells - _vectorOfCells->begin());
+        return _flagManager->cellCanContainOwnedParticles(_iteratorAcrossCells - _vectorOfCells->begin());
       default:
         utils::ExceptionHandler::exception("unknown iterator behavior");
         return false;

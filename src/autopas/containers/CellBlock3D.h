@@ -60,7 +60,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   CellBlock3D &operator=(const CellBlock3D) = delete;
 
-  bool isHaloCell(index_t index1d) const override {
+  bool cellCanContainHaloParticles(index_t index1d) const override {
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
@@ -75,7 +75,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return isHaloCell;
   }
 
-  bool isOwningCell(index_t index1d) const override {
+  bool cellCanContainOwnedParticles(index_t index1d) const override {
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
