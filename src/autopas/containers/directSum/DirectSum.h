@@ -156,12 +156,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     std::vector<size_t> cellsOfInterest;
 
     switch (behavior) {
-      case IteratorBehavior::haloOnly:
-        cellsOfInterest.push_back(1);
-        break;
       case IteratorBehavior::ownedOnly:
         cellsOfInterest.push_back(0);
         break;
+      case IteratorBehavior::haloOnly:
+        // for haloOnly all cells can contain halo particles!
       case IteratorBehavior::haloAndOwned:
         cellsOfInterest.push_back(0);
         cellsOfInterest.push_back(1);
@@ -180,7 +179,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     typedef std::size_t index_t;
 
    public:
-    bool isHaloCell(index_t index1d) const override { return index1d == 1; }
+    /**
+     * This will always return true, as all cells can contain halo particles for DirectSum.
+     * @param index1d
+     * @return
+     */
+    bool isHaloCell(index_t index1d) const override { return true; }
 
     bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
   } _cellBorderFlagManager;

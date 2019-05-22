@@ -10,7 +10,9 @@
 constexpr double cutoff = 1.;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
+constexpr std::array<double, 3> haloBoxMin{0. - skin - cutoff, 0. - skin - cutoff, 0. - skin - cutoff};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
+constexpr std::array<double, 3> haloBoxMax{10. + skin + cutoff, 10. + skin + cutoff, 10. + skin + cutoff};
 constexpr double eps = 1.;
 constexpr double sigma = 1.;
 constexpr double shift = 0.1;
@@ -257,7 +259,7 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
   // check number of halo particles for region iterator
   {
     size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::haloOnly); iter.isValid();
+    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly); iter.isValid();
          ++iter) {
       ++count;
       EXPECT_FALSE(iter->isOwned());
@@ -272,7 +274,7 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
   // check number of particles
   {
     size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::haloAndOwned); iter.isValid();
+    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned); iter.isValid();
          ++iter) {
       ++count;
     }

@@ -29,7 +29,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
  protected:
   /**
    * Simple constructor without major calculation overhead for internal use.
-   * ATTENTION: This Iterator might be invalid after construction!
+   * @note ATTENTION: This Iterator might be invalid after construction!
    *
    * @param cont Linear data vector of ParticleCells.
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
@@ -73,6 +73,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
     } else {
       _iteratorAcrossCells = cont->end();
       AutoPasLog(warn, "More threads than cells. No work left for thread {}!", myThreadId);
+      return;
     }
 
     if (behavior != haloAndOwned and flagManager == nullptr) {
@@ -83,11 +84,15 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
           "Behavior is not haloAndOwned, but flagManager is "
           "nullptr!");
     }
-    if (_iteratorAcrossCells < cont->end()) {
-      _iteratorWithinOneCell = _iteratorAcrossCells->begin();
-      if (not isCellTypeBehaviorCorrect() or not _iteratorWithinOneCell.isValid()) {
-        ParticleIterator::next_non_empty_cell();
-      }
+
+    if (not _iteratorWithinOneCell.isValid()) {
+      ParticleIterator::next_non_empty_cell();
+    }
+    // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
+    // we check it here!
+    if (not ParticleIterator<Particle, ParticleCell>::isValid() and this->_iteratorAcrossCells < cont->end()) {
+      // the iterator is invalid + we still have particles/cells, so we increment it!
+      operator++();
     }
   }
 
@@ -95,15 +100,17 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * @copydoc ParticleIteratorInterface::operator++()
    */
   inline ParticleIterator<Particle, ParticleCell>& operator++() override {
-    if (_iteratorWithinOneCell.isValid()) {
-      ++_iteratorWithinOneCell;
-    }
+    // this iteration is done until a proper particle is found. i.e. one that satisfies the owning state.
+    do {
+      if (_iteratorWithinOneCell.isValid()) {
+        ++_iteratorWithinOneCell;
+      }
 
-    // don't merge into if-else, _cell_iterator may becoeme invalid after ++
-
-    if (not _iteratorWithinOneCell.isValid()) {
-      next_non_empty_cell();
-    }
+      // don't merge into if-else, _cell_iterator may become invalid after ++
+      if (not _iteratorWithinOneCell.isValid()) {
+        next_non_empty_cell();
+      }
+    } while (not isValid() && _iteratorAcrossCells < _vectorOfCells->end());
     return *this;
   }
 
@@ -129,7 +136,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    */
   bool isValid() const override {
     return _vectorOfCells != nullptr and _iteratorAcrossCells < _vectorOfCells->end() and
-           _iteratorWithinOneCell.isValid();
+           _iteratorWithinOneCell.isValid() and particleHasCorrectOwnedState();
   }
 
   ParticleIteratorInterfaceImpl<Particle>* clone() const override {
@@ -155,7 +162,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * checks if a cell has the correct cell type according to the behavior
    * @return true iff the cell type is proper according to the behavior
    */
-  bool isCellTypeBehaviorCorrect() {
+  bool isCellTypeBehaviorCorrect() const {
     switch (_behavior) {
       case haloAndOwned:
         return true;
@@ -163,6 +170,24 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
         return _flagManager->isHaloCell(_iteratorAcrossCells - _vectorOfCells->begin());
       case ownedOnly:
         return _flagManager->isOwningCell(_iteratorAcrossCells - _vectorOfCells->begin());
+      default:
+        utils::ExceptionHandler::exception("unknown iterator behavior");
+        return false;
+    }
+  }
+
+  /**
+   * Indicates whether the particle has the correct owned state.
+   * @return
+   */
+  bool particleHasCorrectOwnedState() const {
+    switch (_behavior) {
+      case haloAndOwned:
+        return true;
+      case haloOnly:
+        return not _iteratorWithinOneCell->isOwned();
+      case ownedOnly:
+        return _iteratorWithinOneCell->isOwned();
       default:
         utils::ExceptionHandler::exception("unknown iterator behavior");
         return false;
