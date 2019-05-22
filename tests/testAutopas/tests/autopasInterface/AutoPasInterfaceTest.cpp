@@ -259,8 +259,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
   // check number of halo particles for region iterator
   {
     size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly); iter.isValid();
-         ++iter) {
+    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly);
+         iter.isValid(); ++iter) {
       ++count;
       EXPECT_FALSE(iter->isOwned());
     }
@@ -274,8 +274,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
   // check number of particles
   {
     size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned); iter.isValid();
-         ++iter) {
+    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned);
+         iter.isValid(); ++iter) {
       ++count;
     }
     EXPECT_EQ(count, 6 * 6 * 6);
