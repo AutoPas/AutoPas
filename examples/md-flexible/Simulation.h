@@ -29,7 +29,7 @@ private:
     AutoPas<Particle, ParticleCell> *_autopas;
 
     //@todo nicht sicher mit der implementierung-> anders: functor initialize -> simulate(S.init)
-    autopas::Functor Functor;
+    autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType> _Functor;
 
     long durationX;
     long durationF;
@@ -37,7 +37,7 @@ private:
 public:
     virtual ~Simulation();  //@todo
 
-    explicit Simulation(const AutoPas<Particle, ParticleCell> &autopas);
+    explicit Simulation(AutoPas<Particle, ParticleCell> &autopas);
 
     /**
     * @brief Constructs a container and fills it with particles.
@@ -50,7 +50,7 @@ public:
     * @param particlesPerDim Number of desired particles per dimension.
     * @param particelSpacing Space between two particles along each axis of space.
     */
-    void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+    void initContainerGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,
                            size_t particlesPerDim, double particelSpacing);
     /**Getter for Duration of Position Calculation
      * @return durationX
@@ -77,10 +77,10 @@ public:
      */
     void addDurationV(long durationV);
 
-    void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+    void initContainerGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,
                             double boxLength, size_t numParticles, double distributionMean, double distributionStdDev);
 
-    void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+    void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas,
                               double boxLength, size_t numParticles);
 
     /** @brief This function
@@ -95,7 +95,7 @@ public:
      * @param Force Calculation Functor
      * @return Duration of Calculation
      * */
-    void CalcF(autopas::Functor functor);
+    void CalcF();
 
     /**
      * This function processes the main simulation loop
@@ -147,62 +147,62 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     auto tuningInterval(parser.getTuningInterval());
     auto tuningSamples(parser.getTuningSamples());
     auto verletSkinRadius(parser.getVerletSkinRadius());
-    _autopas.setCutoff(cutoff);
-    _autopas.setVerletSkin(verletSkinRadius);
-    _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
-    _autopas.setTuningInterval(tuningInterval);
-    _autopas.setNumSamples(tuningSamples);
-    _autopas.setSelectorStrategy(selectorStrategy);
-    _autopas.setAllowedContainers(containerChoice);
-    _autopas.setAllowedTraversals(traversalOptions);
-    _autopas.setAllowedDataLayouts(dataLayoutOptions);
-    _autopas.setAllowedNewton3Options(newton3Options);
+    _autopas->setCutoff(cutoff);
+    _autopas->setVerletSkin(verletSkinRadius);
+    _autopas->setVerletRebuildFrequency(verletRebuildFrequency);
+    _autopas->setTuningInterval(tuningInterval);
+    _autopas->setNumSamples(tuningSamples);
+    _autopas->setSelectorStrategy(selectorStrategy);
+    _autopas->setAllowedContainers(containerChoice);
+    _autopas->setAllowedTraversals(traversalOptions);
+    _autopas->setAllowedDataLayouts(dataLayoutOptions);
+    _autopas->setAllowedNewton3Options(newton3Options);
     switch (generatorChoice) {
         case MDFlexParser::GeneratorOption::grid: {
-            initContainerGrid(autopas, particlesPerDim, particleSpacing); //particlesTotal wird in diesem fall in der main geupdated
+            initContainerGrid(_autopas, particlesPerDim, particleSpacing); //particlesTotal wird in diesem fall in der main geupdated
             break;
         }
         case MDFlexParser::GeneratorOption::uniform: {
-            initContainerUniform(autopas, boxLength, particlesTotal);
+            initContainerUniform(_autopas, boxLength, particlesTotal);
             break;
         }
         case MDFlexParser::GeneratorOption::gaussian: {
-            initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
+            initContainerGauss(_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
             break;
         }
         default:
-            std::cerr << "Unknown generator choice" << std::endl;
-            return -1;
+            throw std::runtime_error("Unknown generator choice");
     }
     //initializes Functor
     switch (functorChoice) {
         case MDFlexParser::FunctorOption::lj12_6: {
-            this->setFunctor(LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>);
+            //@todo muss mit numIterations geändert werden zu particledeltaT / time_end
+            this->setFunctor(LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>(_autopas,cutoff,numIterations));
         }
         case MDFlexParser::FunctorOption::lj12_6_AVX: {
-            this->setFunctor(LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>);
+            this->setFunctor(LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>(_autopas,cutoff,numIterations));
         }
     }
     // @todo UNSICHER: müssen die Position nochmal berechnet werden nachdem GridGenerator
 
     // @todo Velocity werte müssen initialisiert werden , später mit thermostat
     //Force Values musst be filled
-    this->CalcF(this->Functor);
+    this->CalcF(this->_Functor);
 
     }
 
 template<class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::setFunctor(auto functor) {
-    Functor = functor;
+    _Functor = functor;
 }
 
 template<class Particle, class ParticleCell>
-Simulation<Particle, ParticleCell>::Simulation(const AutoPas<Particle, ParticleCell> &autopas):_autopas(autopas) {
+Simulation<Particle, ParticleCell>::Simulation(AutoPas<Particle, ParticleCell> &autopas):_autopas(autopas) {
     durationF=0; durationV=0; durationX=0;
 }
 
 template<class Particle,class ParticleCell>
-void Simulation<Particle, ParticleCell>::initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+void Simulation<Particle, ParticleCell>::initContainerGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,
                        size_t particlesPerDim, double particelSpacing) {
     std::array<double, 3> boxMin({0., 0., 0.});
     std::array<double, 3> boxMax(
@@ -220,7 +220,7 @@ void Simulation<Particle, ParticleCell>::initContainerGrid(autopas::AutoPas<Prin
 }
 
 template<class Particle,class ParticleCell>
-void Simulation<Particle, ParticleCell>::initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+void Simulation<Particle, ParticleCell>::initContainerGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
     std::array<double, 3> boxMin({0., 0., 0.});
     std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
@@ -235,7 +235,7 @@ void Simulation<Particle, ParticleCell>::initContainerGauss(autopas::AutoPas<Pri
 }
 
 template<class Particle,class ParticleCell>
-void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas,
                           double boxLength, size_t numParticles) {
     std::array<double, 3> boxMin({0., 0., 0.});
     std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
@@ -250,11 +250,11 @@ void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<P
 }
 
 
-template<class Particle,ParticleCell>
-void Simulation<Particle,ParticleCell>::CalcF(autopas::Functor functor){
-    td::chrono::high_resolution_clock::time_point startCalc, stopCalc;
+template<class Particle,class ParticleCell>
+void Simulation<Particle,ParticleCell>::CalcF(){
+    std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
-    _autopas->iteratePairwise(functor)
+    _autopas->iteratePairwise(this->_Functor);
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
     this->addDurationF(durationCalc);
@@ -264,9 +264,6 @@ void Simulation<Particle,ParticleCell>::CalcF(autopas::Functor functor){
 template<class Particle,class ParticleCell>
 long Simulation<Particle, ParticleCell>::simulate(){
 
-
-
-    auto functor = LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
 
@@ -274,14 +271,14 @@ long Simulation<Particle, ParticleCell>::simulate(){
     double particleDelta_T=0.01;    //@todo -get Value from Parser
     double time=0;
     double timeEnd=10;              //@todo -get TimeEnd from Parser
-    TimeDiscretization td(particleDelta_T);
+    TimeDiscretization<Particle> td(particleDelta_T);
     //main simulation loop
     while(time<timeEnd){
         this->addDurationX(td.VSCalculateX(_autopas));
         // -> nicht sicher ob man das IF-Case braucht
-        if (this->autopas::Logger::get()->level() <= this->autopas::Logger::LogLevel::debug) {
+        if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
              cout << "Iteration " << time/particleDelta_T << endl;
-            cout << "Current Memory usage: " << this->autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
+            cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
         }
         this->CalcF();
         this->addDurationV(td.VSCalculateV(_autopas));

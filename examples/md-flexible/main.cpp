@@ -61,7 +61,7 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
 }
 
 
-int     main(int argc, char **argv) {
+int main(int argc, char **argv) {
     // Parsing
     MDFlexParser parser;
     if (not parser.parseInput(argc, argv)) {
@@ -95,17 +95,20 @@ int     main(int argc, char **argv) {
     std::ostream outputStream(streamBuf);
     long DurationSimulation;
 
+
+    PrintableMolecule::setEpsilon(1.0);
+    PrintableMolecule::setSigma(1.0);
+    PrintableMolecule::setMass(1.0);
+    PrintableMolecule::setOldf(0);
     // Initialization
     autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas(outputStream);
     autopas::Logger::get()->set_level(logLevel);
-    Simulation<PrintableMolecule, FullParticleCell<PrintableMolecule>> Simulation(autopas);
+    Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
     Simulation.initialize(parser);
     //Simulation
     DurationSimulation = Simulation.simulate();
     // @todo -> simulate gibt duration der Simulation zurück
 
-    PrintableMolecule::setEpsilon(1.0);
-    PrintableMolecule::setSigma(1.0);
     cout << endl;
     cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
     cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
