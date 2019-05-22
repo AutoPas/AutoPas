@@ -168,25 +168,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
         }
     }
 
-    // @todo check if return ParticleTotal for main (used in VTkWriter)
-        switch (generatorChoice) {
-            case MDFlexParser::GeneratorOption::grid: {
-                initContainerGrid(_autopas, particlesPerDim, particleSpacing);
-                particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
-                break;
-            }
-            case MDFlexParser::GeneratorOption::uniform: {
-                initContainerUniform(_autopas, boxLength, particlesTotal);
-                break;
-            }
-            case MDFlexParser::GeneratorOption::gaussian: {
-                initContainerGauss(_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
-                break;
-            }
-            default:
-                std::string errorMessage= std::string("Unknown generetor Choice");
-                throw std::runtime_error(errorMessage);
-        }
 
         //  @todo initialize Velocities and Positions---JA oder NEIN?
     TimeDiscretization td;
@@ -261,7 +242,7 @@ void Simulation<Particle,ParticleCell>::CalcF(autopas::Functor functor){
     _autopas->iteratePairwise(functor)
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
-    this.addDurationF(durationCalc);
+    this->addDurationF(durationCalc);
 }
 
 
@@ -279,6 +260,7 @@ long Simulation<Particle, ParticleCell>::simulate(){
     double time=0;
     double timeEnd=10;              //@todo -get TimeEnd from Parser
     TimeDiscretization td(particleDelta_T);
+    //main simulation loop
     while(time<timeEnd){
         this->addDurationX(td.VSCalculateX(_autopas));
         // -> nicht sicher ob man das IF-Case braucht
