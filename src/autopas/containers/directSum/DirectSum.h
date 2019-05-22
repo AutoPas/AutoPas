@@ -186,7 +186,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
      */
     bool isHaloCell(index_t index1d) const override { return true; }
 
-    bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
+    bool isOwningCell(index_t index1d) const override { return index1d == 0; }
   } _cellBorderFlagManager;
 
   ParticleCell *getCell() { return &(this->_cells.at(0)); };
