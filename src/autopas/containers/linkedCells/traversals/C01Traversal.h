@@ -136,8 +136,6 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
 
   if (DataLayout == DataLayoutOption::soa) {
     ParticleCell combinationOfOtherCell;
-    size_t offset = 0;
-
     for (size_t j = 0; j < num_pairs; ++j) {
       const unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
       ParticleCell &otherCell = cells[otherIndex];
@@ -145,8 +143,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
       if (baseIndex == otherIndex) {
         this->_cellFunctor.processCell(baseCell);
       } else {
-        _pairwiseFunctor->SoALoader(otherCell, combinationOfOtherCell._particleSoABuffer, offset);
-        offset += otherCell.numParticles();
+        combinationOfOtherCell._particleSoABuffer.append(otherCell._particleSoABuffer);
       }
     }
     this->_cellFunctor.processCellPair(baseCell, combinationOfOtherCell);
