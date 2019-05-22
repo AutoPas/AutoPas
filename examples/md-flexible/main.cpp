@@ -62,54 +62,65 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
 
 
 int     main(int argc, char **argv) {
-  // Parsing
-  MDFlexParser parser;
-  if (not parser.parseInput(argc, argv)) {
-    exit(-1);
-  }
-  string logFileName(parser.getLogFileName());
-  auto measureFlops(parser.getMeasureFlops());
-  auto numIterations(parser.getIterations());
-  auto particlesTotal(parser.getParticlesTotal());
-  auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
-  auto vtkFilename(parser.getWriteVTK());
-  auto logLevel(parser.getLogLevel());
+    // Parsing
+    MDFlexParser parser;
+    if (not parser.parseInput(argc, argv)) {
+        exit(-1);
+    }
+    string logFileName(parser.getLogFileName());
+    auto measureFlops(parser.getMeasureFlops());
+    auto numIterations(parser.getIterations());
+    auto particlesTotal(parser.getParticlesTotal());
+    auto particlesPerDim(parser.getParticlesPerDim());
+    auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
+    auto vtkFilename(parser.getWriteVTK());
+    auto logLevel(parser.getLogLevel());
 
-  parser.printConfig();
+    parser.printConfig();
 
-  //Simulationsdauer ausgerechnet in main.cpp:
-  std::chrono::high_resolution_clock::time_point startTotal, stopTotal;
-  startTotal = std::chrono::high_resolution_clock::now();
+    //Simulationsdauer ausgerechnet in main.cpp:
+    std::chrono::high_resolution_clock::time_point startTotal, stopTotal;
+    startTotal = std::chrono::high_resolution_clock::now();
 
-  // select either std::out or a logfile for autopas log output.
-  // This does not affect md-flex output.
-  std::ofstream logFile;
-  std::streambuf *streamBuf;
-  if (logFileName.empty()) {
-    streamBuf = std::cout.rdbuf();
-  } else {
-    logFile.open(logFileName);
-    streamBuf = logFile.rdbuf();
-  }
-  std::ostream outputStream(streamBuf);
-  long DurationSimulation;
+    // select either std::out or a logfile for autopas log output.
+    // This does not affect md-flex output.
+    std::ofstream logFile;
+    std::streambuf *streamBuf;
+    if (logFileName.empty()) {
+        streamBuf = std::cout.rdbuf();
+    } else {
+        logFile.open(logFileName);
+        streamBuf = logFile.rdbuf();
+    }
+    std::ostream outputStream(streamBuf);
+    long DurationSimulation;
 
-  // Initialization
-  autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas(outputStream);
-  autopas::Logger::get()->set_level(logLevel);
+    // Initialization
+    autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas(outputStream);
+    autopas::Logger::get()->set_level(logLevel);
 
-  Simulation<PrintableMolecule,FullParticleCell<PrintableMolecule>> Simulation(autopas);
-  Simulation.initialize(parser);
-  DurationSimulation = Simulation.simulate();
+    Simulation<PrintableMolecule, FullParticleCell<PrintableMolecule>> Simulation(autopas);
+    Simulation.initialize(parser);
+    DurationSimulation = Simulation.simulate();
     // @todo -> simulate gibt duration der Simulation zurück
 
 
-  PrintableMolecule::setEpsilon(1.0);
-  PrintableMolecule::setSigma(1.0);
-  cout << endl;
-  cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
-  cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
+    PrintableMolecule::setEpsilon(1.0);
+    PrintableMolecule::setSigma(1.0);
+    cout << endl;
+    cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
+    cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
+    if(GridGenerator == MDFlexParser::GeneratorOption::grid){
+        particlesTotal=particlesPerDim * particlesPerDim * particlesPerDim;
+    }
+    
 
+    switch (GridGenerator){
+        case MDFlexParser::GeneratorOption::grid: {
+            particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
+            break;
+        }
+}
   if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
 
   // statistics for linked cells
