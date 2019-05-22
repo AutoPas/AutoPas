@@ -226,13 +226,17 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
     size_t count = 0;
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       ++count;
+      EXPECT_TRUE(iter->isOwned());
     }
     EXPECT_EQ(count, 3 * 3 * 3);
   }
+
+  // check number of halo particles
   {
     size_t count = 0;
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       ++count;
+      EXPECT_FALSE(iter->isOwned());
     }
     if (alwaysAddAsHalo) {
       EXPECT_EQ(count, 6 * 6 * 6);
@@ -240,6 +244,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
       EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
     }
   }
+
+  // check number of particles
   {
     size_t count = 0;
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
@@ -263,12 +269,13 @@ using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 
+/// @todo: use this instead of below to enable testing of VerletClusterLists.
+// INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest, ValuesIn(autopas::allContainerOptions),
+//                         AutoPasInterfaceTest::PrintToStringParamName());
+
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                          // proper indent
                          ValuesIn([]() -> std::vector<autopas::ContainerOption> {
-                           // return autopas::allContainerOptions;
-                           /// @todo: uncomment above lines and remove below lines to enable testing of
-                           /// verletClusterLists.
                            auto all = autopas::allContainerOptions;
                            all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists),
                                      all.end());
