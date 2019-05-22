@@ -220,17 +220,17 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
       }
     }
   }
-
-  if (alwaysAddAsHalo) {
-    ASSERT_FALSE(autoPas.begin(autopas::IteratorBehavior::ownedOnly).isValid())
-        << "for alwaysAddAsHalo=true, no owned particles should exist" << std::endl;
-  } else {
+  {
     size_t count = 0;
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       ++count;
       EXPECT_TRUE(iter->isOwned());
     }
-    EXPECT_EQ(count, 3 * 3 * 3);
+    if (alwaysAddAsHalo) {
+      EXPECT_EQ(count, 0);
+    } else {
+      EXPECT_EQ(count, 3 * 3 * 3);
+    }
   }
 
   // check number of halo particles
@@ -271,7 +271,7 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
     }
   }
 
-  // check number of particles
+  // check number of particles for region iterator
   {
     size_t count = 0;
     for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned);
@@ -279,6 +279,20 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
       ++count;
     }
     EXPECT_EQ(count, 6 * 6 * 6);
+  }
+
+  // check number of owned particles for region iterator
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::ownedOnly);
+         iter.isValid(); ++iter) {
+      ++count;
+    }
+    if (alwaysAddAsHalo) {
+      EXPECT_EQ(count, 0);
+    } else {
+      EXPECT_EQ(count, 3 * 3 * 3);
+    }
   }
 }
 
