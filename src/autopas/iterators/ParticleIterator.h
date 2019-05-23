@@ -90,9 +90,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
     }
     // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
     // we check it here!
-    if (not ParticleIterator<Particle, ParticleCell>::isValid() and this->_iteratorAcrossCells < cont->end()) {
+    if (not ParticleIterator::isValid() and this->_iteratorAcrossCells < cont->end()) {
       // the iterator is invalid + we still have particles/cells, so we increment it!
-      operator++();
+      ParticleIterator::operator++();
     }
   }
 
