@@ -110,6 +110,39 @@ TEST_F(SoATest, SoATestPush) {
   EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 0.07);
 }
 
+TEST_F(SoATest, SoATestAppend) {
+  // default soa using autopas::Particle
+  using autopas::Particle;
+  std::array<autopas::SoA<Particle::SoAArraysType>, 2> soaBuffer;
+
+  soaBuffer[0].push<Particle::AttributeNames::id>(2);
+  soaBuffer[0].push<Particle::AttributeNames::posX>(0.3);
+  soaBuffer[0].push<Particle::AttributeNames::posY>(0.1);
+  soaBuffer[0].push<Particle::AttributeNames::posZ>(0.5);
+  soaBuffer[0].push<Particle::AttributeNames::forceX>(-0.2);
+  soaBuffer[0].push<Particle::AttributeNames::forceY>(0.7);
+  soaBuffer[0].push<Particle::AttributeNames::forceZ>(0.07);
+
+  EXPECT_EQ(soaBuffer[0].getNumParticles(), 1);
+  EXPECT_EQ(soaBuffer[1].getNumParticles(), 0);
+  // Append to empty buffer
+  soaBuffer[1].append(soaBuffer[0]);
+  EXPECT_EQ(soaBuffer[0].getNumParticles(), 1);
+  EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
+
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::id>(0), 2);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posX>(0), 0.3);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posY>(0), 0.1);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posZ>(0), 0.5);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceX>(0), -0.2);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceY>(0), 0.7);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceZ>(0), 0.07);
+  // Append to filled buffer
+  soaBuffer[0].append(soaBuffer[1]);
+  EXPECT_EQ(soaBuffer[0].getNumParticles(), 2);
+  EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
+}
+
 TEST_F(SoATest, SoATestClear) {
   // default soa using autopas::Particle
   using autopas::Particle;
