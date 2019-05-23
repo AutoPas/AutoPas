@@ -12,16 +12,6 @@
 
 typedef autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> Container;
 
-// typedef autopas::VerletLists<
-//    autopas::sph::SPHParticle,
-//    autopas::FullParticleCell<autopas::sph::SPHParticle>>
-//    Container;
-
-// typedef autopas::DirectSum<
-//    autopas::sph::SPHParticle,
-//    autopas::FullParticleCell<autopas::sph::SPHParticle>>
-//    Container;
-
 void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>& bBoxMax) {
   // Place SPH particles
   std::cout << "setup... started" << std::endl;
@@ -303,13 +293,13 @@ int main() {
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
   double cutoff = 0.03;  // 0.012*2.5=0.03; where 2.5 = kernel support radius
   unsigned int rebuildFrequency = 6;
-  double skintocutoff = 0.04;
+  double skinToCutoffRatio = 0.04;
 
   Container sphSystem;
   sphSystem.setBoxMin(boxMin);
   sphSystem.setBoxMax(boxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkin(skintocutoff * cutoff);
+  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
   std::vector<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
                                                           autopas::ContainerOption::verletLists,
