@@ -12,15 +12,6 @@
 #include <spdlog/spdlog.h>
 #include <iostream>
 
-/**
- * Returns the filename without full path.
- */
-#define __FILENAME__                           \
-  ({                                           \
-    const char* pStr = strrchr(__FILE__, '/'); \
-    pStr ? pStr + 1 : __FILE__;                \
-  })
-
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
  * Macro for logging providing common meta information.
@@ -33,7 +24,7 @@
     size_t textwidth = 26; /* If filenames get cropped increase this! */ \
     std::string s;                                                       \
     s.reserve(textwidth);                                                \
-    s.append(__FILENAME__);                                              \
+    s.append(SPDLOG_FILE_BASENAME(__FILE__));                            \
     s.append(":");                                                       \
     s.append(std::to_string(__LINE__));                                  \
     s.resize(textwidth, ' ');                                            \
