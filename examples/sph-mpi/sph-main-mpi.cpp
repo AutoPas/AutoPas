@@ -8,16 +8,10 @@
 #include <array>
 #include <cmath>
 #include <iostream>
-#include "autopas/autopasIncludes.h"
+#include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
 
-typedef autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> Container;
-typedef autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
-                              autopas::sph::SPHCalcHydroForceFunctor, autopas::DataLayoutOption::aos, false>
-    HydroTraversal;
-typedef autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
-                              autopas::DataLayoutOption::aos, false>
-    DensityTraversal;
+typedef autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> Container;
 
 void SetupIC(Container& sphSystem, double* end_time, const std::array<double, 3>& bBoxMax) {
   // Place SPH particles
@@ -148,7 +142,7 @@ int getReceivePartner(const std::array<int, 3> diff, MPI_Comm& comm) { return ge
 void issueSend(std::vector<autopas::sph::SPHParticle>& sendParticles, const std::array<int, 3> diff, MPI_Comm& comm,
                MPI_Request& sendRequest, std::vector<double>& buffer) {
   int neighbor = getSendRecvPartner(diff, comm);
-  ;
+
   for (auto& p : sendParticles) {
     std::vector<double> serialized = p.serialize();
     buffer.insert(std::end(buffer), std::begin(serialized), std::end(serialized));
@@ -386,8 +380,8 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm, const std::
     densityFunctor.AoSFunctor(*part, *part);
     part->setDensity(part->getDensity() / 2);
   }
-  DensityTraversal densityTraversal(sphSystem.getCellBlock().getCellsPerDimensionWithHalo(), &densityFunctor);
-  sphSystem.iteratePairwise(&densityFunctor, &densityTraversal, false);
+
+  sphSystem.iteratePairwise(&densityFunctor);
   // 1.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 
@@ -407,8 +401,8 @@ void densityPressureHydroForce(Container& sphSystem, MPI_Comm& comm, const std::
     part->setAcceleration(std::array<double, 3>{0., 0., 0.});
     part->setEngDot(0.);
   }
-  HydroTraversal hydroTraversal(sphSystem.getCellBlock().getCellsPerDimensionWithHalo(), &hydroForceFunctor);
-  sphSystem.iteratePairwise(&hydroForceFunctor, &hydroTraversal, false);
+
+  sphSystem.iteratePairwise(&hydroForceFunctor);
   // 0.3.3 delete halo particles, as their values are no longer valid
   deleteHaloParticles(sphSystem);
 }
@@ -450,7 +444,7 @@ MPI_Comm getDecomposition(const std::array<double, 3> globalMin, const std::arra
 
   int rank;
   MPI_Comm_rank(cart, &rank);
-  std::array<int, 3> coords;
+  std::array<int, 3> coords{};
   MPI_Cart_coords(cart, rank, 3, coords.data());
 
   for (int i = 0; i < 3; ++i) {
@@ -476,6 +470,8 @@ int main(int argc, char* argv[]) {
   globalBoxMax[0] = 1.;
   globalBoxMax[1] = globalBoxMax[2] = globalBoxMax[0] / 8.0;
   double cutoff = 0.03;  // 0.012*2.5=0.03; where 2.5 = kernel support radius
+  unsigned int rebuildFrequency = 6;
+  double skinToCutoffRatio = 0.04;
 
   std::array<double, 3> localBoxMin{}, localBoxMax{};
 
@@ -483,7 +479,18 @@ int main(int argc, char* argv[]) {
   // global box
   MPI_Comm comm = getDecomposition(globalBoxMin, globalBoxMax, localBoxMin, localBoxMax);
 
-  Container sphSystem(localBoxMin, localBoxMax, cutoff);
+  Container sphSystem;
+  sphSystem.setBoxMin(localBoxMin);
+  sphSystem.setBoxMax(localBoxMax);
+  sphSystem.setCutoff(cutoff);
+  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
+  sphSystem.setVerletRebuildFrequency(rebuildFrequency);
+  std::vector<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
+                                                          autopas::ContainerOption::verletLists,
+                                                          autopas::ContainerOption::verletListsCells};
+  sphSystem.setAllowedContainers(allowedContainers);
+  sphSystem.init();
+
   double dt;
   double t_end;
 
