@@ -47,6 +47,13 @@ void defaultInit(AutoPasT& autoPas1, AutoPasT& autoPas2, size_t direction) {
   }
 }
 
+
+/**
+ * Convert the leaving particle to entering particles.
+ * Hereby the periodic boundary position change is done.
+ * @param leavingParticles
+ * @return vector of particles that will enter the container.
+ */
 std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule>& leavingParticles) {
   std::vector<Molecule> enteringParticles{leavingParticles};
   for (auto& p : enteringParticles) {
@@ -65,6 +72,12 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule>& le
   return enteringParticles;
 }
 
+/**
+ * Identifies and sends particles that are in the halo of neighboring AutoPas instances or the same instance (periodic
+ * boundaries).
+ * @param autoPas
+ * @return vector of particles that are already shifted for the next process.
+ */
 auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) {
   std::vector<Molecule> haloParticles;
 
@@ -132,7 +145,7 @@ void addHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<M
 
 template <typename Functor>
 void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor) {
-  // 1. update Container; return value is vector of invalid = leaving particles!
+  // 1. update Container; return value is vector of invalid == leaving particles!
   auto invalidParticles = autoPas.updateContainer();
 
   // 2. leaving and entering particles
