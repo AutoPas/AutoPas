@@ -17,7 +17,7 @@ namespace autopas {
  */
 class FeatureVector {
  private:
-  std::vector<std::shared_ptr<Feature>> _vector;
+  std::vector<std::unique_ptr<Feature>> _vector;
 
  public:
   /**
@@ -33,6 +33,32 @@ class FeatureVector {
     for (double i : init) {
       addFeature(i);
     }
+  }
+
+  /**
+   * Copy constructor
+   * @param other
+   */
+  FeatureVector(const FeatureVector& other) : _vector() {
+    _vector.reserve(other._vector.size());
+    for (auto& f : other._vector) {
+      _vector.push_back(f->clone());
+    }
+  }
+
+  /**
+   * Copy assignment
+   * @param other
+   * @return
+   */
+  FeatureVector& operator=(const FeatureVector& other) {
+    _vector.clear();
+    _vector.reserve(other._vector.size());
+    for (auto& f : other._vector) {
+      _vector.push_back(f->clone());
+    }
+
+    return *this;
   }
 
   /**
@@ -53,6 +79,6 @@ class FeatureVector {
    * Add a DoubleFeature with given value to the vector
    * @param doubleFeature
    */
-  void addFeature(double doubleFeature) { _vector.push_back(std::make_shared<DoubleFeature>(doubleFeature)); }
+  void addFeature(double doubleFeature) { _vector.push_back(std::make_unique<DoubleFeature>(doubleFeature)); }
 };
 }  // namespace autopas
