@@ -200,6 +200,7 @@ class SoA {
     // @TODO: This is a rather bad solution, but necessary since C++14 lacks fold expressions
     // @TODO: C++17: replace by (appendSingleArray<Is>(valArrays),...);
     int unusedArray[] = {(appendSingleArray<Is>(valArrays), 0)...};
+    (void)unusedArray;  // avoid unused variable warning
   }
 
   // ------------- members ---------------
