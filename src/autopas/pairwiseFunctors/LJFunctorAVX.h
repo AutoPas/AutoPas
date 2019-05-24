@@ -82,6 +82,10 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   bool isRelevantForTuning() override { return relevantForTuning; }
 
+  bool allowsNewton3() override { return true; }
+
+  bool allowsNonNewton3() override { return true; }
+
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     utils::ExceptionHandler::exception("LJFunctorAVX.AoSFunctor() not implemented!");
   }
