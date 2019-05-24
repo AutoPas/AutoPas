@@ -131,7 +131,7 @@ void addEnteringParticles(Container& sphSystem, std::vector<autopas::sph::SPHPar
 }
 
 /**
- * get the required region for the regionparticleiterator.
+ * Get the required region for the regionparticleiterator.
  * @param boxMin
  * @param boxMax
  * @param diff
