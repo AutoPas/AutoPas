@@ -279,8 +279,9 @@ void updateHaloParticles(Container& sphSystem, MPI_Comm& comm, const std::array<
                       globalBoxMin[i], globalBoxMax[i]);
         }
 
-        for (auto iterator = sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax, autopas::IteratorBehavior::ownedOnly); iterator.isValid();
-             ++iterator) {
+        for (auto iterator =
+                 sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax, autopas::IteratorBehavior::ownedOnly);
+             iterator.isValid(); ++iterator) {
           autopas::sph::SPHParticle p = *iterator;  // copies Particle
           p.addR(shift);
           sendParticles.push_back(p);
@@ -307,8 +308,8 @@ void updateHaloParticles(Container& sphSystem, MPI_Comm& comm, const std::array<
 void deleteHaloParticles(Container& sphSystem) { sphSystem.deleteHaloParticles(); }
 
 void periodicBoundaryUpdate(Container& sphSystem, MPI_Comm& comm,
-                            const std::vector<autopas::sph::SPHParticle>& invalidParticles, std::array<double, 3> globalBoxMin,
-                            std::array<double, 3> globalBoxMax) {
+                            const std::vector<autopas::sph::SPHParticle>& invalidParticles,
+                            std::array<double, 3> globalBoxMin, std::array<double, 3> globalBoxMax) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
   std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
