@@ -41,14 +41,10 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @param epsilon
    * @param sigma
    * @param shift
-   * @param lowCorner Lower corner of the local simulation domain.
-   * @param highCorner Upper corner of the local simulation domain.
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift,
-                        std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
-                        bool duplicatedCalculation = false)
+  explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift, bool duplicatedCalculation = false)
 #ifdef __AVX__
       : _one{_mm256_set1_pd(1.)},
         _masks{
@@ -64,8 +60,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _duplicatedCalculations{duplicatedCalculation},
-        _lowCorner(lowCorner),
-        _highCorner(highCorner),
         _postProcessed{false} {
     if (calculateGlobals or duplicatedCalculation) {
       utils::ExceptionHandler::exception("Calculation of global values and duplicated calculations not supported.");
@@ -495,8 +489,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   // bool that defines whether duplicate calculations are happening
   bool _duplicatedCalculations;
-  // lower and upper corner of the domain of the current process
-  std::array<double, 3> _lowCorner, _highCorner;
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
