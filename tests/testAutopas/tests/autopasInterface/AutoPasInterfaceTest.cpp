@@ -270,8 +270,8 @@ void testSimulationLoop(autopas::ContainerOption containerOption) {
     autoPas.addParticle(particle2);
   }
 
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(
-      cutoff, eps, sigma, shift, boxMin, boxMax);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(cutoff, eps,
+                                                                                                          sigma, shift);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
@@ -467,9 +467,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   }
 
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor1(
-      cutoff, eps, sigma, shift, boxMin, boxMax);
+      cutoff, eps, sigma, shift);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor2(
-      cutoff, eps, sigma, shift, boxMin, boxMax);
+      cutoff, eps, sigma, shift);
 
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);

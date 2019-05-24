@@ -163,7 +163,7 @@ class ParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
+  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, owned };
 
   /**
    * Floating Point Type used for this particle
@@ -173,9 +173,8 @@ class ParticleBase {
   /**
    * the type for the soa storage
    */
-  typedef
-      typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType>::Type
-          SoAArraysType;
+  typedef typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType,
+                                           floatType>::Type SoAArraysType;
 
 #if defined(AUTOPAS_CUDA)
   /**
