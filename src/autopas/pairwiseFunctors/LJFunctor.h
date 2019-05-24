@@ -144,7 +144,8 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
-   * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
+   * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
+   * to use it correctly for the global values.
    */
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
@@ -173,10 +174,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       floatPrecision fzacc = 0.;
       floatPrecision inbox1Mul = 0.;
       if (calculateGlobals and duplicatedCalculations) {  // only for duplicated calculations we need this value
-        inbox1Mul = ownedPtr[i];
-        if (newton3) {
-          inbox1Mul *= 0.5;
-        }
+        inbox1Mul = ownedPtr[i] * .5;
       }
 
 // icpc vectorizes this.
@@ -223,7 +221,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
           if (duplicatedCalculations) {
             // for non-newton3 the division by 2 is in the post-processing step.
-            floatPrecision inboxMul = inbox1Mul + (newton3 ? ownedPtr[j] * .5 : 0.);
+            floatPrecision inboxMul = inbox1Mul + ownedPtr[j] * .5;
             upotSum += upot * inboxMul;
             virialSumX += virialx * inboxMul;
             virialSumY += virialy * inboxMul;
@@ -244,12 +242,12 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
-      // if newton3 is false, then we divide by 2 later on, so we multiply by two here (very hacky, but needed for
-      // AoS)
-      _aosThreadData[threadnum].upotSum += upotSum;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+      // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
+      // since for newton3 disabled we divide by two later on.
+      _aosThreadData[threadnum].upotSum += upotSum * (newton3 ? 1. : 2.);
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * (newton3 ? 1. : 2.);
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * (newton3 ? 1. : 2.);
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * (newton3 ? 1. : 2.);
     }
   }
 
@@ -266,7 +264,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
     const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
-    const auto *const __restrict__ ownedPtr2 = soa1.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
 
     auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
@@ -673,7 +671,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::forceZ>();
+    const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
 
     const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
                          shift6 = _shift6;
