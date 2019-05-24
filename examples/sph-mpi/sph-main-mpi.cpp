@@ -325,7 +325,6 @@ void periodicBoundaryUpdate(Container& sphSystem, MPI_Comm& comm,
         std::vector<autopas::sph::SPHParticle> sendParticles;
         if (not diff[0] and not diff[1] and not diff[2]) {
           // at least one dimension has to be non-zero
-          std::cout << "skipping diff: " << diff[0] << ", " << diff[1] << ", " << diff[2] << std::endl;
           continue;
         }
         // figure out which particles we send
