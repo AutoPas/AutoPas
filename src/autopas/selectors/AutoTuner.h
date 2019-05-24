@@ -409,7 +409,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     ++_currentConfig;
     _numSamples = 0;
   }
-
+ 
   // repeat as long as traversals are not applicable or we run out of configs
   while (_currentConfig != _allowedConfigurations.end()) {
     // check if newton3 works with this functor and remove config if not
