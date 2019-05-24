@@ -47,7 +47,6 @@ void defaultInit(AutoPasT& autoPas1, AutoPasT& autoPas2, size_t direction) {
   }
 }
 
-
 /**
  * Convert the leaving particle to entering particles.
  * Hereby the periodic boundary position change is done.
