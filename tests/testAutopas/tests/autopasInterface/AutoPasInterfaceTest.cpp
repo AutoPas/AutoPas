@@ -1,5 +1,5 @@
 /**
- * @file AutoPasVerletLikeInterfaceTest.cpp
+ * @file AutoPasInterfaceTest.cpp
  * @author seckler
  * @date 13.05.19
  */
@@ -10,7 +10,9 @@
 constexpr double cutoff = 1.;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
+constexpr std::array<double, 3> haloBoxMin{0. - skin - cutoff, 0. - skin - cutoff, 0. - skin - cutoff};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
+constexpr std::array<double, 3> haloBoxMax{10. + skin + cutoff, 10. + skin + cutoff, 10. + skin + cutoff};
 constexpr double eps = 1.;
 constexpr double sigma = 1.;
 constexpr double shift = 0.1;
@@ -26,6 +28,25 @@ void defaultInit(AutoPasT& autoPas) {
   autoPas.init();
 }
 
+template <typename AutoPasT>
+void defaultInit(AutoPasT& autoPas1, AutoPasT& autoPas2, size_t direction) {
+  autoPas1.setBoxMin(boxMin);
+  autoPas2.setBoxMax(boxMax);
+
+  auto midLow = boxMin, midHigh = boxMax;
+  midLow[direction] = (boxMax[direction] + boxMin[direction]) / 2;
+  midHigh[direction] = (boxMax[direction] + boxMin[direction]) / 2;
+  autoPas1.setBoxMax(midHigh);
+  autoPas2.setBoxMin(midLow);
+
+  for (auto aP : {&autoPas1, &autoPas2}) {
+    aP->setCutoff(cutoff);
+    aP->setVerletSkin(skin);
+    // init autopas
+    aP->init();
+  }
+}
+
 /**
  * Convert the leaving particle to entering particles.
  * Hereby the periodic boundary position change is done.
@@ -38,7 +59,7 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule>& le
     auto pos = p.getR();
     for (auto dim = 0; dim < 3; dim++) {
       if (pos[dim] < boxMin[dim]) {
-        // should at most be boxMax
+        // has to be smaller than boxMax
         pos[dim] = std::min(std::nextafter(boxMax[dim], -1), pos[dim] + (boxMax[dim] - boxMin[dim]));
       } else if (pos[dim] >= boxMax[dim]) {
         // should at least be boxMin
@@ -67,17 +88,28 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) {
         std::array<double, 3> min{}, max{}, shiftVec{};
         for (size_t dim = 0; dim < 3; ++dim) {
           // The search domain has to be enlarged as the position of the particles is not certain.
+          bool needsShift = false;
           if (direction[dim] == -1) {
-            min[dim] = boxMin[dim] - skin;
-            max[dim] = boxMin[dim] + cutoff + skin;
+            min[dim] = autoPas.getBoxMin()[dim] - skin;
+            max[dim] = autoPas.getBoxMin()[dim] + cutoff + skin;
+            if (autoPas.getBoxMin()[dim] == boxMin[dim]) {
+              needsShift = true;
+            }
           } else if (direction[dim] == 1) {
-            min[dim] = boxMax[dim] - cutoff - skin;
-            max[dim] = boxMax[dim] + skin;
+            min[dim] = autoPas.getBoxMax()[dim] - cutoff - skin;
+            max[dim] = autoPas.getBoxMax()[dim] + skin;
+            if (autoPas.getBoxMax()[dim] == boxMax[dim]) {
+              needsShift = true;
+            }
           } else {  // 0
-            min[dim] = boxMin[dim] - skin;
-            max[dim] = boxMax[dim] + skin;
+            min[dim] = autoPas.getBoxMin()[dim] - skin;
+            max[dim] = autoPas.getBoxMax()[dim] + skin;
           }
-          shiftVec[dim] = -(boxMax[dim] - boxMin[dim]) * direction[dim];
+          if (needsShift) {
+            shiftVec[dim] = -(boxMax[dim] - boxMin[dim]) * direction[dim];
+          } else {
+            shiftVec[dim] = 0;
+          }
         }
         // here it is important to only iterate over the owned particles!
         for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOnly); iter.isValid();
@@ -93,10 +125,15 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) {
   return haloParticles;
 }
 
-void addEnteringParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> enteringParticles) {
+size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> enteringParticles) {
+  size_t numAdded = 0;
   for (auto& p : enteringParticles) {
-    autoPas.addParticle(p);
+    if (autopas::utils::inBox(p.getR(), autoPas.getBoxMin(), autoPas.getBoxMax())) {
+      autoPas.addParticle(p);
+      ++numAdded;
+    }
   }
+  return numAdded;
 }
 
 void addHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> haloParticles) {
@@ -114,7 +151,9 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* func
   const auto& sendLeavingParticles = invalidParticles;
   // 2b. get+add entering particles (addParticle)
   const auto& enteringParticles = convertToEnteringParticles(sendLeavingParticles);
-  addEnteringParticles(autoPas, enteringParticles);
+  auto numAdded = addEnteringParticles(autoPas, enteringParticles);
+
+  EXPECT_EQ(numAdded, enteringParticles.size());
 
   // 3. halo particles
   // 3a. identify and send inner particles that are in the halo of other autopas instances or itself.
@@ -126,6 +165,45 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* func
 
   // 4. iteratePairwise
   autoPas.iteratePairwise(functor);
+}
+
+template <typename Functor>
+void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas1, autopas::AutoPas<Molecule, FMCell>& autoPas2,
+                      Functor* functor1, Functor* functor2) {
+  // 1. update Container; return value is vector of invalid = leaving particles!
+  auto invalidParticles1 = autoPas1.updateContainer();
+  auto invalidParticles2 = autoPas2.updateContainer();
+
+  // 2. leaving and entering particles
+  const auto& sendLeavingParticles1 = invalidParticles1;
+  const auto& sendLeavingParticles2 = invalidParticles2;
+  // 2b. get+add entering particles (addParticle)
+  const auto& enteringParticles2 = convertToEnteringParticles(sendLeavingParticles1);
+  const auto& enteringParticles1 = convertToEnteringParticles(sendLeavingParticles2);
+
+  // the particles may either still be in the same container (just going over periodic boundaries) or in the other.
+  size_t numAdded = 0;
+  numAdded += addEnteringParticles(autoPas1, enteringParticles1);
+  numAdded += addEnteringParticles(autoPas1, enteringParticles2);
+  numAdded += addEnteringParticles(autoPas2, enteringParticles1);
+  numAdded += addEnteringParticles(autoPas2, enteringParticles2);
+
+  ASSERT_EQ(numAdded, enteringParticles1.size() + enteringParticles2.size());
+
+  // 3. halo particles
+  // 3a. identify and send inner particles that are in the halo of other autopas instances or itself.
+  auto sendHaloParticles1 = identifyAndSendHaloParticles(autoPas1);
+  auto sendHaloParticles2 = identifyAndSendHaloParticles(autoPas2);
+
+  // 3b. get halo particles
+  const auto& recvHaloParticles2 = sendHaloParticles1;
+  const auto& recvHaloParticles1 = sendHaloParticles2;
+  addHaloParticles(autoPas1, recvHaloParticles1);
+  addHaloParticles(autoPas2, recvHaloParticles2);
+
+  // 4. iteratePairwise
+  autoPas1.iteratePairwise(functor1);
+  autoPas2.iteratePairwise(functor2);
 }
 
 template <typename Functor>
@@ -143,11 +221,34 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor)
         << "wrong force calculated.";  // this value should be correct already
   }
 
-  EXPECT_DOUBLE_EQ(functor->getUpot(), 16128.1 /*todo: fix value*/) << "wrong upot calculated";
-  EXPECT_DOUBLE_EQ(functor->getVirial(), 195072. /*todo: fix value*/) << "wrong virial calculated";
+  EXPECT_DOUBLE_EQ(functor->getUpot(), 16128.1) << "wrong upot calculated";
+  EXPECT_DOUBLE_EQ(functor->getVirial(), 195072.) << "wrong virial calculated";
 }
 
-void testInterface(autopas::ContainerOption containerOption) {
+template <typename Functor>
+void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas1, autopas::AutoPas<Molecule, FMCell>& autoPas2,
+                  Functor* functor1, Functor* functor2) {
+  std::array<Molecule, 2> molecules{};
+  size_t numParticles = 0;
+  for (auto iter = autoPas1.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    ASSERT_LT(numParticles, 2) << "Too many owned particles.";
+    molecules[numParticles++] = *iter;
+  }
+  for (auto iter = autoPas2.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    ASSERT_LT(numParticles, 2) << "Too many owned particles.";
+    molecules[numParticles++] = *iter;
+  }
+  ASSERT_EQ(numParticles, 2) << "There should be exactly two owned particles!";
+
+  for (auto& mol : molecules) {
+    EXPECT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144) << "wrong force calculated.";
+  }
+
+  EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.1) << "wrong upot calculated";
+  EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated";
+}
+
+void testSimulationLoop(autopas::ContainerOption containerOption) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
   autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
@@ -176,7 +277,7 @@ void testInterface(autopas::ContainerOption containerOption) {
 
   doAssertions(autoPas, &functor);
 
-  // update positions a bit and do loop again
+  // update positions a bit (outside of domain!) and do loop again
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
@@ -191,7 +292,232 @@ void testInterface(autopas::ContainerOption containerOption) {
   doAssertions(autoPas, &functor);
 }
 
-TEST_F(AutoPasInterfaceTest, InterfaceTest) {
+TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
   // this test checks the correct behavior of the autopas interface.
-  testInterface(autopas::ContainerOption::linkedCells);
+  auto containerOption = GetParam();
+  testSimulationLoop(containerOption);
 }
+
+/**
+ * Tests the addition and iteration over particles.
+ * @param containerOption
+ * @param alwaysAddAsHalo If this is true, all particles will be added as halo. This is to test, whether halo particles
+ * inside of the domain are handled properly!
+ */
+void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alwaysAddAsHalo) {
+  // create AutoPas object
+  autopas::AutoPas<Molecule, FMCell> autoPas;
+  autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
+
+  defaultInit(autoPas);
+
+  auto getPossible1DPositions = [&](double min, double max) -> auto {
+    // ensure that all particles are at most skin away from halo!
+    return std::array<double, 6>{min - cutoff, min, min + skin, max - skin, max, max + cutoff - 1e-3};
+  };
+  size_t id = 0;
+  for (auto x : getPossible1DPositions(boxMin[0], boxMax[0])) {
+    for (auto y : getPossible1DPositions(boxMin[1], boxMax[1])) {
+      for (auto z : getPossible1DPositions(boxMin[2], boxMax[2])) {
+        std::array<double, 3> pos{x, y, z};
+        Molecule p(pos, {0., 0., 0.}, id);
+        ++id;
+        // add the two particles!
+        if (autopas::utils::inBox(pos, boxMin, boxMax) and not alwaysAddAsHalo) {
+          autoPas.addParticle(p);
+        } else {
+          autoPas.addHaloParticle(p);
+        }
+      }
+    }
+  }
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      ++count;
+      EXPECT_TRUE(iter->isOwned());
+    }
+    if (alwaysAddAsHalo) {
+      EXPECT_EQ(count, 0);
+    } else {
+      EXPECT_EQ(count, 3 * 3 * 3);
+    }
+  }
+
+  // check number of halo particles
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+      ++count;
+      EXPECT_FALSE(iter->isOwned());
+    }
+    if (alwaysAddAsHalo) {
+      EXPECT_EQ(count, 6 * 6 * 6);
+    } else {
+      EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
+    }
+  }
+
+  // check number of particles
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
+      ++count;
+    }
+    EXPECT_EQ(count, 6 * 6 * 6);
+  }
+
+  // check number of halo particles for region iterator
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly);
+         iter.isValid(); ++iter) {
+      ++count;
+      EXPECT_FALSE(iter->isOwned());
+    }
+    if (alwaysAddAsHalo) {
+      EXPECT_EQ(count, 6 * 6 * 6);
+    } else {
+      EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
+    }
+  }
+
+  // check number of particles for region iterator
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned);
+         iter.isValid(); ++iter) {
+      ++count;
+    }
+    EXPECT_EQ(count, 6 * 6 * 6);
+  }
+
+  // check number of owned particles for region iterator
+  {
+    size_t count = 0;
+    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::ownedOnly);
+         iter.isValid(); ++iter) {
+      ++count;
+    }
+    if (alwaysAddAsHalo) {
+      EXPECT_EQ(count, 0);
+    } else {
+      EXPECT_EQ(count, 3 * 3 * 3);
+    }
+  }
+}
+
+TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTestNormal) {
+  auto containerOption = GetParam();
+  testAdditionAndIteration(containerOption, false);
+}
+
+TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTestHalo) {
+  auto containerOption = GetParam();
+  testAdditionAndIteration(containerOption, true);
+}
+
+using ::testing::UnorderedElementsAreArray;
+using ::testing::ValuesIn;
+
+/// @todo: use this instead of below to enable testing of VerletClusterLists.
+// INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest, ValuesIn(autopas::allContainerOptions),
+//                         AutoPasInterfaceTest::PrintToStringParamName());
+
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
+                         // proper indent
+                         ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+                           auto all = autopas::allContainerOptions;
+                           all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists),
+                                     all.end());
+                           return all;
+                         }()),
+                         AutoPasInterfaceTest::PrintToStringParamName());
+
+///////////////////////////////////////// TWO containers //////////////////////////////////////////////////////////
+
+void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::ContainerOption containerOption2,
+                        size_t autoPasDirection) {
+  // create AutoPas object
+  autopas::AutoPas<Molecule, FMCell> autoPas1;
+  autoPas1.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption1});
+  autopas::AutoPas<Molecule, FMCell> autoPas2;
+  autoPas1.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption2});
+
+  defaultInit(autoPas1, autoPas2, autoPasDirection);
+
+  // create two particles with distance .5
+  double distance = .5;
+  std::array<double, 3> pos1{9.99, 5., 5.};
+  std::array<double, 3> distVec{0., distance, 0.};
+  std::array<double, 3> pos2 = autopas::ArrayMath::add(pos1, distVec);
+
+  {
+    Molecule particle1(pos1, {0., 0., 0.}, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, 1);
+
+    // add the two particles!
+    for (auto p : {&particle1, &particle2}) {
+      if (autopas::utils::inBox(p->getR(), autoPas1.getBoxMin(), autoPas1.getBoxMax())) {
+        autoPas1.addParticle(*p);
+      } else {
+        autoPas2.addParticle(*p);
+      }
+    }
+  }
+
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor1(
+      cutoff, eps, sigma, shift, boxMin, boxMax);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor2(
+      cutoff, eps, sigma, shift, boxMin, boxMax);
+
+  // do first simulation loop
+  doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
+
+  doAssertions(autoPas1, autoPas2, &functor1, &functor2);
+
+  // update positions a bit (outside of domain!) and do loop again
+  {
+    std::array<double, 3> moveVec{skin / 3., 0., 0.};
+    for (auto aP : {&autoPas1, &autoPas2}) {
+      for (auto iter = aP->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+        iter->setR(autopas::ArrayMath::add(iter->getR(), moveVec));
+        iter->setF(zeroArr);
+      }
+    }
+  }
+
+  // do second simulation loop
+  doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
+
+  doAssertions(autoPas1, autoPas2, &functor1, &functor2);
+}
+
+TEST_P(AutoPasInterface2ContainersTest, SimulatonLoopTest) {
+  // this test checks the correct behavior of the autopas interface.
+  auto containerOptionTuple = GetParam();
+  testSimulationLoop(std::get<0>(containerOptionTuple), std::get<1>(containerOptionTuple), 0);
+}
+
+using ::testing::Combine;
+using ::testing::UnorderedElementsAreArray;
+using ::testing::ValuesIn;
+
+/// @todo: use this instead of below to enable testing of VerletClusterLists.
+// INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
+//                         Combine(ValuesIn(autopas::allContainerOptions), ValuesIn(autopas::allContainerOptions)),
+//                         ContainerSelectorTest::PrintToStringParamName());
+
+INSTANTIATE_TEST_SUITE_P(
+    Generated, AutoPasInterface2ContainersTest,
+    Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+              auto all = autopas::allContainerOptions;
+              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
+              return all;
+            }()),
+            ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+              auto all = autopas::allContainerOptions;
+              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
+              return all;
+            }())),
+    AutoPasInterface2ContainersTest::PrintToStringParamName());

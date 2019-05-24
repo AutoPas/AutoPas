@@ -78,25 +78,31 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void addHaloParticle(Particle &haloParticle) override {
-    bool inHalo = _cellBlock.checkInHalo(haloParticle.getR());
-    if (inHalo) {
-      ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
-      cell.addParticle(haloParticle);
+    // halo particles can also be inside of the domain (assuming non-precise interfaces)
+    bool inContainer =
+        autopas::utils::inBox(haloParticle.getR(), _cellBlock.getHaloBoxMin(), _cellBlock.getHaloBoxMax());
+    // here we could also check whether the particle is too far inside of the domain; we would need the verlet skin for
+    // that.
+    if (inContainer) {
+      Particle pCopy = haloParticle;
+      pCopy.setOwned(false);
+      ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
+      cell.addParticle(pCopy);
     } else {
-      auto inInnerBox = autopas::utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax());
-      if (inInnerBox) {
-        utils::ExceptionHandler::exception(
-            "LinkedCells: Trying to add a halo particle that is actually in the bounding box.\n" +
-            haloParticle.toString());
-      } else {
-        AutoPasLog(trace,
-                   "LinkedCells: Trying to add a halo particle that is outside the halo box. Particle not added!\n{}",
-                   haloParticle.toString());
-      }
+      AutoPasLog(trace,
+                 "LinkedCells: Trying to add a halo particle that is outside the halo box. Particle not added!\n{}",
+                 haloParticle.toString());
     }
   }
 
-  void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
+  void deleteHaloParticles() override {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+      iter.deleteCurrentParticle();
+    }
+  }
 
   /**
    * @copydoc DirectSum::iteratePairwise
