@@ -40,6 +40,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
     _particleSoABuffer.template push<Particle::AttributeNames::forceX>(p.getF()[0]);
     _particleSoABuffer.template push<Particle::AttributeNames::forceY>(p.getF()[1]);
     _particleSoABuffer.template push<Particle::AttributeNames::forceZ>(p.getF()[2]);
+    _particleSoABuffer.template push<Particle::AttributeNames::owned>(p.isOwned());
   }
 
   SingleCellIteratorWrapper<Particle> begin() override {
@@ -73,6 +74,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
     rmm_or_not_pointer->setF(
         _particleSoABuffer.template readMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
                                                  Particle::AttributeNames::forceZ>(i));
+    rmm_or_not_pointer->setOwned(_particleSoABuffer.template read<Particle::AttributeNames::owned>(i));
   }
 
   void writeParticleToSoA(size_t index, Particle &particle) {
@@ -80,6 +82,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
                                               Particle::AttributeNames::posZ>(index, particle.getR());
     _particleSoABuffer.template writeMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
                                               Particle::AttributeNames::forceZ>(index, particle.getF());
+    _particleSoABuffer.template write<Particle::AttributeNames::owned>(index, particle.isOwned());
   }
 
   /**
