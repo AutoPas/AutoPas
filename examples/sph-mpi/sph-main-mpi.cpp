@@ -120,7 +120,7 @@ void setPressure(Container& sphSystem) {
   }
 }
 
-int getSendRecvPartner(const std::array<int, 3> diff, MPI_Comm& comm, bool recvPartner = false) {
+int getSendRecvPartner(const std::array<int, 3> diff, MPI_Comm& comm, bool recvPartner) {
   int neighbor;
   std::array<int, 3> mycoords{0, 0, 0};
   std::array<int, 3> neighborcoords{0, 0, 0};
@@ -141,7 +141,7 @@ int getReceivePartner(const std::array<int, 3> diff, MPI_Comm& comm) { return ge
 
 void issueSend(std::vector<autopas::sph::SPHParticle>& sendParticles, const std::array<int, 3> diff, MPI_Comm& comm,
                MPI_Request& sendRequest, std::vector<double>& buffer) {
-  int neighbor = getSendRecvPartner(diff, comm);
+  int neighbor = getSendRecvPartner(diff, comm, false);
 
   for (auto& p : sendParticles) {
     std::vector<double> serialized = p.serialize();
@@ -306,7 +306,8 @@ void updateHaloParticles(Container& sphSystem, MPI_Comm& comm, const std::array<
  */
 void deleteHaloParticles(Container& sphSystem) { sphSystem.deleteHaloParticles(); }
 
-void periodicBoundaryUpdate(Container& sphSystem, MPI_Comm& comm, std::array<double, 3> globalBoxMin,
+void periodicBoundaryUpdate(Container& sphSystem, MPI_Comm& comm,
+                            std::vector<autopas::sph::SPHParticle> invalidParticles, std::array<double, 3> globalBoxMin,
                             std::array<double, 3> globalBoxMax) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
@@ -330,15 +331,14 @@ void periodicBoundaryUpdate(Container& sphSystem, MPI_Comm& comm, std::array<dou
           getSendLeaving(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, shift[i],
                          globalBoxMin[i], globalBoxMax[i]);
         }
-
-        for (auto iterator = sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax); iterator.isValid();
-             ++iterator) {
-          autopas::sph::SPHParticle p = *iterator;  // copies Particle
-          // std::cout << "sending particle at (" << p.getR()[0] << ", "
-          //          << p.getR()[1] << ", " << p.getR()[2] << ")" << std::endl;
-          p.addR(shift);
-          sendParticles.push_back(p);
-          iterator.deleteCurrentParticle();
+        for (const auto& p : invalidParticles) {
+          if (autopas::utils::inBox(p.getR(), requiredHaloMin, requiredHaloMax)) {
+            // std::cout << "sending particle at (" << p.getR()[0] << ", "
+            //          << p.getR()[1] << ", " << p.getR()[2] << ")" << std::endl;
+            auto pCopy = p;
+            pCopy.addR(shift);
+            sendParticles.push_back(pCopy);
+          }
         }
         MPI_Request sendRequest;
         issueSend(sendParticles, diff, comm, sendRequest, buffer);
@@ -523,10 +523,10 @@ int main(int argc, char* argv[]) {
     leapfrogFullDrift(sphSystem, dt);  // changes position
 
     // 1.2.1 positions have changed, so the container needs to be updated!
-    sphSystem.updateContainer();
+    auto invalidParticles = sphSystem.updateContainer();
 
     // 1.2.2 adjust positions based on boundary conditions (here: periodic)
-    periodicBoundaryUpdate(sphSystem, comm, globalBoxMin, globalBoxMax);
+    periodicBoundaryUpdate(sphSystem, comm, invalidParticles, globalBoxMin, globalBoxMax);
 
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
