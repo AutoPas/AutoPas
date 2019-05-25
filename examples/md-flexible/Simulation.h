@@ -28,16 +28,16 @@ class  Simulation {
 private:
     AutoPas<Particle, ParticleCell> *_autopas;
 
-    //@todo nicht sicher mit der implementierung-> anders: functor initialize -> simulate(S.init)
-    autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType> _Functor;
+    //@todo sich überlegen mit dem Funktor -> erwiterbar für alle Funktor Arten
 
+    autopas::Functor<Particle,ParticleCell,typename Particle::SoAArraysType> *_Functor;
     long durationX;
     long durationF;
     long durationV;
 public:
     virtual ~Simulation();  //@todo
 
-    explicit Simulation(AutoPas<Particle, ParticleCell> &autopas);
+    explicit Simulation(AutoPas<Particle, ParticleCell> *autopas);
 
     /**
     * @brief Constructs a container and fills it with particles.
@@ -52,6 +52,12 @@ public:
     */
     void initContainerGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,
                            size_t particlesPerDim, double particelSpacing);
+
+    void initContainerGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,
+                            double boxLength, size_t numParticles, double distributionMean, double distributionStdDev);
+
+    void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas,
+                              double boxLength, size_t numParticles);
     /**Getter for Duration of Position Calculation
      * @return durationX
      */
@@ -77,11 +83,6 @@ public:
      */
     void addDurationV(long durationV);
 
-    void initContainerGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                            double boxLength, size_t numParticles, double distributionMean, double distributionStdDev);
-
-    void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                              double boxLength, size_t numParticles);
 
     /** @brief This function
     * -initializes the autopas Object
@@ -115,6 +116,11 @@ public:
 
 };
 
+template<class Particle, class ParticleCell>
+Simulation<Particle, ParticleCell>::Simulation(AutoPas<Particle, ParticleCell> *autopas) {
+    _autopas = autopas;
+    durationF=0; durationV=0; durationX=0;
+}
 
 template<class Particle, class ParticleCell>
 AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas() const {
@@ -159,15 +165,15 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     _autopas->setAllowedNewton3Options(newton3Options);
     switch (generatorChoice) {
         case MDFlexParser::GeneratorOption::grid: {
-            initContainerGrid(_autopas, particlesPerDim, particleSpacing); //particlesTotal wird in diesem fall in der main geupdated
+            this->initContainerGrid(*_autopas, particlesPerDim, particleSpacing); //particlesTotal wird in diesem fall in der main geupdated
             break;
         }
         case MDFlexParser::GeneratorOption::uniform: {
-            initContainerUniform(_autopas, boxLength, particlesTotal);
+            this->initContainerUniform(*_autopas, boxLength, particlesTotal);
             break;
         }
         case MDFlexParser::GeneratorOption::gaussian: {
-            initContainerGauss(_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
+            this->initContainerGauss(*_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
             break;
         }
         default:
@@ -194,11 +200,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
 template<class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::setFunctor(auto functor) {
     _Functor = functor;
-}
-
-template<class Particle, class ParticleCell>
-Simulation<Particle, ParticleCell>::Simulation(AutoPas<Particle, ParticleCell> &autopas):_autopas(autopas) {
-    durationF=0; durationV=0; durationX=0;
 }
 
 template<class Particle,class ParticleCell>

@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
     PrintableMolecule::setMass(1.0);
     PrintableMolecule::setOldf(0);
     // Initialization
-    autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> autopas(outputStream);
+    auto *autopas = new autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> (outputStream);
     autopas::Logger::get()->set_level(logLevel);
     Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
     Simulation.initialize(parser);
@@ -119,9 +119,9 @@ int main(int argc, char **argv) {
   if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
 
   // statistics for linked cells
-  if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
+  if (autopas->getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
     auto lcContainer = dynamic_cast<autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> *>(
-        autopas.getContainer());
+        autopas->getContainer());
     auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
     std::array<size_t, 3> cellsPerDim{cellsPerDimHalo[0] - 2, cellsPerDimHalo[1] - 2, cellsPerDimHalo[2] - 2};
     //    auto numCellsHalo = lcContainer->getCells().size();
@@ -169,12 +169,12 @@ int main(int argc, char **argv) {
 
   if (measureFlops) {
     FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-        autopas.getContainer()->getCutoff());
-    autopas.iteratePairwise(&flopCounterFunctor);
+        autopas->getContainer()->getCutoff());
+    autopas->iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
     // approximation for flops of verlet list generation
-    if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::verletLists)
+    if (autopas->getContainer()->getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
