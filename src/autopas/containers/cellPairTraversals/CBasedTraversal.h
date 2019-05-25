@@ -95,6 +95,7 @@ inline void CBasedTraversal<ParticleCell>::cTraversal(LoopBody&& loopBody, const
       for (unsigned long z = start_z; z < end_z; z += stride_z) {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
           for (unsigned long x = start_x; x < end_x; x += stride_x) {
+            // Don't exchange order of execution (x must be last!), it would break other code
             loopBody(x, y, z);
           }
         }
