@@ -48,7 +48,12 @@ additional_commands = {
 always_wrap = []
 
 # Specify the order of wrapping algorithms during successive reflow attempts
-algorithm_order = [0, 1, 2, 3, 4]
+# 0: Horizontal packing: no wrapping
+# 1: Horizontal wrapping
+# 2: Vertical packing: each element on it's own line
+# 3: keyword nested vertical packing
+# 4: parentheses nested vertical packing
+algorithm_order = [0, 3, 1, 2, 4]
 
 # If true, the argument lists which are known to be sortable will be sorted
 # lexicographicall
