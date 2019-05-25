@@ -183,10 +183,10 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     switch (functorChoice) {
         case MDFlexParser::FunctorOption::lj12_6: {
             //@todo muss mit numIterations geändert werden zu particledeltaT / time_end
-            this->setFunctor(LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>(_autopas,cutoff,numIterations));
+            this->setFunctor(LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>(*_autopas,cutoff,numIterations));
         }
         case MDFlexParser::FunctorOption::lj12_6_AVX: {
-            this->setFunctor(LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>(_autopas,cutoff,numIterations));
+            this->setFunctor(LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>(*_autopas,cutoff,numIterations));
         }
     }
     // @todo UNSICHER: müssen die Position nochmal berechnet werden nachdem GridGenerator
