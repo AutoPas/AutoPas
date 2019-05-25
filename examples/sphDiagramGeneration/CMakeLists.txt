@@ -1,18 +1,16 @@
-file(GLOB_RECURSE MY_SRC
-        "*.cpp"
-        "*.h"
-        ../../tests/testAutopas/testingHelpers/RandomGenerator.cpp
-        )
+file(
+    GLOB_RECURSE
+    MY_SRC
+    "*.cpp"
+    "*.h"
+    ../../tests/testAutopas/testingHelpers/RandomGenerator.cpp
+)
 
-ADD_EXECUTABLE(sph-diagram-generation
-        ${MY_SRC}
-        )
+add_executable(sph-diagram-generation ${MY_SRC})
 
-TARGET_LINK_LIBRARIES(sph-diagram-generation
-        autopas)
+target_link_libraries(sph-diagram-generation autopas)
 
-
-#-----------------test-----------------
+# -----------------test-----------------
 # add check for current target
 # cmake-format: off
 add_test(
@@ -40,4 +38,4 @@ add_test(
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples sph-diagram-generation)
 
-#sph-diagram-generation ${Mols[$i]} ${Reps[$i]} ${iCont} 0
+# sph-diagram-generation ${Mols[$i]} ${Reps[$i]} ${iCont} 0
