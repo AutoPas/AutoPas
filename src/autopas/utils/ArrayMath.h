@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include <numeric>
 
 namespace autopas {
 
@@ -134,6 +135,19 @@ class ArrayMath {
       result += a[d] * b[d];
     }
     return result;
+  }
+
+  /**
+   * Generates a normalized array (|a| = 1).
+   * @tparam T floating point type
+   * @tparam SIZE size of the arrays
+   * @param a input array
+   * @return normalized array of a
+   */
+  template <class T, std::size_t SIZE>
+  static std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
+    const T sum = std::accumulate(a.begin(), a.end(), static_cast<T>(0));
+    return mulScalar(a, static_cast<T>(1) / sum);
   }
 
 };  // class ArrayMath
