@@ -329,15 +329,30 @@ int main(int argc, char **argv) {
                      LJFunctorAVX<PrintableMoleculeBase<double>, FullParticleCell<PrintableMoleculeBase<double>>>>(
               parser);
         }
+        case MDFlexParser::FunctorOption::lj12_6_Globals: {
+          return run<PrintableMoleculeBase<double>,
+                     LJFunctor<PrintableMoleculeBase<double>, FullParticleCell<PrintableMoleculeBase<double>>,
+                               autopas::FunctorN3Modes::Both, true>>(parser);
+        }
       }
       break;
     case MDFlexParser::PrecisionOption::FP32: {
-      if (parser.getFunctorOption() == MDFlexParser::FunctorOption::lj12_6_AVX) {
-        cout << "lj12_6_AVX has no FP32 version" << endl;
-        return EXIT_FAILURE;
+      switch (parser.getFunctorOption()) {
+        case MDFlexParser::FunctorOption::lj12_6: {
+          return run<PrintableMoleculeBase<float>,
+                     autopas::LJFunctor<PrintableMoleculeBase<float>, FullParticleCell<PrintableMoleculeBase<float>>>>(
+              parser);
+        }
+        case MDFlexParser::FunctorOption::lj12_6_AVX: {
+          cout << "lj12_6_AVX has no FP32 version" << endl;
+          return EXIT_FAILURE;
+        }
+        case MDFlexParser::FunctorOption::lj12_6_Globals: {
+          return run<PrintableMoleculeBase<float>,
+                     LJFunctor<PrintableMoleculeBase<float>, FullParticleCell<PrintableMoleculeBase<float>>,
+                               autopas::FunctorN3Modes::Both, true>>(parser);
+        }
       }
-      return run<PrintableMoleculeBase<float>,
-                 LJFunctor<PrintableMoleculeBase<float>, FullParticleCell<PrintableMoleculeBase<float>>>>(parser);
     } break;
   }
 }

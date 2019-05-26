@@ -71,10 +71,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         _epsilon24{epsilon * 24.0},
         _sigmasquare{sigma * sigma},
         _shift6{shift * 6.0},
-        _cutoffsquareSoA{(SoAFloatPrecision)_cutoffsquare},
-        _epsilon24SoA{(SoAFloatPrecision)_epsilon24},
-        _sigmasquareSoA{(SoAFloatPrecision)_sigmasquare},
-        _shift6SoA{(SoAFloatPrecision)_shift6},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
@@ -985,7 +981,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
-  SoAFloatPrecision _cutoffsquareSoA, _epsilon24SoA, _sigmasquareSoA, _shift6SoA;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
