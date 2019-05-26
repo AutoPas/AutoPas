@@ -128,8 +128,9 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
  * @return Time for all calculation iterations in microseconds.
  */
 template <class FunctorChoice, class AutoPasTemplate>
-long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
-  auto functor = FunctorChoice(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
+long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations,
+               std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.}) {
+  auto functor = FunctorChoice(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0, lowCorner, highCorner);
 
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
 
@@ -261,7 +262,8 @@ int run(MDFlexParser &parser) {
   unsigned long flopsPerKernelCall = 0;
   cout << "Starting force calculation... " << endl;
 
-  durationApply = calculate<FunctorChoice>(autopas, cutoff, numIterations);
+  durationApply =
+      calculate<FunctorChoice>(autopas, cutoff, numIterations, {0, 0, 0}, {boxLength, boxLength, boxLength});
   flopsPerKernelCall = FunctorChoice::getNumFlopsPerKernelCall();
 
   stopTotal = std::chrono::high_resolution_clock::now();
