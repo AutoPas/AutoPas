@@ -29,11 +29,11 @@ public:
 
     /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
-    long VSCalculateX(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas);
+    long VSCalculateX(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas); //Conversion von ParticleCell nach FullParticleCell mag der Compiler nicht
 
     /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
-    long VSCalculateV(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas);
+    long VSCalculateV(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas);
 
     double getParticleDeltaT() const;
 
@@ -46,12 +46,11 @@ private:
 };
 
 template <class Particle>
-long TimeDiscretization<Particle>::VSCalculateX(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas) {
+long TimeDiscretization<Particle>::VSCalculateX(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas) {
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
-    for (auto iter = autopas->getContainer().begin(); iter.isValid(); ++iter) {
-        auto r = iter->getR();
+    for (auto iter = autopas->getContainer()->begin(); iter.isValid(); ++iter) {
         auto v = iter->getV();
         auto m = autopas::MoleculeLJ::getMass();
         auto f = iter->getF();
@@ -67,16 +66,15 @@ long TimeDiscretization<Particle>::VSCalculateX(autopas::AutoPas<Particle, autop
 
 
 template <class Particle>
-long TimeDiscretization<Particle>::VSCalculateV(autopas::AutoPas<Particle, autopas::ParticleCell<Particle>> &autopas) {
+long TimeDiscretization<Particle>::VSCalculateV(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas) {
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
-    for (auto iter = autopas->getContainer().begin(); iter.isValid(); ++iter) {
-        auto v =iter->getV();
+    for (auto iter = autopas->getContainer()->begin(); iter.isValid(); ++iter) {
         auto m = autopas::MoleculeLJ::getMass();
         auto force = iter->getF();
         auto old_force= autopas::MoleculeLJ::getOldf();  //@todo : implement right old_force interface (Particle -> inherent to MoleculeLJ -> PrintableMolecule)
-        auto newV= ArrayMath((autopas::ArrayMath::add(force,old_force)),particle_delta_t/(2*m));
+        auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force,old_force)) , particle_delta_t/(2*m));
         iter->addV(newV);
     }
     stopCalc = std::chrono::high_resolution_clock::now();

@@ -71,15 +71,18 @@ class MoleculeLJ : public Particle {
     /**get OldForce
     * @return OldForce
     */
-  static double getOldf() {return OLDF;}
+  static std::array<double,3> getOldf() {return OLDF;}
 
     /**set OldForce
     * @param OldForce
     */
-  static void setOldf(double oldf) { OLDF = oldf;}
+  static void setOldf(const std::array<double, 3> &oldf) {
+        OLDF = oldf;
+    }
 
 private:
-  static double EPSILON, SIGMA, MASS, OLDF;
+  static double EPSILON, SIGMA, MASS;
+  static std::array<double,3>  OLDF;
 };
 
 }  // namespace autopas

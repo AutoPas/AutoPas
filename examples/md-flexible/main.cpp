@@ -52,7 +52,7 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
   vtkFile << "DIMENSIONS 1 1 1" << endl;
   vtkFile << "POINTS " << numParticles << " double" << endl;
 
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
     auto pos = iter->getR();
     vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
   }
@@ -99,7 +99,9 @@ int main(int argc, char **argv) {
     PrintableMolecule::setEpsilon(1.0);
     PrintableMolecule::setSigma(1.0);
     PrintableMolecule::setMass(1.0);
-    PrintableMolecule::setOldf(0);
+    //vorübergehend, nicht sicher ob das mit den Werten für OldF Sinn macht
+    std::array<double, 3> oldf = {1.0, 1.0, 1.0};
+    PrintableMolecule::setOldf(oldf);
     // Initialization
     auto *autopas = new autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> (outputStream);
     autopas::Logger::get()->set_level(logLevel);
@@ -156,6 +158,8 @@ int main(int argc, char **argv) {
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
 
+  //time statistics
+  cout << DurationSimulation << endl;
   // Statistics
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;

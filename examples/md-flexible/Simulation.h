@@ -129,7 +129,10 @@ AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas(
 
 template<class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
-
+    //werte die man später für die initialisierung der Funktoren braucht, temporäre implementierung
+    std::array<double, 3> lowCorner = {0., 0., 0.};
+    std::array<double, 3> highCorner = {5., 5., 5.};
+    double epsilon,sigma  = 1.0;
     string logFileName(parser.getLogFileName());
     auto measureFlops(parser.getMeasureFlops());
     auto numIterations(parser.getIterations());
@@ -163,6 +166,13 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     _autopas->setAllowedTraversals(traversalOptions);
     _autopas->setAllowedDataLayouts(dataLayoutOptions);
     _autopas->setAllowedNewton3Options(newton3Options);
+
+    Particle::setEpsilon(1.0);
+    Particle::setSigma(1.0);
+    Particle::setMass(1.0);
+    std::array<double, 3> oldf = {1.0, 1.0, 1.0};
+    PrintableMolecule::setOldf(oldf);
+
     switch (generatorChoice) {
         case MDFlexParser::GeneratorOption::grid: {
             this->initContainerGrid(*_autopas, particlesPerDim, particleSpacing); //particlesTotal wird in diesem fall in der main geupdated
@@ -183,17 +193,21 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     switch (functorChoice) {
         case MDFlexParser::FunctorOption::lj12_6: {
             //@todo muss mit numIterations geändert werden zu particledeltaT / time_end
-            this->setFunctor(LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>(*_autopas,cutoff,numIterations));
+            //@todo erstmal DEFAULT WERTE für epsilon=1, sigma=1, shift=0.0.
+            //@todo Funktor Relevant for tuning/dublicated calculation; erstmal auf true
+            autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);
+            this->setFunctor(functor);
         }
         case MDFlexParser::FunctorOption::lj12_6_AVX: {
-            this->setFunctor(LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>(*_autopas,cutoff,numIterations));
+            autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);            //this->setFunctor(functor);
+            this->setFunctor(functor);
+            //andere art den Funktor zu initialisieren: autopas::LJFunctorAVX<Particle,ParticleCell> functor(cutoff, epsilon, sigma, 0.1,lowCorner,highCorner)
         }
     }
     // @todo UNSICHER: müssen die Position nochmal berechnet werden nachdem GridGenerator
-
     // @todo Velocity werte müssen initialisiert werden , später mit thermostat
     //Force Values musst be filled
-    this->CalcF(this->_Functor);
+    this->CalcF();
 
     }
 
@@ -285,14 +299,9 @@ long Simulation<Particle, ParticleCell>::simulate(){
         this->addDurationV(td.VSCalculateV(_autopas));
         time+=particleDelta_T;
     }
-
-
-
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
     return durationCalc;
-
-
 
 }
 
