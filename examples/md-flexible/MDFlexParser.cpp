@@ -390,7 +390,7 @@ void MDFlexParser::printConfig() {
       break;
     }
     case FunctorOption::lj12_6_Globals: {
-      cout << "Lennard-Jones (12-6) globals" << endl;
+      cout << "Lennard-Jones-globals (12-6)" << endl;
       break;
     }
   }
