@@ -207,7 +207,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     //Force Values musst be filled
     this->CalcF();
 
-    }
+}
 
 template<class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::setFunctor(auto functor) {
