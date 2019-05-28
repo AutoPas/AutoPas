@@ -47,6 +47,7 @@ class TraversalSelector {
    * @tparam useNewton3
    * @param traversalType
    * @param pairwiseFunctor
+   * @param info
    * @return Smartpointer to the traversal.
    */
   template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

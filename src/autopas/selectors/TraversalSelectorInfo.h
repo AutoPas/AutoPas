@@ -29,12 +29,19 @@ class TraversalSelectorInfo {
       : dims(dims), cutoff(cutoff), cellLength(cellLength) {}
 
   /**
+   * Array with the dimension lengths of the domain
    * indicating whether or not the optimalTraversalOption is already initialized
    */
   const std::array<unsigned long, 3> dims;
 
+  /**
+   * Cutoff radius
+   */
   const double cutoff;
 
+  /**
+   * cell length
+   */
   const std::array<double, 3> cellLength;
 };
 }  // namespace autopas

@@ -157,8 +157,8 @@ class ParticleContainerInterface {
   virtual bool isContainerUpdateNeeded() = 0;
 
   /**
-   * Generates a traversal selector for this container type.
-   * @return Traversal selector for this container type.
+   * Generates a traversal selector info for this container.
+   * @return Traversal selector info for this container.
    */
   virtual TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() = 0;
 
