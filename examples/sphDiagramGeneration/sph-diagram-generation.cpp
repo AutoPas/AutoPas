@@ -10,6 +10,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3);
