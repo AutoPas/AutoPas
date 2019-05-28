@@ -39,8 +39,6 @@ namespace autopas {
  */
 template <class ParticleCell>
 class TraversalSelector {
-  friend TraversalSelectorInfo<ParticleCell>;
-
  public:
   /**
    * Generates a given Traversal for the given properties.
@@ -69,43 +67,43 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
     // Linked cell
     case TraversalOption::c08: {
       return std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-          info._dims, &pairwiseFunctor, info._cutoff, info._cellLength);
+          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
     }
     case TraversalOption::sliced: {
       return std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-          info._dims, &pairwiseFunctor, info._cutoff, info._cellLength);
+          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
     }
     case TraversalOption::c18: {
       return std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-          info._dims, &pairwiseFunctor, info._cutoff, info._cellLength);
+          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
     }
     case TraversalOption::c01: {
       return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-          info._dims, &pairwiseFunctor, info._cutoff, info._cellLength);
+          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
     }
     // Verlet
     case TraversalOption::slicedVerlet: {
       return std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-          info._dims, &pairwiseFunctor);
+          info.dims, &pairwiseFunctor);
     }
     case TraversalOption::c18Verlet: {
       return std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-          info._dims, &pairwiseFunctor);
+          info.dims, &pairwiseFunctor);
     }
     case TraversalOption::c01Verlet: {
       return std::make_unique<C01TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-          info._dims, &pairwiseFunctor);
+          info.dims, &pairwiseFunctor);
     }
     case TraversalOption::c01Cuda: {
       return std::make_unique<C01CudaTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
-          info._dims, &pairwiseFunctor);
+          info.dims, &pairwiseFunctor);
     }
     case TraversalOption::verletTraversal: {
-      return std::make_unique<TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(info._dims,
+      return std::make_unique<TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(info.dims,
                                                                                                       &pairwiseFunctor);
     }
     case TraversalOption::dummyTraversal: {
-      return std::make_unique<DummyTraversal<ParticleCell>>(info._dims);
+      return std::make_unique<DummyTraversal<ParticleCell>>(info.dims);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
