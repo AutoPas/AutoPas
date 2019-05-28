@@ -11,6 +11,8 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListAsBuild.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
 namespace autopas {
@@ -45,6 +47,8 @@ void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle, Particl
     case ContainerOption::verletClusterLists:
       function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(container_ptr));
       return;
+    case ContainerOption::varVerletListsAsBuild:
+      function(dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>*>(container_ptr));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticSelectorMacros.h. Type: {}",
                                               container->getContainerType());

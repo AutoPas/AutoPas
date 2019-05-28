@@ -8,6 +8,8 @@
 
 #include <array>
 #include <vector>
+#include <autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h>
+#include <autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListAsBuild.h>
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
@@ -110,6 +112,10 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin,
                                                                  _verletRebuildFrequency);
       break;
+    }
+    case varVerletListsAsBuild: {
+      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
+          _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
     }
     default: {
       utils::ExceptionHandler::exception("Container type {} is not a known type!",

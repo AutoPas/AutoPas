@@ -103,6 +103,9 @@ inline std::string to_string(const ContainerOption &option) {
     case autopas::ContainerOption::verletClusterLists: {
       return "VerletClusterLists";
     }
+    case autopas::ContainerOption::varVerletListsAsBuild: {
+      return "VarVerletListsAsBuild";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown option (" + std::to_string(option) + ")";
@@ -147,6 +150,9 @@ inline std::string to_string(const TraversalOption &option) {
     }
     case autopas::TraversalOption::verletTraversal: {
       return "verlet-lists";
+    }
+    case autopas::TraversalOption::varVerletTraversalAsBuild: {
+      return "var-verlet-lists-as-build";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -252,7 +258,9 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
         traversalOptions.emplace_back(autopas::TraversalOption::slicedVerlet);
       else
         traversalOptions.emplace_back(autopas::TraversalOption::sliced);
-    } else if (not ignoreUnknownOptions) {
+    } else if(word.find("var-verlet-lists-as-build") != std::string::npos) {
+      traversalOptions.emplace_back(autopas::TraversalOption::varVerletTraversalAsBuild);
+    }else if (not ignoreUnknownOptions) {
       traversalOptions.emplace_back(autopas::TraversalOption(-1));
     }
   }
@@ -287,6 +295,8 @@ inline std::vector<autopas::ContainerOption> parseContainerOptions(const std::st
         containerOptions.emplace_back(autopas::ContainerOption::verletClusterLists);
       } else if (word.find("cel") != std::string::npos) {
         containerOptions.emplace_back(autopas::ContainerOption::verletListsCells);
+      } else if (word.find("uild") != std::string::npos) {
+        containerOptions.emplace_back(autopas::ContainerOption::varVerletListsAsBuild);
       } else {
         containerOptions.emplace_back(autopas::ContainerOption::verletLists);
       }

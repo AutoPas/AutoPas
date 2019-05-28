@@ -91,7 +91,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       : _neighborList{}, currentColor(0) {}
 
   std::vector<TraversalOption> getAllTraversals() override {
-    return std::vector<TraversalOption>{};
+    return std::vector<TraversalOption>{TraversalOption::varVerletTraversalAsBuild};
   };
 
   void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,

@@ -35,7 +35,7 @@ class VarVerletLists : public VerletLists<Particle> {
   //TODO: Add applicable traversals to constructor call to verlet lists (and in that constructor)
 
   //TODO: Update this
-  std::vector<TraversalOption> getAllTraversals() override { return VerletLists<Particle>::getAllTraversals(); }
+  std::vector<TraversalOption> getAllTraversals() override { return _neighborList.getAllTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
