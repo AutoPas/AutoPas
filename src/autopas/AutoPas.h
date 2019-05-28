@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <memory>
+#include <type_traits>
 #include "autopas/autopasIncludes.h"
 #include "autopas/selectors/AutoTuner.h"
 
@@ -137,6 +138,10 @@ class AutoPas {
    */
   template <class Functor>
   void iteratePairwise(Functor *f) {
+    static_assert(not std::is_same<Functor, autopas::Functor<Particle, ParticleCell>>::value,
+                  "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
+                  "derived type instead, e.g. using a dynamic_cast.");
+
     _autoTuner->iteratePairwise(f);
   }
 
