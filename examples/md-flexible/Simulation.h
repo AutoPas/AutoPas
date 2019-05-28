@@ -267,7 +267,8 @@ template<class Particle,class ParticleCell>
 void Simulation<Particle,ParticleCell>::CalcF(){
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
-    _autopas->iteratePairwise(this->_Functor);
+    //@ TODO: switch for other functors
+    _autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
     this->addDurationF(durationCalc);
