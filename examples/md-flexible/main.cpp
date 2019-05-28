@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
     DurationSimulation = Simulation.simulate();
 
     cout << endl;
-    cout << "epsilon: " << PrintableMolec  ule::getEpsilon() << endl;
+    cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
     cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
     if(parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid){
         particlesTotal=particlesPerDim * particlesPerDim * particlesPerDim;
