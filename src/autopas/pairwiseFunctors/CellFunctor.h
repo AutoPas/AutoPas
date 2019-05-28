@@ -32,14 +32,15 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 class CellFunctor {
  public:
   /**
-   * The constructor of CellFunctor
+   * The constructor of CellFunctor.
    * @param f the particlefunctor which should be used for the interaction.
+   * @param cutoff cutoff radius.
    */
   explicit CellFunctor(ParticleFunctor *f, const double cutoff = std::numeric_limits<double>::max())
       : _functor(f), _cutoff(cutoff) {}
 
   /**
-   * process the interactions inside one cell
+   * process the interactions inside one cell.
    * @param cell all pairwise interactions of particles inside this cell are
    * calculated
    */
@@ -50,37 +51,40 @@ class CellFunctor {
    * cell2.
    * @param cell1
    * @param cell2
+   * @param r normalized vector connecting centers of cell1 and cell2
    */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r = {1., 0., 0.});
 
  private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of
-   * motion
+   * motion.
    * @param cell
    */
   void processCellAoSN3(ParticleCell &cell);
 
   /**
    * Applies the functor to all particle pairs without exploiting newtons third
-   * law of motion
+   * law of motion.
    * @param cell
    */
   void processCellAoSNoN3(ParticleCell &cell);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
-   * exploiting newtons third law of motion
+   * exploiting newtons third law of motion.
    * @param cell1
    * @param cell2
+   * @param r normalized vector connecting centers of cell1 and cell2
    */
   void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
-   * without exploiting newtons third law of motion
+   * without exploiting newtons third law of motion.
    * @param cell1
    * @param cell2
+   * @param r normalized vector connecting centers of cell1 and cell2
    */
 
   void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r);
