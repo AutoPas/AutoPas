@@ -140,13 +140,13 @@ class ArrayMath {
   /**
    * Generates a normalized array (|a| = 1).
    * @tparam T floating point type
-   * @tparam SIZE size of the arrays
+   * @tparam SIZE size of the array
    * @param a input array
    * @return normalized array of a
    */
   template <class T, std::size_t SIZE>
   static std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
-    const T sum = std::accumulate(a.begin(), a.end(), static_cast<T>(0));
+    const T sum = std::accumulate(a.cbegin(), a.cend(), static_cast<T>(0));
     return mulScalar(a, static_cast<T>(1) / sum);
   }
 
