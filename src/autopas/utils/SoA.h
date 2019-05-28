@@ -60,7 +60,9 @@ class SoA {
    * @param other other buffer.
    */
   void append(SoA<SoAArraysType> &other) {
-    append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+    if (other.getNumParticles() > 0) {
+      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+    }
   }
 
   /**
