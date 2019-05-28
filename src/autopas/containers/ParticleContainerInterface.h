@@ -8,8 +8,11 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include "autopas/iterators/ParticleIteratorWrapper.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/selectors/TraversalSelectorInfo.h"
 
 namespace autopas {
 
@@ -157,7 +160,7 @@ class ParticleContainerInterface {
    * Generates a traversal selector for this container type.
    * @return Traversal selector for this container type.
    */
-  virtual TraversalSelector<ParticleCell> generateTraversalSelector() = 0;
+  virtual TraversalSelectorInfo<ParticleCell> generateTraversalSelectorInfo() = 0;
 
   /**
    * Generates a list of all traversals that are theoretically applicable to this container.

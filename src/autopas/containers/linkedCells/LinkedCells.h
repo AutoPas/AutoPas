@@ -9,6 +9,7 @@
 
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -188,9 +189,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
-                                           this->getCellBlock().getCellLength());
+  TraversalSelectorInfo<ParticleCell> generateTraversalSelectorInfo() override {
+    return TraversalSelectorInfo<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
+                                               this->getCellBlock().getCellLength());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

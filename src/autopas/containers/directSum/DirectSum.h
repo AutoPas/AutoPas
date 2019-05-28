@@ -9,6 +9,7 @@
 
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/directSum/DirectSumTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -128,9 +129,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
+  TraversalSelectorInfo<ParticleCell> generateTraversalSelectorInfo() override {
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelector<ParticleCell>({2, 0, 0});
+    return TraversalSelectorInfo<ParticleCell>({2, 0, 0});
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
