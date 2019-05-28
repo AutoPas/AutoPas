@@ -103,14 +103,13 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
 
   PairwiseFunctor *_pairwiseFunctor;
 
-  std::vector<ParticleCell> combinationSlices;
-  unsigned int currentSlice;
+  std::vector<std::vector<ParticleCell>> combinationSlices;
+  std::vector<unsigned int> currentSlices;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
-  combinationSlices.resize(_cellOffsets.size());
 
   const auto cutoffSquare(this->_cutoff * this->_cutoff);
 
@@ -153,15 +152,19 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
   if (DataLayout == DataLayoutOption::soa) {
     // Iteration along x
 
+    const auto threadID = autopas_get_thread_num();
+    auto &currentSlice = currentSlices[threadID];
+    auto &combinationSlice = combinationSlices[threadID];
+
     // First cell needs to initialize whole buffer
     if (x == this->_overlap[0]) {
       currentSlice = 0;
       for (unsigned int offsetSlice = 0; offsetSlice < cOffSize; offsetSlice++) {
-        combinationSlices[offsetSlice]._particleSoABuffer.clear();
-        for (auto offset : _cellOffsets[offsetSlice]) {
+        combinationSlice[offsetSlice]._particleSoABuffer.clear();
+        for (const auto offset : _cellOffsets[offsetSlice]) {
           const unsigned long otherIndex = baseIndex + offset;
           ParticleCell &otherCell = cells[otherIndex];
-          combinationSlices[offsetSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+          combinationSlice[offsetSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
         }
       }
     } else {
@@ -170,12 +173,12 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
       for (size_t slice = (currentSlice + 1) % cOffSize; slice != (currentSlice + this->_overlap[0] + 1) % cOffSize;
            ++slice %= cOffSize, ++i) {
         size_t newSize = 0;
-        for (auto offset : _cellOffsets[i]) {
+        for (const auto offset : _cellOffsets[i]) {
           const unsigned long otherIndex = baseIndex + offset;
           ParticleCell &otherCell = cells[otherIndex];
           newSize += otherCell.numParticles();
         }
-        combinationSlices[slice]._particleSoABuffer.resizeArrays(newSize);
+        combinationSlice[slice]._particleSoABuffer.resizeArrays(newSize);
       }
       // append buffers
       for (size_t slice = (currentSlice + this->_overlap[0] + 1) % cOffSize; slice != currentSlice;
@@ -184,16 +187,16 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
              ++offsetIndex) {
           const unsigned long otherIndex = baseIndex + _cellOffsets[i][offsetIndex];
           ParticleCell &otherCell = cells[otherIndex];
-          combinationSlices[slice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+          combinationSlice[slice]._particleSoABuffer.append(otherCell._particleSoABuffer);
         }
       }
 
-      combinationSlices[currentSlice]._particleSoABuffer.clear();
+      combinationSlice[currentSlice]._particleSoABuffer.clear();
 
-      for (auto offset : _cellOffsets.back()) {
+      for (const auto offset : _cellOffsets.back()) {
         const unsigned long otherIndex = baseIndex + offset;
         ParticleCell &otherCell = cells[otherIndex];
-        combinationSlices[currentSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+        combinationSlice[currentSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
       }
 
       ++currentSlice %= cOffSize;
@@ -202,17 +205,19 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
     // calculate all interactions
     for (unsigned int slice = 0; slice < cOffSize; slice++) {
       if (slice == (currentSlice + this->_overlap[0]) % cOffSize) {
-        combinationSlices[slice]._particleSoABuffer.setViewStart(baseCell.numParticles());
-        this->_cellFunctor.processCellPair(baseCell, combinationSlices[slice]);
-        combinationSlices[slice]._particleSoABuffer.setViewStart(0);
+        // slice contains base cell -> skip particles of base cell
+        combinationSlice[slice]._particleSoABuffer.setViewStart(baseCell.numParticles());
+        this->_cellFunctor.processCellPair(baseCell, combinationSlice[slice]);
+        combinationSlice[slice]._particleSoABuffer.setViewStart(0);
+        // compute base cell
         this->_cellFunctor.processCell(baseCell);
       } else {
-        this->_cellFunctor.processCellPair(baseCell, combinationSlices[slice]);
+        this->_cellFunctor.processCellPair(baseCell, combinationSlice[slice]);
       }
     }
   } else {
-    for (auto &slice : _cellOffsets) {
-      for (auto offset : slice) {
+    for (const auto &slice : _cellOffsets) {
+      for (const auto offset : slice) {
         const unsigned long otherIndex = baseIndex + offset;
         ParticleCell &otherCell = cells[otherIndex];
 
@@ -232,6 +237,18 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception(
         "The C01 traversal cannot work with enabled newton3 (unless only one thread is used)!");
+  }
+  // resize buffers
+  if (DataLayout == DataLayoutOption::soa) {
+    const unsigned int numThreads = static_cast<unsigned int>(autopas_get_max_threads());
+    if (combinationSlices.size() != numThreads) {
+      combinationSlices.resize(numThreads);
+      const auto cellOffsetsSize = _cellOffsets.size();
+      std::for_each(combinationSlices.begin(), combinationSlices.end(),
+                    [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
+      currentSlices.resize(numThreads);
+      AutoPasLog(debug, "numThreads: {}", numThreads);
+    }
   }
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }

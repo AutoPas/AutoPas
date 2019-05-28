@@ -90,7 +90,7 @@ inline void CBasedTraversal<ParticleCell>::cTraversal(LoopBody&& loopBody, const
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
 #if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3)
+#pragma omp for schedule(dynamic, 1) collapse(2)
 #endif
       for (unsigned long z = start_z; z < end_z; z += stride_z) {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
