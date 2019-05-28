@@ -21,7 +21,7 @@ namespace autopas {
  * This class handles the storage of particles in their full form.
  * @tparam Particle
  */
-template <class Particle>
+template <class Particle, class ParticleCellType>
 class FullSortedParticleCell : public ParticleCell<Particle> {
  public:
   /**
@@ -29,9 +29,9 @@ class FullSortedParticleCell : public ParticleCell<Particle> {
    * @param cell cell whose particles are sorted
    * @param r vector along particles are sorted
    */
-  FullSortedParticleCell(ParticleCell<Particle>& cell, const std::array<double, 3>& r) : _cell(&cell) {
+  FullSortedParticleCell(ParticleCellType& cell, const std::array<double, 3>& r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
-    for (auto p = cell.begin(); p.isValid(); ++p) {
+    for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
       _particles.push_back(std::make_pair(ArrayMath::dot(p->getR(), r), &(*p)));
     }
     std::sort(_particles.begin(), _particles.end(),
@@ -60,7 +60,7 @@ class FullSortedParticleCell : public ParticleCell<Particle> {
   /**
    * type of the internal iterator.
    */
-  typedef internal::SingleCellIterator<Particle, FullSortedParticleCell<Particle>> iterator_t;
+  typedef internal::SingleCellIterator<Particle, FullSortedParticleCell<Particle, ParticleCellType>> iterator_t;
 
   /**
    * sorted vector of projected positions and particle pointers.
@@ -70,7 +70,7 @@ class FullSortedParticleCell : public ParticleCell<Particle> {
   /**
    * underlying cell.
    */
-  ParticleCell<Particle>* _cell;
+  ParticleCellType* _cell;
 
  private:
 };

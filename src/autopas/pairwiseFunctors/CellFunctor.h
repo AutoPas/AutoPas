@@ -226,15 +226,17 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
-  auto outer = getStaticCellIter(cell1);
-  auto innerStart = getStaticCellIter(cell2);
+  FullSortedParticleCell<Particle, ParticleCell> baseSorted(cell1, r);
+  FullSortedParticleCell<Particle, ParticleCell> outerSorted(cell2, r);
 
-  for (; outer.isValid(); ++outer) {
-    Particle &p1 = *outer;
+  for (auto &outer : baseSorted._particles) {
+    Particle &p1 = *outer.second;
 
-    for (auto inner = innerStart; inner.isValid(); ++inner) {
-      Particle &p2 = *inner;
-
+    for (auto &inner : outerSorted._particles) {
+      /*if (std::abs(outer.first - inner.first) > _cutoff) {
+        break;
+      }*/
+      Particle &p2 = *inner.second;
       _functor->AoSFunctor(p1, p2, true);
     }
   }
@@ -245,15 +247,18 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
                                                         const std::array<double, 3> &r) {
-  auto innerStart = getStaticCellIter(cell2);
+  FullSortedParticleCell<Particle, ParticleCell> baseSorted(cell1, r);
+  FullSortedParticleCell<Particle, ParticleCell> outerSorted(cell2, r);
 
-  for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
-    Particle &p1 = *outer;
+  for (auto &outer : baseSorted._particles) {
+    Particle &p1 = *outer.second;
 
-    for (auto inner = innerStart; inner.isValid(); ++inner) {
-      Particle &p2 = *inner;
-
-      _functor->AoSFunctor(p1, p2, false);
+    for (auto &inner : outerSorted._particles) {
+      /*if (std::abs(outer.first - inner.first) > _cutoff) {
+        break;
+      }*/
+      Particle &p2 = *inner.second;
+      _functor->AoSFunctor(p1, p2, true);
       if (bidirectional) _functor->AoSFunctor(p2, p1, false);
     }
   }
