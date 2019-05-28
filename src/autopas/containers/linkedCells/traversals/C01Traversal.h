@@ -42,7 +42,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
                         const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
                                                                                  cellLength),
-        _cellFunctor(pairwiseFunctor) {
+        _cellFunctor(pairwiseFunctor, cutoff) {
     computeOffsets();
   }
 
@@ -92,7 +92,7 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   /**
    * Pairs for processBaseCell().
    */
-  std::vector<long> _cellOffsets;
+  std::vector<std::pair<long, std::array<double, 3>>> _cellOffsets;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -117,7 +117,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
         const double distSquare = ArrayMath::dot(pos, pos);
         if (distSquare <= cutoffSquare) {
           const long offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
-          _cellOffsets.push_back(offset);
+          _cellOffsets.push_back(std::make_pair(offset, ArrayMath::normalize(pos)));
         }
       }
     }
@@ -132,13 +132,14 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
 
   const size_t num_pairs = this->_cellOffsets.size();
   for (size_t j = 0; j < num_pairs; ++j) {
-    const unsigned long otherIndex = baseIndex + this->_cellOffsets[j];
+    const unsigned long otherIndex = baseIndex + this->_cellOffsets[j].first;
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
       this->_cellFunctor.processCell(baseCell);
     } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell);
+      std::array<double, 3> r = this->_cellOffsets[j].second;
+      this->_cellFunctor.processCellPair(baseCell, otherCell, r);
     }
   }
 }

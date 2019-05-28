@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/cells/FullSortedParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -34,7 +35,8 @@ class CellFunctor {
    * The constructor of CellFunctor
    * @param f the particlefunctor which should be used for the interaction.
    */
-  explicit CellFunctor(ParticleFunctor *f) : _functor(f) {}
+  explicit CellFunctor(ParticleFunctor *f, const double cutoff = std::numeric_limits<double>::max())
+      : _functor(f), _cutoff(cutoff) {}
 
   /**
    * process the interactions inside one cell
@@ -49,7 +51,7 @@ class CellFunctor {
    * @param cell1
    * @param cell2
    */
-  void processCellPair(ParticleCell &cell1, ParticleCell &cell2);
+  void processCellPair(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r = {1., 0., 0.});
 
  private:
   /**
@@ -72,7 +74,7 @@ class CellFunctor {
    * @param cell1
    * @param cell2
    */
-  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2);
+  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
@@ -81,7 +83,7 @@ class CellFunctor {
    * @param cell2
    */
 
-  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2);
+  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r);
 
   void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
 
@@ -100,6 +102,8 @@ class CellFunctor {
   void processCellCudaN3(ParticleCell &cell);
 
   ParticleFunctor *_functor;
+
+  const double _cutoff;
 };
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
@@ -138,7 +142,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
-    ParticleCell &cell1, ParticleCell &cell2) {
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
   if (cell1.numParticles() == 0 || cell2.numParticles() == 0) {
     return;
   }
@@ -146,9 +150,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   switch (DataLayout) {
     case DataLayoutOption::aos:
       if (useNewton3) {
-        processCellPairAoSN3(cell1, cell2);
+        processCellPairAoSN3(cell1, cell2, r);
       } else {
-        processCellPairAoSNoN3(cell1, cell2);
+        processCellPairAoSNoN3(cell1, cell2, r);
       }
       break;
     case DataLayoutOption::soa:
@@ -217,7 +221,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2) {
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
   auto outer = getStaticCellIter(cell1);
   auto innerStart = getStaticCellIter(cell2);
 
@@ -235,7 +239,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
-                 bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2) {
+                 bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
+                                                        const std::array<double, 3> &r) {
   auto innerStart = getStaticCellIter(cell2);
 
   for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
