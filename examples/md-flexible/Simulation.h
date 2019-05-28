@@ -35,7 +35,7 @@ private:
     long durationF;
     long durationV;
 public:
-    virtual ~Simulation();  //@todo
+    virtual ~Simulation() {}  //@todo
 
     explicit Simulation(AutoPas<Particle, ParticleCell> *autopas);
 
