@@ -49,6 +49,7 @@ void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle, Particl
       return;
     case ContainerOption::varVerletListsAsBuild:
       function(dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>*>(container_ptr));
+      return;
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticSelectorMacros.h. Type: {}",
                                               container->getContainerType());

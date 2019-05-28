@@ -116,9 +116,10 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
     case varVerletListsAsBuild: {
       container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
           _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
+      break;
     }
     default: {
-      utils::ExceptionHandler::exception("Container type {} is not a known type!",
+      utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
                                          utils::StringUtils::to_string(containerChoice));
     }
   }
