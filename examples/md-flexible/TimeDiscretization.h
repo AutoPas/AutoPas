@@ -17,7 +17,7 @@
 //idee: Die TimeDiskretization Methode als Template weiterzugeben, und somit pro verschiede Diskretisierungsmethode eine Klasse/Functor zu schreiben
 
 
-template <class Particle>
+template <class AutoPasTemplate>
 class TimeDiscretization {
 
 public:
@@ -29,11 +29,11 @@ public:
 
     /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
-    long VSCalculateX(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas); //@todo FRAGE__Conversion von ParticleCell nach FullParticleCell mag der Compiler nicht
+    long VSCalculateX(AutoPasTemplate autopas); //@todo FRAGE__Conversion von ParticleCell nach FullParticleCell mag der Compiler nicht
 
     /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
-    long VSCalculateV(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas);
+    long VSCalculateV(AutoPasTemplate autopas);
 
     double getParticleDeltaT() const;
 
@@ -45,8 +45,8 @@ private:
 
 };
 
-template <class Particle>
-long TimeDiscretization<Particle>::VSCalculateX(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas) {
+template <class AutoPasTemplate>
+long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate autopas) {
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
@@ -65,8 +65,8 @@ long TimeDiscretization<Particle>::VSCalculateX(autopas::AutoPas<Particle, autop
 }
 
 
-template <class Particle>
-long TimeDiscretization<Particle>::VSCalculateV(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas) {
+template <class AutoPasTemplate>
+long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate autopas) {
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
@@ -82,11 +82,11 @@ long TimeDiscretization<Particle>::VSCalculateV(autopas::AutoPas<Particle, autop
     return durationCalc;
 }
 
-template<class Particle>
-TimeDiscretization<Particle>::TimeDiscretization(double particleDeltaT):particle_delta_t(particleDeltaT) {}
+template<class AutoPasTemplate>
+TimeDiscretization<AutoPasTemplate>::TimeDiscretization(double particleDeltaT):particle_delta_t(particleDeltaT) {}
 
-template<class Particle>
-double TimeDiscretization<Particle>::getParticleDeltaT() const {
+template<class AutoPasTemplate>
+double TimeDiscretization<AutoPasTemplate>::getParticleDeltaT() const {
     return particle_delta_t;
 }
 
