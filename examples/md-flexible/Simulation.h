@@ -30,7 +30,7 @@ private:
 
     //@todo sich überlegen mit dem Funktor -> erwiterbar für alle Funktor Arten
 
-    autopas::Functor<Particle,ParticleCell,typename Particle::SoAArraysType> *_Functor;
+    autopas::Functor<Particle,ParticleCell> *_Functor;
     long durationX;
     long durationF;
     long durationV;
@@ -112,7 +112,7 @@ public:
      */
     AutoPas<Particle, ParticleCell> *getAutopas() const;
 
-    void setFunctor(auto functor);
+    void setFunctor(Functor<Particle, ParticleCell> *functor);
 
 };
 
@@ -210,7 +210,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
 }
 
 template<class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::setFunctor(auto functor) {
+void Simulation<Particle, ParticleCell>::setFunctor(Functor<Particle, ParticleCell> *functor) {
     _Functor = functor;
 }
 
@@ -284,7 +284,7 @@ long Simulation<Particle, ParticleCell>::simulate(){
     double particleDelta_T=0.01;    //@todo -get Value from Parser
     double time=0;
     double timeEnd=10;              //@todo -get TimeEnd from Parser
-    TimeDiscretization<Particle> td(particleDelta_T);
+    TimeDiscretization<decltype(_autopas)> td(particleDelta_T);
     //main simulation loop
     while(time<timeEnd){
         this->addDurationX(td.VSCalculateX(_autopas));
