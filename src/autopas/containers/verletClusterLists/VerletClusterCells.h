@@ -365,10 +365,11 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       _dummyStarts[i] = dummyStart;
       for (size_t pid = dummyStart; pid < _clusterSize; ++pid) {
         // add dummy Particles with ID ULONG_MAX
-        Particle dummyParticle = Particle({this->getBoxMax()[0] + 8 * this->getCutoff() + static_cast<double>(i),
-                                           this->getBoxMax()[1] + 8 * this->getCutoff() + static_cast<double>(pid),
-                                           this->getBoxMax()[2] + 8 * this->getCutoff()},
-                                          {0., 0., 0.}, ULONG_MAX);
+        Particle dummyParticle = Particle();
+        dummyParticle.setR({this->getBoxMax()[0] + 8 * this->getCutoff() + static_cast<double>(i),
+                            this->getBoxMax()[1] + 8 * this->getCutoff() + static_cast<double>(pid),
+                            this->getBoxMax()[2] + 8 * this->getCutoff()});
+        dummyParticle.setID(ULONG_MAX);
         this->_cells[i].addParticle(dummyParticle);
       }
     }
