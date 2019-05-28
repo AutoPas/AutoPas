@@ -89,7 +89,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   containerSelector.selectContainer(containerOption);
 
   auto container = containerSelector.getCurrentContainer();
-  auto traversalSelectorInfo = container->generateTraversalSelectorInfo();
+  auto traversalSelectorInfo = container->getTraversalSelectorInfo();
 
   autopas::MoleculeLJ defaultParticle;
   RandomGenerator::fillWithParticles(*container, defaultParticle, 100);

@@ -160,7 +160,7 @@ class ParticleContainerInterface {
    * Generates a traversal selector for this container type.
    * @return Traversal selector for this container type.
    */
-  virtual TraversalSelectorInfo<ParticleCell> generateTraversalSelectorInfo() = 0;
+  virtual TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() = 0;
 
   /**
    * Generates a list of all traversals that are theoretically applicable to this container.

@@ -85,7 +85,7 @@ class AutoTuner {
     for (auto &containerOption : allowedContainerOptions) {
       _containerSelector.selectContainer(containerOption);
       _traversalSelectorInfos.emplace(containerOption,
-                                      _containerSelector.getCurrentContainer()->generateTraversalSelectorInfo());
+                                      _containerSelector.getCurrentContainer()->getTraversalSelectorInfo());
 
       // get all traversals of the container and restrict them to the allowed ones
       auto allContainerTraversals = _containerSelector.getCurrentContainer()->getAllTraversals();
@@ -147,7 +147,7 @@ class AutoTuner {
       if (_traversalSelectorInfos.find(conf._container) == _traversalSelectorInfos.end()) {
         _containerSelector.selectContainer(conf._container);
         _traversalSelectorInfos.emplace(conf._container,
-                                        _containerSelector.getCurrentContainer()->generateTraversalSelectorInfo());
+                                        _containerSelector.getCurrentContainer()->getTraversalSelectorInfo());
       }
     }
 

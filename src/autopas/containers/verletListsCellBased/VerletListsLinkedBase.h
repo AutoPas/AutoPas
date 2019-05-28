@@ -205,7 +205,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    */
   bool needsRebuild() { return needsRebuild(_verletBuiltNewton3); }
 
-  TraversalSelectorInfo<ParticleCell> generateTraversalSelectorInfo() override {
+  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
     return TraversalSelectorInfo<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 

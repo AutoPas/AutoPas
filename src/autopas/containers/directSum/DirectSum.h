@@ -129,7 +129,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelectorInfo<ParticleCell> generateTraversalSelectorInfo() override {
+  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo<ParticleCell>({2, 0, 0});
   }
