@@ -29,7 +29,7 @@ public:
 
     /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
-    long VSCalculateX(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas); //Conversion von ParticleCell nach FullParticleCell mag der Compiler nicht
+    long VSCalculateX(autopas::AutoPas<Particle, autopas::FullParticleCell<Particle>>* autopas); //@todo FRAGE__Conversion von ParticleCell nach FullParticleCell mag der Compiler nicht
 
     /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */

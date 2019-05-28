@@ -109,10 +109,9 @@ int main(int argc, char **argv) {
     Simulation.initialize(parser);
     //Simulation
     DurationSimulation = Simulation.simulate();
-    // @todo -> simulate gibt duration der Simulation zurück
 
     cout << endl;
-    cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
+    cout << "epsilon: " << PrintableMolec  ule::getEpsilon() << endl;
     cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
     if(parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid){
         particlesTotal=particlesPerDim * particlesPerDim * particlesPerDim;

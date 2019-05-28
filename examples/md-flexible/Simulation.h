@@ -192,9 +192,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     //initializes Functor
     switch (functorChoice) {
         case MDFlexParser::FunctorOption::lj12_6: {
-            //@todo muss mit numIterations geändert werden zu particledeltaT / time_end
-            //@todo erstmal DEFAULT WERTE für epsilon=1, sigma=1, shift=0.0.
-            //@todo Funktor Relevant for tuning/dublicated calculation; erstmal auf true
+            //@todo erstmal DEFAULT WERTE für epsilon=1, sigma=1, shift=0.0 ,___ tuning/dublicated calculation; erstmal auf true
             autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);
             this->setFunctor(functor);
         }
@@ -204,8 +202,8 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
             //andere art den Funktor zu initialisieren: autopas::LJFunctorAVX<Particle,ParticleCell> functor(cutoff, epsilon, sigma, 0.1,lowCorner,highCorner)
         }
     }
-    // @todo UNSICHER: müssen die Position nochmal berechnet werden nachdem GridGenerator
-    // @todo Velocity werte müssen initialisiert werden , später mit thermostat
+    // @todo UNSICHER: müssen die Position nochmal berechnet werden nachdem GridGenerator?
+    // @todo Velocitys werte müssen initialisiert werden , später mit thermostat
     //Force Values musst be filled
     this->CalcF();
 
