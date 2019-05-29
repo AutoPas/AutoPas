@@ -206,6 +206,14 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    */
   bool needsRebuild() { return needsRebuild(_verletBuiltNewton3); }
 
+  /**
+   * Generates a traversal selector info for this container.
+   * @return Traversal selector info for this container.
+   */
+  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+  }
+
  protected:
   /**
    * Updates a found particle within cellI to the values of particleI.

@@ -85,8 +85,8 @@ class AutoTuner {
     // generate all potential configs
     for (auto &containerOption : allowedContainerOptions) {
       _containerSelector.selectContainer(containerOption);
-      _traversalSelectors.emplace(containerOption,
-                                  _containerSelector.getCurrentContainer()->generateTraversalSelector());
+      _traversalSelectorInfos.emplace(containerOption,
+                                      _containerSelector.getCurrentContainer()->getTraversalSelectorInfo());
 
       // get all traversals of the container and restrict them to the allowed ones
       auto allContainerTraversals = _containerSelector.getCurrentContainer()->getAllTraversals();
@@ -146,10 +146,10 @@ class AutoTuner {
     }
 
     for (auto &conf : allowedConfigurations) {
-      if (_traversalSelectors.find(conf._container) == _traversalSelectors.end()) {
+      if (_traversalSelectorInfos.find(conf._container) == _traversalSelectorInfos.end()) {
         _containerSelector.selectContainer(conf._container);
-        _traversalSelectors.emplace(conf._container,
-                                    _containerSelector.getCurrentContainer()->generateTraversalSelector());
+        _traversalSelectorInfos.emplace(conf._container,
+                                        _containerSelector.getCurrentContainer()->getTraversalSelectorInfo());
       }
     }
 
@@ -250,7 +250,7 @@ class AutoTuner {
   /**
    * One selector / factory per possible container because every container might have a different number of cells.
    */
-  std::map<ContainerOption, TraversalSelector<ParticleCell>> _traversalSelectors;
+  std::map<ContainerOption, TraversalSelectorInfo<ParticleCell>> _traversalSelectorInfos;
 
   /**
    * How many times each configuration should be tested.
@@ -365,9 +365,8 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   auto container = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {}", _currentConfig->toString());
 
-  auto traversal =
-      _traversalSelectors[_currentConfig->_container]
-          .template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(_currentConfig->_traversal, *f);
+  auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(
+      _currentConfig->_traversal, *f, _traversalSelectorInfos[_currentConfig->_container]);
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
@@ -513,17 +512,18 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     case DataLayoutOption::aos: {
       switch (conf._newton3) {
         case Newton3Option::enabled: {
-          traversalApplicable = _traversalSelectors[conf._container]
-                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::aos, true>(
-                                        conf._traversal, pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::aos, true>(
+                  conf._traversal, pairwiseFunctor, _traversalSelectorInfos[conf._container])
+                  ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
-          traversalApplicable = _traversalSelectors[conf._container]
-                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::aos, false>(
-                                        conf._traversal, pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::aos,
+                                                                          false>(
+                  conf._traversal, pairwiseFunctor, _traversalSelectorInfos[conf._container])
+                  ->isApplicable();
           break;
         }
       }
@@ -532,17 +532,18 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     case DataLayoutOption::soa: {
       switch (conf._newton3) {
         case Newton3Option::enabled: {
-          traversalApplicable = _traversalSelectors[conf._container]
-                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::soa, true>(
-                                        conf._traversal, pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::soa, true>(
+                  conf._traversal, pairwiseFunctor, _traversalSelectorInfos[conf._container])
+                  ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
-          traversalApplicable = _traversalSelectors[conf._container]
-                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::soa, false>(
-                                        conf._traversal, pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::soa,
+                                                                          false>(
+                  conf._traversal, pairwiseFunctor, _traversalSelectorInfos[conf._container])
+                  ->isApplicable();
           break;
         }
       }
@@ -551,17 +552,19 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     case DataLayoutOption::cuda: {
       switch (conf._newton3) {
         case Newton3Option::enabled: {
-          traversalApplicable = _traversalSelectors[conf._container]
-                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda, true>(
-                                        conf._traversal, pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda,
+                                                                          true>(
+                  conf._traversal, pairwiseFunctor, _traversalSelectorInfos[conf._container])
+                  ->isApplicable();
           break;
         }
         case Newton3Option::disabled: {
-          traversalApplicable = _traversalSelectors[conf._container]
-                                    .template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda, false>(
-                                        conf._traversal, pairwiseFunctor)
-                                    ->isApplicable();
+          traversalApplicable =
+              TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda,
+                                                                          false>(
+                  conf._traversal, pairwiseFunctor, _traversalSelectorInfos[conf._container])
+                  ->isApplicable();
           break;
         }
       }

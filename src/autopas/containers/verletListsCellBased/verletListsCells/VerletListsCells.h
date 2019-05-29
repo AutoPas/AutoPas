@@ -13,6 +13,7 @@
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 
@@ -71,10 +72,6 @@ class VerletListsCells
 
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    // Function needs to be overwritten
-    return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
-  }
   /**
    * Function to iterate over all pairs of particles. (Only AoS)
    * This function only handles short-range interactions.
