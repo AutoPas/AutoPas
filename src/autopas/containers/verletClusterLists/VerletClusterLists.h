@@ -135,8 +135,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return false;
   }
 
-  TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector() override {
-    return TraversalSelector<FullParticleCell<Particle>>(_cellsPerDim);
+  TraversalSelectorInfo<FullParticleCell<Particle>> getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo<FullParticleCell<Particle>>(_cellsPerDim);
   }
 
   /**
