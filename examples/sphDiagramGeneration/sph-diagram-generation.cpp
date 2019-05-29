@@ -8,6 +8,7 @@
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
 
