@@ -44,12 +44,16 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
                         const double skin, const unsigned int rebuildFrequency,
                         const std::vector<TraversalOption>& applicableTraversals, const double cellSizeFactor)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
-        _linkedCells(boxMin, boxMax, cutoff + skin, cellSizeFactor),
+        _linkedCells(boxMin, boxMax, cutoff + skin, std::max(1.0, cellSizeFactor)),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false),
-        _verletBuiltNewton3(false) {}
+        _verletBuiltNewton3(false) {
+    if (cellSizeFactor < 1.0) {
+      AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
+    }
+  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticle
