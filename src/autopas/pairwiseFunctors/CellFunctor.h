@@ -258,7 +258,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
         break;
       }*/
       Particle &p2 = *inner.second;
-      _functor->AoSFunctor(p1, p2, true);
+      _functor->AoSFunctor(p1, p2, false);
       if (bidirectional) _functor->AoSFunctor(p2, p1, false);
     }
   }
