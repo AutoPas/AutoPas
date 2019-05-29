@@ -131,7 +131,6 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
                   const double distSquare = ArrayMath::dot(pos, pos);
                   // only add cell offset if cell is within cutoff radius
                   if (distSquare <= cutoffSquare) {
-                    auto uoffset = static_cast<unsigned long>(offset);
                     _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].push_back(
                         std::make_pair(offset, ArrayMath::normalize(pos)));
                   }
