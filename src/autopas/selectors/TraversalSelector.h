@@ -21,7 +21,7 @@
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
-//#include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
@@ -105,8 +105,9 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
                                                                                                       &pairwiseFunctor);
     }
     case TraversalOption::varVerletTraversalAsBuild: {
-      // TODO: return std::make_unique<VarVerletTraversalAsBuild<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>>(&pairwiseFunctor);
-      return std::make_unique<DummyTraversal<ParticleCell>>(_dims);
+      return std::make_unique<
+          VarVerletTraversalAsBuild<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>>(
+          &pairwiseFunctor);
     }
     case TraversalOption::dummyTraversal: {
       return std::make_unique<DummyTraversal<ParticleCell>>(info.dims);
