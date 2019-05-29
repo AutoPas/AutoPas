@@ -56,8 +56,8 @@ if (CMAKE_FORMAT)
             OUTPUT ${file_cf}
             COMMAND
                 ${CMAKE_FORMAT}
-                -i # inplace
-                ${_file}
+                --in-place
+                --config-file ${PROJECT_SOURCE_DIR}/cmake/cmake-format.py ${_file}
             DEPENDS ${_file}
         )
         list(APPEND dummyfiles ${file_cf})
