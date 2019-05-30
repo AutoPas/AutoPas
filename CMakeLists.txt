@@ -14,6 +14,16 @@ if (NOT CMAKE_CXX_COMPILER_ID IN_LIST SUPPORTED_COMPILERS)
     message(WARNING "Compiler " ${CMAKE_CXX_COMPILER_ID} " not supported!")
 endif ()
 
+# Use ccache if available
+find_program(CCACHE ccache)
+if (CCACHE)
+    message(STATUS "ccache found, building with ccache")
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+else()
+    message(WARNING "ccache not found, building without ccache")
+endif ()
+
 # Check if the compiler command is archer
 # CMAKE_CXX_COMPILER contains the whole path. "archer" must be after the last "/"
 if (CMAKE_CXX_COMPILER MATCHES ".*archer[^/]*")
