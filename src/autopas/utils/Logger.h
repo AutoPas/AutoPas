@@ -79,7 +79,7 @@ class Logger {
       ostream_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     } else if (oss.rdbuf() == std::cerr.rdbuf()) {
       ostream_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
-    } else { // no color for streams other than cout / cerr
+    } else {  // no color for streams other than cout / cerr
       ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
     }
 #else
