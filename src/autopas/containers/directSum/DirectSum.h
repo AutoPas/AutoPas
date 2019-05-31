@@ -45,7 +45,6 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     this->_cells.resize(2);
   }
 
-  std::vector<TraversalOption> getAllTraversals() override { return applicableTraversals::allDSApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::directSum; }
 

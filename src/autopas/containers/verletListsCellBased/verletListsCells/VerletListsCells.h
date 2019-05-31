@@ -57,10 +57,6 @@ class VerletListsCells
                                                             applicableTraversals::allVLCApplicableTraversals()),
         _buildTraversal(buildTraversal) {}
 
-  std::vector<TraversalOption> getAllTraversals() override {
-    return applicableTraversals::allVLCApplicableTraversals();
-  }
-
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
 
   /**

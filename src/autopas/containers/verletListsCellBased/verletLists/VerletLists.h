@@ -70,8 +70,6 @@ class VerletLists
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 
-  std::vector<TraversalOption> getAllTraversals() override { return applicableTraversals::allVLApplicableTraversals(); }
-
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
   /**

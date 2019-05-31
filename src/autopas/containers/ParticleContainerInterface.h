@@ -169,7 +169,9 @@ class ParticleContainerInterface {
    *
    * @return Vector of traversal options.
    */
-  virtual std::vector<TraversalOption> getAllTraversals() = 0;
+  std::set<TraversalOption> getAllTraversals() {
+    return applicableTraversals::allApplicableTraversals(this->getContainerType());
+  }
 };
 
 }  // namespace autopas

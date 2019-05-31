@@ -61,10 +61,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     rebuild();
   }
 
-  std::vector<TraversalOption> getAllTraversals() override {
-    return applicableTraversals::allVCLApplicableTraversals();
-  }
-
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
   /**
