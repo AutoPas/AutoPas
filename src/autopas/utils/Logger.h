@@ -74,7 +74,7 @@ class Logger {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     std::shared_ptr<spdlog::sinks::sink> ostream_sink;
-#ifdef COLORED_CONSOLE_LOGGING
+#ifdef AUTOPAS_COLORED_CONSOLE_LOGGING
     if (oss.rdbuf() == std::cout.rdbuf()) {
       ostream_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     } else if (oss.rdbuf() == std::cerr.rdbuf()) {
