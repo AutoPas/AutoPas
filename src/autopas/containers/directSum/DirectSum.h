@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/containers/ApplicableTraversals.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSumTraversalInterface.h"
@@ -38,21 +39,13 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff,
+                                                  applicableTraversals::allDSApplicableTraversals()),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 
-  /**
-   * Lists all traversal options applicable for the Direct Sum container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allDSApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::directSumTraversal};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allDSApplicableTraversals(); }
+  std::vector<TraversalOption> getAllTraversals() override { return applicableTraversals::allDSApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::directSum; }
 

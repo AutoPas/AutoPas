@@ -7,6 +7,7 @@
 #pragma once
 
 #include "VerletListsCellsHelpers.h"
+#include "autopas/containers/ApplicableTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
@@ -53,20 +54,12 @@ class VerletListsCells
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                    const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                                            allVLCApplicableTraversals()),
+                                                            applicableTraversals::allVLCApplicableTraversals()),
         _buildTraversal(buildTraversal) {}
 
-  /**
-   * Lists all traversal options applicable for the Verlet Lists Cells container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption>& allVLCApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
-                                                TraversalOption::c01Verlet};
-    return v;
+  std::vector<TraversalOption> getAllTraversals() override {
+    return applicableTraversals::allVLCApplicableTraversals();
   }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allVLCApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
 

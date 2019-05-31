@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/ApplicableTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/utils/ArrayMath.h"
 
@@ -46,8 +47,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
-                                                                allVCLApplicableTraversals()),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(
+            boxMin, boxMax, cutoff + skin, applicableTraversals::allVCLApplicableTraversals()),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -60,17 +61,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     rebuild();
   }
 
-  /**
-   * Lists all traversal options applicable for the Verlet Lists container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption>& allVCLApplicableTraversals() {
-    // traversal not used but prevents usage of newton3
-    static const std::vector<TraversalOption> v{TraversalOption::c01};
-    return v;
+  std::vector<TraversalOption> getAllTraversals() override {
+    return applicableTraversals::allVCLApplicableTraversals();
   }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allVCLApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
