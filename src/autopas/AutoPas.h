@@ -442,6 +442,9 @@ class AutoPas {
    */
   std::vector<Newton3Option> _allowedNewton3Options;
 
+  /**
+   * This is the AutoTuner that owns the container, ...
+   */
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
-};  // namespace autopas
+};  // class AutoPas
 }  // namespace autopas
