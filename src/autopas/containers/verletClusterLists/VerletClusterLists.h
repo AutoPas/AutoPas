@@ -46,7 +46,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin,
                                                                 allVCLApplicableTraversals()),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
@@ -56,7 +56,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         _cellsPerDim{0},
         _skin(skin),
         _cutoff(cutoff),
-        _cutoffSqr(cutoff * cutoff),
+        _interactionLengthSqr((cutoff + skin) * (cutoff + skin)),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false) {
@@ -297,10 +297,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
             index_t jRest = jGrid.numParticles() % _clusterSize;
             index_t jSize = jGrid.numParticles() / _clusterSize;
 
-            // calculate distance in xy-plane and skip if already longer than cutoff
+            // calculate distance in xy-plane and skip if already longer than cutoff + skin
             double distX = std::max(0, std::abs(xi - xj) - 1) * _gridSideLength;
             double distXYsqr = distX * distX + distY * distY;
-            if (distXYsqr <= _cutoffSqr) {
+            if (distXYsqr <= _interactionLengthSqr) {
               for (index_t zi = 0; zi < iSize; zi++) {
                 // bbox in z of iGrid
                 float iBBoxBot = iGrid[zi * _clusterSize].getR()[2];
@@ -313,7 +313,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
 
                   double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
-                  if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+                  if (distXYsqr + distZ * distZ <= _interactionLengthSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
                 }
@@ -325,7 +325,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
 
                   double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
-                  if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+                  if (distXYsqr + distZ * distZ <= _interactionLengthSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
                 }
@@ -343,7 +343,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
 
                   double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
-                  if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+                  if (distXYsqr + distZ * distZ <= _interactionLengthSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
                 }
@@ -355,7 +355,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                   float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
 
                   double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
-                  if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+                  if (distXYsqr + distZ * distZ <= _interactionLengthSqr) {
                     iClusterVerlet.push_back(jClusterStart);
                   }
                 }
@@ -520,7 +520,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   /// cutoff
   double _cutoff;
-  double _cutoffSqr;
+  double _interactionLengthSqr;
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
