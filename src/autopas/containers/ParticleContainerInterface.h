@@ -142,6 +142,24 @@ class ParticleContainerInterface {
   virtual void setCutoff(double cutoff) = 0;
 
   /**
+   * Return the skin of the container.
+   * @return skin radius.
+   */
+  virtual double getSkin() const = 0;
+
+  /**
+   * Set the skin of the container.
+   * @param skin
+   */
+  virtual void setSkin(double skin) = 0;
+
+  /**
+   * Return the interaction length (cutoff+skin) of the container.
+   * @return interaction length
+   */
+  virtual double getInteractionLength() const = 0;
+
+  /**
    * Updates the container.
    * This deletes halo particles, resorts particles into appropriate cells and might remove particles from the
    * container, if necessary.

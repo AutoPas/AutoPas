@@ -345,7 +345,7 @@ void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
-  DirectSum<MoleculeLJ, FullParticleCell<MoleculeLJ>> ds({0., 0., 0.}, {10., 10., 10.}, 3);
+  DirectSum<MoleculeLJ, FullParticleCell<MoleculeLJ>> ds({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   ds.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
@@ -355,7 +355,7 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
-  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3);
+  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1.);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   linkedCells.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);

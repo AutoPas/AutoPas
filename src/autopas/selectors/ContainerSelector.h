@@ -86,11 +86,12 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
 
   switch (containerChoice) {
     case directSum: {
-      container = std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
+      container = std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _verletSkin);
       break;
     }
     case linkedCells: {
-      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _cellSizeFactor);
+      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _verletSkin,
+                                                                        _cellSizeFactor);
       break;
     }
     case verletLists: {

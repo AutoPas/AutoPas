@@ -40,14 +40,15 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
-                                                                                    cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
+                           const double interactionLength = 1.0,
+                           const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                    interactionLength, cellLength),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()

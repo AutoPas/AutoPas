@@ -621,7 +621,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
                                                                                                                        \
     autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 3);                        \
     autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.}, \
-                                                                                           cutoff);                    \
+                                                                                           cutoff, 0.5, 1.);           \
                                                                                                                        \
     autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,                                  \
                                                  cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);    \

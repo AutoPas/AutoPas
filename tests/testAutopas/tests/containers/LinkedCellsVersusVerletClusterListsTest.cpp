@@ -8,7 +8,7 @@
 
 LinkedCellsVersusVerletClusterListsTest::LinkedCellsVersusVerletClusterListsTest()
     : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),
-      _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
+      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*cell size factor*/) {}
 
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);

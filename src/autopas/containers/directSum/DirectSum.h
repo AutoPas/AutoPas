@@ -36,9 +36,10 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param skin
    */
-  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
+  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, skin, allDSApplicableTraversals()),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
