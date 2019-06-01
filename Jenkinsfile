@@ -36,7 +36,7 @@ pipeline{
                                 // return 2 if files have been modified by clang-format, 0 otherwise
                                 try{
                                     // if files were modified, return 2
-                                    sh "git status | grep -q modified && exit 2 || exit 0"
+                                    sh "git diff --quiet && exit 2 || exit 0"
                                 } catch (Exception e) {
                                     // change detected
                                     echo 'clang format errors detected. please format the code properly. Affected files:'
@@ -56,7 +56,7 @@ pipeline{
                                 // return 2 if files have been modified by cmake-format, 0 otherwise
                                 try{
                                     // if files were modified, return 2
-                                    sh "git status | grep -q modified && exit 2 || exit 0"
+                                    sh "git diff --quiet && exit 2 || exit 0"
                                 } catch (Exception e) {
                                     // change detected
                                     echo 'cmake format errors detected. please format the code properly. Affected files:'
