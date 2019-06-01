@@ -19,6 +19,7 @@ endforeach (script)
 
 # -----------------test-----------------
 # add check for current target
+# cmake-format: off
 add_test(
     NAME md-flexible.test
     COMMAND
@@ -38,6 +39,7 @@ add_test(
         --verlet-skin-radius 0
     CONFIGURATIONS checkExamples
 )
+# cmake-format: on
 
 add_test(
     NAME md-flexMeasurePerf

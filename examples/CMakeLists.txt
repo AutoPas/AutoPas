@@ -6,7 +6,15 @@ if (NOT BUILD_EXAMPLES)
     return()
 endif ()
 
-add_custom_target(checkExamples COMMAND ctest -C checkExamples -j 4)
+add_custom_target(
+    checkExamples
+    COMMAND
+        ctest
+        -C
+        checkExamples
+        -j
+        4
+)
 
 add_subdirectory(basic)
 add_subdirectory(md-flexible)
