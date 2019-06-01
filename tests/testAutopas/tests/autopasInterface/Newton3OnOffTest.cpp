@@ -99,7 +99,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
     // loader and extractor will be called, we don't care how often.
-    EXPECT_CALL(mockFunctor, SoALoader(_, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoALoader(_, _))
+        .Times(testing::AtLeast(1))
+        .WillRepeatedly(testing::WithArgs<1>(testing::Invoke([](auto &buf) { buf.resizeArrays(1); })));
     EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
   }
 

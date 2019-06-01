@@ -32,9 +32,7 @@ class FullParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
   }
 
-  unsigned long numParticles() const override {
-    return std::max(_particles.size(), _particleSoABuffer.getNumParticles());
-  }
+  unsigned long numParticles() const override { return _particles.size(); }
 
   /**
    * Returns a reference to the element at position n in the cell.
