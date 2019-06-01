@@ -25,10 +25,12 @@ ExternalProject_Add(
 ExternalProject_Get_Property(gtest source_dir binary_dir)
 
 # Create a libgtest target to be used as a dependency by test programs
-# cmake-format: off
-# @TODO: Currently excluded from formatting due to bug in cmake-format. Remove cmake-format: off if migrating to v.0.5.2
-add_library(libgtest IMPORTED STATIC GLOBAL)
-# cmake-format: on
+add_library(
+    libgtest
+    IMPORTED
+    STATIC
+    GLOBAL
+)
 
 add_dependencies(libgtest gtest)
 
@@ -43,10 +45,12 @@ set_target_properties(
 )
 
 # Create a libgmock target to be used as a dependency by test programs
-# cmake-format: off
-# @TODO: Currently excluded from formatting due to bug in cmake-format. Remove cmake-format: off if migrating to v.0.5.2
-add_library(libgmock IMPORTED STATIC GLOBAL)
-# cmake-format: on
+add_library(
+    libgmock
+    IMPORTED
+    STATIC
+    GLOBAL
+)
 
 add_dependencies(libgmock gtest)
 
