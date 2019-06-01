@@ -233,9 +233,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     Particle &p1 = *outer.second;
 
     for (auto &inner : outerSorted._particles) {
-      /*if (std::abs(outer.first - inner.first) > _cutoff) {
+      if (std::abs(outer.first - inner.first) > _cutoff) {
         break;
-      }*/
+      }
       Particle &p2 = *inner.second;
       _functor->AoSFunctor(p1, p2, true);
     }
@@ -254,9 +254,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     Particle &p1 = *outer.second;
 
     for (auto &inner : outerSorted._particles) {
-      /*if (std::abs(outer.first - inner.first) > _cutoff) {
+      if (std::abs(outer.first - inner.first) > _cutoff) {
         break;
-      }*/
+      }
       Particle &p2 = *inner.second;
       _functor->AoSFunctor(p1, p2, false);
       if (bidirectional) _functor->AoSFunctor(p2, p1, false);
