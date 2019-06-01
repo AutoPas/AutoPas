@@ -9,7 +9,7 @@
 
 using ::testing::_;  // anything is ok
 using ::testing::Combine;
-using ::testing::Return;  // anything is ok
+using ::testing::Return;
 using ::testing::ValuesIn;
 
 // Parse combination strings and call actual test function
@@ -112,16 +112,14 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNewton3SC++;
-      }));
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, true)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, true))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3SC++; }));
 
       // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNewton3Pair++;
-      }));
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3Pair++; }));
 
       // non newton3 variant should not happen
       EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).Times(0);
@@ -133,10 +131,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
       break;
     }
     case autopas::DataLayoutOption::aos: {
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNewton3Pair++;
-      }));
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3Pair++; }));
       // non newton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(0);
       iterate(container,
@@ -169,16 +166,14 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNonNewton3SC++;
-      }));
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, false)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, false))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3SC++; }));
 
       // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNonNewton3Pair++;
-      }));
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3Pair++; }));
 
       // newton3 variant should not happen
       EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).Times(0);
@@ -190,10 +185,10 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
       break;
     }
     case autopas::DataLayoutOption::aos: {
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNewton3Pair++;
-      }));
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3Pair++; }));
+
       // newton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(0);
       iterate(container,
