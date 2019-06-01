@@ -104,8 +104,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   }
 
   // with newton 3:
-  int callsNewton3SC = 0;    // same cell
-  int callsNewton3Pair = 0;  // pair of cells
+  std::atomic<unsigned int> callsNewton3SC (0ul);    // same cell
+  std::atomic<unsigned int> callsNewton3Pair (0ul);  // pair of cells
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(true));
   EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
 
@@ -158,8 +158,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   }
 
   // without newton 3:
-  int callsNonNewton3SC = 0;
-  int callsNonNewton3Pair = 0;
+  std::atomic<unsigned int> callsNonNewton3SC (0ul);
+  std::atomic<unsigned int> callsNonNewton3Pair (0ul);
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(false));
   EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(true));
 
