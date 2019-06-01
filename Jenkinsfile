@@ -46,6 +46,26 @@ pipeline{
                             }
                         }
                     },
+                    "cmake format": {
+                        dir("cmake-format"){
+                            container('autopas-clang6-cmake-ninja-make'){
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DOPENMP=ON .."
+                                sh "ninja cmakeformat"
+                            }
+                            script{
+                                // return 2 if files have been modified by cmake-format, 0 otherwise
+                                try{
+                                    // if files were modified, return 2
+                                    sh "git status | grep -q modified && exit 2 || exit 0"
+                                } catch (Exception e) {
+                                    // change detected
+                                    echo 'cmake format errors detected. please format the code properly. Affected files:'
+                                    sh "git status | grep modified"
+                                    sh "exit 1"
+                                }
+                            }
+                        }
+                    },
                     "custom checks": {
                         dir("src"){
                             script{
