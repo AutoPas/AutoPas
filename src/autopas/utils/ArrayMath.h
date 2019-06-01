@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include <cmath>
 #include <numeric>
 
 namespace autopas {
@@ -146,8 +147,8 @@ class ArrayMath {
    */
   template <class T, std::size_t SIZE>
   static std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
-    const T sum = std::accumulate(a.cbegin(), a.cend(), static_cast<T>(0));
-    return mulScalar(a, static_cast<T>(1) / sum);
+    const T length = sqrt(dot(a, a));
+    return mulScalar(a, static_cast<T>(1) / length);
   }
 
 };  // class ArrayMath

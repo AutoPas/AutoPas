@@ -84,7 +84,7 @@ TEST(ArrayMathTest, testMulScalar) {
 
 TEST(ArrayMathTest, testNormalize) {
   std::array<double, 3> a({1.1, 2.2, 3.3});
-  std::array<double, 3> correctResult({1.0 / 6.0, 1.0 / 3.0, 0.5});
+  std::array<double, 3> correctResult({sqrt(14) / 14.0, sqrt(14) / 7.0, 3 / sqrt(14)});
   std::array<double, 3> result = ArrayMath::normalize(a);
   for (int d = 0; d < 3; ++d) {
     ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
