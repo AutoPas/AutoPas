@@ -8,7 +8,6 @@
 
 #include <autopas/utils/WrapOpenMP.h>
 #include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
-#include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {
 
@@ -23,7 +22,7 @@ namespace autopas {
  * @tparam useSoA
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C01BasedTraversal : public CBasedTraversal<ParticleCell> {
+class C01BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -35,27 +34,7 @@ class C01BasedTraversal : public CBasedTraversal<ParticleCell> {
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
                              double cutoff = 1.0, const std::array<double, 3>& cellLength = {1.0, 1.0, 1.0})
-      : CBasedTraversal<ParticleCell>(dims, cutoff, cellLength), _dataLayoutConverter(pairwiseFunctor) {}
-
-  void initTraversal(std::vector<ParticleCell>& cells) override {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.loadDataLayout(cells[i]);
-    }
-  }
-
-  void endTraversal(std::vector<ParticleCell>& cells) override {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.storeDataLayout(cells[i]);
-    }
-  }
+      : CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout>(dims, pairwiseFunctor, cutoff, cellLength) {}
 
  protected:
   /**
@@ -67,12 +46,6 @@ class C01BasedTraversal : public CBasedTraversal<ParticleCell> {
    */
   template <typename LoopBody>
   inline void c01Traversal(LoopBody&& loopBody);
-
- private:
-  /**
-   * Data Layout Converter to be used with this traversal
-   */
-  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
