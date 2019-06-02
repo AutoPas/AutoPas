@@ -29,8 +29,9 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3,
           bool combineSoA = false>
-class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
-                     public LinkedCellTraversalInterface<ParticleCell> {
+class C01Traversal
+    : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, (combineSoA) ? 2 : 3>,
+      public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -42,10 +43,9 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                         const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
-                                                                                 cellLength),
-        _cellFunctor(pairwiseFunctor),
-        _pairwiseFunctor(pairwiseFunctor) {
+      : C01BasedTraversal < ParticleCell,
+      PairwiseFunctor, DataLayout, useNewton3, (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, cutoff, cellLength),
+      _cellFunctor(pairwiseFunctor), _pairwiseFunctor(pairwiseFunctor) {
     /*static_assert(not(combineSoA && DataLayout != DataLayoutOption::soa),
                   "C01Traversal: tried to use combined SoA buffers without activating SoA");*/
     computeOffsets();

@@ -17,7 +17,7 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  */
-template <class ParticleCell>
+template <class ParticleCell, unsigned int collapseDepth = 3>
 class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
   /**
@@ -70,11 +70,12 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   std::array<unsigned long, 3> _overlap;
 };
 
-template <class ParticleCell>
+template <class ParticleCell, unsigned int collapseDepth>
 template <typename LoopBody>
-inline void CBasedTraversal<ParticleCell>::cTraversal(LoopBody&& loopBody, const std::array<unsigned long, 3>& end,
-                                                      const std::array<unsigned long, 3>& stride,
-                                                      const std::array<unsigned long, 3>& offset) {
+inline void CBasedTraversal<ParticleCell, collapseDepth>::cTraversal(LoopBody&& loopBody,
+                                                                     const std::array<unsigned long, 3>& end,
+                                                                     const std::array<unsigned long, 3>& stride,
+                                                                     const std::array<unsigned long, 3>& offset) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
@@ -90,7 +91,7 @@ inline void CBasedTraversal<ParticleCell>::cTraversal(LoopBody&& loopBody, const
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
 #if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(2)
+#pragma omp for schedule(dynamic, 1) collapse(collapseDepth)
 #endif
       for (unsigned long z = start_z; z < end_z; z += stride_z) {
         for (unsigned long y = start_y; y < end_y; y += stride_y) {
