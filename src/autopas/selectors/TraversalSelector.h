@@ -104,6 +104,10 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
       return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(
           _dims, &pairwiseFunctor, _cutoff, _cellLength);
     }
+    case TraversalOption::c01CombinedSoA: {
+      return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, true>>(
+          _dims, &pairwiseFunctor, _cutoff, _cellLength);
+    }
     // Verlet
     case TraversalOption::slicedVerlet: {
       return std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>>(

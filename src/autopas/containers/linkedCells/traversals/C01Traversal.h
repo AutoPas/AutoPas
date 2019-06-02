@@ -26,7 +26,8 @@ namespace autopas {
  * @tparam DataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3,
+          bool combineSoA = false>
 class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
  public:
@@ -44,6 +45,8 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
                                                                                  cellLength),
         _cellFunctor(pairwiseFunctor),
         _pairwiseFunctor(pairwiseFunctor) {
+    /*static_assert(not(combineSoA && DataLayout != DataLayoutOption::soa),
+                  "C01Traversal: tried to use combined SoA buffers without activating SoA");*/
     computeOffsets();
   }
 
@@ -71,13 +74,15 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
     cudaGetDeviceCount(&nDevices);
 #endif
     if (DataLayout == DataLayoutOption::cuda) {
-      return (not useNewton3) and (nDevices > 0);
+      return (not useNewton3) and (nDevices > 0) and not combineSoA;
     } else {
-      return not useNewton3;
+      return not useNewton3 and not(combineSoA && DataLayout != DataLayoutOption::soa);
     }
   }
 
-  TraversalOption getTraversalType() override { return TraversalOption::c01; }
+  TraversalOption getTraversalType() override {
+    return (combineSoA) ? TraversalOption::c01CombinedSoA : TraversalOption::c01;
+  }
 
  private:
   /**
@@ -107,8 +112,8 @@ class C01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   std::vector<unsigned int> currentSlices;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
+inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
 
   const auto cutoffSquare(this->_cutoff * this->_cutoff);
@@ -142,14 +147,14 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
+inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
   const size_t cOffSize = _cellOffsets.size();
 
-  if (DataLayout == DataLayoutOption::soa) {
+  if (combineSoA) {
     // Iteration along x
 
     const auto threadID = autopas_get_thread_num();
@@ -231,8 +236,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
+inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception(
