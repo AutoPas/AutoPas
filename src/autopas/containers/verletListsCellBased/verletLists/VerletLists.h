@@ -9,7 +9,9 @@
 #include "VerletListHelpers.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
@@ -143,11 +145,6 @@ class VerletLists
     this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal, useNewton3);
 
     return validityCheckerFunctor.neighborlistsAreValid();
-  }
-
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
-    return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 
  protected:
