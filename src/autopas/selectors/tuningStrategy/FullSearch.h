@@ -37,7 +37,7 @@ class FullSearch : public TuningStrategyInterface {
       : _selectorStrategy(selectorStrategy),
         _containerOptions(),
         _searchSpace(allowedConfigurations),
-        _currentConfig(allowedConfigurations.begin()) {
+        _currentConfig(_searchSpace.begin()) {
     for (auto config : _searchSpace) {
       _containerOptions.insert(config._container);
     }
@@ -76,15 +76,20 @@ class FullSearch : public TuningStrategyInterface {
 };
 
 void FullSearch::generateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                     const std::set<TraversalOption> &allowedTraversalOptions,
+                                     const std::set<TraversalOption> &___allowedTraversalOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                      const std::set<Newton3Option> &allowedNewton3Options) {
+  auto dummySet = {TraversalOption::dummyTraversal};
+  std::set<TraversalOption> allowedTraversalOptions;
+  std::set_union(___allowedTraversalOptions.begin(), ___allowedTraversalOptions.end(), dummySet.begin(), dummySet.end(),
+                 std::inserter(allowedTraversalOptions,allowedTraversalOptions.begin()));
+
   // generate all potential configs
   for (auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
-    auto allContainerTraversals = applicableTraversals::allApplicableTraversals(containerOption);
+    std::set<TraversalOption> allContainerTraversals = applicableTraversals::allApplicableTraversals(containerOption);
     //@TODO dummyTraversal needed until all containers support propper traversals
-    std::set<TraversalOption> allowedAndApplicable{TraversalOption::dummyTraversal};
+    std::set<TraversalOption> allowedAndApplicable;
     std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
@@ -107,12 +112,9 @@ void FullSearch::generateSearchSpace(const std::set<ContainerOption> &allowedCon
 
 bool FullSearch::tune() {
   // repeat as long as traversals are not applicable or we run out of configs
-  while (_currentConfig != _searchSpace.end()) {
+  if (_currentConfig != _searchSpace.end()) {
     ++_currentConfig;
-  }
-
-  // reached end of tuning phase
-  if (_currentConfig == _searchSpace.end()) {
+  } else {  // reached end of tuning phase
     // sets _currentConfig
     selectOptimalConfiguration();
     return false;

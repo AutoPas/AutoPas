@@ -46,6 +46,7 @@ class AutoPas {
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
         _numSamples(3),
+        _tuningStrategyOption(TuningStrategyOption::exhaustiveSearch),
         _selectorStrategy(SelectorStrategy::fastestAbs),
         _allowedContainers(allContainerOptions),
         _allowedTraversals(allTraversalOptions),
