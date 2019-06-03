@@ -6,59 +6,162 @@
 
 #pragma once
 
-#include <autopas/selectors/ContainerSelector.h>
-#include <autopas/utils/ExceptionHandler.h>
 #include <set>
+#include <sstream>
 #include "TuningStrategyInterface.h"
+#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/selectors/OptimumSelector.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
-class FullSearch : TuningStrategyInterface {
-  template <class CSelector>
-  void generateSearchSpace(CSelector *containerSelector, const std::set<ContainerOption> &allowedContainerOptions,
-                           std::set<TraversalOption> allowedTraversalOptions,
+class FullSearch : public TuningStrategyInterface {
+ public:
+  FullSearch(const std::set<ContainerOption> &allowedContainerOptions,
+             const std::set<TraversalOption> &allowedTraversalOptions,
+             const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+             const std::set<Newton3Option> &allowedNewton3Options, SelectorStrategy selectorStrategy)
+      : _selectorStrategy(selectorStrategy), _containerOptions(allowedContainerOptions) {
+    // sets search space and current config
+    generateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
+                        allowedNewton3Options);
+  }
+
+  inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
+
+  inline void addEvidence(long time) override { _traversalTimes[*_currentConfig].push_back(time); }
+
+  inline void reset() override {
+    _traversalTimes.clear();
+    _currentConfig = _searchSpace.begin();
+  }
+
+  inline bool tune() override;
+
+  inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; };
+
+  inline bool searchSpaceOneOption() override { return _searchSpace.size() == 1; }
+
+  inline bool searchSpaceEmpty() override { return _searchSpace.empty(); }
+
+ private:
+  inline void generateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                           const std::set<TraversalOption> &allowedTraversalOptions,
                            const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                           const std::set<Newton3Option> &allowedNewton3Options) {
-    auto containerBefore = containerSelector->getCurrentContainer()->getContainerType();
+                           const std::set<Newton3Option> &allowedNewton3Options);
 
-    //@TODO needed until all containers support propper traversals
-    allowedTraversalOptions.insert(TraversalOption::dummyTraversal);
+  inline void selectOptimalConfiguration();
 
-    // generate all potential configs
-    for (auto &containerOption : allowedContainerOptions) {
-      containerSelector->selectContainer(containerOption);
+  SelectorStrategy _selectorStrategy;
+  std::set<ContainerOption> _containerOptions;
+  std::set<Configuration> _searchSpace;
+  std::set<Configuration>::iterator _currentConfig;
+  std::unordered_map<Configuration, std::vector<size_t>, ConfigHash> _traversalTimes;
+};
 
-      // get all traversals of the container and restrict them to the allowed ones
-      auto allContainerTraversals = containerSelector->getCurrentContainer()->getAllTraversals();
-      std::vector<TraversalOption> allowedAndApplicable;
-      std::sort(allContainerTraversals.begin(), allContainerTraversals.end());
-      std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
-                            allContainerTraversals.begin(), allContainerTraversals.end(),
-                            std::back_inserter(allowedAndApplicable));
+void FullSearch::generateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                     const std::set<TraversalOption> &allowedTraversalOptions,
+                                     const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                     const std::set<Newton3Option> &allowedNewton3Options) {
+  // generate all potential configs
+  for (auto &containerOption : allowedContainerOptions) {
+    // get all traversals of the container and restrict them to the allowed ones
+    auto allContainerTraversals = applicableTraversals::allApplicableTraversals(containerOption);
+    //@TODO dummyTraversal needed until all containers support propper traversals
+    std::set<TraversalOption> allowedAndApplicable{TraversalOption::dummyTraversal};
+    std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
+                          allContainerTraversals.begin(), allContainerTraversals.end(),
+                          std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-      for (auto &traversalOption : allowedAndApplicable) {
-        for (auto &dataLayoutOption : allowedDataLayoutOptions) {
-          for (auto &newton3Option : allowedNewton3Options) {
-            _searchSpace.emplace(containerOption, traversalOption, dataLayoutOption, newton3Option);
-          }
+    for (auto &traversalOption : allowedAndApplicable) {
+      for (auto &dataLayoutOption : allowedDataLayoutOptions) {
+        for (auto &newton3Option : allowedNewton3Options) {
+          _searchSpace.emplace(containerOption, traversalOption, dataLayoutOption, newton3Option);
         }
       }
     }
-
-    if (_searchSpace.empty()) {
-      autopas::utils::ExceptionHandler::exception("FullSearch: No valid configurations could be created.");
-    }
-
-    _currentConfig = _searchSpace.begin();
-
-    containerSelector->selectContainer(_currentConfig->_container);
   }
 
-  Configuration getCurrentConfig() { return *_currentConfig; }
+  if (_searchSpace.empty()) {
+    autopas::utils::ExceptionHandler::exception("FullSearch: No valid configurations could be created.");
+  }
 
-  Configuration getNextConfig() { return *(++_currentConfig); }
+  _currentConfig = _searchSpace.begin();
+}
 
-  std::set<Configuration> _searchSpace;
-  std::set<Configuration>::iterator _currentConfig;
-};
+bool FullSearch::tune() {
+  // repeat as long as traversals are not applicable or we run out of configs
+  while (_currentConfig != _searchSpace.end()) {
+    ++_currentConfig;
+  }
+
+  // reached end of tuning phase
+  if (_currentConfig == _searchSpace.end()) {
+    // sets _currentConfig
+    selectOptimalConfiguration();
+    return false;
+  }
+
+  return true;
+}
+
+void FullSearch::selectOptimalConfiguration() {
+  if (_searchSpace.size() == 1) {
+    _currentConfig = _searchSpace.begin();
+    return;
+  }
+
+  // Time measure strategy
+  if (_traversalTimes.empty()) {
+    utils::ExceptionHandler::exception(
+        "FullSearch: Trying to determine fastest configuration without any measurements! "
+        "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
+  }
+
+  long optimalTraversalTime = std::numeric_limits<long>::max();
+  Configuration optimalConfiguration;
+  // reduce sample values
+  for (auto &configAndTimes : _traversalTimes) {
+    long value = OptimumSelector::optimumValue(configAndTimes.second, _selectorStrategy);
+
+    // save all values for debugging purposes
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+      configAndTimes.second.push_back(value);
+    }
+
+    if (value < optimalTraversalTime) {
+      optimalTraversalTime = value;
+      optimalConfiguration = configAndTimes.first;
+    }
+  }
+
+  // print all configs, times and their reduced values
+  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    std::stringstream ss;
+    // print all configs
+    for (auto &p : _traversalTimes) {
+      ss << std::endl << p.first.toString() << " : [";
+      // print all timings
+      for (size_t i = 0; i < p.second.size() - 1; ++i) {
+        ss << " " << p.second[i];
+      }
+      ss << " ] ";
+      ss << "Reduced value: " << p.second[p.second.size() - 1];
+    }
+    AutoPasLog(debug, "Collected times: {}", ss.str());
+  }
+
+  _currentConfig = _searchSpace.find(optimalConfiguration);
+  // sanity check
+  if (_currentConfig == _searchSpace.end()) {
+    autopas::utils::ExceptionHandler::exception(
+        "FullSearch: Optimal configuration not found in list of configurations!");
+  }
+
+  // measurements are not needed anymore
+  _traversalTimes.clear();
+
+  AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
+}
+
 }  // namespace autopas

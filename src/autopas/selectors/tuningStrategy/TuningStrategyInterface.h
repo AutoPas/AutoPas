@@ -11,22 +11,52 @@
 namespace autopas {
 
 class TuningStrategyInterface {
+ public:
   /**
-   * Store empirically collected information for a given configuration.
-   * @param configuration
+   * Store empirically collected information for the current configuration.
    * @param time
    */
-  virtual void addEvidence(Configuration configuration, long time) = 0;
+  virtual void addEvidence(long time) = 0;
+
+  /**
+   * Returns the currently selected configuration object.
+   * @return
+   */
+  virtual Configuration getCurrentConfiguration() = 0;
 
   /**
    * Selects the next configuration to test or the optimum.
    *
-   * The returned pair first contains a bool that indicates whether more tuning steps are required (=true) or the
-   * optimum was found (=false). Second is the configuration which is either the next configuration to test (=true) or
-   * the optimum (=false).
+   * A bool is returned indicating whether more tuning steps are required (=true) or the optimum was found (=false).
+   * The new configuration can be obtained by getCurrentConfiguration. It is the configuration which is either the next
+   * configuration to test (=true) or the optimum (=false).
    *
-   * @return false iff returned configuration is the selected optimum.
+   * @return false iff new configuration is the selected optimum.
    */
-  virtual std::pair<bool, Configuration> tune() = 0;
+  virtual bool tune() = 0;
+
+  /**
+   * Reset all internal parameters to the beginning of a new tuning cycle.
+   */
+  virtual void reset() = 0;
+
+  /**
+   * Returns all container options the strategy might choose.
+   * @return
+   */
+  virtual std::set<ContainerOption> getAllowedContainerOptions() = 0;
+
+  /**
+   * Indicate whether the search space collapsed to only one option.
+   * @return
+   */
+  virtual bool searchSpaceOneOption() = 0;
+
+  /**
+   * Indicate whether the search space collapsed to be empty.
+   * @return
+   */
+  virtual bool searchSpaceEmpty() = 0;
+
 };
 }  // namespace autopas
