@@ -8,8 +8,23 @@
 
 #include <Eigen/Dense>
 #include "autopas/selectors/FeatureVector.h"
+#include "autopas/utils/DoubleRange.h"
 
 namespace autopas {
+
+/**
+ * Different acquisition functions
+ */
+enum AcquisitionFunction {
+  /**
+   * Upper confidence bound
+   */
+  ucb,
+  /**
+   * mean
+   */
+  mean
+};
 
 /**
  * Gaussian process is a stochastical model. It predicts the
@@ -36,6 +51,7 @@ class GaussianProcess {
    * fixed noise assumed
    */
   const double _sigma;
+
   Eigen::MatrixXd _covMat;
   Eigen::MatrixXd _covMatInv;
   Eigen::VectorXd _weights;
@@ -91,7 +107,7 @@ class GaussianProcess {
    * Get the number of evidences provided.
    * @return
    */
-  size_t numEvidences() { return _inputs.size(); }
+  size_t numEvidences() const { return _inputs.size(); }
 
   /**
    * Provide a the output for a blackbox function
@@ -141,6 +157,41 @@ class GaussianProcess {
 
     Eigen::VectorXd kVec = kernelVector(input);
     return kernel(input, input) - kVec.dot(_covMatInv * kVec);
+  }
+
+  /**
+   * Find FeatureVector in samples which maximizes
+   * given aquisition function.
+   * TODO: maybe add parameters for hyperparameters of aquisition functions
+   * @param af function to maximize
+   * @param samples
+   * @return
+   */
+  FeatureVector sampleAquisitionMax(AcquisitionFunction af, const std::vector<FeatureVector>& samples) const {
+    int maxIdx = -1;
+    double maxVal;
+
+    // find maximum from samples
+    for (unsigned i = 0; i < samples.size(); ++i) {
+      double val;
+      switch (af) {
+        case ucb: {
+          val = predictMean(samples[i]) + std::sqrt(predictVar(samples[i]));
+          break;
+        }
+        case mean: {
+          val = predictMean(samples[i]);
+          break;
+        }
+      }
+
+      if (maxIdx == -1 || val > maxVal) {
+        maxIdx = i;
+        maxVal = val;
+      }
+    }
+
+    return samples[maxIdx];
   }
 };
 }  // namespace autopas

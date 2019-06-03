@@ -5,6 +5,8 @@
  */
 
 #include <gtest/gtest.h>
+#include <iostream>
+#include <random>
 #include "autopas/selectors/GaussianProcess.h"
 
 using namespace autopas;
@@ -148,7 +150,7 @@ TEST(GaussianProcess, sine) {
     gp.addEvidence(f, output);
   }
 
-  // make equisitant prediction over the domain
+  // make equidistant prediction over the domain
   double predictStep = (domainEnd - domainStart) / (numPredictions - 1);
   for (unsigned i = 0; i < numPredictions; ++i) {
     double input = domainStart + predictStep * i;
@@ -157,4 +159,49 @@ TEST(GaussianProcess, sine) {
 
     ASSERT_NEAR(gp.predictMean(f), output, epsilon);
   }
+}
+
+TEST(GaussianProcess, 2dMax) {
+  std::default_random_engine rng(72);         // random generator
+  std::uniform_int_distribution<long> distr;  // uniform distribution
+
+  // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
+  auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
+  double epsilon = 0.1;                                                     // allowed error
+  std::vector<DoubleRange> domain{DoubleRange(-2, 2), DoubleRange(-2, 2)};  // domain of function
+  FeatureVector max({-1, 1});                                               // max of function
+  unsigned numEvidences = 15;                                               // number of samples allowed to make
+  unsigned lhsNumSamples = 1000;                      // number of sample to find max of acquisition function
+  AcquisitionFunction af = AcquisitionFunction::ucb;  // use upper confidence bound as af
+
+  GaussianProcess gp(6, {0.2, 0.2}, 0.001);
+
+  // add first evidence
+  gp.addEvidence({0, 0}, functor(0, 0));
+
+  for (unsigned i = 1; i < numEvidences; ++i) {
+    // create lhs samples
+    std::vector<FeatureVector> lhsSamples(lhsNumSamples);
+    for (auto& d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, distr(rng));
+
+    // sample max of acquisition function
+    FeatureVector am = gp.sampleAquisitionMax(af, lhsSamples);
+    double i1 = static_cast<DoubleFeature&>(am[0]).getValue();
+    double i2 = static_cast<DoubleFeature&>(am[1]).getValue();
+    double amOut = functor(i1, i2);
+
+    gp.addEvidence(am, amOut);
+  }
+
+  // last lhs sample for predicted max
+  std::vector<FeatureVector> lhsSamples(lhsNumSamples);
+  for (auto& d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, distr(rng));
+
+  // sample max of mean function
+  FeatureVector am = gp.sampleAquisitionMax(AcquisitionFunction::mean, lhsSamples);
+
+  // check if predicted max is near real max
+  auto diff = am - max;
+  ASSERT_NEAR(diff[0], 0, epsilon);
+  ASSERT_NEAR(diff[1], 0, epsilon);
 }

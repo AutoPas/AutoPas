@@ -47,6 +47,8 @@ class DoubleFeature : public Feature {
 
   double operator-(const Feature& other) const override;
   std::unique_ptr<Feature> clone() const override;
+
+  double getValue() { return _value; }
 };
 
 Feature::~Feature() = default;
