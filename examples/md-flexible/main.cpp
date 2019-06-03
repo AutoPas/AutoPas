@@ -192,5 +192,8 @@ int main(int argc, char **argv) {
     logFile.close();
   }
 
+  delete autopas;
+  autopas= NULL;
+
   return EXIT_SUCCESS;
 }

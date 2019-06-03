@@ -30,12 +30,17 @@ private:
 
     //@todo sich überlegen mit dem Funktor -> erwiterbar für alle Funktor Arten
 
-    autopas::Functor<Particle,ParticleCell> *_Functor;
+    autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* _Functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
     long durationX;
     long durationF;
     long durationV;
 public:
-    virtual ~Simulation() {}  //@todo
+    virtual ~Simulation() {
+    delete _autopas;
+    _autopas = NULL;
+    delete _Functor;
+    _Functor = NULL;
+    }
 
     explicit Simulation(AutoPas<Particle, ParticleCell> *autopas);
 
@@ -130,12 +135,12 @@ AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas(
 template<class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     //werte die man später für die initialisierung der Funktoren braucht, temporäre implementierung
-    std::array<double, 3> lowCorner = {0., 0., 0.};
-    std::array<double, 3> highCorner = {5., 5., 5.};
-    double epsilon,sigma  = 1.0;
+    //std::array<double, 3> lowCorner = {0., 0., 0.};
+    //std::array<double, 3> highCorner = {5., 5., 5.};
+    //double epsilon,sigma  = 1.0;
     string logFileName(parser.getLogFileName());
-    auto measureFlops(parser.getMeasureFlops());
-    auto numIterations(parser.getIterations());
+    auto measureFlops(parser.getMeasureFlops()); //@todo un-used
+    auto numIterations(parser.getIterations()); //@todo un-used
     auto particlesTotal(parser.getParticlesTotal());
     auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
     auto vtkFilename(parser.getWriteVTK()); //
@@ -146,9 +151,9 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     auto dataLayoutOptions(parser.getDataLayoutOptions());
     auto distributionMean(parser.getDistributionMean());
     auto distributionStdDev(parser.getDistributionStdDev());
-    auto functorChoice(parser.getFunctorOption());
+    auto functorChoice(parser.getFunctorOption());              //@todo un-used
     auto generatorChoice(parser.getGeneratorOption());
-    auto logLevel(parser.getLogLevel());
+    auto logLevel(parser.getLogLevel());                           //@todo un-used
     auto newton3Options(parser.getNewton3Options());
     auto particleSpacing(parser.getParticleSpacing());
     auto particlesPerDim(parser.getParticlesPerDim());
@@ -190,18 +195,18 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
             throw std::runtime_error("Unknown generator choice");
     }
     //initializes Functor
-    switch (functorChoice) {
-        case MDFlexParser::FunctorOption::lj12_6: {
-            //@todo erstmal DEFAULT WERTE für epsilon=1, sigma=1, shift=0.0 ,___ tuning/dublicated calculation; erstmal auf true
-            autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);
-            this->setFunctor(functor);
-        }
-        case MDFlexParser::FunctorOption::lj12_6_AVX: {
-            autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);            //this->setFunctor(functor);
-            this->setFunctor(functor);
+    //switch (functorChoice) {
+    //    case MDFlexParser::FunctorOption::lj12_6: {
+    //        //@todo erstmal DEFAULT WERTE für epsilon=1, sigma=1, shift=0.0 ,___ tuning/dublicated calculation; erstmal auf true
+     //       autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);
+     //       this->setFunctor(functor);
+      //  }
+       // case MDFlexParser::FunctorOption::lj12_6_AVX: {
+      //      autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);            //this->setFunctor(functor);
+       //     this->setFunctor(functor);
             //andere art den Funktor zu initialisieren: autopas::LJFunctorAVX<Particle,ParticleCell> functor(cutoff, epsilon, sigma, 0.1,lowCorner,highCorner)
-        }
-    }
+    //    }
+    //}
     // @todo UNSICHER: müssen die Position nochmal berechnet werden nachdem GridGenerator?
     // @todo Velocitys werte müssen initialisiert werden , später mit thermostat
     //Force Values musst be filled
@@ -267,8 +272,10 @@ template<class Particle,class ParticleCell>
 void Simulation<Particle,ParticleCell>::CalcF(){
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
-    //@ TODO: switch for other functors
-    _autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
+    //@ TODO: switch for other functors --> mit boolean object?
+    //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
+    //_autopas->iteratePairwise(this->_Functor);
+    _autopas->iteratePairwise(new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true));
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
     this->addDurationF(durationCalc);
