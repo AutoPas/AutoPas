@@ -9,7 +9,7 @@
 #include <array>
 #include <memory>
 #include <set>
-#include "OptimumSelector.h"
+#include "autopas/selectors/OptimumSelector.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -17,6 +17,7 @@
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
+#include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 
 namespace autopas {
 
