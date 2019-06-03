@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/options/TuningStrategyOption.h>
+#include <autopas/selectors/tuningStrategy/FullSearch.h>
 #include <iostream>
 #include <memory>
 #include <set>
@@ -89,9 +91,8 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _cellSizeFactor, _verletSkin, _verletRebuildFrequency, _allowedContainers,
-        _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy, _tuningInterval,
-        _numSamples);
+        _boxMin, _boxMax, _cutoff, _cellSizeFactor, _verletSkin, _verletRebuildFrequency, generateTuningStrategy(),
+        _tuningInterval, _numSamples);
   }
 
   /**
@@ -388,6 +389,22 @@ class AutoPas {
 
  private:
   /**
+   * Generates a new Tuning Strategy object from the member variables of this autopas object.
+   * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
+   */
+  TuningStrategyInterface *generateTuningStrategy() {
+    switch (_tuningStrategyOption) {
+      case TuningStrategyOption::exhaustiveSearch:
+        return new FullSearch(_allowedContainers, _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options,
+                              _selectorStrategy);
+    }
+
+    autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
+                                                _tuningStrategyOption);
+    return nullptr;
+  }
+
+  /**
    * Lower corner of the container.
    */
   std::array<double, 3> _boxMin;
@@ -419,6 +436,13 @@ class AutoPas {
    * Number of samples the tuner should collect for each combination.
    */
   unsigned int _numSamples;
+
+  /**
+   * Strategy option for the auto tuner.
+   * For possible tuning strategy choices see AutoPas::TuningStrategy.
+   */
+  TuningStrategyOption _tuningStrategyOption;
+
   /**
    * Strategy for the configuration selector.
    * For possible container choices see AutoPas::SelectorStrategy.
