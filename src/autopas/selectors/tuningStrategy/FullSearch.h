@@ -27,6 +27,22 @@ class FullSearch : public TuningStrategyInterface {
                         allowedNewton3Options);
   }
 
+  /**
+   * Constructor for the FullSearch that only contains the given configurations.
+   * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
+   * @param allowedConfigurations Set of configurations AutoPas can choose from.
+   * @param selectorStrategy Strategy for the configuration selection.
+   */
+  FullSearch(const std::set<Configuration> &allowedConfigurations, SelectorStrategy selectorStrategy)
+      : _selectorStrategy(selectorStrategy),
+        _containerOptions(),
+        _searchSpace(allowedConfigurations),
+        _currentConfig(allowedConfigurations.begin()) {
+    for (auto config : _searchSpace) {
+      _containerOptions.insert(config._container);
+    }
+  }
+
   inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
 
   inline void addEvidence(long time) override { _traversalTimes[*_currentConfig].push_back(time); }
@@ -46,9 +62,9 @@ class FullSearch : public TuningStrategyInterface {
 
  private:
   inline void generateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                           const std::set<TraversalOption> &allowedTraversalOptions,
-                           const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                           const std::set<Newton3Option> &allowedNewton3Options);
+                                  const std::set<TraversalOption> &allowedTraversalOptions,
+                                  const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                  const std::set<Newton3Option> &allowedNewton3Options);
 
   inline void selectOptimalConfiguration();
 
