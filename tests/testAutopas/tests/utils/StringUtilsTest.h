@@ -14,39 +14,39 @@
 class StringUtilsTest : public AutoPasTestBase {};
 
 /**
- * Tests a parsing function which takes a string and returns a vector of values.
+ * Tests a parsing function which takes a string and returns a set of values.
  * @tparam T Type of the object resulting form parsing.
- * @param allOptions Vector of all expected options.
+ * @param allOptions Set of all expected options.
  * @param optionsString String that shall be parsed.
  * @param parseFun Parsing Function.
  */
 template <class T>
-void testParseMultiple(const std::vector<T> &allOptions, const std::string &optionsString,
-                       std::function<std::vector<T>(const std::string &, bool)> &&parseFun) {
+void testParseMultiple(const std::set<T> &allOptions, const std::string &optionsString,
+                       std::function<std::set<T>(const std::string &, bool)> &&parseFun) {
   auto parsedOptions = parseFun(optionsString, false);
 
-  EXPECT_THAT(parsedOptions, ::testing::UnorderedElementsAreArray(allOptions));
+  EXPECT_THAT(parsedOptions, ::testing::ElementsAreArray(allOptions));
 }
 
 /**
  * Tests a parsing function which takes a string and returns a value.
  * @tparam T Type of the object resulting form parsing.
- * @param allOptions Vector of all expected options.
+ * @param allOptions Set of all expected options.
  * @param optionsStrings Vector of strings that shall be parsed.
  * @param parseFun Parsing function.
  */
 template <class T>
-void testParseSingle(const std::vector<T> &allOptions, const std::vector<std::string> &optionsStrings,
+void testParseSingle(const std::set<T> &allOptions, const std::vector<std::string> &optionsStrings,
                      std::function<T(const std::string &)> &&parseFun) {
   ASSERT_EQ(allOptions.size(), optionsStrings.size()) << "Not all options tested!";
 
-  std::vector<T> parsedOptions;
+  std::set<T> parsedOptions;
 
   for (auto &string : optionsStrings) {
-    parsedOptions.push_back(parseFun(string));
+    parsedOptions.insert(parseFun(string));
   }
 
-  ASSERT_THAT(parsedOptions, ::testing::UnorderedElementsAreArray(allOptions));
+  ASSERT_THAT(parsedOptions, ::testing::ElementsAreArray(allOptions));
 }
 
 /**
@@ -56,7 +56,7 @@ void testParseSingle(const std::vector<T> &allOptions, const std::vector<std::st
  * @param badOptions Options expected to return 'Unknown option'.
  */
 template <class T>
-void testToString(const std::vector<T> &goodOptions, const std::vector<T> &badOptions) {
+void testToString(const std::set<T> &goodOptions, const std::set<T> &badOptions) {
   for (auto &op : goodOptions) {
     std::string createdString = autopas::utils::StringUtils::to_string(op);
     EXPECT_THAT(createdString, Not(::testing::HasSubstr("Unknown option")));

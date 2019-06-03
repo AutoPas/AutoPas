@@ -50,7 +50,6 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
       for (auto &dataLayout : /*autopas::allDataLayoutOptions*/ {autopas::DataLayoutOption::aos}) {
         autopas::AutoPas<Particle, FPCell> autoPas;
 
-
         // generates one cell per particle + 1 halo layer
         autoPas.setBoxMin(boxMin);
         autoPas.setBoxMax(boxMax);
@@ -77,14 +76,14 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
 
           // although these are doubles this should be exactly zero
           ASSERT_EQ(particleIterator->getF()[0], 0)
-                        << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
-                        << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
+              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
           ASSERT_EQ(particleIterator->getF()[1], 0)
-                        << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
-                        << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
+              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
           ASSERT_EQ(particleIterator->getF()[2], 0)
-                        << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
-                        << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
+              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
         }
       }
 #ifdef AUTOPAS_OPENMP

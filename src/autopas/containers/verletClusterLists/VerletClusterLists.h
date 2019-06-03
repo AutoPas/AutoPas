@@ -47,8 +47,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(
-            boxMin, boxMax, cutoff + skin, applicableTraversals::allVCLApplicableTraversals()),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
+                                                                applicableTraversals::allVCLApplicableTraversals()),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),

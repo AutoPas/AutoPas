@@ -50,7 +50,6 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
                                                                  applicableTraversals::allLCApplicableTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
 
-
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
 
   void addParticle(Particle &p) override {

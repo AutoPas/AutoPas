@@ -9,6 +9,9 @@
 #include <set>
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/StringUtils.h"
+
 namespace autopas {
 namespace applicableTraversals {
 
@@ -17,8 +20,8 @@ namespace applicableTraversals {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allDSApplicableTraversals() {
-  static const std::set<TraversalOption> v{TraversalOption::directSumTraversal};
-  return v;
+  static const std::set<TraversalOption> s{TraversalOption::directSumTraversal};
+  return s;
 }
 
 /**
@@ -26,14 +29,14 @@ static const std::set<TraversalOption> &allDSApplicableTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allLCApplicableTraversals() {
-  static const std::set<TraversalOption> v {
+  static const std::set<TraversalOption> s {
     TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced
 #if defined(AUTOPAS_CUDA)
         ,
         TraversalOption::c01Cuda
 #endif
   };
-  return v;
+  return s;
 }
 
 /**
@@ -42,8 +45,8 @@ static const std::set<TraversalOption> &allLCApplicableTraversals() {
  */
 static const std::set<TraversalOption> &allVCLApplicableTraversals() {
   // traversal not used but prevents usage of newton3
-  static const std::set<TraversalOption> v{TraversalOption::c01};
-  return v;
+  static const std::set<TraversalOption> s{TraversalOption::c01};
+  return s;
 }
 
 /**
@@ -51,8 +54,8 @@ static const std::set<TraversalOption> &allVCLApplicableTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVLApplicableTraversals() {
-  static const std::set<TraversalOption> v{TraversalOption::verletTraversal};
-  return v;
+  static const std::set<TraversalOption> s{TraversalOption::verletTraversal};
+  return s;
 }
 
 /**
@@ -60,9 +63,9 @@ static const std::set<TraversalOption> &allVLApplicableTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVLCApplicableTraversals() {
-  static const std::set<TraversalOption> v{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
+  static const std::set<TraversalOption> s{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
                                            TraversalOption::c01Verlet};
-  return v;
+  return s;
 }
 
 /**
@@ -88,6 +91,12 @@ static inline const std::set<TraversalOption> &allApplicableTraversals(Container
       return allVLCApplicableTraversals();
     }
   }
+
+  autopas::utils::ExceptionHandler::exception("OptionSelector: Unknown selector strategy {}!",
+                                              autopas::utils::StringUtils::to_string(container));
+
+  static const std::set<TraversalOption> s{};
+  return s;
 }
 
 }  // namespace applicableTraversals

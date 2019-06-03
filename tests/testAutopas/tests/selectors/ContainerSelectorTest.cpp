@@ -119,20 +119,17 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    Generated, ContainerSelectorTest,
-    Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> {
-              // return autopas::allContainerOptions;
-              /// @todo: uncomment above lines and remove below lines to enable testing of verletClusterLists.
-              auto all = autopas::allContainerOptions;
-              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
-              return all;
-            }()),
-            ValuesIn([]() -> std::vector<autopas::ContainerOption> {
-              // return autopas::allContainerOptions;
-              /// @todo: uncomment above lines and remove below lines to enable testing of verletClusterLists.
-              auto all = autopas::allContainerOptions;
-              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
-              return all;
-            }())),
-    ContainerSelectorTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
+                         Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
+                                   auto all = autopas::allContainerOptions;
+                                   /// @todo: remove below line to enable testing of verletClusterLists.
+                                   all.erase(autopas::ContainerOption::verletClusterLists);
+                                   return all;
+                                 }()),
+                                 ValuesIn([]() -> std::set<autopas::ContainerOption> {
+                                   /// @todo: remove below line to enable testing of verletClusterLists.
+                                   auto all = autopas::allContainerOptions;
+                                   all.erase(autopas::ContainerOption::verletClusterLists);
+                                   return all;
+                                 }())),
+                         ContainerSelectorTest::PrintToStringParamName());

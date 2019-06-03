@@ -51,20 +51,19 @@ class AutoTuner {
    * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
-   * @param allowedContainerOptions Vector of container types AutoPas can choose from.
-   * @param allowedTraversalOptions Vector of traversals AutoPas can choose from.
-   * @param allowedDataLayoutOptions Vector of data layouts AutoPas can choose from.
-   * @param allowedNewton3Options Vector of newton 3 options AutoPas can choose from.
+   * @param allowedContainerOptions Set of container types AutoPas can choose from.
+   * @param allowedTraversalOptions Set of traversals AutoPas can choose from.
+   * @param allowedDataLayoutOptions Set of data layouts AutoPas can choose from.
+   * @param allowedNewton3Options Set of newton 3 options AutoPas can choose from.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of timesteps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSizeFactor,
             double verletSkin, unsigned int verletRebuildFrequency,
-            const std::vector<ContainerOption> &allowedContainerOptions,
-            std::vector<TraversalOption> allowedTraversalOptions,
-            const std::vector<DataLayoutOption> &allowedDataLayoutOptions,
-            const std::vector<Newton3Option> &allowedNewton3Options, SelectorStrategy selectorStrategy,
+            const std::set<ContainerOption> &allowedContainerOptions, std::set<TraversalOption> allowedTraversalOptions,
+            const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+            const std::set<Newton3Option> &allowedNewton3Options, SelectorStrategy selectorStrategy,
             unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
@@ -76,10 +75,7 @@ class AutoTuner {
         _currentConfig(),
         _traversalTimes() {
     //@TODO needed until all containers support propper traversals
-    allowedTraversalOptions.push_back(TraversalOption::dummyTraversal);
-
-    // needs to be sorted for intersection with applicable traversals
-    std::sort(allowedTraversalOptions.begin(), allowedTraversalOptions.end());
+    allowedTraversalOptions.insert(TraversalOption::dummyTraversal);
 
     // generate all potential configs
     for (auto &containerOption : allowedContainerOptions) {
@@ -89,11 +85,10 @@ class AutoTuner {
 
       // get all traversals of the container and restrict them to the allowed ones
       auto allContainerTraversals = _containerSelector.getCurrentContainer()->getAllTraversals();
-      std::vector<TraversalOption> allowedAndApplicable;
-      std::sort(allContainerTraversals.begin(), allContainerTraversals.end());
+      std::set<TraversalOption> allowedAndApplicable;
       std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                             allContainerTraversals.begin(), allContainerTraversals.end(),
-                            std::back_inserter(allowedAndApplicable));
+                            std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
       for (auto &traversalOption : allowedAndApplicable) {
         for (auto &dataLayoutOption : allowedDataLayoutOptions) {

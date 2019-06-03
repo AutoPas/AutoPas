@@ -45,7 +45,6 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     this->_cells.resize(2);
   }
 
-
   ContainerOption getContainerType() override { return ContainerOption::directSum; }
 
   void addParticle(Particle &p) override {

@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <memory>
+#include <set>
 #include <type_traits>
 #include "autopas/autopasIncludes.h"
 #include "autopas/selectors/AutoTuner.h"
@@ -305,14 +306,14 @@ class AutoPas {
    * Get the list of allowed containers.
    * @return
    */
-  const std::vector<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
+  const std::set<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
 
   /**
    * Set the list of allowed containers.
    * For possible container choices see AutoPas::ContainerOption.
    * @param allowedContainers
    */
-  void setAllowedContainers(const std::vector<ContainerOption> &allowedContainers) {
+  void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
     AutoPas::_allowedContainers = allowedContainers;
   }
 
@@ -320,14 +321,14 @@ class AutoPas {
    * Get the list of allowed traversals.
    * @return
    */
-  const std::vector<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
+  const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
 
   /**
    * Set the list of allowed traversals.
    * For possible traversals choices see AutoPas::TraversalOption.
    * @param allowedTraversals
    */
-  void setAllowedTraversals(const std::vector<TraversalOption> &allowedTraversals) {
+  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
     AutoPas::_allowedTraversals = allowedTraversals;
   }
 
@@ -335,14 +336,14 @@ class AutoPas {
    * Get the list of allowed data layouts.
    * @return
    */
-  const std::vector<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
+  const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
 
   /**
    * Set the list of allowed data layouts.
    * For possible data layout choices see AutoPas::DataLayoutOption.
    * @param allowedDataLayouts
    */
-  void setAllowedDataLayouts(const std::vector<DataLayoutOption> &allowedDataLayouts) {
+  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
     AutoPas::_allowedDataLayouts = allowedDataLayouts;
   }
 
@@ -350,14 +351,14 @@ class AutoPas {
    * Get the list of allowed newton 3 options.
    * @return
    */
-  const std::vector<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+  const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
 
   /**
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see AutoPas::Newton3Option
    * @param allowedNewton3Options
    */
-  void setAllowedNewton3Options(const std::vector<Newton3Option> &allowedNewton3Options) {
+  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
     AutoPas::_allowedNewton3Options = allowedNewton3Options;
   }
 
@@ -427,21 +428,21 @@ class AutoPas {
    * List of container types AutoPas can choose from.
    * For possible container choices see AutoPas::ContainerOption.
    */
-  std::vector<ContainerOption> _allowedContainers;
+  std::set<ContainerOption> _allowedContainers;
   /**
    * List of traversals AutoPas can choose from.
    * For possible container choices see AutoPas::TraversalOption.
    */
-  std::vector<TraversalOption> _allowedTraversals;
+  std::set<TraversalOption> _allowedTraversals;
   /**
    * List of data layouts AutoPas can choose from.
    * For possible container choices see AutoPas::DataLayoutOption.
    */
-  std::vector<DataLayoutOption> _allowedDataLayouts;
+  std::set<DataLayoutOption> _allowedDataLayouts;
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  std::vector<Newton3Option> _allowedNewton3Options;
+  std::set<Newton3Option> _allowedNewton3Options;
 
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };  // namespace autopas

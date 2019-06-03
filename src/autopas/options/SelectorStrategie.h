@@ -31,7 +31,7 @@ enum SelectorStrategy {
 /**
  * Provides a way to iterate over the possible choices of selector strategies.
  */
-static const std::vector<SelectorStrategy> allSelectorStrategies = {
+static const std::set<SelectorStrategy> allSelectorStrategies = {
     SelectorStrategy::fastestAbs,
     SelectorStrategy::fastestMean,
     SelectorStrategy::fastestMedian,
