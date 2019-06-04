@@ -25,7 +25,8 @@ namespace autopas {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, bool calculateGlobals = false, bool relevantForTuning = true>
+template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
+          bool calculateGlobals = false, bool relevantForTuning = true>
 class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -83,6 +84,14 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 #endif
 
   bool isRelevantForTuning() override { return relevantForTuning; }
+
+  bool allowsNewton3() override {
+    return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both;
+  }
+
+  bool allowsNonNewton3() override {
+    return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
+  }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     utils::ExceptionHandler::exception("LJFunctorAVX.AoSFunctor() not implemented!");
@@ -174,6 +183,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
       const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
 
+      // globals = {virialX, virialY, virialZ, uPot}
       double globals[4];
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzUpotVec);
