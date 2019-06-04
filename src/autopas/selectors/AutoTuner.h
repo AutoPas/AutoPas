@@ -35,13 +35,14 @@ class AutoTuner {
  public:
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSizeFactor,
             double verletSkin, unsigned int verletRebuildFrequency, TuningStrategyInterface *tuningStrategy,
-            unsigned int tuningInterval, unsigned int maxSamples)
-      : _tuningStrategy(tuningStrategy),
+            SelectorStrategy selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+      : _selectorStrategy(selectorStrategy),
+        _tuningStrategy(tuningStrategy),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency),
         _maxSamples(maxSamples),
-        _numSamples(maxSamples) {
+        _samples(maxSamples) {
     if (_tuningStrategy->searchSpaceEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
@@ -95,20 +96,45 @@ class AutoTuner {
       return false;
     }
 
-    return _iterationsSinceTuning >= _tuningInterval and _numSamples >= _maxSamples;
+    return _iterationsSinceTuning >= _tuningInterval and _samples.size() >= _maxSamples;
   }
 
   /**
    * Save the runtime of a given traversal if the functor is relevant for tuning.
-   * The time argument is a long because std::chrono::duration::count returns a long
+   *
+   * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
+   * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
+   * The time argument is a long because std::chrono::duration::count returns a long.
+   *
    * @param pairwiseFunctor
    * @param time
    */
   template <class PairwiseFunctor>
   void addTimeMeasurement(PairwiseFunctor &pairwiseFunctor, long time) {
     if (pairwiseFunctor.isRelevantForTuning()) {
-      AutoPasLog(trace, "Adding time measurement.");
-      _tuningStrategy->addEvidence(time);
+      if (_samples.size() < _maxSamples) {
+        AutoPasLog(trace, "Adding sample.");
+        _samples.push_back(time);
+        // if this was the last sample:
+        if (_samples.size() == _maxSamples) {
+          auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+          _tuningStrategy->addEvidence(time);
+
+          // print config, times and reduced value
+          if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+            std::stringstream ss;
+            // print all configs
+            ss << std::endl << _tuningStrategy->getCurrentConfiguration().toString() << " : [";
+            // print all timings
+            for (auto &sample : _samples) {
+              ss << " " << sample;
+            }
+            ss << " ] ";
+            ss << "Reduced value: " << reducedValue;
+            AutoPasLog(debug, "Collected times for  {}", ss.str());
+          }
+        }
+      }
     } else {
       AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
     }
@@ -146,6 +172,7 @@ class AutoTuner {
   template <class PairwiseFunctor>
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
+  SelectorStrategy _selectorStrategy;
   TuningStrategyInterface *_tuningStrategy;
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
@@ -163,9 +190,7 @@ class AutoTuner {
    * How many times this configurations has already been tested.
    * Initialize with max value to start tuning at start of simulation.
    */
-  size_t _numSamples;
-
-  SelectorStrategy _selectorStrategy;
+  std::vector<size_t> _samples;
 };
 
 template <class Particle, class ParticleCell>
@@ -254,7 +279,6 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
   }
 
   if (f->isRelevantForTuning()) {
-    ++_numSamples;
     ++_iterationsSinceTuning;
   }
   return isTuning;
@@ -300,7 +324,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
   // need more samples; keep current config
-  if (_numSamples < _maxSamples) {
+  if (_samples.size() < _maxSamples) {
     return stillTuning;
   }
 
@@ -310,7 +334,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }
-  _numSamples = 0;
+  // @TODO move to addMeasurement?
+  _samples.clear();
 
   // repeat as long as traversals are not applicable or we run out of configs
   while (true) {

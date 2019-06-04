@@ -93,7 +93,7 @@ class AutoPas {
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         _boxMin, _boxMax, _cutoff, _cellSizeFactor, _verletSkin, _verletRebuildFrequency, generateTuningStrategy(),
-        _tuningInterval, _numSamples);
+        _selectorStrategy, _tuningInterval, _numSamples);
   }
 
   /**
@@ -396,8 +396,7 @@ class AutoPas {
   TuningStrategyInterface *generateTuningStrategy() {
     switch (_tuningStrategyOption) {
       case TuningStrategyOption::exhaustiveSearch:
-        return new FullSearch(_allowedContainers, _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options,
-                              _selectorStrategy);
+        return new FullSearch(_allowedContainers, _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",

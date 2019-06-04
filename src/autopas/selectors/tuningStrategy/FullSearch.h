@@ -20,8 +20,8 @@ class FullSearch : public TuningStrategyInterface {
   FullSearch(const std::set<ContainerOption> &allowedContainerOptions,
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-             const std::set<Newton3Option> &allowedNewton3Options, SelectorStrategy selectorStrategy)
-      : _selectorStrategy(selectorStrategy), _containerOptions(allowedContainerOptions) {
+             const std::set<Newton3Option> &allowedNewton3Options)
+      : _containerOptions(allowedContainerOptions) {
     // sets search space and current config
     generateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
                         allowedNewton3Options);
@@ -31,13 +31,9 @@ class FullSearch : public TuningStrategyInterface {
    * Constructor for the FullSearch that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
-   * @param selectorStrategy Strategy for the configuration selection.
    */
-  FullSearch(const std::set<Configuration> &allowedConfigurations, SelectorStrategy selectorStrategy)
-      : _selectorStrategy(selectorStrategy),
-        _containerOptions(),
-        _searchSpace(allowedConfigurations),
-        _currentConfig(_searchSpace.begin()) {
+  explicit FullSearch(std::set<Configuration> allowedConfigurations)
+      : _containerOptions(), _searchSpace(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {
     for (auto config : _searchSpace) {
       _containerOptions.insert(config._container);
     }
@@ -47,7 +43,7 @@ class FullSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override { _traversalTimes[*_currentConfig].push_back(time); }
+  inline void addEvidence(long time) override { _traversalTimes[*_currentConfig] = time; }
 
   inline void reset() override {
     _traversalTimes.clear();
@@ -70,11 +66,10 @@ class FullSearch : public TuningStrategyInterface {
 
   inline void selectOptimalConfiguration();
 
-  SelectorStrategy _selectorStrategy;
   std::set<ContainerOption> _containerOptions;
   std::set<Configuration> _searchSpace;
   std::set<Configuration>::iterator _currentConfig;
-  std::unordered_map<Configuration, std::vector<size_t>, ConfigHash> _traversalTimes;
+  std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 };
 
 void FullSearch::generateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
@@ -138,40 +133,30 @@ void FullSearch::selectOptimalConfiguration() {
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
-  long optimalTraversalTime = std::numeric_limits<long>::max();
-  Configuration optimalConfiguration;
-  // reduce sample values
-  for (auto &configAndTimes : _traversalTimes) {
-    long value = OptimumSelector::optimumValue(configAndTimes.second, _selectorStrategy);
+//  long optimalTraversalTime = std::numeric_limits<long>::max();
+//  Configuration optimalConfiguration;
+  //  // reduce sample values
+  //  for (auto &configAndTimes : _traversalTimes) {
+  //    long value = OptimumSelector::optimumValue(configAndTimes.second, _selectorStrategy);
+  //
+  //    // save all values for debugging purposes
+  //    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+  //      configAndTimes.second.push_back(value);
+  //    }
+  //
+  //    if (value < optimalTraversalTime) {
+  //      optimalTraversalTime = value;
+  //      optimalConfiguration = configAndTimes.first;
+  //    }
+  //  }
 
-    // save all values for debugging purposes
-    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      configAndTimes.second.push_back(value);
-    }
+  auto optimum = std::min_element(
+      _traversalTimes.begin(), _traversalTimes.end(),
+      [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
+        return a.second < b.second;
+      });
 
-    if (value < optimalTraversalTime) {
-      optimalTraversalTime = value;
-      optimalConfiguration = configAndTimes.first;
-    }
-  }
-
-  // print all configs, times and their reduced values
-  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-    std::stringstream ss;
-    // print all configs
-    for (auto &p : _traversalTimes) {
-      ss << std::endl << p.first.toString() << " : [";
-      // print all timings
-      for (size_t i = 0; i < p.second.size() - 1; ++i) {
-        ss << " " << p.second[i];
-      }
-      ss << " ] ";
-      ss << "Reduced value: " << p.second[p.second.size() - 1];
-    }
-    AutoPasLog(debug, "Collected times: {}", ss.str());
-  }
-
-  _currentConfig = _searchSpace.find(optimalConfiguration);
+  _currentConfig = _searchSpace.find(optimum->first);
   // sanity check
   if (_currentConfig == _searchSpace.end()) {
     autopas::utils::ExceptionHandler::exception(
