@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam useSoA
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3,
-          unsigned int collapseDepth = 3>
+          int collapseDepth = 3>
 class C01BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, collapseDepth> {
  public:
   /**
@@ -50,8 +50,7 @@ class C01BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
   inline void c01Traversal(LoopBody&& loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3,
-          unsigned int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, int collapseDepth>
 template <typename LoopBody>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, collapseDepth>::c01Traversal(
     LoopBody&& loopBody) {
