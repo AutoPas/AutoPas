@@ -322,17 +322,13 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
                  utils::StringUtils::to_string(_tuningStrategy->getCurrentConfiguration()._newton3));
 
-      //@TODO: we need to be able to remove stuff from the search space.
-      //       Alternative: Throw exception and declare SS invalid
-      // _currentConfig = _allowedConfigurations.erase(_currentConfig);
       _tuningStrategy->removeN3Option(_tuningStrategy->getCurrentConfiguration()._newton3);
     } else {
       if (configApplicable(_tuningStrategy->getCurrentConfiguration(), pairwiseFunctor)) {
         // we found a valid config!
         break;
       } else {
-        //@TODO: what if the optimum is a not supported N3 config
-        _tuningStrategy->tune();
+        stillTuning = _tuningStrategy->tune();
       }
     }
   }
