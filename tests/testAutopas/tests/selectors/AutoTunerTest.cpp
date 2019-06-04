@@ -215,9 +215,10 @@ TEST_F(AutoTunerTest, testOneConfig) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
 
-  tuner.iteratePairwise(&functor);
-
-  EXPECT_EQ(conf, tuner.getCurrentConfig());
+  for (int i = 0; i < 5; ++i) {
+    tuner.iteratePairwise(&functor);
+    EXPECT_EQ(conf, tuner.getCurrentConfig());
+  }
 }
 
 /**
