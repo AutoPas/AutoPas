@@ -59,6 +59,18 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
 
   vtkFile.close();
 }
+/**Convert array<double, 3> to string -> only for testing purpose
+ * @param array<double,3>
+ * @return string
+ * */
+string BoxToString(array<double,3> input){
+    std::ostringstream os;
+    for (double i: input){
+        os << i;
+    }
+    std::string str(os.str());
+    return str;
+}
 
 
 int main(int argc, char **argv) {
@@ -78,6 +90,7 @@ int main(int argc, char **argv) {
 
     parser.printConfig();
 
+
     //Simulationsdauer ausgerechnet in main.cpp:
     std::chrono::high_resolution_clock::time_point startTotal, stopTotal;
     startTotal = std::chrono::high_resolution_clock::now();
@@ -95,7 +108,6 @@ int main(int argc, char **argv) {
     std::ostream outputStream(streamBuf);
     long DurationSimulation;
 
-
     PrintableMolecule::setEpsilon(1.0);
     PrintableMolecule::setSigma(1.0);
     PrintableMolecule::setMass(1.0);
@@ -103,7 +115,10 @@ int main(int argc, char **argv) {
     std::array<double, 3> oldf = {1.0, 1.0, 1.0};
     PrintableMolecule::setOldf(oldf);
     // Initialization
+
     auto *autopas = new autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> (outputStream);
+    autopas->setBoxMax({2.,2.,2.});
+    autopas->init();
     autopas::Logger::get()->set_level(logLevel);
     Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
     Simulation.initialize(parser);
