@@ -55,7 +55,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   static const std::vector<TraversalOption> &allLCApplicableTraversals() {
     static const std::vector<TraversalOption> v {
       TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced,
-          TraversalOption::c01CombinedSoA
+          TraversalOption::c01CombinedSoA, TraversalOption::c04
 #if defined(AUTOPAS_CUDA)
           ,
           TraversalOption::c01Cuda

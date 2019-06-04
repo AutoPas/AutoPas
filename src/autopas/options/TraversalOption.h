@@ -25,24 +25,24 @@ enum TraversalOption {
   c01Cuda = 8,
   verletTraversal = 9,
   c01CombinedSoA = 10,
+  c04 = 11,
   dummyTraversal = 666,
 };
 
 /**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
-static const std::vector<TraversalOption> allTraversalOptions = {
-    TraversalOption::c08,
-    TraversalOption::sliced,
-    TraversalOption::c18,
-    TraversalOption::c01,
-    TraversalOption::directSumTraversal,
-    TraversalOption::slicedVerlet,
-    TraversalOption::c18Verlet,
-    TraversalOption::c01Verlet,
-    TraversalOption::c01Cuda,
-    TraversalOption::verletTraversal,
-    TraversalOption::c01CombinedSoA,
-};
+static const std::vector<TraversalOption> allTraversalOptions = {TraversalOption::c08,
+                                                                 TraversalOption::sliced,
+                                                                 TraversalOption::c18,
+                                                                 TraversalOption::c01,
+                                                                 TraversalOption::directSumTraversal,
+                                                                 TraversalOption::slicedVerlet,
+                                                                 TraversalOption::c18Verlet,
+                                                                 TraversalOption::c01Verlet,
+                                                                 TraversalOption::c01Cuda,
+                                                                 TraversalOption::verletTraversal,
+                                                                 TraversalOption::c01CombinedSoA,
+                                                                 TraversalOption::c04};
 
 }  // namespace autopas
