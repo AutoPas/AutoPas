@@ -45,7 +45,8 @@ class C01Traversal
                         const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C01BasedTraversal < ParticleCell,
       PairwiseFunctor, DataLayout, useNewton3, (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, cutoff, cellLength),
-      _cellFunctor(pairwiseFunctor), _pairwiseFunctor(pairwiseFunctor) {
+      _cellFunctor(pairwiseFunctor), _pairwiseFunctor(pairwiseFunctor),
+      cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
     /*static_assert(not(combineSoA && DataLayout != DataLayoutOption::soa),
                   "C01Traversal: tried to use combined SoA buffers without activating SoA");*/
     computeOffsets();
@@ -109,8 +110,20 @@ class C01Traversal
 
   PairwiseFunctor *_pairwiseFunctor;
 
+  /**
+   * Cells containing combined SoA buffers.
+   */
   std::vector<std::vector<ParticleCell>> combinationSlices;
+
+  /**
+   * Current index in combinationSlices.
+   */
   std::vector<unsigned int> currentSlices;
+
+  /**
+   * Offset factor to avoid false sharing.
+   */
+  const unsigned int cacheOffset;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
@@ -159,7 +172,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
     // Iteration along x
 
     const auto threadID = autopas_get_thread_num();
-    auto &currentSlice = currentSlices[threadID];
+    auto &currentSlice = currentSlices[threadID * cacheOffset];
     auto &combinationSlice = combinationSlices[threadID];
 
     // First cell needs to initialize whole buffer
@@ -252,7 +265,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
       const auto cellOffsetsSize = _cellOffsets.size();
       std::for_each(combinationSlices.begin(), combinationSlices.end(),
                     [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
-      currentSlices.resize(numThreads);
+      currentSlices.resize(numThreads * cacheOffset);
       AutoPasLog(debug, "numThreads: {}", numThreads);
     }
   }
