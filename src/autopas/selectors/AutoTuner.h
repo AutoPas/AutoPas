@@ -325,6 +325,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       //@TODO: we need to be able to remove stuff from the search space.
       //       Alternative: Throw exception and declare SS invalid
       // _currentConfig = _allowedConfigurations.erase(_currentConfig);
+      _tuningStrategy->removeN3Option(_tuningStrategy->getCurrentConfiguration()._newton3);
     } else {
       if (configApplicable(_tuningStrategy->getCurrentConfiguration(), pairwiseFunctor)) {
         // we found a valid config!

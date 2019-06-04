@@ -45,6 +45,8 @@ class FullSearch : public TuningStrategyInterface {
 
   inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
 
+  inline void removeN3Option(Newton3Option badNewton3Option) override;
+
   inline void addEvidence(long time) override { _traversalTimes[*_currentConfig].push_back(time); }
 
   inline void reset() override {
@@ -82,7 +84,7 @@ void FullSearch::generateSearchSpace(const std::set<ContainerOption> &allowedCon
   auto dummySet = {TraversalOption::dummyTraversal};
   std::set<TraversalOption> allowedTraversalOptions;
   std::set_union(___allowedTraversalOptions.begin(), ___allowedTraversalOptions.end(), dummySet.begin(), dummySet.end(),
-                 std::inserter(allowedTraversalOptions,allowedTraversalOptions.begin()));
+                 std::inserter(allowedTraversalOptions, allowedTraversalOptions.begin()));
 
   // generate all potential configs
   for (auto &containerOption : allowedContainerOptions) {
@@ -180,6 +182,27 @@ void FullSearch::selectOptimalConfiguration() {
   _traversalTimes.clear();
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
+}
+
+void FullSearch::removeN3Option(Newton3Option badNewton3Option) {
+  for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
+    if (ssIter->_newton3 == badNewton3Option) {
+      // change current config to the next non-deleted
+      if (ssIter == _currentConfig) {
+        ssIter = _searchSpace.erase(ssIter);
+        _currentConfig = ssIter;
+      } else {
+        ssIter = _searchSpace.erase(ssIter);
+      }
+    } else {
+      ++ssIter;
+    }
+  }
+
+  if (this->searchSpaceEmpty()) {
+    utils::ExceptionHandler::exception(
+        "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
+  }
 }
 
 }  // namespace autopas

@@ -47,6 +47,12 @@ class TuningStrategyInterface {
   virtual std::set<ContainerOption> getAllowedContainerOptions() = 0;
 
   /**
+   * Removes all configurations with the given newton 3 option from the search space.
+   *
+   * If the current configuration is removed, it is set to the next not-removed one.
+   */
+  virtual void removeN3Option(Newton3Option) = 0;
+  /**
    * Indicate whether the search space collapsed to only one option.
    * @return
    */
@@ -57,6 +63,5 @@ class TuningStrategyInterface {
    * @return
    */
   virtual bool searchSpaceEmpty() = 0;
-
 };
 }  // namespace autopas
