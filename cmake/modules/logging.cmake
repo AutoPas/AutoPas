@@ -14,7 +14,7 @@ endif ()
 if (COLORED_LOGGING)
     target_compile_definitions(autopas
             PUBLIC
-            COLORED_CONSOLE_LOGGING
+            AUTOPAS_COLORED_CONSOLE_LOGGING
             )
     message(STATUS "Colored log messages enabled.")
 endif ()

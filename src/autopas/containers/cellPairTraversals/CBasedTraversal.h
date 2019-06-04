@@ -8,6 +8,7 @@
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -16,20 +17,26 @@ namespace autopas {
  * This class provides the base for traversals using base steps based on cell coloring.
  *
  * @tparam ParticleCell the type of cells
+ * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam DataLayout
  */
-template <class ParticleCell, unsigned int collapseDepth = 3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, unsigned int collapseDepth = 3>
 class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
   /**
    * Constructor of the CBasedTraversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff Cutoff radius.
    * @param cellLength cell length.
    */
-  explicit CBasedTraversal(const std::array<unsigned long, 3>& dims, const double cutoff,
-                           const std::array<double, 3>& cellLength)
-      : CellPairTraversal<ParticleCell>(dims), _cutoff(cutoff), _cellLength(cellLength) {
+  explicit CBasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
+                           const double cutoff, const std::array<double, 3>& cellLength)
+      : CellPairTraversal<ParticleCell>(dims),
+        _cutoff(cutoff),
+        _cellLength(cellLength),
+        _dataLayoutConverter(pairwiseFunctor) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
     }
@@ -40,6 +47,28 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   ~CBasedTraversal() override = default;
 
+ public:
+  void initTraversal(std::vector<ParticleCell>& cells) override {
+#ifdef AUTOPAS_OPENMP
+    // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      _dataLayoutConverter.loadDataLayout(cells[i]);
+    }
+  }
+
+  void endTraversal(std::vector<ParticleCell>& cells) override {
+#ifdef AUTOPAS_OPENMP
+    // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      _dataLayoutConverter.storeDataLayout(cells[i]);
+    }
+  }
+
+ protected:
   /**
    * The main traversal of the CTraversal.
    * @tparam LoopBody type of the loop body
@@ -68,14 +97,19 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   std::array<unsigned long, 3> _overlap;
+
+ private:
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, unsigned int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, unsigned int collapseDepth>
 template <typename LoopBody>
-inline void CBasedTraversal<ParticleCell, collapseDepth>::cTraversal(LoopBody&& loopBody,
-                                                                     const std::array<unsigned long, 3>& end,
-                                                                     const std::array<unsigned long, 3>& stride,
-                                                                     const std::array<unsigned long, 3>& offset) {
+inline void CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, collapseDepth>::cTraversal(
+    LoopBody&& loopBody, const std::array<unsigned long, 3>& end, const std::array<unsigned long, 3>& stride,
+    const std::array<unsigned long, 3>& offset) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif

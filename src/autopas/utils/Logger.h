@@ -12,15 +12,6 @@
 #include <spdlog/spdlog.h>
 #include <iostream>
 
-/**
- * Returns the filename without full path.
- */
-#define __FILENAME__                           \
-  ({                                           \
-    const char* pStr = strrchr(__FILE__, '/'); \
-    pStr ? pStr + 1 : __FILE__;                \
-  })
-
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
  * Macro for logging providing common meta information.
@@ -33,7 +24,7 @@
     size_t textwidth = 26; /* If filenames get cropped increase this! */ \
     std::string s;                                                       \
     s.reserve(textwidth);                                                \
-    s.append(__FILENAME__);                                              \
+    s.append(SPDLOG_FILE_BASENAME(__FILE__));                            \
     s.append(":");                                                       \
     s.append(std::to_string(__LINE__));                                  \
     s.resize(textwidth, ' ');                                            \
@@ -83,12 +74,12 @@ class Logger {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     std::shared_ptr<spdlog::sinks::sink> ostream_sink;
-#ifdef COLORED_CONSOLE_LOGGING
+#ifdef AUTOPAS_COLORED_CONSOLE_LOGGING
     if (oss.rdbuf() == std::cout.rdbuf()) {
       ostream_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     } else if (oss.rdbuf() == std::cerr.rdbuf()) {
       ostream_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
-    } else {
+    } else {  // no color for streams other than cout / cerr
       ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
     }
 #else
