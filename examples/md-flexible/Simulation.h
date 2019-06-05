@@ -30,7 +30,7 @@ private:
 
     //@todo sich überlegen mit dem Funktor -> erwiterbar für alle Funktor Arten
 
-    autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* _Functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
+    //autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* _Functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
     long durationX;
     long durationF;
     long durationV;
@@ -38,8 +38,8 @@ public:
     virtual ~Simulation() {
     delete _autopas;
     _autopas = NULL;
-    delete _Functor;
-    _Functor = NULL;
+    //delete _Functor;
+    //_Functor = NULL;
     }
 
     explicit Simulation(AutoPas<Particle, ParticleCell> *autopas);
@@ -216,7 +216,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
 
 template<class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::setFunctor(Functor<Particle, ParticleCell> *functor) {
-    _Functor = functor;
+    //_Functor = functor;
 }
 
 template<class Particle,class ParticleCell>
@@ -275,7 +275,10 @@ void Simulation<Particle,ParticleCell>::CalcF(){
     //@ TODO: switch for other functors --> mit boolean object?
     //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
     //_autopas->iteratePairwise(this->_Functor);
-    _autopas->iteratePairwise(new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true));
+    autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
+    _autopas->iteratePairwise(functor);
+    delete functor;
+    functor=NULL;
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
     this->addDurationF(durationCalc);
@@ -289,7 +292,7 @@ long Simulation<Particle, ParticleCell>::simulate(){
     startCalc = std::chrono::high_resolution_clock::now();
 
 
-    double particleDelta_T=0.01;    //@todo -get Value from Parser
+    double particleDelta_T=1;    //@todo -get Value from Parser
     double time=0;
     double timeEnd=10;              //@todo -get TimeEnd from Parser
     TimeDiscretization<decltype(_autopas)> td(particleDelta_T);
