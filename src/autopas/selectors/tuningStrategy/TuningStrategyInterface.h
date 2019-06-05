@@ -15,6 +15,8 @@ namespace autopas {
  */
 class TuningStrategyInterface {
  public:
+  virtual ~TuningStrategyInterface() = default;
+
   /**
    * Store empirically collected information for the current configuration.
    * @param time Measured traversal time.

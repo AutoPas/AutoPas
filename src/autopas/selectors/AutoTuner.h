@@ -71,6 +71,13 @@ class AutoTuner {
   }
 
   /**
+   * Destructor.
+   *
+   * This also deletes the tuning strategy object.
+   */
+  ~AutoTuner() { delete (_tuningStrategy); }
+
+  /**
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
