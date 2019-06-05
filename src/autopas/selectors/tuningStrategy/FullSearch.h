@@ -43,7 +43,7 @@ class FullSearch : public TuningStrategyInterface {
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
   explicit FullSearch(std::set<Configuration> allowedConfigurations)
-      : _containerOptions(), _searchSpace(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {
+      : _containerOptions{}, _searchSpace(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {
     for (auto config : _searchSpace) {
       _containerOptions.insert(config._container);
     }
@@ -126,10 +126,8 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
 
 bool FullSearch::tune() {
   // repeat as long as traversals are not applicable or we run out of configs
-  if (_currentConfig != _searchSpace.end()) {
-    ++_currentConfig;
-  } else {  // reached end of tuning phase
-    // sets _currentConfig
+  ++_currentConfig;
+  if (_currentConfig == _searchSpace.end()) {
     selectOptimalConfiguration();
     return false;
   }
@@ -149,23 +147,6 @@ void FullSearch::selectOptimalConfiguration() {
         "FullSearch: Trying to determine fastest configuration without any measurements! "
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
-
-  //  long optimalTraversalTime = std::numeric_limits<long>::max();
-  //  Configuration optimalConfiguration;
-  //  // reduce sample values
-  //  for (auto &configAndTimes : _traversalTimes) {
-  //    long value = OptimumSelector::optimumValue(configAndTimes.second, _selectorStrategy);
-  //
-  //    // save all values for debugging purposes
-  //    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-  //      configAndTimes.second.push_back(value);
-  //    }
-  //
-  //    if (value < optimalTraversalTime) {
-  //      optimalTraversalTime = value;
-  //      optimalConfiguration = configAndTimes.first;
-  //    }
-  //  }
 
   auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),
                                   [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
