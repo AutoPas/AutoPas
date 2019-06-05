@@ -30,7 +30,7 @@ TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
 }
 
 TEST(StringUtilsTest, parseSelectorOptionsTest) {
-  testParseSingle<autopas::SelectorStrategy>(autopas::allSelectorStrategies, {"absolute", "median", "mean"},
+  testParseSingle<autopas::SelectorStrategyOption>(autopas::allSelectorStrategies, {"absolute", "median", "mean"},
                                              autopas::utils::StringUtils::parseSelectorStrategy);
 }
 
@@ -39,7 +39,7 @@ TEST(StringUtilsTest, to_stringDataLayoutTest) {
 }
 
 TEST(StringUtilsTest, to_stringSelectorStrategiesTest) {
-  testToString(autopas::allSelectorStrategies, {autopas::SelectorStrategy(-1)});
+  testToString(autopas::allSelectorStrategies, {autopas::SelectorStrategyOption(-1)});
 }
 
 TEST(StringUtilsTest, to_stringContainerOptionsTest) {

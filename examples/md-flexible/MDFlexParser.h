@@ -24,7 +24,7 @@ class MDFlexParser {
 
   double getBoxLength();
   std::set<autopas::ContainerOption> getContainerOptions() const;
-  autopas::SelectorStrategy getSelectorStrategy() const;
+  autopas::SelectorStrategyOption getSelectorStrategy() const;
   double getCutoff() const;
   double getCellSizeFactor() const;
   std::set<autopas::DataLayoutOption> getDataLayoutOptions() const;
@@ -54,7 +54,7 @@ class MDFlexParser {
 
   // defaults:
   std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
-  autopas::SelectorStrategy selectorStrategy = autopas::SelectorStrategy::fastestAbs;
+  autopas::SelectorStrategyOption selectorStrategy = autopas::SelectorStrategyOption::fastestAbs;
   std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
   std::set<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;

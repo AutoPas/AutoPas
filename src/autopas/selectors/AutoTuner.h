@@ -35,7 +35,7 @@ class AutoTuner {
  public:
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSizeFactor,
             double verletSkin, unsigned int verletRebuildFrequency, TuningStrategyInterface *tuningStrategy,
-            SelectorStrategy selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(tuningStrategy),
         _tuningInterval(tuningInterval),
@@ -172,7 +172,7 @@ class AutoTuner {
   template <class PairwiseFunctor>
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
-  SelectorStrategy _selectorStrategy;
+  SelectorStrategyOption _selectorStrategy;
   TuningStrategyInterface *_tuningStrategy;
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;

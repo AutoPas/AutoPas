@@ -25,7 +25,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
                                      autopas::allDataLayoutOptions, autopas::allNewton3Options);
   autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin,
                                                  verletRebuildFrequency, &tuningStrategy,
-                                                 autopas::SelectorStrategy::fastestAbs, 100, maxSamples);
+                                                 autopas::SelectorStrategyOption::fastestAbs, 100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
@@ -80,7 +80,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 
   autopas::FullSearch tuningStrategy(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, &tuningStrategy,
-                                                 autopas::SelectorStrategy::fastestAbs, 1000, 2);
+                                                 autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -124,7 +124,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
 
   autopas::FullSearch tuningStrategy(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, &tuningStrategy,
-                                                 autopas::SelectorStrategy::fastestAbs, 1000, 2);
+                                                 autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -158,7 +158,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 
   autopas::FullSearch tuningStrategy(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, &tuningStrategy,
-                                                 autopas::SelectorStrategy::fastestAbs, 1000, 2);
+                                                 autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -189,7 +189,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
   auto exp1 = []() {
     autopas::FullSearch tuningStrategy({});
     autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, &tuningStrategy,
-                                                   autopas::SelectorStrategy::fastestAbs, 1000, 3);
+                                                   autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
 
   EXPECT_THROW(exp1(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor with given configs";
@@ -198,7 +198,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
   auto exp2 = []() {
     autopas::FullSearch tuningStrategy({}, {}, {}, {});
     autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, &tuningStrategy,
-                                                   autopas::SelectorStrategy::fastestAbs, 1000, 3);
+                                                   autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
 
   EXPECT_THROW(exp2(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor which generates configs";
@@ -213,7 +213,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
 
   autopas::FullSearch tuningStrategy({conf});
   autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, &tuningStrategy,
-                                             autopas::SelectorStrategy::fastestAbs, 1000, 3);
+                                             autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(conf, tuner.getCurrentConfig());
 
@@ -238,7 +238,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 
   autopas::FullSearch tuningStrategy({confN3, confNoN3});
   autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, &tuningStrategy,
-                                             autopas::SelectorStrategy::fastestAbs, 1000, 3);
+                                             autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
@@ -268,7 +268,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 
   autopas::FullSearch tuningStrategy({confN3, confNoN3});
   autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, &tuningStrategy,
-                                             autopas::SelectorStrategy::fastestAbs, 1000, 3);
+                                             autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 

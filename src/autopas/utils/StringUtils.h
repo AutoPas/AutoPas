@@ -12,7 +12,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
-#include "autopas/options/SelectorStrategie.h"
+#include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 
 namespace autopas {
@@ -45,15 +45,15 @@ inline std::string to_string(const Newton3Option &option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-inline std::string to_string(const autopas::SelectorStrategy &option) {
+inline std::string to_string(const autopas::SelectorStrategyOption &option) {
   switch (option) {
-    case autopas::SelectorStrategy::fastestAbs: {
+    case autopas::SelectorStrategyOption::fastestAbs: {
       return "Fastest-Absolute-Value";
     }
-    case autopas::SelectorStrategy::fastestMean: {
+    case autopas::SelectorStrategyOption::fastestMean: {
       return "Fastest-Mean-Value";
     }
-    case autopas::SelectorStrategy::fastestMedian: {
+    case autopas::SelectorStrategyOption::fastestMedian: {
       return "Fastest-Median-Value";
     }
   }
@@ -308,16 +308,16 @@ inline std::set<autopas::ContainerOption> parseContainerOptions(const std::strin
  * @return An enum representing the selector Strategy. If no valid option was found 'autopas::SelectorStrategy(-1)' is
  * returned.
  */
-inline autopas::SelectorStrategy parseSelectorStrategy(const std::string &selectorStrategyString) {
+inline autopas::SelectorStrategyOption parseSelectorStrategy(const std::string &selectorStrategyString) {
   // hack to initialize the enum out of range as an error value.
-  auto selectorStrategy(autopas::SelectorStrategy(-1));
+  auto selectorStrategy(autopas::SelectorStrategyOption(-1));
   if (selectorStrategyString.find("abs") != std::string::npos or
       selectorStrategyString.find("min") != std::string::npos) {
-    selectorStrategy = autopas::SelectorStrategy::fastestAbs;
+    selectorStrategy = autopas::SelectorStrategyOption::fastestAbs;
   } else if (selectorStrategyString.find("mea") != std::string::npos) {
-    selectorStrategy = autopas::SelectorStrategy::fastestMean;
+    selectorStrategy = autopas::SelectorStrategyOption::fastestMean;
   } else if (selectorStrategyString.find("med") != std::string::npos) {
-    selectorStrategy = autopas::SelectorStrategy::fastestMedian;
+    selectorStrategy = autopas::SelectorStrategyOption::fastestMedian;
   }
   return selectorStrategy;
 }

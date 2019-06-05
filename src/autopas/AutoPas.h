@@ -47,7 +47,7 @@ class AutoPas {
         _tuningInterval(5000),
         _numSamples(3),
         _tuningStrategyOption(TuningStrategyOption::exhaustiveSearch),
-        _selectorStrategy(SelectorStrategy::fastestAbs),
+        _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
         _allowedTraversals(allTraversalOptions),
         _allowedDataLayouts(allDataLayoutOptions),
@@ -295,14 +295,14 @@ class AutoPas {
    * Get the selector configuration strategy.
    * @return
    */
-  SelectorStrategy getSelectorStrategy() const { return _selectorStrategy; }
+  SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
 
   /**
    * Set the selector configuration strategy.
    * For possible selector strategy choices see AutoPas::SelectorStrategy.
    * @param selectorStrategy
    */
-  void setSelectorStrategy(SelectorStrategy selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
+  void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
 
   /**
    * Get the list of allowed containers.
@@ -447,7 +447,7 @@ class AutoPas {
    * Strategy for the configuration selector.
    * For possible container choices see AutoPas::SelectorStrategy.
    */
-  SelectorStrategy _selectorStrategy;
+  SelectorStrategyOption _selectorStrategy;
   /**
    * List of container types AutoPas can choose from.
    * For possible container choices see AutoPas::ContainerOption.

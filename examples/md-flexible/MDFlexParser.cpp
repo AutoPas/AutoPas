@@ -158,7 +158,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'y': {
         selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (selectorStrategy == autopas::SelectorStrategy(-1)) {
+        if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
           cerr << "Unknown Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
@@ -466,7 +466,7 @@ unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 
-autopas::SelectorStrategy MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
+autopas::SelectorStrategyOption MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
 
 std::set<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
 
