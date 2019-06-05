@@ -38,7 +38,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param applicableTraversals all applicable traversals
-   * @param cellSizeFactor cell size factor ralative to cutoff
+   * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
+   * (smaller values are set to 1.0).
    */
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const unsigned int rebuildFrequency,
