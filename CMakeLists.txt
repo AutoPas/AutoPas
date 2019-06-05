@@ -40,8 +40,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif (NOT CMAKE_BUILD_TYPE)
 
 # CUDA options
-option(ENABLE_CUDA "Activates Cuda Components" OFF)
-if (ENABLE_CUDA)
+option(AUTOPAS_ENABLE_CUDA "Activates Cuda Components" OFF)
+if (AUTOPAS_ENABLE_CUDA)
     message(STATUS "Cuda enabled.")
     enable_language(CUDA)
     set(CUDA_SEPARABLE_COMPILATION ON)

@@ -12,7 +12,7 @@ if (USE_VECTORIZATION)
     # let ccmake and cmake-gui offer the options
     set_property(CACHE VECTOR_INSTRUCTIONS PROPERTY STRINGS ${VECTOR_INSTRUCTIONS_OPTIONS})
 
-    if (ENABLE_CUDA)
+    if (AUTOPAS_ENABLE_CUDA)
         target_compile_options(
             autopas
             PUBLIC
@@ -55,7 +55,7 @@ if (USE_VECTORIZATION)
 else ()
     message(STATUS "Vectorization disabled.")
 
-    if (ENABLE_CUDA)
+    if (AUTOPAS_ENABLE_CUDA)
         target_compile_options(
             autopas
             PUBLIC

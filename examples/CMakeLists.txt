@@ -1,8 +1,8 @@
 # make exapmles optional. Useful when only the library is needed.
-option(BUILD_EXAMPLES "Build examples." ON)
+option(AUTOPAS_BUILD_EXAMPLES "Build examples." ON)
 
 # do nothing if nothing should be done
-if (NOT BUILD_EXAMPLES)
+if (NOT AUTOPAS_BUILD_EXAMPLES)
     return()
 endif ()
 

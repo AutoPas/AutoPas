@@ -4,7 +4,7 @@ file(
     "*.cpp"
     "*.h"
 )
-if (ENABLE_CUDA)
+if (AUTOPAS_ENABLE_CUDA)
     file(
         GLOB_RECURSE
         CU_SRC
@@ -13,7 +13,7 @@ if (ENABLE_CUDA)
     )
 endif ()
 
-add_executable(runTests $<$<BOOL:${ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
+add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 
 target_link_libraries(
     runTests

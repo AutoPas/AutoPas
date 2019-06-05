@@ -1,9 +1,9 @@
-option(OPENMP "Activates OpenMP shared memory parallelization." OFF)
+option(AUTOPAS_OPENMP "Activates OpenMP shared memory parallelization." OFF)
 
 if (ARCHER)
     message(STATUS "archer detected, OpenMP enabled by default, so skipping OpenMP package search")
-    set(OPENMP ON)
-elseif (OPENMP)
+    set (AUTOPAS_OPENMP ON)
+elseif (AUTOPAS_OPENMP)
     message(STATUS "OpenMP enabled.")
     find_package(OpenMP)
 

@@ -1,6 +1,6 @@
-option(ENABLE_CLANG_TIDY "Add clang-tidy automatically to builds")
-# set(ENABLE_CLANG_TIDY ON BOOL "Add clang-tidy automatically to builds")
-if (ENABLE_CLANG_TIDY)
+option(AUTOPAS_ENABLE_CLANG_TIDY "Add clang-tidy automatically to builds")
+# set(AUTOPAS_ENABLE_CLANG_TIDY ON BOOL "Add clang-tidy automatically to builds")
+if (AUTOPAS_ENABLE_CLANG_TIDY)
     find_program(CLANG_TIDY_EXE NAMES "clang-tidy" DOC "Path to clang-tidy executable")
     if (CLANG_TIDY_EXE)
         message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")
@@ -18,6 +18,6 @@ if (ENABLE_CLANG_TIDY)
 else ()
     message(
         STATUS
-            "clang tidy disabled, to enable specify -DENABLE_CLANG_TIDY=\"ON\" when calling cmake"
+            "clang tidy disabled, to enable specify -DAUTOPAS_ENABLE_CLANG_TIDY=\"ON\" when calling cmake"
     )
 endif ()

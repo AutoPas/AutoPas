@@ -7,7 +7,7 @@ file(
     "*.cu"
 )
 
-if (NOT ${ENABLE_CUDA})
+if (NOT ${AUTOPAS_ENABLE_CUDA})
     message(STATUS "cuda disabled, not building basic-cuda")
     return()
 endif ()
