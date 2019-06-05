@@ -69,6 +69,16 @@ class Configuration {
 };
 
 /**
+ * Stream insertion operator.
+ * @param os
+ * @param configuration
+ * @return
+ */
+inline std::ostream& operator<<(std::ostream& os, const Configuration& configuration) {
+  return os << configuration.toString();
+}
+
+/**
  * Equals operator for Configuration objects.
  *
  * @remark removing "inline" here leads to multiple definition errors.
