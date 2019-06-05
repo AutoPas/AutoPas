@@ -68,7 +68,8 @@ class AutoTuner {
             unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
-        _containerSelector(boxMin, boxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency),
+        _containerSelector(boxMin, boxMax, cutoff),
+        _containerSelectorInfo(cellSizeFactor, verletSkin, verletRebuildFrequency),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
         _selectorStrategy(selectorStrategy),
@@ -83,7 +84,8 @@ class AutoTuner {
 
     // generate all potential configs
     for (auto &containerOption : allowedContainerOptions) {
-      _containerSelector.selectContainer(containerOption);
+      // @TODO map only usable with fix containerInfo
+      _containerSelector.selectContainer(containerOption, _containerSelectorInfo);
       _traversalSelectorInfos.emplace(containerOption,
                                       _containerSelector.getCurrentContainer()->getTraversalSelectorInfo());
 
@@ -109,7 +111,7 @@ class AutoTuner {
     }
 
     _currentConfig = _allowedConfigurations.begin();
-    _containerSelector.selectContainer(_currentConfig->_container);
+    _containerSelector.selectContainer(_currentConfig->_container, _containerSelectorInfo);
   }
 
   /**
@@ -132,7 +134,8 @@ class AutoTuner {
             unsigned int tuningInterval, unsigned int maxSamples)
       : _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
-        _containerSelector(boxMin, boxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency),
+        _containerSelector(boxMin, boxMax, cutoff),
+        _containerSelectorInfo(cellSizeFactor, verletSkin, verletRebuildFrequency),
         _maxSamples(maxSamples),
         _numSamples(maxSamples),
         _selectorStrategy(selectorStrategy),
@@ -145,14 +148,14 @@ class AutoTuner {
 
     for (auto &conf : allowedConfigurations) {
       if (_traversalSelectorInfos.find(conf._container) == _traversalSelectorInfos.end()) {
-        _containerSelector.selectContainer(conf._container);
+        _containerSelector.selectContainer(conf._container, _containerSelectorInfo);
         _traversalSelectorInfos.emplace(conf._container,
                                         _containerSelector.getCurrentContainer()->getTraversalSelectorInfo());
       }
     }
 
     _currentConfig = _allowedConfigurations.begin();
-    _containerSelector.selectContainer(_currentConfig->_container);
+    _containerSelector.selectContainer(_currentConfig->_container, _containerSelectorInfo);
   }
 
   /**
@@ -244,6 +247,7 @@ class AutoTuner {
 
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
+  ContainerSelectorInfo _containerSelectorInfo;
 
   /**
    * One selector / factory per possible container because every container might have a different number of cells.
@@ -440,7 +444,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     stillTuning = false;
   }
 
-  _containerSelector.selectContainer(_currentConfig->_container);
+  _containerSelector.selectContainer(_currentConfig->_container, _containerSelectorInfo);
   return stillTuning;
 }
 

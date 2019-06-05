@@ -4,3 +4,4 @@ build*/
 .idea/
 venv/
 *.timestamp
+/CMakeLists.txt.user
