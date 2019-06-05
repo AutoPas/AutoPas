@@ -238,7 +238,7 @@ pipeline{
                     steps{
                         container('autopas-archer'){
                             dir("build-archer"){
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_VECTORIZATION=OFF .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_VECTORIZATION=OFF .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                                 sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest --verbose'
                             }
@@ -291,7 +291,7 @@ pipeline{
                 // generate coverage
                 dir("coverage"){
                     container('autopas-build-code-coverage'){
-                        sh "cmake -DCodeCoverage=ON -DCMAKE_BUILD_TYPE=Debug .."
+                        sh "cmake -DAUTOPAS_CODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug .."
                         sh "make AutoPas_cobertura -j 4"
                     }
                     cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false

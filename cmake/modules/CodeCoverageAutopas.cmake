@@ -1,7 +1,7 @@
-option(CodeCoverage "CodeCoverage" OFF)
+option(AUTOPAS_CODE_COVERAGE "Code Coverage" OFF)
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-    if (CodeCoverage MATCHES ON)
+    if (AUTOPAS_CODE_COVERAGE MATCHES ON)
         message(STATUS "ENABLING CODE COVERAGE TARGET")
         include(CodeCoverage)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_COVERAGE} ${CMAKE_CXX_FLAGS_DEBUG}")
