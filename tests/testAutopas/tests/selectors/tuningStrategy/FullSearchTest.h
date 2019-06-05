@@ -10,9 +10,4 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 
-class FullSearchTest : public AutoPasTestBase {
-
-};
-
-
-
+class FullSearchTest : public AutoPasTestBase {};
