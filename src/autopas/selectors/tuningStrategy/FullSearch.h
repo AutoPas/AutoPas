@@ -15,15 +15,25 @@
 
 namespace autopas {
 
+/**
+ * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
+ */
 class FullSearch : public TuningStrategyInterface {
  public:
+  /**
+   * Constructor for the FullSearch that generates the search space from the allowed options.
+   * @param allowedContainerOptions
+   * @param allowedTraversalOptions
+   * @param allowedDataLayoutOptions
+   * @param allowedNewton3Options
+   */
   FullSearch(const std::set<ContainerOption> &allowedContainerOptions,
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
              const std::set<Newton3Option> &allowedNewton3Options)
       : _containerOptions(allowedContainerOptions) {
     // sets search space and current config
-    generateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
+    populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
                         allowedNewton3Options);
   }
 
@@ -59,7 +69,14 @@ class FullSearch : public TuningStrategyInterface {
   inline bool searchSpaceEmpty() override { return _searchSpace.empty(); }
 
  private:
-  inline void generateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+  /**
+   * Fills the search space with the cartesian product of the given options (minus invalid combinations).
+   * @param allowedContainerOptions
+   * @param allowedTraversalOptions
+   * @param allowedDataLayoutOptions
+   * @param allowedNewton3Options
+   */
+  inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                   const std::set<Newton3Option> &allowedNewton3Options);
@@ -72,22 +89,22 @@ class FullSearch : public TuningStrategyInterface {
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 };
 
-void FullSearch::generateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                     const std::set<TraversalOption> &___allowedTraversalOptions,
+void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                     const std::set<TraversalOption> &allowedTraversalOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                      const std::set<Newton3Option> &allowedNewton3Options) {
+  //@TODO dummyTraversal needed until all containers support propper traversals
   auto dummySet = {TraversalOption::dummyTraversal};
-  std::set<TraversalOption> allowedTraversalOptions;
-  std::set_union(___allowedTraversalOptions.begin(), ___allowedTraversalOptions.end(), dummySet.begin(), dummySet.end(),
-                 std::inserter(allowedTraversalOptions, allowedTraversalOptions.begin()));
+  std::set<TraversalOption> allowedTraversalOptionsPlusDummy;
+  std::set_union(allowedTraversalOptions.begin(), allowedTraversalOptions.end(), dummySet.begin(), dummySet.end(),
+                 std::inserter(allowedTraversalOptionsPlusDummy, allowedTraversalOptionsPlusDummy.begin()));
 
   // generate all potential configs
   for (auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
     std::set<TraversalOption> allContainerTraversals = applicableTraversals::allApplicableTraversals(containerOption);
-    //@TODO dummyTraversal needed until all containers support propper traversals
     std::set<TraversalOption> allowedAndApplicable;
-    std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
+    std::set_intersection(allowedTraversalOptionsPlusDummy.begin(), allowedTraversalOptionsPlusDummy.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
@@ -133,8 +150,8 @@ void FullSearch::selectOptimalConfiguration() {
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
-//  long optimalTraversalTime = std::numeric_limits<long>::max();
-//  Configuration optimalConfiguration;
+  //  long optimalTraversalTime = std::numeric_limits<long>::max();
+  //  Configuration optimalConfiguration;
   //  // reduce sample values
   //  for (auto &configAndTimes : _traversalTimes) {
   //    long value = OptimumSelector::optimumValue(configAndTimes.second, _selectorStrategy);
@@ -150,11 +167,10 @@ void FullSearch::selectOptimalConfiguration() {
   //    }
   //  }
 
-  auto optimum = std::min_element(
-      _traversalTimes.begin(), _traversalTimes.end(),
-      [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
-        return a.second < b.second;
-      });
+  auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),
+                                  [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
+                                    return a.second < b.second;
+                                  });
 
   _currentConfig = _searchSpace.find(optimum->first);
   // sanity check

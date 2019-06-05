@@ -29,14 +29,17 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
    */
   RMMParticleCell2T() = default;
 
-  void addParticle(Particle &m) override {
-    _particleSoABuffer.template push<Particle::AttributeNames::id>(m.getID());
-    _particleSoABuffer.template push<Particle::AttributeNames::posX>(m.getR()[0]);
-    _particleSoABuffer.template push<Particle::AttributeNames::posY>(m.getR()[1]);
-    _particleSoABuffer.template push<Particle::AttributeNames::posZ>(m.getR()[2]);
-    _particleSoABuffer.template push<Particle::AttributeNames::forceX>(m.getF()[0]);
-    _particleSoABuffer.template push<Particle::AttributeNames::forceY>(m.getF()[1]);
-    _particleSoABuffer.template push<Particle::AttributeNames::forceZ>(m.getF()[2]);
+  /**
+   * @copydoc ParticleCell::addParticle()
+   */
+  void addParticle(Particle &p) override {
+    _particleSoABuffer.template push<Particle::AttributeNames::id>(p.getID());
+    _particleSoABuffer.template push<Particle::AttributeNames::posX>(p.getR()[0]);
+    _particleSoABuffer.template push<Particle::AttributeNames::posY>(p.getR()[1]);
+    _particleSoABuffer.template push<Particle::AttributeNames::posZ>(p.getR()[2]);
+    _particleSoABuffer.template push<Particle::AttributeNames::forceX>(p.getF()[0]);
+    _particleSoABuffer.template push<Particle::AttributeNames::forceY>(p.getF()[1]);
+    _particleSoABuffer.template push<Particle::AttributeNames::forceZ>(p.getF()[2]);
   }
 
   SingleCellIteratorWrapper<Particle> begin() override {
@@ -58,7 +61,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
   }
 
   /**
-   * the soa buffer of the particle, all information is stored here.
+   * The soa buffer of the particle, all information is stored here.
    */
   SoA<typename Particle::SoAArraysType> _particleSoABuffer;
 
@@ -80,34 +83,34 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
   }
 
   /**
-   * iterator friend class
+   * Iterator friend class.
    * @tparam ParticleType
    */
   template <class ParticleType>
   friend class RMMParticleCellIterator;
 
   /**
-   * type of the internal iterator
+   * Type of the internal iterator.
    */
   typedef Iterator iterator_t;
 };
 
 /**
- * SingleCellIterator for the RMMParticleCell
+ * SingleCellIterator for the RMMParticleCell.
  * @tparam Particle
  */
 template <class Particle>
 class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl<Particle> {
  public:
   /**
-   * default constructor of SingleCellIterator
+   * Default constructor of SingleCellIterator.
    */
   RMMParticleCellIterator() : _cell(nullptr), _index(0), _deleted(false) {}
 
   /**
-   * constructor of SingleCellIterator
-   * @param cell_arg pointer to the cell of particles
-   * @param ind index of the first particle
+   * Constructor of SingleCellIterator.
+   * @param cell_arg pointer to the cell of particles.
+   * @param ind index of the first particle.
    */
   explicit RMMParticleCellIterator(RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>> *cell_arg,
                                    size_t ind = 0)
@@ -132,9 +135,8 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
   }
 
   /**
-   * equality operator.
-   * if both iterators are invalid or if they point to the same particle, this
-   * returns true
+   * Equality operator.
+   * If both iterators are invalid or if they point to the same particle, this returns true.
    * @param rhs
    * @return
    */
@@ -147,16 +149,16 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
   }
 
   /**
-   * inequality operator
-   * descrition see operator==
+   * Inequality operator.
+   * Descrition see operator==
    * @param rhs
    * @return
    */
   bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const override { return !(rhs == *this); }
 
   /**
-   * increment operator to get the next particle
-   * @return the next particle, usually ignored
+   * Increment operator to get the next particle.
+   * @return the next particle, usually ignored.
    */
   inline RMMParticleCellIterator &operator++() override {
     if (not _deleted) {
@@ -168,19 +170,19 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
   }
 
   /**
-   * Check whether the iterator is valid
-   * @return returns whether the iterator is valid
+   * Check whether the iterator is valid.
+   * @return returns whether the iterator is valid.
    */
   bool isValid() const override { return _cell != nullptr and _index < _cell->numParticles(); }
 
   /**
-   * Get the index of the particle in the cell
-   * @return index of the current particle
+   * Get the index of the particle in the cell.
+   * @return index of the current particle.
    */
   size_t getIndex() const override { return _index; }
 
   /**
-   * Deletes the current particle
+   * Deletes the current particle.
    */
   void deleteCurrentParticle() override {
     _cell->deleteByIndex(_index);
@@ -201,7 +203,7 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
 // provide a simpler template for RMMParticleCell, i.e.
 // RMMParticleCell<Particle>
 /**
- * typedef for simpler access to RMMParticleCell
+ * typedef for simpler access to RMMParticleCell.
  */
 template <class Particle>
 using RMMParticleCell = RMMParticleCell2T<Particle, RMMParticleCellIterator<Particle>>;

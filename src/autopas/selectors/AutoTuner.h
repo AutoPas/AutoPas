@@ -33,6 +33,19 @@ namespace autopas {
 template <class Particle, class ParticleCell>
 class AutoTuner {
  public:
+  /**
+   * Constructor for the AutoTuner that generates all configurations from the given options.
+   * @param boxMin Lower corner of the container.
+   * @param boxMax Upper corner of the container.
+   * @param cutoff Cutoff radius to be used in this container.
+   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells).
+   * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
+   * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * @param tuningStrategy Object implementing the modelling and exploration of a search space.
+   * @param selectorStrategy Strategy for the configuration selection.
+   * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
+   * @param maxSamples Number of samples that shall be collected for each combination.
+   */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSizeFactor,
             double verletSkin, unsigned int verletRebuildFrequency, TuningStrategyInterface *tuningStrategy,
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)

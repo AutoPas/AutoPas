@@ -1,5 +1,5 @@
 /**
- * @file BaseTuningStrategy.h
+ * @file TuningStrategyInterface.h
  * @author F. Gratl
  * @date 5/29/19
  */
@@ -10,11 +10,14 @@
 
 namespace autopas {
 
+/**
+ * Interface for tuning strategies for the auto tuner.
+ */
 class TuningStrategyInterface {
  public:
   /**
    * Store empirically collected information for the current configuration.
-   * @param time
+   * @param time Measured traversal time.
    */
   virtual void addEvidence(long time) = 0;
 
