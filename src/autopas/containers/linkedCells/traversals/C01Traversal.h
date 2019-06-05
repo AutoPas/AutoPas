@@ -123,7 +123,7 @@ class C01Traversal
   /**
    * Offset factor to avoid false sharing.
    */
-  const unsigned int cacheOffset;
+  const int cacheOffset;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
