@@ -9,7 +9,7 @@
 
 using ::testing::_;  // anything is ok
 using ::testing::Combine;
-using ::testing::Return;  // anything is ok
+using ::testing::Return;
 using ::testing::ValuesIn;
 
 // Parse combination strings and call actual test function
@@ -89,7 +89,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   containerSelector.selectContainer(containerOption);
 
   auto container = containerSelector.getCurrentContainer();
-  auto traversalSelector = container->generateTraversalSelector();
+  auto traversalSelectorInfo = container->getTraversalSelectorInfo();
 
   autopas::MoleculeLJ defaultParticle;
   RandomGenerator::fillWithParticles(*container, defaultParticle, 100);
@@ -104,53 +104,52 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   }
 
   // with newton 3:
-  int callsNewton3SC = 0;    // same cell
-  int callsNewton3Pair = 0;  // pair of cells
+  std::atomic<unsigned int> callsNewton3SC(0ul);    // same cell
+  std::atomic<unsigned int> callsNewton3Pair(0ul);  // pair of cells
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(true));
   EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
 
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNewton3SC++;
-      }));
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, true)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, true))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3SC++; }));
 
       // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNewton3Pair++;
-      }));
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3Pair++; }));
 
       // non newton3 variant should not happen
       EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).Times(0);
       iterate(container,
-              traversalSelector.generateTraversal<MockFunctor<Particle, FPCell>, autopas::DataLayoutOption::soa, true>(
-                  traversalOption, mockFunctor),
+              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                             autopas::DataLayoutOption::soa, true>(
+                  traversalOption, mockFunctor, traversalSelectorInfo),
               dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
       break;
     }
     case autopas::DataLayoutOption::aos: {
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNewton3Pair++;
-      }));
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3Pair++; }));
       // non newton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(0);
       iterate(container,
-              traversalSelector.generateTraversal<MockFunctor<Particle, FPCell>, autopas::DataLayoutOption::aos, true>(
-                  traversalOption, mockFunctor),
+              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                             autopas::DataLayoutOption::aos, true>(
+                  traversalOption, mockFunctor, traversalSelectorInfo),
               dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
       break;
       case autopas::DataLayoutOption::cuda: {
         // supresses Warning
         // TODO implement suitable test
-        iterate(
-            container,
-            traversalSelector.generateTraversal<MockFunctor<Particle, FPCell>, autopas::DataLayoutOption::aos, true>(
-                traversalOption, mockFunctor),
-            dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
+        iterate(container,
+                autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                               autopas::DataLayoutOption::aos, true>(
+                    traversalOption, mockFunctor, traversalSelectorInfo),
+                dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
         break;
       }
     }
@@ -159,43 +158,43 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   }
 
   // without newton 3:
-  int callsNonNewton3SC = 0;
-  int callsNonNewton3Pair = 0;
+  std::atomic<unsigned int> callsNonNewton3SC(0ul);
+  std::atomic<unsigned int> callsNonNewton3Pair(0ul);
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(false));
   EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(true));
 
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNonNewton3SC++;
-      }));
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, false)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, false))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3SC++; }));
 
       // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNonNewton3Pair++;
-      }));
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3Pair++; }));
 
       // newton3 variant should not happen
       EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).Times(0);
       iterate(container,
-              traversalSelector.generateTraversal<MockFunctor<Particle, FPCell>, autopas::DataLayoutOption::soa, false>(
-                  traversalOption, mockFunctor),
+              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                             autopas::DataLayoutOption::soa, false>(
+                  traversalOption, mockFunctor, traversalSelectorInfo),
               dataLayout, autopas::Newton3Option::disabled, &mockFunctor);
       break;
     }
     case autopas::DataLayoutOption::aos: {
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
-        callsNewton3Pair++;
-      }));
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(testing::AtLeast(1));
+      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3Pair++; }));
+
       // newton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(0);
       iterate(container,
-              traversalSelector.generateTraversal<MockFunctor<Particle, FPCell>, autopas::DataLayoutOption::aos, false>(
-                  traversalOption, mockFunctor),
+              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                             autopas::DataLayoutOption::aos, false>(
+                  traversalOption, mockFunctor, traversalSelectorInfo),
               dataLayout, autopas::Newton3Option::disabled, &mockFunctor);
       break;
     }
@@ -203,8 +202,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
       // supresses Warning
       // TODO implement suitable test
       iterate(container,
-              traversalSelector.generateTraversal<MockFunctor<Particle, FPCell>, autopas::DataLayoutOption::aos, true>(
-                  traversalOption, mockFunctor),
+              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                             autopas::DataLayoutOption::aos, true>(
+                  traversalOption, mockFunctor, traversalSelectorInfo),
               dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
       break;
     }
