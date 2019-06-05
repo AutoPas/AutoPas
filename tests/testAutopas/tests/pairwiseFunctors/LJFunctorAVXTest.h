@@ -14,7 +14,7 @@
 class LJFunctorAVXTest : public AutoPasTestBase {
  public:
   LJFunctorAVXTest()
-      : AutoPasTestBase(), _cutoff{1.}, _epsilon{1.}, _sigma{1.}, _lowCorner{0, 0, 0}, _highCorner{2, 1, 1} {}
+      : AutoPasTestBase(), _cutoff{3.}, _epsilon{1.}, _sigma{1.}, _lowCorner{0, 0, 0}, _highCorner{6, 3, 3} {}
 
   /**
    *  Maximum error allowed for comparisons.

@@ -147,6 +147,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   Particle defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
   RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner, numParticles);
 
+  for (auto p = cellAVX.begin(); p.isValid(); ++p) {
+    std::cout << p->getID() << ": " << p->getR()[0] << " " << p->getR()[1] << " " << p->getR()[2] << " " << std::endl;
+  }
+
   // copy cells
   FPCell cellNoAVX(cellAVX);
 
