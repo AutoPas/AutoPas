@@ -1,5 +1,7 @@
 # needed for GCC to vectorize LJFunctor.SoAFunctor
-option(AUTOPAS_ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize efficiently" OFF)
+option(
+    AUTOPAS_ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize efficiently" OFF
+)
 if (AUTOPAS_ENABLE_FAST_MATH)
     message(
         WARNING
@@ -36,7 +38,8 @@ else ()
             # fast math for better vectorization
             $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-ffast-math>
             # INTEL: per default fast math is on. Disable via fp-model precise
-            $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:-fp-model precise>
+            $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:-fp-model
+            precise>
             # Warnings:
             # no warnings for intel because it's mainly spam
             $<$<CXX_COMPILER_ID:GNU>:-Wsuggest-override
