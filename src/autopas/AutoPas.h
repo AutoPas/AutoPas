@@ -6,14 +6,14 @@
 
 #pragma once
 
-#include <autopas/options/TuningStrategyOption.h>
-#include <autopas/selectors/tuningStrategy/FullSearch.h>
 #include <iostream>
 #include <memory>
 #include <set>
 #include <type_traits>
 #include "autopas/autopasIncludes.h"
+#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/FullSearch.h"
 
 namespace autopas {
 

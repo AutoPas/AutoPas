@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <set>
 #include "autopas/AutoPas.h"
 
 using namespace std;
