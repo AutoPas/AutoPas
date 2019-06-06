@@ -26,12 +26,6 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
- private:
-  static const std::set<TraversalOption> &DefaultApplicableTraversals() {
-    static const std::set<TraversalOption> v{};
-    return v;
-  }
-
  public:
   /// type of the Particle
   typedef Particle ParticleType;
@@ -43,11 +37,11 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param applicableTraversals Sorted vector of traversals applicable for this Container.
+   * @param compatibleTraversals Sorted vector of traversals applicable for this Container.
    */
-  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                    std::set<TraversalOption> applicableTraversals = DefaultApplicableTraversals())
-      : _cells(), _applicableTraversals(applicableTraversals), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
+  ParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
+                    const std::set<TraversalOption> &compatibleTraversals)
+      : _cells(), _applicableTraversals(compatibleTraversals), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
 
   /**
    * destructor of ParticleContainer
