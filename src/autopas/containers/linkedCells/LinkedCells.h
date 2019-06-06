@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "autopas/containers/ApplicableTraversals.h"
 #include "autopas/containers/CellBlock3D.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -47,7 +47,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double cellSizeFactor = 1.0)
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff,
-                                                                 applicableTraversals::allLCApplicableTraversals()),
+                                                                 compatibleTraversals::allLCCompatibleTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
 
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }

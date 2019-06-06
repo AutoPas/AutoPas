@@ -5,7 +5,7 @@
  */
 
 #include "TraversalTest.h"
-#include "autopas/containers/ApplicableTraversals.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/Logger.h"
 #include "testingHelpers/NumThreadGuard.h"
 
@@ -136,7 +136,7 @@ TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
 
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
                          Combine(ValuesIn([]() -> std::set<autopas::TraversalOption> {
-                                   auto allTraversals = autopas::applicableTraversals::allLCApplicableTraversals();
+                                   auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
                                    allTraversals.erase(autopas::TraversalOption::c01Cuda);
                                    return allTraversals;
                                  }()),

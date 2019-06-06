@@ -102,7 +102,7 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
   // generate all potential configs
   for (auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
-    std::set<TraversalOption> allContainerTraversals = applicableTraversals::allApplicableTraversals(containerOption);
+    std::set<TraversalOption> allContainerTraversals = compatibleTraversals::allCompatibleTraversals(containerOption);
     std::set<TraversalOption> allowedAndApplicable;
     std::set_intersection(allowedTraversalOptionsPlusDummy.begin(), allowedTraversalOptionsPlusDummy.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),

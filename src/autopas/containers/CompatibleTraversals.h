@@ -1,5 +1,5 @@
 /**
- * @file ApplicableTraversals.h
+ * @file CompatibleTraversals.h
  * @author F. Gratl
  * @date 5/31/19
  */
@@ -13,13 +13,13 @@
 #include "autopas/utils/StringUtils.h"
 
 namespace autopas {
-namespace applicableTraversals {
+namespace compatibleTraversals {
 
 /**
  * Lists all traversal options applicable for the Direct Sum container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allDSApplicableTraversals() {
+static const std::set<TraversalOption> &allDSCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::directSumTraversal};
   return s;
 }
@@ -28,7 +28,7 @@ static const std::set<TraversalOption> &allDSApplicableTraversals() {
  * Lists all traversal options applicable for the Linked Cells container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allLCApplicableTraversals() {
+static const std::set<TraversalOption> &allLCCompatibleTraversals() {
   static const std::set<TraversalOption> s {
     TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced
 #if defined(AUTOPAS_CUDA)
@@ -43,7 +43,7 @@ static const std::set<TraversalOption> &allLCApplicableTraversals() {
  * Lists all traversal options applicable for the Verlet Lists container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allVCLApplicableTraversals() {
+static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
   // traversal not used but prevents usage of newton3
   static const std::set<TraversalOption> s{TraversalOption::c01};
   return s;
@@ -53,7 +53,7 @@ static const std::set<TraversalOption> &allVCLApplicableTraversals() {
  * Lists all traversal options applicable for the Verlet Lists container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allVLApplicableTraversals() {
+static const std::set<TraversalOption> &allVLCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::verletTraversal};
   return s;
 }
@@ -62,7 +62,7 @@ static const std::set<TraversalOption> &allVLApplicableTraversals() {
  * Lists all traversal options applicable for the Verlet Lists Cells container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allVLCApplicableTraversals() {
+static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
                                            TraversalOption::c01Verlet};
   return s;
@@ -73,22 +73,22 @@ static const std::set<TraversalOption> &allVLCApplicableTraversals() {
  * @param container ContainerOption
  * @return set of all applicable traversal options.
  */
-static inline const std::set<TraversalOption> &allApplicableTraversals(ContainerOption container) {
+static inline const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption container) {
   switch (container) {
     case ContainerOption::linkedCells: {
-      return allLCApplicableTraversals();
+      return allLCCompatibleTraversals();
     }
     case ContainerOption::directSum: {
-      return allDSApplicableTraversals();
+      return allDSCompatibleTraversals();
     }
     case ContainerOption::verletClusterLists: {
-      return allVCLApplicableTraversals();
+      return allVCLCompatibleTraversals();
     }
     case ContainerOption::verletLists: {
-      return allVLApplicableTraversals();
+      return allVLCompatibleTraversals();
     }
     case ContainerOption::verletListsCells: {
-      return allVLCApplicableTraversals();
+      return allVLCCompatibleTraversals();
     }
   }
 
@@ -99,5 +99,5 @@ static inline const std::set<TraversalOption> &allApplicableTraversals(Container
   return s;
 }
 
-}  // namespace applicableTraversals
+}  // namespace compatibleTraversals
 }  // namespace autopas

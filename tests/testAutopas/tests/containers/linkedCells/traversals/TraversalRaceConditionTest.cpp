@@ -5,7 +5,7 @@
  */
 
 #include "TraversalRaceConditionTest.h"
-#include "autopas/containers/ApplicableTraversals.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/StringUtils.h"
 #include "testingHelpers/GridGenerator.h"
 
@@ -36,7 +36,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
 
   /// @todo: test all containers similar to Newton3OnOffTest
   for (auto &container : {autopas::ContainerOption::linkedCells}) {
-    for (auto &traversal : autopas::applicableTraversals::allApplicableTraversals(container)) {
+    for (auto &traversal : autopas::compatibleTraversals::allCompatibleTraversals(container)) {
       if (traversal == autopas::TraversalOption::c01) {
         // c01 traversal does not work with newton3.
         // Here only one traversal is tested.

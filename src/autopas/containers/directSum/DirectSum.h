@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "autopas/containers/ApplicableTraversals.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSumTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -40,7 +40,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
       : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff,
-                                                  applicableTraversals::allDSApplicableTraversals()),
+                                                  compatibleTraversals::allDSCompatibleTraversals()),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
   }

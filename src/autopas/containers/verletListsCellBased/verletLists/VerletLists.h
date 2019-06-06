@@ -66,7 +66,7 @@ class VerletLists
               const double skin, const unsigned int rebuildFrequency = 1,
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, rebuildFrequency, applicableTraversals::allVLApplicableTraversals()),
+            boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVLCompatibleTraversals()),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 

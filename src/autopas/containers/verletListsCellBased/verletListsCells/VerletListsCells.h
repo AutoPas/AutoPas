@@ -7,7 +7,7 @@
 #pragma once
 
 #include "VerletListsCellsHelpers.h"
-#include "autopas/containers/ApplicableTraversals.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
@@ -54,7 +54,7 @@ class VerletListsCells
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                    const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                                            applicableTraversals::allVLCApplicableTraversals()),
+                                                            compatibleTraversals::allVLCCompatibleTraversals()),
         _buildTraversal(buildTraversal) {}
 
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }

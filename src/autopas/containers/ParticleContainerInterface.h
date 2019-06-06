@@ -9,7 +9,7 @@
 
 #include <array>
 #include <vector>
-#include "autopas/containers/ApplicableTraversals.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -171,7 +171,7 @@ class ParticleContainerInterface {
    * @return Vector of traversal options.
    */
   std::set<TraversalOption> getAllTraversals() {
-    return applicableTraversals::allApplicableTraversals(this->getContainerType());
+    return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
   }
 };
 
