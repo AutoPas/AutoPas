@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <cstdlib>
 #include "AutoPasTestBase.h"
@@ -28,5 +29,5 @@ class VerletListsCellsTraversalTest : public AutoPasTestBase {
  protected:
   void test(unsigned long numMolecules);
 
-  autopas::VerletListsCells<autopas::MoleculeLJ> _verletListsCells;
+  autopas::VerletListsCells<autopas::MoleculeLJ> _verletListsCells, _verletListsCells_cs2;
 };
