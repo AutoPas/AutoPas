@@ -123,7 +123,7 @@ class C01Traversal
   /**
    * Offset factor to avoid false sharing.
    */
-  const int cacheOffset;
+  const unsigned int cacheOffset;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
@@ -171,7 +171,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   if (combineSoA) {
     // Iteration along x
 
-    const auto threadID = autopas_get_thread_num();
+    const auto threadID = static_cast<unsigned int>(autopas_get_thread_num());
     auto &currentSlice = currentSlices[threadID * cacheOffset];
     auto &combinationSlice = combinationSlices[threadID];
 
