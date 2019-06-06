@@ -48,7 +48,6 @@ class CellPairTraversal : public TraversalInterface {
   /**
    * write Data to AoS
    * @param cells for which the data should be written back
-   *
    */
   virtual void endTraversal(std::vector<ParticleCell> &cells) = 0;
 
