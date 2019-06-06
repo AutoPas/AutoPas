@@ -127,8 +127,8 @@ INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
                                    return all;
                                  }()),
                                  ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   /// @todo: remove below line to enable testing of verletClusterLists.
                                    auto all = autopas::allContainerOptions;
+                                   /// @todo: remove below line to enable testing of verletClusterLists.
                                    all.erase(autopas::ContainerOption::verletClusterLists);
                                    return all;
                                  }())),
