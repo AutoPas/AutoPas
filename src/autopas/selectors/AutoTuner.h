@@ -38,7 +38,8 @@ class AutoTuner {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells).
+   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
+   * VerletListsCells).
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
