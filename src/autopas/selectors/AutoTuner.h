@@ -47,10 +47,11 @@ class AutoTuner {
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSizeFactor,
-            double verletSkin, unsigned int verletRebuildFrequency, TuningStrategyInterface *tuningStrategy,
-            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+            double verletSkin, unsigned int verletRebuildFrequency,
+            std::unique_ptr<TuningStrategyInterface> tuningStrategy, SelectorStrategyOption selectorStrategy,
+            unsigned int tuningInterval, unsigned int maxSamples)
       : _selectorStrategy(selectorStrategy),
-        _tuningStrategy(tuningStrategy),
+        _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency),
@@ -67,15 +68,18 @@ class AutoTuner {
                                       _containerSelector.getCurrentContainer()->getTraversalSelectorInfo());
     }
 
-    _containerSelector.selectContainer(tuningStrategy->getCurrentConfiguration()._container);
+    _containerSelector.selectContainer(_tuningStrategy->getCurrentConfiguration()._container);
   }
 
   /**
-   * Destructor.
-   *
-   * This also deletes the tuning strategy object.
+   * Move assignment operator
+   * @param other
+   * @return
    */
-  ~AutoTuner() { delete (_tuningStrategy); }
+  AutoTuner &operator=(AutoTuner &&other) noexcept {
+    _tuningStrategy = std::move(other._tuningStrategy);
+    return *this;
+  }
 
   /**
    * Getter for the current container.
@@ -193,7 +197,7 @@ class AutoTuner {
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
   SelectorStrategyOption _selectorStrategy;
-  TuningStrategyInterface *_tuningStrategy;
+  std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
 
