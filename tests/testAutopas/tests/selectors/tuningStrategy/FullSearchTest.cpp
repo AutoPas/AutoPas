@@ -5,7 +5,6 @@
  */
 
 #include "FullSearchTest.h"
-#include <backtrace.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
