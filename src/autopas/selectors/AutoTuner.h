@@ -57,7 +57,7 @@ class AutoTuner {
         _containerSelector(boxMin, boxMax, cutoff, cellSizeFactor, verletSkin, verletRebuildFrequency),
         _maxSamples(maxSamples),
         _samples(maxSamples) {
-    if (_tuningStrategy->searchSpaceEmpty()) {
+    if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
 
@@ -116,7 +116,7 @@ class AutoTuner {
    * @return True if the next iteratePairwise() call uses a different configuration. False otherwise.
    */
   bool willRebuild() {
-    if (_tuningStrategy->searchSpaceOneOption()) {
+    if (_tuningStrategy->searchSpaceIsTrivial()) {
       return false;
     }
 
@@ -225,7 +225,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
   // - more than one config exists
   // - currently in tuning phase
   // - functor is relevant
-  if ((not _tuningStrategy->searchSpaceOneOption()) and _iterationsSinceTuning >= _tuningInterval and
+  if ((not _tuningStrategy->searchSpaceIsTrivial()) and _iterationsSinceTuning >= _tuningInterval and
       f->isRelevantForTuning()) {
     isTuning = tune<PairwiseFunctor>(*f);
     if (not isTuning) {

@@ -64,9 +64,9 @@ class FullSearch : public TuningStrategyInterface {
 
   inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; };
 
-  inline bool searchSpaceOneOption() override { return _searchSpace.size() == 1; }
+  inline bool searchSpaceIsTrivial() override { return _searchSpace.size() == 1; }
 
-  inline bool searchSpaceEmpty() override { return _searchSpace.empty(); }
+  inline bool searchSpaceIsEmpty() override { return _searchSpace.empty(); }
 
  private:
   /**
@@ -181,7 +181,7 @@ void FullSearch::removeN3Option(Newton3Option badNewton3Option) {
     }
   }
 
-  if (this->searchSpaceEmpty()) {
+  if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
         "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
   }
