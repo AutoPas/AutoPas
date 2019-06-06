@@ -5,7 +5,7 @@
 Please keep the following notes in mind while working.
 
 ## C++
-####General Notes
+#### General Notes
 * used cpp standard: C++14. If there is a peace of code, which could be done better using C++17, please add a comment `@todo C++17` including the C++17 version of the code.
 * If there is no special reason, use smart pointers instead of raw pointers.
 * Use AutoPas wrapper functions for OpenMP (src/autopas/utils/WrapOpenMP.h) instead of OpenMP functions to allow building without enabled OpenMP.
