@@ -100,16 +100,13 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
   /**
-   * Checks if the given traversals are applicable to this traversal.
+   * Checks if the given traversals are applicable to this container.
    * @param traversalOptions
    * @return True iff traversalOptions is a subset of _applicableTraversals
    */
-  bool checkIfTraversalsAreApplicable(std::vector<TraversalOption> traversalOptions) {
-    for (auto &option : traversalOptions) {
-      if (find(_applicableTraversals.begin(), _applicableTraversals.end(), option) == _applicableTraversals.end())
-        return false;
-    }
-    return true;
+  bool checkIfTraversalsAreApplicable(std::set<TraversalOption> traversalOptions) {
+    return std::includes(_applicableTraversals.begin(), _applicableTraversals.end(), traversalOptions.begin(),
+                         traversalOptions.end());
   }
 
   /**
