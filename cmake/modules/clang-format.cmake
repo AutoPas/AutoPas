@@ -30,17 +30,7 @@ find_program(
     CLANG_FORMAT
     NAMES
         clang-format
-        clang-format-8.0
-        clang-format-7.0
         clang-format-6.0
-        clang-format-5.0
-        clang-format-4.0
-        clang-format-3.9
-        clang-format-3.8
-        clang-format-3.7
-        clang-format-3.6
-        clang-format-3.5
-        clang-format-3.4
 )
 
 if (CLANG_FORMAT)
@@ -76,5 +66,5 @@ if (CLANG_FORMAT)
     add_custom_command(OUTPUT .dummy/cf/clang_dummy COMMAND true DEPENDS ${dummyfiles})
     add_custom_target(clangformat DEPENDS .dummy/cf/clang_dummy)
 else ()
-    message(STATUS "clang format not found, not adding clang format target")
+    message(STATUS "clang-format-6 not found, not adding clang format target. Other Versions not supported!")
 endif ()
