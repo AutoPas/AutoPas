@@ -158,8 +158,6 @@ class AutoTuner {
             ss << "Reduced value: " << reducedValue;
             AutoPasLog(debug, "Collected times for  {}", ss.str());
           }
-          // remove samples since the are no longer needed
-          _samples.clear();
         }
       }
     } else {
@@ -359,6 +357,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }
+  // @TODO move to addMeasurement?
+  _samples.clear();
 
   // repeat as long as traversals are not applicable or we run out of configs
   while (true) {
