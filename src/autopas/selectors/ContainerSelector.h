@@ -36,7 +36,8 @@ class ContainerSelector {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells).
+   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
+   * VerletListsCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
@@ -95,14 +96,15 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
     }
     case verletLists: {
       // @todo determine verletSkin and verletRebuildFrequency via tuning
-      container =
-          std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency);
+      container = std::make_unique<VerletLists<Particle>>(
+          _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency,
+          VerletLists<Particle>::BuildVerletListType::VerletSoA, _cellSizeFactor);
       break;
     }
     case verletListsCells: {
       // @todo determine verletSkin and verletRebuildFrequency via tuning
       container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::c08,
-                                                               _verletSkin, _verletRebuildFrequency);
+                                                               _verletSkin, _verletRebuildFrequency, _cellSizeFactor);
       break;
     }
     case verletClusterLists: {
