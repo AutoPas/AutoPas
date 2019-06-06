@@ -57,8 +57,17 @@ class ContainerSelectorInfo {
            std::tie(other.cellSizeFactor, other.verletSkin, other.verletRebuildFrequency);
   }
 
+  /**
+   * cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells)
+   */
   double cellSizeFactor;
+  /**
+   * Length added to the cutoff for the verlet lists' skin.
+   */
   double verletSkin;
+  /**
+   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   */
   unsigned int verletRebuildFrequency;
 };
 
