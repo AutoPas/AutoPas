@@ -56,7 +56,8 @@ class VerletListsCells
                    const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1,
                    const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                                            compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
+                                                            compatibleTraversals::allVLCCompatibleTraversals(),
+                                                            cellSizeFactor),
         _buildTraversal(buildTraversal) {}
 
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
