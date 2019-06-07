@@ -26,10 +26,19 @@ For now we are stuck with C++14 due to the CUDA dependency.
 * ToDos: All comments containing TpDos should be prefixed with `@todo`, thus they are visible in the global todo list.
 * Date format: dd.mm.yyyy (please replace occurrences of other formats as you come accross them)
 
-## Commits
+## GitHub
+
+### Pull Requests
+* If you want to contribute a new feature, resolve an issue etc. please create a new branch from `master` where you implement your solution.
+* Create Pull request agains `master` and fill out our Pull Request form.
+* Please take your time to give a concise description of your solution and how you tested it.
+* Link related PRs or issues.
+
+### Issues
+* Feel free to open issues for bugs, feature requests or optimization ideas.
+* Tag the issues you write appropriately.
+
+### Commits
 * Use meaningfull commit messages.
 * Please avoid using commits to save your unfinished work before switching branches, this pollutes the commit history. Please use `git stash` instead.
 
-## Issues
-* Feel free to open issues for bugs, feature requests or optimization ideas.
-* Tag the issues you write appropriately.
