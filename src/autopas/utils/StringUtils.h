@@ -389,4 +389,3 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
 }  // namespace StringUtils
 }  // namespace utils
 }  // namespace autopas
-}  // namespace autopas
