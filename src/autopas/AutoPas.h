@@ -388,6 +388,20 @@ class AutoPas {
    */
   const Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
 
+  /**
+   * Getter for the tuning strategy option.
+   * @return
+   */
+  TuningStrategyOption getTuningStrategyOption() const { return _tuningStrategyOption; }
+
+  /**
+   * Setter for the tuning strategy option.
+   * @param tuningStrategyOption
+   */
+  void setTuningStrategyOption(TuningStrategyOption tuningStrategyOption) {
+    _tuningStrategyOption = tuningStrategyOption;
+  }
+
  private:
   /**
    * Generates a new Tuning Strategy object from the member variables of this autopas object.

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <autopas/options/TuningStrategyOption.h>
 #include <set>
 #include <string>
 #include <vector>
@@ -58,7 +59,7 @@ inline std::string to_string(const autopas::SelectorStrategyOption &option) {
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
-  return "Unknown option (" + std::to_string(option) + ")";
+  return "Unknown SelectorStrategyOption (" + std::to_string(option) + ")";
 }
 
 /**
@@ -79,7 +80,7 @@ inline std::string to_string(const DataLayoutOption &option) {
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
-  return "Unknown option (" + std::to_string(option) + ")";
+  return "Unknown DataLayoutOption (" + std::to_string(option) + ")";
 }
 
 /**
@@ -106,7 +107,7 @@ inline std::string to_string(const ContainerOption &option) {
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
-  return "Unknown option (" + std::to_string(option) + ")";
+  return "Unknown ContainerOption (" + std::to_string(option) + ")";
 }
 
 /**
@@ -151,9 +152,23 @@ inline std::string to_string(const TraversalOption &option) {
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
-  return "Unknown option (" + std::to_string(option) + ")";
+  return "Unknown TraversalOption (" + std::to_string(option) + ")";
 }
 
+/**
+ * Converts a TuningStrategyOption to its respective string representation.
+ * @param option
+ * @return The string representation or "Unknown option (<IntValue>)".
+ */
+* / inline std::string to_string(const TuningStrategyOption &option) {
+  switch (option) {
+    case autopas::TuningStrategyOption::fullSearch: {
+      return "full-Search";
+    }
+  }
+  // do not implement default case to provoke compiler warnings if new options are introduced.
+  return "Unknown TuningStrategyOption (" + std::to_string(option) + ")";
+}
 /**
  * All accepted delimiters to split input strings.
  */
@@ -354,6 +369,24 @@ inline std::set<autopas::DataLayoutOption> parseDataLayout(const std::string &da
   }
   return dataLayouts;
 }
+
+/**
+ * Converts a string containing a tuning strategy to an enum. The option is expected to be lower case.
+ *
+ * Possible options: full-search
+ *
+ * @param tuningStrategyString String containing the tuning strategy option
+ * @return An enum representing the tuningStrategy. If no valid option was found an error value of -1 is returned.
+ */
+inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string &tuningStrategyString) {
+  // hack to initialize the enum out of range as an error value.
+  auto tuningStrategy(autopas::TuningStrategyOption(-1));
+  if (tuningStrategyString.find("full") != std::string::npos or tuningStrategyString.find("ex") != std::string::npos) {
+    tuningStrategy = autopas::TuningStrategyOption::fullSearch;
+  }
+  return tuningStrategy;
+}
 }  // namespace StringUtils
 }  // namespace utils
+}  // namespace autopas
 }  // namespace autopas
