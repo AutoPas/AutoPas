@@ -47,13 +47,13 @@ class VerletListsCellsHelpers {
 
     bool allowsNewton3() override {
       utils::ExceptionHandler::exception(
-          "VerletListGeneratorFunctor::allowsNewton3() is not yet implemented, as it should not be called.");
+          "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
     bool allowsNonNewton3() override {
       utils::ExceptionHandler::exception(
-          "VerletListGeneratorFunctor::allowsNonNewton3() is not yet implemented, as it should not be called.");
+          "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
