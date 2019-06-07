@@ -68,10 +68,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         _lowCorner(lowCorner),
         _highCorner(highCorner),
         _postProcessed{false} {
-    if (calculateGlobals or duplicatedCalculation) {
-      /*
-       *utils::ExceptionHandler::exception("Calculation of global values and duplicated calculations not supported.");
-       */
+
+    if (calculateGlobals and duplicatedCalculation) {
+      if (lowCorner == highCorner) {
+        throw utils::ExceptionHandler::AutoPasException(
+            "Please specify the lowCorner and highCorner properly if calculateGlobals and duplicatedCalculation are "
+            "set to true.");
+      }
     }
     if (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
@@ -118,8 +121,18 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d upotSum = _mm256_setzero_pd();
 
-    //    bool isHaloCell1 = false;
-    //    bool isHaloCell2 = false;
+    if (calculateGlobals) {
+      // Checks if the cell is a halo cell, if it is, we skip it.
+      // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
+      // set. (as of 23.11.2018)
+      bool isHaloCell = false;
+      isHaloCell |= xptr[0] < _lowCorner[0] || xptr[0] >= _highCorner[0];
+      isHaloCell |= yptr[0] < _lowCorner[1] || yptr[0] >= _highCorner[1];
+      isHaloCell |= zptr[0] < _lowCorner[2] || zptr[0] >= _highCorner[2];
+      if (isHaloCell) {
+        return;
+      }
+    }
 
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
