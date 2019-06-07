@@ -30,6 +30,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
+                                         {"tuning-strategy", required_argument, nullptr, 'T'},
                                          {"log-level", required_argument, nullptr, 'l'},
                                          {"log-file", required_argument, nullptr, 'L'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
@@ -265,6 +266,15 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'T': {
+        tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(strArg);
+        if (tuningStrategyOption == autopas::TuningStrategyOption(-1)) {
+          cerr << "Unknown Tuning Strategy: " << strArg << endl;
+          cerr << "Please use 'full-search'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 'v': {
         try {
           verletRebuildFrequency = (unsigned int)stoul(strArg);
@@ -471,3 +481,5 @@ autopas::SelectorStrategyOption MDFlexParser::getSelectorStrategy() const { retu
 std::set<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
 
 const string &MDFlexParser::getLogFileName() const { return logFileName; }
+
+autopas::TuningStrategyOption MDFlexParser::getTuningStrategyOption() const { return tuningStrategyOption; }

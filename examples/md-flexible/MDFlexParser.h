@@ -41,6 +41,7 @@ class MDFlexParser {
   size_t getParticlesPerDim() const;
   unsigned int getTuningInterval() const;
   unsigned int getTuningSamples() const;
+  autopas::TuningStrategyOption getTuningStrategyOption() const;
   std::string getWriteVTK() const;
   const std::set<autopas::TraversalOption> &getTraversalOptions() const;
   unsigned int getVerletRebuildFrequency() const;
@@ -52,13 +53,15 @@ class MDFlexParser {
   static constexpr size_t valueOffset = 32;
 
   // defaults:
+  // AutoPas options:
   std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
-  autopas::SelectorStrategyOption selectorStrategy = autopas::SelectorStrategyOption::fastestAbs;
   std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
+  autopas::SelectorStrategyOption selectorStrategy = autopas::SelectorStrategyOption::fastestAbs;
   std::set<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
+  autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
 
- private:
+  // Simulation Options:
   double boxLength = -1;
   double cutoff = 1.;
   double cellSizeFactor = 1.;
