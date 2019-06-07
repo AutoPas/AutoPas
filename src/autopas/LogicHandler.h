@@ -56,7 +56,34 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addHaloParticle()
    */
-  void addHaloParticle(Particle& haloParticle) { _autoTuner.getContainer()->addHaloParticle(); }
+  void addHaloParticle(Particle& haloParticle) {
+    if (_neighborListIsValid) {
+      if (not utils::inBox(haloParticle.getR(), ArrayMath::addScalar(this->getBoxMin(), this->getSkin() / 2),
+                           ArrayMath::subScalar(this->getBoxMax(), this->getSkin() / 2))) {
+        bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
+        if (not updated) {
+          // a particle is only allowed not to be updated if it is NOT within cutoff + skin/2 of the bounding box
+          double dangerousDistance = this->getCutoff() + this->getSkin() / 2;
+
+          bool dangerous = utils::inBox(haloParticle.getR(), ArrayMath::subScalar(this->getBoxMin(), dangerousDistance),
+                                        ArrayMath::addScalar(this->getBoxMax(), dangerousDistance));
+          if (dangerous) {
+            // throw exception, rebuild frequency not high enough / skin too small!
+            utils::ExceptionHandler::exception(
+                "VerletListsLinkedBase::addHaloParticle: wasn't able to update halo particle that is too close to "
+                "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!");
+          }
+        }
+      } else {
+        // throw exception, rebuild frequency not high enough / skin too small!
+        utils::ExceptionHandler::exception(
+            "VerletListsLinkedBase::addHaloParticle: trying to update halo particle that is too far inside domain "
+            "(more than skin/2). Rebuild frequency not high enough / skin too small!");
+      }
+    } else {
+      _autoTuner.getContainer()->addHaloParticle(haloParticle);
+    }
+  }
 
   /**
    * @copydoc AutoPas::deleteHaloParticles()
