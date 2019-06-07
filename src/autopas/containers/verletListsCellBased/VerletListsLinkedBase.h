@@ -42,9 +42,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const unsigned int rebuildFrequency,
                         const std::vector<TraversalOption>& applicableTraversals)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
-        _linkedCells(boxMin, boxMax, cutoff + skin),
-        _skin(skin),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin, applicableTraversals),
+        _linkedCells(boxMin, boxMax, cutoff, skin, 1. /**@todo remove 1.*/),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false),
@@ -114,8 +113,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       _linkedCells.getCellBlock().getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      boxmin = ArrayMath::addScalar(boxmin, -_skin / 2.);
-      boxmax = ArrayMath::addScalar(boxmax, +_skin / 2.);
+      boxmin = ArrayMath::subScalar(boxmin, this->getSkin() / 2.);
+      boxmax = ArrayMath::addScalar(boxmax, this->getSkin() / 2.);
       for (auto iter = _linkedCells.getCells()[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update
@@ -226,9 +225,6 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
 
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
   LinkedCells<Particle, LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
-
-  /// skin radius
-  double _skin;
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
