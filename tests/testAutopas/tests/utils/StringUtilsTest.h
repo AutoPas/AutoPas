@@ -59,10 +59,10 @@ template <class T>
 void testToString(const std::set<T> &goodOptions, const std::set<T> &badOptions) {
   for (auto &op : goodOptions) {
     std::string createdString = autopas::utils::StringUtils::to_string(op);
-    EXPECT_THAT(createdString, Not(::testing::HasSubstr("Unknown option")));
+    EXPECT_THAT(createdString, Not(::testing::HasSubstr("Unknown")));
   }
   for (auto &op : badOptions) {
     std::string createdString = autopas::utils::StringUtils::to_string(op);
-    EXPECT_THAT(createdString, ::testing::HasSubstr("Unknown option"));
+    EXPECT_THAT(createdString, ::testing::HasSubstr("Unknown"));
   }
 }

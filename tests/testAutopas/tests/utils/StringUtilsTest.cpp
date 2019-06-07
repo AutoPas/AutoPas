@@ -34,6 +34,11 @@ TEST(StringUtilsTest, parseSelectorOptionsTest) {
                                                    autopas::utils::StringUtils::parseSelectorStrategy);
 }
 
+TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
+  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search"},
+                                                 autopas::utils::StringUtils::parseTuningStrategyOption);
+}
+
 TEST(StringUtilsTest, to_stringDataLayoutTest) {
   testToString(autopas::allDataLayoutOptions, {autopas::DataLayoutOption(-1)});
 }
@@ -48,4 +53,8 @@ TEST(StringUtilsTest, to_stringContainerOptionsTest) {
 
 TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
   testToString(autopas::allTraversalOptions, {autopas::TraversalOption(-1)});
+}
+
+TEST(StringUtilsTest, to_stringTuningStrategyOptionsTest) {
+  testToString(autopas::allTuningStrategyOptions, {autopas::TuningStrategyOption(-1)});
 }
