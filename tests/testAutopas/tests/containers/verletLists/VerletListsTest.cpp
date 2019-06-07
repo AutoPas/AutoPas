@@ -491,7 +491,9 @@ TEST_F(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
 template <class Container, class Particle>
 void moveUpdateAndExpectEqual(Container& container, Particle& particle, std::array<double, 3> newPosition) {
   particle.setR(newPosition);
-  container.updateHaloParticle(particle);
+  /// @todo: uncomment
+  // container.updateHaloParticle(particle);
+  FAIL();
   {
     auto iter = container.begin();
     auto r = iter->getR();
@@ -509,7 +511,9 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
 
   // test same position, change velocity
   p.setV({.1, .1, .1});
-  verletLists.updateHaloParticle(p);
+  ///@todo: uncomment the updateHaloParticle lines and fix test.
+  // verletLists.updateHaloParticle(p);
+  FAIL();
   {
     auto iter = verletLists.begin();
     auto v = iter->getV();
@@ -530,21 +534,24 @@ TEST_F(VerletListsTest, testUpdateHaloParticle) {
 
   // check for particle with wrong id
   Particle p2({-.1, -.1, -.1}, {0., 0., 0.}, 2);
-  EXPECT_ANY_THROW(verletLists.updateHaloParticle(p2));
-
+  // EXPECT_ANY_THROW(verletLists.updateHaloParticle(p2));
+  FAIL();
   // test move far, expect throw
   EXPECT_ANY_THROW(moveUpdateAndExpectEqual(verletLists, p, {3, 3, 3}););
 
   // test particles at intermediate positions (not at corners)
   Particle p3({-1., 4., 2.}, {0., 0., 0.}, 3);
   verletLists.addHaloParticle(p3);
-  EXPECT_NO_THROW(verletLists.updateHaloParticle(p3));
+  // EXPECT_NO_THROW(verletLists.updateHaloParticle(p3));
+  FAIL();
   Particle p4({4., 10.2, 2.}, {0., 0., 0.}, 4);
   verletLists.addHaloParticle(p4);
-  EXPECT_NO_THROW(verletLists.updateHaloParticle(p4));
+  // EXPECT_NO_THROW(verletLists.updateHaloParticle(p4));
+  FAIL();
   Particle p5({5., 4., 10.2}, {0., 0., 0.}, 3);
   verletLists.addHaloParticle(p5);
-  EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
+  // EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
+  FAIL();
 }
 
 TEST_F(VerletListsTest, testIsContainerNeeded) {
