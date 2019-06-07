@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <memory>
+#include "autopas/LogicHandler.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/selectors/AutoTuner.h"
 
@@ -33,7 +34,7 @@ class AutoPas {
    * Constructor for the autopas class.
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
-  AutoPas(std::ostream &logOutputStream = std::cout)
+  explicit AutoPas(std::ostream &logOutputStream = std::cout)
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
         _cutoff(1.),
@@ -74,6 +75,7 @@ class AutoPas {
    */
   AutoPas &operator=(AutoPas &&other) noexcept {
     _autoTuner = std::move(other._autoTuner);
+    _logicHandler = std::move(other._logicHandler);
     return *this;
   }
 
@@ -90,49 +92,41 @@ class AutoPas {
         _boxMin, _boxMax, _cutoff, _cellSizeFactor, _verletSkin, _verletRebuildFrequency, _allowedContainers,
         _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy, _tuningInterval,
         _numSamples);
+    _logicHandler = std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(
+        _autoTuner.get(), _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, _tuningInterval,
+        _numSamples);
   }
 
   /**
    * Updates the internal container.
    * This is needed e.g. for linked-cells if particles move from one cell to another.
-   * It resorts particles into appropriate cells and moves them to the halo, if necessary.
-   * @todo update doc
+   * It resorts particles into appropriate cells and will return particles that do no longer belong into the container.
    * @return A vector of invalid particles that do no belong in the current container.
    */
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
-    return _autoTuner->getContainer()->updateContainer();
-  }
-
-  /**
-   * Returns a pointer to the actual container.
-   * @todo do we need the whole container functionality available to the outside
-   * @return container
-   */
-  // @todo: remove this once we are convinced all necessary container functions are wrapped
-  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _autoTuner->getContainer().get(); }
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() { return _logicHandler->updateContainer(); }
 
   /**
    * Adds a particle to the container.
    * @param p Reference to the particle to be added
    */
-  void addParticle(Particle &p) { _autoTuner->getContainer()->addParticle(p); }
+  void addParticle(Particle &p) { _logicHandler->addParticle(p); }
 
   /**
-   * adds a particle to the container that lies in the halo region of the
+   * Adds a particle to the container that lies in the halo region of the
    * container
    * @param haloParticle particle to be added
    */
-  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); }
+  void addHaloParticle(Particle &haloParticle) { _logicHandler->addHaloParticle(haloParticle); }
 
   /**
-   * deletes all halo particles
+   * Deletes all halo particles
    */
-  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); }
+  void deleteHaloParticles() { _logicHandler->deleteHaloParticles(); }
 
   /**
-   * deletes all particles
+   * Deletes all particles
    */
-  void deleteAllParticles() { _autoTuner->getContainer()->deleteAllParticles(); }
+  void deleteAllParticles() { _logicHandler->deleteAllParticles(); }
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -141,7 +135,7 @@ class AutoPas {
    */
   template <class Functor>
   void iteratePairwise(Functor *f) {
-    _autoTuner->iteratePairwise(f);
+    _logicHandler->iteratePairwise(f);
   }
 
   /**
@@ -152,7 +146,7 @@ class AutoPas {
    * @return iterator to the first particle
    */
   autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _autoTuner->getContainer()->begin(behavior);
+    return _logicHandler->begin(behavior);
   }
 
   /**
@@ -168,7 +162,7 @@ class AutoPas {
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**
@@ -361,24 +355,6 @@ class AutoPas {
   }
 
   /**
-   * Checks if the container needs to be updated.
-   * Will return false if no lists are used.
-   * This function can indicate whether you should send only halo particles or whether you should send leaving particles
-   * as well.
-   * @return True if the lists are valid, false if a rebuild is needed.
-   */
-  bool needsContainerUpdate() {
-    if (_autoTuner->willRebuild()) {
-      return true;
-    }
-    if (auto container = dynamic_cast<VerletLists<Particle> *>(_autoTuner->getContainer().get())) {
-      return container->needsRebuild();
-    } else {
-      return true;
-    }
-  }
-
-  /**
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
    */
@@ -441,6 +417,11 @@ class AutoPas {
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
   std::vector<Newton3Option> _allowedNewton3Options;
+
+  /**
+   * LogicHandler of autopas.
+   */
+  std::unique_ptr<autopas::LogicHandler<Particle, ParticleCell>> _logicHandler;
 
   /**
    * This is the AutoTuner that owns the container, ...
