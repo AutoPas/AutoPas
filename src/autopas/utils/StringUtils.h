@@ -160,7 +160,7 @@ inline std::string to_string(const TraversalOption &option) {
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
  */
-* / inline std::string to_string(const TuningStrategyOption &option) {
+inline std::string to_string(const TuningStrategyOption &option) {
   switch (option) {
     case autopas::TuningStrategyOption::fullSearch: {
       return "full-Search";
