@@ -34,6 +34,8 @@ private:
     long durationX;
     long durationF;
     long durationV;
+    double delta_t;
+    int iterations;
 public:
     virtual ~Simulation() {
     delete _autopas;
@@ -140,7 +142,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     //double epsilon,sigma  = 1.0;
     string logFileName(parser.getLogFileName());
     auto measureFlops(parser.getMeasureFlops()); //@todo un-used
-    auto numIterations(parser.getIterations()); //@todo un-used
+    auto numIterations(parser.getIterations()); //@todo un-use
     auto particlesTotal(parser.getParticlesTotal());
     auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
     auto vtkFilename(parser.getWriteVTK()); //
@@ -161,6 +163,8 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     auto tuningInterval(parser.getTuningInterval());
     auto tuningSamples(parser.getTuningSamples());
     auto verletSkinRadius(parser.getVerletSkinRadius());
+    this->delta_t = parser.getDeltaT();
+    this->iterations= numIterations;
     _autopas->setCutoff(cutoff);
     _autopas->setVerletSkin(verletSkinRadius);
     _autopas->setVerletRebuildFrequency(verletRebuildFrequency);
@@ -290,13 +294,12 @@ long Simulation<Particle, ParticleCell>::simulate(){
 
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
-
-
-    double particleDelta_T=1;    //@todo -get Value from Parser
+    double particleDelta_T=this->delta_t;
     double time=0;
-    double timeEnd=10;              //@todo -get TimeEnd from Parser
+    double timeEnd= this->delta_t * (double)this->iterations;
     TimeDiscretization<decltype(_autopas)> td(particleDelta_T);
     //main simulation loop
+
     while(time<timeEnd){
         this->addDurationX(td.VSCalculateX(_autopas));
         // -> nicht sicher ob man das IF-Case braucht
@@ -311,7 +314,6 @@ long Simulation<Particle, ParticleCell>::simulate(){
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
     return durationCalc;
-
 }
 
 template<class Particle, class ParticleCell>

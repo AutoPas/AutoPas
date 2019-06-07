@@ -38,6 +38,10 @@ class MDFlexParser {
   double getParticleSpacing() const;
   size_t getParticlesTotal() const;
   size_t getParticlesPerDim() const;
+  double getEpsilon() const;
+  double getSigma() const;
+  double getDeltaT() const;
+
   unsigned int getTuningInterval() const;
   unsigned int getTuningSamples() const;
   string getWriteVTK() const;
@@ -47,7 +51,9 @@ class MDFlexParser {
   bool parseInput(int argc, char **argv);
   void printConfig();
 
- private:
+    double getMass() const;
+
+private:
   static constexpr size_t valueOffset = 32;
 
   // defaults:
@@ -76,4 +82,8 @@ class MDFlexParser {
   string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
+  double epsilon= 1.0;
+  double sigma= 1.0;
+  double delta_t = 0.01;
+  double mass = 1.0;
 };

@@ -108,15 +108,15 @@ int main(int argc, char **argv) {
     std::ostream outputStream(streamBuf);
     long DurationSimulation;
 
-    PrintableMolecule::setEpsilon(1.0);
-    PrintableMolecule::setSigma(1.0);
-    PrintableMolecule::setMass(1.0);
+    PrintableMolecule::setEpsilon(parser.getEpsilon());
+    PrintableMolecule::setSigma(parser.getSigma());
+    PrintableMolecule::setMass(parser.getMass());
     //vorübergehend, nicht sicher ob das mit den Werten für OldF Sinn macht
     std::array<double, 3> oldf = {1.0, 1.0, 1.0};
     PrintableMolecule::setOldf(oldf);
     // Initialization
 
-    auto *autopas = new autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> (outputStream);
+    auto *autopas =new autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> (outputStream);
     autopas->setBoxMax({2.,2.,2.});
     autopas->init();
     autopas::Logger::get()->set_level(logLevel);
@@ -124,6 +124,11 @@ int main(int argc, char **argv) {
     Simulation.initialize(parser);
     //Simulation
     DurationSimulation = Simulation.simulate();
+
+    //testing   ->>> @todo epsilon werden anscheinden nicht richtig gesetzt
+    cout << "parserEpsi " << parser.getEpsilon() << endl;
+    cout << "parserSigm " << parser.getSigma() << endl;
+
 
     cout << endl;
     cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
@@ -206,9 +211,10 @@ int main(int argc, char **argv) {
   if (not logFileName.empty()) {
     logFile.close();
   }
-
-  delete autopas;
-  autopas= NULL;
+  //Frage an Fabio: wie geht delete
+  //mit folgenden 2 zeilen kriegt man 14invalidFree,27InvalidRead,9InvalidWrite Warnings
+  //delete autopas;
+  //autopas= NULL;
 
   return EXIT_SUCCESS;
 }

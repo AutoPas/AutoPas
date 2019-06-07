@@ -22,6 +22,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
                                          {"newton3", required_argument, nullptr, '3'},
+                                         {"delta_t", required_argument, nullptr, 'D'},
+                                         {"epsilon",required_argument, nullptr, 'e'},
+                                         {"sigma",required_argument, nullptr, 'a'},
+                                         {"particle-mass", required_argument, nullptr,'M'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
@@ -40,6 +44,42 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
+      case 'e': {
+          try {
+              epsilon = stod(strArg);
+          } catch (const exception &) {
+              cerr << "Error parsing epsilon value: " << optarg << endl;
+              displayHelp = true;
+          }
+          break;
+      }
+      case 'a':{
+          try {
+              sigma = stod(strArg);
+          } catch (const exception &) {
+              cerr << "Error parsing sigma value: " << optarg << endl;
+              displayHelp = true;
+          }
+          break;
+      }
+      case 'M':{
+          try {
+              mass = stod(strArg);
+          } catch (const exception &) {
+              cerr << "Error parsing Particle Mass value: " << optarg << endl;
+               displayHelp = true;
+          }
+           break;
+      }
+      case 'D':{
+          try {
+              delta_t = stod(strArg);
+          } catch (const exception &) {
+              cerr << "Error parsing epsilon value: " << optarg << endl;
+              displayHelp = true;
+          }
+          break;
+      }
       case '3': {
         newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
         if (newton3Options.empty()) {
@@ -309,7 +349,7 @@ template <class T>
 std::string iterableToString(T arr) {
   std::ostringstream ss;
   for (auto a : arr) {
-    ss << autopas::utils::StringUtils::to_string(a) << ", ";
+    ss << autopas::utils::StringUtils::to_string(a) << ", ";  //@todo, das ss --- Memory Sanitizer
   }
   // deletes last comma
   ss << "\b\b";
@@ -396,11 +436,17 @@ void MDFlexParser::printConfig() {
       break;
     }
   }
-
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  " << iterableToString(traversalOptions) << endl;
-
-  cout << setw(valueOffset) << left << "Iterations"
+  cout << setw(valueOffset) << left << "Particles Mass"
+       << ":  " << mass << endl;
+  cout << setw(valueOffset) << left << "Particles Epsilon"   //@todo verändern wenn verschieden ParticleType in der Simulation sind
+       << ":  " << epsilon << endl;
+  cout << setw(valueOffset) << left << "Particles Sigma"   //@todo verändern wenn verschieden ParticleType in der Simulation sind
+       << ":  " << sigma << endl;
+  cout << setw(valueOffset) << left << "delta_t"
+       << ":  " << delta_t << endl;
+  cout << setw(valueOffset) << left << "Iterations"   //iterations * delta_t = time_end;
        << ":  " << iterations << endl;
   cout << setw(valueOffset) << left << "Tuning Interval"
        << ":  " << tuningInterval << endl;
@@ -456,3 +502,12 @@ autopas::SelectorStrategy MDFlexParser::getSelectorStrategy() const { return sel
 std::vector<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
 
 const string &MDFlexParser::getLogFileName() const { return logFileName; }
+
+double MDFlexParser::getEpsilon() const { return epsilon; }
+
+double MDFlexParser::getSigma() const { return sigma;}
+
+double MDFlexParser::getDeltaT() const { return delta_t;
+}
+
+double MDFlexParser::getMass() const { return mass; }

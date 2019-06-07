@@ -76,7 +76,7 @@ class MoleculeLJ : public Particle {
     /**set OldForce
     * @param OldForce
     */
-  static void setOldf(const std::array<double, 3> &oldf) {
+   static void setOldf(const std::array<double, 3> &oldf) {
         OLDF = oldf;
     }
 
