@@ -5,6 +5,7 @@
  */
 
 #include "TraversalRaceConditionTest.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/StringUtils.h"
 #include "testingHelpers/GridGenerator.h"
 
@@ -34,62 +35,60 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
 #endif
 
   /// @todo: test all containers similar to Newton3OnOffTest
-  auto containerList = {autopas::ContainerOption::linkedCells};
-
-  for (auto &traversalLC : autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals()) {
-    if (traversalLC == autopas::TraversalOption::c01) {
-      // c01 traversal does not work with newton3.
-      // Here only one traversal is tested.
-      continue;
-    }
-    if (traversalLC == autopas::TraversalOption::c01Cuda) {
-      // c01Cuda traversal does not work with DataLayout Option AoS used in this test.
-      continue;
-    }
-    // @TODO: extend Simple Functor for SoA
-    for (auto &dataLayout : /*autopas::allDataLayoutOptions*/ {autopas::DataLayoutOption::aos}) {
-      autopas::AutoPas<Particle, FPCell> autoPas;
-
-      auto traversalList = {traversalLC};
-
-      // generates one cell per particle + 1 halo layer
-      autoPas.setBoxMin(boxMin);
-      autoPas.setBoxMax(boxMax);
-      autoPas.setCutoff(cellLength);
-      autoPas.setAllowedContainers(containerList);
-      autoPas.setAllowedTraversals(traversalList);
-      autoPas.setAllowedDataLayouts({dataLayout});
-      autoPas.init();
-
-      auto defaultParticle = Particle({0, 0, 0}, {0, 0, 0}, 0);
-      GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
-
-      SimpleFunctor functor;
-
-      autoPas.iteratePairwise(&functor);
-
-      for (auto particleIterator = autoPas.begin(); particleIterator.isValid(); ++particleIterator) {
-        if (particleIterator->getR()[0] == .5 || particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||
-            particleIterator->getR()[1] == .5 || particleIterator->getR()[1] == particlesPerDimension[1] - .5 ||
-            particleIterator->getR()[2] == .5 || particleIterator->getR()[2] == particlesPerDimension[2] - .5)
-          continue;
-        // for debugging:
-        //    particleIterator->print();
-
-        // although these are doubles this should be exactly zero
-        ASSERT_EQ(particleIterator->getF()[0], 0)
-            << "in traversal: " << autopas::utils::StringUtils::to_string(traversalLC)
-            << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
-        ASSERT_EQ(particleIterator->getF()[1], 0)
-            << "in traversal: " << autopas::utils::StringUtils::to_string(traversalLC)
-            << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
-        ASSERT_EQ(particleIterator->getF()[2], 0)
-            << "in traversal: " << autopas::utils::StringUtils::to_string(traversalLC)
-            << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+  for (auto &container : {autopas::ContainerOption::linkedCells}) {
+    for (auto &traversal : autopas::compatibleTraversals::allCompatibleTraversals(container)) {
+      if (traversal == autopas::TraversalOption::c01) {
+        // c01 traversal does not work with newton3.
+        // Here only one traversal is tested.
+        continue;
       }
-    }
+      if (traversal == autopas::TraversalOption::c01Cuda) {
+        // c01Cuda traversal does not work with DataLayout Option AoS used in this test.
+        continue;
+      }
+      // @TODO: extend Simple Functor for SoA
+      for (auto &dataLayout : /*autopas::allDataLayoutOptions*/ {autopas::DataLayoutOption::aos}) {
+        autopas::AutoPas<Particle, FPCell> autoPas;
+
+        // generates one cell per particle + 1 halo layer
+        autoPas.setBoxMin(boxMin);
+        autoPas.setBoxMax(boxMax);
+        autoPas.setCutoff(cellLength);
+        autoPas.setAllowedContainers({container});
+        autoPas.setAllowedTraversals({traversal});
+        autoPas.setAllowedDataLayouts({dataLayout});
+        autoPas.init();
+
+        auto defaultParticle = Particle({0, 0, 0}, {0, 0, 0}, 0);
+        GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
+
+        SimpleFunctor functor;
+
+        autoPas.iteratePairwise(&functor);
+
+        for (auto particleIterator = autoPas.begin(); particleIterator.isValid(); ++particleIterator) {
+          if (particleIterator->getR()[0] == .5 || particleIterator->getR()[0] == particlesPerDimension[0] - .5 ||
+              particleIterator->getR()[1] == .5 || particleIterator->getR()[1] == particlesPerDimension[1] - .5 ||
+              particleIterator->getR()[2] == .5 || particleIterator->getR()[2] == particlesPerDimension[2] - .5)
+            continue;
+          // for debugging:
+          //    particleIterator->print();
+
+          // although these are doubles this should be exactly zero
+          ASSERT_EQ(particleIterator->getF()[0], 0)
+              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
+              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+          ASSERT_EQ(particleIterator->getF()[1], 0)
+              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
+              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+          ASSERT_EQ(particleIterator->getF()[2], 0)
+              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
+              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+        }
+      }
 #ifdef AUTOPAS_OPENMP
-    omp_set_num_threads(numThreadsBefore);
+      omp_set_num_threads(numThreadsBefore);
 #endif
+    }
   }
 }
