@@ -141,23 +141,22 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * Searches for the provided particle within the halo cells of the container
    * and overwrites the found particle with the provided particle.
    * @param particle
+   * @return true if a particle was found and updated, false if it was not found.
    */
-  void updateHaloParticle(Particle& particle) {
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), _skin);
-    bool updated = false;
+  bool updateHaloParticle(Particle& particle) {
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), this->getSkin());
+    bool updated;
     for (auto cellptr : cells) {
-      updated |= checkParticleInCellAndUpdate(*cellptr, particle);
+      updated = checkParticleInCellAndUpdate(*cellptr, particle);
       if (updated) {
-        continue;
+        return true;
       }
     }
-    if (not updated) {
-      AutoPasLog(error,
-                 "VerletLists: updateHaloParticle was not able to update particle at "
-                 "[{}, {}, {}]",
-                 particle.getR()[0], particle.getR()[1], particle.getR()[2]);
-      utils::ExceptionHandler::exception("VerletLists: updateHaloParticle could not find any particle");
-    }
+    AutoPasLog(trace,
+               "VerletLists: updateHaloParticle was not able to update particle at "
+               "[{}, {}, {}]",
+               particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+    return false;
   }
 
   /**
