@@ -17,13 +17,13 @@ enum TuningStrategyOption {
   /**
    * Tests all allowed configurations and select the best.
    */
-  exhaustiveSearch = 0,
+  fullSearch = 0,
 };
 
 /**
  * Provides a way to iterate over the possible choices of TuningStrategy.
  */
 static const std::set<TuningStrategyOption> allTuningStrategyOptions = {
-    TuningStrategyOption::exhaustiveSearch,
+    TuningStrategyOption::fullSearch,
 };
 }  // namespace autopas

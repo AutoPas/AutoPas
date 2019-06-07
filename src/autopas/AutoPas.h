@@ -46,7 +46,7 @@ class AutoPas {
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
         _numSamples(3),
-        _tuningStrategyOption(TuningStrategyOption::exhaustiveSearch),
+        _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
         _allowedTraversals(allTraversalOptions),
@@ -395,7 +395,7 @@ class AutoPas {
    */
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
-      case TuningStrategyOption::exhaustiveSearch:
+      case TuningStrategyOption::fullSearch:
         return std::make_unique<FullSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
                                             _allowedNewton3Options);
     }
