@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <vector>
+#include <set>
 
 namespace autopas {
 /**
@@ -17,7 +17,7 @@ enum DataLayoutOption { aos, soa, cuda };
 /**
  * Provides a way to iterate over the possible choices of data layouts.
  */
-static const std::vector<DataLayoutOption> allDataLayoutOptions = {
+static const std::set<DataLayoutOption> allDataLayoutOptions = {
     DataLayoutOption::aos,
     DataLayoutOption::soa,
 #if defined(AUTOPAS_CUDA)

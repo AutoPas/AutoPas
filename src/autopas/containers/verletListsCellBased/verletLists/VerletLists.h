@@ -68,20 +68,10 @@ class VerletLists
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals(), cellSizeFactor),
+            boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVLCompatibleTraversals(),
+            cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
-
-  /**
-   * Lists all traversal options applicable for the Verlet Lists container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption>& allVLApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::verletTraversal};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allVLApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 

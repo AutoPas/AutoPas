@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <vector>
+#include <set>
 
 namespace autopas {
 /**
@@ -17,7 +17,7 @@ enum Newton3Option { enabled, disabled };
 /**
  * Provides a way to iterate over the possible choices of data layouts.
  */
-static const std::vector<Newton3Option> allNewton3Options = {
+static const std::set<Newton3Option> allNewton3Options = {
     Newton3Option::enabled,
     Newton3Option::disabled,
 };
