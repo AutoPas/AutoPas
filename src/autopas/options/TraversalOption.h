@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <vector>
+#include <set>
 
 namespace autopas {
 
@@ -31,7 +31,7 @@ enum TraversalOption {
 /**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
-static const std::vector<TraversalOption> allTraversalOptions = {
+static const std::set<TraversalOption> allTraversalOptions = {
     TraversalOption::c08,
     TraversalOption::sliced,
     TraversalOption::c18,

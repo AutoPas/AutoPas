@@ -24,7 +24,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
-#include "autopas/options/SelectorStrategie.h"
+#include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Logger.h"

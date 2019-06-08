@@ -19,9 +19,9 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
 
   transform(contTravStr.begin(), contTravStr.end(), contTravStr.begin(), ::tolower);
   transform(dataLayoutStr.begin(), dataLayoutStr.end(), dataLayoutStr.begin(), ::tolower);
-  auto containerOption = autopas::utils::StringUtils::parseContainerOptions(contTravStr)[0];
-  auto traversalOption = autopas::utils::StringUtils::parseTraversalOptions(contTravStr)[0];
-  auto dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(dataLayoutStr)[0];
+  auto containerOption = autopas::utils::StringUtils::parseContainerOptions(contTravStr).begin().operator*();
+  auto traversalOption = autopas::utils::StringUtils::parseTraversalOptions(contTravStr).begin().operator*();
+  auto dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(dataLayoutStr).begin().operator*();
   countFunctorCalls(containerOption, traversalOption, dataLayoutOption);
 }
 
