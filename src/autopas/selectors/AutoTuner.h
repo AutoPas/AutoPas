@@ -277,7 +277,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
     }
 #if defined(AUTOPAS_CUDA)
     case DataLayoutOption::cuda: {
-      if (_tuningStrategy->getCurrentConfiguration()._newton3 == Newton3Option::enabled) {
+      if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ true,
                                         /*tuning*/ true>(f);
