@@ -80,10 +80,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'a': {
-        cellSizeFactors = autopas::utils::StringUtils::parseDouble(strArg);
-        if (cellSizeFactors.empty()) {
+        std::set<double> values = autopas::utils::StringUtils::parseDouble(strArg);
+        if (values.empty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
+        } else {
+          cellSizeFactors = std::make_unique<autopas::DoubleFiniteSet>(values);
         }
         break;
       }
@@ -377,7 +379,7 @@ void MDFlexParser::printConfig() {
        << ":  " << cutoff << endl;
 
   cout << setw(valueOffset) << left << "Cell size factor"
-       << ":  " << iterableToString(cellSizeFactors) << endl;
+       << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
 
   cout << setw(valueOffset) << left << "Particle Generator"
        << ":  ";
@@ -434,7 +436,7 @@ std::set<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { r
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 
-std::set<double> MDFlexParser::getCellSizeFactors() const { return cellSizeFactors; }
+const autopas::DoubleSet &MDFlexParser::getCellSizeFactors() const { return *cellSizeFactors; }
 
 std::set<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
 

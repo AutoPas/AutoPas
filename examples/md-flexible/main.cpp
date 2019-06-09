@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
   auto containerChoice(parser.getContainerOptions());
   auto selectorStrategy(parser.getSelectorStrategy());
   auto cutoff(parser.getCutoff());
-  auto cellSizeFactors(parser.getCellSizeFactors());
+  auto &cellSizeFactors(parser.getCellSizeFactors());
   auto dataLayoutOptions(parser.getDataLayoutOptions());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
