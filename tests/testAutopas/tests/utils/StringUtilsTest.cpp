@@ -29,6 +29,10 @@ TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
 #endif
 }
 
+TEST(StringUtilsTest, parseDoublesTest) {
+  testParseMultiple<double>({1., 1.5, 2., 3., 20.}, "1.,1.5, 2,3.00,2e1", autopas::utils::StringUtils::parseDouble);
+}
+
 TEST(StringUtilsTest, parseSelectorOptionsTest) {
   testParseSingle<autopas::SelectorStrategyOption>(autopas::allSelectorStrategies, {"absolute", "median", "mean"},
                                                    autopas::utils::StringUtils::parseSelectorStrategy);

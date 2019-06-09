@@ -7,6 +7,8 @@
 #pragma once
 
 #include <autopas/options/TuningStrategyOption.h>
+#include <cmath>
+#include <exception>
 #include <set>
 #include <string>
 #include <vector>
@@ -169,6 +171,12 @@ inline std::string to_string(const TuningStrategyOption &option) {
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TuningStrategyOption (" + std::to_string(option) + ")";
 }
+/**
+ * Converts a double to its respective string representation.
+ * @param value
+ * @return The string representation.
+ */
+inline std::string to_string(const double &value) { return std::to_string(value); }
 /**
  * All accepted delimiters to split input strings.
  */
@@ -385,6 +393,32 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
   }
   return tuningStrategy;
+}
+
+/**
+ * Converts a string to a set of doubles.
+ * @param doubleString String containing doubles.
+ * @param ignoreUnknownOptions If set to false, 'nan' will be inserted in the return set
+ * for each not parsable word.
+ * @return Set of doubles. If no valid double was found and unknown options are ignored the empty
+ * set is returned.
+ */
+inline std::set<double> parseDouble(const std::string &doubleString, bool ignoreUnknownOptions = true) {
+  auto words = tokenize(doubleString, delimiters);
+
+  std::set<double> doubles;
+
+  for (auto &word : words) {
+    try {
+      double value = stod(word);
+      doubles.insert(value);
+    } catch (const std::exception &) {
+      if (not ignoreUnknownOptions) {
+        doubles.insert(std::nan(""));
+      }
+    }
+  }
+  return doubles;
 }
 }  // namespace StringUtils
 }  // namespace utils

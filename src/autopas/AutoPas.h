@@ -245,7 +245,7 @@ class AutoPas {
 
   /**
    * Set allowed cell size factors to one element (only relevant for LinkedCells, VerletLists and VerletListsCells).
-   * @param allowedCellSizeFactors
+   * @param cellSizeFactor
    */
   void setCellSizeFactor(double cellSizeFactor) {
     if (cellSizeFactor <= 0.0) {
