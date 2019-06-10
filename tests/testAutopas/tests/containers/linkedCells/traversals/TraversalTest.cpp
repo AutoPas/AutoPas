@@ -136,10 +136,10 @@ TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
 
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
                          Combine(ValuesIn([]() -> std::set<autopas::TraversalOption> {
-                                     auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
-                                     allTraversals.erase(autopas::TraversalOption::c01Cuda);
-                                     allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
-                                     return allTraversals;
+                                   auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
+                                   allTraversals.erase(autopas::TraversalOption::c01Cuda);
+                                   allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
+                                   return allTraversals;
                                  }()),
                                  Bool()),
                          TraversalTest::PrintToStringParamName());
