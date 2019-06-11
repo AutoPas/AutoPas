@@ -142,7 +142,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     //double epsilon,sigma  = 1.0;
     string logFileName(parser.getLogFileName());
     auto measureFlops(parser.getMeasureFlops()); //@todo un-used
-    auto numIterations(parser.getIterations()); //@todo un-use
+    auto numIterations(parser.getIterations());
     auto particlesTotal(parser.getParticlesTotal());
     auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
     auto vtkFilename(parser.getWriteVTK()); //
@@ -155,7 +155,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     auto distributionStdDev(parser.getDistributionStdDev());
     auto functorChoice(parser.getFunctorOption());              //@todo un-used
     auto generatorChoice(parser.getGeneratorOption());
-    auto logLevel(parser.getLogLevel());                           //@todo un-used
     auto newton3Options(parser.getNewton3Options());
     auto particleSpacing(parser.getParticleSpacing());
     auto particlesPerDim(parser.getParticlesPerDim());
@@ -180,7 +179,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     Particle::setSigma(1.0);
     Particle::setMass(1.0);
     std::array<double, 3> oldf = {1.0, 1.0, 1.0};
-    PrintableMolecule::setOldf(oldf);
 
     switch (generatorChoice) {
         case MDFlexParser::GeneratorOption::grid: {
@@ -279,7 +277,7 @@ void Simulation<Particle,ParticleCell>::CalcF(){
     //@ TODO: switch for other functors --> mit boolean object?
     //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
     //_autopas->iteratePairwise(this->_Functor);
-    autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
+    auto* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
     _autopas->iteratePairwise(functor);
     delete functor;
     functor=NULL;
@@ -298,6 +296,7 @@ long Simulation<Particle, ParticleCell>::simulate(){
     double time=0;
     double timeEnd= this->delta_t * (double)this->iterations;
     TimeDiscretization<decltype(_autopas)> td(particleDelta_T);
+
     //main simulation loop
 
     while(time<timeEnd){

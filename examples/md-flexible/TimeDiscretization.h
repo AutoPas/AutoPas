@@ -14,7 +14,6 @@
 #include "autopas/utils/ArrayMath.h"
 
 
-//idee: Die TimeDiskretization Methode als Template weiterzugeben, und somit pro verschiede Diskretisierungsmethode eine Klasse/Functor zu schreiben
 
 
 template <class AutoPasTemplate>
@@ -24,12 +23,11 @@ public:
     TimeDiscretization(double particleDeltaT);
 
     virtual ~TimeDiscretization() {
-    //@todo
     }
 
     /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
-    long VSCalculateX(AutoPasTemplate autopas); //@todo FRAGE__Conversion von ParticleCell nach FullParticleCell mag der Compiler nicht
+    long VSCalculateX(AutoPasTemplate autopas);
 
     /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
@@ -41,7 +39,7 @@ public:
 private:
     /**  Duration of a timestep
      * */
-    double particle_delta_t;        // @todo: add particle_delta, time_end -> main and parser
+    double particle_delta_t;
 
 };
 
@@ -52,7 +50,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate autopas) 
 #pragma omp parallel
     for (auto iter = autopas->getContainer()->begin(); iter.isValid(); ++iter) {
         auto v = iter->getV();
-        auto m = autopas::MoleculeLJ::getMass();
+        auto m = iter->getMass();
         auto f = iter->getF();
         v = autopas::ArrayMath::mulScalar(v, this->particle_delta_t);
         f= autopas::ArrayMath::mulScalar(f,(particle_delta_t * particle_delta_t / (2 * m)));
@@ -71,9 +69,9 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate autopas) 
     startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
     for (auto iter = autopas->getContainer()->begin(); iter.isValid(); ++iter) {
-        auto m = autopas::MoleculeLJ::getMass();
+        auto m = iter->getMass();
         auto force = iter->getF();
-        auto old_force= autopas::MoleculeLJ::getOldf();  //@todo : implement right old_force interface (Particle -> inherent to MoleculeLJ -> PrintableMolecule)
+        auto old_force= iter->getMass();  //@todo : implement right old_force interface (Particle -> inherent to MoleculeLJ -> PrintableMolecule)
         auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force,old_force)) , particle_delta_t/(2*m));
         iter->addV(newV);
     }
