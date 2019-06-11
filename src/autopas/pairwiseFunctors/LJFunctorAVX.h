@@ -406,41 +406,43 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d fy1 = masked1 ? _mm256_maskload_pd(&fy1ptr[0], mask1) : _mm256_load_pd(&fy1ptr[0]);
     __m256d fz1 = masked1 ? _mm256_maskload_pd(&fz1ptr[0], mask1) : _mm256_load_pd(&fz1ptr[0]);
 
-    double x2ptrPerm[4] = {0.0,0.0,0.0,0.0};
-    double y2ptrPerm[4] = {0.0,0.0,0.0,0.0};
-    double z2ptrPerm[4] = {0.0,0.0,0.0,0.0};
+    double x2ptrPerm[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double y2ptrPerm[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double z2ptrPerm[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double fx2ptrPerm[4] = {0.0,0.0,0.0,0.0};
     double fy2ptrPerm[4] = {0.0,0.0,0.0,0.0};
     double fz2ptrPerm[4] = {0.0,0.0,0.0,0.0};
 
-    size_t sizeofRest = masked2 ? r2 * sizeof(x2ptrPerm[0]) : sizeof(x2ptrPerm);
+    size_t sizeofRest = masked2 ? r2 * sizeof(x2ptrPerm[0]) : (4*sizeof(double));
 
     std::memcpy(x2ptrPerm, x2ptr, sizeofRest);
     std::memcpy(y2ptrPerm, y2ptr, sizeofRest);
     std::memcpy(z2ptrPerm, z2ptr, sizeofRest);
 
-    std::memcpy(fx2ptrPerm, fx2ptr, sizeofRest);
-    std::memcpy(fy2ptrPerm, fy2ptr, sizeofRest);
-    std::memcpy(fz2ptrPerm, fz2ptr, sizeofRest);
+    std::memcpy(&x2ptrPerm[4], x2ptr, sizeofRest);
+    std::memcpy(&y2ptrPerm[4], y2ptr, sizeofRest);
+    std::memcpy(&z2ptrPerm[4], z2ptr, sizeofRest);
+
+    std::memcpy(&fx2ptrPerm[0], fx2ptr, sizeofRest);
+    std::memcpy(&fy2ptrPerm[0], fy2ptr, sizeofRest);
+    std::memcpy(&fz2ptrPerm[0], fz2ptr, sizeofRest);
 
     unsigned long mask2ptrPerm[4];
     std::memcpy(mask2ptrPerm, mask2ptr, sizeof(mask2ptrPerm));
 
-    for (int a = 0; a < 4; a++) {
-      
-      std::rotate(x2ptrPerm, x2ptrPerm + 1, x2ptrPerm + 4);
-      std::rotate(y2ptrPerm, y2ptrPerm + 1, y2ptrPerm + 4);
-      std::rotate(z2ptrPerm, z2ptrPerm + 1, z2ptrPerm + 4);
-      std::rotate(fx2ptrPerm, fx2ptrPerm + 1, fx2ptrPerm + 4);
-      std::rotate(fy2ptrPerm, fy2ptrPerm + 1, fy2ptrPerm + 4);
-      std::rotate(fz2ptrPerm, fz2ptrPerm + 1, fz2ptrPerm + 4);
-      std::rotate(mask2ptrPerm, mask2ptrPerm + 1, mask2ptrPerm + 4);
+    for (unsigned int a = 0; a < 4; a++) {
+
+      /*
+       *std::cout << "x rotation: " << a << " " << x2ptrPerm[a] << " "  << x2ptrPerm[a+1] << " " << x2ptrPerm[a+2] << " " << x2ptrPerm[a+3] << " " << std::endl;
+       *std::cout << "mask ation: " << a << " " << mask2ptrPerm[0] << " "  << mask2ptrPerm[1] << " " << mask2ptrPerm[2] << " " << mask2ptrPerm[3] << " " << std::endl;
+       */
+
 
       __m256i mask2 = _mm256_loadu_si256((__m256i *) &mask2ptrPerm[0]);
 
-      __m256d x2 = masked2 ? _mm256_maskload_pd(&x2ptrPerm[0], mask2) : _mm256_load_pd(&x2ptrPerm[0]);
-      __m256d y2 = masked2 ? _mm256_maskload_pd(&y2ptrPerm[0], mask2) : _mm256_load_pd(&y2ptrPerm[0]);
-      __m256d z2 = masked2 ? _mm256_maskload_pd(&z2ptrPerm[0], mask2) : _mm256_load_pd(&z2ptrPerm[0]);
+      __m256d x2 = masked2 ? _mm256_maskload_pd(&x2ptrPerm[a], mask2) : _mm256_loadu_pd(&x2ptrPerm[a]);
+      __m256d y2 = masked2 ? _mm256_maskload_pd(&y2ptrPerm[a], mask2) : _mm256_loadu_pd(&y2ptrPerm[a]);
+      __m256d z2 = masked2 ? _mm256_maskload_pd(&z2ptrPerm[a], mask2) : _mm256_loadu_pd(&z2ptrPerm[a]);
 
       __m256d fx2 = masked2 ? _mm256_maskload_pd(&fx2ptrPerm[0], mask2) : _mm256_load_pd(&fx2ptrPerm[0]);
       __m256d fy2 = masked2 ? _mm256_maskload_pd(&fy2ptrPerm[0], mask2) : _mm256_load_pd(&fy2ptrPerm[0]);
@@ -483,6 +485,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         masked2 ? _mm256_maskstore_pd(&fy2ptrPerm[0], mask2, fy2) : _mm256_store_pd(&fy2ptrPerm[0], fy2);
         masked2 ? _mm256_maskstore_pd(&fz2ptrPerm[0], mask2, fz2) : _mm256_store_pd(&fz2ptrPerm[0], fz2);
       }
+
+      std::rotate(mask2ptrPerm, mask2ptrPerm + 1, mask2ptrPerm + 4);
+      std::rotate(fx2ptrPerm, fx2ptrPerm + 1, fx2ptrPerm + 4);
+      std::rotate(fy2ptrPerm, fy2ptrPerm + 1, fy2ptrPerm + 4);
+      std::rotate(fz2ptrPerm, fz2ptrPerm + 1, fz2ptrPerm + 4);
 
     }
 
