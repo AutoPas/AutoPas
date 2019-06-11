@@ -139,7 +139,7 @@ class SoA {
    *
    * @return Number of particles.
    */
-  inline constexpr size_t getNumParticles() const { return soaStorage.template get<0>().size() - viewStart; }
+  inline size_t getNumParticles() const { return soaStorage.template get<0>().size() - viewStart; }
 
   /**
    * delete all particles in the soa
