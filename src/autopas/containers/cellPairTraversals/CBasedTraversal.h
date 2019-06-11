@@ -19,6 +19,7 @@ namespace autopas {
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam DataLayout
+ * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, int collapseDepth = 3>
 class CBasedTraversal : public CellPairTraversal<ParticleCell> {
@@ -49,8 +50,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
 
  public:
   /**
-   * load Data Layouts required for this Traversal
-   * @param cells where the data should be loaded
+   * @copydoc CellPairTraversal::initTraversal()
    */
   void initTraversal(std::vector<ParticleCell>& cells) override {
 #ifdef AUTOPAS_OPENMP
@@ -63,8 +63,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   /**
-   * write Data to AoS
-   * @param cells for which the data should be written back
+   * @copydoc CellPairTraversal::endTraversal()
    */
   void endTraversal(std::vector<ParticleCell>& cells) override {
 #ifdef AUTOPAS_OPENMP
