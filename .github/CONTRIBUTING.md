@@ -29,7 +29,7 @@ Please keep in mind the following notes while working.
 
 ### Pull Requests
 *  If you want to contribute a new feature, resolve an issue etc. please create a new branch from `master` where you implement your solution.
-*  Create Pull request agains `master` and fill out our Pull Request form.
+*  Create a pull request against `master` and fill out our Pull Request form.
 *  Please take your time to give a concise description of your solution and how you tested it.
 *  Link related PRs or issues.
 
