@@ -381,6 +381,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 #endif
   }
 
+ private:
+  __m256d rotateRight(__m256d in) {
+    __m256d t0 = _mm256_permute_pd(in, 0x05);           // [x2  x3  x0  x1]
+    __m256d t1 = _mm256_permute2f128_pd(t0, t0, 0x01);  // [x0  x1  x2  x3]
+    __m256d y  = _mm256_blend_pd(t0, t1, 0x0a);         // [x0  x3  x2  x1]
+  return y;
+}
 
  private:
   template <bool masked1, bool masked2>
@@ -397,6 +404,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
 
     __m256i mask1 = _mm256_loadu_si256((__m256i *) &mask1ptr[0]);
+    __m256i mask2 = _mm256_loadu_si256((__m256i *) &mask2ptr[0]);
 
     __m256d x1 = masked1 ? _mm256_maskload_pd(&x1ptr[0], mask1) : _mm256_load_pd(&x1ptr[0]);
     __m256d y1 = masked1 ? _mm256_maskload_pd(&y1ptr[0], mask1) : _mm256_load_pd(&y1ptr[0]);
@@ -406,47 +414,18 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d fy1 = masked1 ? _mm256_maskload_pd(&fy1ptr[0], mask1) : _mm256_load_pd(&fy1ptr[0]);
     __m256d fz1 = masked1 ? _mm256_maskload_pd(&fz1ptr[0], mask1) : _mm256_load_pd(&fz1ptr[0]);
 
-    double x2ptrPerm[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-    double y2ptrPerm[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-    double z2ptrPerm[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-    double fx2ptrPerm[4] = {0.0,0.0,0.0,0.0};
-    double fy2ptrPerm[4] = {0.0,0.0,0.0,0.0};
-    double fz2ptrPerm[4] = {0.0,0.0,0.0,0.0};
+    __m256d x2 = masked2 ? _mm256_maskload_pd(&x2ptr[0], mask2) : _mm256_load_pd(&x2ptr[0]);
+    __m256d y2 = masked2 ? _mm256_maskload_pd(&y2ptr[0], mask2) : _mm256_load_pd(&y2ptr[0]);
+    __m256d z2 = masked2 ? _mm256_maskload_pd(&z2ptr[0], mask2) : _mm256_load_pd(&z2ptr[0]);
 
-    size_t sizeofRest = masked2 ? r2 * sizeof(x2ptrPerm[0]) : (4*sizeof(double));
+    __m256d fx2 = masked2 ? _mm256_maskload_pd(&fx2ptr[0], mask2) : _mm256_load_pd(&fx2ptr[0]);
+    __m256d fy2 = masked2 ? _mm256_maskload_pd(&fy2ptr[0], mask2) : _mm256_load_pd(&fy2ptr[0]);
+    __m256d fz2 = masked2 ? _mm256_maskload_pd(&fz2ptr[0], mask2) : _mm256_load_pd(&fz2ptr[0]);
 
-    std::memcpy(x2ptrPerm, x2ptr, sizeofRest);
-    std::memcpy(y2ptrPerm, y2ptr, sizeofRest);
-    std::memcpy(z2ptrPerm, z2ptr, sizeofRest);
-
-    std::memcpy(&x2ptrPerm[4], x2ptr, sizeofRest);
-    std::memcpy(&y2ptrPerm[4], y2ptr, sizeofRest);
-    std::memcpy(&z2ptrPerm[4], z2ptr, sizeofRest);
-
-    std::memcpy(&fx2ptrPerm[0], fx2ptr, sizeofRest);
-    std::memcpy(&fy2ptrPerm[0], fy2ptr, sizeofRest);
-    std::memcpy(&fz2ptrPerm[0], fz2ptr, sizeofRest);
-
-    unsigned long mask2ptrPerm[4];
-    std::memcpy(mask2ptrPerm, mask2ptr, sizeof(mask2ptrPerm));
 
     for (unsigned int a = 0; a < 4; a++) {
 
-      /*
-       *std::cout << "x rotation: " << a << " " << x2ptrPerm[a] << " "  << x2ptrPerm[a+1] << " " << x2ptrPerm[a+2] << " " << x2ptrPerm[a+3] << " " << std::endl;
-       *std::cout << "mask ation: " << a << " " << mask2ptrPerm[0] << " "  << mask2ptrPerm[1] << " " << mask2ptrPerm[2] << " " << mask2ptrPerm[3] << " " << std::endl;
-       */
 
-
-      __m256i mask2 = _mm256_loadu_si256((__m256i *) &mask2ptrPerm[0]);
-
-      __m256d x2 = masked2 ? _mm256_maskload_pd(&x2ptrPerm[a], mask2) : _mm256_loadu_pd(&x2ptrPerm[a]);
-      __m256d y2 = masked2 ? _mm256_maskload_pd(&y2ptrPerm[a], mask2) : _mm256_loadu_pd(&y2ptrPerm[a]);
-      __m256d z2 = masked2 ? _mm256_maskload_pd(&z2ptrPerm[a], mask2) : _mm256_loadu_pd(&z2ptrPerm[a]);
-
-      __m256d fx2 = masked2 ? _mm256_maskload_pd(&fx2ptrPerm[0], mask2) : _mm256_load_pd(&fx2ptrPerm[0]);
-      __m256d fy2 = masked2 ? _mm256_maskload_pd(&fy2ptrPerm[0], mask2) : _mm256_load_pd(&fy2ptrPerm[0]);
-      __m256d fz2 = masked2 ? _mm256_maskload_pd(&fz2ptrPerm[0], mask2) : _mm256_load_pd(&fz2ptrPerm[0]);
 
       __m256d mask1and2;
       bool masked = false;
@@ -481,22 +460,28 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       
 
       if (newton3) {
-        masked2 ? _mm256_maskstore_pd(&fx2ptrPerm[0], mask2, fx2) : _mm256_store_pd(&fx2ptrPerm[0], fx2);
-        masked2 ? _mm256_maskstore_pd(&fy2ptrPerm[0], mask2, fy2) : _mm256_store_pd(&fy2ptrPerm[0], fy2);
-        masked2 ? _mm256_maskstore_pd(&fz2ptrPerm[0], mask2, fz2) : _mm256_store_pd(&fz2ptrPerm[0], fz2);
+        /*
+         *masked2 ? _mm256_maskstore_pd(&fx2ptrPerm[0], mask2, fx2) : _mm256_store_pd(&fx2ptrPerm[0], fx2);
+         *masked2 ? _mm256_maskstore_pd(&fy2ptrPerm[0], mask2, fy2) : _mm256_store_pd(&fy2ptrPerm[0], fy2);
+         *masked2 ? _mm256_maskstore_pd(&fz2ptrPerm[0], mask2, fz2) : _mm256_store_pd(&fz2ptrPerm[0], fz2);
+         */
       }
 
-      std::rotate(mask2ptrPerm, mask2ptrPerm + 1, mask2ptrPerm + 4);
-      std::rotate(fx2ptrPerm, fx2ptrPerm + 1, fx2ptrPerm + 4);
-      std::rotate(fy2ptrPerm, fy2ptrPerm + 1, fy2ptrPerm + 4);
-      std::rotate(fz2ptrPerm, fz2ptrPerm + 1, fz2ptrPerm + 4);
+      x2 = rotateRight(x2);
+      y2 = rotateRight(y2);
+      z2 = rotateRight(z2);
 
+      fx2 = rotateRight(fx2);
+      fy2 = rotateRight(fy2);
+      fz2 = rotateRight(fz2);
+
+      mask2 = _mm256_castpd_si256(rotateRight(_mm256_castsi256_pd(mask2)));
     }
 
     if (newton3) {
-      std::memcpy(fx2ptr, fx2ptrPerm, sizeofRest);
-      std::memcpy(fy2ptr, fy2ptrPerm, sizeofRest);
-      std::memcpy(fz2ptr, fz2ptrPerm, sizeofRest);
+      masked2 ? _mm256_maskstore_pd(&fx2ptr[0], mask2, fx2) : _mm256_store_pd(&fx2ptr[0], fx2);
+      masked2 ? _mm256_maskstore_pd(&fy2ptr[0], mask2, fy2) : _mm256_store_pd(&fy2ptr[0], fy2);
+      masked2 ? _mm256_maskstore_pd(&fz2ptr[0], mask2, fz2) : _mm256_store_pd(&fz2ptr[0], fz2);
     }
 
     masked1 ? _mm256_maskstore_pd(&fx1ptr[0], mask1, fx1) : _mm256_store_pd(&fx1ptr[0], fx1);
