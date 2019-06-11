@@ -30,6 +30,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
+                                         {"tuning-strategy", required_argument, nullptr, 'T'},
                                          {"log-level", required_argument, nullptr, 'l'},
                                          {"log-file", required_argument, nullptr, 'L'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
@@ -158,7 +159,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'y': {
         selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (selectorStrategy == autopas::SelectorStrategy(-1)) {
+        if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
           cerr << "Unknown Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
@@ -261,6 +262,15 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal: " << strArg << endl;
           cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'T': {
+        tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(strArg);
+        if (tuningStrategyOption == autopas::TuningStrategyOption(-1)) {
+          cerr << "Unknown Tuning Strategy: " << strArg << endl;
+          cerr << "Please use 'full-search'!" << endl;
           displayHelp = true;
         }
         break;
@@ -421,13 +431,13 @@ void MDFlexParser::printConfig() {
        << ":  " << tuningSamples << endl;
 }
 
-std::vector<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
+std::set<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 
 double MDFlexParser::getCellSizeFactor() const { return cellSizeFactor; }
 
-vector<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
+std::set<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
 
 MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const { return functorOption; }
 
@@ -439,7 +449,7 @@ double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
 
 size_t MDFlexParser::getParticlesTotal() const { return particlesTotal; }
 
-const vector<autopas::TraversalOption> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
+const std::set<autopas::TraversalOption> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
 
 unsigned int MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
@@ -451,7 +461,7 @@ double MDFlexParser::getDistributionMean() const { return distributionMean; }
 
 double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; }
 
-string MDFlexParser::getWriteVTK() const { return writeVTK; }
+std::string MDFlexParser::getWriteVTK() const { return writeVTK; }
 
 double MDFlexParser::getBoxLength() {
   if (boxLength == -1) boxLength = ceil(2 * distributionMean);
@@ -466,8 +476,10 @@ unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 
-autopas::SelectorStrategy MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
+autopas::SelectorStrategyOption MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
 
-std::vector<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
+std::set<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
 
 const string &MDFlexParser::getLogFileName() const { return logFileName; }
+
+autopas::TuningStrategyOption MDFlexParser::getTuningStrategyOption() const { return tuningStrategyOption; }
