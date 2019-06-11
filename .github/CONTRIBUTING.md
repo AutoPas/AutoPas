@@ -38,5 +38,5 @@ Please keep in mind the following notes while working.
 *  Tag the issues you write appropriately.
 
 ### Commits
-*  Use meaningfull commit messages.
+*  Use meaningful commit messages.
 *  Please avoid using commits to save your unfinished work before switching branches, this pollutes the commit history. Please use `git stash` instead.
