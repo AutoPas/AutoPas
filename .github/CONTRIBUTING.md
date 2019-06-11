@@ -32,6 +32,8 @@ Please keep in mind the following notes while working.
 *  Create a pull request against `master` and fill out our Pull Request form.
 *  Please take your time to give a concise description of your solution and how you tested it.
 *  Link related PRs or issues.
+*  The CI server will check your PR for correct formatting and complete documentation. It also executes all unit tests and several examples with all supported compilers with and without sanitizers.
+*  To merge your PR back to master, at least one review of a project admin is required.
 
 ### Issues
 *  Feel free to open issues for bugs, feature requests or optimization ideas.
