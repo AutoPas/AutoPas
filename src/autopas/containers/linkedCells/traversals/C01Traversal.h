@@ -255,8 +255,14 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout
 inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   if (not this->isApplicable()) {
-    utils::ExceptionHandler::exception(
-        "The C01 traversal cannot work with enabled newton3 (unless only one thread is used)!");
+    if (combineSoA) {
+      utils::ExceptionHandler::exception(
+          "The C01 traversal with combined SoA buffers cannot work with enabled newton3 (unless only one thread is "
+          "used) and data layout AoS!");
+    } else {
+      utils::ExceptionHandler::exception(
+          "The C01 traversal cannot work with enabled newton3 (unless only one thread is used)!");
+    }
   }
   // resize buffers
   if (DataLayout == DataLayoutOption::soa) {
