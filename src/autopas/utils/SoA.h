@@ -56,7 +56,7 @@ class SoA {
   }
 
   /**
-   * @brief appends an other SoA buffer.
+   * Appends the other SoA buffer.
    * @param other other buffer.
    */
   void append(SoA<SoAArraysType> &other) {
@@ -66,7 +66,7 @@ class SoA {
   }
 
   /**
-   * @brief Writes / updates values of attributes for a specific particle.
+   * Writes or updates values of attributes for a specific particle.
    * @tparam attributes Array of attributes to update.
    * @tparam ValueArrayType type of the array
    * @param particleId Particle to update.
@@ -158,7 +158,7 @@ class SoA {
   }
 
   /**
-   * delete the last particle in the soa.
+   * Delete the last particle in the SoA.
    */
   void pop_back() {
     soaStorage.apply([](auto &list) { list.pop_back(); });
