@@ -382,11 +382,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
  private:
-  __m256d rotateRight(__m256d in) {
-    __m256d t0 = _mm256_permute_pd(in, 0x05);           // [x2  x3  x0  x1]
-    __m256d t1 = _mm256_permute2f128_pd(t0, t0, 0x01);  // [x0  x1  x2  x3]
-    __m256d y  = _mm256_blend_pd(t0, t1, 0x0a);         // [x0  x3  x2  x1]
-  return y;
+  template <bool stage>
+  __m256d permute(__m256d in) {
+    if (stage) {
+      return _mm256_permute_pd(in, 0x05);           // [x2  x3  x0  x1]
+    } else {
+      return _mm256_permute2f128_pd(in, in, 0x01);  // [x1  x0  x3  x2]
+    }
 }
 
  private:
@@ -460,18 +462,33 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       
 
 
-      x2 = rotateRight(x2);
-      y2 = rotateRight(y2);
-      z2 = rotateRight(z2);
+      if (a%2) {
+      x2 = permute<true>(x2);
+      y2 = permute<true>(y2);
+      z2 = permute<true>(z2);
 
     
-      if (newton3) {
-        fx2 = rotateRight(fx2);
-        fy2 = rotateRight(fy2);
-        fz2 = rotateRight(fz2);
-      }
+        if (newton3) {
+          fx2 = permute<true>(fx2);
+          fy2 = permute<true>(fy2);
+          fz2 = permute<true>(fz2);
+        }
 
-      mask2 = _mm256_castpd_si256(rotateRight(_mm256_castsi256_pd(mask2)));
+      mask2 = _mm256_castpd_si256(permute<true>(_mm256_castsi256_pd(mask2)));
+      } else {
+      x2 = permute<false>(x2);
+      y2 = permute<false>(y2);
+      z2 = permute<false>(z2);
+
+    
+        if (newton3) {
+          fx2 = permute<false>(fx2);
+          fy2 = permute<false>(fy2);
+          fz2 = permute<false>(fz2);
+        }
+
+      mask2 = _mm256_castpd_si256(permute<false>(_mm256_castsi256_pd(mask2)));
+      }
     }
 
     if (newton3) {
