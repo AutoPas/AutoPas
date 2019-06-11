@@ -28,7 +28,7 @@ Please keep in mind the following notes while working.
 ## GitHub
 
 ### Pull Requests
-*  If you want to contribute a new feature, resolve an issue etc. please create a new branch from `master` where you implement your solution.
+*  If you want to contribute a new feature, resolve an issue etc. please create a new branch or alternatively fork from `master` where you implement your solution.
 *  Create a pull request against `master` and fill out our Pull Request form.
 *  Please take your time to give a concise description of your solution and how you tested it.
 *  Link related PRs or issues.
