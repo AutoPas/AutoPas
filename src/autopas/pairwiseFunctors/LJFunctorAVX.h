@@ -8,6 +8,7 @@
 
 #include <immintrin.h>
 #include <array>
+#include <algorithm>
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -380,18 +381,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 #endif
   }
 
- private:
-  void permute(int* perm, auto* from, auto* to) {
-    for (int a = 0; a < 4; a++) {
-      to[perm[a]] = from[a];
-    }
-  }
- private:
-  void invpermute(int* perm, auto* from, auto* to, int max = 4) {
-    for (int a = 0; a < max; a++) {
-      to[a] = from[perm[a]];
-    }
-  }
 
  private:
   template <bool masked1, bool masked2>
@@ -402,19 +391,10 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     int permArray[4][4] = {{0,1,2,3},{1,2,3,0},{2,3,0,1},{3,0,1,2}};
 
 
-    //unsigned long masks [4][4] = {{0,0,0,0},{ULONG_MAX,ULONG_MAX,ULONG_MAX,0},{ULONG_MAX,ULONG_MAX,0,0},{ULONG_MAX,0,0,0}};
-    unsigned long masks [4][4] = {{0,0,0,0},{ULONG_MAX,0,0,0},{ULONG_MAX,ULONG_MAX,0,0},{ULONG_MAX,ULONG_MAX,ULONG_MAX,0}};
+    unsigned long masks [4][4] = {{ULONG_MAX, ULONG_MAX, ULONG_MAX, ULONG_MAX},{ULONG_MAX,0,0,0},{ULONG_MAX,ULONG_MAX,0,0},{ULONG_MAX,ULONG_MAX,ULONG_MAX,0}};
     unsigned long *mask1ptr = masks[r1]; //depends on r1
     unsigned long *mask2ptr = masks[r2]; //depends on r2
 
-    /*
-     *if (masked1) {
-     *  std::cout << "r1: " << r1 << " " << mask1ptr[0] << " " << mask1ptr[1] << " " << mask1ptr[2] << " " << mask1ptr[3] << " " << std::endl;
-     *}
-     *if (masked2) {
-     *  std::cout << "r2: " << r2 << " " << mask2ptr[0] << " " << mask2ptr[1] << " " << mask2ptr[2] << " " << mask2ptr[3] << " " << std::endl;
-     *}
-     */
 
     __m256i mask1 = _mm256_loadu_si256((__m256i *) &mask1ptr[0]);
 
@@ -426,25 +406,37 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d fy1 = masked1 ? _mm256_maskload_pd(&fy1ptr[0], mask1) : _mm256_load_pd(&fy1ptr[0]);
     __m256d fz1 = masked1 ? _mm256_maskload_pd(&fz1ptr[0], mask1) : _mm256_load_pd(&fz1ptr[0]);
 
+    double x2ptrPerm[4] = {0.0,0.0,0.0,0.0};
+    double y2ptrPerm[4] = {0.0,0.0,0.0,0.0};
+    double z2ptrPerm[4] = {0.0,0.0,0.0,0.0};
+    double fx2ptrPerm[4] = {0.0,0.0,0.0,0.0};
+    double fy2ptrPerm[4] = {0.0,0.0,0.0,0.0};
+    double fz2ptrPerm[4] = {0.0,0.0,0.0,0.0};
+
+    size_t sizeofRest = masked2 ? r2 * sizeof(x2ptrPerm[0]) : sizeof(x2ptrPerm);
+
+    std::memcpy(x2ptrPerm, x2ptr, sizeofRest);
+    std::memcpy(y2ptrPerm, y2ptr, sizeofRest);
+    std::memcpy(z2ptrPerm, z2ptr, sizeofRest);
+
+    std::memcpy(fx2ptrPerm, fx2ptr, sizeofRest);
+    std::memcpy(fy2ptrPerm, fy2ptr, sizeofRest);
+    std::memcpy(fz2ptrPerm, fz2ptr, sizeofRest);
+
+    unsigned long mask2ptrPerm[4];
+    std::memcpy(mask2ptrPerm, mask2ptr, sizeof(mask2ptrPerm));
+
     for (int a = 0; a < 4; a++) {
-      double x2ptrPerm[4];
-      double y2ptrPerm[4];
-      double z2ptrPerm[4];
-      permute(permArray[a], x2ptr, x2ptrPerm);
-      permute(permArray[a], y2ptr, y2ptrPerm);
-      permute(permArray[a], z2ptr, z2ptrPerm);
+      
+      std::rotate(x2ptrPerm, x2ptrPerm + 1, x2ptrPerm + 4);
+      std::rotate(y2ptrPerm, y2ptrPerm + 1, y2ptrPerm + 4);
+      std::rotate(z2ptrPerm, z2ptrPerm + 1, z2ptrPerm + 4);
+      std::rotate(fx2ptrPerm, fx2ptrPerm + 1, fx2ptrPerm + 4);
+      std::rotate(fy2ptrPerm, fy2ptrPerm + 1, fy2ptrPerm + 4);
+      std::rotate(fz2ptrPerm, fz2ptrPerm + 1, fz2ptrPerm + 4);
+      std::rotate(mask2ptrPerm, mask2ptrPerm + 1, mask2ptrPerm + 4);
 
-      double fx2ptrPerm[4];
-      double fy2ptrPerm[4];
-      double fz2ptrPerm[4];
-      permute(permArray[a], fx2ptr, fx2ptrPerm);
-      permute(permArray[a], fy2ptr, fy2ptrPerm);
-      permute(permArray[a], fz2ptr, fz2ptrPerm);
-
-      unsigned long mask2ptrPerm[4];
-      permute(permArray[a], mask2ptr, mask2ptrPerm);
       __m256i mask2 = _mm256_loadu_si256((__m256i *) &mask2ptrPerm[0]);
-
 
       __m256d x2 = masked2 ? _mm256_maskload_pd(&x2ptrPerm[0], mask2) : _mm256_load_pd(&x2ptrPerm[0]);
       __m256d y2 = masked2 ? _mm256_maskload_pd(&y2ptrPerm[0], mask2) : _mm256_load_pd(&y2ptrPerm[0]);
@@ -486,28 +478,23 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       }
       
 
-      double fx2resultPtrPerm [4];
-      double fy2resultPtrPerm [4];
-      double fz2resultPtrPerm [4];
-
-      masked2 ? _mm256_maskstore_pd(&fx2resultPtrPerm[0], mask2, fx2) : _mm256_store_pd(&fx2resultPtrPerm[0], fx2);
-      masked2 ? _mm256_maskstore_pd(&fy2resultPtrPerm[0], mask2, fy2) : _mm256_store_pd(&fy2resultPtrPerm[0], fy2);
-      masked2 ? _mm256_maskstore_pd(&fz2resultPtrPerm[0], mask2, fz2) : _mm256_store_pd(&fz2resultPtrPerm[0], fz2);
-
-      if (!masked2){
-        invpermute(permArray[a], &fx2resultPtrPerm[0], &fx2ptr[0]);
-        invpermute(permArray[a], &fy2resultPtrPerm[0], &fy2ptr[0]);
-        invpermute(permArray[a], &fz2resultPtrPerm[0], &fz2ptr[0]);
-      } else {
-        invpermute(permArray[a], &fx2resultPtrPerm[0], &fx2ptr[0], r2);
-        invpermute(permArray[a], &fy2resultPtrPerm[0], &fy2ptr[0], r2);
-        invpermute(permArray[a], &fz2resultPtrPerm[0], &fz2ptr[0], r2);
+      if (newton3) {
+        masked2 ? _mm256_maskstore_pd(&fx2ptrPerm[0], mask2, fx2) : _mm256_store_pd(&fx2ptrPerm[0], fx2);
+        masked2 ? _mm256_maskstore_pd(&fy2ptrPerm[0], mask2, fy2) : _mm256_store_pd(&fy2ptrPerm[0], fy2);
+        masked2 ? _mm256_maskstore_pd(&fz2ptrPerm[0], mask2, fz2) : _mm256_store_pd(&fz2ptrPerm[0], fz2);
       }
 
     }
-      masked1 ? _mm256_maskstore_pd(&fx1ptr[0], mask1, fx1) : _mm256_store_pd(&fx1ptr[0], fx1);
-      masked1 ? _mm256_maskstore_pd(&fy1ptr[0], mask1, fy1) : _mm256_store_pd(&fy1ptr[0], fy1);
-      masked1 ? _mm256_maskstore_pd(&fz1ptr[0], mask1, fz1) : _mm256_store_pd(&fz1ptr[0], fz1);
+
+    if (newton3) {
+      std::memcpy(fx2ptr, fx2ptrPerm, sizeofRest);
+      std::memcpy(fy2ptr, fy2ptrPerm, sizeofRest);
+      std::memcpy(fz2ptr, fz2ptrPerm, sizeofRest);
+    }
+
+    masked1 ? _mm256_maskstore_pd(&fx1ptr[0], mask1, fx1) : _mm256_store_pd(&fx1ptr[0], fx1);
+    masked1 ? _mm256_maskstore_pd(&fy1ptr[0], mask1, fy1) : _mm256_store_pd(&fy1ptr[0], fy1);
+    masked1 ? _mm256_maskstore_pd(&fz1ptr[0], mask1, fz1) : _mm256_store_pd(&fz1ptr[0], fz1);
   }
 
  public:
