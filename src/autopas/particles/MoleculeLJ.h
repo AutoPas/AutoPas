@@ -86,7 +86,7 @@ private:
   /**
   * Old Force of the particle experiences as 3D vector.
   */
-  std::array<double,3>  OLDF;
+  std::array<double,3>  OLDF = {0.,0.,0.};
 };
 
 }  // namespace autopas

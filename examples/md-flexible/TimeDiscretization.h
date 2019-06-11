@@ -71,7 +71,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate autopas) 
     for (auto iter = autopas->getContainer()->begin(); iter.isValid(); ++iter) {
         auto m = iter->getMass();
         auto force = iter->getF();
-        auto old_force= iter->getMass();  //@todo : implement right old_force interface (Particle -> inherent to MoleculeLJ -> PrintableMolecule)
+        auto old_force= iter->getOldF();
         auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force,old_force)) , particle_delta_t/(2*m));
         iter->addV(newV);
     }

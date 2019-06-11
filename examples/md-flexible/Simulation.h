@@ -28,8 +28,6 @@ class  Simulation {
 private:
     AutoPas<Particle, ParticleCell> *_autopas;
 
-    //@todo sich überlegen mit dem Funktor -> erwiterbar für alle Funktor Arten
-
     //autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* _Functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
     long durationX;
     long durationF;

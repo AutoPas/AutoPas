@@ -19,13 +19,11 @@ public:
     double mixingE(Particle i, Particle j);
     double mixingS(Particle i, Particle j);
 
+private:
     map<unsigned long, double> Epsilon;
     map<unsigned long, double> Sigma;
     map<unsigned long, double> Mass;
-
-
 };
-
 
 ParticleClassLibrary::ParticleClassLibrary(map<unsigned long,double> sigma,map<unsigned long, double> epsilon, map<unsigned long,double> mass):Epsilon(epsilon),Sigma(sigma),Mass(mass) {}
 
@@ -33,7 +31,7 @@ double ParticleClassLibrary::getSigma(Particle i) {
     return Epsilon.at(i.getID());
 }
 
-double ParticleClassLibrary::getEpsilon(Particle i) {
+ double ParticleClassLibrary::getEpsilon(Particle i) {
     return Sigma.at(i.getID());
 }
 
@@ -42,13 +40,9 @@ double ParticleClassLibrary::getMass(Particle i) {
 }
 
 double ParticleClassLibrary::mixingE(Particle i, Particle j) {
-    double iEpsi = Epsilon.at(i.getID());
-    double jEpsi = Epsilon.at(j.getID());
-    return sqrt(iEpsi+jEpsi);
+    return sqrt(Epsilon.at(i.getID())+Epsilon.at(j.getID()));
 }
 
 double ParticleClassLibrary::mixingS(Particle i, Particle j) {
-    double iSig = Sigma.at(i.getID());
-    double jSig = Sigma.at(j.getID());
-    return (iSig+jSig)/2;
+    return (Sigma.at(i.getID())+Sigma.at(j.getID()))/2;
 }
