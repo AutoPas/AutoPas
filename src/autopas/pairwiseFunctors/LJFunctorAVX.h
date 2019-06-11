@@ -459,21 +459,17 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       }
       
 
-      if (newton3) {
-        /*
-         *masked2 ? _mm256_maskstore_pd(&fx2ptrPerm[0], mask2, fx2) : _mm256_store_pd(&fx2ptrPerm[0], fx2);
-         *masked2 ? _mm256_maskstore_pd(&fy2ptrPerm[0], mask2, fy2) : _mm256_store_pd(&fy2ptrPerm[0], fy2);
-         *masked2 ? _mm256_maskstore_pd(&fz2ptrPerm[0], mask2, fz2) : _mm256_store_pd(&fz2ptrPerm[0], fz2);
-         */
-      }
 
       x2 = rotateRight(x2);
       y2 = rotateRight(y2);
       z2 = rotateRight(z2);
 
-      fx2 = rotateRight(fx2);
-      fy2 = rotateRight(fy2);
-      fz2 = rotateRight(fz2);
+    
+      if (newton3) {
+        fx2 = rotateRight(fx2);
+        fy2 = rotateRight(fy2);
+        fz2 = rotateRight(fz2);
+      }
 
       mask2 = _mm256_castpd_si256(rotateRight(_mm256_castsi256_pd(mask2)));
     }
