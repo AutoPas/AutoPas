@@ -22,7 +22,7 @@ Please keep in mind the following notes while working.
 *  Documentation style is Javadoc style.
 *  All public methods and attributes need to be documented.
 *  The first comment inside a comment block (`/** <comment> */`) is automatically treated as brief comment and needs to end with a dot. The `brief` keyword is omitted (please delete occurrences).
-*  ToDos: All comments containing TpDos should be prefixed with `@todo`, thus they are visible in the global todo list.
+*  ToDos: All comments containing todos should be prefixed with `@todo`, thus they are visible in the global todo list.
 *  Date format: dd.mm.yyyy (please replace occurrences of other formats as you come accross them)
 
 ## GitHub
