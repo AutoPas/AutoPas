@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <tuple>
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -66,6 +67,16 @@ class Configuration {
    */
   Newton3Option _newton3;
 };
+
+/**
+ * Stream insertion operator.
+ * @param os
+ * @param configuration
+ * @return
+ */
+inline std::ostream& operator<<(std::ostream& os, const Configuration& configuration) {
+  return os << configuration.toString();
+}
 
 /**
  * Equals operator for Configuration objects.

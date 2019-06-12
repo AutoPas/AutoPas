@@ -60,7 +60,6 @@ include(cmake-format)
 include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
-include(coloring)
 
 include(version.cmake)
 
@@ -75,6 +74,7 @@ add_subdirectory(examples)
 add_subdirectory(tests)
 
 # modules needing targets:
+include(coloring)
 include(logging)
 include(other-compileroptions)
 include(vectorization)

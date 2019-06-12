@@ -38,7 +38,7 @@ if (NOT CMAKE_COMPILER_IS_GNUCXX)
     )
 
     if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        message(FATAL_ERROR "Compiler is not GNU gcc! Aborting...")
+        message(FATAL_ERROR "Compiler is not GNU gcc or CLang! Aborting...")
     endif ()
 endif () # NOT CMAKE_COMPILER_IS_GNUCXX
 

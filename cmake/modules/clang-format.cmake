@@ -26,12 +26,7 @@ foreach (TMP_PATH ${ALL_SOURCE_FILES})
     endif ()
 endforeach (TMP_PATH)
 
-find_program(
-    CLANG_FORMAT
-    NAMES
-        clang-format
-        clang-format-6.0
-)
+find_program(CLANG_FORMAT NAMES clang-format clang-format-6.0)
 
 if (CLANG_FORMAT)
     message(STATUS "clang format found, added clangformat target")
@@ -66,5 +61,8 @@ if (CLANG_FORMAT)
     add_custom_command(OUTPUT .dummy/cf/clang_dummy COMMAND true DEPENDS ${dummyfiles})
     add_custom_target(clangformat DEPENDS .dummy/cf/clang_dummy)
 else ()
-    message(STATUS "clang-format-6 not found, not adding clang format target. Other Versions not supported!")
+    message(
+        STATUS
+            "clang-format-6 not found, not adding clang format target. Other Versions not supported!"
+    )
 endif ()

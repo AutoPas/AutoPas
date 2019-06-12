@@ -26,12 +26,6 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
- private:
-  static const std::vector<TraversalOption> &DefaultApplicableTraversals() {
-    static const std::vector<TraversalOption> v{};
-    return v;
-  }
-
  public:
   /// type of the Particle
   typedef Particle ParticleType;
@@ -43,17 +37,11 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param applicableTraversals Sorted vector of traversals applicable for this Container.
+   * @param compatibleTraversals Sorted vector of traversals applicable for this Container.
    */
-  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                    std::vector<TraversalOption> applicableTraversals = DefaultApplicableTraversals())
-      : _cells(),
-        _applicableTraversals(
-            // first sort the applicableTraversals, then pass them to _applicableTraversals. (Comma operator)
-            (std::sort(applicableTraversals.begin(), applicableTraversals.end()), applicableTraversals)),
-        _boxMin(boxMin),
-        _boxMax(boxMax),
-        _cutoff(cutoff) {}
+  ParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
+                    const std::set<TraversalOption> &compatibleTraversals)
+      : _cells(), _applicableTraversals(compatibleTraversals), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
 
   /**
    * destructor of ParticleContainer
@@ -112,16 +100,13 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
   /**
-   * Checks if the given traversals are applicable to this traversal.
+   * Checks if the given traversals are applicable to this container.
    * @param traversalOptions
    * @return True iff traversalOptions is a subset of _applicableTraversals
    */
-  bool checkIfTraversalsAreApplicable(std::vector<TraversalOption> traversalOptions) {
-    for (auto &option : traversalOptions) {
-      if (find(_applicableTraversals.begin(), _applicableTraversals.end(), option) == _applicableTraversals.end())
-        return false;
-    }
-    return true;
+  bool checkIfTraversalsAreApplicable(std::set<TraversalOption> traversalOptions) {
+    return std::includes(_applicableTraversals.begin(), _applicableTraversals.end(), traversalOptions.begin(),
+                         traversalOptions.end());
   }
 
   /**
@@ -169,7 +154,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   /**
    * Vector of all applicable traversal options for the container.
    */
-  const std::vector<TraversalOption> _applicableTraversals;
+  const std::set<TraversalOption> _applicableTraversals;
 
  private:
   std::array<double, 3> _boxMin;

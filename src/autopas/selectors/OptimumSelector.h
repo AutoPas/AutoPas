@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <numeric>
 #include <vector>
-#include "autopas/options/SelectorStrategie.h"
+#include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -55,15 +55,15 @@ inline unsigned long medianValue(std::vector<unsigned long> values) {
  * @param strategy For possible selector strategy choices see AutoPas::SelectorStrategy.
  * @return value
  */
-inline unsigned long optimumValue(const std::vector<unsigned long>& values, SelectorStrategy strategy) {
+inline unsigned long optimumValue(const std::vector<unsigned long>& values, SelectorStrategyOption strategy) {
   switch (strategy) {
-    case SelectorStrategy::fastestAbs: {
+    case SelectorStrategyOption::fastestAbs: {
       return minValue(values);
     }
-    case SelectorStrategy::fastestMean: {
+    case SelectorStrategyOption::fastestMean: {
       return meanValue(values);
     }
-    case SelectorStrategy::fastestMedian: {
+    case SelectorStrategyOption::fastestMedian: {
       return medianValue(values);
     }
       // no default to get appropriate compiler warnings
