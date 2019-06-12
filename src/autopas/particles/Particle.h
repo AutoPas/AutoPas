@@ -18,9 +18,10 @@
 namespace autopas {
 
 /**
- * basic Particle class
- * This class can be used to build your own Particle class. However, you are
- * free to not use it as well.
+ * Minimal definition of a basic particle.
+ *
+ * If a different Particle class should be used with AutoPas this class must be used as a base to build your own
+ * Particle class.
  */
 template <typename floatType>
 class ParticleBase {
@@ -28,10 +29,10 @@ class ParticleBase {
   ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
 
   /**
-   * Constructor of the Particle class
-   * @param r position of the particle
-   * @param v velocity of the particle
-   * @param id id of the particle
+   * Constructor of the Particle class.
+   * @param r Position of the particle.
+   * @param v Velocity of the particle.
+   * @param id Id of the particle.
    */
   ParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
