@@ -52,7 +52,6 @@ include(clang-tidy)
 include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
-include(coloring)
 
 include(version.cmake)
 
@@ -67,6 +66,7 @@ ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(tests)
 
 # modules needing targets:
+include(coloring)
 include(logging)
 include(other-compileroptions)
 include(vectorization)
