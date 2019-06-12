@@ -9,7 +9,9 @@
 #include "VerletListHelpers.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
@@ -59,25 +61,17 @@ class VerletLists
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
+   * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const unsigned int rebuildFrequency = 1,
-              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
+              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals()),
+            boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVLCompatibleTraversals(),
+            cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
-
-  /**
-   * Lists all traversal options applicable for the Verlet Lists container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption>& allVLApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::verletTraversal};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allVLApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
@@ -143,11 +137,6 @@ class VerletLists
     this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal, useNewton3);
 
     return validityCheckerFunctor.neighborlistsAreValid();
-  }
-
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
-    return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 
  protected:

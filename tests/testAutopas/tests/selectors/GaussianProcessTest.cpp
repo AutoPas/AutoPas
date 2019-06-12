@@ -8,6 +8,7 @@
 #include <iostream>
 #include <random>
 #include "autopas/selectors/GaussianProcess.h"
+#include "autopas/utils/DoubleSet.h"
 
 using namespace autopas;
 
@@ -163,14 +164,13 @@ TEST(GaussianProcess, sine) {
 
 TEST(GaussianProcess, 2dMax) {
   std::default_random_engine rng(72);         // random generator
-  std::uniform_int_distribution<long> distr;  // uniform distribution
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
   double epsilon = 0.1;                                                     // allowed error
-  std::vector<DoubleRange> domain{DoubleRange(-2, 2), DoubleRange(-2, 2)};  // domain of function
+  std::vector<DoubleInterval> domain{DoubleInterval(-2, 2), DoubleInterval(-2, 2)};  // domain of function
   FeatureVector max({-1, 1});                                               // max of function
-  unsigned numEvidences = 15;                                               // number of samples allowed to make
+  unsigned numEvidences = 20;                                               // number of samples allowed to make
   unsigned lhsNumSamples = 1000;                      // number of sample to find max of acquisition function
   AcquisitionFunction af = AcquisitionFunction::ucb;  // use upper confidence bound as af
 
@@ -182,7 +182,7 @@ TEST(GaussianProcess, 2dMax) {
   for (unsigned i = 1; i < numEvidences; ++i) {
     // create lhs samples
     std::vector<FeatureVector> lhsSamples(lhsNumSamples);
-    for (auto& d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, distr(rng));
+    for (auto& d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, rng);
 
     // sample max of acquisition function
     FeatureVector am = gp.sampleAquisitionMax(af, lhsSamples);
@@ -195,7 +195,7 @@ TEST(GaussianProcess, 2dMax) {
 
   // last lhs sample for predicted max
   std::vector<FeatureVector> lhsSamples(lhsNumSamples);
-  for (auto& d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, distr(rng));
+  for (auto& d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, rng);
 
   // sample max of mean function
   FeatureVector am = gp.sampleAquisitionMax(AcquisitionFunction::mean, lhsSamples);

@@ -5,6 +5,7 @@
  */
 
 #include "CellBlock3DTest.h"
+#include "testingHelpers/GridGenerator.h"
 
 void testIndex(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>>& cellBlock,
                std::array<double, 3>& start, std::array<double, 3>& dr, std::array<int, 3>& numParts) {
@@ -13,7 +14,7 @@ void testIndex(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeL
   unsigned long counter = 0ul;
   for (auto& m : mesh) {
     unsigned long index = cellBlock.get1DIndexOfPosition(m);
-    ASSERT_EQ(index, counter);
+    ASSERT_EQ(index, counter) << "Pos: [" << m[0] << ", " << m[1] << ", " << m[2] << "]";
     ++counter;
   }
 }
@@ -37,8 +38,8 @@ TEST_F(CellBlock3DTest, test2x2x2) {
 }
 
 TEST_F(CellBlock3DTest, test2x2x2_cs05) {
-  std::array<double, 3> start = {-2.5, -2.5, -2.5}, dr = {5.0, 5.0, 5.0};
-  std::array<int, 3> numParts = {4, 4, 4};
+  std::array<double, 3> start = {-7.5, -7.5, -7.5}, dr = {5.0, 5.0, 5.0};
+  std::array<int, 3> numParts = {6, 6, 6};
   testIndex(_cells_2x2x2_cs05, start, dr, numParts);
 }
 
@@ -58,6 +59,7 @@ void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::Molecu
                            boxMax[dim]};                      // boxmax (outside)
   }
   std::array<size_t, 3> cellsPerDimWithHalo = cellBlock.getCellsPerDimensionWithHalo();
+  auto haloThickness(cellBlock.getCellsPerInteractionLength());
   std::array<size_t, 3> ind = {};
   for (ind[0] = 0; ind[0] < 4; ++ind[0]) {
     for (ind[1] = 0; ind[1] < 4; ++ind[1]) {
@@ -70,23 +72,25 @@ void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::Molecu
           switch (ind[d]) {
             case 0:
               // slightly below boxmin (outside)
-              EXPECT_EQ(pos[d], 0) << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
-                                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
+              EXPECT_EQ(pos[d], haloThickness - 1)
+                  << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
+                  << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
               break;
             case 1:
               // at boxmin (inside)
-              EXPECT_EQ(pos[d], 1) << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
-                                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
+              EXPECT_EQ(pos[d], haloThickness)
+                  << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
+                  << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
               break;
             case 2:
               // slightly below boxmax (inside)
-              EXPECT_EQ(pos[d], cellsPerDimWithHalo[d] - 2)
+              EXPECT_EQ(pos[d], cellsPerDimWithHalo[d] - haloThickness - 1)
                   << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
               break;
             case 3:
               // boxmax (outside)
-              EXPECT_EQ(pos[d], cellsPerDimWithHalo[d] - 1)
+              EXPECT_EQ(pos[d], cellsPerDimWithHalo[d] - haloThickness)
                   << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
               break;
@@ -98,14 +102,12 @@ void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::Molecu
   }
 }
 
-TEST_F(CellBlock3DTest, testBoundaries) {
+TEST_F(CellBlock3DTest, testBoundaries_cs_geq1) {
   testBoundary(_cells_1x1x1, {0., 0., 0.}, {10., 10., 10.});
-
-  testBoundary(_cells_1x1x1_cs2, {0., 0., 0.}, {10., 10., 10.});
 
   testBoundary(_cells_2x2x2, {0., 0., 0.}, {10., 10., 10.});
 
-  testBoundary(_cells_2x2x2_cs05, {0., 0., 0.}, {10., 10., 10.});
+  testBoundary(_cells_1x1x1_cs2, {0., 0., 0.}, {10., 10., 10.});
 
   testBoundary(_cells_3x3x3, {0., 0., 0.}, {10., 10., 10.});
 
@@ -113,6 +115,8 @@ TEST_F(CellBlock3DTest, testBoundaries) {
 
   testBoundary(_cells_19x19x19, {0., 0., 0.}, {58.5, 58.5, 58.5});
 }
+
+TEST_F(CellBlock3DTest, testBoundaries_cs_leq1) { testBoundary(_cells_2x2x2_cs05, {0., 0., 0.}, {10., 10., 10.}); }
 
 std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3> start, std::array<double, 3> dr,
                                                             std::array<int, 3> numParts) {
@@ -131,4 +135,22 @@ std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3
     }
   }
   return ret;
+}
+
+size_t getNumberOfParticlesInBox(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>>& cellBlock,
+                                 std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>>& vec) {
+  const autopas::MoleculeLJ defaultParticle;
+  GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
+  cellBlock.clearHaloCells();
+  return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto& e) { return acc + e.numParticles(); });
+}
+
+TEST_F(CellBlock3DTest, testClearHaloParticles) {
+  EXPECT_EQ(getNumberOfParticlesInBox(_cells_1x1x1, _vec1), 1);
+  EXPECT_EQ(getNumberOfParticlesInBox(_cells_1x1x1_cs2, _vec1_cs), 1);
+  EXPECT_EQ(getNumberOfParticlesInBox(_cells_2x2x2, _vec2), 2 * 2 * 2);
+  EXPECT_EQ(getNumberOfParticlesInBox(_cells_2x2x2_cs05, _vec2_cs), 2 * 2 * 2);
+  EXPECT_EQ(getNumberOfParticlesInBox(_cells_3x3x3, _vec3), 3 * 3 * 3);
+  EXPECT_EQ(getNumberOfParticlesInBox(_cells_11x4x4_nonZeroBoxMin, _vec4), 11 * 4 * 4);
+  EXPECT_EQ(getNumberOfParticlesInBox(_cells_19x19x19, _vec19), 19 * 19 * 19);
 }

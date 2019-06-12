@@ -29,9 +29,18 @@ TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
 #endif
 }
 
+TEST(StringUtilsTest, parseDoublesTest) {
+  testParseMultiple<double>({1., 1.5, 2., 3., 20.}, "1.,1.5, 2,3.00,2e1", autopas::utils::StringUtils::parseDouble);
+}
+
 TEST(StringUtilsTest, parseSelectorOptionsTest) {
-  testParseSingle<autopas::SelectorStrategy>(autopas::allSelectorStrategies, {"absolute", "median", "mean"},
-                                             autopas::utils::StringUtils::parseSelectorStrategy);
+  testParseSingle<autopas::SelectorStrategyOption>(autopas::allSelectorStrategies, {"absolute", "median", "mean"},
+                                                   autopas::utils::StringUtils::parseSelectorStrategy);
+}
+
+TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
+  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search"},
+                                                 autopas::utils::StringUtils::parseTuningStrategyOption);
 }
 
 TEST(StringUtilsTest, to_stringDataLayoutTest) {
@@ -39,7 +48,7 @@ TEST(StringUtilsTest, to_stringDataLayoutTest) {
 }
 
 TEST(StringUtilsTest, to_stringSelectorStrategiesTest) {
-  testToString(autopas::allSelectorStrategies, {autopas::SelectorStrategy(-1)});
+  testToString(autopas::allSelectorStrategies, {autopas::SelectorStrategyOption(-1)});
 }
 
 TEST(StringUtilsTest, to_stringContainerOptionsTest) {
@@ -48,4 +57,8 @@ TEST(StringUtilsTest, to_stringContainerOptionsTest) {
 
 TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
   testToString(autopas::allTraversalOptions, {autopas::TraversalOption(-1)});
+}
+
+TEST(StringUtilsTest, to_stringTuningStrategyOptionsTest) {
+  testToString(autopas::allTuningStrategyOptions, {autopas::TuningStrategyOption(-1)});
 }

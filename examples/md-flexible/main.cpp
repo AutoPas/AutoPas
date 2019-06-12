@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
   auto containerChoice(parser.getContainerOptions());
   auto selectorStrategy(parser.getSelectorStrategy());
   auto cutoff(parser.getCutoff());
-  auto cellSizeFactor(parser.getCellSizeFactor());
+  auto &cellSizeFactors(parser.getCellSizeFactors());
   auto dataLayoutOptions(parser.getDataLayoutOptions());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
@@ -173,6 +173,7 @@ int main(int argc, char **argv) {
   auto traversalOptions(parser.getTraversalOptions());
   auto tuningInterval(parser.getTuningInterval());
   auto tuningSamples(parser.getTuningSamples());
+  auto tuningStrategy(parser.getTuningStrategyOption());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
   auto verletSkinRadius(parser.getVerletSkinRadius());
   auto vtkFilename(parser.getWriteVTK());
@@ -199,16 +200,17 @@ int main(int argc, char **argv) {
   autopas::Logger::get()->set_level(logLevel);
 
   autopas.setCutoff(cutoff);
-  autopas.setCellSizeFactor(cellSizeFactor);
   autopas.setVerletSkin(verletSkinRadius);
   autopas.setVerletRebuildFrequency(verletRebuildFrequency);
   autopas.setTuningInterval(tuningInterval);
+  autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
   autopas.setSelectorStrategy(selectorStrategy);
   autopas.setAllowedContainers(containerChoice);
   autopas.setAllowedTraversals(traversalOptions);
   autopas.setAllowedDataLayouts(dataLayoutOptions);
   autopas.setAllowedNewton3Options(newton3Options);
+  autopas.setAllowedCellSizeFactors(cellSizeFactors);
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {

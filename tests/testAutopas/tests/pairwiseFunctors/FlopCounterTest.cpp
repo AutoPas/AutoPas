@@ -53,7 +53,6 @@ TEST_F(FlopCounterTest, testFlopCounterSoA4Mol) { test(autopas::DataLayoutOption
 
 TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
   bool newton3 = true;
-  std::string where_str = "inside";
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
 
@@ -88,7 +87,6 @@ TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
 
 TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
   bool newton3 = true;
-  std::string where_str = "inside";
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
 

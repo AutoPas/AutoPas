@@ -10,7 +10,7 @@
 #include <random>
 #include <vector>
 #include "autopas/selectors/Feature.h"
-#include "autopas/utils/DoubleRange.h"
+#include "autopas/utils/DoubleSet.h"
 
 namespace autopas {
 
@@ -103,13 +103,9 @@ class FeatureVector {
    * @param featureRange
    * @param seed seed for rng
    */
-  static void lhsAddFeature(std::vector<FeatureVector>& vectors, const DoubleRange& featureRange, long seed) {
-    std::default_random_engine rng(seed);
-
-    // create n values in given range
-    auto pool = featureRange.range(vectors.size());
-    // randomize them
-    std::shuffle(std::begin(pool), std::end(pool), rng);
+  static void lhsAddFeature(std::vector<FeatureVector>& vectors, const DoubleSet& featureSet, std::default_random_engine& rng) {
+    // create n samples from given set
+    auto pool = featureSet.uniformSample(vectors.size(), rng);
 
     // append to feature vectors
     for (unsigned i = 0; i < vectors.size(); ++i) {
@@ -125,9 +121,7 @@ class FeatureVector {
    * @param featureSpace
    */
   static void lhsAddFeature(std::vector<FeatureVector>& vectors, std::vector<std::unique_ptr<Feature>> featureSpace,
-                            long seed) {
-    std::default_random_engine rng(seed);
-
+                            std::default_random_engine& rng) {
     // create n values from given pool
     std::vector<std::unique_ptr<Feature>> pool;
     pool.reserve(vectors.size());

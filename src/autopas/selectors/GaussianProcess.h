@@ -8,7 +8,6 @@
 
 #include <Eigen/Dense>
 #include "autopas/selectors/FeatureVector.h"
-#include "autopas/utils/DoubleRange.h"
 
 namespace autopas {
 

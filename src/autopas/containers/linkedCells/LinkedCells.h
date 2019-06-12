@@ -8,10 +8,13 @@
 #pragma once
 
 #include "autopas/containers/CellBlock3D.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -43,25 +46,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff,
+                                                                 compatibleTraversals::allLCCompatibleTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
-
-  /**
-   * Lists all traversal options applicable for the Linked Cells container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allLCApplicableTraversals() {
-    static const std::vector<TraversalOption> v {
-      TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced
-#if defined(AUTOPAS_CUDA)
-          ,
-          TraversalOption::c01Cuda
-#endif
-    };
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allLCApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
 
@@ -187,8 +174,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo());
+  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
+                                               this->getCellBlock().getCellLength());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -204,11 +192,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     // this is needed when used through verlet lists since particles can move over cell borders.
     // only lower corner needed since we increase the upper corner anyways.
     if (incSearchRegion) {
-      startIndex = this->_cellBlock.get1DIndexOfPosition({
-          lowerCorner[0] - 1,
-          lowerCorner[1] - 1,
-          lowerCorner[2] - 1,
-      });
+      startIndex = this->_cellBlock.get1DIndexOfPosition(ArrayMath::subScalar(lowerCorner, 1.0));
     } else {
       startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
     }
