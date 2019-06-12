@@ -22,6 +22,11 @@ namespace autopas {
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
+  FullParticleCell()
+      : _cellLength({std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                     std::numeric_limits<double>::max()}) {}
+  FullParticleCell(std::array<double, 3>& cellLength) : _cellLength(cellLength) {}
+
   void addParticle(Particle& m) override {
     particlesLock.lock();
     _particles.push_back(m);
@@ -55,6 +60,10 @@ class FullParticleCell : public ParticleCell<Particle> {
     _particles.pop_back();
     particlesLock.unlock();
   }
+
+  void setCellLength(std::array<double, 3>& cellLength) override { _cellLength = cellLength; }
+
+  std::array<double, 3> getCellLength() const override { return _cellLength; }
 
   /**
    * Resizes the container so that it contains n elements.
@@ -99,5 +108,6 @@ class FullParticleCell : public ParticleCell<Particle> {
 
  private:
   AutoPasLock particlesLock;
+  std::array<double, 3> _cellLength;
 };
 }  // namespace autopas

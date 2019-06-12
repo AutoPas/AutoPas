@@ -57,6 +57,10 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
     _particleSoABuffer.pop_back();
   }
 
+  void setCellLength(std::array<double, 3> &cellLength) override {}
+
+  std::array<double, 3> getCellLength() const override { return std::array<double, 3>{0., 0., 0.}; }
+
   /**
    * the soa buffer of the particle, all information is stored here.
    */

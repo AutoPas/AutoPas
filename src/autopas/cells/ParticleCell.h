@@ -67,6 +67,18 @@ class ParticleCell {
    * @param index the index of the particle that shall be deleted
    */
   virtual void deleteByIndex(size_t index) = 0;
+
+  /**
+   * set the side lengths of this cell
+   * @param cellLength cell side length
+   */
+  virtual void setCellLength(std::array<double, 3> &cellLength) = 0;
+
+  /**
+   * get the side lengths of this cell
+   * @return cell side length
+   */
+  virtual std::array<double, 3> getCellLength() const = 0;
 };
 
 }  // namespace autopas
