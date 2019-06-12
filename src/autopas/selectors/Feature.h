@@ -7,6 +7,8 @@
 #pragma once
 
 #include <memory>
+#include <set>
+#include <vector>
 
 namespace autopas {
 
@@ -51,10 +53,37 @@ class DoubleFeature : public Feature {
   double getValue() { return _value; }
 };
 
-Feature::~Feature() = default;
+/**
+ * Feature described by a enum.
+ * Different enums always have distance 1 from each other.
+ */
+class EnumFeature : public Feature {
+ private:
+  int _value;
 
-double DoubleFeature::operator-(const Feature& other) const {
-  return _value - dynamic_cast<const DoubleFeature&>(other)._value;
-}
-std::unique_ptr<Feature> DoubleFeature::clone() const { return std::make_unique<DoubleFeature>(_value); }
+ public:
+  /**
+   * Construct enum feature from int represntation of enum.
+   * @param value
+   */
+  EnumFeature(int value) : _value(value) {}
+
+  double operator-(const Feature& other) const override;
+  std::unique_ptr<Feature> clone() const override;
+
+  int getValue() { return _value; }
+
+  /**
+   * Convert a set of enums to a vector of EnumFeature
+   */
+  template <class enumType>
+  static std::vector<EnumFeature> set2Vector(std::set<enumType> enums) {
+    std::vector<EnumFeature> result;
+    for (auto& e : enums) {
+      result.push_back(EnumFeature(e));
+    }
+
+    return result;
+  }
+};
 }  // namespace autopas

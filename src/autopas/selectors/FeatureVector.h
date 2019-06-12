@@ -103,7 +103,8 @@ class FeatureVector {
    * @param featureRange
    * @param seed seed for rng
    */
-  static void lhsAddFeature(std::vector<FeatureVector>& vectors, const DoubleSet& featureSet, std::default_random_engine& rng) {
+  static void lhsAddFeature(std::vector<FeatureVector>& vectors, const DoubleSet& featureSet,
+                            std::default_random_engine& rng) {
     // create n samples from given set
     auto pool = featureSet.uniformSample(vectors.size(), rng);
 
@@ -120,7 +121,8 @@ class FeatureVector {
    * @param vectors
    * @param featureSpace
    */
-  static void lhsAddFeature(std::vector<FeatureVector>& vectors, std::vector<std::unique_ptr<Feature>> featureSpace,
+  template <class FeatureType>
+  static void lhsAddFeature(std::vector<FeatureVector>& vectors, std::vector<FeatureType> featureSpace,
                             std::default_random_engine& rng) {
     // create n values from given pool
     std::vector<std::unique_ptr<Feature>> pool;
@@ -130,7 +132,7 @@ class FeatureVector {
     unsigned minCopies = vectors.size() / featureSpace.size();
     for (unsigned i = 0; i < minCopies; ++i) {
       for (auto& feature : featureSpace) {
-        pool.push_back(feature->clone());
+        pool.push_back(feature.clone());
       }
     }
     // fill the rest with random samples
@@ -140,7 +142,7 @@ class FeatureVector {
       auto index = uniDist(rng);
 
       // move from featureSpace vector to pool vector
-      pool.push_back(std::unique_ptr<Feature>(featureSpace[index].release()));
+      pool.push_back(featureSpace[index].clone());
       featureSpace.erase(featureSpace.begin() + index);
     }
 

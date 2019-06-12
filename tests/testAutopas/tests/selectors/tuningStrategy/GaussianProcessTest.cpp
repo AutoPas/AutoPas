@@ -1,14 +1,10 @@
 /**
- * @file ArrayMathTest.cpp
- * @author tchipev
- * @date 19.01.18
+ * @file GaussianProcessTest.cpp
+ * @author Jan Nguyen
+ * @date 12.06.19
  */
 
-#include <gtest/gtest.h>
-#include <iostream>
-#include <random>
-#include "autopas/selectors/GaussianProcess.h"
-#include "autopas/utils/DoubleSet.h"
+#include "GaussianProcessTest.h"
 
 using namespace autopas;
 
@@ -163,14 +159,14 @@ TEST(GaussianProcess, sine) {
 }
 
 TEST(GaussianProcess, 2dMax) {
-  std::default_random_engine rng(72);         // random generator
+  std::default_random_engine rng(72);  // random generator
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.1;                                                     // allowed error
+  double epsilon = 0.1;                                                              // allowed error
   std::vector<DoubleInterval> domain{DoubleInterval(-2, 2), DoubleInterval(-2, 2)};  // domain of function
-  FeatureVector max({-1, 1});                                               // max of function
-  unsigned numEvidences = 20;                                               // number of samples allowed to make
+  FeatureVector max({-1, 1});                                                        // max of function
+  unsigned numEvidences = 20;                         // number of samples allowed to make
   unsigned lhsNumSamples = 1000;                      // number of sample to find max of acquisition function
   AcquisitionFunction af = AcquisitionFunction::ucb;  // use upper confidence bound as af
 

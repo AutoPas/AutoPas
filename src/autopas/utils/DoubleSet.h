@@ -50,9 +50,16 @@ class DoubleSet {
   virtual double getMax() const = 0;
 
   /**
+   * Get number of doubles in the set.
+   * Only usable if set is finite.
+   * @return size of set
+   */
+  virtual size_t size() const = 0;
+
+  /**
    * Get all doubles in the set. Only usable
    * if set is finite.
-   * @return
+   * @return set as std::set
    */
   virtual std::set<double> getAll() const = 0;
 
@@ -111,6 +118,8 @@ class DoubleFiniteSet : public DoubleSet {
 
   double getMin() const override { return *_set.begin(); }
   double getMax() const override { return *_set.rbegin(); }
+
+  size_t size() const override { return _set.size(); }
 
   std::set<double> getAll() const override { return _set; }
 
@@ -175,15 +184,22 @@ class DoubleInterval : public DoubleSet {
     return ss.str();
   }
 
+  bool isFinite() const override { return _max == _min; }
+
   double getMin() const override { return _min; }
   double getMax() const override { return _max; }
 
-  bool isFinite() const override { return _max == _min; }
+  size_t size() const override {
+    if (isFinite()) return 1;
+
+    utils::ExceptionHandler::exception("DoubleInterval.getSize: Interval is not finite [{}, {}]", _min, _max);
+    return 0;
+  }
 
   std::set<double> getAll() const override {
     if (isFinite()) return {_min};
 
-    utils::ExceptionHandler::exception("DoubleInterval: Interval is not finite [{}, {}]", _min, _max);
+    utils::ExceptionHandler::exception("DoubleInterval.getAll: Interval is not finite [{}, {}]", _min, _max);
     return {};
   }
 

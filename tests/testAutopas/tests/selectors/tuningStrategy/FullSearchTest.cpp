@@ -18,7 +18,7 @@ TEST_F(FullSearchTest, testSearchSpaceEmpty) {
 TEST_F(FullSearchTest, testSearchSpaceOneOption) {
   autopas::FullSearch fullSearch(
       {autopas::Configuration(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
-                              autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, -1.)});
+                              autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, 1.)});
   EXPECT_FALSE(fullSearch.searchSpaceIsEmpty());
   EXPECT_TRUE(fullSearch.searchSpaceIsTrivial());
   EXPECT_THAT(fullSearch.getAllowedContainerOptions(), ::testing::ElementsAre(autopas::ContainerOption::directSum));
@@ -27,7 +27,7 @@ TEST_F(FullSearchTest, testSearchSpaceOneOption) {
 TEST_F(FullSearchTest, testSearchSpaceMoreOptions) {
   autopas::FullSearch fullSearch({autopas::ContainerOption::linkedCells}, {autopas::TraversalOption::c08},
                                  {autopas::DataLayoutOption::soa},
-                                 {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, {-1.});
+                                 {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, {1.});
   EXPECT_FALSE(fullSearch.searchSpaceIsEmpty());
   EXPECT_FALSE(fullSearch.searchSpaceIsTrivial());
   EXPECT_THAT(fullSearch.getAllowedContainerOptions(), ::testing::ElementsAre(autopas::ContainerOption::linkedCells));

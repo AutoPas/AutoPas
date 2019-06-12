@@ -8,6 +8,7 @@
 
 #include <Eigen/Dense>
 #include "autopas/selectors/FeatureVector.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -19,6 +20,10 @@ enum AcquisitionFunction {
    * Upper confidence bound
    */
   ucb,
+  /**
+   * Lower confidence bound
+   */
+  lcb,
   /**
    * mean
    */
@@ -159,6 +164,30 @@ class GaussianProcess {
   }
 
   /**
+   * Calculate the acquisition function of given feature
+   * @param af
+   * @param feature
+   * @return
+   */
+  inline double calcAcquisition(AcquisitionFunction af, FeatureVector feature) const {
+    switch (af) {
+      case ucb: {
+        return predictMean(feature) + std::sqrt(predictVar(feature));
+      }
+      case lcb: {
+        return predictMean(feature) - std::sqrt(predictVar(feature));
+      }
+      case mean: {
+        return predictMean(feature);
+      }
+    }
+
+    autopas::utils::ExceptionHandler::exception("GaussianProcess.calcAcquisition: Unknown acquisition function {}.",
+                                                af);
+    return 0;
+  }
+
+  /**
    * Find FeatureVector in samples which maximizes
    * given aquisition function.
    * TODO: maybe add parameters for hyperparameters of aquisition functions
@@ -168,21 +197,11 @@ class GaussianProcess {
    */
   FeatureVector sampleAquisitionMax(AcquisitionFunction af, const std::vector<FeatureVector>& samples) const {
     int maxIdx = -1;
-    double maxVal;
+    double maxVal = 0.;
 
     // find maximum from samples
     for (unsigned i = 0; i < samples.size(); ++i) {
-      double val;
-      switch (af) {
-        case ucb: {
-          val = predictMean(samples[i]) + std::sqrt(predictVar(samples[i]));
-          break;
-        }
-        case mean: {
-          val = predictMean(samples[i]);
-          break;
-        }
-      }
+      double val = calcAcquisition(af, samples[i]);
 
       if (maxIdx == -1 || val > maxVal) {
         maxIdx = i;
@@ -191,6 +210,31 @@ class GaussianProcess {
     }
 
     return samples[maxIdx];
+  }
+
+  /**
+   * Find FeatureVector in samples which minimizes
+   * given aquisition function.
+   * TODO: maybe add parameters for hyperparameters of aquisition functions
+   * @param af function to minimize
+   * @param samples
+   * @return
+   */
+  FeatureVector sampleAquisitionMin(AcquisitionFunction af, const std::vector<FeatureVector>& samples) const {
+    int minIdx = -1;
+    double minVal = 0.;
+
+    // find maximum from samples
+    for (unsigned i = 0; i < samples.size(); ++i) {
+      double val = calcAcquisition(af, samples[i]);
+
+      if (minIdx == -1 || val < minVal) {
+        minIdx = i;
+        minVal = val;
+      }
+    }
+
+    return samples[minIdx];
   }
 };
 }  // namespace autopas

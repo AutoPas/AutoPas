@@ -24,6 +24,7 @@ TEST(DoubleSetTest, testFiniteSet) {
   // set should keep all initialized values
   std::set<double> values = set.getAll();
   ASSERT_EQ(values.size(), a.size());
+  ASSERT_EQ(set.size(), a.size());
   auto it = values.begin();
   for (unsigned i = 0; i < a.size(); ++i, ++it) {
     ASSERT_EQ(*it, a[i]);
@@ -78,8 +79,9 @@ TEST(DoubleSetTest, testInterval) {
   // set should be infinite
   ASSERT_FALSE(set.isFinite());
 
-  // cant get all objects in an infinite set
+  // cant get all objects or size of an infinite set
   EXPECT_THROW(set.getAll(), autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(set.size(), autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 TEST(DoubleSetTest, testIntervalFinite) {
@@ -92,6 +94,7 @@ TEST(DoubleSetTest, testIntervalFinite) {
   ASSERT_TRUE(set.isFinite());
 
   // set should contain exactly one value
+  ASSERT_EQ(set.size(), 1);
   std::set<double> values = set.getAll();
   ASSERT_EQ(values.size(), 1);
   ASSERT_EQ(*values.begin(), max);
