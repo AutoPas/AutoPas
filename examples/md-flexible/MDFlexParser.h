@@ -82,7 +82,7 @@ private:
   string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
-  double epsilon= 1.0;
+  double epsilon= 5.0;
   double sigma= 1.0;
   double delta_t = 0.01;
   double mass = 1.0;

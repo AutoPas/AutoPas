@@ -1,10 +1,7 @@
 //
 // Created by nicola on 12.05.19.
 //
-
-#ifndef AUTOPAS_SIMULATION_H
-#define AUTOPAS_SIMULATION_H
-
+#pragma once
 #include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
 #include <fstream>
@@ -26,7 +23,7 @@ template<class Particle,class ParticleCell>
 class  Simulation {
 
 private:
-    AutoPas<Particle, ParticleCell> *_autopas;
+    shared_ptr<AutoPas<Particle, ParticleCell>> _autopas;
 
     //autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* _Functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
     long durationX;
@@ -36,13 +33,9 @@ private:
     int iterations;
 public:
     virtual ~Simulation() {
-    delete _autopas;
-    _autopas = NULL;
-    //delete _Functor;
-    //_Functor = NULL;
     }
 
-    explicit Simulation(AutoPas<Particle, ParticleCell> *autopas);
+    explicit Simulation(shared_ptr<AutoPas<Particle, ParticleCell>> autopas);
 
     /**
     * @brief Constructs a container and fills it with particles.
@@ -117,12 +110,10 @@ public:
      */
     AutoPas<Particle, ParticleCell> *getAutopas() const;
 
-    void setFunctor(Functor<Particle, ParticleCell> *functor);
-
 };
 
 template<class Particle, class ParticleCell>
-Simulation<Particle, ParticleCell>::Simulation(AutoPas<Particle, ParticleCell> *autopas) {
+Simulation<Particle, ParticleCell>::Simulation(shared_ptr<AutoPas<Particle, ParticleCell>> autopas) {
     _autopas = autopas;
     durationF=0; durationV=0; durationX=0;
 }
@@ -173,11 +164,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
     _autopas->setAllowedDataLayouts(dataLayoutOptions);
     _autopas->setAllowedNewton3Options(newton3Options);
 
-    Particle::setEpsilon(1.0);
-    Particle::setSigma(1.0);
-    Particle::setMass(1.0);
-    std::array<double, 3> oldf = {1.0, 1.0, 1.0};
-
     switch (generatorChoice) {
         case MDFlexParser::GeneratorOption::grid: {
             this->initContainerGrid(*_autopas, particlesPerDim, particleSpacing); //particlesTotal wird in diesem fall in der main geupdated
@@ -194,31 +180,9 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
         default:
             throw std::runtime_error("Unknown generator choice");
     }
-    //initializes Functor
-    //switch (functorChoice) {
-    //    case MDFlexParser::FunctorOption::lj12_6: {
-    //        //@todo erstmal DEFAULT WERTE für epsilon=1, sigma=1, shift=0.0 ,___ tuning/dublicated calculation; erstmal auf true
-     //       autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);
-     //       this->setFunctor(functor);
-      //  }
-       // case MDFlexParser::FunctorOption::lj12_6_AVX: {
-      //      autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0,lowCorner,highCorner,true);            //this->setFunctor(functor);
-       //     this->setFunctor(functor);
-            //andere art den Funktor zu initialisieren: autopas::LJFunctorAVX<Particle,ParticleCell> functor(cutoff, epsilon, sigma, 0.1,lowCorner,highCorner)
-    //    }
-    //}
-    // @todo UNSICHER: müssen die Position nochmal berechnet werden nachdem GridGenerator?
-    // @todo Velocitys werte müssen initialisiert werden , später mit thermostat
-    //Force Values musst be filled
     this->CalcF();
 
 }
-
-template<class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::setFunctor(Functor<Particle, ParticleCell> *functor) {
-    //_Functor = functor;
-}
-
 template<class Particle,class ParticleCell>
 void Simulation<Particle, ParticleCell>::initContainerGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,
                        size_t particlesPerDim, double particelSpacing) {
@@ -343,5 +307,3 @@ void Simulation<Particle, ParticleCell>::addDurationV(long durationV) {
     Simulation::durationV += durationV;
 }
 
-
-#endif //AUTOPAS_SIMULATION_H

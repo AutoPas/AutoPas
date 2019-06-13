@@ -90,7 +90,6 @@ int main(int argc, char **argv) {
 
     parser.printConfig();
 
-
     //Simulationsdauer ausgerechnet in main.cpp:
     std::chrono::high_resolution_clock::time_point startTotal, stopTotal;
     startTotal = std::chrono::high_resolution_clock::now();
@@ -106,33 +105,22 @@ int main(int argc, char **argv) {
         streamBuf = logFile.rdbuf();
     }
     std::ostream outputStream(streamBuf);
-    long DurationSimulation;
-
     PrintableMolecule::setEpsilon(parser.getEpsilon());
     PrintableMolecule::setSigma(parser.getSigma());
     PrintableMolecule::setMass(parser.getMass());
-    //vorübergehend, nicht sicher ob das mit den Werten für OldF Sinn macht
-    std::array<double, 3> oldf = {1.0, 1.0, 1.0};
-    PrintableMolecule::setOldf(oldf);
     // Initialization
 
-    auto *autopas =new autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> (outputStream);
-    autopas->setBoxMax({2.,2.,2.});
+    auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
     autopas->init();
     autopas::Logger::get()->set_level(logLevel);
     Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
     Simulation.initialize(parser);
     //Simulation
-    DurationSimulation = Simulation.simulate();
-
-    //testing   ->>> @todo epsilon werden anscheinden nicht richtig gesetzt
-    cout << "parserEpsi " << parser.getEpsilon() << endl;
-    cout << "parserSigm " << parser.getSigma() << endl;
-
-
+    long durationSimulate = Simulation.simulate();
+    long durationPosition = Simulation.getDurationX();
+    long durationVelocity = Simulation.getDurationV();
+    long durationForce = Simulation.getDurationF();
     cout << endl;
-    cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
-    cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
     if(parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid){
         particlesTotal=particlesPerDim * particlesPerDim * particlesPerDim;
     }
@@ -153,32 +141,36 @@ int main(int argc, char **argv) {
     cout << "Average Particles per cell: " << (particlesTotal) / (double)numCells << endl;
     cout << endl;
   }
-
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
   long durationApply = 0;
   unsigned long flopsPerKernelCall = 0;
   cout << "Starting force calculation... " << endl;
-
-
-   //@todo für statistiken:  flopsPerKernelCall =  LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-    //if(MDFlexParser::FunctorOption::lj12_6==parser.getFunctorOption()){
-    //  flopsPerKernelCall =
-    //          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-    //} usw für weitere Funktoren
-
-
   stopTotal = std::chrono::high_resolution_clock::now();
   cout << "Force calculation done!" << endl;
 
+  //FlopsPerKernelCall ließt vom Functor
+  switch (parser.getFunctorOption()){
+      case MDFlexParser::FunctorOption ::lj12_6:{
+          flopsPerKernelCall = LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+        break;
+      }
+      case MDFlexParser::FunctorOption ::lj12_6_AVX:{
+          flopsPerKernelCall = LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+          break;
+      }
+      default:
+          throw std::runtime_error("Not allowed Functor choice");
+  }
+
   //  printMolecules(autopas);
 
-  auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();  //@todo ob durationTotal von main oder von Simulation.h genommen wird
+  auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
 
   //time statistics
-  cout << DurationSimulation << endl;
+  cout << "Simulation duration without initilization: " << durationSimulate << " \u03bcs" <<  endl;
   // Statistics
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
@@ -211,10 +203,6 @@ int main(int argc, char **argv) {
   if (not logFileName.empty()) {
     logFile.close();
   }
-  //Frage an Fabio: wie geht delete
-  //mit folgenden 2 zeilen kriegt man 14invalidFree,27InvalidRead,9InvalidWrite Warnings
-  //delete autopas;
-  //autopas= NULL;
 
   return EXIT_SUCCESS;
 }

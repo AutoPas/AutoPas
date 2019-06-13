@@ -2,15 +2,12 @@
 // Created by nicola on 13.05.19.
 //
 
-#ifndef AUTOPAS_TIMEDISCRETIZATION_H
-#define AUTOPAS_TIMEDISCRETIZATION_H
-
+#pragma once
 #include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include "autopas/AutoPas.h"
-#include "Simulation.h"
 #include "autopas/utils/ArrayMath.h"
 
 
@@ -52,6 +49,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate autopas) 
         auto v = iter->getV();
         auto m = iter->getMass();
         auto f = iter->getF();
+        iter->setOldf(iter->getF());
         v = autopas::ArrayMath::mulScalar(v, this->particle_delta_t);
         f= autopas::ArrayMath::mulScalar(f,(particle_delta_t * particle_delta_t / (2 * m)));
         auto newR = autopas::ArrayMath::add(v,f);
@@ -71,7 +69,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate autopas) 
     for (auto iter = autopas->getContainer()->begin(); iter.isValid(); ++iter) {
         auto m = iter->getMass();
         auto force = iter->getF();
-        auto old_force= iter->getOldF();
+        auto old_force= iter->getOldf();
         auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force,old_force)) , particle_delta_t/(2*m));
         iter->addV(newV);
     }
@@ -87,5 +85,3 @@ template<class AutoPasTemplate>
 double TimeDiscretization<AutoPasTemplate>::getParticleDeltaT() const {
     return particle_delta_t;
 }
-
-#endif //AUTOPAS_TIMEDISCRETIZATION_H
