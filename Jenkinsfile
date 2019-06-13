@@ -1,4 +1,7 @@
 pipeline{
+    options {
+        lock(quantity: 1, resource: 'openshift_cluster')
+    }
     agent {
         node {
             //cloud 'kubernetes'
