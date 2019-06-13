@@ -111,6 +111,8 @@ int main(int argc, char **argv) {
     // Initialization
 
     auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+    //setted default anderen boxMax--> sonst Fehler
+    autopas->setBoxMax({2.,2.,2.});
     autopas->init();
     autopas::Logger::get()->set_level(logLevel);
     Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
@@ -143,7 +145,7 @@ int main(int argc, char **argv) {
   }
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
-  long durationApply = 0;
+  long durationApply = durationSimulate;
   unsigned long flopsPerKernelCall = 0;
   cout << "Starting force calculation... " << endl;
   stopTotal = std::chrono::high_resolution_clock::now();
@@ -175,7 +177,12 @@ int main(int argc, char **argv) {
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
-  if (numIterations > 0) {
+  cout << "Total Duration of Physics Calculations: " << endl;
+  cout << "Force:   " << durationForce  << " \u03bcs (" <<  endl;
+  cout << "Postion: " << durationPosition  << " \u03bcs (" <<  endl;
+  cout << "Velocity " << durationVelocity  << " \u03bcs (" <<  endl;
+
+    if (numIterations > 0) {
     cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
          << "s)" << endl;
   }
