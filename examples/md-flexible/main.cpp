@@ -177,10 +177,10 @@ int main(int argc, char **argv) {
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
-  cout << "Total Duration of Physics Calculations: " << endl;
-  cout << "Force:   " << durationForce  << " \u03bcs (" <<  endl;
-  cout << "Postion: " << durationPosition  << " \u03bcs (" <<  endl;
-  cout << "Velocity " << durationVelocity  << " \u03bcs (" <<  endl;
+  cout << "Duration of Physics Calculations: " << endl;
+  cout << "Force:   " << durationForce  << " \u03bcs (" << durationForce*1e-6 << "s)" << endl;
+  cout << "Postion: " << durationPosition  << " \u03bcs (" << durationPosition*1e-6 << "s)" << endl;
+  cout << "Velocity " << durationVelocity  << " \u03bcs (" << durationVelocity*1e-6 << "s)" << endl;
 
     if (numIterations > 0) {
     cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
