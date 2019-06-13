@@ -30,7 +30,28 @@ TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
 }
 
 TEST(StringUtilsTest, parseDoublesTest) {
-  testParseMultiple<double>({1., 1.5, 2., 3., 20.}, "1.,1.5, 2,3.00,2e1", autopas::utils::StringUtils::parseDouble);
+  testParseMultiple<double>({1., 1.5, 2., 3., 20.}, "1.,1.5, 2,3.00,2e1", autopas::utils::StringUtils::parseDoubles);
+}
+
+TEST(StringUtilsTest, parseNumberSetTest) {
+  EXPECT_EQ(autopas::utils::StringUtils::parseNumberSet("1.,1.5, 2,3.00,2e1")->getAll(),
+            std::set<double>({1., 1.5, 2., 3., 20.}));
+
+  auto numberSetSquare = autopas::utils::StringUtils::parseNumberSet("[1.,2e1]");
+  auto* numberInterval = dynamic_cast<autopas::NumberInterval<double>*>(numberSetSquare.get());
+  EXPECT_NE(numberInterval, nullptr);
+  if (numberInterval) {
+    EXPECT_EQ(numberInterval->getMin(), 1.);
+    EXPECT_EQ(numberInterval->getMax(), 2e1);
+  }
+
+  auto numberSetRound = autopas::utils::StringUtils::parseNumberSet("(-.2,2)");
+  numberInterval = dynamic_cast<autopas::NumberInterval<double>*>(numberSetRound.get());
+  EXPECT_NE(numberInterval, nullptr);
+  if (numberInterval) {
+    EXPECT_EQ(numberInterval->getMin(), -.2);
+    EXPECT_EQ(numberInterval->getMax(), 2);
+  }
 }
 
 TEST(StringUtilsTest, parseSelectorOptionsTest) {

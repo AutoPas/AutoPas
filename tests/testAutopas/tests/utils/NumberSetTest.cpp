@@ -1,18 +1,18 @@
 /**
- * @file DoubleSet.cpp
+ * @file NumberSetTest.cpp
  * @author Jan Nguyen
  * @date 09.06.19
  */
 
 #include <gtest/gtest.h>
-#include "autopas/utils/DoubleSet.h"
+#include "autopas/utils/NumberSet.h"
 
 using namespace autopas;
 
-TEST(DoubleSetTest, testFiniteSet) {
+TEST(NumberSetTest, testFiniteSet) {
   std::array<double, 3> a = {1., 2., 3.};
-  DoubleFiniteSet fSet({1., 2., 3.});
-  DoubleSet& set = fSet;
+  NumberSetFinite<double> fSet({1., 2., 3.});
+  NumberSet<double>& set = fSet;
 
   // check min and max
   ASSERT_EQ(set.getMin(), 1.);
@@ -30,13 +30,13 @@ TEST(DoubleSetTest, testFiniteSet) {
   }
 }
 
-TEST(DoubleSetTest, testFiniteSetSample) {
+TEST(NumberSetTest, testFiniteSetSample) {
   std::default_random_engine rng(32);
   unsigned numSamples = 32;
 
   std::array<double, 3> a = {1., 2., 3.};
-  DoubleFiniteSet fSet({1., 2., 3.});
-  DoubleSet& set = fSet;
+  NumberSetFinite<double> fSet({1., 2., 3.});
+  NumberSet<double>& set = fSet;
 
   std::map<double, unsigned> occurences;
   for (auto val : a) {
@@ -69,11 +69,11 @@ TEST(DoubleSetTest, testFiniteSetSample) {
   ASSERT_LE(maxOccur - minOccur, 1);
 }
 
-TEST(DoubleSetTest, testInterval) {
+TEST(NumberSetTest, testInterval) {
   double min = -3.;
   double max = 2.;
-  DoubleInterval iSet(min, max);
-  DoubleSet& set = iSet;
+  NumberInterval<double> iSet(min, max);
+  NumberSet<double>& set = iSet;
 
   // set should be infinite
   ASSERT_FALSE(set.isFinite());
@@ -82,11 +82,11 @@ TEST(DoubleSetTest, testInterval) {
   EXPECT_THROW(set.getAll(), autopas::utils::ExceptionHandler::AutoPasException);
 }
 
-TEST(DoubleSetTest, testIntervalFinite) {
+TEST(NumberSetTest, testIntervalFinite) {
   double min = 2.;
   double max = 2.;
-  DoubleInterval iSet(min, max);
-  DoubleSet& set = iSet;
+  NumberInterval<double> iSet(min, max);
+  NumberSet<double>& set = iSet;
 
   // set should be finite
   ASSERT_TRUE(set.isFinite());
@@ -97,14 +97,14 @@ TEST(DoubleSetTest, testIntervalFinite) {
   ASSERT_EQ(*values.begin(), max);
 }
 
-TEST(DoubleSetTest, testIntervalSample) {
+TEST(NumberSetTest, testIntervalSample) {
   std::default_random_engine rng(32);
   unsigned numSamples = 32;
 
   double min = -3.;
   double max = 2.;
-  DoubleInterval iSet(min, max);
-  DoubleSet& set = iSet;
+  NumberInterval<double> iSet(min, max);
+  NumberSet<double>& set = iSet;
 
   std::vector<double> samples = set.uniformSample(numSamples, rng);
   ASSERT_EQ(samples.size(), numSamples);
@@ -115,11 +115,11 @@ TEST(DoubleSetTest, testIntervalSample) {
   }
 }
 
-TEST(DoubleSetTest, testClone) {
+TEST(NumberSetTest, testClone) {
   double min = -3.;
   double max = 2.;
-  DoubleInterval iSet(min, max);
-  DoubleSet& set = iSet;
+  NumberInterval<double> iSet(min, max);
+  NumberSet<double>& set = iSet;
 
   auto clone = set.clone();
 

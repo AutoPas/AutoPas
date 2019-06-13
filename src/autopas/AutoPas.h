@@ -14,7 +14,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
-#include "autopas/utils/DoubleSet.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 
@@ -52,7 +52,7 @@ class AutoPas {
         _allowedTraversals(allTraversalOptions),
         _allowedDataLayouts(allDataLayoutOptions),
         _allowedNewton3Options(allNewton3Options),
-        _allowedCellSizeFactors(std::make_unique<DoubleFiniteSet>(std::set<double>({1.}))) {
+        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -228,13 +228,13 @@ class AutoPas {
    * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */
-  const DoubleSet &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
+  const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
 
   /**
    * Set allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @param allowedCellSizeFactors
    */
-  void setAllowedCellSizeFactors(const DoubleSet &allowedCellSizeFactors) {
+  void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
     if (allowedCellSizeFactors.getMin() <= 0.0) {
       AutoPasLog(error, "cell size <= 0.0");
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
@@ -251,7 +251,7 @@ class AutoPas {
       AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
-    AutoPas::_allowedCellSizeFactors = std::make_unique<DoubleFiniteSet>(std::set<double>{cellSizeFactor});
+    AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
   /**
@@ -429,8 +429,8 @@ class AutoPas {
           return nullptr;
         }
 
-        return std::make_unique<FullSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
-                                            _allowedNewton3Options, _allowedCellSizeFactors->getAll());
+        return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
+                                            _allowedDataLayouts, _allowedNewton3Options);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
@@ -500,7 +500,7 @@ class AutoPas {
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
-  std::unique_ptr<DoubleSet> _allowedCellSizeFactors;
+  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
 
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };  // namespace autopas

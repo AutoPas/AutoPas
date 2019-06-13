@@ -27,8 +27,8 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    */
-  Configuration(ContainerOption _container, TraversalOption _traversal, DataLayoutOption _dataLayout,
-                Newton3Option _newton3, double _cellSizeFactor)
+  Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
+                DataLayoutOption _dataLayout, Newton3Option _newton3)
       : container(_container),
         traversal(_traversal),
         dataLayout(_dataLayout),
@@ -51,10 +51,10 @@ class Configuration {
    */
   std::string toString() const {
     return "{Container: " + utils::StringUtils::to_string(container) +
+           " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
            " , Traversal: " + utils::StringUtils::to_string(traversal) +
            " , Data Layout: " + utils::StringUtils::to_string(dataLayout) +
-           " , Newton 3: " + utils::StringUtils::to_string(newton3) +
-           " , CellSizeFactor: " + std::to_string(cellSizeFactor) + "}";
+           " , Newton 3: " + utils::StringUtils::to_string(newton3) + "}";
   }
 
   /**
@@ -118,15 +118,15 @@ inline bool operator!=(const Configuration& lhs, const Configuration& rhs) { ret
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
  * sets.
  *
- * Configurations are compared member wise in the order: _container, _traversal, _dataLayout, _newton3.
+ * Configurations are compared member wise in the order: container, cellSizeFactor, traversal, dataLayout, newton3.
  *
  * @param lhs
  * @param rhs
  * @return
  */
 inline bool operator<(const Configuration& lhs, const Configuration& rhs) {
-  return std::tie(lhs.container, lhs.traversal, lhs.dataLayout, lhs.newton3, lhs.cellSizeFactor) <
-         std::tie(rhs.container, rhs.traversal, rhs.dataLayout, rhs.newton3, rhs.cellSizeFactor);
+  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.dataLayout, lhs.newton3) <
+         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.dataLayout, rhs.newton3);
 }
 
 /**
