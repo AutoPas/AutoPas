@@ -40,7 +40,8 @@ class BayesianSearch : public TuningStrategyInterface {
                  const std::set<Newton3Option>& allowedNewton3Options = allNewton3Options,
                  const DoubleSet& allowedCellSizeFactors = DoubleInterval(0., 2.),
                  AcquisitionFunction expAcqFunction = lcb, size_t expNumSamples = 1000)
-      : _containerOptions(allowedContainerOptions),
+      : _enumOptions(4),
+        _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
         _dataLayoutOptions(allowedDataLayoutOptions),
         _newton3Options(allowedNewton3Options),
@@ -53,7 +54,7 @@ class BayesianSearch : public TuningStrategyInterface {
     /// @todo setting hyperparameters
 
     updateEnumOptions();
-    if (not searchSpaceIsEmpty()) tune();
+    tune();
   }
 
   inline Configuration getCurrentConfiguration() override { return _currentConfig; }
@@ -110,6 +111,12 @@ class BayesianSearch : public TuningStrategyInterface {
 };
 
 bool BayesianSearch::tune() {
+  if (searchSpaceIsEmpty()) {
+    // no valid configuration
+    _currentConfig = Configuration();
+    return false;
+  }
+
   std::vector<FeatureVector> samples(_expNumSamples);
 
   // sample from all enums
@@ -121,6 +128,7 @@ bool BayesianSearch::tune() {
 
   // sample minimum of acquisition function
   FeatureVector best = _gp.sampleAquisitionMin(_expAcqFunction, samples);
+  setConfig(best);
 
   return true;
 }

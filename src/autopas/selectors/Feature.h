@@ -50,6 +50,10 @@ class DoubleFeature : public Feature {
   double operator-(const Feature& other) const override;
   std::unique_ptr<Feature> clone() const override;
 
+  /**
+   * Get double representing the Feature
+   * @return
+   */
   double getValue() { return _value; }
 };
 
@@ -71,6 +75,10 @@ class EnumFeature : public Feature {
   double operator-(const Feature& other) const override;
   std::unique_ptr<Feature> clone() const override;
 
+  /**
+   * Get int representing the Feature
+   * @return
+   */
   int getValue() { return _value; }
 
   /**

@@ -78,11 +78,18 @@ class FeatureVector {
   }
 
   /**
-   * get the feature of given index
+   * Get a reference to feature of given index.
    * @param index
    * @return
    */
   Feature& operator[](size_t index) { return *_vector[index]; }
+
+  /**
+   * Get a const reference to feature of given index.
+   * @param index
+   * @return
+   */
+  const Feature& operator[](size_t index) const { return *_vector[index]; }
 
   /**
    * Add a feature to the vector
@@ -100,8 +107,8 @@ class FeatureVector {
    * Create equidistant values in given range and
    * append them randomly to given vectors.
    * @param vectors
-   * @param featureRange
-   * @param seed seed for rng
+   * @param featureSet
+   * @param rng random number generator
    */
   static void lhsAddFeature(std::vector<FeatureVector>& vectors, const DoubleSet& featureSet,
                             std::default_random_engine& rng) {
@@ -120,6 +127,7 @@ class FeatureVector {
    *
    * @param vectors
    * @param featureSpace
+   * @param rng random number generator
    */
   template <class FeatureType>
   static void lhsAddFeature(std::vector<FeatureVector>& vectors, std::vector<FeatureType> featureSpace,

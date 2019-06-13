@@ -39,55 +39,6 @@ enum AcquisitionFunction {
  * TODO: maybe offer some options.
  */
 class GaussianProcess {
- private:
-  std::vector<FeatureVector> _inputs;
-  Eigen::VectorXd _outputs;
-
-  /**
-   * prior variance
-   */
-  double _theta;
-  /**
-   * Scale distance of each feature
-   */
-  std::vector<double> _dimScale;
-  /**
-   * fixed noise assumed
-   */
-  const double _sigma;
-
-  Eigen::MatrixXd _covMat;
-  Eigen::MatrixXd _covMatInv;
-  Eigen::VectorXd _weights;
-
-  /**
-   * Kernel function to describe similarity between two features
-   * @param f1
-   * @param f2
-   * @return
-   */
-  double kernel(FeatureVector f1, FeatureVector f2) const {
-    std::vector<double> r = f1 - f2;
-    double result = 0;
-    for (unsigned i = 0; i < r.size(); ++i) {
-      result += r[i] * r[i] * _dimScale[i];
-    }
-    return _theta * exp(-result);
-  }
-
-  /**
-   * Calulates the kernel between input and all evidences
-   * @param input
-   * @return Vector of covariances
-   */
-  Eigen::VectorXd kernelVector(FeatureVector input) const {
-    std::vector<double> k;
-    for (FeatureVector d : _inputs) {
-      k.push_back(kernel(input, d));
-    }
-    return Eigen::Map<Eigen::VectorXd>(k.data(), k.size());
-  }
-
  public:
   /**
    * Construct a gaussian process
@@ -145,7 +96,7 @@ class GaussianProcess {
    * @param input
    * @return mean
    */
-  double predictMean(FeatureVector input) const {
+  double predictMean(const FeatureVector& input) const {
     if (_inputs.size() == 0) return 0.;
 
     return kernelVector(input).dot(_weights);
@@ -156,7 +107,7 @@ class GaussianProcess {
    * @param input
    * @return variance
    */
-  double predictVar(FeatureVector input) const {
+  double predictVar(const FeatureVector& input) const {
     if (_inputs.size() == 0) return kernel(input, input);
 
     Eigen::VectorXd kVec = kernelVector(input);
@@ -169,7 +120,7 @@ class GaussianProcess {
    * @param feature
    * @return
    */
-  inline double calcAcquisition(AcquisitionFunction af, FeatureVector feature) const {
+  inline double calcAcquisition(AcquisitionFunction af, const FeatureVector& feature) const {
     switch (af) {
       case ucb: {
         return predictMean(feature) + std::sqrt(predictVar(feature));
@@ -236,5 +187,54 @@ class GaussianProcess {
 
     return samples[minIdx];
   }
+
+ private:
+  /**
+   * Kernel function to describe similarity between two features
+   * @param f1
+   * @param f2
+   * @return
+   */
+  double kernel(const FeatureVector& f1, const FeatureVector& f2) const {
+    std::vector<double> r = f1 - f2;
+    double result = 0;
+    for (unsigned i = 0; i < r.size(); ++i) {
+      result += r[i] * r[i] * _dimScale[i];
+    }
+    return _theta * exp(-result);
+  }
+
+  /**
+   * Calulates the kernel between input and all evidences
+   * @param input
+   * @return Vector of covariances
+   */
+  Eigen::VectorXd kernelVector(const FeatureVector& input) const {
+    std::vector<double> k;
+    for (FeatureVector d : _inputs) {
+      k.push_back(kernel(input, d));
+    }
+    return Eigen::Map<Eigen::VectorXd>(k.data(), k.size());
+  }
+
+  std::vector<FeatureVector> _inputs;
+  Eigen::VectorXd _outputs;
+
+  /**
+   * prior variance
+   */
+  double _theta;
+  /**
+   * Scale distance of each feature
+   */
+  std::vector<double> _dimScale;
+  /**
+   * fixed noise assumed
+   */
+  const double _sigma;
+
+  Eigen::MatrixXd _covMat;
+  Eigen::MatrixXd _covMatInv;
+  Eigen::VectorXd _weights;
 };
 }  // namespace autopas
