@@ -1,6 +1,6 @@
 project(AutoPas)
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 
 # CMAKE policies, etc.
 cmake_policy(SET CMP0054 NEW)
