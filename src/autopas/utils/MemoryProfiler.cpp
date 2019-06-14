@@ -4,10 +4,11 @@
  * @date 9/18/18
  */
 
-#include "MemoryProfiler.h"
 #include <sys/stat.h>
 #include <ifstream>
+
 #include "Logger.h"
+#include "MemoryProfiler.h"
 
 size_t autopas::memoryProfiler::currentMemoryUsage() {
   std::ifstream statusFile(statusFileName);
