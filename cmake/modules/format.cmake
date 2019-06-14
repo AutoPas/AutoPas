@@ -1,0 +1,2 @@
+add_custom_target(formatall)
+add_dependencies(formatall cmakeformat clangformat)
