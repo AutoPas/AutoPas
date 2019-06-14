@@ -271,8 +271,6 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
 
   elapsedTime = t.stop();
 
-  delete traversal;
-
   // double flops = flopsPerIteration * numIterations;
 
   double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-6;
