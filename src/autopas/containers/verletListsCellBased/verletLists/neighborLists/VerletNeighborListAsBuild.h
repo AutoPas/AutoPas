@@ -94,6 +94,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     return std::vector<TraversalOption>{TraversalOption::varVerletTraversalAsBuild};
   };
 
+  ContainerOption getContainerType() override { return ContainerOption::varVerletListsAsBuild; }
+
   void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                      typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
                          bool useNewton3) override {
