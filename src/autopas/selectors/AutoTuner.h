@@ -49,8 +49,8 @@ class AutoTuner {
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double cellSizeFactor,
             double verletSkin, unsigned int verletRebuildFrequency,
-            std::unique_ptr<TuningStrategyInterface> tuningStrategy, SelectorStrategyOption selectorStrategy,
-            unsigned int tuningInterval, unsigned int maxSamples)
+            std::unique_ptr<TuningStrategyInterface<Particle, ParticleCell>> tuningStrategy,
+            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
@@ -70,6 +70,8 @@ class AutoTuner {
     }
 
     _containerSelector.selectContainer(_tuningStrategy->getCurrentConfiguration()._container);
+
+    _tuningStrategy->addContainerSelector(_containerSelector);
   }
 
   /**
@@ -198,7 +200,7 @@ class AutoTuner {
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
   SelectorStrategyOption _selectorStrategy;
-  std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
+  std::unique_ptr<TuningStrategyInterface<Particle, ParticleCell>> _tuningStrategy;
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
 

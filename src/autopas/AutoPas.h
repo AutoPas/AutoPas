@@ -407,11 +407,11 @@ class AutoPas {
    * Generates a new Tuning Strategy object from the member variables of this autopas object.
    * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
    */
-  std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
+  std::unique_ptr<TuningStrategyInterface<Particle, ParticleCell>> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
       case TuningStrategyOption::fullSearch:
-        return std::make_unique<FullSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
-                                            _allowedNewton3Options);
+        return std::make_unique<FullSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
+                                                                    _allowedDataLayouts, _allowedNewton3Options);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
