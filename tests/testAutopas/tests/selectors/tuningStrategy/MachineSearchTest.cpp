@@ -11,7 +11,7 @@
 TEST_F(MachineSearchTest, testSearchSpaceExpectedOptions) {
   autopas::MachineSearch<Particle, FPCell> machineSearch(
       {autopas::ContainerOption::linkedCells, autopas::ContainerOption::verletLists,
-       autopas::ContainerOption::verletListsCells},
+       autopas::ContainerOption::verletListsCells}, {1.},
       autopas::allTraversalOptions, autopas::allDataLayoutOptions, autopas::allNewton3Options, "fdeep_model.json");
   EXPECT_FALSE(machineSearch.searchSpaceIsEmpty());
   EXPECT_FALSE(machineSearch.searchSpaceIsTrivial());
@@ -20,29 +20,29 @@ TEST_F(MachineSearchTest, testSearchSpaceExpectedOptions) {
 
 TEST_F(MachineSearchTest, testTune) {
   autopas::MachineSearch<Particle, FPCell> machineSearch(
-      {autopas::ContainerOption::linkedCells},
+      {autopas::ContainerOption::linkedCells},{1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, "fdeep_model.json");
 
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             machineSearch.getCurrentConfiguration());
   machineSearch.addEvidence(10);
 
   machineSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, autopas::TraversalOption::sliced,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             machineSearch.getCurrentConfiguration());
   machineSearch.addEvidence(1);
 
   machineSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c01,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c01,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             machineSearch.getCurrentConfiguration());
   machineSearch.addEvidence(20);
 
   machineSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, autopas::TraversalOption::sliced,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             machineSearch.getCurrentConfiguration());
 }

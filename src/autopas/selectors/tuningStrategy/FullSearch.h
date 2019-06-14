@@ -18,7 +18,8 @@ namespace autopas {
 /**
  * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
  */
-class FullSearch : public TuningStrategyInterface {
+template <typename Particle, typename ParticleCell>
+class FullSearch : public TuningStrategyInterface<Particle, ParticleCell> {
  public:
   /**
    * Constructor for the FullSearch that generates the search space from the allowed options.
@@ -69,6 +70,10 @@ class FullSearch : public TuningStrategyInterface {
 
   inline bool searchSpaceIsEmpty() override { return _searchSpace.empty(); }
 
+  void addContainerSelector(/*const*/ ContainerSelector<Particle, ParticleCell> & /*containerSelector*/) override {
+    AutoPasLog(trace, "ignoring containerSelector in FullSearch");
+  }
+
  private:
   /**
    * Fills the search space with the cartesian product of the given options (minus invalid combinations).
@@ -91,7 +96,8 @@ class FullSearch : public TuningStrategyInterface {
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 };
 
-void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+template <typename Particle, typename ParticleCell>
+void FullSearch<Particle, ParticleCell>::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                      const std::set<double> &allowedCellSizeFactors,
                                      const std::set<TraversalOption> &allowedTraversalOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
@@ -128,7 +134,8 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
   _currentConfig = _searchSpace.begin();
 }
 
-bool FullSearch::tune() {
+template <typename Particle, typename ParticleCell>
+bool FullSearch<Particle, ParticleCell>::tune() {
   // repeat as long as traversals are not applicable or we run out of configs
   ++_currentConfig;
   if (_currentConfig == _searchSpace.end()) {
@@ -139,7 +146,8 @@ bool FullSearch::tune() {
   return true;
 }
 
-void FullSearch::selectOptimalConfiguration() {
+template <typename Particle, typename ParticleCell>
+void FullSearch<Particle, ParticleCell>::selectOptimalConfiguration() {
   if (_searchSpace.size() == 1) {
     _currentConfig = _searchSpace.begin();
     return;
@@ -170,7 +178,8 @@ void FullSearch::selectOptimalConfiguration() {
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
 
-void FullSearch::removeN3Option(Newton3Option badNewton3Option) {
+template <typename Particle, typename ParticleCell>
+void FullSearch<Particle, ParticleCell>::removeN3Option(Newton3Option badNewton3Option) {
   for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
     if (ssIter->newton3 == badNewton3Option) {
       // change current config to the next non-deleted

@@ -45,7 +45,7 @@ class AutoTuner {
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            std::unique_ptr<TuningStrategyInterface> tuningStrategy, SelectorStrategyOption selectorStrategy,
+            std::unique_ptr<TuningStrategyInterface<Particle, ParticleCell>> tuningStrategy, SelectorStrategyOption selectorStrategy,
             unsigned int tuningInterval, unsigned int maxSamples)
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
@@ -60,6 +60,7 @@ class AutoTuner {
     }
 
     selectCurrentContainer();
+    _tuningStrategy->addContainerSelector(_containerSelector);
   }
 
   /**
@@ -192,7 +193,7 @@ class AutoTuner {
   bool tune(PairwiseFunctor &pairwiseFunctor);
 
   SelectorStrategyOption _selectorStrategy;
-  std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
+  std::unique_ptr<TuningStrategyInterface<Particle, ParticleCell>> _tuningStrategy;
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
   double _verletSkin;

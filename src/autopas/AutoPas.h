@@ -17,7 +17,6 @@
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/selectors/tuningStrategy/MachineSearch.h"
 #include "autopas/utils/NumberSet.h"
-#include "autopas/NoTemplateInterface.h"
 
 namespace autopas {
 
@@ -35,7 +34,7 @@ static unsigned int _instanceCounter = 0;
  * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle, class ParticleCell>
-class AutoPas : NoTemplateInterface {
+class AutoPas {
  public:
   /**
    * Constructor for the autopas class.
@@ -425,18 +424,22 @@ class AutoPas : NoTemplateInterface {
   }
 
   /**
-   * Set tuning interval.
-   * @param modelLink
+   * Set the file which should be used for the MachineSearch tuning strategy.
+   * @param modelLink Absolute or relative path to the file.
    */
-  void setModelLink(std::string modelLink) { AutoPas::_modelLink = modelLink; }
+  void setModelLink(std::string modelLink) { _modelLink = modelLink; }
 
+  /**
+   * Get the
+   */
+  std::string getModelLink() { return _modelLink; }
 
-private:
+ private:
   /**
    * Generates a new Tuning Strategy object from the member variables of this autopas object.
    * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
    */
-  std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
+  std::unique_ptr<TuningStrategyInterface<Particle, ParticleCell>> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
       case TuningStrategyOption::fullSearch:
         if (not _allowedCellSizeFactors->isFinite()) {
@@ -445,12 +448,14 @@ private:
           return nullptr;
         }
 
-        return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
-                                            _allowedDataLayouts, _allowedNewton3Options);
+        return std::make_unique<FullSearch<Particle, ParticleCell>>(
+            _allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals, _allowedDataLayouts,
+            _allowedNewton3Options);
 
-        case TuningStrategyOption::machineSearch:
-        return std::make_unique<MachineSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
-                                               _allowedNewton3Options, _modelLink, this);
+      case TuningStrategyOption::machineSearch:
+        return std::make_unique<MachineSearch<Particle, ParticleCell>>(
+            _allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals, _allowedDataLayouts,
+            _allowedNewton3Options, _modelLink);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
