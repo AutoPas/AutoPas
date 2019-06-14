@@ -10,7 +10,7 @@ Please keep in mind the following notes while working.
 * Pointers: Always use smart pointers when you are managing memory. Don't use new or delete.
 * OpenMP: Use AutoPas wrapper functions for OpenMP (`src/autopas/utils/WrapOpenMP.h`) instead of OpenMP functions to allow building without enabled OpenMP.
 * `#pragma once` instead of header guards.
-* `constexpr` instead of `#define`.
+* `constexpr` instead of `#define`. Use it wherever possible.
 
 ### Code Style
 * Private attributes are prefixed with `_`.
