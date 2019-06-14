@@ -49,7 +49,7 @@ Please keep in mind the following notes while working.
 
 ## AutoPas
 ### Adding a new Traversal
-* Create a new traversal class under `src/autopas/containers/[Container]` for the container the traversal is intended.
+* Create a new traversal class under `src/autopas/containers/[Container]/traversals` for the container the traversal is intended.
 * Think about inheriting from a similar traversal. At least derive your new traversal from `src/autopas/containers/cellPairTraversals/TraversalInterface.h`.
 * Add a new enum entry to `src/autopas/options/TraversalOption.h`.
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
@@ -81,4 +81,5 @@ Please keep in mind the following notes while working.
 ### Adding a new Option
 * If applicable add a new setter to `src/autopas/AutoPas.h`.
 * Check that the new option is added to the md-flexible example. Parser and main.
+* Global options, which are represented by an enum, should be defined in an additional file in `src/autopas/options`
 * Add new unit tests for your option.
