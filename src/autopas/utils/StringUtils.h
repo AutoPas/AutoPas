@@ -440,8 +440,14 @@ inline std::set<double> parseDoubles(const std::string &doubleString, bool ignor
  */
 inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString,
                                                                   bool ignoreUnknownOptions = true) {
-  // try to match (x,y) or [x,y]
-  std::regex rgx("[\\(\\[]([^,]++),([^\\]\\)]++)[\\)\\]]");
+  // try to match an interval [x,y]
+  std::regex rgx(
+      "\\["         // open square bracket
+      "([^,]++)"    // any number of non-comma chars (1st Capturing Group)
+      ","           // comma
+      "([^\\]]++)"  // any number of non-closing-bracket chars (2nd Capturing Group)
+      "\\]"         // closing square bracket
+  );
   std::smatch matches;
   if (std::regex_match(setString, matches, rgx)) {
     try {

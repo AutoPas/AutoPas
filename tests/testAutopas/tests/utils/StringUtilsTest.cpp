@@ -37,20 +37,12 @@ TEST(StringUtilsTest, parseNumberSetTest) {
   EXPECT_EQ(autopas::utils::StringUtils::parseNumberSet("1.,1.5, 2,3.00,2e1")->getAll(),
             std::set<double>({1., 1.5, 2., 3., 20.}));
 
-  auto numberSetSquare = autopas::utils::StringUtils::parseNumberSet("[1.,2e1]");
-  auto* numberInterval = dynamic_cast<autopas::NumberInterval<double>*>(numberSetSquare.get());
+  auto numberSet = autopas::utils::StringUtils::parseNumberSet("[1.,2e1]");
+  auto* numberInterval = dynamic_cast<autopas::NumberInterval<double>*>(numberSet.get());
   EXPECT_NE(numberInterval, nullptr);
   if (numberInterval) {
     EXPECT_EQ(numberInterval->getMin(), 1.);
     EXPECT_EQ(numberInterval->getMax(), 2e1);
-  }
-
-  auto numberSetRound = autopas::utils::StringUtils::parseNumberSet("(-.2,2)");
-  numberInterval = dynamic_cast<autopas::NumberInterval<double>*>(numberSetRound.get());
-  EXPECT_NE(numberInterval, nullptr);
-  if (numberInterval) {
-    EXPECT_EQ(numberInterval->getMin(), -.2);
-    EXPECT_EQ(numberInterval->getMax(), 2);
   }
 }
 
