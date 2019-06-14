@@ -8,15 +8,26 @@
 
 namespace autopas {
 
-template<class NeighborList>
-class VarVerletTraversalInterface {
+/**
+ *
+ * @tparam ParticleCell Needed because all traversals have to be cell pair traversals.
+ * @tparam NeighborList
+ */
+template <class ParticleCell, class NeighborList>
+class VarVerletTraversalInterface : public CellPairTraversal<ParticleCell> {
   // TODO: Have SoA as an option
  public:
-  virtual ~VarVerletTraversalInterface() = default;
+  VarVerletTraversalInterface() : CellPairTraversal<ParticleCell>({0, 0, 0}) {}
+
+  ~VarVerletTraversalInterface() override = default;
 
   virtual void iterateVerletLists(NeighborList &neighborList) = 0;
 
   virtual bool usesNewton3() = 0;
+
+  void initTraversal(std::vector<ParticleCell> &cells) override {}
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {}
 };
 
-} //namespace autopas
+}  // namespace autopas

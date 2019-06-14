@@ -235,7 +235,9 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
   auto words = tokenize(traversalOptionsString, delimiters);
 
   for (auto &word : words) {
-    if (word.find("verlet-lists") != std::string::npos) {
+    if (word.find("var") != std::string::npos) {
+      traversalOptions.emplace_back(autopas::TraversalOption::varVerletTraversalAsBuild);
+    } else if (word.find("verlet-lists") != std::string::npos) {
       traversalOptions.emplace_back(autopas::TraversalOption::verletTraversal);
     } else if (word.find("01") != std::string::npos) {
       if (word.find("cuda") != std::string::npos) {
@@ -258,9 +260,7 @@ inline std::vector<autopas::TraversalOption> parseTraversalOptions(const std::st
         traversalOptions.emplace_back(autopas::TraversalOption::slicedVerlet);
       else
         traversalOptions.emplace_back(autopas::TraversalOption::sliced);
-    } else if(word.find("var-verlet-lists-as-build") != std::string::npos) {
-      traversalOptions.emplace_back(autopas::TraversalOption::varVerletTraversalAsBuild);
-    }else if (not ignoreUnknownOptions) {
+    } else if (not ignoreUnknownOptions) {
       traversalOptions.emplace_back(autopas::TraversalOption(-1));
     }
   }

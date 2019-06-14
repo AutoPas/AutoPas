@@ -19,7 +19,7 @@ enum ContainerOption {
   verletLists = 2,
   verletListsCells = 3,
   verletClusterLists = 4,
-  varVerletListsAsBuild = 5
+  varVerletListsAsBuild = 5,
 };
 
 /**

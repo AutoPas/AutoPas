@@ -39,7 +39,8 @@ INSTANTIATE_TEST_SUITE_P(
                 // @TODO: let verlet lists support Newton 3
                 if (containerOption == autopas::ContainerOption::verletLists ||
                     containerOption == autopas::ContainerOption::verletListsCells ||
-                    containerOption == autopas::ContainerOption::verletClusterLists) {
+                    containerOption == autopas::ContainerOption::verletClusterLists ||
+                    containerOption == autopas::ContainerOption::varVerletListsAsBuild) {
                   continue;
                 }
 

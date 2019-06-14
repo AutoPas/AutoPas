@@ -6,23 +6,28 @@
 
 #pragma once
 
-#include "autopas/utils/WrapOpenMP.h"
-#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListAsBuild.h"
 #include "VarVerletTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListAsBuild.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
-
-template<class Particle, class PairwiseFunctor, bool useNewton3>
-class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeighborListAsBuild<Particle>> {
+/**
+ *
+ * @tparam ParticleCell Needed because every traversal has to be a CellPairTraversal at the moment.
+ * @tparam Particle
+ * @tparam PairwiseFunctor
+ * @tparam useNewton3
+ */
+template <class ParticleCell, class Particle, class PairwiseFunctor, bool useNewton3>
+class VarVerletTraversalAsBuild
+    : public VarVerletTraversalInterface<ParticleCell, VerletNeighborListAsBuild<Particle>> {
  public:
-  explicit VarVerletTraversalAsBuild(PairwiseFunctor *pairwiseFunctor)
-      : _functor(pairwiseFunctor) {}
+  explicit VarVerletTraversalAsBuild(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
 
-  bool usesNewton3() override {
-    return useNewton3;
-  }
+  bool usesNewton3() override { return useNewton3; }
 
-  void iterateVerletLists(VerletNeighborListAsBuild <Particle> &neighborList) override {
+  void iterateVerletLists(VerletNeighborListAsBuild<Particle> &neighborList) override {
     const auto &list = neighborList.getInternalNeighborList();
 
 #if defined(AUTOPAS_OPENMP)
@@ -40,12 +45,15 @@ class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeigh
           }
         }
       }
-
     }
   }
+
+  bool isApplicable() override { return true; }
+
+  TraversalOption getTraversalType() override { return TraversalOption::varVerletTraversalAsBuild; }
 
  private:
   PairwiseFunctor *_functor;
 };
 
-} // namespace autopas
+}  // namespace autopas

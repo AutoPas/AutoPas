@@ -24,6 +24,8 @@ class VerletNeighborListInterface {
 
   virtual std::vector<TraversalOption> getAllTraversals() = 0;
 
+  virtual ContainerOption getContainerType() = 0;
+
   virtual void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                                        typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
                                  bool useNewton3) = 0;
