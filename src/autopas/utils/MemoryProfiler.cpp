@@ -5,7 +5,7 @@
  */
 
 #include <sys/stat.h>
-#include <ifstream>
+#include <fstream>
 
 #include "Logger.h"
 #include "MemoryProfiler.h"
