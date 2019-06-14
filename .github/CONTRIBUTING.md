@@ -7,7 +7,7 @@ Please keep in mind the following notes while working.
 ## C++
 ### General Notes
 * Cpp standard: C++14. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++17` including the alternative version of the code. For now, we are stuck with C++14 due to the CUDA dependency.
-* Pointers: Unless there is no special reason, use smart pointers instead of raw pointers.
+* Pointers: Always use smart pointers when you are managing memory. Don't use new or delete.
 * OpenMP: Use AutoPas wrapper functions for OpenMP (`src/autopas/utils/WrapOpenMP.h`) instead of OpenMP functions to allow building without enabled OpenMP.
 * `#pragma once` instead of header guards.
 * `constexpr` instead of `#define`.
@@ -23,7 +23,7 @@ Please keep in mind the following notes while working.
 
 ### Comment Style
 * Please write full sentences starting with a capital letter and ending with a period.
-* Doxygen (VERSION) is used in this project to create a documentation.
+* Doxygen (v1.8.11) is used in this project to create the documentation.
 * Documentation style is Javadoc style.
 * All public methods and attributes need to be documented.
 * The first comment inside a comment block (`/** <comment> */`) is automatically treated as a brief comment and needs to end with a period. The `brief` keyword is omitted (please delete occurrences).
@@ -64,6 +64,7 @@ Please keep in mind the following notes while working.
 * Derive your new container from `src/autopas/containers/ParticleContainer.h` or a more similar one.
 * Add a new enum entry to `src/autopas/options/ContainerOption.h`.
 * Create a new set of compatible traversals in `src/autopas/containers/CompatibleTraversals.h`.
+* Create a new `case` statement in `src/autopas/utils/StaticSelectors.h`
 * Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`
 * Add a case for the new container in `src/autopas/selectors/ContainerSelector.h::generateContainer()`.
 * Check that the new option is added to the md-flexible example.
