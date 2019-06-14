@@ -10,7 +10,7 @@
 #include "autopas/iterators/SingleCellIteratorInterface.h"
 
 namespace autopas {
-namespace internal {
+inline namespace internal {
 /**
  * SingleCellIterator class to loop over particles of a single cell.
  *
