@@ -6,7 +6,7 @@
 
 #include "MemoryProfiler.h"
 #include <sys/stat.h>
-#include <fstream>
+#include <ifstream>
 #include "Logger.h"
 
 size_t autopas::memoryProfiler::currentMemoryUsage() {
