@@ -50,7 +50,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
 
  public:
   /**
-   * @copydoc CellPairTraversal::initTraversal()
+   * load Data Layouts required for this Traversal.
+   * @param cells where the data should be loaded
    */
   void initTraversal(std::vector<ParticleCell>& cells) override {
 #ifdef AUTOPAS_OPENMP
@@ -63,7 +64,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   /**
-   * @copydoc CellPairTraversal::endTraversal()
+   * write Data to AoS.
+   * @param cells for which the data should be written back
    */
   void endTraversal(std::vector<ParticleCell>& cells) override {
 #ifdef AUTOPAS_OPENMP
