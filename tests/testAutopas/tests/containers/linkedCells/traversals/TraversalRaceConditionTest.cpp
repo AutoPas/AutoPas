@@ -37,7 +37,8 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   auto containerList = {autopas::ContainerOption::linkedCells};
 
   for (auto &traversalLC : autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals()) {
-    if (traversalLC == autopas::TraversalOption::c01 || traversalLC == autopas::TraversalOption::c01CombinedSoA) {
+    if (traversalLC == autopas::TraversalOption::c01 || traversalLC == autopas::TraversalOption::c01CombinedSoA ||
+        traversalLC == autopas::TraversalOption::c04SoA) {
       // c01 traversal does not work with newton3.
       // Here only one traversal is tested.
       continue;

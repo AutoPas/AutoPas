@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "C08CellHandler.h"
+#include "C04CellHandler.h"
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C04BasedTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
@@ -47,33 +47,25 @@ class C04Traversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-  TraversalOption getTraversalType() override { return TraversalOption::c04; }
+  TraversalOption getTraversalType() override { return TraversalOption::c04SoA; }
 
   /**
-   * C04 traversals are always usable.
+   * c04SoA traversals are only usable with DataLayout SoA.
    * @return
    */
-  bool isApplicable() override {
-    int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-    cudaGetDeviceCount(&nDevices);
-#endif
-    if (DataLayout == DataLayoutOption::cuda)
-      return nDevices > 0;
-    else
-      return true;
-  }
+  bool isApplicable() override { return DataLayout == DataLayoutOption::soa; }
 
  private:
-  C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
+  C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
+  _cellHandler.resizeBuffers();
   this->c04Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    _cellHandler.processBaseCell(cells, baseIndex);
+    _cellHandler.processBaseCell(cells, x, y, z);
   });
 }
 
