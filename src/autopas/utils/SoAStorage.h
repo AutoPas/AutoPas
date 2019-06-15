@@ -20,10 +20,10 @@ class SoAStorage {
  private:
   // End of iteration/recursion.
   template <std::size_t I = 0, typename FunctorT, typename... Tp>
-  inline typename std::enable_if<I == sizeof...(Tp), void>::type for_each(std::tuple<Tp...>&, FunctorT) {}
+  inline typename std::enable_if<I == sizeof...(Tp), void>::type for_each(std::tuple<Tp...> &, FunctorT) {}
 
   template <std::size_t I = 0, typename FunctorT, typename... Tp>
-  inline typename std::enable_if<(I < sizeof...(Tp)), void>::type for_each(std::tuple<Tp...>& t, FunctorT f) {
+  inline typename std::enable_if<(I < sizeof...(Tp)), void>::type for_each(std::tuple<Tp...> &t, FunctorT f) {
     f(std::get<I>(t));
     for_each<I + 1, FunctorT, Tp...>(t, f);
   }
@@ -48,7 +48,7 @@ class SoAStorage {
    * @return a reference to the vector for the specific attribute
    */
   template <size_t soaAttribute>
-  auto& get() {
+  auto &get() {
     return std::get<soaAttribute>(soaStorageTuple);
   }
 
@@ -57,7 +57,7 @@ class SoAStorage {
    * @note const variant
    */
   template <size_t soaAttribute>
-  const auto& get() const {
+  const auto &get() const {
     return std::get<soaAttribute>(soaStorageTuple);
   }
 
