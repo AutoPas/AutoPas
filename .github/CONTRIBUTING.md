@@ -48,6 +48,10 @@ Please keep in mind the following notes while working.
 * Please avoid using commits to save your unfinished work before switching branches, this pollutes the commit history. Please use `git stash` instead.
 
 ## AutoPas
+### Namespaces
+* Code in folder `src` should belong to namespace `autopas`
+* Classes which shouldn't be used externally should belong to namespace `internal` declared as `inline`
+
 ### Adding a new Traversal
 * Create a new traversal class under `src/autopas/containers/[Container]/traversals` for the container the traversal is intended.
 * Think about inheriting from a similar traversal. At least derive your new traversal from `src/autopas/containers/cellPairTraversals/TraversalInterface.h`.
