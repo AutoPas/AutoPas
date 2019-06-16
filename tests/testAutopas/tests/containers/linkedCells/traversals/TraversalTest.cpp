@@ -14,7 +14,7 @@ using ::testing::Bool;
 using ::testing::Combine;
 using ::testing::ValuesIn;
 
-void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3>& edgeLength,
+void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3> &edgeLength,
                    int interactions, double cutoff = 1.0) {
   TraversalTest::CountFunctor functor;
   functor.setCutoff(cutoff);
@@ -58,7 +58,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     }
   }
 
-  auto* traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell>*>(Traversal.get());
+  auto *traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell> *>(Traversal.get());
   traversalInterface->traverseCellPairs(cells);
 }
 
@@ -138,6 +138,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
                          Combine(ValuesIn([]() -> std::set<autopas::TraversalOption> {
                                    auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
                                    allTraversals.erase(autopas::TraversalOption::c01Cuda);
+                                   allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
                                    return allTraversals;
                                  }()),
                                  Bool()),

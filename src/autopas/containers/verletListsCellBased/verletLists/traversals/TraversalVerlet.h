@@ -40,27 +40,27 @@ class TraversalVerlet
    * @param dims dimensions of the underlying container
    * @param pairwiseFunctor Functor to be used with this Traversal
    */
-  TraversalVerlet(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor)
+  TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>(dims), _functor(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() override { return TraversalOption::verletTraversal; }
 
   bool isApplicable() override { return DataLayout == DataLayoutOption::aos || DataLayout == DataLayoutOption::soa; }
 
-  void initTraversal(std::vector<ParticleCell>& cells) override {
+  void initTraversal(std::vector<ParticleCell> &cells) override {
     if (DataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
-      for (auto& cell : cells) {
+      for (auto &cell : cells) {
         _functor->SoALoader(cell, _soa, offset);
         offset += cell.numParticles();
       }
     }
   }
 
-  void endTraversal(std::vector<ParticleCell>& cells) override {
+  void endTraversal(std::vector<ParticleCell> &cells) override {
     if (DataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
-      for (auto& cell : cells) {
+      for (auto &cell : cells) {
         _functor->SoAExtractor(cell, _soa, offset);
         offset += cell.numParticles();
       }
@@ -71,10 +71,10 @@ class TraversalVerlet
    * Initializes Traversal and copies data to this traversal soa storage
    * @param cells content of the container the Traversal is to be called on
    */
-  void initTraversal(std::vector<LinkedParticleCell>& cells) override {
+  void initTraversal(std::vector<LinkedParticleCell> &cells) override {
     if (DataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
-      for (auto& cell : cells) {
+      for (auto &cell : cells) {
         _functor->SoALoader(cell, _soa, offset);
         offset += cell.numParticles();
       }
@@ -85,10 +85,10 @@ class TraversalVerlet
    * Ends Traversal and writes data from this Traversals soa back to the cells
    * @param cells content of the container the Traversal is to be called on
    */
-  void endTraversal(std::vector<LinkedParticleCell>& cells) override {
+  void endTraversal(std::vector<LinkedParticleCell> &cells) override {
     if (DataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
-      for (auto& cell : cells) {
+      for (auto &cell : cells) {
         _functor->SoAExtractor(cell, _soa, offset);
         offset += cell.numParticles();
       }
@@ -101,7 +101,7 @@ class TraversalVerlet
    * @param soaNeighborLists neighbor lists as index list for the soa format
    */
   void iterateVerletLists(
-      std::unordered_map<Particle*, std::vector<Particle*>> aosNeighborLists,
+      std::unordered_map<Particle *, std::vector<Particle *>> aosNeighborLists,
       std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> soaNeighborLists) override {
     switch (DataLayout) {
       case DataLayoutOption::aos: {
@@ -113,9 +113,9 @@ class TraversalVerlet
           for (size_t b = 0; b < buckets; b++) {
             auto endIter = aosNeighborLists.end(b);
             for (auto it = aosNeighborLists.begin(b); it != endIter; ++it) {
-              Particle& i = *(it->first);
+              Particle &i = *(it->first);
               for (auto j_ptr : it->second) {
-                Particle& j = *j_ptr;
+                Particle &j = *j_ptr;
                 _functor->AoSFunctor(i, j, false);
               }
             }
@@ -123,10 +123,10 @@ class TraversalVerlet
         } else
 #endif
         {
-          for (auto& list : aosNeighborLists) {
-            Particle& i = *list.first;
+          for (auto &list : aosNeighborLists) {
+            Particle &i = *list.first;
             for (auto j_ptr : list.second) {
-              Particle& j = *j_ptr;
+              Particle &j = *j_ptr;
               _functor->AoSFunctor(i, j, useNewton3);
             }
           }
@@ -162,7 +162,7 @@ class TraversalVerlet
   /**
    * Functor for Traversal
    */
-  PairwiseFunctor* _functor;
+  PairwiseFunctor *_functor;
 
   /**
    *global SoA of verlet lists

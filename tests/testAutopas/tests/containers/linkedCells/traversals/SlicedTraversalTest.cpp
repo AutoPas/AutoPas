@@ -10,7 +10,7 @@
 
 using ::testing::_;
 
-void testSlicedTraversal(const std::array<size_t, 3>& edgeLength, unsigned long overlap = 1ul) {
+void testSlicedTraversal(const std::array<size_t, 3> &edgeLength, unsigned long overlap = 1ul) {
   MFunctor functor;
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);

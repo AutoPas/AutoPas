@@ -51,7 +51,7 @@ TEST_F(ExceptionHandlerTest, TestVariadicExceptionMessages) {
   try {
     ExceptionHandler::exception("testexception {}", 1);
     FAIL() << "Expected ExceptionHandler::AutoPasException";
-  } catch (ExceptionHandler::AutoPasException& err) {
+  } catch (ExceptionHandler::AutoPasException &err) {
     EXPECT_EQ(err.what(), std::string("testexception 1"));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
@@ -60,7 +60,7 @@ TEST_F(ExceptionHandlerTest, TestVariadicExceptionMessages) {
   try {
     ExceptionHandler::exception("testexception {} {} {}", 1, "hallo", true);
     FAIL() << "Expected ExceptionHandler::AutoPasException";
-  } catch (ExceptionHandler::AutoPasException& err) {
+  } catch (ExceptionHandler::AutoPasException &err) {
     EXPECT_EQ(err.what(), std::string("testexception 1 hallo true"));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
@@ -92,7 +92,7 @@ TEST_F(ExceptionHandlerTest, TestAbortCustom) {
 TEST_F(ExceptionHandlerTest, TestTryRethrow) {
   try {
     throw std::runtime_error("me throwing things");
-  } catch (std::exception& e) {
+  } catch (std::exception &e) {
     EXPECT_THROW(ExceptionHandler::rethrow(), std::runtime_error);
   }
 }

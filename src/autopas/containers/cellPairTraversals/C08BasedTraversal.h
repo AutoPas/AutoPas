@@ -33,8 +33,8 @@ class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    * @param cutoff Cutoff radius.
    * @param cellLength cell length.
    */
-  explicit C08BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
-                             const double cutoff = 1.0, const std::array<double, 3>& cellLength = {1.0, 1.0, 1.0})
+  explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                             const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout>(dims, pairwiseFunctor, cutoff, cellLength) {}
 
  protected:
@@ -43,13 +43,13 @@ class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    * @copydetails C01BasedTraversal::c01Traversal()
    */
   template <typename LoopBody>
-  inline void c08Traversal(LoopBody&& loopBody);
+  inline void c08Traversal(LoopBody &&loopBody);
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 template <typename LoopBody>
 inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c08Traversal(
-    LoopBody&& loopBody) {
+    LoopBody &&loopBody) {
   const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
   const auto stride = ArrayMath::addScalar(this->_overlap, 1ul);
   this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
