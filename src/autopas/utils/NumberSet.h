@@ -30,6 +30,7 @@ class NumberSet {
 
   /**
    * Get a string representation of the set
+   * @return string representation
    */
   virtual operator std::string() const = 0;
 
