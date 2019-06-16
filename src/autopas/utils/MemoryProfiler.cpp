@@ -4,39 +4,30 @@
  * @date 9/18/18
  */
 
-#include "MemoryProfiler.h"
-#include "Logger.h"
-
-#include <fcntl.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <cstring>
+#include <fstream>
+
+#include "Logger.h"
+#include "MemoryProfiler.h"
 
 size_t autopas::memoryProfiler::currentMemoryUsage() {
-  // the stat file should be around ~1400 chars
-  static const auto BUFFER_SIZE = 2 * 1024;
-  int statusfile = open(statusFileName, O_RDONLY);
-  if (statusfile == -1) AutoPasLog(error, "Error opening {}", statusFileName);
-  // Advise the kernel of our access pattern.
-  posix_fadvise(statusfile, 0, 0, 1);  // FDADVICE_SEQUENTIAL
+  std::ifstream statusFile(statusFileName);
+  if (statusFile.rdstate() != std::ifstream::goodbit) {
+    // this seems non-critical so we don't throw an exception
+    AutoPasLog(error, "Error opening {}", statusFileName);
+    return 0;
+  }
 
-  char buffer[BUFFER_SIZE + 1];
-  // read the file with buffers
-  // this loop should only be executed once since the whole file should fit in the buffer.
-  while (auto bytes_read = read(statusfile, buffer, BUFFER_SIZE)) {
-    if (!bytes_read) break;
-
-    char *needle = buffer;
-    // as long as 'V''s are found...
-    while (needle != nullptr) {
-      // find next start of needle
-      needle = (char *)memchr(needle, 'V', (buffer + bytes_read) - needle);
-      if (strncmp(needle, "VmRSS:", 6) == 0) {
-        // pass whole text after colon. strtol ignores leading whitespaces and stops after number.
-        return (size_t)std::strtol(needle + 7, nullptr, 10);
-      }
-      needle += 6;
+  std::string line;
+  while (getline(statusFile, line)) {
+    auto needleStart = line.find("VmRSS");
+    if (needleStart != std::string::npos) {
+      auto needleEnd = line.find_first_of(" \n", needleStart);
+      // parse whole text after colon. strtol ignores leading whitespaces and stops after number.
+      return (size_t)std::strtol(line.substr(needleStart + 7, needleEnd).c_str(), nullptr, 10);
     }
   }
+
+  AutoPasLog(error, "Could not read memory usage!");
   return 0;
 }
