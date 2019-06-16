@@ -19,8 +19,9 @@ namespace autopas {
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam DataLayout
+ * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, int collapseDepth = 3>
 class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
   /**
@@ -48,6 +49,10 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   ~CBasedTraversal() override = default;
 
  public:
+  /**
+   * load Data Layouts required for this Traversal.
+   * @param cells where the data should be loaded
+   */
   void initTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
@@ -58,6 +63,10 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
     }
   }
 
+  /**
+   * write Data to AoS.
+   * @param cells for which the data should be written back
+   */
   void endTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
@@ -105,9 +114,9 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, int collapseDepth>
 template <typename LoopBody>
-inline void CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout>::cTraversal(
+inline void CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, collapseDepth>::cTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
 #if defined(AUTOPAS_OPENMP)
@@ -123,14 +132,28 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout>::cTravers
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-
+      if (collapseDepth == 2) {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp for schedule(dynamic, 1) collapse(2)
+#endif
+        for (unsigned long z = start_z; z < end_z; z += stride_z) {
+          for (unsigned long y = start_y; y < end_y; y += stride_y) {
+            for (unsigned long x = start_x; x < end_x; x += stride_x) {
+              // Don't exchange order of execution (x must be last!), it would break other code
+              loopBody(x, y, z);
+            }
+          }
+        }
+      } else {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(3)
 #endif
-      for (unsigned long z = start_z; z < end_z; z += stride_z) {
-        for (unsigned long y = start_y; y < end_y; y += stride_y) {
-          for (unsigned long x = start_x; x < end_x; x += stride_x) {
-            loopBody(x, y, z);
+        for (unsigned long z = start_z; z < end_z; z += stride_z) {
+          for (unsigned long y = start_y; y < end_y; y += stride_y) {
+            for (unsigned long x = start_x; x < end_x; x += stride_x) {
+              // Don't exchange order of execution (x must be last!), it would break other code
+              loopBody(x, y, z);
+            }
           }
         }
       }

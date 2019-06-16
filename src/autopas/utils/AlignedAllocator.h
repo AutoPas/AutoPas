@@ -21,7 +21,8 @@ namespace autopas {
 /**
  * Default size for a cache line.
  */
-#define DEFAULT_CACHE_LINE_SIZE 64
+// @todo C++17: replace value by std::hardware_destructive_interference_size
+constexpr unsigned int DEFAULT_CACHE_LINE_SIZE{64};
 
 /**
  * AlignedAllocator class

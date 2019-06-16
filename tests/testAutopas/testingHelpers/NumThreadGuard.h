@@ -40,6 +40,7 @@ class NumThreadGuard final {
 
   /**
    * delete copy assignment constructor.
+   * @return
    */
   NumThreadGuard &operator=(const NumThreadGuard &) = delete;
 

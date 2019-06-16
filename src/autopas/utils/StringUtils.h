@@ -153,6 +153,9 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::verletTraversal: {
       return "verlet-lists";
     }
+    case autopas::TraversalOption::c01CombinedSoA: {
+      return "c01-combined-SoA";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TraversalOption (" + std::to_string(option) + ")";
@@ -247,7 +250,7 @@ inline std::set<autopas::Newton3Option> parseNewton3Options(const std::string &n
  * Converts a string of options to a set of enums. The options are expected to be lower case.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
- * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced
+ * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced, c01-combined-SoA
  *
  * @param traversalOptionsString String containing traversal options.
  * @param ignoreUnknownOptions If set to false, a 'autopas::TraversalOption(-1)' will be inserted in the return set
@@ -267,10 +270,13 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
     } else if (word.find("01") != std::string::npos) {
       if (word.find("cuda") != std::string::npos) {
         traversalOptions.insert(autopas::TraversalOption::c01Cuda);
-      } else if (word.find('v') != std::string::npos)
+      } else if (word.find("com") != std::string::npos) {
+        traversalOptions.insert(autopas::TraversalOption::c01CombinedSoA);
+      } else if (word.find('v') != std::string::npos) {
         traversalOptions.insert(autopas::TraversalOption::c01Verlet);
-      else
+      } else {
         traversalOptions.insert(autopas::TraversalOption::c01);
+      }
     } else if (word.find("c08") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::c08);
     } else if (word.find("18") != std::string::npos) {
