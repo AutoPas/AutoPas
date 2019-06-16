@@ -70,7 +70,7 @@ class NumberSet {
    * @param rng random number generator
    * @return samples
    */
-  virtual std::vector<Number> uniformSample(unsigned n, std::default_random_engine& rng) const = 0;
+  virtual std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const = 0;
 };
 
 /**
@@ -119,7 +119,7 @@ class NumberSetFinite : public NumberSet<Number> {
 
   std::set<Number> getAll() const override { return _set; }
 
-  std::vector<Number> uniformSample(unsigned n, std::default_random_engine& rng) const override {
+  std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const override {
     std::vector<Number> result;
     result.reserve(n + _set.size());
 
@@ -198,7 +198,7 @@ class NumberInterval : public NumberSet<Number> {
     return {};
   }
 
-  std::vector<Number> uniformSample(unsigned n, std::default_random_engine& rng) const override {
+  std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const override {
     std::vector<Number> result;
     if (n == 0) {
       return result;

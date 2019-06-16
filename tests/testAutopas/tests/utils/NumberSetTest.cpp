@@ -12,7 +12,7 @@ using namespace autopas;
 TEST(NumberSetTest, testFiniteSet) {
   std::array<double, 3> a = {1., 2., 3.};
   NumberSetFinite<double> fSet({1., 2., 3.});
-  NumberSet<double>& set = fSet;
+  NumberSet<double> &set = fSet;
 
   // check min and max
   ASSERT_EQ(set.getMin(), 1.);
@@ -36,7 +36,7 @@ TEST(NumberSetTest, testFiniteSetSample) {
 
   std::array<double, 3> a = {1., 2., 3.};
   NumberSetFinite<double> fSet({1., 2., 3.});
-  NumberSet<double>& set = fSet;
+  NumberSet<double> &set = fSet;
 
   std::map<double, unsigned> occurences;
   for (auto val : a) {
@@ -73,7 +73,7 @@ TEST(NumberSetTest, testInterval) {
   double min = -3.;
   double max = 2.;
   NumberInterval<double> iSet(min, max);
-  NumberSet<double>& set = iSet;
+  NumberSet<double> &set = iSet;
 
   // set should be infinite
   ASSERT_FALSE(set.isFinite());
@@ -86,7 +86,7 @@ TEST(NumberSetTest, testIntervalFinite) {
   double min = 2.;
   double max = 2.;
   NumberInterval<double> iSet(min, max);
-  NumberSet<double>& set = iSet;
+  NumberSet<double> &set = iSet;
 
   // set should be finite
   ASSERT_TRUE(set.isFinite());
@@ -104,7 +104,7 @@ TEST(NumberSetTest, testIntervalSample) {
   double min = -3.;
   double max = 2.;
   NumberInterval<double> iSet(min, max);
-  NumberSet<double>& set = iSet;
+  NumberSet<double> &set = iSet;
 
   std::vector<double> samples = set.uniformSample(numSamples, rng);
   ASSERT_EQ(samples.size(), numSamples);
@@ -119,7 +119,7 @@ TEST(NumberSetTest, testClone) {
   double min = -3.;
   double max = 2.;
   NumberInterval<double> iSet(min, max);
-  NumberSet<double>& set = iSet;
+  NumberSet<double> &set = iSet;
 
   auto clone = set.clone();
 

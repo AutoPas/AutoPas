@@ -99,8 +99,8 @@ inline std::ostream &operator<<(std::ostream &os, const Configuration &configura
  * @return true iff all members are equal.
  */
 inline bool operator==(const Configuration &lhs, const Configuration &rhs) {
-  return lhs.container == rhs.container and lhs.traversal == rhs.traversal and lhs.dataLayout == rhs.dataLayout and
-         lhs.newton3 == rhs.newton3 and lhs.cellSizeFactor == rhs.cellSizeFactor;
+  return lhs.container == rhs.container and lhs.cellSizeFactor == rhs.cellSizeFactor and
+         lhs.traversal == rhs.traversal and lhs.dataLayout == rhs.dataLayout and lhs.newton3 == rhs.newton3;
 }
 
 /**

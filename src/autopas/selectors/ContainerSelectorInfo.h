@@ -34,7 +34,7 @@ class ContainerSelectorInfo {
    * @param other
    * @return True iff all member equal
    */
-  bool operator==(const ContainerSelectorInfo& other) const {
+  bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
            verletRebuildFrequency == other.verletRebuildFrequency;
   }
@@ -44,7 +44,7 @@ class ContainerSelectorInfo {
    * @param other
    * @return False iff all member euqal
    */
-  bool operator!=(const ContainerSelectorInfo& other) const { return !(*this == other); }
+  bool operator!=(const ContainerSelectorInfo &other) const { return !(*this == other); }
 
   /**
    * Comparison operator for ContainerSelectorInfo objects.
@@ -53,7 +53,7 @@ class ContainerSelectorInfo {
    * @param other
    * @return
    */
-  bool operator<(const ContainerSelectorInfo& other) {
+  bool operator<(const ContainerSelectorInfo &other) {
     return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency) <
            std::tie(other.cellSizeFactor, other.verletSkin, other.verletRebuildFrequency);
   }
