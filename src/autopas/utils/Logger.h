@@ -59,7 +59,7 @@ class Logger {
    * create a logger writing to the file system
    * @param filename
    */
-  static void create(std::string& filename) {
+  static void create(std::string &filename) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     spdlog::basic_logger_mt(loggerName(), filename);
@@ -70,7 +70,7 @@ class Logger {
    * default is std::cout
    * @param oss
    */
-  static void create(std::ostream& oss = std::cout) {
+  static void create(std::ostream &oss = std::cout) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     std::shared_ptr<spdlog::sinks::sink> ostream_sink;

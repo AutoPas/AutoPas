@@ -32,8 +32,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param cutoff Cutoff radius.
    * @param cellLength cell length.
    */
-  explicit CBasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
-                           const double cutoff, const std::array<double, 3>& cellLength)
+  explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                           const double cutoff, const std::array<double, 3> &cellLength)
       : CellPairTraversal<ParticleCell>(dims),
         _cutoff(cutoff),
         _cellLength(cellLength),
@@ -53,7 +53,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * load Data Layouts required for this Traversal.
    * @param cells where the data should be loaded
    */
-  void initTraversal(std::vector<ParticleCell>& cells) override {
+  void initTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
@@ -67,7 +67,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * write Data to AoS.
    * @param cells for which the data should be written back
    */
-  void endTraversal(std::vector<ParticleCell>& cells) override {
+  void endTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
@@ -88,9 +88,9 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param offset initial offset
    */
   template <typename LoopBody>
-  inline void cTraversal(LoopBody&& loopBody, const std::array<unsigned long, 3>& end,
-                         const std::array<unsigned long, 3>& stride,
-                         const std::array<unsigned long, 3>& offset = {0ul, 0ul, 0ul});
+  inline void cTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
+                         const std::array<unsigned long, 3> &stride,
+                         const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
 
   /**
    * cutoff radius.
@@ -117,8 +117,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, int collapseDepth>
 template <typename LoopBody>
 inline void CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, collapseDepth>::cTraversal(
-    LoopBody&& loopBody, const std::array<unsigned long, 3>& end, const std::array<unsigned long, 3>& stride,
-    const std::array<unsigned long, 3>& offset) {
+    LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
+    const std::array<unsigned long, 3> &offset) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
