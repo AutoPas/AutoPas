@@ -85,7 +85,7 @@ class Configuration {
  * @param configuration
  * @return
  */
-inline std::ostream& operator<<(std::ostream& os, const Configuration& configuration) {
+inline std::ostream &operator<<(std::ostream &os, const Configuration &configuration) {
   return os << configuration.toString();
 }
 
@@ -98,7 +98,7 @@ inline std::ostream& operator<<(std::ostream& os, const Configuration& configura
  * @param rhs
  * @return true iff all members are equal.
  */
-inline bool operator==(const Configuration& lhs, const Configuration& rhs) {
+inline bool operator==(const Configuration &lhs, const Configuration &rhs) {
   return lhs.container == rhs.container and lhs.traversal == rhs.traversal and lhs.dataLayout == rhs.dataLayout and
          lhs.newton3 == rhs.newton3 and lhs.cellSizeFactor == rhs.cellSizeFactor;
 }
@@ -112,7 +112,7 @@ inline bool operator==(const Configuration& lhs, const Configuration& rhs) {
  * @param rhs
  * @return true iff at least one member is different.
  */
-inline bool operator!=(const Configuration& lhs, const Configuration& rhs) { return not(lhs == rhs); }
+inline bool operator!=(const Configuration &lhs, const Configuration &rhs) { return not(lhs == rhs); }
 
 /**
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
@@ -124,7 +124,7 @@ inline bool operator!=(const Configuration& lhs, const Configuration& rhs) { ret
  * @param rhs
  * @return
  */
-inline bool operator<(const Configuration& lhs, const Configuration& rhs) {
+inline bool operator<(const Configuration &lhs, const Configuration &rhs) {
   return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.dataLayout, lhs.newton3) <
          std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.dataLayout, rhs.newton3);
 }
