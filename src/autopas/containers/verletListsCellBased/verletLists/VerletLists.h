@@ -79,12 +79,12 @@ class VerletLists
    * @copydoc LinkedCells::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     if (this->needsRebuild()) {
       rebuildVerletLists(useNewton3);
     }
 
-    if (auto* traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell>*>(traversal)) {
+    if (auto *traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal)) {
       if (not _soaListIsValid and traversalInterface->getDataLayout() == DataLayoutOption::soa) {
         // only do this if we need it, i.e., if we are using soa!
         generateSoAListFromAoSVerletLists();
@@ -103,7 +103,7 @@ class VerletLists
    * get the actual neighbour list
    * @return the neighbour list
    */
-  typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() { return _aosNeighborLists; }
+  typename verlet_internal::AoS_verletlist_storage_type &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Checks whether the neighbor lists are valid.
@@ -223,7 +223,7 @@ class VerletLists
       _aos2soaMap[&(*iter)] = i;
     }
     size_t accumulatedListSize = 0;
-    for (auto& aosList : _aosNeighborLists) {
+    for (auto &aosList : _aosNeighborLists) {
       accumulatedListSize += aosList.second.size();
       size_t i_id = _aos2soaMap[aosList.first];
       // each soa neighbor list should be of the same size as for aos
@@ -247,7 +247,7 @@ class VerletLists
 
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
-  std::unordered_map<Particle*, size_t> _aos2soaMap;
+  std::unordered_map<Particle *, size_t> _aos2soaMap;
 
   /// verlet list for SoA:
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;

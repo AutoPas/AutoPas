@@ -52,13 +52,13 @@ class TraversalSelector {
    */
   template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
   static std::unique_ptr<CellPairTraversal<ParticleCell>> generateTraversal(
-      TraversalOption traversalType, PairwiseFunctor& pairwiseFunctor, const TraversalSelectorInfo<ParticleCell>& info);
+      TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo<ParticleCell> &info);
 };
 
 template <class ParticleCell>
 template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>::generateTraversal(
-    TraversalOption traversalType, PairwiseFunctor& pairwiseFunctor, const TraversalSelectorInfo<ParticleCell>& info) {
+    TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo<ParticleCell> &info) {
   switch (traversalType) {
     // Direct sum
     case TraversalOption::directSumTraversal: {

@@ -16,11 +16,11 @@ __constant__ LJFunctorConstants<float> global_constants_float;
 __constant__ LJFunctorConstants<double> global_constants_double;
 
 template <typename T>
-__device__ inline LJFunctorConstants<T>& getConstants() {
+__device__ inline LJFunctorConstants<T> &getConstants() {
   return global_constants_float;
 }
 template <>
-__device__ inline LJFunctorConstants<double>& getConstants<double>() {
+__device__ inline LJFunctorConstants<double> &getConstants<double>() {
   return global_constants_double;
 }
 
@@ -65,7 +65,7 @@ template <typename floatType, bool n3AdditionSafe = false>
 __device__ inline typename vec3<floatType>::Type bodyBodyFN3(typename vec3<floatType>::Type i,
                                                              typename vec3<floatType>::Type j,
                                                              typename vec3<floatType>::Type fi,
-                                                             typename vec3<floatType>::Type* fj) {
+                                                             typename vec3<floatType>::Type *fj) {
   floatType drx = i.x - j.x;
   floatType dry = i.y - j.y;
   floatType drz = i.z - j.z;
@@ -298,8 +298,8 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
 }
 
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, cudaStream_t stream) {
+  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType> *>(cell1Base);
 
   switch (_num_threads) {
     case 32:
@@ -331,11 +331,11 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3Wrapper(FunctorCudaSoA<float
 }
 
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base,
-                                                                FunctorCudaSoA<floatType>* cell2Base,
+void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3PairWrapper(FunctorCudaSoA<floatType> *cell1Base,
+                                                                FunctorCudaSoA<floatType> *cell2Base,
                                                                 cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
-  LJFunctorCudaSoA<floatType> cell2 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell2Base);
+  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType> *>(cell1Base);
+  LJFunctorCudaSoA<floatType> cell2 = *static_cast<LJFunctorCudaSoA<floatType> *>(cell2Base);
 
   switch (_num_threads) {
     case 32:
@@ -367,8 +367,8 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorNoN3PairWrapper(FunctorCudaSoA<f
 }
 
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::SoAFunctorN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+void LJFunctorCudaWrapper<floatType>::SoAFunctorN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, cudaStream_t stream) {
+  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType> *>(cell1Base);
 
   switch (_num_threads) {
     case 32:
@@ -397,11 +397,11 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorN3Wrapper(FunctorCudaSoA<floatTy
 }
 
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::SoAFunctorN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base,
-                                                              FunctorCudaSoA<floatType>* cell2Base,
+void LJFunctorCudaWrapper<floatType>::SoAFunctorN3PairWrapper(FunctorCudaSoA<floatType> *cell1Base,
+                                                              FunctorCudaSoA<floatType> *cell2Base,
                                                               cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
-  LJFunctorCudaSoA<floatType> cell2 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell2Base);
+  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType> *>(cell1Base);
+  LJFunctorCudaSoA<floatType> cell2 = *static_cast<LJFunctorCudaSoA<floatType> *>(cell2Base);
 
   switch (_num_threads) {
     case 32:
@@ -430,8 +430,8 @@ void LJFunctorCudaWrapper<floatType>::SoAFunctorN3PairWrapper(FunctorCudaSoA<flo
 }
 
 template <typename floatType, int block_size>
-__global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsigned int* cids, size_t* cellSizes,
-                                         unsigned int offsets_size, int* offsets) {
+__global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsigned int *cids, size_t *cellSizes,
+                                         unsigned int offsets_size, int *offsets) {
   int own_cid = cids[blockIdx.x];
   __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
@@ -466,8 +466,8 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaSoA<floatType> cell, unsig
 }
 
 template <typename floatType, int block_size>
-__global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned int* cids, size_t* cellSizes,
-                                       unsigned int offsets_size, int* offsets) {
+__global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigned int *cids, size_t *cellSizes,
+                                       unsigned int offsets_size, int *offsets) {
   int own_cid = cids[blockIdx.x];
   __shared__ typename vec3<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
@@ -524,12 +524,12 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaSoA<floatType> cell, unsigne
 }
 
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType> *cell1Base,
                                                                       unsigned int reqThreads, unsigned int cids_size,
-                                                                      unsigned int* cids, unsigned int cellSizes_size,
-                                                                      size_t* cellSizes, unsigned int offsets_size,
-                                                                      int* offsets, cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+                                                                      unsigned int *cids, unsigned int cellSizes_size,
+                                                                      size_t *cellSizes, unsigned int offsets_size,
+                                                                      int *offsets, cudaStream_t stream) {
+  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType> *>(cell1Base);
 
   switch (reqThreads) {
     case 32:
@@ -555,12 +555,12 @@ void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(FunctorCud
 }
 
 template <typename floatType>
-void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base,
+void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType> *cell1Base,
                                                                     unsigned int reqThreads, unsigned int cids_size,
-                                                                    unsigned int* cids, unsigned int cellSizes_size,
-                                                                    size_t* cellSizes, unsigned int offsets_size,
-                                                                    int* offsets, cudaStream_t stream) {
-  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType>*>(cell1Base);
+                                                                    unsigned int *cids, unsigned int cellSizes_size,
+                                                                    size_t *cellSizes, unsigned int offsets_size,
+                                                                    int *offsets, cudaStream_t stream) {
+  LJFunctorCudaSoA<floatType> cell1 = *static_cast<LJFunctorCudaSoA<floatType> *>(cell1Base);
 
   switch (reqThreads) {
     case 32:
@@ -586,20 +586,20 @@ void LJFunctorCudaWrapper<floatType>::LinkedCellsTraversalN3Wrapper(FunctorCudaS
 }
 
 template <>
-void LJFunctorCudaWrapper<float>::loadConstants(FunctorCudaConstants<float>* constants) {
-  LJFunctorConstants<float>* c = static_cast<LJFunctorConstants<float>*>(constants);
+void LJFunctorCudaWrapper<float>::loadConstants(FunctorCudaConstants<float> *constants) {
+  LJFunctorConstants<float> *c = static_cast<LJFunctorConstants<float> *>(constants);
 
   cudaMemcpyToSymbol(global_constants_float, c, sizeof(LJFunctorConstants<float>));
 }
 template <>
-void LJFunctorCudaWrapper<double>::loadConstants(FunctorCudaConstants<double>* constants) {
-  LJFunctorConstants<double>* c = static_cast<LJFunctorConstants<double>*>(constants);
+void LJFunctorCudaWrapper<double>::loadConstants(FunctorCudaConstants<double> *constants) {
+  LJFunctorConstants<double> *c = static_cast<LJFunctorConstants<double> *>(constants);
 
   cudaMemcpyToSymbol(global_constants_double, c, sizeof(LJFunctorConstants<double>));
 }
 
 template <typename T>
-void LJFunctorCudaWrapper<T>::loadConstants(FunctorCudaConstants<T>* constants) {
+void LJFunctorCudaWrapper<T>::loadConstants(FunctorCudaConstants<T> *constants) {
   autopas::utils::ExceptionHandler::exception("Cuda constants with unknown Type loaded");
 }
 
