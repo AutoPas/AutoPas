@@ -14,6 +14,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 
@@ -41,7 +42,6 @@ class AutoPas {
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
         _cutoff(1),
-        _cellSizeFactor(1),
         _verletSkin(0.2),
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
@@ -51,7 +51,8 @@ class AutoPas {
         _allowedContainers(allContainerOptions),
         _allowedTraversals(allTraversalOptions),
         _allowedDataLayouts(allDataLayoutOptions),
-        _allowedNewton3Options(allNewton3Options) {
+        _allowedNewton3Options(allNewton3Options),
+        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -92,8 +93,8 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _cellSizeFactor, _verletSkin, _verletRebuildFrequency,
-        std::move(generateTuningStrategy()), _selectorStrategy, _tuningInterval, _numSamples);
+        _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, std::move(generateTuningStrategy()),
+        _selectorStrategy, _tuningInterval, _numSamples);
   }
 
   /**
@@ -224,13 +225,25 @@ class AutoPas {
   }
 
   /**
-   * Get cell size factor (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */
-  double getCellSizeFactor() const { return _cellSizeFactor; }
+  const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
 
   /**
-   * Set cell size factor (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * Set allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * @param allowedCellSizeFactors
+   */
+  void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
+    if (allowedCellSizeFactors.getMin() <= 0.0) {
+      AutoPasLog(error, "cell size <= 0.0");
+      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+    }
+    AutoPas::_allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
+  }
+
+  /**
+   * Set allowed cell size factors to one element (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @param cellSizeFactor
    */
   void setCellSizeFactor(double cellSizeFactor) {
@@ -238,7 +251,7 @@ class AutoPas {
       AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
-    AutoPas::_cellSizeFactor = cellSizeFactor;
+    AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
   /**
@@ -410,8 +423,14 @@ class AutoPas {
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
       case TuningStrategyOption::fullSearch:
-        return std::make_unique<FullSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
-                                            _allowedNewton3Options);
+        if (not _allowedCellSizeFactors->isFinite()) {
+          autopas::utils::ExceptionHandler::exception(
+              "AutoPas::generateTuningStrategy: fullSearch can not handle infinite cellSizeFactors!");
+          return nullptr;
+        }
+
+        return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
+                                            _allowedDataLayouts, _allowedNewton3Options);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
@@ -431,10 +450,6 @@ class AutoPas {
    * Cutoff radius to be used in this container.
    */
   double _cutoff;
-  /**
-   * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
-   */
-  double _cellSizeFactor;
   /**
    * Length added to the cutoff for the verlet lists' skin.
    */
@@ -482,6 +497,10 @@ class AutoPas {
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
   std::set<Newton3Option> _allowedNewton3Options;
+  /**
+   * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   */
+  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
 
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };  // namespace autopas

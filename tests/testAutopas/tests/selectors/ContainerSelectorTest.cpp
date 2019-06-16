@@ -18,15 +18,15 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 1;
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin,
-                                                                 verletRebuildFrequency);
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency);
 
   // expect an exception if nothing is selected yet
   EXPECT_THROW((containerSelector.getCurrentContainer()), autopas::utils::ExceptionHandler::AutoPasException);
 
   // test all individual options
   for (auto containerOp : autopas::allContainerOptions) {
-    containerSelector.selectContainer(containerOp);
+    containerSelector.selectContainer(containerOp, containerInfo);
 
     EXPECT_EQ(containerOp, containerSelector.getCurrentContainer()->getContainerType());
   }
@@ -42,10 +42,10 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   const double verletSkin = 0.1;
   const unsigned int verletRebuildFrequency = 1;
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin,
-                                                                 verletRebuildFrequency);
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency);
   // select container from which we want to convert from
-  containerSelector.selectContainer(from);
+  containerSelector.selectContainer(from, containerInfo);
 
   // fill witch problematic particles
   {
@@ -94,7 +94,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   }
 
   // select container to which we want to convert to
-  containerSelector.selectContainer(to);
+  containerSelector.selectContainer(to, containerInfo);
 
   std::vector<Particle> afterListInner, afterListHalo, afterListHaloVerletOnly;
   for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid();

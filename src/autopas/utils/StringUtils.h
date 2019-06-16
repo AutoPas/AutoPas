@@ -7,6 +7,8 @@
 #pragma once
 
 #include <autopas/options/TuningStrategyOption.h>
+#include <cmath>
+#include <regex>
 #include <set>
 #include <string>
 #include <vector>
@@ -15,6 +17,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 namespace utils {
@@ -170,9 +173,23 @@ inline std::string to_string(const TuningStrategyOption &option) {
   return "Unknown TuningStrategyOption (" + std::to_string(option) + ")";
 }
 /**
+ * Converts a double to its respective string representation.
+ * @param value
+ * @return The string representation.
+ */
+inline std::string to_string(const double &value) { return std::to_string(value); }
+/**
  * All accepted delimiters to split input strings.
  */
 constexpr char delimiters[] = " ,;|/";
+/**
+ * Regex for all delimiters to split input strings.
+ */
+constexpr char delimitersRgx[] = "[\\s,;|/]";
+/**
+ * Regex for all but delimiters to split input strings as regex.
+ */
+constexpr char delimitersRgxInv[] = "[^\\s,;|/]";
 
 /**
  * Splits a string by multiple delimiters.
@@ -385,6 +402,65 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
   }
   return tuningStrategy;
+}
+
+/**
+ * Converts a string to a set of doubles.
+ * @param doubleString String containing doubles.
+ * @param ignoreUnknownOptions If set to false, 'nan' will be inserted in the return set
+ * for each not parsable word.
+ * @return Set of doubles. If no valid double was found and unknown options are ignored the empty
+ * set is returned.
+ */
+inline std::set<double> parseDoubles(const std::string &doubleString, bool ignoreUnknownOptions = true) {
+  auto words = tokenize(doubleString, delimiters);
+
+  std::set<double> doubles;
+
+  for (auto &word : words) {
+    try {
+      double value = stod(word);
+      doubles.insert(value);
+    } catch (const std::exception &) {
+      if (not ignoreUnknownOptions) {
+        doubles.insert(std::nan(""));
+      }
+    }
+  }
+  return doubles;
+}
+
+/**
+ * Converts a string to a NumberSet<double>.
+ * @param setString String containing the set.
+ * @param ignoreUnknownOptions If set to false, 'nan' will be inserted in the return set
+ * for each not parsable word.
+ * @return NumberSet<double>. If no valid double was found and unknown options are ignored the empty
+ * set is returned.
+ */
+inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString,
+                                                                  bool ignoreUnknownOptions = true) {
+  // try to match an interval [x,y]
+  std::regex rgx(
+      "\\["         // open square bracket
+      "([^,]++)"    // any number of non-comma chars (1st Capturing Group)
+      ","           // comma
+      "([^\\]]++)"  // any number of non-closing-bracket chars (2nd Capturing Group)
+      "\\]"         // closing square bracket
+  );
+  std::smatch matches;
+  if (std::regex_match(setString, matches, rgx)) {
+    try {
+      double min = stod(matches.str(1));
+      double max = stod(matches.str(2));
+      return std::make_unique<autopas::NumberInterval<double>>(min, max);
+    } catch (const std::exception &) {
+      // try parseDoubles instead
+    }
+  }
+
+  std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString, ignoreUnknownOptions);
+  return std::make_unique<autopas::NumberSetFinite<double>>(values);
 }
 }  // namespace StringUtils
 }  // namespace utils
