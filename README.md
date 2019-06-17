@@ -156,13 +156,10 @@ for (auto p: invalidParticles) {
 ```
 
 #### Special exceptions
-* Verlet-Lists, here it is safe to not update the container
-as long as particles move not more than a skin radius.
+* Verlet-Lists, here it is safe to not update the container as long as particles move not more than a skin radius.
 
 ## Developing AutoPas
-* We use the google code style with minor modifications (see .clang-format)
-* code style can be build with `make clangformat`
-* requirements: clang-format-6.0 (Version is important since formatting is not consistent)
+Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/CONTRIBUTING.md).
 
 ## Logging
 AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
