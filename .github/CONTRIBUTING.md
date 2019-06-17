@@ -11,6 +11,7 @@ Please keep in mind the following notes while working.
 * OpenMP: Use AutoPas wrapper functions for OpenMP (`src/autopas/utils/WrapOpenMP.h`) instead of OpenMP functions to allow building without enabled OpenMP.
 * `#pragma once` instead of header guards.
 * `constexpr` instead of `#define`. Use it wherever possible.
+* `const` wherever possible. 
 
 ### Code Style
 * Private attributes are prefixed with `_`.
@@ -80,6 +81,7 @@ Please keep in mind the following notes while working.
 * Derive your new strategy from `src/autopas/selectors/tuningStrategy/TuningStrategyInterface.h` or a more similar one.
 * Add a new enum entry to `src/autopas/options/TuningStrategyOption.h` along with a brief description.
 * Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`
+* Add a case for the new strategy in `src/autopas/AutoPas.h::generateTuningStrategy()`.
 * Check that the new option is added to the md-flexible example.
 * Add new unit tests for your strategy.
 
