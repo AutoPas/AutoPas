@@ -159,7 +159,7 @@ for (auto p: invalidParticles) {
 * Verlet-Lists, here it is safe to not update the container as long as particles move not more than a skin radius.
 
 ## Developing AutoPas
-Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/CONTRIBUTING.md).
+Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
 ## Logging
 AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
