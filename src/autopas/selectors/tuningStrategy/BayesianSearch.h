@@ -20,7 +20,7 @@ namespace autopas {
 /**
  * Assume that the stochastic distribution of the execution time corresponds
  * to a Gaussian Process. This allows to estimate the 'gain' of testing a given
- * feature next.
+ * feature next. @todo find better conversion to featureVector
  */
 class BayesianSearch : public TuningStrategyInterface {
  public:
@@ -80,7 +80,7 @@ class BayesianSearch : public TuningStrategyInterface {
   /**
    * Update search space for enums
    */
-  void updateEnumOptions() {
+  inline void updateEnumOptions() {
     _enumOptions = {EnumFeature::set2Vector(_containerOptions), EnumFeature::set2Vector(_traversalOptions),
                     EnumFeature::set2Vector(_dataLayoutOptions), EnumFeature::set2Vector(_newton3Options)};
   }
@@ -89,12 +89,12 @@ class BayesianSearch : public TuningStrategyInterface {
    * Set the current configuration with
    * information from a FeatureVector
    */
-  void setConfig(FeatureVector feature);
+  inline void setConfig(FeatureVector feature);
   /**
    * Get the current configuration as
    * a FeatureVector.
    */
-  FeatureVector configAsFeature();
+  inline FeatureVector configAsFeature();
 
   std::vector<std::vector<EnumFeature>> _enumOptions;
   std::set<ContainerOption> _containerOptions;
@@ -117,14 +117,29 @@ bool BayesianSearch::tune() {
     return false;
   }
 
-  std::vector<FeatureVector> samples(_expNumSamples);
+  std::vector<FeatureVector> samples;
+  while (samples.empty()) {
+    samples.resize(_expNumSamples);
 
-  // sample from all enums
-  for (auto &enumOption : _enumOptions) {
-    FeatureVector::lhsAddFeature(samples, enumOption, _rng);
+    // sample from all enums
+    for (auto &enumOption : _enumOptions) {
+      FeatureVector::lhsAddFeature(samples, enumOption, _rng);
+    }
+    // sample from cellSizeFactors
+    FeatureVector::lhsAddFeature(samples, *_cellSizeFactors, _rng);
+
+    // remove all invalid samples
+    for (auto it = samples.begin(); it != samples.end();) {
+      auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(
+          static_cast<ContainerOption>(dynamic_cast<EnumFeature &>((*it)[0]).getValue()));
+      auto traversalOption = static_cast<TraversalOption>(dynamic_cast<EnumFeature &>((*it)[1]).getValue());
+      if (allContainerTraversals.find(traversalOption) == allContainerTraversals.end()) {
+        it = samples.erase(it);
+      } else {
+        ++it;
+      }
+    }
   }
-  // sample from cellSizeFactors
-  FeatureVector::lhsAddFeature(samples, *_cellSizeFactors, _rng);
 
   // sample minimum of acquisition function
   FeatureVector best = _gp.sampleAquisitionMin(_expAcqFunction, samples);

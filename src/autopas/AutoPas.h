@@ -13,6 +13,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/BayesianSearch.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/utils/NumberSet.h"
 
@@ -422,7 +423,7 @@ class AutoPas {
    */
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
-      case TuningStrategyOption::fullSearch:
+      case TuningStrategyOption::fullSearch: {
         if (not _allowedCellSizeFactors->isFinite()) {
           autopas::utils::ExceptionHandler::exception(
               "AutoPas::generateTuningStrategy: fullSearch can not handle infinite cellSizeFactors!");
@@ -431,6 +432,12 @@ class AutoPas {
 
         return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
                                             _allowedDataLayouts, _allowedNewton3Options);
+      }
+
+      case TuningStrategyOption::bayesianSearch: {
+        return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+                                                _allowedDataLayouts, _allowedNewton3Options);
+      }
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
