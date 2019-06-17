@@ -11,7 +11,7 @@
 #include "autopas/utils/ArrayMath.h"
 
 
-
+using namespace std;
 
 template <class AutoPasTemplate>
 class TimeDiscretization {
@@ -21,7 +21,15 @@ public:
 
     virtual ~TimeDiscretization() {
     }
-
+    string arrayString(array<double,3> input){
+        std::ostringstream os;
+        for (double i: input){
+            os << i;
+            os << " _ ";
+        }
+        std::string str(os.str());
+        return str;
+    }
     /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
      */
     long VSCalculateX(AutoPasTemplate autopas);
@@ -49,8 +57,8 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate autopas) 
         auto v = iter->getV();
         auto m = iter->getMass();
         auto f = iter->getF();
-        iter->setOldf(iter->getF());
-        v = autopas::ArrayMath::mulScalar(v, this->particle_delta_t);
+        iter->setOldf(f);
+        v = autopas::ArrayMath::mulScalar(v, particle_delta_t);
         f= autopas::ArrayMath::mulScalar(f,(particle_delta_t * particle_delta_t / (2 * m)));
         auto newR = autopas::ArrayMath::add(v,f);
         iter->addR(newR);

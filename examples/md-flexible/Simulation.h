@@ -38,6 +38,37 @@ public:
     explicit Simulation(shared_ptr<AutoPas<Particle, ParticleCell>> autopas);
 
     /**
+    * Writes a VTK file for the current state of the AutoPas object
+    * @tparam AutoPasTemplate Template for the templetized autopas type.
+    * @param filename
+    * @param numParticles
+    * @param autopas
+    */
+    template <class AutoPasTemplate>
+    void writeVTKFile(int iteration, size_t numParticles, AutoPasTemplate &autopas) {
+        string filename="VtkOutput";
+        stringstream strstr;
+        strstr << filename << "_" << setfill('0') << setw(4) << iteration << ".vtu";
+        //string path = "./vtk";
+        std::ofstream vtkFile;
+        vtkFile.open(strstr.str());
+
+        vtkFile << "# vtk DataFile Version 2.0" << endl;
+        vtkFile << "Timestep" << endl;
+        vtkFile << "ASCII" << endl;
+        vtkFile << "DATASET STRUCTURED_GRID" << endl;
+        vtkFile << "DIMENSIONS 1 1 1" << endl;
+        vtkFile << "POINTS " << numParticles << " double" << endl;
+
+        for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
+            auto pos = iter->getR();
+            vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+        }
+
+        vtkFile.close();
+    }
+
+    /**
     * @brief Constructs a container and fills it with particles.
     *
     * According to the options passed, a %DirectSum or %'LinkedCells' container is
@@ -239,7 +270,10 @@ void Simulation<Particle,ParticleCell>::CalcF(){
     //@ TODO: switch for other functors --> mit boolean object?
     //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
     //_autopas->iteratePairwise(this->_Functor);
-    auto* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0., 0.},{5., 5., 5.},true);
+    double m = Particle::getMass();
+    cout << "Particle Mass = " << m << endl << endl;
+    auto* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(_autopas->getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true); // cutoff, espi, sigma, shift, box min, box max
+
     _autopas->iteratePairwise(functor);
     delete functor;
     functor=NULL;
@@ -251,26 +285,24 @@ void Simulation<Particle,ParticleCell>::CalcF(){
 
 template<class Particle,class ParticleCell>
 long Simulation<Particle, ParticleCell>::simulate(){
-
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
     double particleDelta_T=this->delta_t;
     double time=0;
     double timeEnd= this->delta_t * (double)this->iterations;
     TimeDiscretization<decltype(_autopas)> td(particleDelta_T);
-
     //main simulation loop
-
     while(time<timeEnd){
         this->addDurationX(td.VSCalculateX(_autopas));
         // -> nicht sicher ob man das IF-Case braucht
         if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
              cout << "Iteration " << time/particleDelta_T << endl;
-            cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
+             cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
         }
         this->CalcF();
         this->addDurationV(td.VSCalculateV(_autopas));
         time+=particleDelta_T;
+        this->writeVTKFile<decltype(_autopas)>(time/particleDelta_T,_autopas->getNumberOfParticles(),_autopas);
     }
     stopCalc = std::chrono::high_resolution_clock::now();
     auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();

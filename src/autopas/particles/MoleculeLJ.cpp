@@ -10,5 +10,5 @@ namespace autopas {
 
 double MoleculeLJ::EPSILON;
 double MoleculeLJ::SIGMA;
-double MoleculeLJ::MASS;   //@todo Masse und Old_Force des Particle anders implementieren
+double MoleculeLJ::MASS;
 }  // namespace autopas

@@ -59,6 +59,7 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
 
   vtkFile.close();
 }
+
 /**Convert array<double, 3> to string -> only for testing purpose
  * @param array<double,3>
  * @return string
@@ -128,6 +129,9 @@ int main(int argc, char **argv) {
     }
 
   if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
+
+
+
 
   // statistics for linked cells
   if (autopas->getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
@@ -206,6 +210,13 @@ int main(int argc, char **argv) {
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
     cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
   }
+
+
+//    //WRITE VTK OUTPUT
+//    std::string filename= "autopasSimulation.vtk";
+//    size_t number = autopas->getNumberOfParticles();
+//    writeVTKFile<decltype(autopas)>(filename,number, autopas);
+
 
   if (not logFileName.empty()) {
     logFile.close();

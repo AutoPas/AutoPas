@@ -3,7 +3,6 @@ file(GLOB_RECURSE MY_SRC
         "*.h"
         "../../tests/testAutopas/testingHelpers/RandomGenerator.cpp"
         )
-
 ADD_EXECUTABLE(md-flexible
         ${MY_SRC}
        )
