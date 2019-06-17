@@ -34,7 +34,7 @@ class ParticleIteratorInterface {
    */
   virtual ParticleIteratorInterface<Particle>& operator++() = 0;
 
-  virtual ~ParticleIteratorInterface(){};
+  virtual ~ParticleIteratorInterface() = default;
 
   /**
    * access the particle using *iterator
