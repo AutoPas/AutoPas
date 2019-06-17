@@ -27,8 +27,8 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    */
-  Configuration(ContainerOption _container, TraversalOption _traversal, DataLayoutOption _dataLayout,
-                Newton3Option _newton3, double _cellSizeFactor)
+  Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
+                DataLayoutOption _dataLayout, Newton3Option _newton3)
       : container(_container),
         traversal(_traversal),
         dataLayout(_dataLayout),
@@ -51,10 +51,10 @@ class Configuration {
    */
   std::string toString() const {
     return "{Container: " + utils::StringUtils::to_string(container) +
+           " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
            " , Traversal: " + utils::StringUtils::to_string(traversal) +
            " , Data Layout: " + utils::StringUtils::to_string(dataLayout) +
-           " , Newton 3: " + utils::StringUtils::to_string(newton3) +
-           " , CellSizeFactor: " + std::to_string(cellSizeFactor) + "}";
+           " , Newton 3: " + utils::StringUtils::to_string(newton3) + "}";
   }
 
   /**
@@ -85,7 +85,7 @@ class Configuration {
  * @param configuration
  * @return
  */
-inline std::ostream& operator<<(std::ostream& os, const Configuration& configuration) {
+inline std::ostream &operator<<(std::ostream &os, const Configuration &configuration) {
   return os << configuration.toString();
 }
 
@@ -98,9 +98,9 @@ inline std::ostream& operator<<(std::ostream& os, const Configuration& configura
  * @param rhs
  * @return true iff all members are equal.
  */
-inline bool operator==(const Configuration& lhs, const Configuration& rhs) {
-  return lhs.container == rhs.container and lhs.traversal == rhs.traversal and lhs.dataLayout == rhs.dataLayout and
-         lhs.newton3 == rhs.newton3 and lhs.cellSizeFactor == rhs.cellSizeFactor;
+inline bool operator==(const Configuration &lhs, const Configuration &rhs) {
+  return lhs.container == rhs.container and lhs.cellSizeFactor == rhs.cellSizeFactor and
+         lhs.traversal == rhs.traversal and lhs.dataLayout == rhs.dataLayout and lhs.newton3 == rhs.newton3;
 }
 
 /**
@@ -112,21 +112,21 @@ inline bool operator==(const Configuration& lhs, const Configuration& rhs) {
  * @param rhs
  * @return true iff at least one member is different.
  */
-inline bool operator!=(const Configuration& lhs, const Configuration& rhs) { return not(lhs == rhs); }
+inline bool operator!=(const Configuration &lhs, const Configuration &rhs) { return not(lhs == rhs); }
 
 /**
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
  * sets.
  *
- * Configurations are compared member wise in the order: _container, _traversal, _dataLayout, _newton3.
+ * Configurations are compared member wise in the order: container, cellSizeFactor, traversal, dataLayout, newton3.
  *
  * @param lhs
  * @param rhs
  * @return
  */
-inline bool operator<(const Configuration& lhs, const Configuration& rhs) {
-  return std::tie(lhs.container, lhs.traversal, lhs.dataLayout, lhs.newton3, lhs.cellSizeFactor) <
-         std::tie(rhs.container, rhs.traversal, rhs.dataLayout, rhs.newton3, rhs.cellSizeFactor);
+inline bool operator<(const Configuration &lhs, const Configuration &rhs) {
+  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.dataLayout, lhs.newton3) <
+         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.dataLayout, rhs.newton3);
 }
 
 /**

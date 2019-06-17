@@ -96,7 +96,7 @@ class GaussianProcess {
    * @param input
    * @return mean
    */
-  double predictMean(const FeatureVector& input) const {
+  double predictMean(const FeatureVector &input) const {
     if (_inputs.size() == 0) return 0.;
 
     return kernelVector(input).dot(_weights);
@@ -107,7 +107,7 @@ class GaussianProcess {
    * @param input
    * @return variance
    */
-  double predictVar(const FeatureVector& input) const {
+  double predictVar(const FeatureVector &input) const {
     if (_inputs.size() == 0) return kernel(input, input);
 
     Eigen::VectorXd kVec = kernelVector(input);
@@ -120,7 +120,7 @@ class GaussianProcess {
    * @param feature
    * @return
    */
-  inline double calcAcquisition(AcquisitionFunction af, const FeatureVector& feature) const {
+  inline double calcAcquisition(AcquisitionFunction af, const FeatureVector &feature) const {
     switch (af) {
       case ucb: {
         return predictMean(feature) + std::sqrt(predictVar(feature));
@@ -146,7 +146,7 @@ class GaussianProcess {
    * @param samples
    * @return
    */
-  FeatureVector sampleAquisitionMax(AcquisitionFunction af, const std::vector<FeatureVector>& samples) const {
+  FeatureVector sampleAquisitionMax(AcquisitionFunction af, const std::vector<FeatureVector> &samples) const {
     int maxIdx = -1;
     double maxVal = 0.;
 
@@ -171,7 +171,7 @@ class GaussianProcess {
    * @param samples
    * @return
    */
-  FeatureVector sampleAquisitionMin(AcquisitionFunction af, const std::vector<FeatureVector>& samples) const {
+  FeatureVector sampleAquisitionMin(AcquisitionFunction af, const std::vector<FeatureVector> &samples) const {
     int minIdx = -1;
     double minVal = 0.;
 
@@ -195,7 +195,7 @@ class GaussianProcess {
    * @param f2
    * @return
    */
-  double kernel(const FeatureVector& f1, const FeatureVector& f2) const {
+  double kernel(const FeatureVector &f1, const FeatureVector &f2) const {
     std::vector<double> r = f1 - f2;
     double result = 0;
     for (unsigned i = 0; i < r.size(); ++i) {
@@ -209,7 +209,7 @@ class GaussianProcess {
    * @param input
    * @return Vector of covariances
    */
-  Eigen::VectorXd kernelVector(const FeatureVector& input) const {
+  Eigen::VectorXd kernelVector(const FeatureVector &input) const {
     std::vector<double> k;
     for (FeatureVector d : _inputs) {
       k.push_back(kernel(input, d));

@@ -163,10 +163,11 @@ TEST(GaussianProcess, 2dMax) {
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.1;                                                              // allowed error
-  std::vector<DoubleInterval> domain{DoubleInterval(-2, 2), DoubleInterval(-2, 2)};  // domain of function
-  FeatureVector max({-1, 1});                                                        // max of function
-  unsigned numEvidences = 20;                         // number of samples allowed to make
+  double epsilon = 0.1;  // allowed error
+  std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
+                                             NumberInterval<double>(-2, 2)};  // domain of function
+  FeatureVector max({-1, 1});                                                 // max of function
+  unsigned numEvidences = 20;                                                 // number of samples allowed to make
   unsigned lhsNumSamples = 1000;                      // number of sample to find max of acquisition function
   AcquisitionFunction af = AcquisitionFunction::ucb;  // use upper confidence bound as af
 
@@ -178,12 +179,12 @@ TEST(GaussianProcess, 2dMax) {
   for (unsigned i = 1; i < numEvidences; ++i) {
     // create lhs samples
     std::vector<FeatureVector> lhsSamples(lhsNumSamples);
-    for (auto& d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, rng);
+    for (auto &d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, rng);
 
     // sample max of acquisition function
     FeatureVector am = gp.sampleAquisitionMax(af, lhsSamples);
-    double i1 = static_cast<DoubleFeature&>(am[0]).getValue();
-    double i2 = static_cast<DoubleFeature&>(am[1]).getValue();
+    double i1 = static_cast<DoubleFeature &>(am[0]).getValue();
+    double i2 = static_cast<DoubleFeature &>(am[1]).getValue();
     double amOut = functor(i1, i2);
 
     gp.addEvidence(am, amOut);
@@ -191,7 +192,7 @@ TEST(GaussianProcess, 2dMax) {
 
   // last lhs sample for predicted max
   std::vector<FeatureVector> lhsSamples(lhsNumSamples);
-  for (auto& d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, rng);
+  for (auto &d : domain) FeatureVector::lhsAddFeature(lhsSamples, d, rng);
 
   // sample max of mean function
   FeatureVector am = gp.sampleAquisitionMax(AcquisitionFunction::mean, lhsSamples);

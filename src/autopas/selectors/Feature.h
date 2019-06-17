@@ -24,7 +24,7 @@ class Feature {
    * @param other
    * @return feature distance
    */
-  virtual double operator-(const Feature& other) const = 0;
+  virtual double operator-(const Feature &other) const = 0;
 
   /**
    * Create a copy of a feature
@@ -47,7 +47,7 @@ class DoubleFeature : public Feature {
    */
   DoubleFeature(double value) : _value(value) {}
 
-  double operator-(const Feature& other) const override;
+  double operator-(const Feature &other) const override;
   std::unique_ptr<Feature> clone() const override;
 
   /**
@@ -72,7 +72,7 @@ class EnumFeature : public Feature {
    */
   EnumFeature(int value) : _value(value) {}
 
-  double operator-(const Feature& other) const override;
+  double operator-(const Feature &other) const override;
   std::unique_ptr<Feature> clone() const override;
 
   /**
@@ -87,7 +87,7 @@ class EnumFeature : public Feature {
   template <class enumType>
   static std::vector<EnumFeature> set2Vector(std::set<enumType> enums) {
     std::vector<EnumFeature> result;
-    for (auto& e : enums) {
+    for (auto &e : enums) {
       result.push_back(EnumFeature(e));
     }
 

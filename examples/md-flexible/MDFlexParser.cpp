@@ -80,12 +80,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'a': {
-        std::set<double> values = autopas::utils::StringUtils::parseDouble(strArg);
-        if (values.empty()) {
+        cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
+        if (cellSizeFactors->isEmpty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
-        } else {
-          cellSizeFactors = std::make_unique<autopas::DoubleFiniteSet>(values);
         }
         break;
       }
@@ -436,7 +434,7 @@ std::set<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { r
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 
-const autopas::DoubleSet &MDFlexParser::getCellSizeFactors() const { return *cellSizeFactors; }
+const autopas::NumberSet<double> &MDFlexParser::getCellSizeFactors() const { return *cellSizeFactors; }
 
 std::set<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
 

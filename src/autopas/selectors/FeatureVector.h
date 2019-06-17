@@ -10,7 +10,7 @@
 #include <random>
 #include <vector>
 #include "autopas/selectors/Feature.h"
-#include "autopas/utils/DoubleSet.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 
@@ -41,9 +41,9 @@ class FeatureVector {
    * Copy constructor
    * @param other
    */
-  FeatureVector(const FeatureVector& other) : _vector() {
+  FeatureVector(const FeatureVector &other) : _vector() {
     _vector.reserve(other._vector.size());
-    for (auto& f : other._vector) {
+    for (auto &f : other._vector) {
       _vector.push_back(f->clone());
     }
   }
@@ -53,10 +53,10 @@ class FeatureVector {
    * @param other
    * @return
    */
-  FeatureVector& operator=(const FeatureVector& other) {
+  FeatureVector &operator=(const FeatureVector &other) {
     _vector.clear();
     _vector.reserve(other._vector.size());
-    for (auto& f : other._vector) {
+    for (auto &f : other._vector) {
       _vector.push_back(f->clone());
     }
 
@@ -68,7 +68,7 @@ class FeatureVector {
    * @param other
    * @return vector<double> distance in each dimension
    */
-  std::vector<double> operator-(const FeatureVector& other) const {
+  std::vector<double> operator-(const FeatureVector &other) const {
     std::vector<double> result;
     for (unsigned i = 0; i < _vector.size(); ++i) {
       result.push_back((*_vector[i]) - (*other._vector[i]));
@@ -82,20 +82,20 @@ class FeatureVector {
    * @param index
    * @return
    */
-  Feature& operator[](size_t index) { return *_vector[index]; }
+  Feature &operator[](size_t index) { return *_vector[index]; }
 
   /**
    * Get a const reference to feature of given index.
    * @param index
    * @return
    */
-  const Feature& operator[](size_t index) const { return *_vector[index]; }
+  const Feature &operator[](size_t index) const { return *_vector[index]; }
 
   /**
    * Add a feature to the vector
    * @param feature
    */
-  void addFeature(const Feature& feature) { _vector.push_back(feature.clone()); }
+  void addFeature(const Feature &feature) { _vector.push_back(feature.clone()); }
 
   /**
    * Add a DoubleFeature with given value to the vector
@@ -110,8 +110,8 @@ class FeatureVector {
    * @param featureSet
    * @param rng random number generator
    */
-  static void lhsAddFeature(std::vector<FeatureVector>& vectors, const DoubleSet& featureSet,
-                            std::default_random_engine& rng) {
+  static void lhsAddFeature(std::vector<FeatureVector> &vectors, const NumberSet<double> &featureSet,
+                            std::default_random_engine &rng) {
     // create n samples from given set
     auto pool = featureSet.uniformSample(vectors.size(), rng);
 
@@ -130,8 +130,8 @@ class FeatureVector {
    * @param rng random number generator
    */
   template <class FeatureType>
-  static void lhsAddFeature(std::vector<FeatureVector>& vectors, std::vector<FeatureType> featureSpace,
-                            std::default_random_engine& rng) {
+  static void lhsAddFeature(std::vector<FeatureVector> &vectors, std::vector<FeatureType> featureSpace,
+                            std::default_random_engine &rng) {
     // create n values from given pool
     std::vector<std::unique_ptr<Feature>> pool;
     pool.reserve(vectors.size());
@@ -139,7 +139,7 @@ class FeatureVector {
     // first fill the pool with copies of the whole feature space
     unsigned minCopies = vectors.size() / featureSpace.size();
     for (unsigned i = 0; i < minCopies; ++i) {
-      for (auto& feature : featureSpace) {
+      for (auto &feature : featureSpace) {
         pool.push_back(feature.clone());
       }
     }

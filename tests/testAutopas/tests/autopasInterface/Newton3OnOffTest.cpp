@@ -51,7 +51,9 @@ INSTANTIATE_TEST_SUITE_P(
                 auto container = containerSelector.getCurrentContainer();
 
                 for (auto traversalOption : container->getAllTraversals()) {
-                  if (traversalOption == autopas::TraversalOption::c01 /*and autopas::autopas_get_max_threads() > 1*/) {
+                  if (traversalOption == autopas::TraversalOption::c01 ||
+                      traversalOption ==
+                          autopas::TraversalOption::c01CombinedSoA /*and autopas::autopas_get_max_threads() > 1*/) {
                     continue;
                   }
                   if (traversalOption == autopas::TraversalOption::c01Cuda) {
@@ -100,7 +102,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
     // loader and extractor will be called, we don't care how often.
-    EXPECT_CALL(mockFunctor, SoALoader(_, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoALoader(_, _))
+        .Times(testing::AtLeast(1))
+        .WillRepeatedly(testing::WithArgs<1>(testing::Invoke([](auto &buf) { buf.resizeArrays(1); })));
     EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
   }
 

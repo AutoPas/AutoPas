@@ -28,14 +28,14 @@ class FullSearch : public TuningStrategyInterface {
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
    */
-  FullSearch(const std::set<ContainerOption> &allowedContainerOptions,
+  FullSearch(const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-             const std::set<Newton3Option> &allowedNewton3Options, const std::set<double> &allowedCellSizeFactors)
+             const std::set<Newton3Option> &allowedNewton3Options)
       : _containerOptions(allowedContainerOptions) {
     // sets search space and current config
-    populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
-                        allowedNewton3Options, allowedCellSizeFactors);
+    populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
+                        allowedDataLayoutOptions, allowedNewton3Options);
   }
 
   /**
@@ -78,10 +78,10 @@ class FullSearch : public TuningStrategyInterface {
    * @param allowedNewton3Options
    */
   inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                  const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                  const std::set<Newton3Option> &allowedNewton3Options,
-                                  const std::set<double> &allowedCellSizeFactors);
+                                  const std::set<Newton3Option> &allowedNewton3Options);
 
   inline void selectOptimalConfiguration();
 
@@ -92,10 +92,10 @@ class FullSearch : public TuningStrategyInterface {
 };
 
 void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                     const std::set<double> &allowedCellSizeFactors,
                                      const std::set<TraversalOption> &allowedTraversalOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                     const std::set<Newton3Option> &allowedNewton3Options,
-                                     const std::set<double> &allowedCellSizeFactors) {
+                                     const std::set<Newton3Option> &allowedNewton3Options) {
   //@TODO dummyTraversal needed until all containers support propper traversals
   auto dummySet = {TraversalOption::dummyTraversal};
   std::set<TraversalOption> allowedTraversalOptionsPlusDummy;
@@ -111,14 +111,14 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-    for (auto &traversalOption : allowedAndApplicable) {
-      for (auto &dataLayoutOption : allowedDataLayoutOptions) {
-        for (auto &newton3Option : allowedNewton3Options) {
-          for (auto &cellSizeFactor : allowedCellSizeFactors)
-            _searchSpace.emplace(containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor);
+    for (auto &cellSizeFactor : allowedCellSizeFactors)
+      for (auto &traversalOption : allowedAndApplicable) {
+        for (auto &dataLayoutOption : allowedDataLayoutOptions) {
+          for (auto &newton3Option : allowedNewton3Options) {
+            _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
+          }
         }
       }
-    }
   }
 
   if (_searchSpace.empty()) {

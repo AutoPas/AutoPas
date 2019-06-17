@@ -98,7 +98,7 @@ class ExceptionHandler {
   static ExceptionBehavior _behavior;
   static std::function<void()> _customAbortFunction;
 
-  static void nonThrowException(const std::exception& e) {
+  static void nonThrowException(const std::exception &e) {
     switch (_behavior) {
       case ignore:
         // do nothing
@@ -133,7 +133,7 @@ class ExceptionHandler {
      * returns the description
      * @return
      */
-    const char* what() const noexcept override { return _description.c_str(); }
+    const char *what() const noexcept override { return _description.c_str(); }
 
    private:
     std::string _description;
@@ -152,7 +152,7 @@ void ExceptionHandler::exception(const std::string e);  // NOLINT
  * @param e the string to describe the exception
  */
 template <>
-void ExceptionHandler::exception(const char* const e);  // NOLINT
+void ExceptionHandler::exception(const char *const e);  // NOLINT
 
 template <typename First, typename... Args>
 void ExceptionHandler::exception(std::string exceptionString, First first, Args... args) {

@@ -8,7 +8,7 @@
 
 #include <autopas/options/TuningStrategyOption.h>
 #include <cmath>
-#include <exception>
+#include <regex>
 #include <set>
 #include <string>
 #include <vector>
@@ -17,6 +17,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 namespace utils {
@@ -152,6 +153,9 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::verletTraversal: {
       return "verlet-lists";
     }
+    case autopas::TraversalOption::c01CombinedSoA: {
+      return "c01-combined-SoA";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TraversalOption (" + std::to_string(option) + ")";
@@ -181,6 +185,14 @@ inline std::string to_string(const double &value) { return std::to_string(value)
  * All accepted delimiters to split input strings.
  */
 constexpr char delimiters[] = " ,;|/";
+/**
+ * Regex for all delimiters to split input strings.
+ */
+constexpr char delimitersRgx[] = "[\\s,;|/]";
+/**
+ * Regex for all but delimiters to split input strings as regex.
+ */
+constexpr char delimitersRgxInv[] = "[^\\s,;|/]";
 
 /**
  * Splits a string by multiple delimiters.
@@ -238,7 +250,7 @@ inline std::set<autopas::Newton3Option> parseNewton3Options(const std::string &n
  * Converts a string of options to a set of enums. The options are expected to be lower case.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
- * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced
+ * Possible options: c01, c08, c18, direct, sliced, verlet01, verlet18, verlet-sliced, c01-combined-SoA
  *
  * @param traversalOptionsString String containing traversal options.
  * @param ignoreUnknownOptions If set to false, a 'autopas::TraversalOption(-1)' will be inserted in the return set
@@ -258,10 +270,13 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
     } else if (word.find("01") != std::string::npos) {
       if (word.find("cuda") != std::string::npos) {
         traversalOptions.insert(autopas::TraversalOption::c01Cuda);
-      } else if (word.find('v') != std::string::npos)
+      } else if (word.find("com") != std::string::npos) {
+        traversalOptions.insert(autopas::TraversalOption::c01CombinedSoA);
+      } else if (word.find('v') != std::string::npos) {
         traversalOptions.insert(autopas::TraversalOption::c01Verlet);
-      else
+      } else {
         traversalOptions.insert(autopas::TraversalOption::c01);
+      }
     } else if (word.find("c08") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::c08);
     } else if (word.find("18") != std::string::npos) {
@@ -403,7 +418,7 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
  * @return Set of doubles. If no valid double was found and unknown options are ignored the empty
  * set is returned.
  */
-inline std::set<double> parseDouble(const std::string &doubleString, bool ignoreUnknownOptions = true) {
+inline std::set<double> parseDoubles(const std::string &doubleString, bool ignoreUnknownOptions = true) {
   auto words = tokenize(doubleString, delimiters);
 
   std::set<double> doubles;
@@ -419,6 +434,39 @@ inline std::set<double> parseDouble(const std::string &doubleString, bool ignore
     }
   }
   return doubles;
+}
+
+/**
+ * Converts a string to a NumberSet<double>.
+ * @param setString String containing the set.
+ * @param ignoreUnknownOptions If set to false, 'nan' will be inserted in the return set
+ * for each not parsable word.
+ * @return NumberSet<double>. If no valid double was found and unknown options are ignored the empty
+ * set is returned.
+ */
+inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString,
+                                                                  bool ignoreUnknownOptions = true) {
+  // try to match an interval [x,y]
+  std::regex rgx(
+      "\\["         // open square bracket
+      "([^,]++)"    // any number of non-comma chars (1st Capturing Group)
+      ","           // comma
+      "([^\\]]++)"  // any number of non-closing-bracket chars (2nd Capturing Group)
+      "\\]"         // closing square bracket
+  );
+  std::smatch matches;
+  if (std::regex_match(setString, matches, rgx)) {
+    try {
+      double min = stod(matches.str(1));
+      double max = stod(matches.str(2));
+      return std::make_unique<autopas::NumberInterval<double>>(min, max);
+    } catch (const std::exception &) {
+      // try parseDoubles instead
+    }
+  }
+
+  std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString, ignoreUnknownOptions);
+  return std::make_unique<autopas::NumberSetFinite<double>>(values);
 }
 }  // namespace StringUtils
 }  // namespace utils

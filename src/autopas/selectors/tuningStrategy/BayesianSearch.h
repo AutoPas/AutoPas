@@ -12,8 +12,8 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/OptimumSelector.h"
-#include "autopas/utils/DoubleSet.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 
@@ -34,11 +34,11 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param expAcqFunction acquisition function used for exploration.
    * @param expNumSamples number of samples used for exploration.
    */
-  BayesianSearch(const std::set<ContainerOption>& allowedContainerOptions = allContainerOptions,
-                 const std::set<TraversalOption>& allowedTraversalOptions = allTraversalOptions,
-                 const std::set<DataLayoutOption>& allowedDataLayoutOptions = allDataLayoutOptions,
-                 const std::set<Newton3Option>& allowedNewton3Options = allNewton3Options,
-                 const DoubleSet& allowedCellSizeFactors = DoubleInterval(0., 2.),
+  BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = allContainerOptions,
+                 const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(0., 2.),
+                 const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
+                 const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
+                 const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options,
                  AcquisitionFunction expAcqFunction = lcb, size_t expNumSamples = 1000)
       : _enumOptions(4),
         _containerOptions(allowedContainerOptions),
@@ -101,7 +101,7 @@ class BayesianSearch : public TuningStrategyInterface {
   std::set<TraversalOption> _traversalOptions;
   std::set<DataLayoutOption> _dataLayoutOptions;
   std::set<Newton3Option> _newton3Options;
-  std::unique_ptr<DoubleSet> _cellSizeFactors;
+  std::unique_ptr<NumberSet<double>> _cellSizeFactors;
 
   Configuration _currentConfig;
   GaussianProcess _gp;
@@ -120,7 +120,7 @@ bool BayesianSearch::tune() {
   std::vector<FeatureVector> samples(_expNumSamples);
 
   // sample from all enums
-  for (auto& enumOption : _enumOptions) {
+  for (auto &enumOption : _enumOptions) {
     FeatureVector::lhsAddFeature(samples, enumOption, _rng);
   }
   // sample from cellSizeFactors
@@ -137,7 +137,7 @@ bool BayesianSearch::searchSpaceIsTrivial() {
   bool multiOptions = false;
 
   // check all enums
-  for (auto& _enumOption : _enumOptions) {
+  for (auto &_enumOption : _enumOptions) {
     if (_enumOption.size() == 0) {
       // no option allowed
       return false;
@@ -166,7 +166,7 @@ bool BayesianSearch::searchSpaceIsTrivial() {
 
 bool BayesianSearch::searchSpaceIsEmpty() {
   // if one enum is empty return true
-  for (auto& _enumOption : _enumOptions) {
+  for (auto &_enumOption : _enumOptions) {
     if (_enumOption.size() == 0) return true;
   }
 
@@ -189,13 +189,13 @@ void BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {
 }
 
 void BayesianSearch::setConfig(FeatureVector feature) {
-  ContainerOption co = static_cast<ContainerOption>(dynamic_cast<EnumFeature&>(feature[0]).getValue());
-  TraversalOption to = static_cast<TraversalOption>(dynamic_cast<EnumFeature&>(feature[1]).getValue());
-  DataLayoutOption dlo = static_cast<DataLayoutOption>(dynamic_cast<EnumFeature&>(feature[2]).getValue());
-  Newton3Option n3o = static_cast<Newton3Option>(dynamic_cast<EnumFeature&>(feature[3]).getValue());
-  double csf = dynamic_cast<DoubleFeature&>(feature[4]).getValue();
+  ContainerOption co = static_cast<ContainerOption>(dynamic_cast<EnumFeature &>(feature[0]).getValue());
+  TraversalOption to = static_cast<TraversalOption>(dynamic_cast<EnumFeature &>(feature[1]).getValue());
+  DataLayoutOption dlo = static_cast<DataLayoutOption>(dynamic_cast<EnumFeature &>(feature[2]).getValue());
+  Newton3Option n3o = static_cast<Newton3Option>(dynamic_cast<EnumFeature &>(feature[3]).getValue());
+  double csf = dynamic_cast<DoubleFeature &>(feature[4]).getValue();
 
-  _currentConfig = Configuration(co, to, dlo, n3o, csf);
+  _currentConfig = Configuration(co, csf, to, dlo, n3o);
 }
 
 FeatureVector BayesianSearch::configAsFeature() {
