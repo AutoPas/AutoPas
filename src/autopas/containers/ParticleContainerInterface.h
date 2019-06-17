@@ -68,6 +68,19 @@ class ParticleContainerInterface {
   virtual void addHaloParticle(Particle &haloParticle) = 0;
 
   /**
+   * Update a halo particle of the container with the given haloParticle.
+   * @param haloParticle Particle to be updated.
+   * @return Returns true if the particle was updated, false if no particle could be found.
+   */
+  virtual bool updateHaloParticle(Particle &haloParticle) = 0;
+
+  /**
+   * Rebuilds the neighbor lists.
+   * @param traversal The used traversal.
+   */
+  virtual void rebuildNeighborLists(TraversalInterface* traversal) = 0;
+
+  /**
    * Deletes all halo particles.
    */
   virtual void deleteHaloParticles() = 0;

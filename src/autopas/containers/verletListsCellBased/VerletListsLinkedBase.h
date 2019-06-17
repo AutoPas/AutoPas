@@ -9,6 +9,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleCellHelpers.h"
 
 namespace autopas {
 
@@ -143,11 +144,11 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @param particle
    * @return true if a particle was found and updated, false if it was not found.
    */
-  bool updateHaloParticle(Particle& particle) {
+  bool updateHaloParticle(Particle& particle) override {
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), this->getSkin());
     bool updated;
     for (auto cellptr : cells) {
-      updated = checkParticleInCellAndUpdate(*cellptr, particle);
+      updated = internal::checkParticleInCellAndUpdate(*cellptr, particle);
       if (updated) {
         return true;
       }
@@ -204,24 +205,6 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   bool needsRebuild() { return needsRebuild(_verletBuiltNewton3); }
 
  protected:
-  /**
-   * Updates a found particle within cellI to the values of particleI.
-   * Checks whether a particle with the same id as particleI is within the cell
-   * cellI and overwrites the particle with particleI, if it is found.
-   * @param cellI
-   * @param particleI
-   * @return
-   */
-  bool checkParticleInCellAndUpdate(LinkedParticleCell& cellI, Particle& particleI) {
-    for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
-      if (iterator->getID() == particleI.getID()) {
-        *iterator = particleI;
-        return true;
-      }
-    }
-    return false;
-  }
-
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
   LinkedCells<Particle, LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
 

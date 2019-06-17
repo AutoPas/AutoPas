@@ -172,6 +172,12 @@ class AutoPas {
   unsigned long getNumberOfParticles() { return _autoTuner->getContainer()->getNumParticles(); }
 
   /**
+   * Returns the type of the currently used container.
+   * @return The type of the used container is returned.
+   */
+  unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
+
+  /**
    * Get the lower corner of the container.
    * @return lower corner of the container.
    */

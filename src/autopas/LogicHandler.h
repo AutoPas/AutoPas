@@ -74,15 +74,15 @@ class LogicHandler {
     if (not isNeighborListValid()) {
       _autoTuner.getContainer()->addHaloParticle(haloParticle);
     } else {
-      if (not utils::inBox(haloParticle.getR(), ArrayMath::addScalar(this->getBoxMin(), this->getSkin() / 2),
-                           ArrayMath::subScalar(this->getBoxMax(), this->getSkin() / 2))) {
+      if (not utils::inBox(haloParticle.getR(), ArrayMath::addScalar(_boxMin, _skin / 2),
+                           ArrayMath::subScalar(_boxMax, _skin / 2))) {
         bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
         if (not updated) {
           // a particle is only allowed not to be updated if it is NOT within cutoff + skin/2 of the bounding box
-          double dangerousDistance = this->getCutoff() + this->getSkin() / 2;
+          double dangerousDistance = _cutoff + _skin / 2;
 
-          bool dangerous = utils::inBox(haloParticle.getR(), ArrayMath::subScalar(this->getBoxMin(), dangerousDistance),
-                                        ArrayMath::addScalar(this->getBoxMax(), dangerousDistance));
+          bool dangerous = utils::inBox(haloParticle.getR(), ArrayMath::subScalar(_boxMin, dangerousDistance),
+                                        ArrayMath::addScalar(_boxMax, dangerousDistance));
           if (dangerous) {
             // throw exception, rebuild frequency not high enough / skin too small!
             utils::ExceptionHandler::exception(

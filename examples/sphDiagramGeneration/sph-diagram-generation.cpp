@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
   autopas::sph::SPHCalcDensityFunctor densfunc;
   autopas::sph::SPHCalcHydroForceFunctor hydrofunc;
 
-  int numParticles = 16;
-  int numIterations = 100000;
+  int numParticles;
+  int numIterations;
   int containerTypeInt = 0;
   enum ContainerType { linkedCells, directSum, verletLists, verletListsCells } containerType = linkedCells;
   int functorTypeInt = 0;
@@ -69,38 +69,38 @@ int main(int argc, char *argv[]) {
   int rebuildFrequency = 10;
   bool useNewton3 = true;
   if (argc == 9) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
-    functorTypeInt = atoi(argv[4]);
-    skin = atof(argv[5]);
-    rebuildFrequency = atof(argv[6]);
-    useNewton3 = atoi(argv[7]);
-    boxMax[0] = boxMax[1] = boxMax[2] = atof(argv[8]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
+    functorTypeInt = std::stoi(argv[4]);
+    skin = std::stod(argv[5]);
+    rebuildFrequency = std::stoi(argv[6]);
+    useNewton3 = std::stoi(argv[7]);
+    boxMax[0] = boxMax[1] = boxMax[2] = std::stod(argv[8]);
   } else if (argc == 8) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
-    functorTypeInt = atoi(argv[4]);
-    skin = atof(argv[5]);
-    rebuildFrequency = atof(argv[6]);
-    useNewton3 = atoi(argv[7]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
+    functorTypeInt = std::stoi(argv[4]);
+    skin = std::stod(argv[5]);
+    rebuildFrequency = std::stoi(argv[6]);
+    useNewton3 = std::stoi(argv[7]);
   } else if (argc == 7) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
-    functorTypeInt = atoi(argv[4]);
-    skin = atof(argv[5]);
-    rebuildFrequency = atof(argv[6]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
+    functorTypeInt = std::stoi(argv[4]);
+    skin = std::stod(argv[5]);
+    rebuildFrequency = std::stoi(argv[6]);
   } else if (argc == 5) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
-    functorTypeInt = atoi(argv[4]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
+    functorTypeInt = std::stoi(argv[4]);
   } else if (argc == 4) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
   } else {
     std::cerr
         << "ERROR: wrong number of arguments given. " << std::endl
@@ -133,9 +133,9 @@ int main(int argc, char *argv[]) {
   }
 
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff);
+      boxMin, boxMax, cutoff, skin * cutoff);
   autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
-      boxMin, boxMax, cutoff);
+      boxMin, boxMax, cutoff, skin * cutoff);
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(
       boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff, rebuildFrequency);

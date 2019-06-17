@@ -86,15 +86,7 @@ class VerletLists
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (this->needsRebuild()) {
-      rebuildVerletLists(useNewton3);
-    }
-
     if (auto* traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell>*>(traversal)) {
-      if (not _soaListIsValid and traversalInterface->getDataLayout() == DataLayoutOption::soa) {
-        // only do this if we need it, i.e., if we are using soa!
-        generateSoAListFromAoSVerletLists();
-      }
       traversalInterface->initTraversal(this->_linkedCells.getCells());
       traversalInterface->iterateVerletLists(_aosNeighborLists, _soaNeighborLists);
       traversalInterface->endTraversal(this->_linkedCells.getCells());
@@ -150,20 +142,20 @@ class VerletLists
     return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 
- protected:
-  /**
-   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
-   * @param useNewton3
-   */
-  void rebuildVerletLists(bool useNewton3 = true) {
-    this->_verletBuiltNewton3 = useNewton3;
-    this->updateVerletListsAoS(useNewton3);
+  void rebuildNeighborLists(TraversalInterface* traversal) override {
+    this->_verletBuiltNewton3 = traversal->getNewton3();
+    this->updateVerletListsAoS(traversal->getNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
     this->_traversalsSinceLastRebuild = 0;
+
+    if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
+      // only do this if we need it, i.e., if we are using soa!
+      generateSoAListFromAoSVerletLists();
+    }
   }
 
+ protected:
   /**
    * Update the verlet lists for AoS usage
    * @param useNewton3

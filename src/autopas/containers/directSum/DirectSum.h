@@ -80,6 +80,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
+  bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
+
   void deleteHaloParticles() override {
     getHaloCell()->clear();
     // particles inside of a cell can also be halo particles (assuming non-precise interfaces)
@@ -88,6 +90,10 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
         iter.deleteCurrentParticle();
       }
     }
+  }
+
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    // nothing to do.
   }
 
   /**

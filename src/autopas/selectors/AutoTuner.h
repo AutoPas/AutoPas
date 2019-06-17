@@ -178,10 +178,11 @@ class AutoTuner {
    * This function only handles short-range interactions.
    * @tparam PairwiseFunctor
    * @param f Functor that describes the pair-potential.
+   * @param doListRebuild Indicates whether or not the verlet lists should be rebuild.
    * @return true if this was a tuning iteration.
    */
   template <class PairwiseFunctor>
-  bool iteratePairwise(PairwiseFunctor *f);
+  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild);
 
   /**
    * Returns whether the configuration will be changed in the next iteration.
@@ -226,7 +227,7 @@ class AutoTuner {
   void selectOptimalConfiguration();
 
   template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
-  void iteratePairwiseTemplateHelper(PairwiseFunctor *f);
+  void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild);
 
   /**
    * Tune available algorithm configurations.
@@ -269,7 +270,7 @@ class AutoTuner {
 
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
+bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild) {
   bool isTuning = false;
   // tune if :
   // - more than one config exists
@@ -288,18 +289,18 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
       if (_currentConfig->_newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
-                                        /*tuning*/ true>(f);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
-                                        /*tuning*/ false>(f);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
-                                        /*tuning*/ true>(f);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
-                                        /*tuning*/ false>(f);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       }
       break;
@@ -308,18 +309,18 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
       if (_currentConfig->_newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
-                                        /*tuning*/ true>(f);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
-                                        /*tuning*/ false>(f);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
-                                        /*tuning*/ true>(f);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
-                                        /*tuning*/ false>(f);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       }
       break;
@@ -329,18 +330,18 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
       if (_currentConfig->_newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ true,
-                                        /*tuning*/ true>(f);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ true,
-                                        /*tuning*/ false>(f);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ false,
-                                        /*tuning*/ true>(f);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ false,
-                                        /*tuning*/ false>(f);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       }
       break;
@@ -359,13 +360,20 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
 
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
-void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f) {
-  auto container = getContainer();
+void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
+  auto containerPtr = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {}", _currentConfig->toString());
 
   auto traversal =
       _traversalSelectors[_currentConfig->_container]
           .template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(_currentConfig->_traversal, *f);
+
+  auto iterateLambda = [&](auto containerPtr) {
+    if (doListRebuild) {
+      getContainer()->rebuildNeighborLists(traversal.get());
+    }
+    containerPtr->iteratePairwise(f, traversal.get(), useNewton3);
+  };
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
@@ -373,8 +381,8 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
 
     f->initTraversal();
-    withStaticContainerType(container,
-                            [&](auto container) { container->iteratePairwise(f, traversal.get(), useNewton3); });
+
+    withStaticContainerType(containerPtr, iterateLambda);
     f->endTraversal(useNewton3);
 
     auto stop = std::chrono::high_resolution_clock::now();
@@ -385,8 +393,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     addTimeMeasurement(*f, runtime);
   } else {
     f->initTraversal();
-    withStaticContainerType(container,
-                            [&](auto container) { container->iteratePairwise(f, traversal.get(), useNewton3); });
+    withStaticContainerType(containerPtr, iterateLambda);
     f->endTraversal(useNewton3);
   }
 }

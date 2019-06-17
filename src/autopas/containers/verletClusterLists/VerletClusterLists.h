@@ -93,9 +93,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       AutoPasLog(error, "Newton3 not implemented yet.");
       autopas::utils::ExceptionHandler::exception("VerletClusterLists does not support newton3 yet.");
     }
-    if (needsRebuild()) {
-      this->rebuild();
-    }
     traverseVerletLists(f, useNewton3);
 
     // we iterated, so increase traversal counter
@@ -117,6 +114,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void addHaloParticle(Particle& haloParticle) override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
+
+  bool updateHaloParticle(Particle& haloParticle) override { throw std::runtime_error("not yet implemented"); }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles
@@ -184,6 +183,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     // @todo implement this if bounding boxes are here
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
     return ParticleIteratorWrapper<Particle>();
+  }
+
+  void rebuildNeighborLists(TraversalInterface* traversal) override {
+    rebuild();
   }
 
  protected:

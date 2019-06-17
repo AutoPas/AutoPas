@@ -44,7 +44,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const double cellSizeFactor /*= 1.0*/)
+              const double skin, const double cellSizeFactor = 1.0)
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin,
                                                                  allLCApplicableTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
@@ -97,6 +97,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
   }
 
+  bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
+
   void deleteHaloParticles() override {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -104,6 +106,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       iter.deleteCurrentParticle();
     }
+  }
+
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    // nothing to do.
   }
 
   /**
