@@ -43,7 +43,7 @@
  * @param lvl Possible levels: trace, debug, info, warn, error, critical.
  * @param fmt Message with formatting tokens
  * @param ... Formatting arguments
- * @note a ; is enforced at the end of the macro.
+ * @note A ';' is enforced at the end of the macro.
  */
 #define AutoPasLog(lvl, fmt, ...) spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__)
 
