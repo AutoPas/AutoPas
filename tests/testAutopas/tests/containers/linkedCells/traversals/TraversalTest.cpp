@@ -58,7 +58,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     }
   }
 
-  auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<FPCell> *>(Traversal.get());
+  auto *traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell> *>(Traversal.get());
   traversalInterface->traverseCellPairs(cells);
 }
 
