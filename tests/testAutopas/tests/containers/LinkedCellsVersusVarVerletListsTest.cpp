@@ -34,7 +34,8 @@ void LinkedCellsVersusVarVerletListsTest::test(unsigned long numMolecules, doubl
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::VarVerletTraversalAsBuild<FMCell, autopas::MoleculeLJ, decltype(func), useNewton3> traversalLJV(&func);
+  autopas::VarVerletTraversalAsBuild<FMCell, autopas::MoleculeLJ, decltype(func), dataLayoutOption, useNewton3>
+      traversalLJV(&func);
 
   autopas::C08Traversal<FMCell, decltype(func), dataLayoutOption, useNewton3> traversalLJ(
       _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
@@ -70,7 +71,7 @@ void LinkedCellsVersusVarVerletListsTest::test(unsigned long numMolecules, doubl
   autopas::C08Traversal<FMCell, decltype(flopsLinked), dataLayoutOption, useNewton3> traversalFLOPSLC(
       _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
 
-  autopas::VarVerletTraversalAsBuild<FMCell, autopas::MoleculeLJ, decltype(flopsLinked), useNewton3>
+  autopas::VarVerletTraversalAsBuild<FMCell, autopas::MoleculeLJ, decltype(flopsLinked), dataLayoutOption, useNewton3>
       traversalFLOPSVerlet(&flopsVerlet);
   _linkedCells->iteratePairwise(&flopsLinked, &traversalFLOPSLC, useNewton3);
   _verletLists->iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet, useNewton3);
@@ -90,7 +91,11 @@ void LinkedCellsVersusVarVerletListsTest::test(unsigned long numMolecules, doubl
   }
   // blackbox mode: the following line is only true, if the verlet lists do NOT use less cells than the linked cells
   // (for small scenarios), as the verlet lists fall back to linked cells.
-  EXPECT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());
+  // Furthermore, if DataLayout=SoA and newton3=disabled, linked cells will still use newton3 for particles inside
+  // the same cell. Thus, this case has to be excluded!
+  if (dataLayoutOption != autopas::DataLayoutOption::soa and useNewton3) {
+    EXPECT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());
+  }
 }
 
 TEST_F(LinkedCellsVersusVarVerletListsTest, test100) {
@@ -103,11 +108,9 @@ TEST_F(LinkedCellsVersusVarVerletListsTest, test100) {
 
   for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
     test<true, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance, boxMax);
-    // TODO: Not supported yet!
-    // test<true, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
+    test<true, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
     test<false, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance, boxMax);
-    // TODO: Not supported yet!
-    // test<false, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
+    test<false, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
   }
 }
 
@@ -120,11 +123,9 @@ TEST_F(LinkedCellsVersusVarVerletListsTest, test1000) {
   double rel_err_tolerance = 2e-12;
   for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
     test<true, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance, boxMax);
-    // TODO: Not supported yet!
-    // test<true, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
+    test<true, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
     test<false, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance, boxMax);
-    // TODO: Not supported yet!
-    // test<false, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
+    test<false, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
   }
 }
 
@@ -137,10 +138,8 @@ TEST_F(LinkedCellsVersusVarVerletListsTest, test2000) {
   double rel_err_tolerance = 1e-10;
   for (auto boxMax : {std::array<double, 3>{3., 3., 3.}, std::array<double, 3>{10., 10., 10.}}) {
     test<true, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance, boxMax);
-    // TODO: Not supported yet!
-    // test<true, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
+    test<true, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
     test<false, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance, boxMax);
-    // TODO: Not supported yet!
-    // test<false, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
+    test<false, autopas::DataLayoutOption::soa>(numMolecules, rel_err_tolerance, boxMax);
   }
 }

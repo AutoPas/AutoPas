@@ -903,9 +903,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
         }
       }
 
-      fxptr[i] += fxacc;
-      fyptr[i] += fyacc;
-      fzptr[i] += fzacc;
+      if (fxacc != 0 or fyacc != 0 or fzacc != 0) {
+        fxptr[i] += fxacc;
+        fyptr[i] += fyacc;
+        fzptr[i] += fzacc;
+      }
     }
 
     if (calculateGlobals) {

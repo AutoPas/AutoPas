@@ -8,28 +8,30 @@
 #pragma once
 
 #include <vector>
-#include "autopas/options/TraversalOption.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
+#include "autopas/options/TraversalOption.h"
 
 namespace autopas {
 
-template<class Particle>
+template <class Particle>
 class VerletNeighborListInterface {
-  // something with aos to soa
-
-  // TODO: Maybe add some kind of traversal selector
  public:
   virtual ~VerletNeighborListInterface() = default;
 
-  virtual std::vector<TraversalOption> getAllTraversals() = 0;
+  virtual std::vector<TraversalOption> getAllTraversals() const = 0;
 
-  virtual ContainerOption getContainerType() = 0;
+  virtual ContainerOption getContainerType() const = 0;
 
   virtual void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                                       typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
+                                             typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
                                  bool useNewton3) = 0;
 
+  virtual void generateSoAFromAoS() = 0;
+
+  virtual bool isSoAListValid() const = 0;
+
+  virtual long getNumberOfNeighborPairs() const = 0;
 };
 
-} //namespace autopas
+}  // namespace autopas

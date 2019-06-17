@@ -105,9 +105,8 @@ std::unique_ptr<CellPairTraversal<ParticleCell>> TraversalSelector<ParticleCell>
                                                                                                       &pairwiseFunctor);
     }
     case TraversalOption::varVerletTraversalAsBuild: {
-      return std::make_unique<
-          VarVerletTraversalAsBuild<ParticleCell, typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>>(
-          &pairwiseFunctor);
+      return std::make_unique<VarVerletTraversalAsBuild<ParticleCell, typename ParticleCell::ParticleType,
+                                                        PairwiseFunctor, DataLayout, useNewton3>>(&pairwiseFunctor);
     }
     case TraversalOption::dummyTraversal: {
       return std::make_unique<DummyTraversal<ParticleCell>>(info.dims);

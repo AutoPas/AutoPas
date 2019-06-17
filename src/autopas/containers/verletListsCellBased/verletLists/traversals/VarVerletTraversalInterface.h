@@ -15,7 +15,6 @@ namespace autopas {
  */
 template <class ParticleCell, class NeighborList>
 class VarVerletTraversalInterface : public CellPairTraversal<ParticleCell> {
-  // TODO: Have SoA as an option
  public:
   VarVerletTraversalInterface() : CellPairTraversal<ParticleCell>({0, 0, 0}) {}
 
@@ -28,6 +27,12 @@ class VarVerletTraversalInterface : public CellPairTraversal<ParticleCell> {
   void initTraversal(std::vector<ParticleCell> &cells) override {}
 
   void endTraversal(std::vector<ParticleCell> &cells) override {}
+
+  virtual void initVerletTraversal(NeighborList &neighborList) = 0;
+
+  virtual void endVerletTraversal(NeighborList &neighborList) = 0;
+
+  virtual DataLayoutOption getDataLayout() = 0;
 };
 
 }  // namespace autopas
