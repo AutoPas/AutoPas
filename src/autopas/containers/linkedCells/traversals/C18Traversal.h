@@ -63,13 +63,13 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
-  TraversalOption getTraversalType() override { return TraversalOption::c18; }
+  TraversalOption getTraversalType() const override { return TraversalOption::c18; }
 
   /**
    * C18 traversal is always usable.
    * @return
    */
-  bool isApplicable() override {
+  bool isApplicable() const override {
     int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
     cudaGetDeviceCount(&nDevices);

@@ -391,6 +391,7 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
                                      ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletRebuildFrequency));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
+  //@todo move this to new overloaded TraveralSelector::generateTraversal function without templates
   switch (conf.dataLayout) {
     case DataLayoutOption::aos: {
       switch (conf.newton3) {

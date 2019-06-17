@@ -71,7 +71,7 @@ class C01Traversal
    *
    * @return
    */
-  bool isApplicable() override {
+  bool isApplicable() const override {
     int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
     cudaGetDeviceCount(&nDevices);
@@ -83,7 +83,7 @@ class C01Traversal
     }
   }
 
-  TraversalOption getTraversalType() override {
+  TraversalOption getTraversalType() const override {
     return (combineSoA) ? TraversalOption::c01CombinedSoA : TraversalOption::c01;
   }
 
