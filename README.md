@@ -75,7 +75,7 @@ GTEST_FILTER="ArrayMathTest.testAdd*" ctest --verbose
 ```
 or `ctest` arguments like `-R` (run tests matching regex) and `-E` (exclude tests matching regex)
 ```bash
-ctest -R 'Array.*testAdd' -E `Double'
+ctest -R 'Array.*testAdd' -E 'Double'
 ```
 
 ### Debugging Tests
