@@ -194,64 +194,44 @@ int main(int argc, char *argv[]) {
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
-  //@todo use new template free function in TraversalSelector::generateTraversal
+  using CellType = autopas::FullParticleCell<autopas::sph::SPHParticle>;
+  // initialize to dummy values
+  autopas::TraversalSelectorInfo<CellType> traversalInfo = cont->getTraversalSelectorInfo();
+  std::cout << "Cells: " << traversalInfo.dims[0] << " x " << traversalInfo.dims[1] << " x " << traversalInfo.dims[2]
+            << std::endl;
+  auto traversalType = autopas::TraversalOption::dummyTraversal;
   switch (cont->getContainerType()) {
     case autopas::ContainerOption::linkedCells: {
-      auto dims =
-          dynamic_cast<
-              autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(
-              cont)
-              ->getCellBlock()
-              .getCellsPerDimensionWithHalo();
-      std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
-
-      if (useNewton3) {
-        auto traversal =
-            std::make_unique<autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                                   autopas::DataLayoutOption::aos, true>>(dims, func);
-        measureContainerTraversal(cont, func, traversal.get(), numParticles, numIterations, useNewton3);
-      } else {
-        auto traversal =
-            std::make_unique<autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                                   autopas::DataLayoutOption::aos, false>>(dims, func);
-        measureContainerTraversal(cont, func, traversal.get(), numParticles, numIterations, useNewton3);
-      }
-
+      traversalType = autopas::TraversalOption::c08;
       break;
     }
-
     case autopas::ContainerOption::directSum: {
-      auto traversal =
-          std::make_unique<autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                                       autopas::DataLayoutOption::aos, false>>(func);
-      measureContainerTraversal(cont, func, traversal.get(), numParticles, numIterations, useNewton3);
+      traversalType = autopas::TraversalOption::directSumTraversal;
+      //@todo @reviewer ds traversal was previously always with N3 off, ignoring the function arg. Is this intended?
       break;
     }
     case autopas::ContainerOption::verletListsCells: {
-      auto dims = dynamic_cast<autopas::VerletListsCells<autopas::sph::SPHParticle> *>(cont)->getCellsPerDimension();
-      std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
-
       if (useNewton3) {
-        auto traversal =
-            std::make_unique<autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                                   autopas::DataLayoutOption::aos, true>>(dims, func);
-        measureContainerTraversal(cont, func, traversal.get(), numParticles, numIterations, useNewton3);
+        traversalType = autopas::TraversalOption::c18;
       } else {
-        auto traversal =
-            std::make_unique<autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                                   autopas::DataLayoutOption::aos, false>>(dims, func);
-        measureContainerTraversal(cont, func, traversal.get(), numParticles, numIterations, useNewton3);
+        traversalType = autopas::TraversalOption::c01;
       }
       break;
     }
-    default:
-
-    {
-      auto dims = dynamic_cast<autopas::VerletListsCells<autopas::sph::SPHParticle> *>(cont)->getCellsPerDimension();
-      auto traversal = std::make_unique<autopas::DummyTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
-                                                                autopas::DataLayoutOption::aos, false>>(dims);
-      measureContainerTraversal(cont, func, traversal.get(), numParticles, numIterations, useNewton3);
-    }
+    default: {}
+  }
+  auto traversal = autopas::TraversalSelector<CellType>::template generateTraversal<Functor>(
+      traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos, useNewton3);
+  if (useNewton3) {
+    measureContainerTraversal(
+        cont, func,
+        dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, true> *>(traversal.get()),
+        numParticles, numIterations, useNewton3);
+  } else {
+    measureContainerTraversal(
+        cont, func,
+        dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, false> *>(traversal.get()),
+        numParticles, numIterations, useNewton3);
   }
 }
 

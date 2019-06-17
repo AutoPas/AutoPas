@@ -53,6 +53,23 @@ class TraversalSelector {
   template <class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
   static std::unique_ptr<CellPairTraversal<ParticleCell, dataLayout, useNewton3>> generateTraversal(
       TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo<ParticleCell> &info);
+
+  /**
+   * Generates a given Traversal for the given properties. Requires less templates but only returns a TraversalInterface
+   * smart pointer.
+   * @tparam PairwiseFunctor
+   * @param traversalType
+   * @param pairwiseFunctor
+   * @param info
+   * @param dataLayout
+   * @param useNewton3
+   * @return Smartpointer to the traversal.
+   */
+  template <class PairwiseFunctor>
+  static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
+                                                               PairwiseFunctor &pairwiseFunctor,
+                                                               const TraversalSelectorInfo<ParticleCell> &info,
+                                                               DataLayoutOption dataLayout, bool useNewton3);
 };
 
 template <class ParticleCell>
@@ -115,5 +132,46 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
                                               utils::StringUtils::to_string(traversalType));
   return std::unique_ptr<CellPairTraversal<ParticleCell, dataLayout, useNewton3>>(nullptr);
+}
+template <class ParticleCell>
+template <class PairwiseFunctor>
+std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
+    TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor,
+    const TraversalSelectorInfo<ParticleCell> &traversalInfo, DataLayoutOption dataLayout, bool useNewton3) {
+  switch (dataLayout) {
+    case DataLayoutOption::aos: {
+      if (useNewton3) {
+        return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::aos,
+                                                                           true>(traversalType, pairwiseFunctor,
+                                                                                 traversalInfo);
+      } else {
+        return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::aos,
+                                                                           false>(traversalType, pairwiseFunctor,
+                                                                                  traversalInfo);
+      }
+    }
+    case DataLayoutOption::soa: {
+      if (useNewton3) {
+        return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::soa,
+                                                                           true>(traversalType, pairwiseFunctor,
+                                                                                 traversalInfo);
+      } else {
+        return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::soa,
+                                                                           false>(traversalType, pairwiseFunctor,
+                                                                                  traversalInfo);
+      }
+    }
+    case DataLayoutOption::cuda: {
+      if (useNewton3) {
+        return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda,
+                                                                           true>(traversalType, pairwiseFunctor,
+                                                                                 traversalInfo);
+      } else {
+        return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda,
+                                                                           false>(traversalType, pairwiseFunctor,
+                                                                                  traversalInfo);
+      }
+    }
+  }
 }
 }  // namespace autopas
