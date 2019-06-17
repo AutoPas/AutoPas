@@ -26,15 +26,16 @@ class FullSearch : public TuningStrategyInterface {
    * @param allowedTraversalOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedCellSizeFactors
    */
-  FullSearch(const std::set<ContainerOption> &allowedContainerOptions,
+  FullSearch(const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
              const std::set<Newton3Option> &allowedNewton3Options)
       : _containerOptions(allowedContainerOptions) {
     // sets search space and current config
-    populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
-                        allowedNewton3Options);
+    populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
+                        allowedDataLayoutOptions, allowedNewton3Options);
   }
 
   /**
@@ -45,7 +46,7 @@ class FullSearch : public TuningStrategyInterface {
   explicit FullSearch(std::set<Configuration> allowedConfigurations)
       : _containerOptions{}, _searchSpace(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {
     for (auto config : _searchSpace) {
-      _containerOptions.insert(config._container);
+      _containerOptions.insert(config.container);
     }
   }
 
@@ -62,7 +63,7 @@ class FullSearch : public TuningStrategyInterface {
 
   inline bool tune() override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; };
+  inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; }
 
   inline bool searchSpaceIsTrivial() override { return _searchSpace.size() == 1; }
 
@@ -77,6 +78,7 @@ class FullSearch : public TuningStrategyInterface {
    * @param allowedNewton3Options
    */
   inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                  const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                   const std::set<Newton3Option> &allowedNewton3Options);
@@ -90,6 +92,7 @@ class FullSearch : public TuningStrategyInterface {
 };
 
 void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                     const std::set<double> &allowedCellSizeFactors,
                                      const std::set<TraversalOption> &allowedTraversalOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                      const std::set<Newton3Option> &allowedNewton3Options) {
@@ -108,13 +111,14 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-    for (auto &traversalOption : allowedAndApplicable) {
-      for (auto &dataLayoutOption : allowedDataLayoutOptions) {
-        for (auto &newton3Option : allowedNewton3Options) {
-          _searchSpace.emplace(containerOption, traversalOption, dataLayoutOption, newton3Option);
+    for (auto &cellSizeFactor : allowedCellSizeFactors)
+      for (auto &traversalOption : allowedAndApplicable) {
+        for (auto &dataLayoutOption : allowedDataLayoutOptions) {
+          for (auto &newton3Option : allowedNewton3Options) {
+            _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
+          }
         }
       }
-    }
   }
 
   if (_searchSpace.empty()) {
@@ -168,7 +172,7 @@ void FullSearch::selectOptimalConfiguration() {
 
 void FullSearch::removeN3Option(Newton3Option badNewton3Option) {
   for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
-    if (ssIter->_newton3 == badNewton3Option) {
+    if (ssIter->newton3 == badNewton3Option) {
       // change current config to the next non-deleted
       if (ssIter == _currentConfig) {
         ssIter = _searchSpace.erase(ssIter);

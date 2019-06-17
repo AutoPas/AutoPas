@@ -26,11 +26,12 @@ pipeline{
                         // get doxygen warnings
                         recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(pattern: 'build-doxygen/DoxygenWarningLog.txt')], unstableTotalAll: 1
                     },
-                    "clang format": {
-                        dir("clang-format"){
+                    "clang and cmake format": {
+                        dir("format"){
                             container('autopas-clang6-cmake-ninja-make'){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON .."
                                 sh "ninja clangformat"
+                                sh "ninja cmakeformat"
                             }
                             script{
                                 // return 2 if files have been modified by clang-format, 0 otherwise
@@ -39,27 +40,7 @@ pipeline{
                                     sh "git diff --quiet || exit 2"
                                 } catch (Exception e) {
                                     // change detected
-                                    echo 'clang format errors detected. please format the code properly. Affected files:'
-                                    sh "git status | grep modified"
-                                    sh "exit 1"
-                                }
-                            }
-                        }
-                    },
-                    "cmake format": {
-                        dir("cmake-format"){
-                            container('autopas-clang6-cmake-ninja-make'){
-                                sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON .."
-                                sh "ninja cmakeformat"
-                            }
-                            script{
-                                // return 2 if files have been modified by cmake-format, 0 otherwise
-                                try{
-                                    // if files were modified, return 2
-                                    sh "git diff --quiet || exit 2"
-                                } catch (Exception e) {
-                                    // change detected
-                                    echo 'cmake format errors detected. please format the code properly. Affected files:'
+                                    echo 'clang or cmake format errors detected. please format the code properly. Affected files:'
                                     sh "git status | grep modified"
                                     sh "exit 1"
                                 }

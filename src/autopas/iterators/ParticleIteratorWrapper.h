@@ -32,14 +32,15 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    * @tparam InterfacePtrType type of the interface ptr
    */
   template <class InterfacePtrType>
-  explicit ParticleIteratorWrapper(InterfacePtrType* particleIteratorInterface)
-      : _particleIterator(static_cast<internal::ParticleIteratorInterfaceImpl<Particle>*>(particleIteratorInterface)) {}
+  explicit ParticleIteratorWrapper(InterfacePtrType *particleIteratorInterface)
+      : _particleIterator(static_cast<internal::ParticleIteratorInterfaceImpl<Particle> *>(particleIteratorInterface)) {
+  }
 
   /**
    * copy operator
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
-  ParticleIteratorWrapper(const ParticleIteratorWrapper& otherParticleIteratorWrapper)
+  ParticleIteratorWrapper(const ParticleIteratorWrapper &otherParticleIteratorWrapper)
       : _particleIterator(otherParticleIteratorWrapper._particleIterator->clone()) {}
 
   /**
@@ -47,18 +48,18 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    * @param otherParticleIteratorWrapper the other IteratorWrapper
    * @return *this
    */
-  inline ParticleIteratorWrapper& operator=(const ParticleIteratorWrapper& otherParticleIteratorWrapper) {
+  inline ParticleIteratorWrapper &operator=(const ParticleIteratorWrapper &otherParticleIteratorWrapper) {
     _particleIterator = std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>(
         otherParticleIteratorWrapper._particleIterator->clone());
     return *this;
   }
 
-  inline ParticleIteratorWrapper<Particle>& operator++() override final {
+  inline ParticleIteratorWrapper<Particle> &operator++() override final {
     _particleIterator->operator++();
     return *this;
   }
 
-  inline Particle& operator*() const override final { return _particleIterator->operator*(); }
+  inline Particle &operator*() const override final { return _particleIterator->operator*(); }
 
   inline void deleteCurrentParticle() override final { _particleIterator->deleteCurrentParticle(); }
 
