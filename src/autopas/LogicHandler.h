@@ -45,19 +45,35 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
-    return std::move(_autoTuner.getContainer()->updateContainer());
+    if (not isNeighborListValid()) {
+      AutoPasLog(debug, "LogicHandler: Initiating container update.");
+      return std::move(_autoTuner.getContainer()->updateContainer());
+    } else {
+      AutoPasLog(debug, "LogicHandler: Skipping container update.");
+      return std::vector<Particle>{};
+    }
   }
 
   /**
    * @copydoc AutoPas::addParticle()
    */
-  void addParticle(Particle& p) { _autoTuner.getContainer()->addParticle(); }
+  void addParticle(Particle& p) {
+    if (not isNeighborListValid()) {
+      _autoTuner.getContainer()->addParticle(p);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "adding of particles not allowed while neighborlists are still valid. Please invalidate the neighborlists "
+          "by calling AutoPas::invalidateLists(). Do this on EVERY AutoPas instance, i.e., on all mpi processes!");
+    }
+  }
 
   /**
    * @copydoc AutoPas::addHaloParticle()
    */
   void addHaloParticle(Particle& haloParticle) {
-    if (_neighborListIsValid) {
+    if (not isNeighborListValid()) {
+      _autoTuner.getContainer()->addHaloParticle(haloParticle);
+    } else {
       if (not utils::inBox(haloParticle.getR(), ArrayMath::addScalar(this->getBoxMin(), this->getSkin() / 2),
                            ArrayMath::subScalar(this->getBoxMax(), this->getSkin() / 2))) {
         bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
@@ -80,15 +96,16 @@ class LogicHandler {
             "VerletListsLinkedBase::addHaloParticle: trying to update halo particle that is too far inside domain "
             "(more than skin/2). Rebuild frequency not high enough / skin too small!");
       }
-    } else {
-      _autoTuner.getContainer()->addHaloParticle(haloParticle);
     }
   }
 
   /**
    * @copydoc AutoPas::deleteHaloParticles()
    */
-  void deleteHaloParticles() { _autoTuner.getContainer()->deleteHaloParticles(); }
+  void deleteHaloParticles() {
+    _neighborListIsValid = false;
+    _autoTuner.getContainer()->deleteHaloParticles();
+  }
 
   /**
    * @copydoc AutoPas::deleteAllParticles()
@@ -100,7 +117,8 @@ class LogicHandler {
    */
   template <class Functor>
   void iteratePairwise(Functor* f) {
-    _autoTuner.iteratePairwise(f);
+    bool doRebuild = not isNeighborListValid();
+    _autoTuner.iteratePairwise(f, doRebuild);
   }
 
   /**
@@ -121,6 +139,7 @@ class LogicHandler {
 
  private:
   void doAssertions() {
+    // check boxSize at least cutoff + skin
     for (unsigned int dim = 0; dim < 3; ++dim) {
       if (_boxMax[dim] - _boxMin[dim] < _cutoff + _skin) {
         AutoPasLog(error, "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.", dim, _boxMin[dim], dim, _boxMax[dim]);
@@ -128,7 +147,11 @@ class LogicHandler {
         autopas::utils::ExceptionHandler::exception("Box too small.");
       }
     }
+
+    // check
   }
+
+  bool isNeighborListValid() { return _neighborListIsValid; }
 
   /**
    * Lower corner of the container.
@@ -169,5 +192,15 @@ class LogicHandler {
    * Reference to the AutoTuner that owns the container, ...
    */
   autopas::AutoTuner<Particle, ParticleCell>& _autoTuner;
+
+  /**
+   * Specifies if the neighbor list is valid.
+   */
+  bool _neighborListIsValid{false};
+
+  /**
+   * Steps since last rebuild
+   */
+  unsigned int _stepsSinceLastContainerRebuild{UINT32_MAX};
 };
 }  // namespace autopas
