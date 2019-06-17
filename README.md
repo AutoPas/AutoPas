@@ -161,18 +161,6 @@ for (auto p: invalidParticles) {
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
-## Logging
-AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
-```C++
-AutoPasLog(warn, "Hello {}", name);
-```
-The global log level can be set at runtime with:
-```C++
-#include "autopas/utils/Logger.h"
-autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
-```
-Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `off`,
-
 ## Acknowledgements
 * TaLPas BMBF
 

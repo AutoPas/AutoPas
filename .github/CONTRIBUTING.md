@@ -53,6 +53,18 @@ Please keep in mind the following notes while working.
 * Code in folder `src` should belong to namespace `autopas`
 * Classes which shouldn't be used externally should belong to namespace `internal` declared as `inline`
 
+### Logging
+AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
+```C++
+AutoPasLog(warn, "Hello {}", name);
+```
+The global log level can be set at runtime with:
+```C++
+#include "autopas/utils/Logger.h"
+autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+```
+Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `off`,
+
 ### Adding a new Traversal
 * Create a new traversal class under `src/autopas/containers/[Container]/traversals` for the container the traversal is intended.
 * Think about inheriting from a similar traversal. At least derive your new traversal from `src/autopas/containers/cellPairTraversals/TraversalInterface.h`.
