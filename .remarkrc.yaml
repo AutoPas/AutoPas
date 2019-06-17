@@ -1,0 +1,11 @@
+plugins:
+    preset-lint-consistent:
+    preset-lint-markdown-style-guide:
+    preset-lint-recommended:
+    validate-links:
+    # Customized settings
+    lint-list-item-indent: space
+    lint-unordered-list-marker-style: consistent
+    lint-maximum-line-length: false
+    lint-no-multiple-toplevel-headings: false
+    lint-no-file-name-irregular-characters: \\.a-zA-Z0-9-_
