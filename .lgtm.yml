@@ -3,7 +3,7 @@ extraction:
     after_prepare:    # Customizable step used by all languages.
       - wget https://github.com/Kitware/CMake/releases/download/v3.14.5/cmake-3.14.5.tar.gz -O cmake.tar.gz
       - tar -xvzf cmake.tar.gz
-      - cd cmake*/ && mkdir build && cd build
+      - cd cmake-*/ && mkdir build && cd build
       - cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local ..
       - ls ~/.local/bin
       - export PATH=~/.local/bin:$PATH
