@@ -12,7 +12,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
-
+inline namespace internal {
 /**
  * A cell functor. This functor is build from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
@@ -310,5 +310,5 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     ParticleCell &cell) {
   _functor->CudaFunctor(cell._particleSoABufferDevice, true);
 }
-
+}  // namespace internal
 }  // namespace autopas
