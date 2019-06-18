@@ -4,7 +4,7 @@ extraction:
       - wget https://github.com/Kitware/CMake/releases/download/v3.14.5/cmake-3.14.5.tar.gz -O cmake.tar.gz
       - tar -xvzf cmake.tar.gz
       - cd cmake-*/
-      - sed -i '/_qt4_get_version_components/a message(status "QTVersion: ${QTVERSION}")' FindQt4.cmake
+      - sed -i '/_qt4_get_version_components/a message(status "QTVersion ${QTVERSION}")' FindQt4.cmake
       - ./bootstrap
       - make
       - DESTDIR="$HOME/.local" make install
