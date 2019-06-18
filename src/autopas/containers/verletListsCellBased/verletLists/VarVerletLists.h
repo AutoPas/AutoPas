@@ -34,12 +34,12 @@ class VarVerletLists
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                  const double skin, const unsigned int rebuildFrequency = 1,
                  const typename VerletLists<Particle>::BuildVerletListType buildVerletListType =
-                     VerletLists<Particle>::BuildVerletListType::VerletSoA)
-      : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin,
-                                                                           rebuildFrequency, getAllTraversals()),
+                     VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                 const double cellSizeFactor = 1.0)
+      : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
+            boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(),
+            cellSizeFactor),
         _neighborList{} {}
-
-  std::vector<TraversalOption> getAllTraversals() override { return _neighborList.getAllTraversals(); }
 
   ContainerOption getContainerType() override { return _neighborList.getContainerType(); }
 

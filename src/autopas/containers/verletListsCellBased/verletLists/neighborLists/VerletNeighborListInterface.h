@@ -19,8 +19,6 @@ class VerletNeighborListInterface {
  public:
   virtual ~VerletNeighborListInterface() = default;
 
-  virtual std::vector<TraversalOption> getAllTraversals() const = 0;
-
   virtual ContainerOption getContainerType() const = 0;
 
   virtual void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,

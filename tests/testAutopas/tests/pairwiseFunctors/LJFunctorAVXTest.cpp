@@ -37,12 +37,13 @@ bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
   for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
-    EXPECT_DOUBLE_EQ(xptr1[i], xptr2[i]) << "for particle pair " << idptr1[i];
-    EXPECT_DOUBLE_EQ(yptr1[i], yptr2[i]) << "for particle pair " << idptr1[i];
-    EXPECT_DOUBLE_EQ(zptr1[i], zptr2[i]) << "for particle pair " << idptr1[i];
-    EXPECT_DOUBLE_EQ(fxptr1[i], fxptr2[i]) << "for particle pair " << idptr1[i];
-    EXPECT_DOUBLE_EQ(fyptr1[i], fyptr2[i]) << "for particle pair " << idptr1[i];
-    EXPECT_DOUBLE_EQ(fzptr1[i], fzptr2[i]) << "for particle pair " << idptr1[i];
+    double tolerance = 1e-8;
+    EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i];
+    EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i];
+    EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i];
+    EXPECT_NEAR(fxptr1[i], fxptr2[i], tolerance) << "for particle pair " << idptr1[i];
+    EXPECT_NEAR(fyptr1[i], fyptr2[i], tolerance) << "for particle pair " << idptr1[i];
+    EXPECT_NEAR(fzptr1[i], fzptr2[i], tolerance) << "for particle pair " << idptr1[i];
   }
   // clang-format off
   return not ::testing::Test::HasFailure();
@@ -52,12 +53,13 @@ bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
 bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
-  EXPECT_DOUBLE_EQ(p1.getR()[0], p2.getR()[0]) << "for particle pair " << p1.getID();
-  EXPECT_DOUBLE_EQ(p1.getR()[1], p2.getR()[1]) << "for particle pair " << p1.getID();
-  EXPECT_DOUBLE_EQ(p1.getR()[2], p2.getR()[2]) << "for particle pair " << p1.getID();
-  EXPECT_DOUBLE_EQ(p1.getF()[0], p2.getF()[0]) << "for particle pair " << p1.getID();
-  EXPECT_DOUBLE_EQ(p1.getF()[1], p2.getF()[1]) << "for particle pair " << p1.getID();
-  EXPECT_DOUBLE_EQ(p1.getF()[2], p2.getF()[2]) << "for particle pair " << p1.getID();
+  double tolerance = 1e-8;
+  EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[0], p2.getF()[0], tolerance) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[1], p2.getF()[1], tolerance) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[2], p2.getF()[2], tolerance) << "for particle pair " << p1.getID();
 
   // clang-format off
   return not ::testing::Test::HasFailure();
@@ -92,8 +94,13 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   FPCell cell1NoAVX(cell1AVX);
   FPCell cell2NoAVX(cell2AVX);
 
-  autopas::LJFunctor<Particle, FPCell> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
-  autopas::LJFunctorAVX<Particle, FPCell> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(
+      _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(
+      _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+
+  ljFunctorAVX.initTraversal();
+  ljFunctorNoAVX.initTraversal();
 
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after copy initialization.";
@@ -123,6 +130,13 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
 
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after extracting.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after extracting.";
+
+  ljFunctorAVX.endTraversal(newton3);
+  ljFunctorNoAVX.endTraversal(newton3);
+
+  double tolerance = 1e-8;
+  EXPECT_NEAR(ljFunctorAVX.getUpot(), ljFunctorNoAVX.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
@@ -136,10 +150,15 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   // copy cells
   FPCell cellNoAVX(cellAVX);
 
-  autopas::LJFunctor<Particle, FPCell> ljFunctorNoAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
-  autopas::LJFunctorAVX<Particle, FPCell> ljFunctorAVX(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(
+      _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(
+      _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
+
+  ljFunctorAVX.initTraversal();
+  ljFunctorNoAVX.initTraversal();
 
   ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer);
   ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer);
@@ -157,6 +176,13 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   ljFunctorAVX.SoAExtractor(cellNoAVX, cellNoAVX._particleSoABuffer);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells 1 not equal after extracting.";
+
+  ljFunctorAVX.endTraversal(newton3);
+  ljFunctorNoAVX.endTraversal(newton3);
+
+  double tolerance = 1e-8;
+  EXPECT_NEAR(ljFunctorAVX.getUpot(), ljFunctorNoAVX.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
 TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellNewton3) { testLJFunctorVSLJFunctorAVXOneCell(true); }

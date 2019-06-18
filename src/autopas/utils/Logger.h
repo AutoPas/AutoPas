@@ -6,18 +6,11 @@
 
 #pragma once
 
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <iostream>
-
-/**
- * Returns the filename without full path.
- */
-#define __FILENAME__                           \
-  ({                                           \
-    const char* pStr = strrchr(__FILE__, '/'); \
-    pStr ? pStr + 1 : __FILE__;                \
-  })
 
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
@@ -31,7 +24,7 @@
     size_t textwidth = 26; /* If filenames get cropped increase this! */ \
     std::string s;                                                       \
     s.reserve(textwidth);                                                \
-    s.append(__FILENAME__);                                              \
+    s.append(SPDLOG_FILE_BASENAME(__FILE__));                            \
     s.append(":");                                                       \
     s.append(std::to_string(__LINE__));                                  \
     s.resize(textwidth, ' ');                                            \
@@ -66,7 +59,7 @@ class Logger {
    * create a logger writing to the file system
    * @param filename
    */
-  static void create(std::string& filename) {
+  static void create(std::string &filename) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     spdlog::basic_logger_mt(loggerName(), filename);
@@ -77,10 +70,21 @@ class Logger {
    * default is std::cout
    * @param oss
    */
-  static void create(std::ostream& oss = std::cout) {
+  static void create(std::ostream &oss = std::cout) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
-    auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+    std::shared_ptr<spdlog::sinks::sink> ostream_sink;
+#ifdef AUTOPAS_COLORED_CONSOLE_LOGGING
+    if (oss.rdbuf() == std::cout.rdbuf()) {
+      ostream_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    } else if (oss.rdbuf() == std::cerr.rdbuf()) {
+      ostream_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
+    } else {  // no color for streams other than cout / cerr
+      ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+    }
+#else
+    ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+#endif
     auto logger = std::make_shared<spdlog::logger>(loggerName(), ostream_sink);
     spdlog::register_logger(logger);
   }

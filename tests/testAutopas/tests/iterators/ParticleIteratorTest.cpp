@@ -12,7 +12,7 @@ using namespace autopas::internal;
 void ParticleIteratorTest::SetUp() {
   for (int i = 0; i < 20; ++i) {
     std::array<double, 3> arr{};
-    for (auto& a : arr) {
+    for (auto &a : arr) {
       a = static_cast<double>(i);
     }
     MoleculeLJ m(arr, {0., 0., 0.}, static_cast<unsigned long>(i));
@@ -300,7 +300,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
  * @param haloMol
  */
 template <class Container, class Molecule>
-void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule& haloMol) {
+void testContainerIteratorBehavior(Container &container, Molecule &mol, Molecule &haloMol) {
   // default
   int count = 0;
 #ifdef AUTOPAS_OPENMP

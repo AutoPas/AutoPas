@@ -87,10 +87,6 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
 
   VerletNeighborListAsBuild() : _neighborList{}, _soaListIsValid(false), currentColor(0) {}
 
-  std::vector<TraversalOption> getAllTraversals() const override {
-    return std::vector<TraversalOption>{TraversalOption::varVerletTraversalAsBuild};
-  };
-
   ContainerOption getContainerType() const override { return ContainerOption::varVerletListsAsBuild; }
 
   void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,

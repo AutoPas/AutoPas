@@ -8,6 +8,7 @@
 #pragma once
 
 #include "autopas/containers/CellBlock3D.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -45,25 +46,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff,
+                                                                 compatibleTraversals::allLCCompatibleTraversals()),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
-
-  /**
-   * Lists all traversal options applicable for the Linked Cells container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allLCApplicableTraversals() {
-    static const std::vector<TraversalOption> v {
-      TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced
-#if defined(AUTOPAS_CUDA)
-          ,
-          TraversalOption::c01Cuda
-#endif
-    };
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allLCApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
 
@@ -199,8 +184,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     size_t startIndex;
