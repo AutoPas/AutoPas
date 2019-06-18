@@ -221,7 +221,8 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
     default: {}
   }
   auto traversal = autopas::TraversalSelector<CellType>::template generateTraversal<Functor>(
-      traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos, useNewton3);
+      traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos,
+      useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
   if (useNewton3) {
     measureContainerTraversal(
         cont, func,
