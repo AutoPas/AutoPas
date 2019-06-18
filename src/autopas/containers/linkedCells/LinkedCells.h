@@ -184,8 +184,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     size_t startIndex;

@@ -12,6 +12,7 @@
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VerletTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
