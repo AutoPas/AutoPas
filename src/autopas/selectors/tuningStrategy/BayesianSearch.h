@@ -31,15 +31,19 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
-   * @param expAcqFunction acquisition function used for exploration.
-   * @param expNumSamples number of samples used for exploration.
+   * @param predAcqFunction acquisition function used for prediction while tuning.
+   * @param predNumSamples number of samples used for prediction while tuning.
+   * @param maxEvidences stop tuning after given number evidences provided.
+   * @param lastAcqFunction acquisition function used for prediction of last tuning step.
+   * @param lastNumSamples number of samples used for prediction of last tuning step.
    */
   BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = allContainerOptions,
                  const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(0., 2.),
                  const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
                  const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
                  const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options,
-                 AcquisitionFunction expAcqFunction = lcb, size_t expNumSamples = 1000)
+                 AcquisitionFunction predAcqFunction = lcb, size_t predNumSamples = 1000, size_t maxEvidences = 10,
+                 AcquisitionFunction lastAcqFunction = ucb, size_t lastNumSamples = 100000)
       : _enumOptions(4),
         _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
@@ -48,8 +52,11 @@ class BayesianSearch : public TuningStrategyInterface {
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _currentConfig(),
         _gp(0., std::vector<double>(_enumOptions.size() + 1, 1.), 0.001),
-        _expAcqFunction(expAcqFunction),
-        _expNumSamples(expNumSamples),
+        _predAcqFunction(predAcqFunction),
+        _predNumSamples(predNumSamples),
+        _maxEvidences(maxEvidences),
+        _lastAcqFunction(lastAcqFunction),
+        _lastNumSamples(lastNumSamples),
         _rng(std::random_device()()) {
     /// @todo setting hyperparameters
 
@@ -86,6 +93,15 @@ class BayesianSearch : public TuningStrategyInterface {
   }
 
   /**
+   * Generate n samples and predict their corresponding
+   * acquisition function. Return the FeatureVector which
+   * generates the smallest value.
+   * @param n numSamples
+   * @param af acquisition function
+   */
+  inline FeatureVector sampleOptimalFeatureVector(size_t n, AcquisitionFunction af);
+
+  /**
    * Set the current configuration with
    * information from a FeatureVector
    */
@@ -105,8 +121,11 @@ class BayesianSearch : public TuningStrategyInterface {
 
   Configuration _currentConfig;
   GaussianProcess _gp;
-  AcquisitionFunction _expAcqFunction;
-  size_t _expNumSamples;
+  AcquisitionFunction _predAcqFunction;
+  size_t _predNumSamples;
+  size_t _maxEvidences;
+  AcquisitionFunction _lastAcqFunction;
+  size_t _lastNumSamples;
   std::default_random_engine _rng;
 };
 
@@ -117,9 +136,21 @@ bool BayesianSearch::tune() {
     return false;
   }
 
+  if (_gp.numEvidences() >= _maxEvidences) {
+    // select predicted best config
+    setConfig(sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction));
+    return false;
+  }
+
+  // select predicted best config for tuning
+  setConfig(sampleOptimalFeatureVector(_predNumSamples, _predAcqFunction));
+  return true;
+}
+
+FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunction af) {
   std::vector<FeatureVector> samples;
   while (samples.empty()) {
-    samples.resize(_expNumSamples);
+    samples.resize(n);
 
     // sample from all enums
     for (auto &enumOption : _enumOptions) {
@@ -142,10 +173,7 @@ bool BayesianSearch::tune() {
   }
 
   // sample minimum of acquisition function
-  FeatureVector best = _gp.sampleAquisitionMin(_expAcqFunction, samples);
-  setConfig(best);
-
-  return true;
+  return _gp.sampleAquisitionMin(af, samples);
 }
 
 bool BayesianSearch::searchSpaceIsTrivial() {
