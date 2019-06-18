@@ -14,14 +14,13 @@ namespace autopas {
 /**
  * Variable Verlet Lists container with different neighbor lists.
 
- * @tparam Particle
+ * @tparam Particle The particle type this container contains.
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
 template <class Particle, class NeighborList>
 class VarVerletLists
     : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                    typename VerletListHelpers<Particle>::SoAArraysType> {
-  typedef FullParticleCell<Particle> ParticleCell;
   typedef typename VerletListHelpers<Particle>::SoAArraysType SoAArraysType;
   typedef typename VerletListHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
 
@@ -29,7 +28,7 @@ class VarVerletLists
   /**
    * @copydoc VerletLists::VerletLists
    *
-   * @todo TODO Decide if buildVerletListType makes sense and implement it if it does
+   * @todo Decide if buildVerletListType makes sense and implement it if it does
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                  const double skin, const unsigned int rebuildFrequency = 1,
@@ -47,7 +46,7 @@ class VarVerletLists
    * @copydoc VerletLists::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3Deprecated = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     if (auto *traversalInterface =
             dynamic_cast<VarVerletTraversalInterface<FullParticleCell<Particle>, NeighborList> *>(traversal)) {
       if (this->needsRebuild()) {
@@ -91,12 +90,16 @@ class VarVerletLists
     return false;
   }
 
+  /**
+   * Returns the number of neighbor pairs in the list.
+   * @return the number of neighbor pairs in the list.
+   */
   long getNumberOfNeighborPairs() const { return _neighborList.getNumberOfNeighborPairs(); }
 
  protected:
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @note This function will be called in iteratePairwise() appropriately!
    * @param useNewton3
    */
   void rebuildVerletLists(bool useNewton3 = true) {
