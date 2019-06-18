@@ -173,5 +173,9 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       }
     }
   }
+
+  autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
+                                              utils::StringUtils::to_string(traversalType));
+  return std::unique_ptr<TraversalInterface>(nullptr);
 }
 }  // namespace autopas
