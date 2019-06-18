@@ -1,0 +1,10 @@
+extraction:
+  cpp:
+    prepare:    # Customizable step used by all languages.
+      packages:
+        - python-pip
+    after_prepare:    # Customizable step used by all languages.
+      - pip3 install --local cmake
+      - ls ~/.local/bin
+      - export PATH=$PATH:~/.local/bin
+      - cmake --version
