@@ -26,8 +26,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C04Traversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 2>,
-                     public LinkedCellTraversalInterface<ParticleCell> {
+class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 2>,
+                        public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -37,8 +37,8 @@ class C04Traversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @param cutoff Cutoff radius.
    * @param cellLength cell length.
    */
-  explicit C04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+  explicit C04SoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                           const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C04BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 2>(dims, pairwiseFunctor, cutoff,
                                                                                     cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
@@ -60,7 +60,7 @@ class C04Traversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, Dat
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
+inline void C04SoATraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   _cellHandler.resizeBuffers();
   this->c04Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
