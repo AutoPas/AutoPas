@@ -42,6 +42,16 @@ class VerletNeighborListInterface {
                                  bool useNewton3) = 0;
 
   /**
+   * Checks if the neighbor list contains all pairs that is should.
+   *
+   * This is very costly, comparable to rebuilding it.
+   * @param useNewton3 If the neighbor list should use newton 3.
+   * @param cutoff The cutoff. Two particles that are further away than this distance are not considered.
+   * @return If the current neighbor list is valid.
+   */
+  virtual bool checkNeighborListValidity(bool useNewton3, double cutoff) = 0;
+
+  /**
    * Generates the SoA from the AoS. @see buildNeighborList()
    */
   virtual void generateSoAFromAoS() = 0;

@@ -70,9 +70,7 @@ class VarVerletLists
   }
 
   /**
-   * @todo implement
-   * @param useNewton3
-   * @return
+   * @copydoc VerletLists::checkNeighborListsAreValid
    */
   bool checkNeighborListsAreValid(bool useNewton3 = true) {
     // if a particle was added or deleted, ... the list is definitely invalid
@@ -85,9 +83,7 @@ class VarVerletLists
       return false;
     }
 
-    // TODO: Implement some validity checker functor like verlet lists
-
-    return false;
+    return _neighborList.checkNeighborListValidity(useNewton3, this->_linkedCells.getCutoff() - this->_skin);
   }
 
   /**

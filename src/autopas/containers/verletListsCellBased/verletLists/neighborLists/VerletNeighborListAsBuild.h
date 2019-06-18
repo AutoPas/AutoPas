@@ -68,10 +68,13 @@ template <class Particle>
 class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, TraversalColorChangeObserver {
  private:
   /**
-   * This functor can generate variable verlet lists using the typical pairwise
+   * This functor can generate or check variable verlet lists using the typical pairwise
    * traversal.
+   *
+   * @tparam callCheckInstead If false, generate a neighbor list. If true, check the current for validity.
    */
-  class VarVerletListGeneratorFunctor
+  template <bool callCheckInstead = false>
+  class VarVerletListPairGeneratorFunctor
       : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                 typename VerletListHelpers<Particle>::SoAArraysType> {
     typedef typename VerletListHelpers<Particle>::VerletListParticleCellType ParticleCell;
@@ -82,7 +85,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
      * @param neighborList The neighbor list to fill.
      * @param cutoffskin The cutoff skin to use.
      */
-    VarVerletListGeneratorFunctor(VerletNeighborListAsBuild &neighborList, double cutoffskin)
+    VarVerletListPairGeneratorFunctor(VerletNeighborListAsBuild &neighborList, double cutoffskin)
         : _list(neighborList), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
@@ -97,7 +100,11 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
-        _list.addPair(&i, &j);
+        if (callCheckInstead) {
+          _list.checkPair(&i, &j);
+        } else {
+          _list.addPair(&i, &j);
+        }
       }
     }
 
@@ -123,6 +130,22 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     double _cutoffskinsquared;
   };  // end functor
 
+  /**
+   * Starts the generate functor. _baseLinkedCells has to be set before!
+   * @tparam useNewton3 If the functor should use newton 3.
+   * @tparam callCheckInstead If false, start it in generate mode, if true, in check validity mode.
+   * @param cutoff The cutoff to use for the particle pairs in the functor.
+   */
+  template <bool useNewton3, bool callCheckInstead = false>
+  void startFunctor(double cutoff) {
+    VarVerletListPairGeneratorFunctor<callCheckInstead> functor(*this, cutoff);
+    auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
+                                                   VarVerletListPairGeneratorFunctor<callCheckInstead>,
+                                                   DataLayoutOption::aos, useNewton3>(
+        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
+    _baseLinkedCells->iteratePairwise(&functor, &traversal);
+  }
+
  public:
   /**
    * This type represents the neighbor list that each thread has for each color.
@@ -145,7 +168,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * Constructor for the VerletNeighborListAsBuild. Does only default initialization.
    */
-  VerletNeighborListAsBuild() : _neighborList{}, _soaListIsValid(false), currentColor(0) {}
+  VerletNeighborListAsBuild() : _neighborList{}, _soaListIsValid(false), _currentColor(0) {}
 
   ContainerOption getContainerType() const override { return ContainerOption::varVerletListsAsBuild; }
 
@@ -167,23 +190,29 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       std::vector<ThreadNeighborList> &colorList = _neighborList[c];
       colorList.resize(maxNumThreads);
       for (unsigned int i = 0; i < maxNumThreads; i++) {
-        // TODO: See if this call to clear takes a lot of performance because it is O(n)
         colorList[i].clear();
       }
     }
 
-    VarVerletListGeneratorFunctor functor(*this, linkedCells.getCutoff());
     if (useNewton3) {
-      auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                                     VarVerletListGeneratorFunctor, DataLayoutOption::aos, true>(
-          linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
-      linkedCells.iteratePairwise(&functor, &traversal);
+      startFunctor<true>(linkedCells.getCutoff());
     } else {
-      auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                                     VarVerletListGeneratorFunctor, DataLayoutOption::aos, false>(
-          linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
-      linkedCells.iteratePairwise(&functor, &traversal);
+      startFunctor<false>(linkedCells.getCutoff());
     }
+  }
+
+  bool checkNeighborListValidity(bool useNewton3, double cutoff) override {
+    _allPairsPresent = true;
+    if (_baseLinkedCells == nullptr) return false;
+
+    constexpr bool callCheck = true;
+    if (useNewton3) {
+      startFunctor<true, callCheck>(cutoff);
+    } else {
+      startFunctor<false, callCheck>(cutoff);
+    }
+
+    return _allPairsPresent;
   }
 
   /**
@@ -208,7 +237,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   const auto &getInternalSoANeighborList() { return _soaNeighborList; }
 
-  void receiveColorChange(unsigned long newColor) override { currentColor = newColor; }
+  void receiveColorChange(unsigned long newColor) override { _currentColor = newColor; }
 
   /**
    * @see getInternalSoANeighborList()
@@ -299,7 +328,43 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   void addPair(Particle *first, Particle *second) {
     int currentThreadIndex = autopas_get_thread_num();
-    _neighborList[currentColor][currentThreadIndex][first].push_back(second);
+    _neighborList[_currentColor][currentThreadIndex][first].push_back(second);
+  }
+
+  /**
+   * Called from VarVerletListGeneratorFunctor
+   */
+  void checkPair(Particle *first, Particle *second) {
+    int currentThreadIndex = autopas_get_thread_num();
+
+    // Check all neighbor lists for the pair, but the one that the pair would be in if it was not moved first.
+    auto &oldThreadNeighborList = _neighborList[_currentColor][currentThreadIndex];
+    if (isPairInList(oldThreadNeighborList, first, second)) {
+      for (int color = 0; color < 8; color++) {
+        for (unsigned int thread = 0; thread < _neighborList[color].size(); thread++) {
+          if (not isPairInList(_neighborList[_currentColor][currentThreadIndex], first, second)) {
+            // this is thread safe, as _allPairsPresent is atomic
+            _allPairsPresent = false;
+            return;
+          }
+        }
+      }
+    } else {
+      // this is thread safe, as _allPairsPresent is atomic
+      _allPairsPresent = false;
+    }
+  }
+
+  /**
+   * Helper method for checkPair()
+   * @return True, if the pair is not present, false otherwise.
+   */
+  bool isPairInList(ThreadNeighborList &currentNeighborList, Particle *first, Particle *second) {
+    auto found = std::find(currentNeighborList[first].begin(), currentNeighborList[first].end(), second);
+    if (found == currentNeighborList[first].end()) {
+      return false;
+    }
+    return true;
   }
 
  private:
@@ -332,7 +397,12 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The current color in the traversal during the build of the neighbor list.
    */
-  int currentColor;
+  int _currentColor;
+
+  /**
+   * Used in checkNeighborListValidity(). Set to false in the pair generating functor.
+   */
+  std::atomic<bool> _allPairsPresent;
 };
 
 }  // namespace autopas
