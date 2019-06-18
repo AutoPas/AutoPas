@@ -138,6 +138,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
                                    auto t = autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals();
                                    auto t_end = std::remove(t.begin(), t.end(), autopas::TraversalOption::c01Cuda);
                                    t_end = std::remove(t.begin(), t_end, autopas::TraversalOption::c01CombinedSoA);
+                                   t_end = std::remove(t.begin(), t_end, autopas::TraversalOption::c04SoA);
                                    return std::vector<autopas::TraversalOption>(t.begin(), t_end);
                                  }()),
                                  Bool()),

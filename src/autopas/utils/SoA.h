@@ -139,7 +139,9 @@ class SoA {
    *
    * @return Number of particles.
    */
-  inline constexpr size_t getNumParticles() const { return soaStorage.template get<0>().size() - viewStart; }
+  inline constexpr size_t getNumParticles() const {
+    return (viewLength == -1l) ? soaStorage.template get<0>().size() - viewStart : viewLength;
+  }
 
   /**
    * delete all particles in the soa
@@ -169,6 +171,12 @@ class SoA {
    * @param start index of the first element
    */
   void setViewStart(size_t start) { viewStart = start; }
+
+  /**
+   * Set length of view (-1 == view continues until the end).
+   * @param length length of view
+   */
+  void setViewLength(long length) { viewLength = length; }
 
  private:
   // actual implementation of read
@@ -217,5 +225,6 @@ class SoA {
   utils::SoAStorage<SoAArraysType> soaStorage;
 
   size_t viewStart = 0;
+  long viewLength = -1;
 };
 }  // namespace autopas

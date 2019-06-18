@@ -40,7 +40,6 @@ class C04CellHandler {
                           const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
                           const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _cellFunctor(pairwiseFunctor),
-        _cellPairOffsets{},
         _cutoff(cutoff),
         _cellLength(cellLength),
         _overlap(overlap),
@@ -50,9 +49,11 @@ class C04CellHandler {
 
   /**
    * Computes one interaction for each spacial direction based on the lower left
-   * frontal corner (=base index) of a 2x2x2 block of cells.
+   * frontal corner of a 2x2x2 block of cells.
    * @param cells vector of all cells.
-   * @param baseIndex Index respective to which box is constructed.
+   * @param x cell index x-axis
+   * @param y cell index y-axis
+   * @param z cell index z-axis
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
@@ -76,11 +77,6 @@ class C04CellHandler {
   CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellFunctor;
 
   /**
-   * Pair sets for processBaseCell().
-   */
-  std::vector<std::vector<std::pair<unsigned long, unsigned long>>> _cellPairOffsets;
-
-  /**
    * cutoff radius.
    */
   const double _cutoff;
@@ -97,63 +93,134 @@ class C04CellHandler {
 
   std::array<unsigned long, 3> _cellsPerDimension;
 
-  std::vector<std::vector<int>> baseOffsets;
-
+  /**
+   * Cells containing combined SoA buffers
+   */
   std::vector<std::vector<ParticleCell>> _combinationSlices;
+
+  /**
+   * Current position in circular buffer for each thread
+   */
   std::vector<unsigned int> _currentSlices;
+
+  /**
+   * cell offsets of "base plate"
+   */
+  std::vector<std::vector<unsigned long>> _baseOffsets;
+
+  /**
+   * Interactions cell <-> baseplate intervall
+   */
+  std::vector<std::vector<std::pair<unsigned long, std::pair<unsigned long, unsigned long>>>> _offsets;
+
+  /**
+   * Partial sums of sizes of combined buffers to determine start and end quickly
+   */
+  std::vector<std::vector<std::vector<unsigned long>>> _combinationSlicesOffsets;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
-  using std::pair;
+  const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
 
-  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
-
+  // get all information for current thread
   const auto threadID = autopas_get_thread_num();
   auto &currentSlice = _currentSlices[threadID];
   auto &combinationSlice = _combinationSlices[threadID];
+  auto &combinationSlicesOffsets = _combinationSlicesOffsets[threadID];
 
   // First cell needs to initialize whole buffer
-  if (x == this->_overlap[0]) {
+  if (x == 0ul) {
     currentSlice = 0;
-    for (unsigned int offsetSlice = 0; offsetSlice < baseOffsets.size(); offsetSlice++) {
+    for (unsigned int offsetSlice = 0; offsetSlice < _baseOffsets.size(); offsetSlice++) {
+      // delete old data
       combinationSlice[offsetSlice]._particleSoABuffer.clear();
-      for (const auto offset : baseOffsets[offsetSlice]) {
+      combinationSlicesOffsets[offsetSlice].clear();
+      // fill buffer and compute partial sums
+      unsigned long sum = 0ul;
+      combinationSlicesOffsets[offsetSlice].push_back(sum);
+      for (const auto offset : _baseOffsets[offsetSlice]) {
         const unsigned long otherIndex = baseIndex + offset;
         ParticleCell &otherCell = cells[otherIndex];
         combinationSlice[offsetSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+        sum += otherCell.numParticles();
+        combinationSlicesOffsets[offsetSlice].push_back(sum);
       }
     }
   } else {
+    // delete old data
     combinationSlice[currentSlice]._particleSoABuffer.clear();
-
-    for (const auto offset : baseOffsets.back()) {
+    combinationSlicesOffsets[currentSlice].clear();
+    // fill first stripe buffer and compute partial sums
+    unsigned long sum = 0ul;
+    combinationSlicesOffsets[currentSlice].push_back(sum);
+    for (const auto offset : _baseOffsets.back()) {
       const unsigned long otherIndex = baseIndex + offset;
       ParticleCell &otherCell = cells[otherIndex];
       combinationSlice[currentSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+      sum += otherCell.numParticles();
+      combinationSlicesOffsets[currentSlice].push_back(sum);
     }
 
-    ++currentSlice %= baseOffsets.size();
+    ++currentSlice %= _baseOffsets.size();
   }
 
-  for (auto &slice : _cellPairOffsets) {
-    for (auto &current_pair : slice) {
+  // compute interactions
+  for (unsigned long slice = 0; slice < combinationSlicesOffsets.size(); slice++) {
+    for (auto &current_pair : _offsets[slice]) {
       unsigned long offset1 = current_pair.first;
       unsigned long cellIndex1 = baseIndex + offset1;
 
-      unsigned long offset2 = current_pair.second;
-      unsigned long cellIndex2 = baseIndex + offset2;
+      ParticleCell *cell1 = &cells[cellIndex1];
 
-      ParticleCell &cell1 = cells[cellIndex1];
-      ParticleCell &cell2 = cells[cellIndex2];
-
-      if (cellIndex1 == cellIndex2) {
-        this->_cellFunctor.processCell(cell1);
-      } else {
-        this->_cellFunctor.processCellPair(cell1, cell2);
+      auto interval = current_pair.second;
+      // special cases front left/backleft
+      // base cell
+      if (offset1 == _baseOffsets.front().front()) {
+        // two cases intervall in current  stripe
+        cell1 = &combinationSlice[(currentSlice + 1) % combinationSlice.size()];
+        if (slice == 0ul) {
+          // process stripe with itself
+          // make sure no previously applied view is active
+          cell1->_particleSoABuffer.setViewStart(0);
+          cell1->_particleSoABuffer.setViewLength(-1);
+          this->_cellFunctor.processCell(*cell1);
+          continue;
+        } else {
+          // interval in other stripe
+          cell1->_particleSoABuffer.setViewStart(0);
+          cell1->_particleSoABuffer.setViewLength(cells[cellIndex1].numParticles());
+        }
+      } else if (offset1 == _baseOffsets.front().back()) {
+        cell1 = &combinationSlice[(currentSlice + 1) % combinationSlice.size()];
+        cell1->_particleSoABuffer.setViewStart(
+            combinationSlicesOffsets[slice][combinationSlicesOffsets[slice].size() - 2]);
+        cell1->_particleSoABuffer.setViewLength(-1l);
       }
+
+      auto &currentCombinationSlice = combinationSlice[(currentSlice + slice + 1) % combinationSlice.size()];
+      // set view start
+      currentCombinationSlice._particleSoABuffer.setViewStart(combinationSlicesOffsets[slice][interval.first]);
+      // set view length
+      currentCombinationSlice._particleSoABuffer.setViewLength(combinationSlicesOffsets[slice][interval.second] -
+                                                               combinationSlicesOffsets[slice][interval.first]);
+
+      // process cell pair
+      this->_cellFunctor.processCellPair(*cell1, currentCombinationSlice);
     }
+  }
+
+  // write information of combined SoA buffers back to cell
+  combinationSlice[currentSlice]._particleSoABuffer.setViewLength(-1l);
+  for (long i = _baseOffsets.front().size() - 2; i >= 0; i--) {
+    combinationSlice[currentSlice]._particleSoABuffer.setViewStart(combinationSlicesOffsets[currentSlice][i]);
+    combinationSlice[currentSlice]._particleSoABuffer.resizeArrays(combinationSlicesOffsets[currentSlice][i + 1]);
+    const long currentOffset = baseIndex + _baseOffsets.front()[i];
+    // clear old cell buffer
+    cells[currentOffset]._particleSoABuffer.clear();
+    // append new cell buffer
+    cells[currentOffset]._particleSoABuffer.append(combinationSlice[currentSlice]._particleSoABuffer);
   }
 }
 
@@ -162,13 +229,15 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
     std::array<unsigned long, 3> cellsPerDimension) {
   using std::make_pair;
 
+  std::vector<std::vector<std::pair<unsigned long, unsigned long>>> _cellPairOffsets;
+
   //////////////////////////////
   // @TODO: Replace following lines with vector to support asymmetric cells
   const unsigned long ov1 = _overlap[0] + 1;
   const unsigned long ov1_squared = ov1 * ov1;
   //////////////////////////////
 
-  baseOffsets.resize(ov1);
+  _baseOffsets.resize(ov1);
 
   std::array<unsigned long, 3> overlap_1 = ArrayMath::addScalar(_overlap, 1ul);
 
@@ -189,7 +258,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
   }
   for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
-      baseOffsets[x].push_back(ov1_squared * x + ov1 * y);
+      _baseOffsets[x].push_back(ov1_squared * x + ov1 * y);
       for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
         const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
         // origin
@@ -236,6 +305,31 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
       }
     }
   }
+
+  // Create intervals
+  const unsigned long numStripes = _cellPairOffsets.size();
+  _offsets.resize(numStripes);
+
+  // iterate over all stripes
+  for (unsigned long i = 0; i < _cellPairOffsets.size(); ++i) {
+    auto &currentStripe = _cellPairOffsets[i];
+    // Sort
+    std::stable_sort(currentStripe.begin(), currentStripe.end(),
+                     [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
+    // Collect intervals
+    unsigned long current = currentStripe.front().first;
+    unsigned long startID = 0;
+    for (unsigned long j = 0; j < currentStripe.size(); j++) {
+      if (current != currentStripe[j].first) {
+        auto interval = std::make_pair(startID, j - 1);
+        _offsets[i].push_back(std::make_pair(current, interval));
+        startID = j;
+      }
+    }
+    // last interval
+    auto interval = std::make_pair(startID, _cellPairOffsets[i].size() - 1);
+    _offsets[i].push_back(std::make_pair(current, interval));
+  }
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
@@ -245,6 +339,9 @@ void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::resi
     _combinationSlices.resize(numThreads);
     const auto cellOffsetsSize = _overlap[0] + 1;
     std::for_each(_combinationSlices.begin(), _combinationSlices.end(),
+                  [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
+    _combinationSlicesOffsets.resize(numThreads);
+    std::for_each(_combinationSlicesOffsets.begin(), _combinationSlicesOffsets.end(),
                   [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
     _currentSlices.resize(numThreads);
   }
