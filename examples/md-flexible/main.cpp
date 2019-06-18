@@ -211,13 +211,6 @@ int main(int argc, char **argv) {
     cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
   }
 
-
-//    //WRITE VTK OUTPUT
-//    std::string filename= "autopasSimulation.vtk";
-//    size_t number = autopas->getNumberOfParticles();
-//    writeVTKFile<decltype(autopas)>(filename,number, autopas);
-
-
   if (not logFileName.empty()) {
     logFile.close();
   }

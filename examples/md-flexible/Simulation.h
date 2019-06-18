@@ -270,8 +270,6 @@ void Simulation<Particle,ParticleCell>::CalcF(){
     //@ TODO: switch for other functors --> mit boolean object?
     //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
     //_autopas->iteratePairwise(this->_Functor);
-    double m = Particle::getMass();
-    cout << "Particle Mass = " << m << endl << endl;
     auto* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(_autopas->getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true); // cutoff, espi, sigma, shift, box min, box max
 
     _autopas->iteratePairwise(functor);
@@ -294,7 +292,6 @@ long Simulation<Particle, ParticleCell>::simulate(){
     //main simulation loop
     while(time<timeEnd){
         this->addDurationX(td.VSCalculateX(_autopas));
-        // -> nicht sicher ob man das IF-Case braucht
         if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
              cout << "Iteration " << time/particleDelta_T << endl;
              cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
