@@ -9,6 +9,7 @@
 
 #include <array>
 #include <vector>
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -104,7 +105,7 @@ class ParticleContainerInterface {
    * @return Iterator to iterate over all particles in a specific region.
    */
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool incSearchRegion = false) = 0;
 
   /**
@@ -169,7 +170,9 @@ class ParticleContainerInterface {
    *
    * @return Vector of traversal options.
    */
-  virtual std::vector<TraversalOption> getAllTraversals() = 0;
+  std::set<TraversalOption> getAllTraversals() {
+    return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
+  }
 };
 
 }  // namespace autopas

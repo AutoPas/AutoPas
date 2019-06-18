@@ -5,6 +5,7 @@
  */
 
 #include "TraversalTest.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/Logger.h"
 #include "testingHelpers/NumThreadGuard.h"
 
@@ -13,7 +14,7 @@ using ::testing::Bool;
 using ::testing::Combine;
 using ::testing::ValuesIn;
 
-void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3>& edgeLength,
+void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3> &edgeLength,
                    int interactions, double cutoff = 1.0) {
   TraversalTest::CountFunctor functor;
   functor.setCutoff(cutoff);
@@ -57,7 +58,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     }
   }
 
-  auto* traversalInterface = dynamic_cast<LinkedCellTraversalInterface<FPCell>*>(Traversal.get());
+  auto *traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell> *>(Traversal.get());
   traversalInterface->traverseCellPairs(cells);
 }
 
@@ -134,12 +135,12 @@ TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
-                         Combine(ValuesIn([]() -> std::vector<autopas::TraversalOption> {
-                                   auto t = autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals();
-                                   auto t_end = std::remove(t.begin(), t.end(), autopas::TraversalOption::c01Cuda);
-                                   t_end = std::remove(t.begin(), t_end, autopas::TraversalOption::c01CombinedSoA);
-                                   t_end = std::remove(t.begin(), t_end, autopas::TraversalOption::c04SoA);
-                                   return std::vector<autopas::TraversalOption>(t.begin(), t_end);
+                         Combine(ValuesIn([]() -> std::set<autopas::TraversalOption> {
+                                   auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
+                                   allTraversals.erase(autopas::TraversalOption::c01Cuda);
+                                   allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
+                                   allTraversals.erase(autopas::TraversalOption::c04SoA);
+                                   return allTraversals;
                                  }()),
                                  Bool()),
                          TraversalTest::PrintToStringParamName());

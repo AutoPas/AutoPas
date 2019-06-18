@@ -43,7 +43,7 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
     EXPECT_CALL(functor, SoAFunctor(_, true)).Times(1);
     // domain SoA with halo
     EXPECT_CALL(functor, SoAFunctor(_, _, true)).Times(1);
-    std::for_each(cells.begin(), cells.end(), [](auto& c) { c._particleSoABuffer.resizeArrays(2); });
+    std::for_each(cells.begin(), cells.end(), [](auto &c) { c._particleSoABuffer.resizeArrays(2); });
     traversal.traverseCellPairs(cells);
   } else {
     autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(&functor);

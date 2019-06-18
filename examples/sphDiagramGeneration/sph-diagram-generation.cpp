@@ -193,7 +193,8 @@ int main(int argc, char *argv[]) {
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
-  autopas::CellPairTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>> *traversal;
+  using TraversalType = autopas::CellPairTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>>;
+  std::unique_ptr<TraversalType> traversal;
 
   switch (cont->getContainerType()) {
     case autopas::ContainerOption::linkedCells: {
@@ -206,19 +207,19 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
 
       if (useNewton3) {
-        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, true>(dims, func);
+        traversal = std::make_unique<autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                                           Functor, autopas::DataLayoutOption::aos, true>>(dims, func);
       } else {
-        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, false>(dims, func);
+        traversal = std::make_unique<autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                                           Functor, autopas::DataLayoutOption::aos, false>>(dims, func);
       }
 
       break;
     }
 
     case autopas::ContainerOption::directSum: {
-      traversal = new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                                  autopas::DataLayoutOption::aos, false>(func);
+      traversal = std::make_unique<autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                                               Functor, autopas::DataLayoutOption::aos, false>>(func);
       break;
     }
     case autopas::ContainerOption::verletListsCells: {
@@ -226,19 +227,23 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
 
       if (useNewton3) {
-        traversal = new autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, true>(dims, func);
+        traversal = std::make_unique<autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                                           Functor, autopas::DataLayoutOption::aos, true>>(dims, func);
       } else {
-        traversal = new autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, false>(dims, func);
+        traversal = std::make_unique<autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                                           Functor, autopas::DataLayoutOption::aos, false>>(dims, func);
       }
       break;
     }
     default:
-      traversal = new autopas::DummyTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>>({0, 0, 0});
+
+    {
+      auto dims = dynamic_cast<autopas::VerletListsCells<autopas::sph::SPHParticle> *>(cont)->getCellsPerDimension();
+      traversal = std::make_unique<autopas::DummyTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>>>(dims);
+    }
   }
 
-  measureContainerTraversal(cont, func, traversal, numParticles, numIterations, useNewton3);
+  measureContainerTraversal(cont, func, traversal.get(), numParticles, numIterations, useNewton3);
 }
 
 template <class Container, class Functor, class Traversal>
@@ -265,8 +270,6 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
 
   elapsedTime = t.stop();
-
-  delete traversal;
 
   // double flops = flopsPerIteration * numIterations;
 

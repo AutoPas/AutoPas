@@ -1,5 +1,5 @@
 /**
- * @file SelectorStrategie.h
+ * @file SelectorStrategyOption.h
  * @author F. Gratl
  * @date 1/18/19
  */
@@ -13,7 +13,7 @@ namespace autopas {
 /**
  * Possible choices for the employed selectors.
  */
-enum SelectorStrategy {
+enum SelectorStrategyOption {
   /**
    * Fastest absolute value.
    */
@@ -31,9 +31,9 @@ enum SelectorStrategy {
 /**
  * Provides a way to iterate over the possible choices of selector strategies.
  */
-static const std::vector<SelectorStrategy> allSelectorStrategies = {
-    SelectorStrategy::fastestAbs,
-    SelectorStrategy::fastestMean,
-    SelectorStrategy::fastestMedian,
+static const std::set<SelectorStrategyOption> allSelectorStrategies = {
+    SelectorStrategyOption::fastestAbs,
+    SelectorStrategyOption::fastestMean,
+    SelectorStrategyOption::fastestMedian,
 };
 }  // namespace autopas

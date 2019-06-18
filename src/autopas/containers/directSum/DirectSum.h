@@ -8,6 +8,7 @@
 #pragma once
 
 #include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSumTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -38,21 +39,11 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff,
+                                                  compatibleTraversals::allDSCompatibleTraversals()),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
-
-  /**
-   * Lists all traversal options applicable for the Direct Sum container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allDSApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::directSumTraversal};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allDSApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::directSum; }
 
@@ -139,8 +130,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     std::vector<size_t> cellsOfInterest;

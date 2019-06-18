@@ -35,8 +35,8 @@ class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    * @param cutoff Cutoff radius.
    * @param cellLength cell length.
    */
-  explicit C04BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
-                             const double cutoff = 1.0, const std::array<double, 3>& cellLength = {1.0, 1.0, 1.0})
+  explicit C04BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                             const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, collapseDepth>(dims, pairwiseFunctor, cutoff,
                                                                                   cellLength) {}
 
@@ -46,13 +46,13 @@ class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    * @copydetails C01BasedTraversal::c01Traversal()
    */
   template <typename LoopBody>
-  inline void c04Traversal(LoopBody&& loopBody);
+  inline void c04Traversal(LoopBody &&loopBody);
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, int collapseDepth>
 template <typename LoopBody>
 inline void C04BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, collapseDepth>::c04Traversal(
-    LoopBody&& loopBody) {
+    LoopBody &&loopBody) {
   const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
   auto stride = ArrayMath::addScalar(this->_overlap, 1ul);
   stride[0] = 1;

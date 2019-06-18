@@ -16,10 +16,12 @@
 namespace autopas {
 
 /**
- * This class provides the c01 traversal.
+ * This class provides the c01 traversal and the c01 traversal with combined SoA buffers.
  *
  * The traversal uses the c01 base step performed on every single cell.
  * newton3 cannot be applied!
+ * If combineSoA equals true, SoA buffers are combined slice-wise. Each slice is constructed as FIFO buffer and slices
+ * are stored in circular buffer (_combinationSlices).
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -45,9 +47,8 @@ class C01Traversal
                         const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C01BasedTraversal < ParticleCell,
       PairwiseFunctor, DataLayout, useNewton3, (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, cutoff, cellLength),
-      _cellFunctor(pairwiseFunctor), _pairwiseFunctor(pairwiseFunctor) {
-    /*static_assert(not(combineSoA && DataLayout != DataLayoutOption::soa),
-                  "C01Traversal: tried to use combined SoA buffers without activating SoA");*/
+      _cellFunctor(pairwiseFunctor), _pairwiseFunctor(pairwiseFunctor),
+      _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
     computeOffsets();
   }
 
@@ -62,7 +63,8 @@ class C01Traversal
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   /**
-   * C01 traversals are only usable if useNewton3 is disabled.
+   * C01 traversals are only usable if useNewton3 is disabled and combined SoA buffers are only applicable if SoA is set
+   * as DataLayout.
    *
    * This is because the cell functor in the c01 traversal is hardcoded to not allow newton 3 even if only one thread is
    * used.
@@ -109,8 +111,20 @@ class C01Traversal
 
   PairwiseFunctor *_pairwiseFunctor;
 
-  std::vector<std::vector<ParticleCell>> combinationSlices;
-  std::vector<unsigned int> currentSlices;
+  /**
+   * Cells containing combined SoA buffers.
+   */
+  std::vector<std::vector<ParticleCell>> _combinationSlices;
+
+  /**
+   * Current index in _combinationSlices.
+   */
+  std::vector<unsigned int> _currentSlices;
+
+  /**
+   * Offset factor to avoid false sharing.
+   */
+  const unsigned int _cacheOffset;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
@@ -158,9 +172,9 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   if (combineSoA) {
     // Iteration along x
 
-    const auto threadID = autopas_get_thread_num();
-    auto &currentSlice = currentSlices[threadID];
-    auto &combinationSlice = combinationSlices[threadID];
+    const auto threadID = static_cast<unsigned int>(autopas_get_thread_num());
+    auto &currentSlice = _currentSlices[threadID * _cacheOffset];
+    auto &combinationSlice = _combinationSlices[threadID];
 
     // First cell needs to initialize whole buffer
     if (x == this->_overlap[0]) {
@@ -241,19 +255,24 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout
 inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   if (not this->isApplicable()) {
-    utils::ExceptionHandler::exception(
-        "The C01 traversal cannot work with enabled newton3 (unless only one thread is used)!");
+    if (combineSoA) {
+      utils::ExceptionHandler::exception(
+          "The C01 traversal with combined SoA buffers cannot work with enabled newton3 (unless only one thread is "
+          "used) and data layout AoS!");
+    } else {
+      utils::ExceptionHandler::exception(
+          "The C01 traversal cannot work with enabled newton3 (unless only one thread is used)!");
+    }
   }
   // resize buffers
   if (DataLayout == DataLayoutOption::soa) {
     const unsigned int numThreads = static_cast<unsigned int>(autopas_get_max_threads());
-    if (combinationSlices.size() != numThreads) {
-      combinationSlices.resize(numThreads);
+    if (_combinationSlices.size() != numThreads) {
+      _combinationSlices.resize(numThreads);
       const auto cellOffsetsSize = _cellOffsets.size();
-      std::for_each(combinationSlices.begin(), combinationSlices.end(),
+      std::for_each(_combinationSlices.begin(), _combinationSlices.end(),
                     [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
-      currentSlices.resize(numThreads);
-      AutoPasLog(debug, "numThreads: {}", numThreads);
+      _currentSlices.resize(numThreads * _cacheOffset);
     }
   }
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });

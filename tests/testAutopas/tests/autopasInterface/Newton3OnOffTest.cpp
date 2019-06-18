@@ -19,9 +19,9 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
 
   transform(contTravStr.begin(), contTravStr.end(), contTravStr.begin(), ::tolower);
   transform(dataLayoutStr.begin(), dataLayoutStr.end(), dataLayoutStr.begin(), ::tolower);
-  auto containerOption = autopas::utils::StringUtils::parseContainerOptions(contTravStr)[0];
-  auto traversalOption = autopas::utils::StringUtils::parseTraversalOptions(contTravStr)[0];
-  auto dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(dataLayoutStr)[0];
+  auto containerOption = autopas::utils::StringUtils::parseContainerOptions(contTravStr).begin().operator*();
+  auto traversalOption = autopas::utils::StringUtils::parseTraversalOptions(contTravStr).begin().operator*();
+  auto dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(dataLayoutStr).begin().operator*();
   countFunctorCalls(containerOption, traversalOption, dataLayoutOption);
 }
 
@@ -43,9 +43,10 @@ INSTANTIATE_TEST_SUITE_P(
                   continue;
                 }
 
-                autopas::ContainerSelector<Particle, FPCell> containerSelector({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 10);
+                autopas::ContainerSelector<Particle, FPCell> containerSelector({0, 0, 0}, {10, 10, 10}, 1);
+                autopas::ContainerSelectorInfo containerInfo(1, 0, 10);
 
-                containerSelector.selectContainer(containerOption);
+                containerSelector.selectContainer(containerOption, containerInfo);
 
                 auto container = containerSelector.getCurrentContainer();
 
@@ -88,10 +89,11 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   if (traversalOption == autopas::TraversalOption::c04SoA && dataLayout == autopas::DataLayoutOption::aos) {
     return;
   }
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(
-      getBoxMin(), getBoxMax(), getCutoff(), getCellSizeFactor(), getVerletSkin(), getVerletRebuildFrequency());
 
-  containerSelector.selectContainer(containerOption);
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
+  autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), getVerletRebuildFrequency());
+
+  containerSelector.selectContainer(containerOption, containerInfo);
 
   auto container = containerSelector.getCurrentContainer();
   auto traversalSelectorInfo = container->getTraversalSelectorInfo();

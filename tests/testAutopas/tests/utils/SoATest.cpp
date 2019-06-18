@@ -49,22 +49,22 @@ TEST_F(SoATest, SoAStorageTestAlignment) {
   typedef autopas::utils::SoAType<size_t, double, double, double>::Type soatype;
   autopas::utils::SoAStorage<soatype> soAStorage;
 
-  // check alignment to DEFAULT_CACHE_LINE_SIZE
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
+  // check alignment to autopas::DEFAULT_CACHE_LINE_SIZE
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
 
   soAStorage.get<0>().resize(4);
   soAStorage.get<1>().resize(5);
   soAStorage.get<2>().resize(6);
   soAStorage.get<3>().resize(7);
 
-  // check alignment to DEFAULT_CACHE_LINE_SIZE
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
+  // check alignment to autopas::DEFAULT_CACHE_LINE_SIZE
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
 }
 
 TEST_F(SoATest, SoAStorageTestApply) {
