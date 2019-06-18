@@ -4,7 +4,7 @@ extraction:
       packages:
         - python-pip
     after_prepare:    # Customizable step used by all languages.
-      - pip3 install --user --upgrade cmake
+      - pip3 install --user --upgrade cmake=3.14.4
       - ls ~/.local/bin
-      - export PATH=$PATH:~/.local/bin
+      - export PATH=~/.local/bin:$PATH
       - cmake --version
