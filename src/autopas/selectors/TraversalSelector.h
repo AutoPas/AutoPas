@@ -69,7 +69,7 @@ class TraversalSelector {
   static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
                                                                PairwiseFunctor &pairwiseFunctor,
                                                                const TraversalSelectorInfo<ParticleCell> &info,
-                                                               DataLayoutOption dataLayout, bool useNewton3);
+                                                               DataLayoutOption dataLayout, Newton3Option useNewton3);
 };
 
 template <class ParticleCell>
@@ -137,10 +137,10 @@ template <class ParticleCell>
 template <class PairwiseFunctor>
 std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor,
-    const TraversalSelectorInfo<ParticleCell> &traversalInfo, DataLayoutOption dataLayout, bool useNewton3) {
+    const TraversalSelectorInfo<ParticleCell> &traversalInfo, DataLayoutOption dataLayout, Newton3Option newton3) {
   switch (dataLayout) {
     case DataLayoutOption::aos: {
-      if (useNewton3) {
+      if (newton3 == Newton3Option::enabled) {
         return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::aos,
                                                                            true>(traversalType, pairwiseFunctor,
                                                                                  traversalInfo);
@@ -151,7 +151,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       }
     }
     case DataLayoutOption::soa: {
-      if (useNewton3) {
+      if (newton3 == Newton3Option::enabled) {
         return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::soa,
                                                                            true>(traversalType, pairwiseFunctor,
                                                                                  traversalInfo);
@@ -162,7 +162,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       }
     }
     case DataLayoutOption::cuda: {
-      if (useNewton3) {
+      if (newton3 == Newton3Option::enabled) {
         return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda,
                                                                            true>(traversalType, pairwiseFunctor,
                                                                                  traversalInfo);
