@@ -12,7 +12,7 @@ namespace autopas {
 /**
  * Possible choices for the particle data layout.
  */
-enum Newton3Option { disabled, enabled};
+enum Newton3Option { disabled, enabled };
 
 /**
  * Provides a way to iterate over the possible choices of data layouts.
