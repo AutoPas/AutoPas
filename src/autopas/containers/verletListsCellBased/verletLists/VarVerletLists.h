@@ -101,7 +101,6 @@ class VarVerletLists
   void rebuildVerletLists(bool useNewton3 = true) {
     this->_verletBuiltNewton3 = useNewton3;
     _neighborList.buildNeighborList(this->_linkedCells, useNewton3);
-    // TODO: Call neighbor list to build with soa type as parameter
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
     this->_traversalsSinceLastRebuild = 0;

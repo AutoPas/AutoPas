@@ -184,7 +184,6 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     _soaListIsValid = false;
     _baseLinkedCells = &linkedCells;
 
-    // TODO: Maybe don't construct vectors for max number of threads
     unsigned int maxNumThreads = autopas_get_max_threads();
     for (int c = 0; c < 8; c++) {
       std::vector<ThreadNeighborList> &colorList = _neighborList[c];
