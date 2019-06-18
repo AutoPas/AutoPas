@@ -104,8 +104,10 @@ void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, DataLayo
 #pragma omp for schedule(static)
 #endif
       for (unsigned int thread = 0; thread < list[c].size(); thread++) {
-        for (auto &pair : list[c][thread]) {
-          _functor->AoSFunctor(*(pair.first), *(pair.second), useNewton3);
+        for (const auto &pair : list[c][thread]) {
+          for (auto second : pair.second) {
+            _functor->AoSFunctor(*(pair.first), *second, useNewton3);
+          }
         }
       }
     }

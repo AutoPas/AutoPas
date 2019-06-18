@@ -127,7 +127,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * This type represents the neighbor list that each thread has for each color.
    */
-  using ThreadNeighborList = std::vector<std::pair<Particle *, Particle *>>;
+  using ThreadNeighborList = std::unordered_map<Particle *, std::vector<Particle *>>;
   /**
    * This type represents the thread lists for all colors.
    */
@@ -190,8 +190,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * Returns the internal AoS neighbor list. Should be used by traversals.
    *
    * The internal neighbor list is a vector of the neighbor lists of each color. Each of those neighbor lists is a
-   * vector that contains one neighbor list for each thread. Each of those neighbor lists is a vector of pairs of
-   * particles.
+   * vector that contains one neighbor list for each thread. Each of those neighbor lists is a map from each particle to
+   * a vector containing its neighbors.
    *
    * @return the internal AoS neighbor list.
    */
@@ -239,8 +239,10 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
         currentThreadList.resize(_aos2soaMap.size());
         for (const auto &pair : _neighborList[color][thread]) {
           size_t indexFirst = _aos2soaMap[pair.first];
-          size_t indexSecond = _aos2soaMap[pair.second];
-          currentThreadList[indexFirst].push_back(indexSecond);
+          for (const auto &second : pair.second) {
+            size_t indexSecond = _aos2soaMap[second];
+            currentThreadList[indexFirst].push_back(indexSecond);
+          }
         }
       }
     }
@@ -297,7 +299,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   void addPair(Particle *first, Particle *second) {
     int currentThreadIndex = autopas_get_thread_num();
-    _neighborList[currentColor][currentThreadIndex].push_back({first, second});
+    _neighborList[currentColor][currentThreadIndex][first].push_back(second);
   }
 
  private:
