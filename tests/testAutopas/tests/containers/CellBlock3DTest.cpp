@@ -7,7 +7,7 @@
 #include "CellBlock3DTest.h"
 #include "testingHelpers/GridGenerator.h"
 
-void testIndex(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
+void testIndex(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
                std::array<double, 3> &start, std::array<double, 3> &dr, std::array<int, 3> &numParts) {
   auto mesh = CellBlock3DTest::getMesh(start, dr, numParts);
 
@@ -49,7 +49,7 @@ TEST_F(CellBlock3DTest, test3x3x3) {
   testIndex(_cells_3x3x3, start, dr, numParts);
 }
 
-void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
+void testBoundary(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
                   std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
   std::array<std::array<double, 4>, 3> possibleShifts = {};
   for (unsigned short dim = 0; dim < 3; ++dim) {
@@ -137,7 +137,7 @@ std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3
   return ret;
 }
 
-size_t getNumberOfParticlesInBox(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
+size_t getNumberOfParticlesInBox(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
                                  std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>> &vec) {
   const autopas::MoleculeLJ defaultParticle;
   GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);

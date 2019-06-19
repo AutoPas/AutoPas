@@ -260,7 +260,6 @@ class CellBlock3D : public CellBorderAndFlagManager {
   // is computed quite often
   std::array<double, 3> _cellLengthReciprocal;
 
-  //	CellBorderAndFlagManager _cellBorderAndFlagManager;
 };
 
 template <class ParticleCell>

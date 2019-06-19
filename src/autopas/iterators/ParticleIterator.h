@@ -36,7 +36,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell> *cont, CellBorderAndFlagManager *flagManager,
+  explicit ParticleIterator(std::vector<ParticleCell> *cont, internal::CellBorderAndFlagManager *flagManager,
                             IteratorBehavior behavior)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
@@ -59,7 +59,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
   explicit ParticleIterator(std::vector<ParticleCell> *cont, size_t offset = 0,
-                            CellBorderAndFlagManager *flagManager = nullptr, IteratorBehavior behavior = haloAndOwned)
+                            internal::CellBorderAndFlagManager *flagManager = nullptr, IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
         _iteratorWithinOneCell(cont->begin()->begin()),
@@ -191,7 +191,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * Manager providing info if cell is in halo.
    */
-  CellBorderAndFlagManager *_flagManager;
+  internal::CellBorderAndFlagManager *_flagManager;
 
   /**
    * The behavior of the iterator.
