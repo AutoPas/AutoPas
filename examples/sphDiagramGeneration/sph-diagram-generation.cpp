@@ -4,6 +4,7 @@
  * @author seckler
  */
 
+#include <autopas/selectors/TraversalSelector.h>
 #include <array>
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
@@ -193,52 +194,46 @@ int main(int argc, char *argv[]) {
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
-  autopas::CellPairTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>> *traversal;
-
+  using CellType = autopas::FullParticleCell<autopas::sph::SPHParticle>;
+  // initialize to dummy values
+  autopas::TraversalSelectorInfo<CellType> traversalInfo = cont->getTraversalSelectorInfo();
+  std::cout << "Cells: " << traversalInfo.dims[0] << " x " << traversalInfo.dims[1] << " x " << traversalInfo.dims[2]
+            << std::endl;
+  auto traversalType = autopas::TraversalOption::dummyTraversal;
   switch (cont->getContainerType()) {
     case autopas::ContainerOption::linkedCells: {
-      auto dims =
-          dynamic_cast<
-              autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(
-              cont)
-              ->getCellBlock()
-              .getCellsPerDimensionWithHalo();
-      std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
-
-      if (useNewton3) {
-        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, true>(dims, func);
-      } else {
-        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, false>(dims, func);
-      }
-
+      traversalType = autopas::TraversalOption::c08;
       break;
     }
-
     case autopas::ContainerOption::directSum: {
-      traversal = new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                                  autopas::DataLayoutOption::aos, false>(func);
+      traversalType = autopas::TraversalOption::directSumTraversal;
+      //@todo @reviewer ds traversal was previously always with N3 off, ignoring the function arg. Is this intended?
       break;
     }
     case autopas::ContainerOption::verletListsCells: {
-      auto dims = dynamic_cast<autopas::VerletListsCells<autopas::sph::SPHParticle> *>(cont)->getCellsPerDimension();
-      std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
-
       if (useNewton3) {
-        traversal = new autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, true>(dims, func);
+        traversalType = autopas::TraversalOption::c18;
       } else {
-        traversal = new autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, false>(dims, func);
+        traversalType = autopas::TraversalOption::c01;
       }
       break;
     }
-    default:
-      traversal = new autopas::DummyTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>>({0, 0, 0});
+    default: {}
   }
-
-  measureContainerTraversal(cont, func, traversal, numParticles, numIterations, useNewton3);
+  auto traversal = autopas::TraversalSelector<CellType>::template generateTraversal<Functor>(
+      traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos,
+      useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
+  if (useNewton3) {
+    measureContainerTraversal(
+        cont, func,
+        dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, true> *>(traversal.get()),
+        numParticles, numIterations, useNewton3);
+  } else {
+    measureContainerTraversal(
+        cont, func,
+        dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, false> *>(traversal.get()),
+        numParticles, numIterations, useNewton3);
+  }
 }
 
 template <class Container, class Functor, class Traversal>
@@ -265,8 +260,6 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
 
   elapsedTime = t.stop();
-
-  delete traversal;
 
   // double flops = flopsPerIteration * numIterations;
 

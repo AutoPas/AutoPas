@@ -53,6 +53,7 @@ enable_testing()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
+include(ccache)
 include(clang-format)
 include(clang-sanitizers)
 include(clang-tidy)

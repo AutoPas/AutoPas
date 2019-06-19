@@ -19,11 +19,11 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -35,7 +35,8 @@ class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    */
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                              const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout>(dims, pairwiseFunctor, cutoff, cellLength) {}
+      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
+                                                                               cellLength) {}
 
  protected:
   /**
