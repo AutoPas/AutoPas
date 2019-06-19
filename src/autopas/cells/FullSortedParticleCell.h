@@ -29,16 +29,16 @@ class FullSortedParticleCell : public ParticleCell<Particle> {
    * @param cell cell whose particles are sorted
    * @param r vector along particles are sorted
    */
-  FullSortedParticleCell(ParticleCellType& cell, const std::array<double, 3>& r) : _cell(&cell) {
+  FullSortedParticleCell(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
     for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
       _particles.push_back(std::make_pair(ArrayMath::dot(p->getR(), r), &(*p)));
     }
     std::sort(_particles.begin(), _particles.end(),
-              [](const auto& a, const auto& b) -> bool { return a.first < b.first; });
+              [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
   }
 
-  void addParticle(Particle& m) override {}
+  void addParticle(Particle &m) override {}
 
   virtual SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
 
@@ -57,7 +57,7 @@ class FullSortedParticleCell : public ParticleCell<Particle> {
     _particles.pop_back();
   }
 
-  void setCellLength(std::array<double, 3>& cellLength) override { _cell->setCellLength(cellLength); }
+  void setCellLength(std::array<double, 3> &cellLength) override { _cell->setCellLength(cellLength); }
 
   std::array<double, 3> getCellLength() const override { return _cell->getCellLength(); }
 
@@ -69,12 +69,12 @@ class FullSortedParticleCell : public ParticleCell<Particle> {
   /**
    * sorted vector of projected positions and particle pointers.
    */
-  std::vector<std::pair<double, Particle*>> _particles;
+  std::vector<std::pair<double, Particle *>> _particles;
 
   /**
    * underlying cell.
    */
-  ParticleCellType* _cell;
+  ParticleCellType *_cell;
 
  private:
 };

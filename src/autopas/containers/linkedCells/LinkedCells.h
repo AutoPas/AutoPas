@@ -184,8 +184,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     size_t startIndex;
@@ -225,7 +225,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * Get the cell block, not supposed to be used except by verlet lists
    * @return the cell block
    */
-  CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
+  internal::CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
 
   /**
    * returns reference to the data of LinkedCells
@@ -237,7 +237,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   /**
    * object to manage the block of cells.
    */
-  CellBlock3D<ParticleCell> _cellBlock;
+  internal::CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };
 

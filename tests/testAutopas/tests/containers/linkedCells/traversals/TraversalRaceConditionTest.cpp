@@ -8,6 +8,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/StringUtils.h"
 #include "testingHelpers/GridGenerator.h"
+#include "testingHelpers/NumThreadGuard.h"
 
 /**
  * Idea: create mesh of particles and iterate with the SimpleFunctor.
@@ -29,23 +30,22 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   std::array<double, 3> boxMax = {(double)particlesPerDimension[0], (double)particlesPerDimension[1],
                                   (double)particlesPerDimension[2]};
 
-#ifdef AUTOPAS_OPENMP
-  int numThreadsBefore = omp_get_max_threads();
-  omp_set_num_threads(8);
-#endif
+  NumThreadGuard(8);
 
   /// @todo: test all containers similar to Newton3OnOffTest
   for (auto &container : {autopas::ContainerOption::linkedCells}) {
     for (auto &traversal : autopas::compatibleTraversals::allCompatibleTraversals(container)) {
-      if (traversal == autopas::TraversalOption::c01) {
+      if (traversal == autopas::TraversalOption::c01 || traversal == autopas::TraversalOption::c01CombinedSoA) {
         // c01 traversal does not work with newton3.
         // Here only one traversal is tested.
         continue;
       }
+
       if (traversal == autopas::TraversalOption::c01Cuda) {
-        // c01Cuda traversal does not work with DataLayout Option AoS used in this test.
+        // c01Cuda traversal does not work with dataLayout Option AoS used in this test.
         continue;
       }
+
       // @TODO: extend Simple Functor for SoA
       for (auto &dataLayout : /*autopas::allDataLayoutOptions*/ {autopas::DataLayoutOption::aos}) {
         autopas::AutoPas<Particle, FPCell> autoPas;
@@ -86,9 +86,6 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
               << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
         }
       }
-#ifdef AUTOPAS_OPENMP
-      omp_set_num_threads(numThreadsBefore);
-#endif
     }
   }
 }

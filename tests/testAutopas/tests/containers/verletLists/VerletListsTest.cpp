@@ -81,11 +81,11 @@ TEST_P(VerletListsTest, testVerletListBuild) {
                                                                                                   &emptyFunctor);
   verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
 
-  auto& list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getVerletListsAoS();
 
   EXPECT_EQ(list.size(), 2);
   int partners = 0;
-  for (const auto& i : list) {
+  for (const auto &i : list) {
     partners += i.second.size();
   }
   EXPECT_EQ(partners, 1);
@@ -114,11 +114,11 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
                                                                                                   &mockFunctor);
   verletLists.iteratePairwise(&mockFunctor, &dummyTraversal, true);
 
-  auto& list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getVerletListsAoS();
 
   EXPECT_EQ(list.size(), 2);
   int partners = 0;
-  for (const auto& i : list) {
+  for (const auto &i : list) {
     partners += i.second.size();
   }
   EXPECT_EQ(partners, 1);
@@ -149,11 +149,11 @@ TEST_P(VerletListsTest, testVerletListBuildTwice) {
 
   verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
 
-  auto& list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getVerletListsAoS();
 
   EXPECT_EQ(list.size(), 2);
   int partners = 0;
-  for (const auto& i : list) {
+  for (const auto &i : list) {
     partners += i.second.size();
   }
   EXPECT_EQ(partners, 1);
@@ -186,11 +186,11 @@ TEST_P(VerletListsTest, testVerletListBuildFarAway) {
                                                                                                   &emptyFunctor);
   verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
 
-  auto& list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getVerletListsAoS();
 
   ASSERT_EQ(list.size(), 3);
   int partners = 0;
-  for (const auto& i : list) {
+  for (const auto &i : list) {
     partners += i.second.size();
   }
   ASSERT_EQ(partners, 1);
@@ -220,11 +220,11 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
 
   verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
 
-  auto& list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getVerletListsAoS();
 
   ASSERT_EQ(list.size(), 2);
   int partners = 0;
-  for (const auto& i : list) {
+  for (const auto &i : list) {
     partners += i.second.size();
   }
   ASSERT_EQ(partners, 1);
@@ -485,7 +485,7 @@ TEST_P(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
 }
 
 template <class Container, class Particle>
-void moveUpdateAndExpectEqual(Container& container, Particle& particle, std::array<double, 3> newPosition) {
+void moveUpdateAndExpectEqual(Container &container, Particle &particle, std::array<double, 3> newPosition) {
   particle.setR(newPosition);
   container.updateHaloParticle(particle);
   {

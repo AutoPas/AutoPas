@@ -36,7 +36,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell>* cont, CellBorderAndFlagManager* flagManager,
+  explicit ParticleIterator(std::vector<ParticleCell> *cont, internal::CellBorderAndFlagManager *flagManager,
                             IteratorBehavior behavior)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
@@ -58,8 +58,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell>* cont, size_t offset = 0,
-                            CellBorderAndFlagManager* flagManager = nullptr, IteratorBehavior behavior = haloAndOwned)
+  explicit ParticleIterator(std::vector<ParticleCell> *cont, size_t offset = 0,
+                            internal::CellBorderAndFlagManager *flagManager = nullptr,
+                            IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
         _iteratorWithinOneCell(cont->begin()->begin()),
@@ -94,7 +95,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * @copydoc ParticleIteratorInterface::operator++()
    */
-  inline ParticleIterator<Particle, ParticleCell>& operator++() override {
+  inline ParticleIterator<Particle, ParticleCell> &operator++() override {
     if (_iteratorWithinOneCell.isValid()) {
       ++_iteratorWithinOneCell;
     }
@@ -110,7 +111,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * @copydoc ParticleIteratorInterface::operator*()
    */
-  inline Particle& operator*() const override { return _iteratorWithinOneCell.operator*(); }
+  inline Particle &operator*() const override { return _iteratorWithinOneCell.operator*(); }
 
   /**
    * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
@@ -132,7 +133,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
            _iteratorWithinOneCell.isValid();
   }
 
-  ParticleIteratorInterfaceImpl<Particle>* clone() const override {
+  ParticleIteratorInterfaceImpl<Particle> *clone() const override {
     return new ParticleIterator<Particle, ParticleCell>(*this);
   }
 
@@ -178,7 +179,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * Pointer to the cell vector.
    */
-  std::vector<ParticleCell>* _vectorOfCells;
+  std::vector<ParticleCell> *_vectorOfCells;
   /**
    * Iterator for traversing the cell vector.
    */
@@ -191,7 +192,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * Manager providing info if cell is in halo.
    */
-  CellBorderAndFlagManager* _flagManager;
+  internal::CellBorderAndFlagManager *_flagManager;
 
   /**
    * The behavior of the iterator.
