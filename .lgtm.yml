@@ -5,7 +5,6 @@ extraction:
       - tar -xvzf cmake.tar.gz
       - cd cmake-*/
       - sed -i '/_qt4_get_version_components/a message(STATUS "QTVersion ${QTVERSION}")' Modules/FindQt4.cmake
-      - sed -i '/ file(TO_CMAKE_PATH "${output}" output)/a string(REGEX REPLACE "*\[\\r\\n\]" "" output ${output})")' Modules/FindQt4.cmake
       - ./bootstrap
       - make
       - DESTDIR="$HOME/.local" make install
