@@ -26,11 +26,11 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -42,7 +42,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : CellPairTraversal<ParticleCell>(dims),
+      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
         _overlap{},
         _dimsPerLength{},
         _cutoff(cutoff),
@@ -54,8 +54,12 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
     rebuild(dims);
   }
 
-  bool isApplicable() override {
-    if (DataLayout == DataLayoutOption::cuda) {
+  /**
+   * Checks if the traversal is applicable to the current state of the domain.
+   * @return true iff the traversal can be applied.
+   */
+  bool isApplicable() const override {
+    if (dataLayout == DataLayoutOption::cuda) {
       int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
       cudaGetDeviceCount(&nDevices);
@@ -66,6 +70,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
     }
   }
 
+  /**
+   * Load Data Layouts required for this Traversal.
+   * @param cells where the data should be loaded.
+   */
   void initTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
@@ -76,6 +84,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
     }
   }
 
+  /**
+   * Write Data to AoS.
+   * @param cells for which the data should be written back.
+   */
   void endTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
@@ -85,6 +97,11 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
       _dataLayoutConverter.storeDataLayout(cells[i]);
     }
   }
+
+  /**
+   * Resets the cell structure of the traversal.
+   * @param dims
+   */
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  protected:
@@ -130,13 +147,13 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Data Layout Converter to be used with this traversal
    */
-  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
+  utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::rebuild(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::rebuild(
     const std::array<unsigned long, 3> &dims) {
-  CellPairTraversal<ParticleCell>::rebuild(dims);
+  CellPairTraversal<ParticleCell, dataLayout, useNewton3>::rebuild(dims);
 
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
@@ -173,9 +190,9 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useN
 
   locks.resize((numSlices - 1) * _overlapLongestAxis);
 }
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 template <typename LoopBody>
-void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::slicedTraversal(LoopBody &&loopBody) {
+void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = _sliceThickness.size();
