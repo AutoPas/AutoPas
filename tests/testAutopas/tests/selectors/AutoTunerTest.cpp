@@ -248,26 +248,26 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
-  auto configsList = {confN3, confNoN3};
+  auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
                                              autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
-  EXPECT_EQ(confN3, tuner.getCurrentConfig());
+  EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 
   MFunctor functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
   tuner.iteratePairwise(&functor);
-  EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
+  EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
   tuner.iteratePairwise(&functor);
-  EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
+  EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
   tuner.iteratePairwise(&functor);
-  EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
+  EXPECT_EQ(confN3, tuner.getCurrentConfig());
 }
 
 /**

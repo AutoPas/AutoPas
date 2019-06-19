@@ -85,8 +85,9 @@ class VerletLists
       rebuildVerletLists(useNewton3);
     }
 
+    // @todo @reviwer: do we still need this casted traversalInterface variable?
     if (auto *traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal)) {
-      if (not _soaListIsValid and traversalInterface->getDataLayout() == DataLayoutOption::soa) {
+      if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
         // only do this if we need it, i.e., if we are using soa!
         generateSoAListFromAoSVerletLists();
       }

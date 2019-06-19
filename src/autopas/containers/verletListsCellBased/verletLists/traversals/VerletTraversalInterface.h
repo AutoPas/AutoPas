@@ -52,12 +52,6 @@ class VerletTraversalInterface {
    * @param cells content of the container the Traversal is to be called on
    */
   virtual void endTraversal(std::vector<LinkedParticleCell> &cells) = 0;
-
-  /**
-   * Returns data layout.
-   * @return dataLayout
-   */
-  virtual autopas::DataLayoutOption getDataLayout() = 0;
 };
 
 }  // namespace autopas
