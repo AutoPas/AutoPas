@@ -19,12 +19,12 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 class TraversalVerlet
-    : public CellPairTraversal<ParticleCell>,
+    : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
       public VerletTraversalInterface<
           typename VerletListHelpers<typename ParticleCell::ParticleType>::VerletListParticleCellType> {
   using Particle = typename ParticleCell::ParticleType;
@@ -33,7 +33,7 @@ class TraversalVerlet
       typename VerletListHelpers<typename ParticleCell::ParticleType>::VerletListParticleCellType LinkedParticleCell;
 
  public:
-  DataLayoutOption getDataLayout() override { return DataLayout; }
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   /**
    * Constructor for Verlet Traversal
@@ -41,14 +41,16 @@ class TraversalVerlet
    * @param pairwiseFunctor Functor to be used with this Traversal
    */
   TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims), _functor(pairwiseFunctor) {}
+      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims), _functor(pairwiseFunctor) {}
 
-  TraversalOption getTraversalType() override { return TraversalOption::verletTraversal; }
+  TraversalOption getTraversalType() const override { return TraversalOption::verletTraversal; }
 
-  bool isApplicable() override { return DataLayout == DataLayoutOption::aos || DataLayout == DataLayoutOption::soa; }
+  bool isApplicable() const override {
+    return dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa;
+  }
 
   void initTraversal(std::vector<ParticleCell> &cells) override {
-    if (DataLayout == DataLayoutOption::soa) {
+    if (dataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
       for (auto &cell : cells) {
         _functor->SoALoader(cell, _soa, offset);
@@ -58,7 +60,7 @@ class TraversalVerlet
   }
 
   void endTraversal(std::vector<ParticleCell> &cells) override {
-    if (DataLayout == DataLayoutOption::soa) {
+    if (dataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
       for (auto &cell : cells) {
         _functor->SoAExtractor(cell, _soa, offset);
@@ -72,7 +74,7 @@ class TraversalVerlet
    * @param cells content of the container the Traversal is to be called on
    */
   void initTraversal(std::vector<LinkedParticleCell> &cells) override {
-    if (DataLayout == DataLayoutOption::soa) {
+    if (dataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
       for (auto &cell : cells) {
         _functor->SoALoader(cell, _soa, offset);
@@ -86,7 +88,7 @@ class TraversalVerlet
    * @param cells content of the container the Traversal is to be called on
    */
   void endTraversal(std::vector<LinkedParticleCell> &cells) override {
-    if (DataLayout == DataLayoutOption::soa) {
+    if (dataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
       for (auto &cell : cells) {
         _functor->SoAExtractor(cell, _soa, offset);
@@ -103,7 +105,7 @@ class TraversalVerlet
   void iterateVerletLists(
       std::unordered_map<Particle *, std::vector<Particle *>> aosNeighborLists,
       std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> soaNeighborLists) override {
-    switch (DataLayout) {
+    switch (dataLayout) {
       case DataLayoutOption::aos: {
 #if defined(AUTOPAS_OPENMP)
         if (not useNewton3) {
@@ -154,7 +156,7 @@ class TraversalVerlet
         }
         return;
       }
-      default: { utils::ExceptionHandler::exception("VerletList DataLayout {} not available", DataLayout); }
+      default: { utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout); }
     }
   }
 
