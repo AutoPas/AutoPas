@@ -79,6 +79,12 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
                                 typename VerletListHelpers<Particle>::SoAArraysType> {
     typedef typename VerletListHelpers<Particle>::VerletListParticleCellType ParticleCell;
 
+    /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
+    typedef utils::SoAType<size_t, double, double, double>::Type SoAArraysType;
+
+    /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
+    enum AttributeNames : int { id, posX, posY, posZ };
+
    public:
     /**
      * Constructor of the functor.
@@ -108,15 +114,96 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       }
     }
 
-    void SoAFunctor(SoA<typename VerletListHelpers<Particle>::SoAArraysType> &soa, bool newton3) override {}
+    void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+      if (soa.getNumParticles() == 0) return;
 
-    void SoAFunctor(SoA<typename VerletListHelpers<Particle>::SoAArraysType> &soa1,
-                    SoA<typename VerletListHelpers<Particle>::SoAArraysType> &soa2, bool /*newton3*/) override {}
+      auto **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
+      double *const __restrict__ xptr = soa.begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.begin<AttributeNames::posZ>();
 
-    void SoALoader(ParticleCell &cell, SoA<typename VerletListHelpers<Particle>::SoAArraysType> &soa,
-                   size_t offset = 0) override {}
+      size_t numPart = soa.getNumParticles();
+      for (unsigned int i = 0; i < numPart; ++i) {
+        for (unsigned int j = i + 1; j < numPart; ++j) {
+          const double drx = xptr[i] - xptr[j];
+          const double dry = yptr[i] - yptr[j];
+          const double drz = zptr[i] - zptr[j];
 
-    void SoAExtractor(ParticleCell &cell, SoA<typename VerletListHelpers<Particle>::SoAArraysType> &soa,
+          const double drx2 = drx * drx;
+          const double dry2 = dry * dry;
+          const double drz2 = drz * drz;
+
+          const double dr2 = drx2 + dry2 + drz2;
+
+          if (dr2 < _cutoffskinsquared) {
+            _list.addPair(idptr[i], idptr[j]);
+            if(not newton3) {
+              _list.addPair(idptr[j], idptr[i]);
+            }
+          }
+        }
+      }
+    }
+
+    void SoAFunctor(SoA<SoAArraysType> &soa1,
+                    SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
+      if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+
+      auto **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
+      double *const __restrict__ x1ptr = soa1.begin<AttributeNames::posX>();
+      double *const __restrict__ y1ptr = soa1.begin<AttributeNames::posY>();
+      double *const __restrict__ z1ptr = soa1.begin<AttributeNames::posZ>();
+
+      auto **const __restrict__ id2ptr = reinterpret_cast<Particle **const>(soa2.begin<AttributeNames::id>());
+      double *const __restrict__ x2ptr = soa2.begin<AttributeNames::posX>();
+      double *const __restrict__ y2ptr = soa2.begin<AttributeNames::posY>();
+      double *const __restrict__ z2ptr = soa2.begin<AttributeNames::posZ>();
+
+      size_t numPart1 = soa1.getNumParticles();
+      for (unsigned int i = 0; i < numPart1; ++i) {
+        size_t numPart2 = soa2.getNumParticles();
+        for (unsigned int j = 0; j < numPart2; ++j) {
+          const double drx = x1ptr[i] - x2ptr[j];
+          const double dry = y1ptr[i] - y2ptr[j];
+          const double drz = z1ptr[i] - z2ptr[j];
+
+          const double drx2 = drx * drx;
+          const double dry2 = dry * dry;
+          const double drz2 = drz * drz;
+
+          const double dr2 = drx2 + dry2 + drz2;
+
+          if (dr2 < _cutoffskinsquared) {
+            _list.addPair(id1ptr[i], id2ptr[j]);
+          }
+        }
+      }
+    }
+
+    void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa,
+                   size_t offset = 0) override {
+      assert(offset == 0);
+      soa.resizeArrays(cell.numParticles());
+
+      if (cell.numParticles() == 0) return;
+
+      unsigned long *const __restrict__ idptr = soa.begin<AttributeNames::id>();
+      double *const __restrict__ xptr = soa.begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.begin<AttributeNames::posZ>();
+
+      auto cellIter = cell.begin();
+      // load particles in SoAs.
+      for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
+        Particle *pptr = &(*cellIter);
+        idptr[i] = reinterpret_cast<std::uintptr_t>(pptr);
+        xptr[i] = cellIter->getR()[0];
+        yptr[i] = cellIter->getR()[1];
+        zptr[i] = cellIter->getR()[2];
+      }
+    }
+
+    void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa,
                       size_t offset = 0) override {}
 
    private:
@@ -139,9 +226,11 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   template <bool useNewton3, bool callCheckInstead = false>
   void startFunctor(double cutoff) {
     VarVerletListPairGeneratorFunctor<callCheckInstead> functor(*this, cutoff);
+    // Use SoA traversal for generation and AoS traversal for validation check.
+    constexpr DataLayoutOption dataLayout = callCheckInstead ? DataLayoutOption::aos : DataLayoutOption::soa;
     auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                                    VarVerletListPairGeneratorFunctor<callCheckInstead>,
-                                                   DataLayoutOption::aos, useNewton3>(
+                                                   dataLayout, useNewton3>(
         _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
     _baseLinkedCells->iteratePairwise(&functor, &traversal);
   }

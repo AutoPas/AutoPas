@@ -32,8 +32,6 @@ class VarVerletLists
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                  const double skin, const unsigned int rebuildFrequency = 1,
-                 const typename VerletLists<Particle>::BuildVerletListType buildVerletListType =
-                     VerletLists<Particle>::BuildVerletListType::VerletSoA,
                  const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
             boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(),
@@ -48,8 +46,7 @@ class VarVerletLists
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     if (auto *traversalInterface = dynamic_cast<VarVerletTraversalInterface<NeighborList> *>(traversal)) {
-      if (this->needsRebuild()) {
-        // TODO: See if newton3 type of the list fits to the traversal
+      if (this->needsRebuild(traversal->getUseNewton3())) {
         this->rebuildVerletLists(traversal->getUseNewton3());
       }
 
