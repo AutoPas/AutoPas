@@ -47,14 +47,13 @@ class VarVerletLists
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    if (auto *traversalInterface =
-            dynamic_cast<VarVerletTraversalInterface<FullParticleCell<Particle>, NeighborList> *>(traversal)) {
+    if (auto *traversalInterface = dynamic_cast<VarVerletTraversalInterface<NeighborList> *>(traversal)) {
       if (this->needsRebuild()) {
         // TODO: See if newton3 type of the list fits to the traversal
-        this->rebuildVerletLists(traversalInterface->usesNewton3());
+        this->rebuildVerletLists(traversal->getUseNewton3());
       }
 
-      if (traversalInterface->getDataLayout() == DataLayoutOption::soa and not _neighborList.isSoAListValid()) {
+      if (traversal->getDataLayout() == DataLayoutOption::soa and not _neighborList.isSoAListValid()) {
         _neighborList.generateSoAFromAoS();
       }
 

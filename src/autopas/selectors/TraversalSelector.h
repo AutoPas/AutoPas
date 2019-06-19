@@ -128,7 +128,7 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
     }
     case TraversalOption::varVerletTraversalAsBuild: {
       return std::make_unique<VarVerletTraversalAsBuild<ParticleCell, typename ParticleCell::ParticleType,
-                                                        PairwiseFunctor, DataLayout, useNewton3>>(&pairwiseFunctor);
+                                                        PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor);
     }
     case TraversalOption::dummyTraversal: {
       return std::make_unique<DummyTraversal<ParticleCell, dataLayout, useNewton3>>(info.dims);

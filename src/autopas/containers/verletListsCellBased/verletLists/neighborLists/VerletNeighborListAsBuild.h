@@ -28,8 +28,8 @@ class TraversalColorChangeObserver {
  *
  * It furthermore notifies an observer when color changes during the traversal happen.
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C08TraversalColorChangeNotify : public C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+class C08TraversalColorChangeNotify : public C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the traversal.
@@ -40,7 +40,7 @@ class C08TraversalColorChangeNotify : public C08Traversal<ParticleCell, Pairwise
    */
   C08TraversalColorChangeNotify(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 TraversalColorChangeObserver *observer)
-      : C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
+      : C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor),
         _observer(observer) {}
 
  protected:

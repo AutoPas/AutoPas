@@ -19,11 +19,12 @@ namespace autopas {
  * @tparam ParticleCell Needed because every traversal has to be a CellPairTraversal at the moment.
  * @tparam Particle The particle type used by the neighbor list.
  * @tparam PairwiseFunctor The type of the functor to use for the iteration.
+ * @tparam dataLayout The data layout to use.
  * @tparam useNewton3 Whether or not this traversal uses newton 3.
  */
-template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class VarVerletTraversalAsBuild
-    : public VarVerletTraversalInterface<ParticleCell, VerletNeighborListAsBuild<Particle>> {
+template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeighborListAsBuild<Particle>>,
+                                  public CellPairTraversal<ParticleCell, dataLayout, useNewton3> {
  private:
   /**
    * Internal iterate method for AoS.
@@ -42,27 +43,28 @@ class VarVerletTraversalAsBuild
    * The Constructor of VarVerletTraversalAsBuild.
    * @param pairwiseFunctor The functor to use for the iteration.
    */
-  explicit VarVerletTraversalAsBuild(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor), _soa{nullptr} {}
+  explicit VarVerletTraversalAsBuild(PairwiseFunctor *pairwiseFunctor)
+      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({0, 0, 0}), _functor(pairwiseFunctor), _soa{nullptr} {}
 
-  bool usesNewton3() override { return useNewton3; }
+  bool getUseNewton3() const override { return useNewton3; }
 
-  DataLayoutOption getDataLayout() override { return DataLayout; }
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   void initVerletTraversal(VerletNeighborListAsBuild<Particle> &neighborList) override {
-    if (DataLayout == DataLayoutOption::soa) {
+    if (dataLayout == DataLayoutOption::soa) {
       _soa = neighborList.loadSoA(_functor);
     }
   }
 
   void endVerletTraversal(VerletNeighborListAsBuild<Particle> &neighborList) override {
-    if (DataLayout == DataLayoutOption::soa) {
+    if (dataLayout == DataLayoutOption::soa) {
       neighborList.extractSoA(_functor);
       _soa = nullptr;
     }
   }
 
   void iterateVerletLists(VerletNeighborListAsBuild<Particle> &neighborList) override {
-    switch (DataLayout) {
+    switch (dataLayout) {
       case DataLayoutOption::aos:
         iterateAoS(neighborList);
         break;
@@ -74,9 +76,23 @@ class VarVerletTraversalAsBuild
     }
   }
 
-  bool isApplicable() override { return DataLayout == DataLayoutOption::soa || DataLayout == DataLayoutOption::aos; }
+  /**
+   * Empty body. Just there to fulfill CellPairTraversal interface!
+   * @param cells
+   */
+  void initTraversal(std::vector<ParticleCell> &cells) override {}
 
-  TraversalOption getTraversalType() override { return TraversalOption::varVerletTraversalAsBuild; }
+  /**
+   * Empty body. Just there to fulfill CellPairTraversal interface!
+   * @param cells
+   */
+  void endTraversal(std::vector<ParticleCell> &cells) override {}
+
+  bool isApplicable() const override {
+    return dataLayout == DataLayoutOption::soa || dataLayout == DataLayoutOption::aos;
+  }
+
+  TraversalOption getTraversalType() const override { return TraversalOption::varVerletTraversalAsBuild; }
 
  private:
   /**
@@ -89,8 +105,8 @@ class VarVerletTraversalAsBuild
   SoA<typename Particle::SoAArraysType> *_soa;
 };
 
-template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, DataLayout, useNewton3>::iterateAoS(
+template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, dataLayout, useNewton3>::iterateAoS(
     VerletNeighborListAsBuild<Particle> &neighborList) {
   const auto &list = neighborList.getInternalNeighborList();
 
@@ -114,8 +130,8 @@ void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, DataLayo
   }
 }
 
-template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, DataLayout, useNewton3>::iterateSoA(
+template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, dataLayout, useNewton3>::iterateSoA(
     VerletNeighborListAsBuild<Particle> &neighborList) {
   const auto &soaNeighborList = neighborList.getInternalSoANeighborList();
 
