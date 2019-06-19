@@ -81,8 +81,8 @@ class VerletLists
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    if (this->needsRebuild()) {
-      rebuildVerletLists(useNewton3);
+    if (this->needsRebuild(traversal->getUseNewton3())) {
+      rebuildVerletLists(traversal->getUseNewton3());
     }
 
     // @todo @reviwer: do we still need this casted traversalInterface variable?
