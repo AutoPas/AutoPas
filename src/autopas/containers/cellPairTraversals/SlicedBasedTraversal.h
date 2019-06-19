@@ -72,7 +72,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
 
   /**
    * Load Data Layouts required for this Traversal.
-   * @param Cells where the data should be loaded.
+   * @param cells where the data should be loaded.
    */
   void initTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
@@ -86,7 +86,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
 
   /**
    * Write Data to AoS.
-   * @param Cells for which the data should be written back.
+   * @param cells for which the data should be written back.
    */
   void endTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP

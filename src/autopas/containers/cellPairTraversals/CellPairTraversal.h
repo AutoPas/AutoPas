@@ -43,13 +43,13 @@ class CellPairTraversal : public TraversalInterface {
 
   /**
    * Load Data Layouts required for this Traversal.
-   * @param Cells where the data should be loaded.
+   * @param cells where the data should be loaded.
    */
   virtual void initTraversal(std::vector<ParticleCell> &cells) = 0;
 
   /**
    * Write Data to AoS.
-   * @param Cells for which the data should be written back.
+   * @param cells for which the data should be written back.
    */
   virtual void endTraversal(std::vector<ParticleCell> &cells) = 0;
 
