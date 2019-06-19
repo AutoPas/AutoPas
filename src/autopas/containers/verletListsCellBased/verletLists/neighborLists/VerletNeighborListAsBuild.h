@@ -168,7 +168,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * Constructor for the VerletNeighborListAsBuild. Does only default initialization.
    */
-  VerletNeighborListAsBuild() : _neighborList{}, _soaListIsValid(false), _currentColor(0) {}
+  VerletNeighborListAsBuild() : _neighborList{}, _soaListIsValid(false) {}
 
   ContainerOption getContainerType() const override { return ContainerOption::varVerletListsAsBuild; }
 
@@ -396,12 +396,18 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The current color in the traversal during the build of the neighbor list.
    */
-  int _currentColor;
+  static int _currentColor;
+#if defined(AUTOPAS_OPENMP)
+#pragma omp threadprivate(_currentColor)
+#endif
 
   /**
    * Used in checkNeighborListValidity(). Set to false in the pair generating functor.
    */
   std::atomic<bool> _allPairsPresent;
 };
+
+template <class Particle>
+int VerletNeighborListAsBuild<Particle>::_currentColor = 0;
 
 }  // namespace autopas
