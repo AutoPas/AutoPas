@@ -72,7 +72,8 @@ class VerletListsCells
    * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+    bool useNewton3 = traversal->getUseNewton3();
     if (this->needsRebuild(useNewton3)) {
       updateVerletLists(useNewton3);
     }

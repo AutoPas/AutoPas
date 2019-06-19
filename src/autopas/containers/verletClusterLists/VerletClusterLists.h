@@ -73,7 +73,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+    bool useNewton3 = traversal->getUseNewton3();
     if (useNewton3) {
       /// @todo implement newton3 for VerletClusterLists
       AutoPasLog(error, "Newton3 not implemented yet.");

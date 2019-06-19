@@ -36,5 +36,5 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
   autopas::C08Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal({0, 0, 0},
                                                                                                 &emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, false);
+  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
 }
