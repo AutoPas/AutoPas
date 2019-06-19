@@ -137,8 +137,9 @@ std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3
   return ret;
 }
 
-size_t getNumberOfParticlesInBox(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
-                                 std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>> &vec) {
+size_t getNumberOfParticlesInBox(
+    autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
+    std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>> &vec) {
   const autopas::MoleculeLJ defaultParticle;
   GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
   cellBlock.clearHaloCells();

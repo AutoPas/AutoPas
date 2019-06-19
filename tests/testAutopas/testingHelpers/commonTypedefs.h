@@ -39,26 +39,26 @@ typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Partic
  * Short for the Cell Functor with AoS and Newton 3
  */
 typedef autopas::internal::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
-                             autopas::DataLayoutOption::aos, true>
+                                       autopas::DataLayoutOption::aos, true>
     CellFunctorAoSN3;
 
 /**
  * Short for the Cell Functor with AoS and no Newton 3
  */
 typedef autopas::internal::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
-                             autopas::DataLayoutOption::aos, false>
+                                       autopas::DataLayoutOption::aos, false>
     CellFunctorAoSNoN3;
 
 /**
  * Short for the Cell Functor with SoA and Newton 3
  */
 typedef autopas::internal::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
-                             autopas::DataLayoutOption::soa, true>
+                                       autopas::DataLayoutOption::soa, true>
     CellFunctorSoAN3;
 
 /**
  * Short for the Cell Functor with SoA and no Newton 3
  */
 typedef autopas::internal::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
-                             autopas::DataLayoutOption::soa, false>
+                                       autopas::DataLayoutOption::soa, false>
     CellFunctorSoANoN3;

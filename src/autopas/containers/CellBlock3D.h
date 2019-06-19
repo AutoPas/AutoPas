@@ -259,7 +259,6 @@ class CellBlock3D : public CellBorderAndFlagManager {
   // 1 over above. Since this value is needed for sorting particles in cells, it
   // is computed quite often
   std::array<double, 3> _cellLengthReciprocal;
-
 };
 
 template <class ParticleCell>
