@@ -9,7 +9,6 @@ extraction:
       - wget https://files.pythonhosted.org/packages/ec/51/f45cea425fd5cb0b0380f5b0f048ebc1da5b417e48d304838c02d6288a1e/setuptools-41.0.1-py2.py3-none-any.whl
       - pip3 install --user --upgrade *.whl
       - export PATH=~/.local/bin:$PATH
-      - hash -d pip3
       - pip3 --version
       - pip3 install --user --upgrade cmake==3.14.4
       - ls ~/.local/bin
