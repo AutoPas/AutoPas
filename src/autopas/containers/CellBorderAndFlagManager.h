@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 namespace autopas {
+inline namespace internal {
 /**
  * Interface class to handle cell borders and cell types of cells.
  * @todo: add cell border handling
@@ -39,4 +40,5 @@ class CellBorderAndFlagManager {
    */
   virtual bool isOwningCell(index_t index1d) const = 0;
 };
+}  // namespace internal
 }  // namespace autopas
