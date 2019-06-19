@@ -17,7 +17,7 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
-inline namespace internal {
+namespace internal {
 /**
  * Class that manages a block of ParticleCells.
  * It is used to resize the cellblock and to handle the conversion of 3d to 1d
