@@ -218,8 +218,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       }
       break;
     }
-    default: {
-    }
+    default: {}
   }
   auto traversal = autopas::TraversalSelector<CellType>::template generateTraversal<Functor>(
       traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos,
