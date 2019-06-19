@@ -179,7 +179,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
       // base cell
       if (offset1 == _baseOffsets.front().front()) {
         // two cases intervall in current  stripe
-        cell1 = &combinationSlice[(currentSlice + 1) % combinationSlice.size()];
+        cell1 = &combinationSlice[currentSlice % combinationSlice.size()];
         if (slice == 0ul) {
           // process stripe with itself
           // make sure no previously applied view is active
@@ -193,7 +193,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
           cell1->_particleSoABuffer.setViewLength(cells[cellIndex1].numParticles());
         }
       } else if (offset1 == _baseOffsets.front().back()) {
-        cell1 = &combinationSlice[(currentSlice + 1) % combinationSlice.size()];
+        cell1 = &combinationSlice[currentSlice  % combinationSlice.size()];
         cell1->_particleSoABuffer.setViewStart(
             combinationSlicesOffsets[slice][combinationSlicesOffsets[slice].size() - 2]);
         cell1->_particleSoABuffer.setViewLength(-1l);
@@ -220,7 +220,33 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
     // clear old cell buffer
     cells[currentOffset]._particleSoABuffer.clear();
     // append new cell buffer
+    if (combinationSlice[currentSlice]._particleSoABuffer.getNumParticles() != cells[currentOffset].numParticles()) {
+      AutoPasLog(error, "1: Count doesn't match. x: {} is: {} should: {}", x,
+                 combinationSlice[currentSlice]._particleSoABuffer.getNumParticles(),
+                 cells[currentOffset].numParticles());
+    }
     cells[currentOffset]._particleSoABuffer.append(combinationSlice[currentSlice]._particleSoABuffer);
+  }
+  // last cell in stripe need to save whole buffer
+  if (x == _cellsPerDimension[0] - _overlap[0] - 1l) {
+    for (unsigned long j = 0; j < _overlap[0]; j++) {
+      const long sliceNum = (currentSlice + j + 1) % _baseOffsets.size();
+      combinationSlice[sliceNum]._particleSoABuffer.setViewLength(-1l);
+      for (long i = _baseOffsets[sliceNum].size() - 2; i >= 0; i--) {
+        combinationSlice[sliceNum]._particleSoABuffer.setViewStart(combinationSlicesOffsets[sliceNum][i]);
+        combinationSlice[sliceNum]._particleSoABuffer.resizeArrays(combinationSlicesOffsets[sliceNum][i + 1]);
+        const long currentOffset = baseIndex + _baseOffsets[sliceNum][i];
+        // clear old cell buffer
+        cells[currentOffset]._particleSoABuffer.clear();
+        // append new cell buffer
+        if (combinationSlice[sliceNum]._particleSoABuffer.getNumParticles() != cells[currentOffset].numParticles()) {
+          AutoPasLog(error, "2: Count doesn't match. x: {} is: {} should: {}", x,
+                     combinationSlice[sliceNum]._particleSoABuffer.getNumParticles(),
+                     cells[currentOffset].numParticles());
+        }
+        cells[currentOffset]._particleSoABuffer.append(combinationSlice[sliceNum]._particleSoABuffer);
+      }
+    }
   }
 }
 
