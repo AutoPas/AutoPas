@@ -9,8 +9,8 @@ extraction:
       - qmake --version
       - pip2 --version
       - cat /etc/*release
-      - pip search cmake
-      - pip2 install --no-cache-dir --user --upgrade cmake==3.14.4
+      - pip install --upgrade pip
+      - pip2 install --user --upgrade cmake==3.14.4
       - ls ~/.local/bin
       - export PATH=~/.local/bin:$PATH
       - cmake --version
