@@ -46,8 +46,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff,
-                                                                 compatibleTraversals::allLCCompatibleTraversals()),
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
 
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
