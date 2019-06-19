@@ -18,7 +18,7 @@ namespace autopas {
  * @brief This namespace is used for implementation specifics.
  * @details If you are a developer of AutoPas you might want to take a look inside here.
  */
-inline namespace internal {}  // namespace internal
+namespace internal {}  // namespace internal
 
 /**
  * @brief In this namespace all functionality of the Smoothed Particle Hydrodynamics module of autopas is present.

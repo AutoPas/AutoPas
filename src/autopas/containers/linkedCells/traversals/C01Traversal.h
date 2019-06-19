@@ -106,7 +106,7 @@ class C01Traversal
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, false, false>
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, false, false>
       _cellFunctor;
 
   PairwiseFunctor *_pairwiseFunctor;

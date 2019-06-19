@@ -12,7 +12,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
-inline namespace internal {
+namespace internal {
 /**
  * A cell functor. This functor is build from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
