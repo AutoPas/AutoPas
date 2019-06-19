@@ -152,7 +152,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
  private:
-  class DirectSumCellBorderAndFlagManager : public CellBorderAndFlagManager {
+  class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
     /**
      * the index type to access the particle cells
      */

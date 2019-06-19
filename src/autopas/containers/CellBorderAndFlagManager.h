@@ -8,7 +8,7 @@
 #include <cstdlib>
 
 namespace autopas {
-inline namespace internal {
+namespace internal {
 /**
  * Interface class to handle cell borders and cell types of cells.
  * @todo: add cell border handling
