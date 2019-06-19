@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include <array>
-#include <vector>
 #include <autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h>
 #include <autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListAsBuild.h>
+#include <array>
+#include <vector>
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"

@@ -97,7 +97,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    *
    * @param newColor The new current color.
    */
-  virtual void notifyColorChange(unsigned long newColor) {};
+  virtual void notifyColorChange(unsigned long newColor){};
 
   /**
    * cutoff radius.

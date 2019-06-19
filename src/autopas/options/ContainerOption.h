@@ -27,7 +27,6 @@ enum ContainerOption {
  */
 static const std::set<ContainerOption> allContainerOptions = {
     ContainerOption::directSum,        ContainerOption::linkedCells,        ContainerOption::verletLists,
-    ContainerOption::verletListsCells, ContainerOption::verletClusterLists, ContainerOption::varVerletListsAsBuild
-};
+    ContainerOption::verletListsCells, ContainerOption::verletClusterLists, ContainerOption::varVerletListsAsBuild};
 
 }  // namespace autopas

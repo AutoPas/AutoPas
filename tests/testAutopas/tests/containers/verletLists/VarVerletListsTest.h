@@ -16,6 +16,4 @@
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class VarVerletListsTest : public AutoPasTestBase {
-
-};
+class VarVerletListsTest : public AutoPasTestBase {};

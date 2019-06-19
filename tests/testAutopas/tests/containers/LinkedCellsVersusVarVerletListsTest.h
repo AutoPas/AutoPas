@@ -29,7 +29,7 @@ class LinkedCellsVersusVarVerletListsTest : public AutoPasTestBase {
   double getCutoff() const { return .9; }
 
  protected:
-  template<bool useNewton3, autopas::DataLayoutOption dataLayoutOption>
+  template <bool useNewton3, autopas::DataLayoutOption dataLayoutOption>
   void test(unsigned long numMolecules, double rel_err_tolerance, std::array<double, 3> boxMax);
 
   using vltype = autopas::VarVerletLists<autopas::MoleculeLJ, autopas::VerletNeighborListAsBuild<autopas::MoleculeLJ>>;
@@ -37,5 +37,3 @@ class LinkedCellsVersusVarVerletListsTest : public AutoPasTestBase {
   std::unique_ptr<vltype> _verletLists;
   std::unique_ptr<lctype> _linkedCells;
 };
-
-
