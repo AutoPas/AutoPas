@@ -54,6 +54,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
     rebuild(dims);
   }
 
+  /**
+   * Checks if the traversal is applicable to the current state of the domain.
+   * @return true iff the traversal can be applied.
+   */
   bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       int nDevices = 0;
@@ -66,6 +70,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
     }
   }
 
+  /**
+   * Load Data Layouts required for this Traversal.
+   * @param Cells where the data should be loaded.
+   */
   void initTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
@@ -76,6 +84,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
     }
   }
 
+  /**
+   * Write Data to AoS.
+   * @param Cells for which the data should be written back.
+   */
   void endTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
@@ -85,6 +97,11 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
       _dataLayoutConverter.storeDataLayout(cells[i]);
     }
   }
+
+  /**
+   * Resets the cell structure of the traversal.
+   * @param dims
+   */
   void rebuild(const std::array<unsigned long, 3> &dims) override;
 
  protected:

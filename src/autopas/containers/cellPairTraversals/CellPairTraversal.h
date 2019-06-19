@@ -42,14 +42,14 @@ class CellPairTraversal : public TraversalInterface {
   virtual void rebuild(const std::array<unsigned long, 3> &dims) { _cellsPerDimension = dims; };
 
   /**
-   * load Data Layouts required for this Traversal.
-   * @param cells where the data should be loaded
+   * Load Data Layouts required for this Traversal.
+   * @param Cells where the data should be loaded.
    */
   virtual void initTraversal(std::vector<ParticleCell> &cells) = 0;
 
   /**
-   * write Data to AoS.
-   * @param cells for which the data should be written back
+   * Write Data to AoS.
+   * @param Cells for which the data should be written back.
    */
   virtual void endTraversal(std::vector<ParticleCell> &cells) = 0;
 
