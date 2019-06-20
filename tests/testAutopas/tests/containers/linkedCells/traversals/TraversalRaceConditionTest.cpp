@@ -43,7 +43,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
       }
 
       if (traversal == autopas::TraversalOption::c01Cuda) {
-        // c01Cuda traversal does not work with DataLayout Option AoS used in this test.
+        // c01Cuda traversal does not work with dataLayout Option AoS used in this test.
         continue;
       }
 

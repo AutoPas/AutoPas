@@ -25,13 +25,13 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
   NumThreadGuard(4);
 
   autopas::TraversalSelectorInfo<FPCell> tsi(edgeLength, cutoff);
-  std::unique_ptr<autopas::CellPairTraversal<FPCell>> Traversal;
+  std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
-    Traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
+    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
                                                                                autopas::DataLayoutOption::aos, true>(
         traversalOption, functor, tsi);
   } else {
-    Traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
+    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
                                                                                autopas::DataLayoutOption::aos, false>(
         traversalOption, functor, tsi);
   }
@@ -58,7 +58,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     }
   }
 
-  auto *traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell> *>(Traversal.get());
+  auto *traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell> *>(traversal.get());
   traversalInterface->traverseCellPairs(cells);
 }
 

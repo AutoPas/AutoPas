@@ -71,7 +71,7 @@ class C01Traversal
    *
    * @return
    */
-  bool isApplicable() override {
+  bool isApplicable() const override {
     int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
     cudaGetDeviceCount(&nDevices);
@@ -83,7 +83,7 @@ class C01Traversal
     }
   }
 
-  TraversalOption getTraversalType() override {
+  TraversalOption getTraversalType() const override {
     return (combineSoA) ? TraversalOption::c01CombinedSoA : TraversalOption::c01;
   }
 
@@ -106,7 +106,7 @@ class C01Traversal
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, false, false>
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, false, false>
       _cellFunctor;
 
   PairwiseFunctor *_pairwiseFunctor;
@@ -266,7 +266,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   }
   // resize buffers
   if (DataLayout == DataLayoutOption::soa) {
-    const unsigned int numThreads = static_cast<unsigned int>(autopas_get_max_threads());
+    const auto numThreads = static_cast<unsigned int>(autopas_get_max_threads());
     if (_combinationSlices.size() != numThreads) {
       _combinationSlices.resize(numThreads);
       const auto cellOffsetsSize = _cellOffsets.size();
