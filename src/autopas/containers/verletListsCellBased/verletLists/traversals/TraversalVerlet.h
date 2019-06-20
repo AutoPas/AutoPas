@@ -130,9 +130,7 @@ class TraversalVerlet
         }
         return;
       }
-      default: {
-        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout);
-      }
+      default: { utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout); }
     }
   }
 
