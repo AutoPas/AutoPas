@@ -159,7 +159,7 @@ TEST(GaussianProcessTest, 2dMax) {
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.1;  // allowed error
+  double epsilon = 0.15;  // allowed error
   std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
                                              NumberInterval<double>(-2, 2)};  // domain of function
 

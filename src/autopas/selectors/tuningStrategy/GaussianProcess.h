@@ -213,7 +213,8 @@ class GaussianProcess {
    */
   inline double kernel(const Vector &f1, const Vector &f2) const {
     Eigen::VectorXd r = subtract(f1, f2);
-    return _theta * exp(-(r * r).dot(_dimScale));
+    Eigen::VectorXd rSquared = r.array().square();
+    return _theta * exp(-rSquared.dot(_dimScale));
   }
 
   /**
