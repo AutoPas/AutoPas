@@ -74,7 +74,8 @@ class C04CellHandler {
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellFunctor;
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
+      _cellFunctor;
 
   /**
    * cutoff radius.
@@ -193,7 +194,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
           cell1->_particleSoABuffer.setViewLength(cells[cellIndex1].numParticles());
         }
       } else if (offset1 == _baseOffsets.front().back()) {
-        cell1 = &combinationSlice[currentSlice  % combinationSlice.size()];
+        cell1 = &combinationSlice[currentSlice % combinationSlice.size()];
         cell1->_particleSoABuffer.setViewStart(
             combinationSlicesOffsets[slice][combinationSlicesOffsets[slice].size() - 2]);
         cell1->_particleSoABuffer.setViewLength(-1l);

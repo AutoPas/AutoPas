@@ -47,13 +47,13 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-  TraversalOption getTraversalType() override { return TraversalOption::c04SoA; }
+  TraversalOption getTraversalType() const override { return TraversalOption::c04SoA; }
 
   /**
    * c04SoA traversals are only usable with DataLayout SoA.
    * @return
    */
-  bool isApplicable() override { return DataLayout == DataLayoutOption::soa; }
+  bool isApplicable() const override { return DataLayout == DataLayoutOption::soa; }
 
  private:
   C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;

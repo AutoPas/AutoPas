@@ -23,9 +23,9 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, collapseDepth> {
+class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth> {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -37,8 +37,8 @@ class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    */
   explicit C04BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                              const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, collapseDepth>(dims, pairwiseFunctor, cutoff,
-                                                                                  cellLength) {}
+      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>(dims, pairwiseFunctor,
+                                                                                              cutoff, cellLength) {}
 
  protected:
   /**
