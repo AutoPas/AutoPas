@@ -13,7 +13,7 @@ TEST(GaussianProcessTest, noEvidence) {
 
   double theta = 2.;     // default variance
   double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(theta, {1., 1.}, sigma);
+  GaussianProcess<Eigen::VectorXd> gp(theta, {1.}, sigma);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
@@ -28,7 +28,7 @@ TEST(GaussianProcessTest, oneEvidence) {
 
   double theta = 4.;
   double sigma = 0.001;
-  GaussianProcess<Eigen::VectorXd> gp(theta, {1., 1.}, sigma);
+  GaussianProcess<Eigen::VectorXd> gp(theta, {1.}, sigma);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
@@ -53,7 +53,7 @@ TEST(GaussianProcessTest, twoEvidences) {
 
   double theta = 5.;     // default variance
   double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(theta, {1., 1.}, sigma);
+  GaussianProcess<Eigen::VectorXd> gp(theta, {1.}, sigma);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -87,7 +87,7 @@ TEST(GaussianProcessTest, clear) {
 
   double theta = 5.;     // default variance
   double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(theta, {1., 1.}, sigma);
+  GaussianProcess<Eigen::VectorXd> gp(theta, {1.}, sigma);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
