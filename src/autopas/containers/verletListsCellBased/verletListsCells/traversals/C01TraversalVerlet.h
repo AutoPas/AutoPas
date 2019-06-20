@@ -24,9 +24,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C01TraversalVerlet
-    : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
-      public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
+class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
+                           public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -52,7 +51,7 @@ class C01TraversalVerlet
   bool getUseNewton3() const override { return useNewton3; }
 
  private:
-  PairwiseFunctor* _functor;
+  PairwiseFunctor *_functor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

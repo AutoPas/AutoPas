@@ -27,9 +27,7 @@ class VerletListsCellsTraversal {
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
    */
-  virtual void setVerletList(verlet_storage_type &verlet) {
-    _verletList = &verlet;
-  }
+  virtual void setVerletList(verlet_storage_type &verlet) { _verletList = &verlet; }
 
  protected:
   /**
@@ -37,8 +35,8 @@ class VerletListsCellsTraversal {
    * @param verlet
    * @param cellIndex
    */
-   template<class PairwiseFunctor, bool useNewton3>
-  void iterateVerletListsCell(verlet_storage_type &verlet, unsigned long cellIndex, PairwiseFunctor* pairwiseFunctor) {
+  template <class PairwiseFunctor, bool useNewton3>
+  void iterateVerletListsCell(verlet_storage_type &verlet, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
     for (auto &list : verlet[cellIndex]) {
       Particle &i = *list.first;
       for (auto j_ptr : list.second) {
@@ -49,7 +47,7 @@ class VerletListsCellsTraversal {
   }
 
  protected:
-  verlet_storage_type* _verletList;
+  verlet_storage_type *_verletList;
 };
 
 }  // namespace autopas

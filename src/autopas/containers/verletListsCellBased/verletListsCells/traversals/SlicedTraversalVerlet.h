@@ -30,8 +30,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class SlicedTraversalVerlet
-    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
+class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                               public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
  public:
   /**

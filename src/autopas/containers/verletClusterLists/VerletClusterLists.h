@@ -75,7 +75,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     if (needsRebuild()) {
       this->rebuild();
     }
-    //traverseVerletLists(functor, useNewton3);
+    // traverseVerletLists(functor, useNewton3);
 
     // we iterated, so increase traversal counter
     _traversalsSinceLastRebuild++;

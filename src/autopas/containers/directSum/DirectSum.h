@@ -9,8 +9,8 @@
 
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/directSum/DirectSumTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
@@ -73,7 +73,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
-    //Check if traversal is allowed for this container and give it the data it needs.
+    // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
     if (traversalInterface && cellPairTraversal) {
