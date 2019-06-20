@@ -30,8 +30,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class C01CudaTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
-                         public LinkedCellTraversalInterface<ParticleCell> {
+class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -40,7 +39,7 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell, dataLayout, useN
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims), _functor(pairwiseFunctor) {
+      : CellPairTraversal<ParticleCell>(dims), _functor(pairwiseFunctor) {
     computeOffsets();
   }
 
@@ -52,7 +51,11 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell, dataLayout, useN
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
+
+  void initTraversal() override {}
+
+  void endTraversal() override {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::c01Cuda; }
 
@@ -70,9 +73,9 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell, dataLayout, useN
 #endif
   }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {}
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  void endTraversal(std::vector<ParticleCell> &cells) override {}
+  bool getUseNewton3() const override { return useNewton3; }
 
  private:
   /**
@@ -144,8 +147,8 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception(
         "The Cuda traversal cannot work with Data Layouts other than DataLayoutOption::cuda!");

@@ -24,7 +24,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3> {
+class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
   /**
    * Constructor of the CBasedTraversal.
@@ -36,7 +36,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
    */
   explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            const double cutoff, const std::array<double, 3> &cellLength)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
+      : CellPairTraversal<ParticleCell>(dims),
         _cutoff(cutoff),
         _cellLength(cellLength),
         _dataLayoutConverter(pairwiseFunctor) {
@@ -55,7 +55,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
    * load Data Layouts required for this Traversal.
    * @param cells where the data should be loaded
    */
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  void initTraversal() override {
+    auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
@@ -69,7 +70,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
    * write Data to AoS.
    * @param cells for which the data should be written back
    */
-  void endTraversal(std::vector<ParticleCell> &cells) override {
+  void endTraversal() override {
+    auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for

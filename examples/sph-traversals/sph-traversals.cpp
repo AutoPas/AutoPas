@@ -253,7 +253,7 @@ void measureContainer(Container *cont, autopas::sph::SPHCalcDensityFunctor *func
 
   t.start();
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwise(func, traversal);
+    cont->iteratePairwise(traversal);
   }
   double elapsedTime = t.stop();
   double MFUPS = numParticles * numIterations / elapsedTime * 1e-6;

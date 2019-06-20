@@ -18,14 +18,13 @@ namespace autopas {
  * @tparam ParticleCell
  */
 template <class ParticleCell, DataLayoutOption dataLayout, bool useNewton3>
-class DummyTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3> {
+class DummyTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor
    * @param dims
    */
-  explicit DummyTraversal(const std::array<unsigned long, 3> &dims)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims){};
+  explicit DummyTraversal(const std::array<unsigned long, 3> &dims) : CellPairTraversal<ParticleCell>(dims){};
 
   ~DummyTraversal() = default;
 
@@ -33,13 +32,21 @@ class DummyTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNew
 
   bool isApplicable() const override { return true; }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  void traverseParticlePairs() override {
     // do nothing
   }
 
-  void endTraversal(std::vector<ParticleCell> &cells) override {
+  void initTraversal() override {
     // do nothing
   }
+
+  void endTraversal() override {
+    // do nothing
+  }
+
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 };
 
 }  // namespace autopas

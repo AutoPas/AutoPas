@@ -30,7 +30,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3> {
+class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -42,7 +42,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
+      : CellPairTraversal<ParticleCell>(dims),
         _overlap{},
         _dimsPerLength{},
         _cutoff(cutoff),
@@ -74,7 +74,8 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
    * Load Data Layouts required for this Traversal.
    * @param cells where the data should be loaded.
    */
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  void initTraversal() override {
+    auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
@@ -88,7 +89,8 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
    * Write Data to AoS.
    * @param cells for which the data should be written back.
    */
-  void endTraversal(std::vector<ParticleCell> &cells) override {
+  void endTraversal() override {
+    auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
     // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
@@ -153,7 +155,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::rebuild(
     const std::array<unsigned long, 3> &dims) {
-  CellPairTraversal<ParticleCell, dataLayout, useNewton3>::rebuild(dims);
+  CellPairTraversal<ParticleCell>::rebuild(dims);
 
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_cutoff / _cellLength[d]);

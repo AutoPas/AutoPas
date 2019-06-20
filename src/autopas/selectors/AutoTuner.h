@@ -320,10 +320,9 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   // if tuning execute with time measurements
   if (inTuningPhase) {
     auto start = std::chrono::high_resolution_clock::now();
-    // @todo remove useNewton3 in iteratePairwise by introducing traversals for DS and VL
 
     f->initTraversal();
-    withStaticContainerType(container, [&](auto container) { container->iteratePairwise(f, traversal.get()); });
+    container->iteratePairwise(traversal.get());
     f->endTraversal(useNewton3);
 
     auto stop = std::chrono::high_resolution_clock::now();
@@ -332,7 +331,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     addTimeMeasurement(*f, runtime);
   } else {
     f->initTraversal();
-    withStaticContainerType(container, [&](auto container) { container->iteratePairwise(f, traversal.get()); });
+    container->iteratePairwise(traversal.get());
     f->endTraversal(useNewton3);
   }
 }

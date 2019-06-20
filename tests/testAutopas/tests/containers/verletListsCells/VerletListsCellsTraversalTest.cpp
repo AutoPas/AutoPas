@@ -34,11 +34,11 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
       traversalC18N3FLOPS(dim, &flopsC18N3);
   autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, true>
       traversalSliN3FLOPS(dim, &flopsSliN3);
-  verletListsCells.iteratePairwise(&flopsC01, &traversalC01FLOPS);
-  verletListsCells.iteratePairwise(&flopsC18, &traversalC18FLOPS);
-  verletListsCells.iteratePairwise(&flopsSli, &traversalSliFLOPS);
-  verletListsCells.iteratePairwise(&flopsC18N3, &traversalC18N3FLOPS);
-  verletListsCells.iteratePairwise(&flopsSliN3, &traversalSliN3FLOPS);
+  verletListsCells.iteratePairwise(&traversalC01FLOPS);
+  verletListsCells.iteratePairwise(&traversalC18FLOPS);
+  verletListsCells.iteratePairwise(&traversalSliFLOPS);
+  verletListsCells.iteratePairwise(&traversalC18N3FLOPS);
+  verletListsCells.iteratePairwise(&traversalSliN3FLOPS);
 
   EXPECT_EQ(flopsC18.getKernelCalls(), flopsC01.getKernelCalls());
   EXPECT_EQ(flopsC18.getKernelCalls(), flopsSli.getKernelCalls());

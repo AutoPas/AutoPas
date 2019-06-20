@@ -30,8 +30,8 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
       traversalDS(&func);
-  _directSum.iteratePairwise(&func, &traversalDS);
-  _linkedCells.iteratePairwise(&func, &traversalLJ);
+  _directSum.iteratePairwise(&traversalDS);
+  _linkedCells.iteratePairwise(&traversalLJ);
 
   auto itDirect = _directSum.begin();
   auto itLinked = _linkedCells.begin();
@@ -64,8 +64,8 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
   autopas::DirectSumTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
                               true>
       traversalFLOPSDS(&flopsDirect);
-  _directSum.iteratePairwise(&flopsDirect, &traversalFLOPSDS);
-  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPSLC);
+  _directSum.iteratePairwise(&traversalFLOPSDS);
+  _linkedCells.iteratePairwise(&traversalFLOPSLC);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsDirect.getKernelCalls());
   ASSERT_LE(flopsLinked.getDistanceCalculations(), flopsDirect.getDistanceCalculations());

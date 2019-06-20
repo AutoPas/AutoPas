@@ -63,17 +63,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
-  /**
-   * Function to iterate over all pairs of particles. (Only AoS)
-   * This function only handles short-range interactions.
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal not used
-   * @param useNewton3 whether newton 3 optimization should be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+  void iteratePairwise(TraversalInterface *traversal) override {
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists have no traversals yet here, so it does not work.");
+
     bool useNewton3 = traversal->getUseNewton3();
     if (useNewton3) {
       /// @todo implement newton3 for VerletClusterLists
@@ -83,7 +75,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     if (needsRebuild()) {
       this->rebuild();
     }
-    traverseVerletLists(f, useNewton3);
+    //traverseVerletLists(functor, useNewton3);
 
     // we iterated, so increase traversal counter
     _traversalsSinceLastRebuild++;

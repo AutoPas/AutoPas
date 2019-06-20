@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/options/DataLayoutOption.h"
-#include "autopas/options/TraversalOption.h"
+#include "../options/DataLayoutOption.h"
+#include "../options/TraversalOption.h"
 #if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
 #endif
@@ -15,12 +15,12 @@
 namespace autopas {
 
 /**
- * This interface serves as a common parent class for all cell pair traversals.
+ * This interface serves as a common parent class for all traversals.
  */
 class TraversalInterface {
  public:
   /**
-   * Destructor of CellPairTraversal.
+   * Destructor of TraversalInterface
    */
   virtual ~TraversalInterface() = default;
 
@@ -44,9 +44,24 @@ class TraversalInterface {
 
   /**
    * Return the data layout option
-   * @return
+   * @return the data layout option
    */
   virtual DataLayoutOption getDataLayout() const = 0;
+
+  /**
+   * Initializes the traversal. Should be called before traverse().
+   */
+  virtual void initTraversal() = 0;
+
+  /**
+   * Finalizes the traversal. Should be called after traverse().
+   */
+  virtual void endTraversal() = 0;
+
+  /**
+   * Traverses all particle pairs.
+   */
+  virtual void traverseParticlePairs() = 0;
 };
 
 }  // namespace autopas

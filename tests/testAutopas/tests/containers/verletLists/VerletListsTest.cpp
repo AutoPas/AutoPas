@@ -77,9 +77,8 @@ TEST_P(VerletListsTest, testVerletListBuild) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(1);
 
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -110,9 +109,8 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
   MockFunctor<Particle, FPCell> mockFunctor;
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &mockFunctor);
-  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&mockFunctor);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -143,11 +141,10 @@ TEST_P(VerletListsTest, testVerletListBuildTwice) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
+  verletLists.iteratePairwise(&dummyTraversal);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -182,9 +179,8 @@ TEST_P(VerletListsTest, testVerletListBuildFarAway) {
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -214,11 +210,10 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
+  verletLists.iteratePairwise(&dummyTraversal);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -234,12 +229,11 @@ TEST_F(VerletListsTest, testRebuildFrequencyAlways) {
   MockVerletLists<Particle> mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 1);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
   const unsigned int numIterations = 4;
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(numIterations);
   for (unsigned int i = 0; i < numIterations; i++) {
-    mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+    mockVerletLists.iteratePairwise(&dummyTraversal);
   }
 }
 
@@ -247,21 +241,20 @@ TEST_F(VerletListsTest, testRebuildFrequencyEvery3) {
   MockVerletLists<Particle> mockVerletLists({0., 0., 0.}, {10., 10., 10.}, 1., 0.3, 3);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
 
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // 1
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // 1
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  mockVerletLists.iteratePairwise(&dummyTraversal);
+  mockVerletLists.iteratePairwise(&dummyTraversal);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // 2
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // 2
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  mockVerletLists.iteratePairwise(&dummyTraversal);
+  mockVerletLists.iteratePairwise(&dummyTraversal);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // 3
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // 3
 }
 
 TEST_F(VerletListsTest, testForceRebuild) {
@@ -278,33 +271,32 @@ TEST_F(VerletListsTest, testForceRebuild) {
       .WillByDefault(Invoke(&mockVerletLists, &MockVerletLists<Particle>::updateContainerVerletLists));
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
   // check that the second call does not need a rebuild
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // rebuild happens here
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  mockVerletLists.iteratePairwise(&dummyTraversal);
 
   // check that updateContainer() requires a rebuild
   EXPECT_CALL(mockVerletLists, updateContainer());
   mockVerletLists.updateContainer();
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // rebuild happens here
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  mockVerletLists.iteratePairwise(&dummyTraversal);
 
   // check that adding particles requires a rebuild
   Particle p({1.1, 1.1, 1.1}, {0., 0., 0.}, 1);
   EXPECT_CALL(mockVerletLists, addParticle(_));
   mockVerletLists.addParticle(p);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // rebuild happens here
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  mockVerletLists.iteratePairwise(&dummyTraversal);
+  mockVerletLists.iteratePairwise(&dummyTraversal);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // rebuild happens here
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // rebuild happens here
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(0);
 
   // check that adding halo particles requires a rebuild
@@ -312,7 +304,7 @@ TEST_F(VerletListsTest, testForceRebuild) {
   EXPECT_CALL(mockVerletLists, addHaloParticle(_));
   mockVerletLists.addHaloParticle(p2);
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // rebuild happens here
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // rebuild happens here
 
   // check that deleting particles requires a rebuild
   /// @todo: reenable once implemented
@@ -327,7 +319,7 @@ TEST_F(VerletListsTest, testForceRebuild) {
   // check that deleting halo particles requires a rebuild
   mockVerletLists.deleteHaloParticles();
   EXPECT_CALL(mockVerletLists, updateVerletListsAoS(true)).Times(1);
-  mockVerletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);  // rebuild happens here
+  mockVerletLists.iteratePairwise(&dummyTraversal);  // rebuild happens here
 }
 
 TEST_P(VerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
@@ -345,10 +337,9 @@ TEST_P(VerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
   Particle p2({3.1, 1.1, 1.1}, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   // check validity - should return true
   EXPECT_TRUE(verletLists.checkNeighborListsAreValid());
@@ -368,10 +359,9 @@ TEST_P(VerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
   Particle p2({3.5, 1.1, 1.1}, {0., 0., 0.}, 2);
   verletLists.addParticle(p2);
 
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
@@ -398,10 +388,9 @@ TEST_P(VerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
   Particle p2({3.5, 1.1, 1.1}, {0., 0., 0.}, 2);
   verletLists.addParticle(p2);
 
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
@@ -430,10 +419,9 @@ TEST_P(VerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
   Particle p2({7.5, 1.1, 1.1}, {0., 0., 0.}, 2);
   verletLists.addParticle(p2);
 
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
       // this sets the particle more than skin/2 outside of cell (xmax_cell=2.3)
@@ -461,10 +449,9 @@ TEST_P(VerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
   Particle p2({7.5, 1.1, 1.1}, {0., 0., 0.}, 2);
   verletLists.addParticle(p2);
 
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal({0, 0, 0},
-                                                                                                  &emptyFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> dummyTraversal(&emptyFunctor);
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
@@ -575,14 +562,13 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
   verletLists.addHaloParticle(p);
 
   MockFunctor<Particle, FPCell> mockFunctor;
-  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::soa, false> dummyTraversal({0, 0, 0},
-                                                                                                   &mockFunctor);
+  autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::soa, false> dummyTraversal(&mockFunctor);
   const size_t dimWithHalo = 10 / ((cutoff + skin) * cellSizeFactor) + 2ul;
   const size_t numCells = dimWithHalo * dimWithHalo * dimWithHalo;
   EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(numCells);
   EXPECT_CALL(mockFunctor, SoAExtractorVerlet(_, _, _)).Times(numCells);
   EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _, _)).Times(1);
-  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 }
 
 TEST_P(VerletListsTest, LoadExtractSoALJ) {
@@ -597,8 +583,8 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
 
   autopas::LJFunctor<Particle, FPCell> ljFunctor(cutoff, 1 /*epsilon*/, 1 /*sigma*/, 0 /*shift*/);
   autopas::TraversalVerlet<FPCell, autopas::LJFunctor<Particle, FPCell>, autopas::DataLayoutOption::soa, false>
-      dummyTraversal({0, 0, 0}, &ljFunctor);
-  verletLists.iteratePairwise(&ljFunctor, &dummyTraversal);
+      dummyTraversal(&ljFunctor);
+  verletLists.iteratePairwise(&dummyTraversal);
 }
 
 TEST_P(VerletListsTest, SoAvsAoSLJ) {
@@ -617,11 +603,11 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
 
   autopas::LJFunctor<Particle, FPCell> ljFunctor(cutoff, 1, 1, 0);
   autopas::TraversalVerlet<FPCell, autopas::LJFunctor<Particle, FPCell>, autopas::DataLayoutOption::aos, false>
-      dummyTraversal1({0, 0, 0}, &ljFunctor);
+      dummyTraversal1(&ljFunctor);
   autopas::TraversalVerlet<FPCell, autopas::LJFunctor<Particle, FPCell>, autopas::DataLayoutOption::soa, false>
-      soaTraversal({0, 0, 0}, &ljFunctor);
-  verletLists1.iteratePairwise(&ljFunctor, &dummyTraversal1);
-  verletLists2.iteratePairwise(&ljFunctor, &soaTraversal);
+      soaTraversal(&ljFunctor);
+  verletLists1.iteratePairwise(&dummyTraversal1);
+  verletLists2.iteratePairwise(&soaTraversal);
 
   auto iter1 = verletLists1.begin();
   auto iter2 = verletLists2.begin();

@@ -8,8 +8,8 @@
 #pragma once
 
 #include <array>
+#include "TraversalInterface.h"
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 
 #ifdef AUTOPAS_OPENMP
 #include <omp.h>

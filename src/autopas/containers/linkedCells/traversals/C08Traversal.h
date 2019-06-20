@@ -43,12 +43,14 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
                                                                                  cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+
+  void traverseParticlePairs() override;
 
   TraversalOption getTraversalType() const override { return TraversalOption::c08; }
+
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C08 traversals are always usable.
@@ -70,8 +72,8 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+inline void C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+  auto& cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     _cellHandler.processBaseCell(cells, baseIndex);
