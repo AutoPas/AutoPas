@@ -7,61 +7,40 @@
 #pragma once
 
 #include <memory>
-#include <random>
 #include <vector>
-#include "autopas/selectors/Feature.h"
+#include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/Random.h"
 
 namespace autopas {
 
 /**
  * Vector containing any number of features
  */
-class FeatureVector {
- private:
-  std::vector<std::unique_ptr<Feature>> _vector;
-
+class FeatureVector : public Configuration {
  public:
   /**
    * Default constructor
    */
-  FeatureVector() : _vector() {}
+  FeatureVector() : Configuration() {}
 
   /**
-   * Initialize vector from list of doubles
-   * @param init
+   * Constructor
+   * @param _container
+   * @param _traversal
+   * @param _dataLayout
+   * @param _newton3
+   * @param _cellSizeFactor
    */
-  FeatureVector(std::initializer_list<double> init) : _vector() {
-    for (double i : init) {
-      addFeature(i);
-    }
-  }
+  FeatureVector(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
+                DataLayoutOption _dataLayout, Newton3Option _newton3)
+      : Configuration(_container, _cellSizeFactor, _traversal, _dataLayout, _newton3) {}
 
   /**
-   * Copy constructor
-   * @param other
+   * Constructor from configuration
+   * @param conf
    */
-  FeatureVector(const FeatureVector &other) : _vector() {
-    _vector.reserve(other._vector.size());
-    for (auto &f : other._vector) {
-      _vector.push_back(f->clone());
-    }
-  }
-
-  /**
-   * Copy assignment
-   * @param other
-   * @return
-   */
-  FeatureVector &operator=(const FeatureVector &other) {
-    _vector.clear();
-    _vector.reserve(other._vector.size());
-    for (auto &f : other._vector) {
-      _vector.push_back(f->clone());
-    }
-
-    return *this;
-  }
+  FeatureVector(Configuration conf) : Configuration(conf) {}
 
   /**
    * Distance vector between two feature vectors
@@ -70,38 +49,12 @@ class FeatureVector {
    */
   std::vector<double> operator-(const FeatureVector &other) const {
     std::vector<double> result;
-    for (unsigned i = 0; i < _vector.size(); ++i) {
-      result.push_back((*_vector[i]) - (*other._vector[i]));
-    }
-
+    result.push_back(cellSizeFactor - other.cellSizeFactor);
+    result.push_back((traversal == other.traversal) ? 0 : 1);
+    result.push_back((dataLayout == other.dataLayout) ? 0 : 1);
+    result.push_back((newton3 == other.newton3) ? 0 : 1);
     return result;
   }
-
-  /**
-   * Get a reference to feature of given index.
-   * @param index
-   * @return
-   */
-  Feature &operator[](size_t index) { return *_vector[index]; }
-
-  /**
-   * Get a const reference to feature of given index.
-   * @param index
-   * @return
-   */
-  const Feature &operator[](size_t index) const { return *_vector[index]; }
-
-  /**
-   * Add a feature to the vector
-   * @param feature
-   */
-  void addFeature(const Feature &feature) { _vector.push_back(feature.clone()); }
-
-  /**
-   * Add a DoubleFeature with given value to the vector
-   * @param doubleFeature
-   */
-  void addFeature(double doubleFeature) { _vector.push_back(std::make_unique<DoubleFeature>(doubleFeature)); }
 
   /**
    * Create equidistant values in given range and
@@ -110,56 +63,70 @@ class FeatureVector {
    * @param featureSet
    * @param rng random number generator
    */
-  static void lhsAddFeature(std::vector<FeatureVector> &vectors, const NumberSet<double> &featureSet,
-                            std::default_random_engine &rng) {
+  static void lhsSetCellSizeFactors(std::vector<FeatureVector> &vectors, const NumberSet<double> &featureSet,
+                                    Random &rng) {
     // create n samples from given set
     auto pool = featureSet.uniformSample(vectors.size(), rng);
 
-    // append to feature vectors
+    // set the features
     for (unsigned i = 0; i < vectors.size(); ++i) {
-      vectors[i].addFeature(pool[i]);
+      vectors[i].cellSizeFactor = pool[i];
     }
   }
 
   /**
-   * Create a sample from given feature space and
-   * append them to the vectors randomly.
+   * Randomly set the TraversalOption of all FeatureVectors with
+   * random values from the featureSpace.
    *
    * @param vectors
    * @param featureSpace
    * @param rng random number generator
    */
-  template <class FeatureType>
-  static void lhsAddFeature(std::vector<FeatureVector> &vectors, std::vector<FeatureType> featureSpace,
-                            std::default_random_engine &rng) {
-    // create n values from given pool
-    std::vector<std::unique_ptr<Feature>> pool;
-    pool.reserve(vectors.size());
+  static void lhsSetTraversals(std::vector<FeatureVector> &vectors, std::set<TraversalOption> featureSpace,
+                               Random &rng) {
+    // create n samples from the feature space
+    auto pool = rng.uniformSample(featureSpace, vectors.size());
 
-    // first fill the pool with copies of the whole feature space
-    unsigned minCopies = vectors.size() / featureSpace.size();
-    for (unsigned i = 0; i < minCopies; ++i) {
-      for (auto &feature : featureSpace) {
-        pool.push_back(feature.clone());
-      }
-    }
-    // fill the rest with random samples
-    while (pool.size() < vectors.size()) {
-      // get a random index
-      std::uniform_int_distribution<std::mt19937::result_type> uniDist(0, vectors.size() - pool.size() - 1);
-      auto index = uniDist(rng);
-
-      // move from featureSpace vector to pool vector
-      pool.push_back(featureSpace[index].clone());
-      featureSpace.erase(featureSpace.begin() + index);
-    }
-
-    // randomize pool
-    std::shuffle(std::begin(pool), std::end(pool), rng);
-
-    // append to feature vectors
+    // set the features
     for (unsigned i = 0; i < vectors.size(); ++i) {
-      vectors[i].addFeature(*pool[i]);
+      vectors[i].traversal = pool[i];
+    }
+  }
+
+  /**
+   * Randomly set the DataLayoutOption of all FeatureVectors with
+   * random values from the featureSpace.
+   *
+   * @param vectors
+   * @param featureSpace
+   * @param rng random number generator
+   */
+  static void lhsSetDataLayouts(std::vector<FeatureVector> &vectors, std::set<DataLayoutOption> featureSpace,
+                                Random &rng) {
+    // create n samples from the feature space
+    auto pool = rng.uniformSample(featureSpace, vectors.size());
+
+    // set the features
+    for (unsigned i = 0; i < vectors.size(); ++i) {
+      vectors[i].dataLayout = pool[i];
+    }
+  }
+
+  /**
+   * Randomly set the Newton3Option of all FeatureVectors with
+   * random values from the featureSpace.
+   *
+   * @param vectors
+   * @param featureSpace
+   * @param rng random number generator
+   */
+  static void lhsSetNewton3(std::vector<FeatureVector> &vectors, std::set<Newton3Option> featureSpace, Random &rng) {
+    // create n samples from the feature space
+    auto pool = rng.uniformSample(featureSpace, vectors.size());
+
+    // set the features
+    for (unsigned i = 0; i < vectors.size(); ++i) {
+      vectors[i].newton3 = pool[i];
     }
   }
 };

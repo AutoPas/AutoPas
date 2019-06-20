@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include <random>
 #include <set>
 #include <sstream>
 #include <vector>
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Random.h"
 
 namespace autopas {
 
@@ -78,7 +78,7 @@ class NumberSet {
    * @param rng random number generator
    * @return samples
    */
-  virtual std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const = 0;
+  virtual std::vector<Number> uniformSample(size_t n, Random &rng) const = 0;
 };
 
 /**
@@ -128,32 +128,7 @@ class NumberSetFinite : public NumberSet<Number> {
 
   inline std::set<Number> getAll() const override { return _set; }
 
-  std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const override {
-    std::vector<Number> result;
-    result.reserve(n + _set.size());
-
-    // copy the whole set until result is full
-    while (result.size() < n) {
-      for (auto val : _set) {
-        result.push_back(val);
-      }
-    }
-
-    // if too many elements added
-    if (result.size() > n) {
-      // randomize the last copy of the set
-      size_t extra = result.size() - n;
-      std::shuffle(std::end(result) - extra, std::end(result), rng);
-
-      // truncate the rest
-      result.resize(n);
-    }
-
-    // randomize the sample
-    std::shuffle(std::begin(result), std::end(result), rng);
-
-    return result;
-  }
+  std::vector<Number> uniformSample(size_t n, Random &rng) const override { return rng.uniformSample(_set, n); }
 };
 
 /**
@@ -213,7 +188,7 @@ class NumberInterval : public NumberSet<Number> {
     return {};
   }
 
-  std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const override {
+  std::vector<Number> uniformSample(size_t n, Random &rng) const override {
     std::vector<Number> result;
     if (n == 0) {
       return result;
@@ -222,14 +197,14 @@ class NumberInterval : public NumberSet<Number> {
     result.reserve(n);
 
     Number distance = (_max - _min) / (n - 1);
-    for (unsigned i = 0; i < (n - 1); ++i) {
+    for (size_t i = 0; i < (n - 1); ++i) {
       result.push_back(_min + distance * i);
     }
     // add max separatly, avoiding possible rounding errors
     result.push_back(_max);
 
     // randomize the sample
-    std::shuffle(std::begin(result), std::end(result), rng);
+    rng.shuffle(std::begin(result), std::end(result));
 
     return result;
   }

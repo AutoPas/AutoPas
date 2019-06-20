@@ -7,7 +7,6 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include "autopas/selectors/FeatureVector.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -37,7 +36,9 @@ enum AcquisitionFunction {
  *
  * Currently the default mean is 0 and squared exponential kernel is used.
  * TODO: maybe offer some options.
+ * @tparam Vector
  */
+template <class Vector>
 class GaussianProcess {
  public:
   /**
@@ -47,7 +48,14 @@ class GaussianProcess {
    * @param sigma fixed noise
    */
   GaussianProcess(double theta, std::vector<double> dimScale, double sigma)
-      : _inputs(), _outputs(), _theta(theta), _dimScale(dimScale), _sigma(sigma), _covMat(), _covMatInv(), _weights() {}
+      : _inputs(),
+        _outputs(),
+        _theta(theta),
+        _dimScale(Eigen::Map<Eigen::VectorXd>(dimScale.data(), dimScale.size())),
+        _sigma(sigma),
+        _covMat(),
+        _covMatInv(),
+        _weights() {}
 
   /**
    * Discard all evidences.
@@ -70,7 +78,7 @@ class GaussianProcess {
    * @param input
    * @param output
    */
-  void addEvidence(FeatureVector input, double output) {
+  void addEvidence(Vector input, double output) {
     _inputs.push_back(input);
     long newSize = _inputs.size();
 
@@ -96,7 +104,7 @@ class GaussianProcess {
    * @param input
    * @return mean
    */
-  double predictMean(const FeatureVector &input) const {
+  double predictMean(const Vector &input) const {
     if (_inputs.size() == 0) return 0.;
 
     return kernelVector(input).dot(_weights);
@@ -107,7 +115,7 @@ class GaussianProcess {
    * @param input
    * @return variance
    */
-  double predictVar(const FeatureVector &input) const {
+  double predictVar(const Vector &input) const {
     if (_inputs.size() == 0) return kernel(input, input);
 
     Eigen::VectorXd kVec = kernelVector(input);
@@ -115,12 +123,12 @@ class GaussianProcess {
   }
 
   /**
-   * Calculate the acquisition function of given feature
+   * Calculate the acquisition function for given vector
    * @param af
    * @param feature
    * @return
    */
-  inline double calcAcquisition(AcquisitionFunction af, const FeatureVector &feature) const {
+  inline double calcAcquisition(AcquisitionFunction af, const Vector &feature) const {
     switch (af) {
       case ucb: {
         return predictMean(feature) + std::sqrt(predictVar(feature));
@@ -139,14 +147,14 @@ class GaussianProcess {
   }
 
   /**
-   * Find FeatureVector in samples which maximizes
+   * Find Vector in samples which maximizes
    * given aquisition function.
    * TODO: maybe add parameters for hyperparameters of aquisition functions
    * @param af function to maximize
    * @param samples
    * @return
    */
-  FeatureVector sampleAquisitionMax(AcquisitionFunction af, const std::vector<FeatureVector> &samples) const {
+  Vector sampleAquisitionMax(AcquisitionFunction af, const std::vector<Vector> &samples) const {
     int maxIdx = -1;
     double maxVal = 0.;
 
@@ -164,14 +172,14 @@ class GaussianProcess {
   }
 
   /**
-   * Find FeatureVector in samples which minimizes
+   * Find Vector in samples which minimizes
    * given aquisition function.
    * TODO: maybe add parameters for hyperparameters of aquisition functions
    * @param af function to minimize
    * @param samples
    * @return
    */
-  FeatureVector sampleAquisitionMin(AcquisitionFunction af, const std::vector<FeatureVector> &samples) const {
+  Vector sampleAquisitionMin(AcquisitionFunction af, const std::vector<Vector> &samples) const {
     int minIdx = -1;
     double minVal = 0.;
 
@@ -190,18 +198,22 @@ class GaussianProcess {
 
  private:
   /**
+   * Subtract two vectors
+   * @param f1
+   * @param f2
+   * @return
+   */
+  Eigen::VectorXd subtract(const Vector &f1, const Vector &f2) const;
+
+  /**
    * Kernel function to describe similarity between two features
    * @param f1
    * @param f2
    * @return
    */
-  double kernel(const FeatureVector &f1, const FeatureVector &f2) const {
-    std::vector<double> r = f1 - f2;
-    double result = 0;
-    for (unsigned i = 0; i < r.size(); ++i) {
-      result += r[i] * r[i] * _dimScale[i];
-    }
-    return _theta * exp(-result);
+  inline double kernel(const Vector &f1, const Vector &f2) const {
+    Eigen::VectorXd r = subtract(f1, f2);
+    return _theta * exp(-(r * r).dot(_dimScale));
   }
 
   /**
@@ -209,15 +221,15 @@ class GaussianProcess {
    * @param input
    * @return Vector of covariances
    */
-  Eigen::VectorXd kernelVector(const FeatureVector &input) const {
+  Eigen::VectorXd kernelVector(const Vector &input) const {
     std::vector<double> k;
-    for (FeatureVector d : _inputs) {
+    for (auto &d : _inputs) {
       k.push_back(kernel(input, d));
     }
     return Eigen::Map<Eigen::VectorXd>(k.data(), k.size());
   }
 
-  std::vector<FeatureVector> _inputs;
+  std::vector<Vector> _inputs;
   Eigen::VectorXd _outputs;
 
   /**
@@ -227,7 +239,7 @@ class GaussianProcess {
   /**
    * Scale distance of each feature
    */
-  std::vector<double> _dimScale;
+  Eigen::VectorXd _dimScale;
   /**
    * fixed noise assumed
    */
@@ -237,4 +249,17 @@ class GaussianProcess {
   Eigen::MatrixXd _covMatInv;
   Eigen::VectorXd _weights;
 };
+
+template <class Vector>
+inline Eigen::VectorXd GaussianProcess<Vector>::subtract(const Vector &f1, const Vector &f2) const {
+  auto r = f1 - f2;
+  std::vector<double> rData(std::begin(r), std::end(r));
+  return Eigen::Map<Eigen::VectorXd>(rData.data(), rData.size());
+}
+
+template <>
+inline Eigen::VectorXd GaussianProcess<Eigen::VectorXd>::subtract(const Eigen::VectorXd &f1,
+                                                                  const Eigen::VectorXd &f2) const {
+  return f1 - f2;
+}
 }  // namespace autopas

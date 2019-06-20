@@ -7,8 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <random>
 #include "AutoPasTestBase.h"
+#include "Eigen/Dense"
 #include "autopas/selectors/tuningStrategy/GaussianProcess.h"
+#include "autopas/utils/NumberSet.h"
 
-class GaussianProcessTestTest : public AutoPasTestBase {};
+class GaussianProcessTest : public AutoPasTestBase {};

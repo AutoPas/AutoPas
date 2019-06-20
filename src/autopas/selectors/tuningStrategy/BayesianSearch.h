@@ -11,6 +11,7 @@
 #include "GaussianProcess.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/selectors/ContainerSelector.h"
+#include "autopas/selectors/FeatureVector.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
@@ -20,9 +21,11 @@ namespace autopas {
 /**
  * Assume that the stochastic distribution of the execution time corresponds
  * to a Gaussian Process. This allows to estimate the 'gain' of testing a given
- * feature next. @todo find better conversion to featureVector
+ * feature next.
  */
 class BayesianSearch : public TuningStrategyInterface {
+  const size_t featureSpaceDims = 4;
+
  public:
   /**
    * Constructor
@@ -43,24 +46,27 @@ class BayesianSearch : public TuningStrategyInterface {
                  const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
                  const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options,
                  AcquisitionFunction predAcqFunction = lcb, size_t predNumSamples = 1000, size_t maxEvidences = 10,
-                 AcquisitionFunction lastAcqFunction = ucb, size_t lastNumSamples = 100000)
-      : _enumOptions(4),
-        _containerOptions(allowedContainerOptions),
+                 AcquisitionFunction lastAcqFunction = ucb, size_t lastNumSamples = 1000)
+      : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
         _dataLayoutOptions(allowedDataLayoutOptions),
         _newton3Options(allowedNewton3Options),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _currentConfig(),
-        _gp(0., std::vector<double>(_enumOptions.size() + 1, 1.), 0.001),
+        _gp(0., std::vector<double>(featureSpaceDims, 1.), 0.001),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples),
         _maxEvidences(maxEvidences),
         _lastAcqFunction(lastAcqFunction),
         _lastNumSamples(lastNumSamples),
-        _rng(std::random_device()()) {
+        _rng() {
     /// @todo setting hyperparameters
 
-    updateEnumOptions();
+    if (predNumSamples == 0 or lastNumSamples == 0) {
+      utils::ExceptionHandler::exception(
+          "BayesianSearch: Number of samples used for predictions must be greater than 0!");
+    }
+
     tune();
   }
 
@@ -68,7 +74,7 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override { _gp.addEvidence(configAsFeature(), time); }
+  inline void addEvidence(long time) override { _gp.addEvidence(FeatureVector(_currentConfig), time); }
 
   inline void reset() override {
     _gp.clear();
@@ -85,14 +91,6 @@ class BayesianSearch : public TuningStrategyInterface {
 
  private:
   /**
-   * Update search space for enums
-   */
-  inline void updateEnumOptions() {
-    _enumOptions = {EnumFeature::set2Vector(_containerOptions), EnumFeature::set2Vector(_traversalOptions),
-                    EnumFeature::set2Vector(_dataLayoutOptions), EnumFeature::set2Vector(_newton3Options)};
-  }
-
-  /**
    * Generate n samples and predict their corresponding
    * acquisition function. Return the FeatureVector which
    * generates the smallest value.
@@ -101,18 +99,6 @@ class BayesianSearch : public TuningStrategyInterface {
    */
   inline FeatureVector sampleOptimalFeatureVector(size_t n, AcquisitionFunction af);
 
-  /**
-   * Set the current configuration with
-   * information from a FeatureVector
-   */
-  inline void setConfig(FeatureVector feature);
-  /**
-   * Get the current configuration as
-   * a FeatureVector.
-   */
-  inline FeatureVector configAsFeature();
-
-  std::vector<std::vector<EnumFeature>> _enumOptions;
   std::set<ContainerOption> _containerOptions;
   std::set<TraversalOption> _traversalOptions;
   std::set<DataLayoutOption> _dataLayoutOptions;
@@ -120,13 +106,13 @@ class BayesianSearch : public TuningStrategyInterface {
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
 
   Configuration _currentConfig;
-  GaussianProcess _gp;
+  GaussianProcess<FeatureVector> _gp;
   AcquisitionFunction _predAcqFunction;
   size_t _predNumSamples;
   size_t _maxEvidences;
   AcquisitionFunction _lastAcqFunction;
   size_t _lastNumSamples;
-  std::default_random_engine _rng;
+  Random _rng;
 };
 
 bool BayesianSearch::tune() {
@@ -138,118 +124,61 @@ bool BayesianSearch::tune() {
 
   if (_gp.numEvidences() >= _maxEvidences) {
     // select predicted best config
-    setConfig(sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction));
+    _currentConfig = sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction);
     return false;
   }
 
   // select predicted best config for tuning
-  setConfig(sampleOptimalFeatureVector(_predNumSamples, _predAcqFunction));
+  _currentConfig = sampleOptimalFeatureVector(_predNumSamples, _predAcqFunction);
   return true;
 }
 
 FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunction af) {
-  std::vector<FeatureVector> samples;
-  while (samples.empty()) {
-    samples.resize(n);
+  // create n lhs samples
+  std::vector<FeatureVector> samples(n);
+  FeatureVector::lhsSetCellSizeFactors(samples, *_cellSizeFactors, _rng);
+  FeatureVector::lhsSetTraversals(samples, _traversalOptions, _rng);
+  FeatureVector::lhsSetDataLayouts(samples, _dataLayoutOptions, _rng);
+  FeatureVector::lhsSetNewton3(samples, _newton3Options, _rng);
 
-    // sample from all enums
-    for (auto &enumOption : _enumOptions) {
-      FeatureVector::lhsAddFeature(samples, enumOption, _rng);
-    }
-    // sample from cellSizeFactors
-    FeatureVector::lhsAddFeature(samples, *_cellSizeFactors, _rng);
+  // sample minimum of acquisition function
+  auto best = _gp.sampleAquisitionMin(af, samples);
 
-    // remove all invalid samples
-    for (auto it = samples.begin(); it != samples.end();) {
-      auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(
-          static_cast<ContainerOption>(dynamic_cast<EnumFeature &>((*it)[0]).getValue()));
-      auto traversalOption = static_cast<TraversalOption>(dynamic_cast<EnumFeature &>((*it)[1]).getValue());
-      if (allContainerTraversals.find(traversalOption) == allContainerTraversals.end()) {
-        it = samples.erase(it);
-      } else {
-        ++it;
-      }
+  // find container to traversal
+  for (auto &container : allContainerOptions) {
+    auto allCompatible = compatibleTraversals::allCompatibleTraversals(container);
+    if (allCompatible.find(best.traversal) != allCompatible.end()) {
+      best.container = container;
+      return best;
     }
   }
 
-  // sample minimum of acquisition function
-  return _gp.sampleAquisitionMin(af, samples);
+  utils::ExceptionHandler::exception("BayesianSearch: Could not find valid container for traversal {}", best.traversal);
+  return best;
 }
 
 bool BayesianSearch::searchSpaceIsTrivial() {
-  bool multiOptions = false;
-
-  // check all enums
-  for (auto &_enumOption : _enumOptions) {
-    if (_enumOption.size() == 0) {
-      // no option allowed
-      return false;
-    } else if (_enumOption.size() > 1) {
-      // multiple options allowed
-      multiOptions = true;
-    }
+  if (searchSpaceIsEmpty()) {
+    return false;
   }
 
-  // check csf
-  if (_cellSizeFactors->isFinite()) {
-    if (_cellSizeFactors->size() == 0) {
-      // no option allowed
-      return false;
-    } else if (_cellSizeFactors->size() > 1) {
-      // multiple options allowed
-      multiOptions = true;
-    }
-  } else {
-    // multiple options allowed
-    multiOptions = true;
-  }
-
-  return not multiOptions;
+  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 1) and
+         _traversalOptions.size() == 1 and _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
 }
 
 bool BayesianSearch::searchSpaceIsEmpty() {
   // if one enum is empty return true
-  for (auto &_enumOption : _enumOptions) {
-    if (_enumOption.size() == 0) return true;
-  }
-
-  // if csf is empty return true
-  if (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) {
-    return true;
-  }
-
-  return false;
+  return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
+         _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
 }
 
 void BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {
   _newton3Options.erase(badNewton3Option);
-  updateEnumOptions();
 
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
         "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
   }
-}
-
-void BayesianSearch::setConfig(FeatureVector feature) {
-  ContainerOption co = static_cast<ContainerOption>(dynamic_cast<EnumFeature &>(feature[0]).getValue());
-  TraversalOption to = static_cast<TraversalOption>(dynamic_cast<EnumFeature &>(feature[1]).getValue());
-  DataLayoutOption dlo = static_cast<DataLayoutOption>(dynamic_cast<EnumFeature &>(feature[2]).getValue());
-  Newton3Option n3o = static_cast<Newton3Option>(dynamic_cast<EnumFeature &>(feature[3]).getValue());
-  double csf = dynamic_cast<DoubleFeature &>(feature[4]).getValue();
-
-  _currentConfig = Configuration(co, csf, to, dlo, n3o);
-}
-
-FeatureVector BayesianSearch::configAsFeature() {
-  FeatureVector result;
-  result.addFeature(EnumFeature(_currentConfig.container));
-  result.addFeature(EnumFeature(_currentConfig.traversal));
-  result.addFeature(EnumFeature(_currentConfig.dataLayout));
-  result.addFeature(EnumFeature(_currentConfig.newton3));
-  result.addFeature(_currentConfig.cellSizeFactor);
-
-  return result;
 }
 
 }  // namespace autopas

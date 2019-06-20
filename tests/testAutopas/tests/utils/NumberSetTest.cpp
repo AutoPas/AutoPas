@@ -32,7 +32,7 @@ TEST(NumberSetTest, testFiniteSet) {
 }
 
 TEST(NumberSetTest, testFiniteSetSample) {
-  std::default_random_engine rng(32);
+  Random rng(32);
   unsigned numSamples = 32;
 
   std::array<double, 3> a = {1., 2., 3.};
@@ -101,7 +101,7 @@ TEST(NumberSetTest, testIntervalFinite) {
 }
 
 TEST(NumberSetTest, testIntervalSample) {
-  std::default_random_engine rng(32);
+  Random rng(32);
   unsigned numSamples = 32;
 
   double min = -3.;
