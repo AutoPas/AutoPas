@@ -52,13 +52,13 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
-  TraversalOption getTraversalType() override { return TraversalOption::c04; }
+  TraversalOption getTraversalType() const override { return TraversalOption::c04; }
 
   /**
    * C04 traversals are always usable.
    * @return
    */
-  bool isApplicable() override {
+  bool isApplicable() const override {
     int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
     cudaGetDeviceCount(&nDevices);
