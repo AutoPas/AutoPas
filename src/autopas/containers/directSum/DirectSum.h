@@ -39,9 +39,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff,
-                                                  compatibleTraversals::allDSCompatibleTraversals()),
-        _cellBorderFlagManager() {
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff), _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 
@@ -130,8 +128,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     std::vector<size_t> cellsOfInterest;
@@ -154,7 +152,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
  private:
-  class DirectSumCellBorderAndFlagManager : public CellBorderAndFlagManager {
+  class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
     /**
      * the index type to access the particle cells
      */

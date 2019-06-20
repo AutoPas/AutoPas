@@ -27,21 +27,23 @@ namespace autopas {
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
  public:
-  /// type of the Particle
+  /**
+   *  Type of the Particle.
+   */
   typedef Particle ParticleType;
 
-  /// type of the ParticleCell
+  /**
+   * Type of the ParticleCell.
+   */
   typedef ParticleCell ParticleCellType;
   /**
    * Constructor of ParticleContainer
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param compatibleTraversals Sorted vector of traversals applicable for this Container.
    */
-  ParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                    const std::set<TraversalOption> &compatibleTraversals)
-      : _cells(), _applicableTraversals(compatibleTraversals), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
+  ParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff)
+      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
 
   /**
    * destructor of ParticleContainer
@@ -105,7 +107,8 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * @return True iff traversalOptions is a subset of _applicableTraversals
    */
   bool checkIfTraversalsAreApplicable(std::set<TraversalOption> traversalOptions) {
-    return std::includes(_applicableTraversals.begin(), _applicableTraversals.end(), traversalOptions.begin(),
+    auto applicableTraversals = compatibleTraversals::allCompatibleTraversals(this->getContainerType());
+    return std::includes(applicableTraversals.begin(), applicableTraversals.end(), traversalOptions.begin(),
                          traversalOptions.end());
   }
 
@@ -151,10 +154,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * common vector for this purpose.
    */
   std::vector<ParticleCell> _cells;
-  /**
-   * Vector of all applicable traversal options for the container.
-   */
-  const std::set<TraversalOption> _applicableTraversals;
 
  private:
   std::array<double, 3> _boxMin;

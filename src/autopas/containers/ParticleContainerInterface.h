@@ -105,7 +105,7 @@ class ParticleContainerInterface {
    * @return Iterator to iterate over all particles in a specific region.
    */
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool incSearchRegion = false) = 0;
 
   /**

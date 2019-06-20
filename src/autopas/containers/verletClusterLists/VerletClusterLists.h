@@ -47,8 +47,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
-                                                                compatibleTraversals::allVCLCompatibleTraversals()),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -143,8 +142,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(&this->_clusters));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     // @todo implement this if bounding boxes are here

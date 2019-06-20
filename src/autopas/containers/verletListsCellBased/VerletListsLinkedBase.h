@@ -44,7 +44,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const unsigned int rebuildFrequency,
                         const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin),
         _linkedCells(boxMin, boxMax, cutoff + skin, std::max(1.0, cellSizeFactor)),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
@@ -177,8 +177,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, true);

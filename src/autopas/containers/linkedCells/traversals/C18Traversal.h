@@ -42,9 +42,8 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
                         const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
                                                                                  cellLength),
-        _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(
-                pairwiseFunctor)) {
+        _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
+                                           DataLayout, useNewton3>(pairwiseFunctor)) {
     computeOffsets();
   }
 
@@ -63,13 +62,13 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
-  TraversalOption getTraversalType() override { return TraversalOption::c18; }
+  TraversalOption getTraversalType() const override { return TraversalOption::c18; }
 
   /**
    * C18 traversal is always usable.
    * @return
    */
-  bool isApplicable() override {
+  bool isApplicable() const override {
     int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
     cudaGetDeviceCount(&nDevices);
@@ -89,7 +88,8 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellFunctor;
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
+      _cellFunctor;
 
   /**
    * Pairs for processBaseCell(). overlap[0] x overlap[1] Array for each special case in x and y direction.
