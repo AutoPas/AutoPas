@@ -31,8 +31,7 @@ class VarVerletLists
    * @todo Decide if buildVerletListType makes sense and implement it if it does
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                 const double skin, const unsigned int rebuildFrequency = 1,
-                 const double cellSizeFactor = 1.0)
+                 const double skin, const unsigned int rebuildFrequency = 1, const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
             boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(),
             cellSizeFactor),

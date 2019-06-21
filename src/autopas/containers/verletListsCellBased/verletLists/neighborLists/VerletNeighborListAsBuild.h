@@ -137,7 +137,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
 
           if (dr2 < _cutoffskinsquared) {
             _list.addPair(idptr[i], idptr[j]);
-            if(not newton3) {
+            if (not newton3) {
               _list.addPair(idptr[j], idptr[i]);
             }
           }
@@ -145,8 +145,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       }
     }
 
-    void SoAFunctor(SoA<SoAArraysType> &soa1,
-                    SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
+    void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
@@ -180,8 +179,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       }
     }
 
-    void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa,
-                   size_t offset = 0) override {
+    void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
       assert(offset == 0);
       soa.resizeArrays(cell.numParticles());
 
@@ -203,8 +201,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       }
     }
 
-    void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa,
-                      size_t offset = 0) override {}
+    void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {}
 
    private:
     /**
@@ -228,10 +225,10 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     VarVerletListPairGeneratorFunctor<callCheckInstead> functor(*this, cutoff);
     // Use SoA traversal for generation and AoS traversal for validation check.
     constexpr DataLayoutOption dataLayout = callCheckInstead ? DataLayoutOption::aos : DataLayoutOption::soa;
-    auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                                   VarVerletListPairGeneratorFunctor<callCheckInstead>,
-                                                   dataLayout, useNewton3>(
-        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
+    auto traversal =
+        C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
+                                      VarVerletListPairGeneratorFunctor<callCheckInstead>, dataLayout, useNewton3>(
+            _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
     _baseLinkedCells->iteratePairwise(&functor, &traversal);
   }
 
