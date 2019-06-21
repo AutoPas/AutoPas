@@ -129,7 +129,9 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::comput
   _cellOffsets32Pack[i++] = {2l, 1l, z};
   _cellOffsets32Pack[i++] = {2l, 2l, z};
 
-  assert(i == 32);
+  if(i != 32) {
+      AutoPasLog(error, "Internal error: Wrong number of offsets (expected: 32, actual: {})", i);
+  }
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
@@ -201,8 +203,6 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traver
       // colours 1 and 3
       startOfThisColor = start;
       break;
-    default:
-      assert(false);
   }
 
   long correctParity = parity(startOfThisColor[0], startOfThisColor[1], startOfThisColor[2]);
