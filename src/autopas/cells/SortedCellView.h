@@ -52,7 +52,10 @@ class SortedCellView : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteByIndex(size_t index) override {
-    assert(index < numParticles());
+    if (index >= numParticles()) {
+      AutoPasLog(error, "Index out of range");
+      utils::ExceptionHandler::exception("Error: Index out of range");
+    }
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
