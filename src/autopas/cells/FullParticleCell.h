@@ -23,14 +23,14 @@ template <class Particle, class SoAArraysType = typename Particle::SoAArraysType
 class FullParticleCell : public ParticleCell<Particle> {
  public:
   /**
-   * constructs a new FullParticleCell.
+   * Constructs a new FullParticleCell.
    */
   FullParticleCell()
       : _cellLength({std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
                      std::numeric_limits<double>::max()}) {}
 
   /**
-   * constructs a new FullParticleCell with the given cell side length.
+   * Constructs a new FullParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
   FullParticleCell(std::array<double, 3> &cellLength) : _cellLength(cellLength) {}

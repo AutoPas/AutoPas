@@ -25,7 +25,7 @@ template <class Particle, class ParticleCellType>
 class FullSortedParticleCell : public ParticleCell<Particle> {
  public:
   /**
-   * constructs a FullSortedParticleCell.
+   * Constructs a FullSortedParticleCell.
    * @param cell cell whose particles are sorted
    * @param r vector along particles are sorted
    */
@@ -62,17 +62,17 @@ class FullSortedParticleCell : public ParticleCell<Particle> {
   std::array<double, 3> getCellLength() const override { return _cell->getCellLength(); }
 
   /**
-   * type of the internal iterator.
+   * Type of the internal iterator.
    */
   typedef internal::SingleCellIterator<Particle, FullSortedParticleCell<Particle, ParticleCellType>> iterator_t;
 
   /**
-   * sorted vector of projected positions and particle pointers.
+   * Sorted vector of projected positions and particle pointers.
    */
   std::vector<std::pair<double, Particle *>> _particles;
 
   /**
-   * underlying cell.
+   * Underlying cell.
    */
   ParticleCellType *_cell;
 
