@@ -98,7 +98,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
   using offsetArray_t = std::vector<std::pair<unsigned long, std::array<double, 3>>>;
 
   /**
-   * Pairs for processBaseCell(). overlap[0] x overlap[1] Array for each special case in x and y direction.
+   * Pairs for processBaseCell(). overlap[0] x overlap[1] offsetArray_t for each special case in x and y direction.
    */
   std::vector<std::vector<offsetArray_t>> _cellOffsets;
 

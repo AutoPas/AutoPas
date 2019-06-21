@@ -100,7 +100,7 @@ class C01Traversal
 
   /**
    * Pairs for processBaseCell().
-   * @note std::map not applicable since ordering is important for later processing!
+   * @note std::map not applicable since ordering arising from insertion is important for later processing!
    */
   std::vector<std::vector<std::pair<long, std::array<double, 3>>>> _cellOffsets;
 

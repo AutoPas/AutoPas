@@ -33,8 +33,9 @@ class CellFunctor {
  public:
   /**
    * The constructor of CellFunctor.
-   * @param f the particlefunctor which should be used for the interaction.
-   * @param cutoff cutoff radius.
+   * @param f The particlefunctor which should be used for the interaction.
+   * @param cutoff Cutoff radius. This parameter is only relevant for optimization (sorting). If no parameter is given,
+   * an infinite cutoff radius is used which results in no optimization by sorting.
    */
   explicit CellFunctor(ParticleFunctor *f, const double cutoff = std::numeric_limits<double>::max())
       : _functor(f), _cutoff(cutoff) {}
@@ -47,11 +48,11 @@ class CellFunctor {
   void processCell(ParticleCell &cell);
 
   /**
-   * process the interactions between the particles of cell1 with particles of
-   * cell2.
+   * Process the interactions between the particles of cell1 with particles of cell2.
    * @param cell1
    * @param cell2
-   * @param r normalized vector connecting centers of cell1 and cell2
+   * @param r Normalized vector connecting centers of cell1 and cell2. If no parameter is given, a default value is used
+   * which is always applicable.
    */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r = {1., 0., 0.});
 
