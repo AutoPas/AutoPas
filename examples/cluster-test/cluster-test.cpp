@@ -77,7 +77,6 @@ int main(int argc, char *argv[]) {
   double cutoff = .03;
 
   int numParticles = 16;
-  bool useNewton3 = false;
   double skin = 0.;
   int rebuildFrequency = 1;
   if (argc == 4) {
