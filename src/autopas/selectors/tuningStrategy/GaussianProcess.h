@@ -31,8 +31,8 @@ enum AcquisitionFunction {
 
 /**
  * Gaussian process is a stochastical model. It predicts the
- * output of a blackbox function for given input. To do so some sample
- * input-output pairs of the function should be provided as evidence.
+ * output of a blackbox function f(x) for given input x. To do so, some sample
+ * input-output pairs (x,f(x)) should be provided as evidence.
  *
  * Currently the default mean is 0 and squared exponential kernel is used.
  * TODO: maybe offer some options.
@@ -42,7 +42,7 @@ template <class Vector>
 class GaussianProcess {
  public:
   /**
-   * Construct a gaussian process
+   * Constructor
    * @param theta prior variance
    * @param dimScale scale each dimension before applying kernel
    * @param sigma fixed noise
@@ -73,10 +73,10 @@ class GaussianProcess {
   size_t numEvidences() const { return _inputs.size(); }
 
   /**
-   * Provide a the output for a blackbox function
-   * with given output.
-   * @param input
-   * @param output
+   * Provide a input-output pair as evidence.
+   * Each evidence improve the quality of future predictions.
+   * @param input x
+   * @param output f(x)
    */
   void addEvidence(Vector input, double output) {
     _inputs.push_back(input);
@@ -99,10 +99,10 @@ class GaussianProcess {
   }
 
   /**
-   * Predict the expected output of the blackbox function
-   * at input given the evidence so far.
-   * @param input
-   * @return mean
+   * Try to predict f(x) using the evidences
+   * provided so far.
+   * @param input x
+   * @return expected output of f(x)
    */
   double predictMean(const Vector &input) const {
     if (_inputs.size() == 0) return 0.;
@@ -111,8 +111,8 @@ class GaussianProcess {
   }
 
   /**
-   * The variance of the predicted output of predictMean().
-   * @param input
+   * The variance of the predicted f(x) from predictMean().
+   * @param input x
    * @return variance
    */
   double predictVar(const Vector &input) const {
@@ -123,7 +123,7 @@ class GaussianProcess {
   }
 
   /**
-   * Calculate the acquisition function for given vector
+   * Calculate the acquisition function for given input.
    * @param af
    * @param feature
    * @return
@@ -147,8 +147,7 @@ class GaussianProcess {
   }
 
   /**
-   * Find Vector in samples which maximizes
-   * given aquisition function.
+   * Find the input in samples which maximizes given aquisition function.
    * TODO: maybe add parameters for hyperparameters of aquisition functions
    * @param af function to maximize
    * @param samples
@@ -172,8 +171,7 @@ class GaussianProcess {
   }
 
   /**
-   * Find Vector in samples which minimizes
-   * given aquisition function.
+   * Find the input in samples which minimizes given aquisition function.
    * TODO: maybe add parameters for hyperparameters of aquisition functions
    * @param af function to minimize
    * @param samples
@@ -198,7 +196,8 @@ class GaussianProcess {
 
  private:
   /**
-   * Subtract two vectors
+   * Subtract two inputs. For each template this should return a Eigen::VectorXd.
+   * This vector should represent the distance between the inputs.
    * @param f1
    * @param f2
    * @return
@@ -206,7 +205,7 @@ class GaussianProcess {
   Eigen::VectorXd subtract(const Vector &f1, const Vector &f2) const;
 
   /**
-   * Kernel function to describe similarity between two features
+   * Kernel function to describe similarity between two inputs
    * @param f1
    * @param f2
    * @return

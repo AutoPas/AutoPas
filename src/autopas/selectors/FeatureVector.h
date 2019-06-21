@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <memory>
 #include <vector>
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
@@ -15,12 +14,12 @@
 namespace autopas {
 
 /**
- * Vector containing any number of features
+ * FeatureVector representation of a Configuration
  */
 class FeatureVector : public Configuration {
  public:
   /**
-   * Default constructor
+   * Default constructor. Results in invalid vector.
    */
   FeatureVector() : Configuration() {}
 
@@ -37,22 +36,22 @@ class FeatureVector : public Configuration {
       : Configuration(_container, _cellSizeFactor, _traversal, _dataLayout, _newton3) {}
 
   /**
-   * Constructor from configuration
+   * Construct from Configuration
    * @param conf
    */
   FeatureVector(Configuration conf) : Configuration(conf) {}
 
   /**
-   * Distance vector between two feature vectors
+   * Distance between two FeatureVectors. Container is ignored.
    * @param other
-   * @return vector<double> distance in each dimension
+   * @return array. distance in each dimension
    */
-  std::vector<double> operator-(const FeatureVector &other) const {
-    std::vector<double> result;
-    result.push_back(cellSizeFactor - other.cellSizeFactor);
-    result.push_back((traversal == other.traversal) ? 0 : 1);
-    result.push_back((dataLayout == other.dataLayout) ? 0 : 1);
-    result.push_back((newton3 == other.newton3) ? 0 : 1);
+  std::array<double, 4> operator-(const FeatureVector &other) const {
+    std::array<double, 4> result;
+    result[0] = (cellSizeFactor - other.cellSizeFactor);
+    result[1] = ((traversal == other.traversal) ? 0 : 1);
+    result[2] = ((dataLayout == other.dataLayout) ? 0 : 1);
+    result[3] = ((newton3 == other.newton3) ? 0 : 1);
     return result;
   }
 

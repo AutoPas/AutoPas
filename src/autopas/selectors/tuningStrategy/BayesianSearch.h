@@ -7,12 +7,10 @@
 #pragma once
 
 #include <set>
-#include <sstream>
 #include "GaussianProcess.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/FeatureVector.h"
-#include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StringUtils.h"

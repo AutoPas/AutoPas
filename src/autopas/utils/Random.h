@@ -30,15 +30,16 @@ class Random {
 
   /**
    * Class should not be copied constructed
-   * @param random
+   * @param other
    */
-  Random(const Random &random) = delete;
+  Random(const Random &other) = delete;
 
   /**
    * Class should not be copied assigned
-   * @param random
+   * @param other
+   * @return
    */
-  Random &operator=(const Random &random) = delete;
+  Random &operator=(const Random &other) = delete;
 
   /**
    * Sample n points from the pool. Each element in the pool will
