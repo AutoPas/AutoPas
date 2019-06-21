@@ -15,6 +15,7 @@
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/StringUtils.h"
 
 namespace autopas {
 
@@ -135,17 +136,14 @@ bool BayesianSearch::tune() {
 
 FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunction af) {
   // create n lhs samples
-  std::vector<FeatureVector> samples(n);
-  FeatureVector::lhsSetCellSizeFactors(samples, *_cellSizeFactors, _rng);
-  FeatureVector::lhsSetTraversals(samples, _traversalOptions, _rng);
-  FeatureVector::lhsSetDataLayouts(samples, _dataLayoutOptions, _rng);
-  FeatureVector::lhsSetNewton3(samples, _newton3Options, _rng);
+  std::vector<FeatureVector> samples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _traversalOptions,
+                                                                        _dataLayoutOptions, _newton3Options);
 
   // sample minimum of acquisition function
   auto best = _gp.sampleAquisitionMin(af, samples);
 
   // find container to traversal
-  for (auto &container : allContainerOptions) {
+  for (const auto &container : allContainerOptions) {
     auto allCompatible = compatibleTraversals::allCompatibleTraversals(container);
     if (allCompatible.find(best.traversal) != allCompatible.end()) {
       best.container = container;
@@ -153,7 +151,8 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
     }
   }
 
-  utils::ExceptionHandler::exception("BayesianSearch: Could not find valid container for traversal {}", best.traversal);
+  utils::ExceptionHandler::exception("BayesianSearch: Could not find valid container for traversal {}",
+                                     utils::StringUtils::to_string(best.traversal));
   return best;
 }
 

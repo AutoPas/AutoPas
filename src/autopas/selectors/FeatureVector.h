@@ -57,77 +57,29 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Create equidistant values in given range and
-   * append them randomly to given vectors.
+   * Create n latin-hypercube-samples from given featureSpace
+   * @param n
    * @param vectors
-   * @param featureSet
-   * @param rng random number generator
+   * @param rng
+   * @param allowedCellSizeFactors
+   * @return
    */
-  static void lhsSetCellSizeFactors(std::vector<FeatureVector> &vectors, const NumberSet<double> &featureSet,
-                                    Random &rng) {
-    // create n samples from given set
-    auto pool = featureSet.uniformSample(vectors.size(), rng);
+  static std::vector<FeatureVector> lhsSampleFeatures(size_t n, Random rng, const NumberSet<double> &cellSizeFactors,
+                                                      std::set<TraversalOption> traversals,
+                                                      std::set<DataLayoutOption> dataLayouts,
+                                                      std::set<Newton3Option> newton3) {
+    // create n samples from each set
+    auto csf = cellSizeFactors.uniformSample(n, rng);
+    auto tr = rng.uniformSample(traversals, n);
+    auto dl = rng.uniformSample(dataLayouts, n);
+    auto n3 = rng.uniformSample(newton3, n);
 
-    // set the features
-    for (unsigned i = 0; i < vectors.size(); ++i) {
-      vectors[i].cellSizeFactor = pool[i];
+    std::vector<FeatureVector> result;
+    for (unsigned i = 0; i < n; ++i) {
+      result.emplace_back(ContainerOption(-1), csf[i], tr[i], dl[i], n3[i]);
     }
-  }
 
-  /**
-   * Randomly set the TraversalOption of all FeatureVectors with
-   * random values from the featureSpace.
-   *
-   * @param vectors
-   * @param featureSpace
-   * @param rng random number generator
-   */
-  static void lhsSetTraversals(std::vector<FeatureVector> &vectors, std::set<TraversalOption> featureSpace,
-                               Random &rng) {
-    // create n samples from the feature space
-    auto pool = rng.uniformSample(featureSpace, vectors.size());
-
-    // set the features
-    for (unsigned i = 0; i < vectors.size(); ++i) {
-      vectors[i].traversal = pool[i];
-    }
-  }
-
-  /**
-   * Randomly set the DataLayoutOption of all FeatureVectors with
-   * random values from the featureSpace.
-   *
-   * @param vectors
-   * @param featureSpace
-   * @param rng random number generator
-   */
-  static void lhsSetDataLayouts(std::vector<FeatureVector> &vectors, std::set<DataLayoutOption> featureSpace,
-                                Random &rng) {
-    // create n samples from the feature space
-    auto pool = rng.uniformSample(featureSpace, vectors.size());
-
-    // set the features
-    for (unsigned i = 0; i < vectors.size(); ++i) {
-      vectors[i].dataLayout = pool[i];
-    }
-  }
-
-  /**
-   * Randomly set the Newton3Option of all FeatureVectors with
-   * random values from the featureSpace.
-   *
-   * @param vectors
-   * @param featureSpace
-   * @param rng random number generator
-   */
-  static void lhsSetNewton3(std::vector<FeatureVector> &vectors, std::set<Newton3Option> featureSpace, Random &rng) {
-    // create n samples from the feature space
-    auto pool = rng.uniformSample(featureSpace, vectors.size());
-
-    // set the features
-    for (unsigned i = 0; i < vectors.size(); ++i) {
-      vectors[i].newton3 = pool[i];
-    }
+    return result;
   }
 };
 }  // namespace autopas
