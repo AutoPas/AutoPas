@@ -1,5 +1,5 @@
 /**
- * @file FullSortedParticleCell.h
+ * @file SortedCellView.h
  * @date 18.01.2018
  * @author C. Menges
  */
