@@ -29,7 +29,14 @@ set(
     "C18"
     "SLI"
 )
-set(VerletClusterListsTraversals "" "" "" "" "CLU")
+set(
+    VerletClusterListsTraversals
+    ""
+    ""
+    ""
+    ""
+    "CLU"
+)
 
 set(C01NewtonModes "OFF")
 set(C08NewtonModes "OFF" "ON")
