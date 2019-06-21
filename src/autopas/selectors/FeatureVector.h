@@ -58,13 +58,15 @@ class FeatureVector : public Configuration {
 
   /**
    * Create n latin-hypercube-samples from given featureSpace
-   * @param n
-   * @param vectors
+   * @param n number of samples
    * @param rng
-   * @param allowedCellSizeFactors
+   * @param cellSizeFactors
+   * @param traversals
+   * @param dataLayouts
+   * @param newton3
    * @return
    */
-  static std::vector<FeatureVector> lhsSampleFeatures(size_t n, Random rng, const NumberSet<double> &cellSizeFactors,
+  static std::vector<FeatureVector> lhsSampleFeatures(size_t n, Random &rng, const NumberSet<double> &cellSizeFactors,
                                                       std::set<TraversalOption> traversals,
                                                       std::set<DataLayoutOption> dataLayouts,
                                                       std::set<Newton3Option> newton3) {

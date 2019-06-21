@@ -26,7 +26,19 @@ class Random {
   /**
    * Construct with seed.
    */
-  Random(unsigned long seed) : _rng(seed) {}
+  explicit Random(unsigned long seed) : _rng(seed) {}
+
+  /**
+   * Class should not be copied constructed
+   * @param random
+   */
+  Random(const Random &random) = delete;
+
+  /**
+   * Class should not be copied assigned
+   * @param random
+   */
+  Random &operator=(const Random &random) = delete;
 
   /**
    * Sample n points from the pool. Each element in the pool will
@@ -45,8 +57,6 @@ class Random {
     while (result.size() < n) {
       result.insert(result.end(), pool.begin(), pool.end());
     }
-
-    std::default_random_engine _rng(5);
 
     // if too many elements added
     if (result.size() > n) {
