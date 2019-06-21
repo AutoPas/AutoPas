@@ -18,7 +18,10 @@
 namespace autopas {
 
 /**
- * This class handles the storage of particles in their full form.
+ * This class defines a sorted view on a given ParticleCell. Particles are sorted along the normalized vector r. The
+ * projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
+ * sorted by the projected positions.
+ * @note Insertion, deletion and change of position of particles invalidates the view.
  * @tparam Particle
  */
 template <class Particle, class ParticleCellType>
@@ -26,8 +29,8 @@ class SortedCellView : public ParticleCell<Particle> {
  public:
   /**
    * Constructs a FullSortedParticleCell.
-   * @param cell cell whose particles are sorted
-   * @param r vector along particles are sorted
+   * @param cell Cell whose particles are sorted.
+   * @param r Normalized vector along particles are sorted.
    */
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());

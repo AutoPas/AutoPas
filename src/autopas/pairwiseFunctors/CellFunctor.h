@@ -185,8 +185,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoSN3(
     ParticleCell &cell) {
   if (cell.numParticles() > 8) {
-    SortedCellView<Particle, ParticleCell> cellSorted(
-        cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
+    SortedCellView<Particle, ParticleCell> cellSorted(cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     auto outer = cellSorted._particles.begin();
     for (; outer != cellSorted._particles.end(); ++outer) {
@@ -223,8 +222,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoSNoN3(
     ParticleCell &cell) {
   if (cell.numParticles() > 8) {
-    SortedCellView<Particle, ParticleCell> cellSorted(
-        cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
+    SortedCellView<Particle, ParticleCell> cellSorted(cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     auto outer = cellSorted._particles.begin();
     auto innerStart = outer;
