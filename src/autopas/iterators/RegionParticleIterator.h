@@ -13,7 +13,7 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
-inline namespace internal {
+namespace internal {
 /**
  * RegionParticleIterator to iterate over all particles within a specific region
  * @todo optimize the region particle iterater. Currently we iterate over all
@@ -37,7 +37,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
    */
   explicit RegionParticleIterator(std::vector<ParticleCell> *cont, std::array<double, 3> startRegion,
                                   std::array<double, 3> endRegion, std::vector<size_t> &indicesInRegion,
-                                  CellBorderAndFlagManager *flagManager = nullptr,
+                                  internal::CellBorderAndFlagManager *flagManager = nullptr,
                                   IteratorBehavior behavior = haloAndOwned)
       : ParticleIterator<Particle, ParticleCell>(cont, flagManager, behavior),
         _startRegion(startRegion),

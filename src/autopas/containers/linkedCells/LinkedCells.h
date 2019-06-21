@@ -46,8 +46,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff,
-                                                                 compatibleTraversals::allLCCompatibleTraversals()),
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
 
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
@@ -225,7 +224,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * Get the cell block, not supposed to be used except by verlet lists
    * @return the cell block
    */
-  CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
+  internal::CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
 
   /**
    * returns reference to the data of LinkedCells
@@ -237,7 +236,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   /**
    * object to manage the block of cells.
    */
-  CellBlock3D<ParticleCell> _cellBlock;
+  internal::CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };
 
