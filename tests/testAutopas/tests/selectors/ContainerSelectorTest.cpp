@@ -32,6 +32,16 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   }
 }
 
+/**
+ * This function stores a copy of each particle depending on the position in ListInner, ListHalo or ListHaloVerletOnly.
+ * @param bBoxMin Bounding box min.
+ * @param bBoxMax Bounding box max.
+ * @param cutoff Cutoff radius.
+ * @param containerSelector Container selector used to retrieve the current container.
+ * @param ListInner All particles inside the bounding box.
+ * @param ListHalo All particles in the halo.
+ * @param ListHaloVerletOnly All particles in the halo.
+ */
 void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3> &bBoxMax, const double cutoff,
                autopas::ContainerSelector<Particle, FPCell> &containerSelector, std::vector<Particle> &ListInner,
                std::vector<Particle> &ListHalo, std::vector<Particle> &ListHaloVerletOnly) {
