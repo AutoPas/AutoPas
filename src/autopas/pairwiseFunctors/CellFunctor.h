@@ -40,7 +40,7 @@ class CellFunctor {
       : _functor(f), _cutoff(cutoff) {}
 
   /**
-   * process the interactions inside one cell.
+   * Process the interactions inside one cell.
    * @param cell all pairwise interactions of particles inside this cell are
    * calculated
    */

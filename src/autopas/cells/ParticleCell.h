@@ -69,13 +69,13 @@ class ParticleCell {
   virtual void deleteByIndex(size_t index) = 0;
 
   /**
-   * set the side lengths of this cell
+   * Set the side lengths of this cell.
    * @param cellLength cell side length
    */
   virtual void setCellLength(std::array<double, 3> &cellLength) = 0;
 
   /**
-   * get the side lengths of this cell
+   * Get the side lengths of this cell.
    * @return cell side length
    */
   virtual std::array<double, 3> getCellLength() const = 0;
