@@ -43,7 +43,7 @@ class SortedCellView : public ParticleCell<Particle> {
 
   void addParticle(Particle &m) override {}
 
-  virtual SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
+  SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
 
   unsigned long numParticles() const override { return _particles.size(); }
 
