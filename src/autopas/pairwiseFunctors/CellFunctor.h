@@ -109,6 +109,11 @@ class CellFunctor {
   ParticleFunctor *_functor;
 
   const double _cutoff;
+
+  /**
+   * Min. number of particles to start sorting.
+   */
+  constexpr static unsigned long _startSorting = 8;
 };
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
@@ -185,7 +190,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoSN3(
     ParticleCell &cell) {
-  if (cell.numParticles() > 8) {
+  if (cell.numParticles() > _startSorting) {
     SortedCellView<Particle, ParticleCell> cellSorted(cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     auto outer = cellSorted._particles.begin();
@@ -222,7 +227,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoSNoN3(
     ParticleCell &cell) {
-  if (cell.numParticles() > 8) {
+  if (cell.numParticles() > _startSorting) {
     SortedCellView<Particle, ParticleCell> cellSorted(cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     auto outer = cellSorted._particles.begin();
@@ -280,7 +285,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
-  if (cell1.numParticles() + cell2.numParticles() > 8) {
+  if (cell1.numParticles() + cell2.numParticles() > _startSorting) {
     SortedCellView<Particle, ParticleCell> baseSorted(cell1, r);
     SortedCellView<Particle, ParticleCell> outerSorted(cell2, r);
 
@@ -316,7 +321,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
                                                         const std::array<double, 3> &r) {
-  if (cell1.numParticles() + cell2.numParticles() > 8) {
+  if (cell1.numParticles() + cell2.numParticles() > _startSorting) {
     SortedCellView<Particle, ParticleCell> baseSorted(cell1, r);
     SortedCellView<Particle, ParticleCell> outerSorted(cell2, r);
 
