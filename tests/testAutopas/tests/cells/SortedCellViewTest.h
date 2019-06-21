@@ -1,5 +1,5 @@
 /**
- * @file FullSortedParticleCellTest.h
+ * @file SortedCellViewTest.h
  * @author C. Menges
  * @date 26.05.2019
  */
@@ -12,4 +12,4 @@
 #include "autopas/AutoPas.h"
 #include "mocks/MockFunctor.h"
 
-class FullSortedParticleCellTest : public AutoPasTestBase {};
+class SortedCellViewTest : public AutoPasTestBase {};

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/cells/FullSortedParticleCell.h"
+#include "autopas/cells/SortedCellView.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -185,7 +185,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoSN3(
     ParticleCell &cell) {
   if (cell.numParticles() > 8) {
-    FullSortedParticleCell<Particle, ParticleCell> cellSorted(
+    SortedCellView<Particle, ParticleCell> cellSorted(
         cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     auto outer = cellSorted._particles.begin();
@@ -223,7 +223,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoSNoN3(
     ParticleCell &cell) {
   if (cell.numParticles() > 8) {
-    FullSortedParticleCell<Particle, ParticleCell> cellSorted(
+    SortedCellView<Particle, ParticleCell> cellSorted(
         cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     auto outer = cellSorted._particles.begin();
@@ -282,8 +282,8 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
   if (cell1.numParticles() + cell2.numParticles() > 8) {
-    FullSortedParticleCell<Particle, ParticleCell> baseSorted(cell1, r);
-    FullSortedParticleCell<Particle, ParticleCell> outerSorted(cell2, r);
+    SortedCellView<Particle, ParticleCell> baseSorted(cell1, r);
+    SortedCellView<Particle, ParticleCell> outerSorted(cell2, r);
 
     for (auto &outer : baseSorted._particles) {
       Particle &p1 = *outer.second;
@@ -318,8 +318,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
                                                         const std::array<double, 3> &r) {
   if (cell1.numParticles() + cell2.numParticles() > 8) {
-    FullSortedParticleCell<Particle, ParticleCell> baseSorted(cell1, r);
-    FullSortedParticleCell<Particle, ParticleCell> outerSorted(cell2, r);
+    SortedCellView<Particle, ParticleCell> baseSorted(cell1, r);
+    SortedCellView<Particle, ParticleCell> outerSorted(cell2, r);
 
     for (auto &outer : baseSorted._particles) {
       Particle &p1 = *outer.second;

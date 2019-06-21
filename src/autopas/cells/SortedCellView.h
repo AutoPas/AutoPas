@@ -22,14 +22,14 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle, class ParticleCellType>
-class FullSortedParticleCell : public ParticleCell<Particle> {
+class SortedCellView : public ParticleCell<Particle> {
  public:
   /**
    * Constructs a FullSortedParticleCell.
    * @param cell cell whose particles are sorted
    * @param r vector along particles are sorted
    */
-  FullSortedParticleCell(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
+  SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
     for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
       _particles.push_back(std::make_pair(ArrayMath::dot(p->getR(), r), &(*p)));
@@ -64,7 +64,7 @@ class FullSortedParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal iterator.
    */
-  typedef internal::SingleCellIterator<Particle, FullSortedParticleCell<Particle, ParticleCellType>> iterator_t;
+  typedef internal::SingleCellIterator<Particle, SortedCellView<Particle, ParticleCellType>> iterator_t;
 
   /**
    * Sorted vector of projected positions and particle pointers.
