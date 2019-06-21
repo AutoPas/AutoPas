@@ -129,8 +129,8 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::comput
   _cellOffsets32Pack[i++] = {2l, 1l, z};
   _cellOffsets32Pack[i++] = {2l, 2l, z};
 
-  if(i != 32) {
-      AutoPasLog(error, "Internal error: Wrong number of offsets (expected: 32, actual: {})", i);
+  if (i != 32) {
+    AutoPasLog(error, "Internal error: Wrong number of offsets (expected: 32, actual: {})", i);
   }
 }
 
