@@ -53,7 +53,7 @@ traversals__DirectSum=directSumTraversal
 traversals__LinkedCells=c08
 traversals__VerletLists=verlet-lists
 traversals__VerletCells=verletC18
-traversals__VerletCluster=c01
+traversals__VerletCluster=verlet-clusters
 
 # iterate over containers
 for container in LinkedCells VerletLists DirectSum VerletCluster VerletCells ;

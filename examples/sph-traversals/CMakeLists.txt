@@ -29,12 +29,13 @@ set(
     "C18"
     "SLI"
 )
-set(VerletClusterListsTraversals "C01")
+set(VerletClusterListsTraversals "" "" "" "" "CLU")
 
 set(C01NewtonModes "OFF")
 set(C08NewtonModes "OFF" "ON")
 set(C18NewtonModes "OFF" "ON")
 set(SLINewtonModes "OFF" "ON")
+set(CLUNewtonModes "OFF")
 
 # cmake-format: off
 foreach(container_type IN LISTS ContainerList)
