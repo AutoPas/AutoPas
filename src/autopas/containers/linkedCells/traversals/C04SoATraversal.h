@@ -1,5 +1,5 @@
 /**
- * @file C04Traversal.h
+ * @file C04SoATraversal.h
  * @author C. Menges
  * @date 02.06.2019
  */
