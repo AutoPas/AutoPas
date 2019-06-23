@@ -12,12 +12,12 @@
 namespace autopas {
 
 /**
- * Class to handle mathematical operations of floating point std::array's.
+ * Namespace to handle mathematical operations of floating point std::array's.
  */
 namespace ArrayMath {
 
 /**
- * adds two arrays, returns the result.
+ * Adds two arrays, returns the result.
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a first summand
