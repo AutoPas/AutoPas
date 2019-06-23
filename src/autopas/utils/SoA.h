@@ -61,7 +61,7 @@ class SoA {
    */
   void append(const SoA<SoAArraysType> &other) {
     if (other.getNumParticles() > 0) {
-      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+      append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
   }
 
@@ -204,18 +204,18 @@ class SoA {
 
   // helper function to append a single array
   template <std::size_t attribute>
-  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
+  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays, const long viewStart) {
     auto &currentVector = soaStorage.template get<attribute>();
     const auto &otherVector = valArrays.template get<attribute>();
-    currentVector.insert(currentVector.end(), otherVector.cbegin(), otherVector.cend());
+    currentVector.insert(currentVector.end(), otherVector.cbegin() + viewStart, otherVector.cend());
   }
 
   // actual implementation of append
   template <std::size_t... Is>
-  void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+  void append_impl(const SoA<SoAArraysType> &other, std::index_sequence<Is...>) {
     // @TODO: This is a rather bad solution, but necessary since C++14 lacks fold expressions
     // @TODO: C++17: replace by (appendSingleArray<Is>(valArrays),...);
-    int unusedArray[] = {(appendSingleArray<Is>(valArrays), 0)...};
+    int unusedArray[] = {(appendSingleArray<Is>(other.soaStorage, other.viewStart), 0)...};
     (void)unusedArray;  // avoid unused variable warning
   }
 
