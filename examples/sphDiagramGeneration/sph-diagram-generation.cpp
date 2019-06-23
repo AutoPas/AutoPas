@@ -18,7 +18,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
 template <class Container, class Functor, class Traversal>
 void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
-                               int numIterations, bool useNewton3);
+                               int numIterations);
 
 void addParticles(
     autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
@@ -227,18 +227,18 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
     measureContainerTraversal(
         cont, func,
         dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, true> *>(traversal.get()),
-        numParticles, numIterations, useNewton3);
+        numParticles, numIterations);
   } else {
     measureContainerTraversal(
         cont, func,
         dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, false> *>(traversal.get()),
-        numParticles, numIterations, useNewton3);
+        numParticles, numIterations);
   }
 }
 
 template <class Container, class Functor, class Traversal>
 void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
-                               int numIterations, bool useNewton3) {
+                               int numIterations) {
   // autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
   //    flopFunctor(cont->getCutoff());
 
@@ -248,7 +248,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal);
 
   double elapsedTime = t.stop();
 
@@ -257,7 +257,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal);
 
   elapsedTime = t.stop();
 
