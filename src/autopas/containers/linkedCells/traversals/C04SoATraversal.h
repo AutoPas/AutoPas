@@ -63,10 +63,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout
 inline void C04SoATraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   _cellHandler.resizeBuffers();
-  this->c04Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
-    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    _cellHandler.processBaseCell(cells, x, y, z);
-  });
+  this->c04Traversal(
+      [&](unsigned long x, unsigned long y, unsigned long z) { _cellHandler.processBaseCell(cells, x, y, z); });
 }
 
 }  // namespace autopas
