@@ -59,7 +59,7 @@ class SoA {
    * Appends the other SoA buffer.
    * @param other other buffer.
    */
-  void append(SoA<SoAArraysType> &other) {
+  void append(const SoA<SoAArraysType> &other) {
     if (other.getNumParticles() > 0) {
       append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
@@ -204,15 +204,15 @@ class SoA {
 
   // helper function to append a single array
   template <std::size_t attribute>
-  void appendSingleArray(utils::SoAStorage<SoAArraysType> &valArrays) {
+  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
-    auto &otherVector = valArrays.template get<attribute>();
-    currentVector.insert(currentVector.end(), otherVector.begin(), otherVector.end());
+    const auto &otherVector = valArrays.template get<attribute>();
+    currentVector.insert(currentVector.end(), otherVector.cbegin(), otherVector.cend());
   }
 
   // actual implementation of append
   template <std::size_t... Is>
-  void append_impl(utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+  void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
     // @TODO: This is a rather bad solution, but necessary since C++14 lacks fold expressions
     // @TODO: C++17: replace by (appendSingleArray<Is>(valArrays),...);
     int unusedArray[] = {(appendSingleArray<Is>(valArrays), 0)...};
