@@ -1,0 +1,6 @@
+extraction:
+  cpp:
+    after_prepare:    # Customizable step used by all languages.
+      - pip install --user --upgrade cmake==3.13.3
+      - export PATH=~/.local/bin:$PATH
+      - cmake --version
