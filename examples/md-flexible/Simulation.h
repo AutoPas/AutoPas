@@ -148,8 +148,8 @@ public:
 //@TODO add boolean object to choose between LJFunctor and LJF_AVX  -> implement LJF_AVX with mixing rules
 template<class Particle, class ParticleCell>
 Simulation<Particle, ParticleCell>::Simulation(shared_ptr<AutoPas<Particle, ParticleCell>> autopas,ParticleClassLibrary &PCL) {
-    _autopas = autopas; _PCL = &PCL;
-    durationF=0; durationV=0; durationX=0;
+    _autopas = autopas;
+    durationF=0; durationV=0; durationX=0;_PCL = &PCL;
 
 }
 

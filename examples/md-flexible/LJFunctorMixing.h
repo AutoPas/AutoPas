@@ -82,8 +82,8 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    double _sigmasquare = _PCLibrary->mixingSS(i,j);
-    double _epsilon24= _PCLibrary->mixing24E(i,j);
+    double _sigmasquare = _PCLibrary->mixingSS(i.getID(),j.getID());
+    double _epsilon24= _PCLibrary->mixing24E(i.getID(),j.getID());
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     double dr2 = ArrayMath::dot(dr, dr);
 
@@ -798,9 +798,9 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  double _cutoffsquare, _shift6;
+  double _cutoffsquare;
   ParticleClassLibrary* _PCLibrary;
-
+  double _shift6;
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
   // sum of the virial, only calculated if calculateGlobals is true

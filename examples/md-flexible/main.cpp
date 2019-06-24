@@ -110,9 +110,9 @@ int main(int argc, char **argv) {
     PrintableMolecule::setMass(parser.getMass());
     //Initializing Particles Map for ParticleClassLibrary
     //erstmal zum Testen default werte, mit 2 verschiedenen Particle Types, muss noch im Parser angepasst werden
-    map<unsigned long, double> PC_Epsilon = {{1, 1.}, {2, 2.}};
-    map<unsigned long, double> PC_Sigma = {{1, 1.}, {2, 1.5}};
-    map<unsigned long, double> PC_Mass = {{1, 1.}, {2, 2.}};
+    map<unsigned long, double> PC_Epsilon = {{0,1.},{1, 1.}, {2, 2.}};
+    map<unsigned long, double> PC_Sigma = {{0,1.},{1, 1.}, {2, 1.5}};
+    map<unsigned long, double> PC_Mass = {{0,1.},{1, 1.}, {2, 2.}};
     ParticleClassLibrary P_C_Library =ParticleClassLibrary(PC_Epsilon,PC_Sigma,PC_Mass);
 
     // Initialization
@@ -132,8 +132,7 @@ int main(int argc, char **argv) {
     if(parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid){
         particlesTotal=particlesPerDim * particlesPerDim * particlesPerDim;
     }
-
-  if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
+    if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
 
 
 

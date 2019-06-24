@@ -27,12 +27,12 @@ public:
      * @param Particle
      * @return Epsilon*24
      */
-    double get24Epsilon(Particle i);
+    double get24Epsilon(unsigned long i);
     /**Getter for Particle Square Sigma
     * @param Particle
     * @return Sigma²
     */
-    double getSSigma(Particle i);
+    double getSSigma(unsigned long i);
 
     /**Getter for Particle Mass
     * @param Particle
@@ -43,7 +43,7 @@ public:
      * @param Particles; i and j
      * @return Epsilon of both
      * */
-    double mixingE(Particle i, Particle j);
+    double mixingE(unsigned long i, unsigned long j);
     /**Returns the Sigma of the MixingRule of 2 Particles
     * @param Particles; i and j
     * @return Sigma of both
@@ -54,12 +54,12 @@ public:
      * @param Particles; i and j
      * @return 24*(Epsilon of both)
      * */
-    double mixing24E(Particle i, Particle j);
+    double mixing24E(unsigned long i, unsigned long j);
     /**Returns Sigma Square of the MixingRule of 2 Particles
     * @param Particles; i and j
     * @return (Sigma of both)²
     * */
-    double mixingSS(Particle i, Particle j);
+    double mixingSS(unsigned long i, unsigned long j);
 
 
 
@@ -81,12 +81,12 @@ double ParticleClassLibrary::getEpsilon(Particle i) {
     return Sigma.at(i.getID());
 }
 
-double ParticleClassLibrary::get24Epsilon(Particle i) {
-    return 24*Epsilon.at(i.getID());
+double ParticleClassLibrary::get24Epsilon(unsigned long i) {
+    return 24*Epsilon.at(i);
 }
 
-double ParticleClassLibrary::getSSigma(Particle i) {
-    double sigma=Sigma.at(i.getID());
+double ParticleClassLibrary::getSSigma(unsigned long i) {
+    double sigma=Sigma.at(i);
     return sigma*sigma;
 }
 
@@ -95,19 +95,19 @@ double ParticleClassLibrary::getMass(Particle i) {
     return Mass.at(i.getID());
 }
 
-double ParticleClassLibrary::mixingE(Particle i, Particle j) {
-    return sqrt(Epsilon.at(i.getID())+Epsilon.at(j.getID()));
+double ParticleClassLibrary::mixingE(unsigned long i, unsigned long j) {
+    return sqrt(Epsilon.at(i)+Epsilon.at(j));
 }
 
 double ParticleClassLibrary::mixingS(Particle i, Particle j) {
     return (Sigma.at(i.getID())+Sigma.at(j.getID()))/2;
 }
 
-double ParticleClassLibrary::mixing24E(Particle i, Particle j) {
-    return 24 * sqrt(Epsilon.at(i.getID())+Epsilon.at(j.getID()));
+double ParticleClassLibrary::mixing24E(unsigned long i,unsigned long j) {
+    return 24 * sqrt(Epsilon.at(i)+Epsilon.at(j));
 }
 
-double ParticleClassLibrary::mixingSS(Particle i, Particle j) {
-    double mixingS=(Sigma.at(i.getID())+Sigma.at(j.getID()))/2;
+double ParticleClassLibrary::mixingSS(unsigned long i, unsigned long j) {
+    double mixingS=(Sigma.at(i)+Sigma.at(j))/2;
     return mixingS*mixingS;
 }
