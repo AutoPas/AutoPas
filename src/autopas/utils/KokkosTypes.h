@@ -11,24 +11,28 @@
 #include <Kokkos_Core.hpp>
 #endif
 
-namespace autopas{
+namespace autopas {
 
-
-
+/**
+ * Change value to change precision
+ */
 #ifndef KOKKOS_PRECISION
 #define KOKKOS_PRECISION 2
 #endif
-#if KOKKOS_PRECISION==1
-    typedef float KOKKOS_FLOAT;
+#if KOKKOS_PRECISION == 1
+typedef float KOKKOS_FLOAT;
 #else
-    typedef double KOKKOS_FLOAT;
+typedef double KOKKOS_FLOAT;
 #endif
 
+/**
+ * Change value to modify dimensions, currently only support KOKKOS_DIM = 3
+ */
 #ifndef KOKKOS_DIM
 #define KOKKOS_DIM 3
 #endif
 
 #ifdef AUTOPAS_KOKKOS
-    typedef Kokkos::View<KOKKOS_FLOAT*> FloatVectorType;
+typedef Kokkos::View<KOKKOS_FLOAT *> FloatVectorType;
 #endif
-}
+}  // namespace autopas
