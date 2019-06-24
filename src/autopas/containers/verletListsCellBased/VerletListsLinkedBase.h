@@ -152,9 +152,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    */
   bool updateHaloParticle(Particle &particle) override {
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), this->getSkin());
-    bool updated = false;
     for (auto cellptr : cells) {
-      updated = internal::checkParticleInCellAndUpdate(*cellptr, particle);
+      bool updated = internal::checkParticleInCellAndUpdate(*cellptr, particle);
       if (updated) {
         return true;
       }

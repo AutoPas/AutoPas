@@ -81,7 +81,20 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
   }
 
-  bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
+  bool updateHaloParticle(Particle &haloParticle) override {
+    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getSkin());
+    for (auto cellptr : cells) {
+      bool updated = internal::checkParticleInCellAndUpdate(*cellptr, haloParticle);
+      if (updated) {
+        return true;
+      }
+    }
+    AutoPasLog(trace,
+               "VerletLists: updateHaloParticle was not able to update particle at "
+               "[{}, {}, {}]",
+               haloParticle.getR()[0], haloParticle.getR()[1], haloParticle.getR()[2]);
+    return false;
+  }
 
   void deleteHaloParticles() override {
 #ifdef AUTOPAS_OPENMP
