@@ -459,6 +459,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
       double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
       double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+      auto *const __restrict__ ownedptr = soa.template begin<Particle::AttributeNames::owned>();
 
       auto cellIter = cell.begin();
       // load particles in SoAs
@@ -470,6 +471,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         fxptr[i] = cellIter->getF()[0];
         fyptr[i] = cellIter->getF()[1];
         fzptr[i] = cellIter->getF()[2];
+        ownedptr[i] = cellIter->isOwned() ? 1. : 0.;
       })
   /**
    * soaextractor
