@@ -14,6 +14,8 @@
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 #include "TimeDiscretization.h"
+#include "ParticleClassLibrary.h"
+#include "LJFunctorMixing.h"
 
 
 using namespace autopas;
@@ -31,11 +33,12 @@ private:
     long durationV;
     double delta_t;
     int iterations;
+    ParticleClassLibrary *_PCL;
 public:
     virtual ~Simulation() {
     }
 
-    explicit Simulation(shared_ptr<AutoPas<Particle, ParticleCell>> autopas);
+    explicit Simulation(shared_ptr<AutoPas<Particle, ParticleCell>> autopas,ParticleClassLibrary &PCL);
 
     /**
     * Writes a VTK file for the current state of the AutoPas object
@@ -142,11 +145,12 @@ public:
     AutoPas<Particle, ParticleCell> *getAutopas() const;
 
 };
-
+//@TODO add boolean object to choose between LJFunctor and LJF_AVX  -> implement LJF_AVX with mixing rules
 template<class Particle, class ParticleCell>
-Simulation<Particle, ParticleCell>::Simulation(shared_ptr<AutoPas<Particle, ParticleCell>> autopas) {
-    _autopas = autopas;
+Simulation<Particle, ParticleCell>::Simulation(shared_ptr<AutoPas<Particle, ParticleCell>> autopas,ParticleClassLibrary &PCL) {
+    _autopas = autopas; _PCL = &PCL;
     durationF=0; durationV=0; durationX=0;
+
 }
 
 template<class Particle, class ParticleCell>
@@ -268,10 +272,9 @@ void Simulation<Particle,ParticleCell>::CalcF(){
     std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
     startCalc = std::chrono::high_resolution_clock::now();
     //@ TODO: switch for other functors --> mit boolean object?
-    //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
-    //_autopas->iteratePairwise(this->_Functor);
-    auto* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(_autopas->getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true); // cutoff, espi, sigma, shift, box min, box max
 
+    //auto* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(_autopas->getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true);
+    auto* functor = new LJFunctorM<Particle,ParticleCell>(_autopas->getCutoff(),*_PCL, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax());
     _autopas->iteratePairwise(functor);
     delete functor;
     functor=NULL;

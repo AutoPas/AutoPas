@@ -5,16 +5,15 @@
  */
 
 #include "Simulation.h"
-
 #include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "MDFlexParser.h"
-#include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 
@@ -109,14 +108,20 @@ int main(int argc, char **argv) {
     PrintableMolecule::setEpsilon(parser.getEpsilon());
     PrintableMolecule::setSigma(parser.getSigma());
     PrintableMolecule::setMass(parser.getMass());
-    // Initialization
+    //Initializing Particles Map for ParticleClassLibrary
+    //erstmal zum Testen default werte, mit 2 verschiedenen Particle Types, muss noch im Parser angepasst werden
+    map<unsigned long, double> PC_Epsilon = {{1, 1.}, {2, 2.}};
+    map<unsigned long, double> PC_Sigma = {{1, 1.}, {2, 1.5}};
+    map<unsigned long, double> PC_Mass = {{1, 1.}, {2, 2.}};
+    ParticleClassLibrary P_C_Library =ParticleClassLibrary(PC_Epsilon,PC_Sigma,PC_Mass);
 
+    // Initialization
     auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
     //setted default anderen boxMax--> sonst Fehler
     autopas->setBoxMax({2.,2.,2.});
     autopas->init();
     autopas::Logger::get()->set_level(logLevel);
-    Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
+    Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas,P_C_Library);
     Simulation.initialize(parser);
     //Simulation
     long durationSimulate = Simulation.simulate();

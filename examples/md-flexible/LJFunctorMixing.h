@@ -8,7 +8,6 @@
 #pragma once
 
 #include <array>
-#include "ParticleClassLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -17,16 +16,7 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
-
-/**
- * Newton 3 modes for the LJFunctor.
- */
-enum FunctorN3Modes {
-  Newton3Only,
-  Newton3Off,
-  Both,
-};
-
+//@enum def von FunctorModes entfernt wegen redundant defenition
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * @tparam Particle The type of particle.

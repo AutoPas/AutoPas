@@ -25,12 +25,12 @@ public:
     double getSigma(Particle i);
     /**Getter for Particle Epsilon*24
      * @param Particle
-     * @return Epsilon
+     * @return Epsilon*24
      */
     double get24Epsilon(Particle i);
     /**Getter for Particle Square Sigma
     * @param Particle
-    * @return Sigma
+    * @return Sigma²
     */
     double getSSigma(Particle i);
 
@@ -52,18 +52,19 @@ public:
 
     /**Returns (Epsilon*24) of the MixingRule of 2 Particles
      * @param Particles; i and j
-     * @return Epsilon of both
+     * @return 24*(Epsilon of both)
      * */
     double mixing24E(Particle i, Particle j);
     /**Returns Sigma Square of the MixingRule of 2 Particles
     * @param Particles; i and j
-    * @return Sigma of both
+    * @return (Sigma of both)²
     * */
     double mixingSS(Particle i, Particle j);
 
 
 
 private:
+    //@TODO static wäre vllt besser ???
     map<unsigned long, double> Epsilon;
     map<unsigned long, double> Sigma;
     map<unsigned long, double> Mass;
