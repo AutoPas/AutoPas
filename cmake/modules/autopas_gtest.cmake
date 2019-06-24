@@ -64,5 +64,7 @@ set_target_properties(
         "${CMAKE_THREAD_LIBS_INIT}"
 )
 
-# I couldn't make it work with INTERFACE_INCLUDE_DIRECTORIES
-include_directories(SYSTEM "${source_dir}/googletest/include" "${source_dir}/googlemock/include")
+target_include_directories(
+    autopas SYSTEM
+    INTERFACE "${source_dir}/googletest/include" "${source_dir}/googlemock/include"
+)
