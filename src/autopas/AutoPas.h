@@ -14,6 +14,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/selectors/tuningStrategy/CopyCatSearch.h"
 
 namespace autopas {
 
@@ -407,11 +408,16 @@ class AutoPas {
    * Generates a new Tuning Strategy object from the member variables of this autopas object.
    * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
    */
-  std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
+  std::unique_ptr<TuningStrategyInterface<Particle, ParticleCell>> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
       case TuningStrategyOption::fullSearch:
-        return std::make_unique<FullSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
-                                            _allowedNewton3Options);
+        return std::make_unique<FullSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
+                                                                    _allowedDataLayouts, _allowedNewton3Options);
+      case TuningStrategyOption::copyCatSearch:
+        return std::make_unique<CopyCatSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
+                                                                       _allowedDataLayouts, _allowedNewton3Options,
+                                                                       getNumberOfParticles(), _boxMax[0] - _boxMin[0],
+                                                                       _cutoff, _verletSkin);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",

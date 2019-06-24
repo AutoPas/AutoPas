@@ -165,6 +165,9 @@ inline std::string to_string(const TuningStrategyOption &option) {
     case autopas::TuningStrategyOption::fullSearch: {
       return "full-Search";
     }
+    case autopas::TuningStrategyOption::copyCatSearch: {
+      return "copy-cat-Search";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TuningStrategyOption (" + std::to_string(option) + ")";
@@ -383,6 +386,9 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
   auto tuningStrategy(autopas::TuningStrategyOption(-1));
   if (tuningStrategyString.find("full") != std::string::npos or tuningStrategyString.find("ex") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
+  }
+  else if (tuningStrategyString.find("copy") != std::string::npos) {
+    tuningStrategy = autopas::TuningStrategyOption::copyCatSearch;
   }
   return tuningStrategy;
 }
