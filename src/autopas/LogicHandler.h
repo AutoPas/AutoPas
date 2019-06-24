@@ -47,6 +47,7 @@ class LogicHandler {
   std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
     if (not isNeighborListValid()) {
       AutoPasLog(debug, "LogicHandler: Initiating container update.");
+      _neighborListIsValid = false;
       return std::move(_autoTuner.getContainer()->updateContainer());
     } else {
       AutoPasLog(debug, "LogicHandler: Skipping container update.");
@@ -110,7 +111,10 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::deleteAllParticles()
    */
-  void deleteAllParticles() { _autoTuner.getContainer()->deleteAllParticles(); }
+  void deleteAllParticles() {
+    _neighborListIsValid = false;
+    _autoTuner.getContainer()->deleteAllParticles();
+  }
 
   /**
    * @copydoc AutoPas::iteratePairwise()
@@ -118,7 +122,13 @@ class LogicHandler {
   template <class Functor>
   void iteratePairwise(Functor *f) {
     bool doRebuild = not isNeighborListValid();
-    _autoTuner.iteratePairwise(f, doRebuild);
+    _autoTuner.iteratePairwise(f, doRebuild /*this value can be changed by the autoTuner!*/);
+    if (doRebuild /*we have done a rebuild now*/) {
+      // list is now valid
+      _neighborListIsValid = true;
+      _stepsSinceLastContainerRebuild = 0;
+    }
+    ++_stepsSinceLastContainerRebuild;
   }
 
   /**
@@ -147,11 +157,11 @@ class LogicHandler {
         autopas::utils::ExceptionHandler::exception("Box too small.");
       }
     }
-
-    // check
   }
 
-  bool isNeighborListValid() { return _neighborListIsValid; }
+  bool isNeighborListValid() {
+    return _neighborListIsValid and _stepsSinceLastContainerRebuild < _verletRebuildFrequency;
+  }
 
   /**
    * Lower corner of the container.
