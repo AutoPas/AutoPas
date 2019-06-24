@@ -49,6 +49,7 @@ class CopyCatSearch : public TuningStrategyInterface<Particle, ParticleCell> {
     _traversalTimes.clear();
     _currentConfig = _searchSpace.begin();
     _configCounter = 0;
+    _hasStatistics = false;
   }
 
   inline bool tune() override;
@@ -88,6 +89,7 @@ class CopyCatSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   int _mlSuggestions[5];
   int _configCounter;
   double _particleCount, _boxLength, _cutoff, _verletSkin;
+  bool _hasStatistics{false};
 };
 
 template <typename Particle, typename ParticleCell>
@@ -163,16 +165,17 @@ void CopyCatSearch<Particle, ParticleCell>::generateMLPredictions() {
   const auto model = fdeep::load_model("fdeep_model.json");
   double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
 
-  const auto result = model.predict(
-      {fdeep::tensor5(fdeep::shape5(1, 1, 1, 1, 4), {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
-                                                     static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
+  const auto result = model.predict({fdeep::tensor5(
+      fdeep::shape5(1, 1, 1, 1, 4),
+      {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
+       static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
   std::cout << fdeep::show_tensor5s(result) << std::endl;
   std::vector<float> probabilityVector = *result[0].as_vector();
 
   std::cout << "ML Suggestions are:" << std::endl;
   // find 5 largest values in propabilityVector
   for (int i = 0; i < 5; ++i) {
-    //auto index = find_min(propabilityVector);
+    // auto index = find_min(propabilityVector);
     auto index = std::max_element(probabilityVector.begin(), probabilityVector.end()) - probabilityVector.begin();
     _mlSuggestions[i] = index;
     probabilityVector[index] = 0;  // set to 0, so we don't find this again.
@@ -183,7 +186,7 @@ void CopyCatSearch<Particle, ParticleCell>::generateMLPredictions() {
 template <typename Particle, typename ParticleCell>
 bool CopyCatSearch<Particle, ParticleCell>::tune() {
   AutoPasLog(debug, "You are in CopyCatSearch::tune()");
-  bool getStatistics = _traversalTimes.empty();
+  bool getStatistics = not _hasStatistics;
   if (getStatistics) {
     _particleCount = _containerSelector->getCurrentContainer()->getNumParticles();
     _boxLength = _containerSelector->getCurrentContainer()->getBoxMax()[0] -
@@ -191,6 +194,7 @@ bool CopyCatSearch<Particle, ParticleCell>::tune() {
     _cutoff = _containerSelector->getCurrentContainer()->getCutoff();
     _verletSkin = _containerSelector->getCurrentContainer()->getCutoff();
     generateMLPredictions();
+    _hasStatistics = true;
   } else {
     ++_currentConfig;
     ++_configCounter;
