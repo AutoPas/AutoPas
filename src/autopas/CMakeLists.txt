@@ -21,6 +21,7 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler Do not link against
                                   # openmp when using archer
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
+        $<$<BOOL:${AUTOPAS_KOKKOS}>:kokkos>
 )
 
 # Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP
@@ -29,7 +30,7 @@ target_compile_definitions(
     autopas
     PUBLIC
     $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_OPENMP>
-    $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:AUTOPAS_CUDA>
+    $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:AUTOPAS_CUDA> $<$<BOOL:${AUTOPAS_KOKKOS}>:AUTOPAS_KOKKOS>
 )
 
 if (AUTOPAS_ENABLE_CUDA)
@@ -37,3 +38,5 @@ if (AUTOPAS_ENABLE_CUDA)
 endif ()
 
 target_include_directories(autopas PUBLIC ../.)
+
+target_include_directories(autopas SYSTEM PUBLIC ${Kokkos_INCLUDE_DIRS_RET})
