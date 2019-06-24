@@ -348,8 +348,6 @@ template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
-  _tuningStrategy->addParticleCount(getContainer()->getNumParticles());
-
   // need more samples; keep current config
   if (_samples.size() < _maxSamples) {
     return stillTuning;

@@ -164,8 +164,8 @@ void CopyCatSearch<Particle, ParticleCell>::generateMLPredictions() {
   double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
 
   const auto result = model.predict(
-      {fdeep::tensor5(fdeep::shape5(1, 1, 1, 1, 4), {_particleCount / max_particle_count, _boxLength / max_box_length,
-                                                     _cutoff / max_cutoff, _verletSkin / max_v_skin_rad})});
+      {fdeep::tensor5(fdeep::shape5(1, 1, 1, 1, 4), {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
+                                                     static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
   std::cout << fdeep::show_tensor5s(result) << std::endl;
   std::vector<float> probabilityVector = *result[0].as_vector();
 
