@@ -35,7 +35,7 @@ class ParticleCell {
    * adds a Particle to the cell
    * @param p the particle to be added
    */
-  virtual void addParticle(Particle &p) = 0;
+  virtual void addParticle(const Particle &p) = 0;
 
   /**
    * Get an iterator to the start of a ParticleCell

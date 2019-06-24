@@ -39,9 +39,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff,
-                                                  compatibleTraversals::allDSCompatibleTraversals()),
-        _cellBorderFlagManager() {
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff), _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 
@@ -75,10 +73,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @tparam Traversal
    * @param f functor that describes the pair-potential
    * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
     traversal->initTraversal(this->_cells);

@@ -80,8 +80,9 @@ class VerletLists
    * @copydoc LinkedCells::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    if (this->needsRebuild()) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+    bool useNewton3 = traversal->getUseNewton3();
+    if (this->needsRebuild(useNewton3)) {
       rebuildVerletLists(useNewton3);
     }
 
@@ -136,7 +137,7 @@ class VerletLists
                      typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>,
                      DataLayoutOption::aos, true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                   &validityCheckerFunctor);
-    this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal, useNewton3);
+    this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
