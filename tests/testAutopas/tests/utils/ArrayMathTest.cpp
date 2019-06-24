@@ -82,7 +82,6 @@ TEST(ArrayMathTest, testMulScalar) {
   }
 }
 
-
 TEST(ArrayMathTest, testNormalize) {
   std::array<double, 3> a({1.1, 2.2, 3.3});
   std::array<double, 3> correctResult({sqrt(14) / 14.0, sqrt(14) / 7.0, 3 / sqrt(14)});
