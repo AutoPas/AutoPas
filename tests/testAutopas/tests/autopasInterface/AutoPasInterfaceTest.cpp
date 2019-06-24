@@ -251,7 +251,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas
 void testSimulationLoop(autopas::ContainerOption containerOption) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
-  autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
 
   defaultInit(autoPas);
 
@@ -307,7 +307,7 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
 void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alwaysAddAsHalo) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
-  autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
 
   defaultInit(autoPas);
 
@@ -426,10 +426,9 @@ using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                          // proper indent
-                         ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+                         ValuesIn([]() -> std::set<autopas::ContainerOption> {
                            auto all = autopas::allContainerOptions;
-                           all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists),
-                                     all.end());
+                           all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                            return all;
                          }()),
                          AutoPasInterfaceTest::PrintToStringParamName());
@@ -440,9 +439,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
                         size_t autoPasDirection) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas1;
-  autoPas1.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption1});
+  autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
   autopas::AutoPas<Molecule, FMCell> autoPas2;
-  autoPas1.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption2});
+  autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
 
   defaultInit(autoPas1, autoPas2, autoPasDirection);
 
@@ -508,16 +507,15 @@ using ::testing::ValuesIn;
 //                         Combine(ValuesIn(autopas::allContainerOptions), ValuesIn(autopas::allContainerOptions)),
 //                         ContainerSelectorTest::PrintToStringParamName());
 
-INSTANTIATE_TEST_SUITE_P(
-    Generated, AutoPasInterface2ContainersTest,
-    Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> {
-              auto all = autopas::allContainerOptions;
-              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
-              return all;
-            }()),
-            ValuesIn([]() -> std::vector<autopas::ContainerOption> {
-              auto all = autopas::allContainerOptions;
-              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
-              return all;
-            }())),
-    AutoPasInterface2ContainersTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
+                         Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
+                                   auto all = autopas::allContainerOptions;
+                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
+                                   return all;
+                                 }()),
+                                 ValuesIn([]() -> std::set<autopas::ContainerOption> {
+                                   auto all = autopas::allContainerOptions;
+                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
+                                   return all;
+                                 }())),
+                         AutoPasInterface2ContainersTest::PrintToStringParamName());

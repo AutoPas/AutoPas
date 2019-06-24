@@ -7,12 +7,14 @@
 #pragma once
 
 #include "VerletListsCellsHelpers.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 
@@ -48,31 +50,18 @@ class VerletListsCells
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param buildTraversal the traversal used to build the verletlists
+   * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1)
+                   const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1,
+                   const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                                            allVLCApplicableTraversals()),
+                                                            compatibleTraversals::allVLCCompatibleTraversals(),
+                                                            cellSizeFactor),
         _buildTraversal(buildTraversal) {}
-
-  /**
-   * Lists all traversal options applicable for the Verlet Lists Cells container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allVLCApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
-                                                TraversalOption::c01Verlet};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allVLCApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    // Function needs to be overwritten
-    return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
-  }
   /**
    * Function to iterate over all pairs of particles. (Only AoS)
    * This function only handles short-range interactions.
@@ -80,10 +69,10 @@ class VerletListsCells
    * @tparam Traversal
    * @param f functor that describes the pair-potential
    * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+    bool useNewton3 = traversal->getUseNewton3();
     if (this->needsRebuild(useNewton3)) {
       updateVerletLists(useNewton3);
     }

@@ -8,7 +8,9 @@
 #pragma once
 
 #include "autopas/containers/CellBlock3D.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -44,25 +46,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, allLCApplicableTraversals()),
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
-
-  /**
-   * Lists all traversal options applicable for the Linked Cells container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allLCApplicableTraversals() {
-    static const std::vector<TraversalOption> v {
-      TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced
-#if defined(AUTOPAS_CUDA)
-          ,
-          TraversalOption::c01Cuda
-#endif
-    };
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allLCApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
 
@@ -108,7 +93,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @copydoc DirectSum::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
     traversal->initTraversal(this->_cells);
@@ -201,9 +186,9 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    return TraversalSelector<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
-                                           this->getCellBlock().getCellLength());
+  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
+                                               this->getCellBlock().getCellLength());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -211,8 +196,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     size_t startIndex;
@@ -252,7 +237,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * Get the cell block, not supposed to be used except by verlet lists
    * @return the cell block
    */
-  CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
+  internal::CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
 
   /**
    * returns reference to the data of LinkedCells
@@ -264,7 +249,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   /**
    * object to manage the block of cells.
    */
-  CellBlock3D<ParticleCell> _cellBlock;
+  internal::CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };
 

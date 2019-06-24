@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/utils/ArrayMath.h"
 
@@ -46,8 +47,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
-                                                                allVCLApplicableTraversals()),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -63,18 +63,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     rebuild();
   }
 
-  /**
-   * Lists all traversal options applicable for the Verlet Lists container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allVCLApplicableTraversals() {
-    // traversal not used but prevents usage of newton3
-    static const std::vector<TraversalOption> v{TraversalOption::c01};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allVCLApplicableTraversals(); }
-
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
   /**
@@ -84,10 +72,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @tparam Traversal
    * @param f functor that describes the pair-potential
    * @param traversal not used
-   * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+    bool useNewton3 = traversal->getUseNewton3();
     if (useNewton3) {
       /// @todo implement newton3 for VerletClusterLists
       AutoPasLog(error, "Newton3 not implemented yet.");
@@ -158,8 +146,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return false;
   }
 
-  TraversalSelector<FullParticleCell<Particle>> generateTraversalSelector() override {
-    return TraversalSelector<FullParticleCell<Particle>>(_cellsPerDim);
+  TraversalSelectorInfo<FullParticleCell<Particle>> getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo<FullParticleCell<Particle>>(_cellsPerDim);
   }
 
   /**
@@ -177,8 +165,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(&this->_clusters));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     // @todo implement this if bounding boxes are here

@@ -10,7 +10,7 @@
 TEST(OptimumSelectorTest, min) {
   std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
 
-  auto min = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategy::fastestAbs);
+  auto min = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategyOption::fastestAbs);
 
   EXPECT_EQ(1, min);
 }
@@ -18,7 +18,7 @@ TEST(OptimumSelectorTest, min) {
 TEST(OptimumSelectorTest, mean) {
   std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
 
-  auto mean = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategy::fastestMean);
+  auto mean = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategyOption::fastestMean);
 
   EXPECT_EQ(4, mean);
 }
@@ -26,7 +26,7 @@ TEST(OptimumSelectorTest, mean) {
 TEST(OptimumSelectorTest, median) {
   std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
 
-  auto median = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategy::fastestMedian);
+  auto median = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategyOption::fastestMedian);
 
   EXPECT_EQ(5, median);
 }

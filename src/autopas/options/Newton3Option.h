@@ -6,18 +6,18 @@
 
 #pragma once
 
-#include <vector>
+#include <set>
 
 namespace autopas {
 /**
- * Possible choices for the particle data layout.
+ * Possible choices for the particle data layout. Values consistent with bool.
  */
-enum Newton3Option { enabled, disabled };
+enum Newton3Option { disabled = 0, enabled = 1 };
 
 /**
  * Provides a way to iterate over the possible choices of data layouts.
  */
-static const std::vector<Newton3Option> allNewton3Options = {
+static const std::set<Newton3Option> allNewton3Options = {
     Newton3Option::enabled,
     Newton3Option::disabled,
 };
