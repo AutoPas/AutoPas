@@ -92,6 +92,16 @@ class VerletListsCells
     this->_traversalsSinceLastRebuild++;
   }
 
+  /**
+   * Get the neighbors list of a particle.
+   * @param particle
+   * @return the neighbor list of the particle
+   */
+  const std::vector<Particle *> &getVerletList(const Particle *particle) const {
+    const auto indices = _cellMap.at(const_cast<Particle *>(particle));
+    return _neighborLists.at(indices.first).at(indices.second).second;
+  }
+
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     bool useNewton3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = useNewton3;
@@ -162,16 +172,6 @@ class VerletListsCells
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
     this->_traversalsSinceLastRebuild = 0;
-  }
-
-  /**
-   * Get the neighbors list of a particle.
-   * @param particle
-   * @return the neighbor list of the particle
-   */
-  const std::vector<Particle *> &getVerletList(const Particle *particle) const {
-    const auto indices = _cellMap.at(const_cast<Particle *>(particle));
-    return _neighborLists.at(indices.first).at(indices.second).second;
   }
 
  private:
