@@ -21,9 +21,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const unsigned int maxSamples = 2;
 
   autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
-  auto tuningStrategy =
-      std::make_unique<autopas::FullSearch>(autopas::allContainerOptions, autopas::allTraversalOptions,
-                                            autopas::allDataLayoutOptions, autopas::allNewton3Options);
+  auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(
+      autopas::allContainerOptions, autopas::allTraversalOptions, autopas::allDataLayoutOptions,
+      autopas::allNewton3Options);
   autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin,
                                                  verletRebuildFrequency, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 100, maxSamples);
@@ -79,7 +79,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   configs.emplace(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08, autopas::DataLayoutOption::aos,
                   autopas::Newton3Option::disabled);
 
-  auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
+  auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
@@ -123,7 +123,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   configs.emplace(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08, autopas::DataLayoutOption::aos,
                   autopas::Newton3Option::enabled);
 
-  auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
+  auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
@@ -157,7 +157,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   configs.emplace(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08, autopas::DataLayoutOption::aos,
                   autopas::Newton3Option::disabled);
 
-  auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
+  auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
@@ -189,7 +189,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
   // wrap constructor call into lambda to avoid parser errors
   auto exp1 = []() {
     std::set<autopas::Configuration> configsList = {};
-    auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
+    auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(configsList);
     autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, std::move(tuningStrategy),
                                                    autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
@@ -202,7 +202,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::TraversalOption> tr = {};
     std::set<autopas::DataLayoutOption> dl = {};
     std::set<autopas::Newton3Option> n3 = {};
-    auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, tr, dl, n3);
+    auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(co, tr, dl, n3);
     autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, std::move(tuningStrategy),
                                                    autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
@@ -218,7 +218,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
                               autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
   auto configsList = {conf};
-  auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
+  auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(configsList);
   autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, std::move(tuningStrategy),
                                              autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
@@ -244,7 +244,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto configsList = {confN3, confNoN3};
-  auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
+  auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(configsList);
   autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, std::move(tuningStrategy),
                                              autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
@@ -275,7 +275,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
 
   auto configsList = {confN3, confNoN3};
-  auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
+  auto tuningStrategy = std::make_unique<autopas::FullSearch<Particle, FPCell>>(configsList);
   autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 1, 0, 100, std::move(tuningStrategy),
                                              autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
