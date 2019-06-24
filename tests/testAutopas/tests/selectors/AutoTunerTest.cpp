@@ -44,12 +44,14 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
   int collectedSamples = 0;
   int iterations = 0;
+  bool doRebuild = true;  // defines whether the verlet lists should be rebuild.
   while (stillTuning) {
     if (collectedSamples == maxSamples) {
       collectedSamples = 0;
+      doRebuild = true;
     }
-
-    stillTuning = autoTuner.iteratePairwise(&functor);
+    stillTuning = autoTuner.iteratePairwise(&functor, doRebuild);
+    doRebuild = false;
     ++iterations;
     ++collectedSamples;
     auto currentConfig = autoTuner.getCurrentConfig();
@@ -93,20 +95,20 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
-  autoTuner.iteratePairwise(&functor);  // DS NoN3
+  autoTuner.iteratePairwise(&functor, true);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // DS NoN3
+  autoTuner.iteratePairwise(&functor, false);  // DS NoN3
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
-  autoTuner.iteratePairwise(&functor);  // DS N3
+  autoTuner.iteratePairwise(&functor, true);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // DS N3
+  autoTuner.iteratePairwise(&functor, false);  // DS N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
-  autoTuner.iteratePairwise(&functor);  // LC NoN3
+  autoTuner.iteratePairwise(&functor, true);  // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // LC NoN3
+  autoTuner.iteratePairwise(&functor, false);  // LC NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
-  autoTuner.iteratePairwise(&functor);  // optimum
+  autoTuner.iteratePairwise(&functor, true);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -138,15 +140,15 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
-  autoTuner.iteratePairwise(&functor);  // DS N3
+  autoTuner.iteratePairwise(&functor, true);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // DS N3
+  autoTuner.iteratePairwise(&functor, false);  // DS N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
-  autoTuner.iteratePairwise(&functor);  // LC N3
+  autoTuner.iteratePairwise(&functor, true);  // LC N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // LC N3
+  autoTuner.iteratePairwise(&functor, false);  // LC N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
-  autoTuner.iteratePairwise(&functor);  // optimum
+  autoTuner.iteratePairwise(&functor, true);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -173,15 +175,15 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
-  autoTuner.iteratePairwise(&functor);  // DS NoN3
+  autoTuner.iteratePairwise(&functor, true);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // DS NoN3
+  autoTuner.iteratePairwise(&functor, false);  // DS NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
-  autoTuner.iteratePairwise(&functor);  // LC NoN3
+  autoTuner.iteratePairwise(&functor, true);  // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // LC NoN3
+  autoTuner.iteratePairwise(&functor, false);  // LC NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
-  autoTuner.iteratePairwise(&functor);  // optimum
+  autoTuner.iteratePairwise(&functor, true);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -223,8 +225,9 @@ TEST_F(AutoTunerTest, testOneConfig) {
 
   auto configsList = {conf};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
+  size_t maxSamples = 3;
   autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
-                                             autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
+                                             autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples);
 
   EXPECT_EQ(conf, tuner.getCurrentConfig());
 
@@ -232,8 +235,16 @@ TEST_F(AutoTunerTest, testOneConfig) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
 
+  bool doRebuild = true;
+  size_t numSamples = 0;
   for (int i = 0; i < 5; ++i) {
-    tuner.iteratePairwise(&functor);
+    if(numSamples == maxSamples){
+      numSamples = 0;
+      doRebuild = true;
+    }
+    tuner.iteratePairwise(&functor, doRebuild);
+    doRebuild = false;
+    ++numSamples;
     EXPECT_EQ(conf, tuner.getCurrentConfig());
   }
 }
@@ -260,13 +271,13 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
-  tuner.iteratePairwise(&functor);
+  tuner.iteratePairwise(&functor, true);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
-  tuner.iteratePairwise(&functor);
+  tuner.iteratePairwise(&functor, false);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
-  tuner.iteratePairwise(&functor);
+  tuner.iteratePairwise(&functor, false);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 }
 
@@ -292,5 +303,5 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  EXPECT_THROW(tuner.iteratePairwise(&functor), autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(tuner.iteratePairwise(&functor, true), autopas::utils::ExceptionHandler::AutoPasException);
 }

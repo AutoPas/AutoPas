@@ -160,53 +160,6 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
   AutoPasLog(info, "test logger working.");
 }
 
-TEST_F(AutoPasTest, checkNeedsContainerUpdateVL) {
-  // now build verlet lists
-  autoPas.setBoxMin({0., 0., 0.});
-  autoPas.setBoxMax({5., 5., 5.});
-  autoPas.setCutoff(1.);
-  autoPas.setVerletSkin(0);
-  autoPas.setVerletRebuildFrequency(2);
-  autoPas.setAllowedContainers({autopas::ContainerOption::verletLists});
-  autoPas.init();
-
-  // after build this should be true
-  EXPECT_TRUE(autoPas.needsContainerUpdate());
-
-  // run once, builds verlet lists. (here for 0 particles)
-  MockFunctor<Particle, FPCell> emptyFunctor;
-
-  EXPECT_CALL(emptyFunctor, allowsNewton3()).WillRepeatedly(Return(true));
-  EXPECT_CALL(emptyFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
-  EXPECT_CALL(emptyFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
-  autoPas.iteratePairwise(&emptyFunctor);
-
-  // now verlet lists should be valid.
-  EXPECT_FALSE(autoPas.needsContainerUpdate());
-}
-
-TEST_F(AutoPasTest, checkNeedsContainerUpdateLC) {
-  // now build verlet lists
-  autoPas.setBoxMin({0., 0., 0.});
-  autoPas.setBoxMax({5., 5., 5.});
-  autoPas.setCutoff(1.);
-  autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
-  autoPas.init();
-
-  // after build this should be true
-  EXPECT_TRUE(autoPas.needsContainerUpdate());
-
-  // run once
-  MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, allowsNewton3()).WillRepeatedly(Return(true));
-  EXPECT_CALL(emptyFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
-  EXPECT_CALL(emptyFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
-  autoPas.iteratePairwise(&emptyFunctor);
-
-  // lc should always return true.
-  EXPECT_TRUE(autoPas.needsContainerUpdate());
-}
-
 TEST_F(AutoPasTest, checkArgumentValidation) {
   // cutoff
   EXPECT_ANY_THROW(autoPas.setCutoff(-5.0));

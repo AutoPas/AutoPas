@@ -153,7 +153,7 @@ class ParticleBase {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
-  bool isOwned() { return _isOwned; }
+  bool isOwned() const { return _isOwned; }
 
   /**
    * Set the owned state to the given value
