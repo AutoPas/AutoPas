@@ -18,10 +18,13 @@
 #include "autopas/utils/StaticSelectors.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/KokkosTypes.h"
+#include "autopas/utils/KokkosHelper.h"
 
 // particles
 #include "autopas/particles/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
+#include "autopas/particles/KokkosParticle.h"
 
 // cells
 #include "autopas/cells/FullParticleCell.h"
@@ -58,3 +61,4 @@
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/pairwiseFunctors/KokkosLJFunctor.h"
