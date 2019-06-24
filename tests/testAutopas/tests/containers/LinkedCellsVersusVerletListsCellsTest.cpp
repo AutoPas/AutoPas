@@ -30,6 +30,7 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
       traversalVerletLJ(_verletListsCells.getCellsPerDimension(), &func);
   autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
       traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  _verletListsCells.rebuildNeighborLists(&traversalVerletLJ);
   _verletListsCells.iteratePairwise(&func, &traversalVerletLJ);
   _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
 

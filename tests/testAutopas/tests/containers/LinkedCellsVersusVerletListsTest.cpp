@@ -36,6 +36,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   autopas::C08Traversal<FMCell, decltype(func), dataLayoutOption, useNewton3> traversalLJ(
       _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
 
+  _verletLists->rebuildNeighborLists(&traversalLJV);
   _verletLists->iteratePairwise(&func, &traversalLJV);
   _linkedCells->iteratePairwise(&func, &traversalLJ);
 
