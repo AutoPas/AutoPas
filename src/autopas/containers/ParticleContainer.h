@@ -45,13 +45,8 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * @param applicableTraversals Sorted vector of traversals applicable for this Container.
    */
   ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                    const double skin,
-                    std::vector<TraversalOption> applicableTraversals = DefaultApplicableTraversals())
-      : _cells(),
-        _boxMin(boxMin),
-        _boxMax(boxMax),
-        _cutoff(cutoff),
-        _skin(skin) {}
+                    const double skin)
+      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**
    * destructor of ParticleContainer

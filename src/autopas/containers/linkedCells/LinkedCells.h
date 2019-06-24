@@ -45,7 +45,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @param cellSizeFactor cell size factor relative to cutoff
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff, const double skin
+  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff, const double skin,
               const double cellSizeFactor = 1.0)
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
@@ -194,7 +194,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
+    return TraversalSelectorInfo<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
                                                this->getCellBlock().getCellLength());
   }
 

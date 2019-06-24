@@ -311,18 +311,18 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
 
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
-void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f) {
+void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
   auto containerPtr = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {}", _tuningStrategy->getCurrentConfiguration().toString());
 
   auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(
-      _tuningStrategy->getCurrentConfiguration().traversal, *f, container->getTraversalSelectorInfo());
+      _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
 
   auto iterateLambda = [&](auto containerPtr) {
     if (doListRebuild) {
       getContainer()->rebuildNeighborLists(traversal.get());
     }
-    containerPtr->iteratePairwise(f, traversal.get(), useNewton3);
+    containerPtr->iteratePairwise(f, traversal.get());
   };
 
   // if tuning execute with time measurements

@@ -72,7 +72,7 @@ class VerletListsCells
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
-    if (useNewton3) {
+    if (traversal->getUseNewton3()) {
       if (auto vTraversal =
               dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, true> *>(traversal))
         vTraversal->traverseCellVerlet(_neighborLists);
@@ -93,7 +93,7 @@ class VerletListsCells
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    bool useNewton3 = traversal->getNewton3();
+    bool useNewton3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = useNewton3;
 
     // create a Verlet Lists for each cell

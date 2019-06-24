@@ -10,6 +10,7 @@
 #include <array>
 #include <vector>
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"

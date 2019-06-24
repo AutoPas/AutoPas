@@ -132,15 +132,14 @@ class VerletLists
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
- protected:
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
    * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
    * @param useNewton3
    */
-  void rebuildVerletLists(bool useNewton3 = true) {
-    this->_verletBuiltNewton3 = useNewton3;
-    this->updateVerletListsAoS(useNewton3);
+  void rebuildNeighborLists(TraversalInterface* traversal) override {
+    this->_verletBuiltNewton3 = traversal->getUseNewton3();
+    this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
     this->_traversalsSinceLastRebuild = 0;

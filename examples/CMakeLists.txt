@@ -8,7 +8,6 @@ endif ()
 
 add_custom_target(checkExamples COMMAND ctest -C checkExamples -j 4)
 
-add_subdirectory(basic)
 add_subdirectory(md-flexible)
 add_subdirectory(sph)
 add_subdirectory(sph-mpi)
