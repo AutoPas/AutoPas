@@ -17,6 +17,7 @@
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
 
@@ -70,7 +71,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
-  bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
+  bool updateHaloParticle(Particle &haloParticle) override {
+    return internal::checkParticleInCellAndUpdateNearPosition(*getHaloCell(), haloParticle, this->getSkin());
+  }
 
   void deleteHaloParticles() override {
     getHaloCell()->clear();

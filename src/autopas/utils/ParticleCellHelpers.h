@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
 
@@ -29,6 +30,28 @@ static bool checkParticleInCellAndUpdate(CellType &cellI, ParticleType &particle
   }
   return false;
 }
-}  // namespace internal
 
+/**
+ * Same as checkParticleInCellAndUpdate(CellType, ParticleType), but additionally checks whether the particle is close
+ * to the other particle:
+ * @copydoc checkParticleInCellAndUpdate()
+ * @param absError maximal distance the previous particle is allowed to be away from the new particle.
+ * @note this version is useful, if there might be more than one particle with the same id in the same cell.
+ */
+template <class ParticleType, class CellType>
+static bool checkParticleInCellAndUpdateNearPosition(CellType &cellI, ParticleType &particleI, double absError) {
+  for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
+    if (iterator->getID() == particleI.getID()) {
+      auto distanceVec = autopas::ArrayMath::sub(iterator->getR(), particleI.getR());
+      auto distanceSqr = autopas::ArrayMath::dot(distanceVec, distanceVec);
+      if (distanceSqr < absError * absError) {
+        *iterator = particleI;
+        // found the particle, returning.
+        return true;
+      }
+    }
+  }
+  return false;
+}
+}  // namespace internal
 }  // namespace autopas
