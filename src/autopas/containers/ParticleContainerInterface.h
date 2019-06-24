@@ -8,8 +8,12 @@
 #pragma once
 
 #include <array>
+#include <vector>
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 
 namespace autopas {
@@ -115,7 +119,7 @@ class ParticleContainerInterface {
    * @return Iterator to iterate over all particles in a specific region.
    */
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool incSearchRegion = false) = 0;
 
   /**
@@ -188,10 +192,10 @@ class ParticleContainerInterface {
   virtual bool isContainerUpdateNeeded() = 0;
 
   /**
-   * Generates a traversal selector for this container type.
-   * @return Traversal selector for this container type.
+   * Generates a traversal selector info for this container.
+   * @return Traversal selector info for this container.
    */
-  virtual TraversalSelector<ParticleCell> generateTraversalSelector() = 0;
+  virtual TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() = 0;
 
   /**
    * Generates a list of all traversals that are theoretically applicable to this container.
@@ -200,7 +204,9 @@ class ParticleContainerInterface {
    *
    * @return Vector of traversal options.
    */
-  virtual std::vector<TraversalOption> getAllTraversals() = 0;
+  std::set<TraversalOption> getAllTraversals() {
+    return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
+  }
 };
 
 }  // namespace autopas

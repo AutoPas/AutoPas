@@ -36,8 +36,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   autopas::C08Traversal<FMCell, decltype(func), dataLayoutOption, useNewton3> traversalLJ(
       _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
 
-  _verletLists->iteratePairwise(&func, &traversalLJV, useNewton3);
-  _linkedCells->iteratePairwise(&func, &traversalLJ, useNewton3);
+  _verletLists->iteratePairwise(&func, &traversalLJV);
+  _linkedCells->iteratePairwise(&func, &traversalLJ);
 
   auto itDirect = _verletLists->begin();
   auto itLinked = _linkedCells->begin();
@@ -69,8 +69,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
 
   autopas::TraversalVerlet<FMCell, decltype(flopsLinked), dataLayoutOption, useNewton3> traversalFLOPSVerlet(
       _verletLists->getCellsPerDimension(), &flopsVerlet);
-  _linkedCells->iteratePairwise(&flopsLinked, &traversalFLOPSLC, useNewton3);
-  _verletLists->iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet, useNewton3);
+  _linkedCells->iteratePairwise(&flopsLinked, &traversalFLOPSLC);
+  _verletLists->iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet);
 
   if (not useNewton3 and dataLayoutOption == autopas::DataLayoutOption::soa) {
     // special case if newton3 is disabled and soa are used: here linked cells will anyways partially use newton3 (for

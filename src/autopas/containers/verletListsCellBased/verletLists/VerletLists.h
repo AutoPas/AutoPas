@@ -9,7 +9,10 @@
 #include "VerletListHelpers.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VerletTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
@@ -59,25 +62,17 @@ class VerletLists
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
+   * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const unsigned int rebuildFrequency = 1,
-              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
+              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals()),
+            boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVLCompatibleTraversals(),
+            cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
-
-  /**
-   * Lists all traversal options applicable for the Verlet Lists container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption>& allVLApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::verletTraversal};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allVLApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
@@ -101,7 +96,7 @@ class VerletLists
    * get the actual neighbour list
    * @return the neighbour list
    */
-  typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() { return _aosNeighborLists; }
+  typename verlet_internal::AoS_verletlist_storage_type &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Checks whether the neighbor lists are valid.
@@ -132,19 +127,20 @@ class VerletLists
                      typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>,
                      DataLayoutOption::aos, true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                   &validityCheckerFunctor);
-    this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal, useNewton3);
+    this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
-    return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
-  }
-
-  void rebuildNeighborLists(TraversalInterface* traversal) override {
-    this->_verletBuiltNewton3 = traversal->getNewton3();
-    this->updateVerletListsAoS(traversal->getNewton3());
+ protected:
+  /**
+   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
+   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @param useNewton3
+   */
+  void rebuildVerletLists(bool useNewton3 = true) {
+    this->_verletBuiltNewton3 = useNewton3;
+    this->updateVerletListsAoS(useNewton3);
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
     this->_traversalsSinceLastRebuild = 0;
@@ -226,7 +222,7 @@ class VerletLists
       _aos2soaMap[&(*iter)] = i;
     }
     size_t accumulatedListSize = 0;
-    for (auto& aosList : _aosNeighborLists) {
+    for (auto &aosList : _aosNeighborLists) {
       accumulatedListSize += aosList.second.size();
       size_t i_id = _aos2soaMap[aosList.first];
       // each soa neighbor list should be of the same size as for aos
@@ -250,7 +246,7 @@ class VerletLists
 
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
-  std::unordered_map<Particle*, size_t> _aos2soaMap;
+  std::unordered_map<Particle *, size_t> _aos2soaMap;
 
   /// verlet list for SoA:
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;

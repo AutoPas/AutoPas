@@ -40,9 +40,8 @@ class C08CellHandler {
                           const double interactionLength = 1.0,
                           const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
                           const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
-      : _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(
-                pairwiseFunctor)),
+      : _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
+                                           DataLayout, useNewton3>(pairwiseFunctor)),
         _cellPairOffsets{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),
@@ -70,7 +69,8 @@ class C08CellHandler {
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellFunctor;
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
+      _cellFunctor;
 
   /**
    * Pair sets for processBaseCell().

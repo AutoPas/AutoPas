@@ -58,18 +58,18 @@ class AutoPasLock {
   /**
    * Move Constructor
    */
-  AutoPasLock(AutoPasLock&&) noexcept { omp_init_lock(&_lock); }
+  AutoPasLock(AutoPasLock &&) noexcept { omp_init_lock(&_lock); }
 
   /**
    * Copy constructor
    */
-  AutoPasLock(const AutoPasLock&) { omp_init_lock(&_lock); }
+  AutoPasLock(const AutoPasLock &) { omp_init_lock(&_lock); }
 
   /**
    * Assignment operator
    * @return reference to this object after copy
    */
-  AutoPasLock& operator=(AutoPasLock) = delete;
+  AutoPasLock &operator=(AutoPasLock) = delete;
 
   /**
    * Destructor
@@ -130,18 +130,18 @@ class AutoPasLock {
   /**
    * Move Constructor
    */
-  AutoPasLock(AutoPasLock&&) noexcept { _locked = false; }
+  AutoPasLock(AutoPasLock &&) noexcept { _locked = false; }
 
   /**
    * Copy constructor
    */
-  AutoPasLock(AutoPasLock&) { _locked = false; }
+  AutoPasLock(AutoPasLock &) { _locked = false; }
 
   /**
    * Assignment operator
    * @return reference to this object after copy
    */
-  AutoPasLock& operator=(AutoPasLock) = delete;
+  AutoPasLock &operator=(AutoPasLock) = delete;
 
   /**
    * Destructor

@@ -17,6 +17,7 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
+namespace internal {
 /**
  * Class that manages a block of ParticleCells.
  * It is used to resize the cellblock and to handle the conversion of 3d to 1d
@@ -272,8 +273,6 @@ class CellBlock3D : public CellBorderAndFlagManager {
   // 1 over above. Since this value is needed for sorting particles in cells, it
   // is computed quite often
   std::array<double, 3> _cellLengthReciprocal;
-
-  //	CellBorderAndFlagManager _cellBorderAndFlagManager;
 };
 
 template <class ParticleCell>
@@ -464,4 +463,5 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
     }
   }
 }
+}  // namespace internal
 }  // namespace autopas

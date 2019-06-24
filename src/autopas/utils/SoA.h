@@ -42,7 +42,7 @@ class SoA {
    * @param length new length.
    */
   void resizeArrays(size_t length) {
-    soaStorage.apply([=](auto &list) { list.resize(length); });
+    soaStorage.apply([=](auto &list) { list.resize(length + viewStart); });
   }
 
   /**
@@ -69,6 +69,17 @@ class SoA {
 
   /**
    * @brief Writes / updates values of attributes for a specific particle.
+   * Appends the other SoA buffer.
+   * @param other other buffer.
+   */
+  void append(SoA<SoAArraysType> &other) {
+    if (other.getNumParticles() > 0) {
+      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+    }
+  }
+
+  /**
+   * Writes or updates values of attributes for a specific particle.
    * @tparam attributes Array of attributes to update.
    * @tparam ValueArrayType type of the array
    * @param particleId Particle to update.
@@ -76,7 +87,7 @@ class SoA {
    */
   template <int... attributes, class ValueArrayType>
   void writeMultiple(size_t particleId, const ValueArrayType &values) {
-    write_impl<attributes...>(particleId, values);
+    write_impl<attributes...>(particleId + viewStart, values);
   }
 
   /**
@@ -88,7 +99,7 @@ class SoA {
    */
   template <int... attributes, size_t N = sizeof...(attributes)>
   inline void writeMultiple(size_t particleId, std::array<double, N> values) {
-    write_impl<attributes...>(particleId, values);
+    write_impl<attributes...>(particleId + viewStart, values);
   }
 
   /**
@@ -108,7 +119,7 @@ class SoA {
           getNumParticles());
       return retArray;
     }
-    read_impl<attributes...>(particleId, retArray);
+    read_impl<attributes...>(particleId + viewStart, retArray);
     return retArray;
   }
 
@@ -120,7 +131,7 @@ class SoA {
    */
   template <std::size_t attribute>
   auto read(size_t particleId) {
-    return soaStorage.template get<attribute>().at(particleId);
+    return soaStorage.template get<attribute>().at(particleId + viewStart);
   }
 
   /**
@@ -130,7 +141,7 @@ class SoA {
    */
   template <std::size_t attribute>
   auto begin() {
-    return soaStorage.template get<attribute>().data();
+    return soaStorage.template get<attribute>().data() + viewStart;
   }
 
   /**
@@ -141,7 +152,7 @@ class SoA {
    *
    * @return Number of particles.
    */
-  size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
+  inline size_t getNumParticles() const { return soaStorage.template get<0>().size() - viewStart; }
 
   /**
    * delete all particles in the soa
@@ -160,11 +171,17 @@ class SoA {
   }
 
   /**
-   * delete the last particle in the soa
+   * Delete the last particle in the SoA.
    */
   void pop_back() {
     soaStorage.apply([](auto &list) { list.pop_back(); });
   }
+
+  /**
+   * Set index of the particle which is externally shown as the first particle in the buffer.
+   * @param start index of the first element
+   */
+  void setViewStart(size_t start) { viewStart = start; }
 
  private:
   // actual implementation of read
@@ -190,9 +207,28 @@ class SoA {
   template <class ValueArrayType>
   void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {}
 
+  // helper function to append a single array
+  template <std::size_t attribute>
+  void appendSingleArray(utils::SoAStorage<SoAArraysType> &valArrays) {
+    auto &currentVector = soaStorage.template get<attribute>();
+    auto &otherVector = valArrays.template get<attribute>();
+    currentVector.insert(currentVector.end(), otherVector.begin(), otherVector.end());
+  }
+
+  // actual implementation of append
+  template <std::size_t... Is>
+  void append_impl(utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+    // @TODO: This is a rather bad solution, but necessary since C++14 lacks fold expressions
+    // @TODO: C++17: replace by (appendSingleArray<Is>(valArrays),...);
+    int unusedArray[] = {(appendSingleArray<Is>(valArrays), 0)...};
+    (void)unusedArray;  // avoid unused variable warning
+  }
+
   // ------------- members ---------------
 
   // storage container for the SoA's
   utils::SoAStorage<SoAArraysType> soaStorage;
+
+  size_t viewStart = 0;
 };
 }  // namespace autopas

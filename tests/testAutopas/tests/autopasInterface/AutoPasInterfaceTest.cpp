@@ -19,7 +19,7 @@ constexpr double shift = 0.1;
 constexpr std::array<double, 3> zeroArr = {0., 0., 0.};
 
 template <typename AutoPasT>
-void defaultInit(AutoPasT& autoPas) {
+void defaultInit(AutoPasT &autoPas) {
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
@@ -29,7 +29,7 @@ void defaultInit(AutoPasT& autoPas) {
 }
 
 template <typename AutoPasT>
-void defaultInit(AutoPasT& autoPas1, AutoPasT& autoPas2, size_t direction) {
+void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
   autoPas1.setBoxMin(boxMin);
   autoPas2.setBoxMax(boxMax);
 
@@ -53,9 +53,9 @@ void defaultInit(AutoPasT& autoPas1, AutoPasT& autoPas2, size_t direction) {
  * @param leavingParticles
  * @return vector of particles that will enter the container.
  */
-std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule>& leavingParticles) {
+std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule> &leavingParticles) {
   std::vector<Molecule> enteringParticles{leavingParticles};
-  for (auto& p : enteringParticles) {
+  for (auto &p : enteringParticles) {
     auto pos = p.getR();
     for (auto dim = 0; dim < 3; dim++) {
       if (pos[dim] < boxMin[dim]) {
@@ -77,7 +77,7 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule>& le
  * @param autoPas
  * @return vector of particles that are already shifted for the next process.
  */
-auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) {
+auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas) {
   std::vector<Molecule> haloParticles;
 
   for (short x : {-1, 0, 1}) {
@@ -125,9 +125,9 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas) {
   return haloParticles;
 }
 
-size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> enteringParticles) {
+size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::vector<Molecule> enteringParticles) {
   size_t numAdded = 0;
-  for (auto& p : enteringParticles) {
+  for (auto &p : enteringParticles) {
     if (autopas::utils::inBox(p.getR(), autoPas.getBoxMin(), autoPas.getBoxMax())) {
       autoPas.addParticle(p);
       ++numAdded;
@@ -136,21 +136,21 @@ size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::ve
   return numAdded;
 }
 
-void addHaloParticles(autopas::AutoPas<Molecule, FMCell>& autoPas, std::vector<Molecule> haloParticles) {
-  for (auto& p : haloParticles) {
+void addHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::vector<Molecule> haloParticles) {
+  for (auto &p : haloParticles) {
     autoPas.addHaloParticle(p);
   }
 }
 
 template <typename Functor>
-void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor) {
+void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor) {
   // 1. update Container; return value is vector of invalid == leaving particles!
   auto invalidParticles = autoPas.updateContainer();
 
   // 2. leaving and entering particles
-  const auto& sendLeavingParticles = invalidParticles;
+  const auto &sendLeavingParticles = invalidParticles;
   // 2b. get+add entering particles (addParticle)
-  const auto& enteringParticles = convertToEnteringParticles(sendLeavingParticles);
+  const auto &enteringParticles = convertToEnteringParticles(sendLeavingParticles);
   auto numAdded = addEnteringParticles(autoPas, enteringParticles);
 
   EXPECT_EQ(numAdded, enteringParticles.size());
@@ -160,7 +160,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* func
   auto sendHaloParticles = identifyAndSendHaloParticles(autoPas);
 
   // 3b. get halo particles
-  const auto& recvHaloParticles = sendHaloParticles;
+  const auto &recvHaloParticles = sendHaloParticles;
   addHaloParticles(autoPas, recvHaloParticles);
 
   // 4. iteratePairwise
@@ -168,18 +168,18 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* func
 }
 
 template <typename Functor>
-void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas1, autopas::AutoPas<Molecule, FMCell>& autoPas2,
-                      Functor* functor1, Functor* functor2) {
+void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas<Molecule, FMCell> &autoPas2,
+                      Functor *functor1, Functor *functor2) {
   // 1. update Container; return value is vector of invalid = leaving particles!
   auto invalidParticles1 = autoPas1.updateContainer();
   auto invalidParticles2 = autoPas2.updateContainer();
 
   // 2. leaving and entering particles
-  const auto& sendLeavingParticles1 = invalidParticles1;
-  const auto& sendLeavingParticles2 = invalidParticles2;
+  const auto &sendLeavingParticles1 = invalidParticles1;
+  const auto &sendLeavingParticles2 = invalidParticles2;
   // 2b. get+add entering particles (addParticle)
-  const auto& enteringParticles2 = convertToEnteringParticles(sendLeavingParticles1);
-  const auto& enteringParticles1 = convertToEnteringParticles(sendLeavingParticles2);
+  const auto &enteringParticles2 = convertToEnteringParticles(sendLeavingParticles1);
+  const auto &enteringParticles1 = convertToEnteringParticles(sendLeavingParticles2);
 
   // the particles may either still be in the same container (just going over periodic boundaries) or in the other.
   size_t numAdded = 0;
@@ -196,8 +196,8 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas1, autopas::Aut
   auto sendHaloParticles2 = identifyAndSendHaloParticles(autoPas2);
 
   // 3b. get halo particles
-  const auto& recvHaloParticles2 = sendHaloParticles1;
-  const auto& recvHaloParticles1 = sendHaloParticles2;
+  const auto &recvHaloParticles2 = sendHaloParticles1;
+  const auto &recvHaloParticles1 = sendHaloParticles2;
   addHaloParticles(autoPas1, recvHaloParticles1);
   addHaloParticles(autoPas2, recvHaloParticles2);
 
@@ -207,7 +207,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell>& autoPas1, autopas::Aut
 }
 
 template <typename Functor>
-void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor) {
+void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor) {
   std::array<Molecule, 2> molecules{};
   size_t numParticles = 0;
   for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
@@ -216,7 +216,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor)
   }
   ASSERT_EQ(numParticles, 2) << "The container should own exactly two particles!";
 
-  for (auto& mol : molecules) {
+  for (auto &mol : molecules) {
     EXPECT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144)
         << "wrong force calculated.";  // this value should be correct already
   }
@@ -226,8 +226,8 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas, Functor* functor)
 }
 
 template <typename Functor>
-void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas1, autopas::AutoPas<Molecule, FMCell>& autoPas2,
-                  Functor* functor1, Functor* functor2) {
+void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas<Molecule, FMCell> &autoPas2,
+                  Functor *functor1, Functor *functor2) {
   std::array<Molecule, 2> molecules{};
   size_t numParticles = 0;
   for (auto iter = autoPas1.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
@@ -240,7 +240,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas1, autopas::AutoPas
   }
   ASSERT_EQ(numParticles, 2) << "There should be exactly two owned particles!";
 
-  for (auto& mol : molecules) {
+  for (auto &mol : molecules) {
     EXPECT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144) << "wrong force calculated.";
   }
 
@@ -251,7 +251,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell>& autoPas1, autopas::AutoPas
 void testSimulationLoop(autopas::ContainerOption containerOption) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
-  autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
 
   defaultInit(autoPas);
 
@@ -307,7 +307,7 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
 void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alwaysAddAsHalo) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
-  autoPas.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
 
   defaultInit(autoPas);
 
@@ -426,10 +426,9 @@ using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                          // proper indent
-                         ValuesIn([]() -> std::vector<autopas::ContainerOption> {
+                         ValuesIn([]() -> std::set<autopas::ContainerOption> {
                            auto all = autopas::allContainerOptions;
-                           all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists),
-                                     all.end());
+                           all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                            return all;
                          }()),
                          AutoPasInterfaceTest::PrintToStringParamName());
@@ -440,9 +439,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
                         size_t autoPasDirection) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas1;
-  autoPas1.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption1});
+  autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
   autopas::AutoPas<Molecule, FMCell> autoPas2;
-  autoPas1.setAllowedContainers(std::vector<autopas::ContainerOption>{containerOption2});
+  autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
 
   defaultInit(autoPas1, autoPas2, autoPasDirection);
 
@@ -508,16 +507,15 @@ using ::testing::ValuesIn;
 //                         Combine(ValuesIn(autopas::allContainerOptions), ValuesIn(autopas::allContainerOptions)),
 //                         ContainerSelectorTest::PrintToStringParamName());
 
-INSTANTIATE_TEST_SUITE_P(
-    Generated, AutoPasInterface2ContainersTest,
-    Combine(ValuesIn([]() -> std::vector<autopas::ContainerOption> {
-              auto all = autopas::allContainerOptions;
-              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
-              return all;
-            }()),
-            ValuesIn([]() -> std::vector<autopas::ContainerOption> {
-              auto all = autopas::allContainerOptions;
-              all.erase(std::remove(all.begin(), all.end(), autopas::ContainerOption::verletClusterLists), all.end());
-              return all;
-            }())),
-    AutoPasInterface2ContainersTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
+                         Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
+                                   auto all = autopas::allContainerOptions;
+                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
+                                   return all;
+                                 }()),
+                                 ValuesIn([]() -> std::set<autopas::ContainerOption> {
+                                   auto all = autopas::allContainerOptions;
+                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
+                                   return all;
+                                 }())),
+                         AutoPasInterface2ContainersTest::PrintToStringParamName());

@@ -10,9 +10,10 @@
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
 
-typedef autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> AutoPasContainer;
+typedef autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
+    AutoPasContainer;
 
-void SetupIC(AutoPasContainer& sphSystem, double* end_time, const std::array<double, 3>& bBoxMax) {
+void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
   // Place SPH particles
   std::cout << "setup... started" << std::endl;
   const double dx = 1.0 / 128.0;
@@ -50,7 +51,7 @@ void SetupIC(AutoPasContainer& sphSystem, double* end_time, const std::array<dou
   std::cout << "setup... completed" << std::endl;
 }
 
-void Initialize(AutoPasContainer& sphSystem) {
+void Initialize(AutoPasContainer &sphSystem) {
   std::cout << "initialize... started" << std::endl;
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->calcPressure();
@@ -58,7 +59,7 @@ void Initialize(AutoPasContainer& sphSystem) {
   std::cout << "initialize... completed" << std::endl;
 }
 
-double getTimeStepGlobal(AutoPasContainer& sphSystem) {
+double getTimeStepGlobal(AutoPasContainer &sphSystem) {
   double dt = 1.0e+30;  // set VERY LARGE VALUE
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->calcDt();
@@ -72,7 +73,7 @@ double getTimeStepGlobal(AutoPasContainer& sphSystem) {
   return dt;
 }
 
-void leapfrogInitialKick(AutoPasContainer& sphSystem, const double dt) {
+void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->setVel_half(
         autopas::ArrayMath::add(part->getV(), autopas::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
@@ -80,21 +81,21 @@ void leapfrogInitialKick(AutoPasContainer& sphSystem, const double dt) {
   }
 }
 
-void leapfrogFullDrift(AutoPasContainer& sphSystem, const double dt) {
+void leapfrogFullDrift(AutoPasContainer &sphSystem, const double dt) {
   // time becomes t + dt;
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->addR(autopas::ArrayMath::mulScalar(part->getVel_half(), dt));
   }
 }
 
-void leapfrogPredict(AutoPasContainer& sphSystem, const double dt) {
+void leapfrogPredict(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->addV(autopas::ArrayMath::mulScalar(part->getAcceleration(), dt));
     part->addEnergy(part->getEngDot() * dt);
   }
 }
 
-void leapfrogFinalKick(AutoPasContainer& sphSystem, const double dt) {
+void leapfrogFinalKick(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->setV(
         autopas::ArrayMath::add(part->getVel_half(), autopas::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
@@ -102,17 +103,17 @@ void leapfrogFinalKick(AutoPasContainer& sphSystem, const double dt) {
   }
 }
 
-void setPressure(AutoPasContainer& sphSystem) {
+void setPressure(AutoPasContainer &sphSystem) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->calcPressure();
   }
 }
 
-void addEnteringParticles(AutoPasContainer& sphSystem, std::vector<autopas::sph::SPHParticle>& invalidParticles) {
+void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<autopas::sph::SPHParticle> &invalidParticles) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
 
-  for (auto& p : invalidParticles) {
+  for (auto &p : invalidParticles) {
     // first we have to correct the position of the particles, s.t. they lie inside of the box.
     auto pos = p.getR();
     for (auto dim = 0; dim < 3; dim++) {
@@ -141,8 +142,8 @@ void addEnteringParticles(AutoPasContainer& sphSystem, std::vector<autopas::sph:
  * @param skin
  * @param shift
  */
-void getRequiredHalo(double boxMin, double boxMax, int diff, double& reqMin, double& reqMax, double cutoff, double skin,
-                     double& shift) {
+void getRequiredHalo(double boxMin, double boxMax, int diff, double &reqMin, double &reqMax, double cutoff, double skin,
+                     double &shift) {
   if (diff == 0) {
     reqMin = boxMin - skin;
     reqMax = boxMax + skin;
@@ -164,7 +165,7 @@ void getRequiredHalo(double boxMin, double boxMax, int diff, double& reqMin, dou
  * adding appropriate shifts
  * @param sphSystem
  */
-void updateHaloParticles(AutoPasContainer& sphSystem) {
+void updateHaloParticles(AutoPasContainer &sphSystem) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
   std::array<double, 3> requiredHaloMin{0., 0., 0.}, requiredHaloMax{0., 0., 0.};
@@ -201,9 +202,9 @@ void updateHaloParticles(AutoPasContainer& sphSystem) {
  * deletes the halo particles
  * @param sphSystem
  */
-void deleteHaloParticles(AutoPasContainer& sphSystem) { sphSystem.deleteHaloParticles(); }
+void deleteHaloParticles(AutoPasContainer &sphSystem) { sphSystem.deleteHaloParticles(); }
 
-void densityPressureHydroForce(AutoPasContainer& sphSystem) {
+void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   // declare the used functors
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
   autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
@@ -277,7 +278,7 @@ void densityPressureHydroForce(AutoPasContainer& sphSystem) {
   deleteHaloParticles(sphSystem);
 }
 
-void printConservativeVariables(AutoPasContainer& sphSystem) {
+void printConservativeVariables(AutoPasContainer &sphSystem) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.0;                       // total energy
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
@@ -304,9 +305,9 @@ int main() {
   sphSystem.setCutoff(cutoff);
   sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
-  std::vector<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
-                                                          autopas::ContainerOption::verletLists,
-                                                          autopas::ContainerOption::verletListsCells};
+  std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
+                                                       autopas::ContainerOption::verletLists,
+                                                       autopas::ContainerOption::verletListsCells};
   sphSystem.setAllowedContainers(allowedContainers);
   sphSystem.init();
 

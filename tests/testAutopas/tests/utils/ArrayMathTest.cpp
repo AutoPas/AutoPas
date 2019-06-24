@@ -81,3 +81,17 @@ TEST(ArrayMathTest, testMulScalar) {
     ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
   }
 }
+
+TEST(ArrayMathTest, teststatic_cast_array) {
+  {
+    std::array<long, 3> in({1l, 2l, 3l});
+    auto out = ArrayMath::static_cast_array<unsigned long>(in);
+    static_assert(std::is_same<decltype(out), std::array<unsigned long, 3>>::value, "Type mismatch");
+  }
+
+  {
+    std::array<long, 3> in({1l, 2l, 3l});
+    auto out = ArrayMath::static_cast_array<double>(in);
+    static_assert(std::is_same<decltype(out), std::array<double, 3>>::value, "Type mismatch");
+  }
+}

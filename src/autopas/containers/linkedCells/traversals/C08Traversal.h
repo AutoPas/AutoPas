@@ -22,11 +22,11 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -39,33 +39,34 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                         const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                 interactionLength, cellLength),
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, interactionLength,
+                                                                                 cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
-  TraversalOption getTraversalType() override { return TraversalOption::c08; }
+
+  TraversalOption getTraversalType() const override { return TraversalOption::c08; }
 
   /**
    * C08 traversals are always usable.
    * @return
    */
-  bool isApplicable() override {
+  bool isApplicable() const override {
     int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
     cudaGetDeviceCount(&nDevices);
 #endif
-    if (DataLayout == DataLayoutOption::cuda)
+    if (dataLayout == DataLayoutOption::cuda)
       return nDevices > 0;
     else
       return true;
   }
 
  private:
-  C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
+  C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>

@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
-#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -19,11 +18,11 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam DataLayout
+ * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C18BasedTraversal : public CBasedTraversal<ParticleCell> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the c18 traversal.
@@ -33,30 +32,10 @@ class C18BasedTraversal : public CBasedTraversal<ParticleCell> {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit C18BasedTraversal(const std::array<unsigned long, 3>& dims, PairwiseFunctor* pairwiseFunctor,
-                             const double interactionLength = 1.0,
-                             const std::array<double, 3>& cellLength = {1.0, 1.0, 1.0})
-      : CBasedTraversal<ParticleCell>(dims, interactionLength, cellLength), _dataLayoutConverter(pairwiseFunctor) {}
-
-  void initTraversal(std::vector<ParticleCell>& cells) override {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.loadDataLayout(cells[i]);
-    }
-  }
-
-  void endTraversal(std::vector<ParticleCell>& cells) override {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.storeDataLayout(cells[i]);
-    }
-  }
+  explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                             const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, interactionLength,
+                                                                               cellLength) {}
 
  protected:
   /**
@@ -64,19 +43,13 @@ class C18BasedTraversal : public CBasedTraversal<ParticleCell> {
    * @copydetails C01BasedTraversal::c01Traversal()
    */
   template <typename LoopBody>
-  inline void c18Traversal(LoopBody&& loopBody);
-
- private:
-  /**
-   * Data Layout Converter to be used with this traversal
-   */
-  utils::DataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
+  inline void c18Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 template <typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c18Traversal(
-    LoopBody&& loopBody) {
+inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::c18Traversal(
+    LoopBody &&loopBody) {
   const std::array<unsigned long, 3> stride = {2ul * this->_overlap[0] + 1ul, 2ul * this->_overlap[1] + 1ul,
                                                this->_overlap[2] + 1ul};
   auto end(this->_cellsPerDimension);

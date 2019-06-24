@@ -26,17 +26,15 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
- private:
-  static const std::vector<TraversalOption> &DefaultApplicableTraversals() {
-    static const std::vector<TraversalOption> v{};
-    return v;
-  }
-
  public:
-  /// type of the Particle
+  /**
+   *  Type of the Particle.
+   */
   typedef Particle ParticleType;
 
-  /// type of the ParticleCell
+  /**
+   * Type of the ParticleCell.
+   */
   typedef ParticleCell ParticleCellType;
   /**
    * Constructor of ParticleContainer
@@ -50,9 +48,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
                     const double skin,
                     std::vector<TraversalOption> applicableTraversals = DefaultApplicableTraversals())
       : _cells(),
-        _applicableTraversals(
-            // first sort the applicableTraversals, then pass them to _applicableTraversals. (Comma operator)
-            (std::sort(applicableTraversals.begin(), applicableTraversals.end()), applicableTraversals)),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
@@ -124,16 +119,14 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   double getInteractionLength() const override final { return _cutoff + _skin; }
 
   /**
-   * Checks if the given traversals are applicable to this traversal.
+   * Checks if the given traversals are applicable to this container.
    * @param traversalOptions
    * @return True iff traversalOptions is a subset of _applicableTraversals
    */
-  bool checkIfTraversalsAreApplicable(std::vector<TraversalOption> traversalOptions) {
-    for (auto &option : traversalOptions) {
-      if (find(_applicableTraversals.begin(), _applicableTraversals.end(), option) == _applicableTraversals.end())
-        return false;
-    }
-    return true;
+  bool checkIfTraversalsAreApplicable(std::set<TraversalOption> traversalOptions) {
+    auto applicableTraversals = compatibleTraversals::allCompatibleTraversals(this->getContainerType());
+    return std::includes(applicableTraversals.begin(), applicableTraversals.end(), traversalOptions.begin(),
+                         traversalOptions.end());
   }
 
   /**
@@ -178,10 +171,6 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * common vector for this purpose.
    */
   std::vector<ParticleCell> _cells;
-  /**
-   * Vector of all applicable traversal options for the container.
-   */
-  const std::vector<TraversalOption> _applicableTraversals;
 
  private:
   std::array<double, 3> _boxMin;
