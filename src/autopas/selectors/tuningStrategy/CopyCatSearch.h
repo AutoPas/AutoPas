@@ -39,38 +39,6 @@ namespace autopas {
                                 allowedNewton3Options);
         }
 
-        /**
-         * Constructor for the CopyCatSearch that generates the search space from the allowed options.
-         * But only iterates through ML-Tuner's options
-         * @param allowedContainerOptions
-         * @param allowedTraversalOptions
-         * @param allowedDataLayoutOptions
-         * @param allowedNewton3Options
-         */
-        CopyCatSearch(const std::set<ContainerOption> &allowedContainerOptions,
-                      const std::set<TraversalOption> &allowedTraversalOptions,
-                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                      const std::set<Newton3Option> &allowedNewton3Options,
-                      double boxLength, double cutoff, double verletSkin)
-                : _containerOptions(allowedContainerOptions), _boxLength(boxLength),
-                _cutoff(cutoff), _verletSkin(verletSkin) {
-            // sets search space and current config
-            populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
-                                allowedNewton3Options);
-        }
-
-        /**
-         * Constructor for the CopyCatSearch that only contains the given configurations.
-         * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
-         * @param allowedConfigurations Set of configurations AutoPas can choose from.
-         */
-        explicit CopyCatSearch(std::set<Configuration> allowedConfigurations)
-                : _containerOptions{}, _searchSpace(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {
-            for (auto config : _searchSpace) {
-                _containerOptions.insert(config._container);
-            }
-        }
-
         inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
 
         inline void removeN3Option(Newton3Option badNewton3Option) override;

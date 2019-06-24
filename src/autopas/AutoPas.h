@@ -415,9 +415,7 @@ class AutoPas {
                                                                     _allowedDataLayouts, _allowedNewton3Options);
       case TuningStrategyOption::copyCatSearch:
         return std::make_unique<CopyCatSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
-                                                                       _allowedDataLayouts, _allowedNewton3Options,
-                                                                       getNumberOfParticles(), _boxMax[0] - _boxMin[0],
-                                                                       _cutoff, _verletSkin);
+                                                                       _allowedDataLayouts, _allowedNewton3Options);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
