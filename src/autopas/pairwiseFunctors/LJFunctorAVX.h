@@ -63,13 +63,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         _duplicatedCalculations{duplicatedCalculation},
         _postProcessed{false} {
 
-    if (calculateGlobals and duplicatedCalculation) {
-      if (lowCorner == highCorner) {
-        throw utils::ExceptionHandler::AutoPasException(
-            "Please specify the lowCorner and highCorner properly if calculateGlobals and duplicatedCalculation are "
-            "set to true.");
-      }
-    }
     if (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
@@ -105,6 +98,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
 
     double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
@@ -117,12 +111,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
-      // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
-      // set. (as of 23.11.2018)
-      bool isHaloCell = false;
-      isHaloCell |= xptr[0] < _lowCorner[0] || xptr[0] >= _highCorner[0];
-      isHaloCell |= yptr[0] < _lowCorner[1] || yptr[0] >= _highCorner[1];
-      isHaloCell |= zptr[0] < _lowCorner[2] || zptr[0] >= _highCorner[2];
+      bool isHaloCell = not ownedPtr[0];
       if (isHaloCell) {
         return;
       }
@@ -308,6 +297,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
+    const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
+
     double *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
@@ -327,12 +319,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
     // defined. (as of 23.11.2018)
     if (calculateGlobals) {
-      isHaloCell1 |= x1ptr[0] < _lowCorner[0] || x1ptr[0] >= _highCorner[0];
-      isHaloCell1 |= y1ptr[0] < _lowCorner[1] || y1ptr[0] >= _highCorner[1];
-      isHaloCell1 |= z1ptr[0] < _lowCorner[2] || z1ptr[0] >= _highCorner[2];
-      isHaloCell2 |= x2ptr[0] < _lowCorner[0] || x2ptr[0] >= _highCorner[0];
-      isHaloCell2 |= y2ptr[0] < _lowCorner[1] || y2ptr[0] >= _highCorner[1];
-      isHaloCell2 |= z2ptr[0] < _lowCorner[2] || z2ptr[0] >= _highCorner[2];
+      isHaloCell1 = not ownedPtr1[0];
+      isHaloCell2 = not ownedPtr2[0];
 
       // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
       // correct!
