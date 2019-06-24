@@ -1,6 +1,5 @@
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 project(AutoPas)
-
-cmake_minimum_required(VERSION 3.13)
 
 # CMAKE policies, etc.
 cmake_policy(SET CMP0054 NEW)
