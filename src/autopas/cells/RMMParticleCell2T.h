@@ -32,7 +32,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
   /**
    * @copydoc ParticleCell::addParticle()
    */
-  void addParticle(Particle &p) override {
+  void addParticle(const Particle &p) override {
     _particleSoABuffer.template push<Particle::AttributeNames::id>(p.getID());
     _particleSoABuffer.template push<Particle::AttributeNames::posX>(p.getR()[0]);
     _particleSoABuffer.template push<Particle::AttributeNames::posY>(p.getR()[1]);
