@@ -39,7 +39,7 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
       verletLists.getCellsPerDimension(), &emptyFunctor);
   verletLists.iteratePairwise(&emptyFunctor, &traversal, true);
 
-  std::vector<Particle*> list;
+  std::vector<Particle *> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
 
   EXPECT_EQ(list.size(), 2);
@@ -72,7 +72,7 @@ TEST_F(VerletListsCellsTest, testVerletList) {
       verletLists.getCellsPerDimension(), &mockFunctor);
   verletLists.iteratePairwise(&mockFunctor, &traversal, true);
 
-  std::vector<Particle*> list;
+  std::vector<Particle *> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
 
   EXPECT_EQ(list.size(), 2);

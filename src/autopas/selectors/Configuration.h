@@ -76,7 +76,7 @@ class Configuration {
  * @param rhs
  * @return true iff all members are equal.
  */
-inline bool operator==(const Configuration& lhs, const Configuration& rhs) {
+inline bool operator==(const Configuration &lhs, const Configuration &rhs) {
   return lhs._container == rhs._container and lhs._traversal == rhs._traversal and
          lhs._dataLayout == rhs._dataLayout and lhs._newton3 == rhs._newton3;
 }
@@ -90,7 +90,7 @@ inline bool operator==(const Configuration& lhs, const Configuration& rhs) {
  * @param rhs
  * @return true iff at least one member is different.
  */
-inline bool operator!=(const Configuration& lhs, const Configuration& rhs) { return not(lhs == rhs); }
+inline bool operator!=(const Configuration &lhs, const Configuration &rhs) { return not(lhs == rhs); }
 
 /**
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
@@ -102,7 +102,7 @@ inline bool operator!=(const Configuration& lhs, const Configuration& rhs) { ret
  * @param rhs
  * @return
  */
-inline bool operator<(const Configuration& lhs, const Configuration& rhs) {
+inline bool operator<(const Configuration &lhs, const Configuration &rhs) {
   return std::tie(lhs._container, lhs._traversal, lhs._dataLayout, lhs._newton3) <
          std::tie(rhs._container, rhs._traversal, rhs._dataLayout, rhs._newton3);
 }

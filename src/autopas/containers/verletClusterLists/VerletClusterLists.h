@@ -67,7 +67,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * Lists all traversal options applicable for the Verlet Lists container.
    * @return Vector of all applicable traversal options.
    */
-  static const std::vector<TraversalOption>& allVCLApplicableTraversals() {
+  static const std::vector<TraversalOption> &allVCLApplicableTraversals() {
     // traversal not used but prevents usage of newton3
     static const std::vector<TraversalOption> v{TraversalOption::c01};
     return v;
@@ -87,7 +87,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
     if (useNewton3) {
       /// @todo implement newton3 for VerletClusterLists
       AutoPasLog(error, "Newton3 not implemented yet.");
@@ -105,7 +105,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * @copydoc VerletLists::addParticle()
    */
-  void addParticle(Particle& p) override {
+  void addParticle(Particle &p) override {
     _neighborListIsValid = false;
     // add particle somewhere, because lists will be rebuild anyways
     _clusters[0].addParticle(p);
@@ -114,7 +114,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
-  void addHaloParticle(Particle& haloParticle) override {
+  void addHaloParticle(Particle &haloParticle) override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
@@ -195,7 +195,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void rebuild() {
     // get all particles and clear clusters
     std::vector<Particle> invalidParticles;
-    for (auto& cluster : _clusters) {
+    for (auto &cluster : _clusters) {
       for (auto it = cluster.begin(); it.isValid(); ++it) {
         invalidParticles.push_back(*it);
       }
@@ -237,7 +237,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     _neighborLists.resize(numCells);
 
     // put particles into grids
-    for (auto& particle : invalidParticles) {
+    for (auto &particle : invalidParticles) {
       if (utils::inBox(particle.getR(), _boxMin, _boxMax)) {
         auto index = get1DIndexOfPosition(particle.getR());
         _clusters[index].addParticle(particle);
@@ -245,7 +245,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     // sort by last dimension and reserve space for dummy particles
-    for (auto& cluster : _clusters) {
+    for (auto &cluster : _clusters) {
       cluster.sortByDim(2);
 
       size_t size = cluster.numParticles();
@@ -254,7 +254,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
 
     // clear neighbor lists
-    for (auto& verlet : _neighborLists) {
+    for (auto &verlet : _neighborLists) {
       verlet.clear();
     }
 
@@ -273,7 +273,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     const int gridMaxY = _cellsPerDim[1] - 1;
     for (int yi = 0; yi <= gridMaxY; yi++) {
       for (int xi = 0; xi <= gridMaxX; xi++) {
-        auto& iGrid = _clusters[index1D(xi, yi)];
+        auto &iGrid = _clusters[index1D(xi, yi)];
         // calculate number of full clusters and rest
         index_t iRest = iGrid.numParticles() % _clusterSize;
         index_t iSize = iGrid.numParticles() / _clusterSize;
@@ -283,7 +283,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         const int maxX = std::min(xi + boxRange, gridMaxX);
         const int maxY = std::min(yi + boxRange, gridMaxY);
 
-        auto& iNeighbors = _neighborLists[index1D(xi, yi)];
+        auto &iNeighbors = _neighborLists[index1D(xi, yi)];
         if (iRest > 0)
           iNeighbors.resize(iSize + 1);
         else
@@ -291,7 +291,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         for (int yj = minY; yj <= maxY; yj++) {
           double distY = std::max(0, std::abs(yi - yj) - 1) * _gridSideLength;
           for (int xj = minX; xj <= maxX; xj++) {
-            auto& jGrid = _clusters[index1D(xj, yj)];
+            auto &jGrid = _clusters[index1D(xj, yj)];
 
             // calculate number of  full clusters and rest
             index_t jRest = jGrid.numParticles() % _clusterSize;
@@ -305,10 +305,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                 // bbox in z of iGrid
                 float iBBoxBot = iGrid[zi * _clusterSize].getR()[2];
                 float iBBoxTop = iGrid[(zi + 1) * _clusterSize - 1].getR()[2];
-                auto& iClusterVerlet = iNeighbors[zi];
+                auto &iClusterVerlet = iNeighbors[zi];
                 for (index_t zj = 0; zj < jSize; zj++) {
                   // bbox in z of jGrid
-                  Particle* jClusterStart = &jGrid[zj * _clusterSize];
+                  Particle *jClusterStart = &jGrid[zj * _clusterSize];
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
 
@@ -320,7 +320,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                 // special case: last cluster of jGrid not full
                 if (jRest > 0) {
                   // bbox in z of jGrid
-                  Particle* jClusterStart = &jGrid[jSize * _clusterSize];
+                  Particle *jClusterStart = &jGrid[jSize * _clusterSize];
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
 
@@ -335,10 +335,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                 // bbox in z of iGrid
                 float iBBoxBot = iGrid[iSize * _clusterSize].getR()[2];
                 float iBBoxTop = iGrid[iSize * _clusterSize + iRest - 1].getR()[2];
-                auto& iClusterVerlet = iNeighbors[iSize];
+                auto &iClusterVerlet = iNeighbors[iSize];
                 for (index_t zj = 0; zj < jSize; zj++) {
                   // bbox in z of jGrid
-                  Particle* jClusterStart = &jGrid[zj * _clusterSize];
+                  Particle *jClusterStart = &jGrid[zj * _clusterSize];
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (_clusterSize - 1))->getR()[2];
 
@@ -350,7 +350,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                 // special case: last cluster jGrid and iGrid not full
                 if (jRest > 0) {
                   // bbox in z of jGrid
-                  Particle* jClusterStart = &jGrid[jSize * _clusterSize];
+                  Particle *jClusterStart = &jGrid[jSize * _clusterSize];
                   float jBBoxBot = jClusterStart->getR()[2];
                   float jBBoxTop = (jClusterStart + (jRest - 1))->getR()[2];
 
@@ -379,7 +379,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void padClusters() {
     for (index_t x = 0; x < _cellsPerDim[0]; x++) {
       for (index_t y = 0; y < _cellsPerDim[1]; y++) {
-        auto& grid = _clusters[index1D(x, y)];
+        auto &grid = _clusters[index1D(x, y)];
         index_t rest = grid.numParticles() % _clusterSize;
         if (rest > 0) {
           for (int i = rest; i < _clusterSize; i++) {
@@ -399,7 +399,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param useNewton3
    */
   template <class ParticleFunctor>
-  void traverseVerletLists(ParticleFunctor* functor, bool useNewton3) {
+  void traverseVerletLists(ParticleFunctor *functor, bool useNewton3) {
     if (needsRebuild()) {
       rebuild();
     }
@@ -414,19 +414,19 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     for (index_t x = 0; x < end_x; x++) {
       for (index_t y = 0; y < end_y; y++) {
         index_t index = index1D(x, y);
-        auto& grid = _clusters[index];
-        auto& gridVerlet = _neighborLists[index];
+        auto &grid = _clusters[index];
+        auto &gridVerlet = _neighborLists[index];
 
         const index_t gridSize = grid.numParticles() / _clusterSize;
         for (index_t z = 0; z < gridSize; z++) {
-          Particle* iClusterStart = &grid[z * _clusterSize];
+          Particle *iClusterStart = &grid[z * _clusterSize];
           for (auto neighbor : gridVerlet[z]) {
             if (iClusterStart == neighbor) {
               // self pair
               for (int i = 0; i < _clusterSize; i++) {
                 for (int j = i + 1; j < _clusterSize; j++) {
-                  Particle* iParticle = iClusterStart + i;
-                  Particle* jParticle = neighbor + j;
+                  Particle *iParticle = iClusterStart + i;
+                  Particle *jParticle = neighbor + j;
                   functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
                   if (not useNewton3) functor->AoSFunctor(*jParticle, *iParticle, useNewton3);
                 }
@@ -434,8 +434,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
             } else {
               for (int i = 0; i < _clusterSize; i++) {
                 for (int j = 0; j < _clusterSize; j++) {
-                  Particle* iParticle = iClusterStart + i;
-                  Particle* jParticle = neighbor + j;
+                  Particle *iParticle = iClusterStart + i;
+                  Particle *jParticle = neighbor + j;
                   functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
                 }
               }
@@ -469,7 +469,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param pos the position of the particle
    * @return the index of the grid
    */
-  inline index_t get1DIndexOfPosition(const std::array<double, 3>& pos) const {
+  inline index_t get1DIndexOfPosition(const std::array<double, 3> &pos) const {
     std::array<index_t, 2> cellIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
@@ -499,7 +499,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
  private:
   // neighbors of clusters for each grid
-  std::vector<std::vector<std::vector<Particle*>>> _neighborLists;
+  std::vector<std::vector<std::vector<Particle *>>> _neighborLists;
 
   /// internal storage, particles are split into a grid in xy-dimension
   std::vector<FullParticleCell<Particle>> _clusters;

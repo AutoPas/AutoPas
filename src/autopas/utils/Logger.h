@@ -15,7 +15,7 @@
  */
 #define __FILENAME__                           \
   ({                                           \
-    const char* pStr = strrchr(__FILE__, '/'); \
+    const char *pStr = strrchr(__FILE__, '/'); \
     pStr ? pStr + 1 : __FILE__;                \
   })
 
@@ -67,7 +67,7 @@ class Logger {
    * create a logger writing to the file system
    * @param filename
    */
-  static void create(std::string& filename) {
+  static void create(std::string &filename) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     spdlog::basic_logger_mt(loggerName(), filename);
@@ -78,7 +78,7 @@ class Logger {
    * default is std::cout
    * @param oss
    */
-  static void create(std::ostream& oss = std::cout) {
+  static void create(std::ostream &oss = std::cout) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     auto ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);

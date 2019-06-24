@@ -55,7 +55,7 @@ inline unsigned long medianValue(std::vector<unsigned long> values) {
  * @param strategy For possible selector strategy choices see AutoPas::SelectorStrategy.
  * @return value
  */
-inline unsigned long optimumValue(const std::vector<unsigned long>& values, SelectorStrategy strategy) {
+inline unsigned long optimumValue(const std::vector<unsigned long> &values, SelectorStrategy strategy) {
   switch (strategy) {
     case SelectorStrategy::fastestAbs: {
       return minValue(values);

@@ -41,7 +41,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    */
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const unsigned int rebuildFrequency,
-                        const std::vector<TraversalOption>& applicableTraversals)
+                        const std::vector<TraversalOption> &applicableTraversals)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
         _linkedCells(boxMin, boxMax, cutoff + skin),
         _skin(skin),
@@ -54,7 +54,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @copydoc autopas::ParticleContainerInterface::addParticle
    * @note This function invalidates the neighbor lists.
    */
-  void addParticle(Particle& p) override {
+  void addParticle(Particle &p) override {
     _neighborListIsValid = false;
     _linkedCells.addParticle(p);
   }
@@ -63,7 +63,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @copydoc autopas::ParticleContainerInterface::addHaloParticle
    * @note This function invalidates the neighbor lists.
    */
-  void addHaloParticle(Particle& haloParticle) override {
+  void addHaloParticle(Particle &haloParticle) override {
     _neighborListIsValid = false;
     _linkedCells.addHaloParticle(haloParticle);
   }
@@ -143,7 +143,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * and overwrites the found particle with the provided particle.
    * @param particle
    */
-  void updateHaloParticle(Particle& particle) {
+  void updateHaloParticle(Particle &particle) {
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), _skin);
     bool updated = false;
     for (auto cellptr : cells) {
@@ -182,7 +182,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * Get the dimension of the used cellblock including the haloboxes.
    * @return the dimensions of the used cellblock
    */
-  const std::array<std::size_t, 3>& getCellsPerDimension() {
+  const std::array<std::size_t, 3> &getCellsPerDimension() {
     return _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
   }
 
@@ -214,7 +214,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @param particleI
    * @return
    */
-  bool checkParticleInCellAndUpdate(LinkedParticleCell& cellI, Particle& particleI) {
+  bool checkParticleInCellAndUpdate(LinkedParticleCell &cellI, Particle &particleI) {
     for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
       if (iterator->getID() == particleI.getID()) {
         *iterator = particleI;

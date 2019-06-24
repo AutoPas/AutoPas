@@ -36,13 +36,13 @@ class NumThreadGuard final {
   /**
    * delete copy constructor.
    */
-  NumThreadGuard(const NumThreadGuard&) = delete;
+  NumThreadGuard(const NumThreadGuard &) = delete;
 
   /**
    * delete copy assignment constructor.
    * @return deleted, so not important
    */
-  NumThreadGuard& operator=(const NumThreadGuard&) = delete;
+  NumThreadGuard &operator=(const NumThreadGuard &) = delete;
 
  private:
 #ifdef AUTOPAS_OPENMP

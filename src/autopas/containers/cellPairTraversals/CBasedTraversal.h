@@ -27,8 +27,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param cutoff Cutoff radius.
    * @param cellLength cell length.
    */
-  explicit CBasedTraversal(const std::array<unsigned long, 3>& dims, const double cutoff,
-                           const std::array<double, 3>& cellLength)
+  explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, const double cutoff,
+                           const std::array<double, 3> &cellLength)
       : CellPairTraversal<ParticleCell>(dims), _cutoff(cutoff), _cellLength(cellLength) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
@@ -50,9 +50,9 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param offset initial offset
    */
   template <typename LoopBody>
-  inline void cTraversal(LoopBody&& loopBody, const std::array<unsigned long, 3>& end,
-                         const std::array<unsigned long, 3>& stride,
-                         const std::array<unsigned long, 3>& offset = {0ul, 0ul, 0ul});
+  inline void cTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
+                         const std::array<unsigned long, 3> &stride,
+                         const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
 
   /**
    * cutoff radius.
@@ -72,9 +72,9 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
 
 template <class ParticleCell>
 template <typename LoopBody>
-inline void CBasedTraversal<ParticleCell>::cTraversal(LoopBody&& loopBody, const std::array<unsigned long, 3>& end,
-                                                      const std::array<unsigned long, 3>& stride,
-                                                      const std::array<unsigned long, 3>& offset) {
+inline void CBasedTraversal<ParticleCell>::cTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
+                                                      const std::array<unsigned long, 3> &stride,
+                                                      const std::array<unsigned long, 3> &offset) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif

@@ -18,7 +18,7 @@ void autopas::utils::ExceptionHandler::exception(const std::string e) {  // NOLI
 }
 
 template <>
-void autopas::utils::ExceptionHandler::exception(const char* const e) {
+void autopas::utils::ExceptionHandler::exception(const char *const e) {
   exception(std::string(e));
 }
 
@@ -34,7 +34,7 @@ void autopas::utils::ExceptionHandler::rethrow() {
     default:
       try {
         std::rethrow_exception(p);
-      } catch (std::exception& e) {
+      } catch (std::exception &e) {
         nonThrowException(e);
       }
   }
