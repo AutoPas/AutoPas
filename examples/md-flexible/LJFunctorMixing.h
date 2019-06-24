@@ -146,8 +146,8 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
 
 
     //@TODO FAbio FRAGEN ob das richtig ist, oder was genau restrict ist(es gibt nicht mehrere pointer zu dem object~)
-    double epsilon24= _PCLibrary->get24Epsilon(soa.template begin<Particle::AttributeNames::id>());
-    double sigmasquare= _PCLibrary->getSSigma(soa.template begin<Particle::AttributeNames::id>());
+    double epsilon24= _PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
+    double sigmasquare= _PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const double cutoffsquare = _cutoffsquare, shift6 = _shift6;
     if (calculateGlobals) {
@@ -257,8 +257,8 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
     double *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    double epsilon24= _PCLibrary->mixing24E(soa1.template begin<Particle::AttributeNames::id>(),soa2.template begin<Particle::AttributeNames::id>());
-    double sigmasquare= _PCLibrary->mixingSS(soa1.template begin<Particle::AttributeNames::id>(),soa2.template begin<Particle::AttributeNames::id>());
+    double epsilon24= _PCLibrary->mixing24E(*soa1.template begin<Particle::AttributeNames::id>(),*soa2.template begin<Particle::AttributeNames::id>());
+    double sigmasquare= _PCLibrary->mixingSS(*soa1.template begin<Particle::AttributeNames::id>(),*soa2.template begin<Particle::AttributeNames::id>());
 
 
     bool isHaloCell1 = false;
@@ -542,8 +542,8 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    double epsilon24= _PCLibrary->get24Epsilon(soa.template begin<Particle::AttributeNames::id>());
-    double sigmasquare= _PCLibrary->getSSigma(soa.template begin<Particle::AttributeNames::id>());
+    double epsilon24= _PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
+    double sigmasquare= _PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
     const double cutoffsquare = _cutoffsquare, shift6 = _shift6;
 
     const std::array<double, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
