@@ -57,7 +57,7 @@ algorithm_order = [0, 3, 1, 2, 4]
 
 # If true, the argument lists which are known to be sortable will be sorted
 # lexicographicall
-autosort = False
+autosort = True
 
 # enable comment markup parsing and reflow
 enable_markup = True
