@@ -27,8 +27,8 @@ class LogicHandler {
    * @param tuningInterval
    * @param numSamples
    */
-  LogicHandler(autopas::AutoTuner<Particle, ParticleCell>* autoTuner, const std::array<double, 3>& boxMin,
-               const std::array<double, 3>& boxMax, double cutoff, double skin, unsigned int rebuildFrequency,
+  LogicHandler(autopas::AutoTuner<Particle, ParticleCell> *autoTuner, const std::array<double, 3> &boxMin,
+               const std::array<double, 3> &boxMax, double cutoff, double skin, unsigned int rebuildFrequency,
                unsigned int tuningInterval, unsigned int numSamples)
       : _boxMin{boxMin},
         _boxMax{boxMax},
@@ -57,7 +57,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addParticle()
    */
-  void addParticle(Particle& p) {
+  void addParticle(Particle &p) {
     if (not isNeighborListValid()) {
       _autoTuner.getContainer()->addParticle(p);
     } else {
@@ -70,7 +70,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addHaloParticle()
    */
-  void addHaloParticle(Particle& haloParticle) {
+  void addHaloParticle(Particle &haloParticle) {
     if (not isNeighborListValid()) {
       _autoTuner.getContainer()->addHaloParticle(haloParticle);
     } else {
@@ -116,7 +116,7 @@ class LogicHandler {
    * @copydoc AutoPas::iteratePairwise()
    */
   template <class Functor>
-  void iteratePairwise(Functor* f) {
+  void iteratePairwise(Functor *f) {
     bool doRebuild = not isNeighborListValid();
     _autoTuner.iteratePairwise(f, doRebuild);
   }
@@ -191,7 +191,7 @@ class LogicHandler {
   /**
    * Reference to the AutoTuner that owns the container, ...
    */
-  autopas::AutoTuner<Particle, ParticleCell>& _autoTuner;
+  autopas::AutoTuner<Particle, ParticleCell> &_autoTuner;
 
   /**
    * Specifies if the neighbor list is valid.

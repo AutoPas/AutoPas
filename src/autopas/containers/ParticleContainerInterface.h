@@ -83,7 +83,7 @@ class ParticleContainerInterface {
    * Rebuilds the neighbor lists.
    * @param traversal The used traversal.
    */
-  virtual void rebuildNeighborLists(TraversalInterface* traversal) = 0;
+  virtual void rebuildNeighborLists(TraversalInterface *traversal) = 0;
 
   /**
    * Deletes all halo particles.

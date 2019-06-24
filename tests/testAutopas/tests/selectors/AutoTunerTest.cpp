@@ -238,7 +238,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
   bool doRebuild = true;
   size_t numSamples = 0;
   for (int i = 0; i < 5; ++i) {
-    if(numSamples == maxSamples){
+    if (numSamples == maxSamples) {
       numSamples = 0;
       doRebuild = true;
     }

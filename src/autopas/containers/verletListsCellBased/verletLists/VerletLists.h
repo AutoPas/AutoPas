@@ -80,8 +80,8 @@ class VerletLists
    * @copydoc LinkedCells::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (auto* traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell>*>(traversal)) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+    if (auto *traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal)) {
       traversalInterface->initTraversal(this->_linkedCells.getCells());
       traversalInterface->iterateVerletLists(_aosNeighborLists, _soaNeighborLists);
       traversalInterface->endTraversal(this->_linkedCells.getCells());
@@ -137,7 +137,7 @@ class VerletLists
    * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
    * @param useNewton3
    */
-  void rebuildNeighborLists(TraversalInterface* traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid

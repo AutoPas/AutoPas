@@ -150,7 +150,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @param particle
    * @return true if a particle was found and updated, false if it was not found.
    */
-  bool updateHaloParticle(Particle& particle) override {
+  bool updateHaloParticle(Particle &particle) override {
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), this->getSkin());
     bool updated = false;
     for (auto cellptr : cells) {

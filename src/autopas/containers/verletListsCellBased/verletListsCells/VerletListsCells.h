@@ -169,7 +169,7 @@ class VerletListsCells
    * @param particle
    * @return the neighbor list of the particle
    */
-  const std::vector<Particle *> &getVerletList(const Particle * particle) const {
+  const std::vector<Particle *> &getVerletList(const Particle *particle) const {
     const auto indices = _cellMap.at(const_cast<Particle *>(particle));
     return _neighborLists.at(indices.first).at(indices.second).second;
   }

@@ -10,8 +10,8 @@
 #include <memory>
 #include <set>
 #include <type_traits>
-#include "autopas/autopasIncludes.h"
 #include "autopas/LogicHandler.h"
+#include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
@@ -97,7 +97,7 @@ class AutoPas {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, std::move(generateTuningStrategy()),
         _selectorStrategy, _tuningInterval, _numSamples);
-        _logicHandler = std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(
+    _logicHandler = std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(
         _autoTuner.get(), _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, _tuningInterval,
         _numSamples);
   }

@@ -103,7 +103,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
-  bool updateHaloParticle(Particle& haloParticle) override { throw std::runtime_error("not yet implemented"); }
+  bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles
@@ -173,9 +173,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return ParticleIteratorWrapper<Particle>();
   }
 
-  void rebuildNeighborLists(TraversalInterface* traversal) override {
-    rebuild();
-  }
+  void rebuildNeighborLists(TraversalInterface *traversal) override { rebuild(); }
 
  protected:
   /**
