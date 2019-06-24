@@ -113,7 +113,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets() {
-  _cellOffsets.resize(2 * this->_overlap[1] + 1, std::vector<std::vector<unsigned long>>(2 * this->_overlap[0] + 1));
+  _cellOffsets.resize(2 * this->_overlap[1] + 1, std::vector<offsetArray_t>(2 * this->_overlap[0] + 1));
   const std::array<long, 3> _overlap_s = ArrayMath::static_cast_array<long>(this->_overlap);
 
   const auto cutoffSquare(this->_cutoff * this->_cutoff);
@@ -121,7 +121,9 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
   for (long z = 0l; z <= _overlap_s[2]; ++z) {
     for (long y = -_overlap_s[1]; y <= _overlap_s[1]; ++y) {
       for (long x = -_overlap_s[0]; x <= _overlap_s[0]; ++x) {
-        const long offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
+        const long offset = utils::ThreeDimensionalMapping::threeToOneD(
+            x, y, z, ArrayMath::static_cast_array<long>(this->_cellsPerDimension));
+
         if (offset < 0l) {
           continue;
         }

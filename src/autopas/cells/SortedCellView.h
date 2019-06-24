@@ -41,7 +41,7 @@ class SortedCellView : public ParticleCell<Particle> {
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
   }
 
-  void addParticle(Particle &m) override {}
+  void addParticle(const Particle &m) override {}
 
   SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
 
