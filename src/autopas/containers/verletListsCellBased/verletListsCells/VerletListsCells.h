@@ -164,6 +164,16 @@ class VerletListsCells
     this->_traversalsSinceLastRebuild = 0;
   }
 
+  /**
+   * Get the neighbors list of a particle.
+   * @param particle
+   * @return the neighbor list of the particle
+   */
+  const std::vector<Particle *> &getVerletList(const Particle * particle) const {
+    const auto indices = _cellMap.at(const_cast<Particle *>(particle));
+    return _neighborLists.at(indices.first).at(indices.second).second;
+  }
+
  private:
   /// verlet lists for each particle for each cell
   typename verlet_internal::VerletList_storage_type _neighborLists;

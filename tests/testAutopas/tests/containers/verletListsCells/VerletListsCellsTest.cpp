@@ -34,10 +34,10 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
 
   EXPECT_EQ(list.size(), 2);
   int partners = 0;
-  /// @todo: think of new test
-  //for (auto p : list) {
-  //  partners += verletLists.getVerletList(p).size();
-  //}
+
+  for (auto& pl : list) {
+    partners += verletLists.getVerletList(pl).size();
+  }
   EXPECT_EQ(partners, 1);
 }
 
