@@ -73,8 +73,6 @@ class FullSearch : public TuningStrategyInterface<Particle, ParticleCell> {
     AutoPasLog(trace, "ignoring containerSelector in FullSearch");
   }
 
-  void addParticleCount(int particleCount) {};
-
  private:
   /**
    * Fills the search space with the cartesian product of the given options (minus invalid combinations).

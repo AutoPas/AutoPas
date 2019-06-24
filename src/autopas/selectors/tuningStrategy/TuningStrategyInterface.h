@@ -78,11 +78,5 @@ class TuningStrategyInterface {
    * @todo: add const
    */
   virtual void addContainerSelector(/*const*/ ContainerSelector<Particle, ParticleCell>& containerSelector) = 0;
-
-  /**
-   * Add particleCount to the container
-   * @param particleCount
-   */
-   virtual void addParticleCount(double particle) = 0;
 };
 }  // namespace autopas
