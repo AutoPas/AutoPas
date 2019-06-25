@@ -57,8 +57,8 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
   explicit LJFunctorM(double cutoff, ParticleClassLibrary &PCLibrary, double shift,
-                     std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
-                     bool duplicatedCalculation = true)
+                      std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
+                      bool duplicatedCalculation = true)
       : _cutoffsquare{cutoff * cutoff},
         _PCLibrary(&PCLibrary),
         _shift6{shift * 6.0},
@@ -92,8 +92,8 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    double _sigmasquare = _PCLibrary->mixingSS(i,j);
-    double _epsilon24= _PCLibrary->mixing24E(i,j);
+    double _sigmasquare = _PCLibrary->mixingSS(i, j);
+    double _epsilon24 = _PCLibrary->mixing24E(i, j);
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     double dr2 = ArrayMath::dot(dr, dr);
 
@@ -154,10 +154,9 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-
     //@TODO FAbio FRAGEN ob das richtig ist, oder was genau restrict ist(es gibt nicht mehrere pointer zu dem object~)
-    double epsilon24= _PCLibrary->get24Epsilon(soa.template begin<Particle::AttributeNames::id>());
-    double sigmasquare= _PCLibrary->getSSigma(soa.template begin<Particle::AttributeNames::id>());
+    double epsilon24 = _PCLibrary->get24Epsilon(soa.template begin<Particle::AttributeNames::id>());
+    double sigmasquare = _PCLibrary->getSSigma(soa.template begin<Particle::AttributeNames::id>());
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const double cutoffsquare = _cutoffsquare, shift6 = _shift6;
     if (calculateGlobals) {
@@ -267,9 +266,10 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
     double *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    double epsilon24= _PCLibrary->mixing24E(soa1.template begin<Particle::AttributeNames::id>(),soa2.template begin<Particle::AttributeNames::id>());
-    double sigmasquare= _PCLibrary->mixingSS(soa1.template begin<Particle::AttributeNames::id>(),soa2.template begin<Particle::AttributeNames::id>());
-
+    double epsilon24 = _PCLibrary->mixing24E(soa1.template begin<Particle::AttributeNames::id>(),
+                                             soa2.template begin<Particle::AttributeNames::id>());
+    double sigmasquare = _PCLibrary->mixingSS(soa1.template begin<Particle::AttributeNames::id>(),
+                                              soa2.template begin<Particle::AttributeNames::id>());
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -552,8 +552,8 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    double epsilon24= _PCLibrary->get24Epsilon(soa.template begin<Particle::AttributeNames::id>());
-    double sigmasquare= _PCLibrary->getSSigma(soa.template begin<Particle::AttributeNames::id>());
+    double epsilon24 = _PCLibrary->get24Epsilon(soa.template begin<Particle::AttributeNames::id>());
+    double sigmasquare = _PCLibrary->getSSigma(soa.template begin<Particle::AttributeNames::id>());
     const double cutoffsquare = _cutoffsquare, shift6 = _shift6;
 
     const std::array<double, 3> lowCorner = {_lowCorner[0], _lowCorner[1], _lowCorner[2]};
@@ -809,7 +809,7 @@ class LJFunctorM : public Functor<Particle, ParticleCell, typename Particle::SoA
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   double _cutoffsquare, _shift6;
-  ParticleClassLibrary* _PCLibrary;
+  ParticleClassLibrary *_PCLibrary;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;

@@ -1,4 +1,4 @@
-#!/usr/bin/gnuplot -p
+#!/ usr / bin / gnuplot - p
 
 datafiles = "\
 runtimes_DirectSum_AoS.csv                          \
@@ -26,9 +26,9 @@ titles = "\
 'Verlet Cluster SoA'                                \
 "
 
-# set title "CooLMUC3 256 Threads"
+#set title "CooLMUC3 256 Threads"
 
-# list of keywords used for coloring (same keyword in title = same color)
+#list of keywords used for coloring(same keyword in title = same color)
 colorSelectors = "\
 Linked \
 Direct \
@@ -36,24 +36,24 @@ Direct \
 'Verlet Cells' \
 "
 
-# list of keywords used for point type (same keyword in title = same point type)
+#list of keywords used for point type(same keyword in title = same point type)
 pointSelectors = "\
 SoA \
 AoS \
 "
 
-# Names of the columns to be used for plotting and axis labels
+#Names of the columns to be used for plotting and axis labels
 xData = "NumParticles"
 yData = "MFUPs/s"
 #yData = "Time[micros]"
 #yData = "SingleIteration[micros]"
 
-# if your data file has no header (shame on you) this would be 0 else the number of header blocks
+#if your data file has no header(shame on you) this would be 0 else the number of header blocks
 dataBlock = 1
 
-# use this if you are not satisfied with the automatically chosen size
-#set xrange [30:11000]
-#set yrange [0.001:100]
+#use this if you are not satisfied with the automatically chosen size
+#set xrange[30 : 11000]
+#set yrange[0.001 : 100]
 
 set logscale x 2
 set logscale y 2
@@ -68,7 +68,7 @@ set key autotitle columnheader
 #set key bottom right
 set key outside
 set key center right
-# set key bottom left
+#set key bottom left
 #set key top left
 set key Left reverse
 
@@ -125,7 +125,7 @@ plot for [i=1:words(datafiles)] \
                          esac") + 0) \
     title word(titles, i)
 
-# save margins
+#save margins
 #set xrange restore
 #set yrange restore
 #replot 28000 / x linecolor 'gray'
