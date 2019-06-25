@@ -1,6 +1,6 @@
 # check whether gtest is installed
 
-message(STATUS "Using bundled gtest")
+message(STATUS "gtest - using bundled version")
 find_package(Threads REQUIRED)
 
 # Enable ExternalProject CMake module

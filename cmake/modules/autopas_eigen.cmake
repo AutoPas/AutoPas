@@ -1,4 +1,4 @@
-message(STATUS "Using bundled Eigen3")
+message(STATUS "eigen3 - using bundled version")
 
 # Enable ExternalProject CMake module
 include(ExternalProject)
