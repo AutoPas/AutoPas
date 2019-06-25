@@ -81,9 +81,11 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   bool updateHaloParticle(Particle &haloParticle) override {
-    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getSkin());
+    Particle pCopy = haloParticle;
+    pCopy.setOwned(false);
+    auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdate(*cellptr, haloParticle);
+      bool updated = internal::checkParticleInCellAndUpdate(*cellptr, pCopy);
       if (updated) {
         return true;
       }
@@ -91,7 +93,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     AutoPasLog(trace,
                "VerletLists: updateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
-               haloParticle.getR()[0], haloParticle.getR()[1], haloParticle.getR()[2]);
+               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
     return false;
   }
 

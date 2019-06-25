@@ -151,9 +151,11 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @return true if a particle was found and updated, false if it was not found.
    */
   bool updateHaloParticle(Particle &particle) override {
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), this->getSkin());
+    Particle pCopy = particle;
+    pCopy.setOwned(false);
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdate(*cellptr, particle);
+      bool updated = internal::checkParticleInCellAndUpdate(*cellptr, pCopy);
       if (updated) {
         return true;
       }
@@ -161,7 +163,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
     AutoPasLog(trace,
                "VerletLists: updateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
-               particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
     return false;
   }
 

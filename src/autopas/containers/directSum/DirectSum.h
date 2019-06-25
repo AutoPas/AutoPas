@@ -72,7 +72,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   bool updateHaloParticle(Particle &haloParticle) override {
-    return internal::checkParticleInCellAndUpdateNearPosition(*getHaloCell(), haloParticle, this->getSkin());
+    Particle pCopy = haloParticle;
+    pCopy.setOwned(false);
+    return internal::checkParticleInCellAndUpdateNearPosition(*getHaloCell(), pCopy, this->getSkin());
   }
 
   void deleteHaloParticles() override {
