@@ -1,7 +1,7 @@
 option(AUTOPAS_CODE_COVERAGE "Code Coverage" OFF)
 
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-    if (AUTOPAS_CODE_COVERAGE MATCHES ON)
+if (AUTOPAS_CODE_COVERAGE MATCHES ON)
+    if (CMAKE_BUILD_TYPE MATCHES Debug)
         message(STATUS "ENABLING CODE COVERAGE TARGET")
         include(CodeCoverage)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_COVERAGE} ${CMAKE_CXX_FLAGS_DEBUG}")
@@ -13,7 +13,7 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
             --gtest_output=xml:coverage.junit.xml
             .*gtest.*
         )
+    else()
+        message(FATAL_ERROR "Code Coverage only works with CMAKE_BUILD_TYPE = Debug")
     endif ()
-else()
-    message(FATAL_ERROR "Code Coverage only works with CMAKE_BUILD_TYPE = Debug")
 endif ()
