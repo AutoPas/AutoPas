@@ -47,13 +47,13 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VerletListsCells:    verlet-sliced       with (AoS, newton3 <=> noNewton3)         = 2
   //                      verlet-c18          with (AoS, newton3 <=> noNewton3)         = 2
   //                      verlet-c01          with (AoS, noNewton3)                     = 1
-  // VerletClusterLists:  verlet-clusters     with (AoS, noNewton3)                     = 1
+  // VerletClusterLists:  verlet-clusters     with (AoS <=> SoA, noNewton3)             = 2
   //                                                                               --------
-  //                                                                                     29
+  //                                                                                     30
 #ifndef AUTOPAS_CUDA
-  size_t expectedNumberOfIterations = 29 * maxSamples + 1;
+  size_t expectedNumberOfIterations = 30 * maxSamples + 1;
 #else
-  size_t expectedNumberOfIterations = 40 * maxSamples + 1;
+  size_t expectedNumberOfIterations = 41 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

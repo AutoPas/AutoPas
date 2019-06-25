@@ -52,6 +52,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
                                                                 compatibleTraversals::allVCLCompatibleTraversals()),
         _clusterSize(clusterSize),
+        _numClusters(0),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _skin(skin),
@@ -59,7 +60,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         _cutoffSqr(cutoff * cutoff),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false) {
+        _neighborListIsValid(false),
+        _aosToSoaMapValid(false) {
     rebuild();
   }
 
@@ -86,9 +88,17 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       this->rebuild();
     }
 
+    if (traversal->getDataLayout() == DataLayoutOption::soa && not _aosToSoaMapValid) {
+      buildAosToSoaMap();
+    }
+
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
-      traversalInterface->traverseParticlePairs(_cellsPerDim, _clusterSize, _clusters, _neighborLists);
+      traversalInterface->setTraversalInfo(_cellsPerDim, _numClusters, _clusterSize, _clusters, _neighborLists,
+                                           _aosToSoaMap);
+      traversalInterface->initClusterTraversal();
+      traversalInterface->traverseParticlePairs();
+      traversalInterface->endClusterTraversal();
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
@@ -170,6 +180,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * pad clusters.
    */
   void rebuild() {
+    _aosToSoaMapValid = false;
+
     std::vector<Particle> invalidParticles = collectParticlesAndClearClusters();
 
     auto boxSize = ArrayMath::sub(_boxMax, _boxMin);
@@ -201,6 +213,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     updateVerletLists();
     // fill last cluster with dummy particles, such that each cluster is a multiple of _clusterSize
     padClusters();
+
+    _numClusters = calculateNumClusters();
   }
 
   /**
@@ -394,7 +408,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param jGrid The j-th grid.
    * @param jClusterIndex The index of the cluster to work on in the j-th grid.
    * @param jClusterSize The size of the cluster to work on in the j-th grid.
-   * @param iClusterVerlet The neighbor list of the cluster in the i-th grid to fill the neighbors for.
+   * @param iClusterNeighborList The neighbor list of the cluster in the i-th grid to fill the neighbors for.
    * @param distXYsqr The distance between the i-th grid and the j-th grid in the xy-plane.
    * @param iBBoxBot The bottom z-coordinate of the cluster in the i-th grid.
    * @param iBBoxTop The top z-coordinate of the cluster in the i-th grid.
@@ -432,6 +446,27 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         }
       }
     }
+  }
+
+  /**
+   * Calculates the number of clusters in this container.
+   * @return The number of clusters in this container.
+   */
+  index_t calculateNumClusters() {
+    // iterate over all clusters
+    index_t currentClusterIndex = 0;
+    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
+      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
+        auto &grid = _clusters[index];
+
+        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        for (index_t clusterIndex = 0; clusterIndex < numClustersInGrid; clusterIndex++) {
+          currentClusterIndex++;
+        }
+      }
+    }
+    return currentClusterIndex;
   }
 
   /**
@@ -477,22 +512,47 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return VerletClusterMaths::index1D(cellIndex[0], cellIndex[1], _cellsPerDim);
   }
 
+  /**
+   * Builds the _aosToSoaMap to be up to date with _clusters.
+   */
+  void buildAosToSoaMap() {
+    index_t currentMapIndex = 0;
+    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
+      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
+        auto &grid = _clusters[index];
+        auto &gridNeighborList = _neighborLists[index];
+
+        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        for (index_t clusterIndex = 0; clusterIndex < numClustersInGrid; clusterIndex++) {
+          Particle *clusterStart = &grid[clusterIndex * _clusterSize];
+          _aosToSoaMap[clusterStart] = currentMapIndex++;
+        }
+      }
+    }
+
+    _aosToSoaMapValid = true;
+  }
+
  private:
-  // neighbors of clusters for each grid
+  /// neighbors of clusters for each grid
   std::vector<std::vector<std::vector<Particle *>>> _neighborLists;
 
   /// internal storage, particles are split into a grid in xy-dimension
   std::vector<FullParticleCell<Particle>> _clusters;
   int _clusterSize;
 
+  /// The number of clusters. This is not equal to _cluseters.size(), as every grid might contain multiple clusters.
+  index_t _numClusters;
+
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
 
-  // side length of xy-grid and reciprocal
+  /// side length of xy-grid and reciprocal
   double _gridSideLength;
   double _gridSideLengthReciprocal;
 
-  // dimensions of grid
+  /// dimensions of grid
   std::array<index_t, 3> _cellsPerDim;
 
   /// skin radius
@@ -509,8 +569,14 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /// rebuild
   unsigned int _rebuildFrequency;
 
-  // specifies if the neighbor list is currently valid
+  /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid;
+
+  /// Maps indices to the starting pointers for each cluster
+  std::unordered_map<Particle *, index_t> _aosToSoaMap;
+
+  /// If _aosToSoaMap is valid currently; that means up to date with clusters.
+  bool _aosToSoaMapValid;
 };
 
 }  // namespace autopas
