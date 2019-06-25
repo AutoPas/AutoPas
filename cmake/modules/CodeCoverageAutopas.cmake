@@ -14,4 +14,6 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
             .*gtest.*
         )
     endif ()
+else()
+    message(FATAL_ERROR "Code Coverage only works with CMAKE_BUILD_TYPE = Debug")
 endif ()
