@@ -36,7 +36,7 @@ enum AcquisitionFunction {
  *
  * Currently the default mean is 0 and squared exponential kernel is used.
  * TODO: maybe offer some options.
- * @tparam Vector
+ * @tparam Vector class should be subtractable and convertible to Eigen::VectorXd
  */
 template <class Vector>
 class GaussianProcess {
@@ -44,7 +44,7 @@ class GaussianProcess {
   /**
    * Constructor
    * @param theta prior variance
-   * @param dimScale scale each dimension before applying kernel
+   * @param dimScale scale each dimension of distance vectors before applying kernel
    * @param sigma fixed noise
    */
   GaussianProcess(double theta, std::vector<double> dimScale, double sigma)
@@ -196,22 +196,13 @@ class GaussianProcess {
 
  private:
   /**
-   * Subtract two inputs. For each template this should return a Eigen::VectorXd.
-   * This vector should represent the distance between the inputs.
-   * @param f1
-   * @param f2
-   * @return
-   */
-  Eigen::VectorXd subtract(const Vector &f1, const Vector &f2) const;
-
-  /**
    * Kernel function to describe similarity between two inputs
    * @param f1
    * @param f2
    * @return
    */
   inline double kernel(const Vector &f1, const Vector &f2) const {
-    Eigen::VectorXd r = subtract(f1, f2);
+    Eigen::VectorXd r = static_cast<Eigen::VectorXd>(f1 - f2);
     Eigen::VectorXd rSquared = r.array().square();
     return _theta * exp(-rSquared.dot(_dimScale));
   }
@@ -249,17 +240,4 @@ class GaussianProcess {
   Eigen::MatrixXd _covMatInv;
   Eigen::VectorXd _weights;
 };
-
-template <class Vector>
-inline Eigen::VectorXd GaussianProcess<Vector>::subtract(const Vector &f1, const Vector &f2) const {
-  auto r = f1 - f2;
-  std::vector<double> rData(std::begin(r), std::end(r));
-  return Eigen::Map<Eigen::VectorXd>(rData.data(), rData.size());
-}
-
-template <>
-inline Eigen::VectorXd GaussianProcess<Eigen::VectorXd>::subtract(const Eigen::VectorXd &f1,
-                                                                  const Eigen::VectorXd &f2) const {
-  return f1 - f2;
-}
 }  // namespace autopas

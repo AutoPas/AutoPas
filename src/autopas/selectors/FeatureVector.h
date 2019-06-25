@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+#include <Eigen/Dense>
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
@@ -42,16 +43,30 @@ class FeatureVector : public Configuration {
   FeatureVector(Configuration conf) : Configuration(conf) {}
 
   /**
-   * Distance between two FeatureVectors. Container is ignored.
+   * Distance between two FeatureVectors
    * @param other
-   * @return array. distance in each dimension
+   * @return
    */
-  std::array<double, 4> operator-(const FeatureVector &other) const {
-    std::array<double, 4> result;
-    result[0] = (cellSizeFactor - other.cellSizeFactor);
-    result[1] = ((traversal == other.traversal) ? 0 : 1);
-    result[2] = ((dataLayout == other.dataLayout) ? 0 : 1);
-    result[3] = ((newton3 == other.newton3) ? 0 : 1);
+  FeatureVector operator-(const FeatureVector &other) const {
+    ContainerOption co = ContainerOption((traversal == other.traversal) ? 0 : 1);
+    double cfs = (cellSizeFactor - other.cellSizeFactor);
+    TraversalOption to = TraversalOption((traversal == other.traversal) ? 0 : 1);
+    DataLayoutOption dlo = DataLayoutOption((dataLayout == other.dataLayout) ? 0 : 1);
+    Newton3Option n3o = Newton3Option((newton3 == other.newton3) ? 0 : 1);
+    return FeatureVector(co, cfs, to, dlo, n3o);
+  }
+
+  /**
+   * Cast to Eigen::VectorXd ignoring ContainerOption
+   * @return
+   */
+  operator Eigen::VectorXd() const {
+    Eigen::VectorXd result(4);
+    result << cellSizeFactor,
+              static_cast<double>(traversal),
+              static_cast<double>(dataLayout),
+              static_cast<double>(newton3);
+
     return result;
   }
 
