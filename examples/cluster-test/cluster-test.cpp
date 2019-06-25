@@ -77,7 +77,6 @@ int main(int argc, char *argv[]) {
   double cutoff = .03;
 
   int numParticles = 16;
-  bool useNewton3 = false;
   double skin = 0.;
   int rebuildFrequency = 1;
   if (argc == 4) {
@@ -106,7 +105,7 @@ int main(int argc, char *argv[]) {
       verletTraversal(&func);
 
   // iterate to rebuild
-  cont.iteratePairwise(&func, &verletTraversal, useNewton3);
+  cont.iteratePairwise(&func, &verletTraversal);
 
   int newNumParticles = 0;
   for (auto iter = cont.begin(); iter.isValid(); ++iter) {

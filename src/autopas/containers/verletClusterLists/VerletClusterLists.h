@@ -49,8 +49,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
-                                                                compatibleTraversals::allVCLCompatibleTraversals()),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -75,7 +74,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param useNewton3 not used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
     if (traversal->getUseNewton3()) {
       /// @todo implement newton3 for VerletClusterLists
       AutoPasLog(error, "Newton3 not implemented yet.");

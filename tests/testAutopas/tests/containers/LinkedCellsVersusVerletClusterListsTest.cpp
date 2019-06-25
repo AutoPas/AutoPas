@@ -30,8 +30,8 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
       verletTraversal(&func);
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
       traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  _verletLists.iteratePairwise(&func, &verletTraversal, false);
-  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ, false);
+  _verletLists.iteratePairwise(&func, &verletTraversal);
+  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
 
   std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, skip id=0 to avoid dummy particles
@@ -63,8 +63,8 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   autopas::VerletClustersTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>,
                                    autopas::DataLayoutOption::aos, false>
       traversalFLOPSVerlet(&flopsVerlet);
-  _verletLists.iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet, false);
-  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS, false);
+  _verletLists.iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet);
+  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
 }
