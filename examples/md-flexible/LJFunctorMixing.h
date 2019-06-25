@@ -14,6 +14,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "ParticleClassLibrary.h"
 
 namespace autopas {
 //@enum def von FunctorModes entfernt wegen redundant defenition

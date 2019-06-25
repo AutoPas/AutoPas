@@ -11,7 +11,6 @@
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "LJFunctorMixing.h"
 #include "MDFlexParser.h"
-#include "ParticleClassLibrary.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
