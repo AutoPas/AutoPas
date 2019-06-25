@@ -71,7 +71,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @tparam Traversal The type of the traversal.
    * @param f not used
    * @param traversal The traversal to use for the iteration
-   * @param useNewton3 not used
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
@@ -393,7 +392,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param jGrid The j-th grid.
    * @param jClusterIndex The index of the cluster to work on in the j-th grid.
    * @param jClusterSize The size of the cluster to work on in the j-th grid.
-   * @param iClusterVerlet The neighbor list of the cluster in the i-th grid to fill the neighbors for.
+   * @param iClusterNeighborList The neighbor list of the cluster in the i-th grid to fill the neighbors for.
    * @param distXYsqr The distance between the i-th grid and the j-th grid in the xy-plane.
    * @param iBBoxBot The bottom z-coordinate of the cluster in the i-th grid.
    * @param iBBoxTop The top z-coordinate of the cluster in the i-th grid.
