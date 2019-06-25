@@ -187,44 +187,45 @@ TEST(Generater, Behavior) {
   ASSERT_TRUE(true);
 }
 TEST(Generator, MolSimTask) {
-  auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  double epsilon = 5.0;
-  double sigma = 1.0;
-  double cutoff = 0.5;
-  std::array<double, 3> boxmin({0., 0., 0.});
-  std::array<double, 3> boxmax({50., 30., 50.});
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
-  MolSimTaskGeneration(*autoPas);
-  // initContainerGrid(*autoPas,20,.5);
-  cout << "Number of particles generated " << autoPas->getNumberOfParticles() << endl;
-  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-    cout << iter->toString() << endl;
-
-    double particleD = 0.01;
-    int iterations = 0;
-    // iterationen beginnend
-    TimeDiscretization<decltype(autoPas)> td(particleD);
-    auto *functor =
-        new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
-                               autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
-    // domain vorbeireiten: -Force initialisieren
-    autoPas->iteratePairwise(functor);
+    auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
+    double epsilon = 5.0;
+    double sigma = 1.0;
+    double cutoff = 0.5;
+    std::array<double, 3> boxmin({0., 0., 0.});
+    std::array<double, 3> boxmax({50., 30., 50.});
+    PrintableMolecule::setEpsilon(epsilon);
+    PrintableMolecule::setSigma(sigma);
+    PrintableMolecule::setMass(1.0);
+    MolSimTaskGeneration(*autoPas);
+    // initContainerGrid(*autoPas,20,.5);
+    cout << "Number of particles generated " << autoPas->getNumberOfParticles() << endl;
     for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-      cout << iter->toString() << endl;
-    }
+        cout << iter->toString() << endl;
 
-    writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
-    while (iterations < 10) {
-      td.VSCalculateX(autoPas);
-      autoPas->iteratePairwise(functor);
-      td.VSCalculateV(autoPas);
-      iterations++;
-      writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
-    }
+        double particleD = 0.01;
+        int iterations = 0;
+        // iterationen beginnend
+        TimeDiscretization<decltype(autoPas)> td(particleD);
+        auto *functor =
+                new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
+                        autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
+        // domain vorbeireiten: -Force initialisieren
+        autoPas->iteratePairwise(functor);
+        for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+            cout << iter->toString() << endl;
+        }
 
-    delete autoPas;
-    delete functor;
-    ASSERT_TRUE(true);
-  }
+        writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
+        while (iterations < 10) {
+            td.VSCalculateX(autoPas);
+            autoPas->iteratePairwise(functor);
+            td.VSCalculateV(autoPas);
+            iterations++;
+            writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
+        }
+
+        delete autoPas;
+        delete functor;
+        ASSERT_TRUE(true);
+    }
+}
