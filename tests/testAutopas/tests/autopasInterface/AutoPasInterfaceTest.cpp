@@ -248,10 +248,21 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas
   EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated";
 }
 
-void testSimulationLoop(autopas::ContainerOption containerOption) {
+void testSimulationLoop(testingTuple options) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
+
+  auto containerOption = std::get<0>(std::get<0>(options));
+  auto traversalOption = std::get<1>(std::get<0>(options));
+  auto dataLayoutOption = std::get<1>(options);
+  auto newton3Option = std::get<2>(options);
+  auto cellSizeOption = std::get<3>(options);
+
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedTraversals(std::set<autopas::TraversalOption>{traversalOption});
+  autoPas.setAllowedDataLayouts(std::set<autopas::DataLayoutOption>{dataLayoutOption});
+  autoPas.setAllowedNewton3Options(std::set<autopas::Newton3Option>{newton3Option});
+  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
 
   defaultInit(autoPas);
 
@@ -294,8 +305,18 @@ void testSimulationLoop(autopas::ContainerOption containerOption) {
 
 TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
   // this test checks the correct behavior of the autopas interface.
-  auto containerOption = GetParam();
-  testSimulationLoop(containerOption);
+  auto options = GetParam();
+  try {
+    testSimulationLoop(options);
+  } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
+    std::string str = autoPasException.what();
+    if (str.find("") != std::string::npos) {
+      GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
+    } else {
+      // rethrow
+      throw;
+    }
+  }
 }
 
 /**
@@ -304,10 +325,21 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
  * @param alwaysAddAsHalo If this is true, all particles will be added as halo. This is to test, whether halo particles
  * inside of the domain are handled properly!
  */
-void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alwaysAddAsHalo) {
+void testAdditionAndIteration(testingTuple options, bool alwaysAddAsHalo) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
+
+  auto containerOption = std::get<0>(std::get<0>(options));
+  auto traversalOption = std::get<1>(std::get<0>(options));
+  auto dataLayoutOption = std::get<1>(options);
+  auto newton3Option = std::get<2>(options);
+  auto cellSizeOption = std::get<3>(options);
+
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedTraversals(std::set<autopas::TraversalOption>{traversalOption});
+  autoPas.setAllowedDataLayouts(std::set<autopas::DataLayoutOption>{dataLayoutOption});
+  autoPas.setAllowedNewton3Options(std::set<autopas::Newton3Option>{newton3Option});
+  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
 
   defaultInit(autoPas);
 
@@ -407,31 +439,51 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, bool alw
   }
 }
 
-TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTestNormal) {
-  auto containerOption = GetParam();
-  testAdditionAndIteration(containerOption, false);
+TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIteratorTestNormal) {
+  auto options = GetParam();
+  testAdditionAndIteration(options, false);
 }
 
-TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIterationTestHalo) {
-  auto containerOption = GetParam();
-  testAdditionAndIteration(containerOption, true);
+TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIteratorTestHalo) {
+  auto options = GetParam();
+  testAdditionAndIteration(options, true);
 }
 
+using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
+using ::testing::Values;
 using ::testing::ValuesIn;
 
 /// @todo: use this instead of below to enable testing of VerletClusterLists.
 // INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest, ValuesIn(autopas::allContainerOptions),
 //                         AutoPasInterfaceTest::PrintToStringParamName());
 
-INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
-                         // proper indent
-                         ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                           auto all = autopas::allContainerOptions;
-                           all.erase(all.find(autopas::ContainerOption::verletClusterLists));
-                           return all;
-                         }()),
-                         AutoPasInterfaceTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(
+    Generated, AutoPasInterfaceTest,
+    // proper indent
+    Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
+              auto allContainerOptions = autopas::allContainerOptions;
+              // no verletClusterLists yet
+              allContainerOptions.erase(allContainerOptions.find(autopas::ContainerOption::verletClusterLists));
+              std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> tupleVector;
+              for (const auto &containerOption : allContainerOptions) {
+                auto compatibleTraversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption);
+                for(const auto &traversalOption : compatibleTraversals){
+                  tupleVector.emplace_back(containerOption, traversalOption);
+                }
+              }
+              return tupleVector;
+            }()),
+            ValuesIn([]() -> std::set<autopas::DataLayoutOption> {
+              auto all = autopas::allDataLayoutOptions;
+              // no cuda yet
+              if (all.find(autopas::DataLayoutOption::cuda) != all.end()) {
+                all.erase(all.find(autopas::DataLayoutOption::cuda));
+              }
+              return all;
+            }()),
+            ValuesIn(autopas::allNewton3Options), Values(0.5, 1., 1.5)),
+    AutoPasInterfaceTest::PrintToStringParamName());
 
 ///////////////////////////////////////// TWO containers //////////////////////////////////////////////////////////
 
