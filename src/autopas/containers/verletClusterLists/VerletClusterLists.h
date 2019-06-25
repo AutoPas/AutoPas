@@ -214,12 +214,14 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   template <class LoopBody>
   void traverseClustersParallel(LoopBody &&loopBody) {
+    const index_t endX = _cellsPerDim[0];
+    const index_t endY = _cellsPerDim[1];
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic) collapse(2)
 #endif
-    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
-      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+    for (index_t x = 0; x < endX; x++) {
+      for (index_t y = 0; y < endY; y++) {
         index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
         auto &grid = _clusters[index];
         auto &gridNeighborList = _neighborLists[index];
