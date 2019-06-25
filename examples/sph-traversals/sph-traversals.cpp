@@ -252,6 +252,7 @@ void measureContainer(Container *cont, autopas::sph::SPHCalcDensityFunctor *func
   autopas::utils::Timer t;
 
   t.start();
+  cont->rebuildNeighborLists(traversal);
   for (int i = 0; i < numIterations; ++i) {
     cont->iteratePairwise(func, traversal);
   }
