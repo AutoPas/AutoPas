@@ -494,7 +494,9 @@ int main(int argc, char *argv[]) {
   sphSystem.setAllowedContainers(allowedContainers);
 
   auto dataLayouts = autopas::allDataLayoutOptions;
-  dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
+  if (dataLayouts.find(autopas::DataLayoutOption::cuda) != dataLayouts.end()) {
+    dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
+  }
   sphSystem.setAllowedDataLayouts(dataLayouts);
 
   sphSystem.init();
