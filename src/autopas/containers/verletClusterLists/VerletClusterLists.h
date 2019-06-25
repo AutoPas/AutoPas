@@ -11,7 +11,9 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
+#include "autopas/iterators/ParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
@@ -88,7 +90,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
-      traversalInterface->traverseParticlePairs(_cellsPerDim, _clusterSize, _clusters, _neighborLists);
+      traversalInterface->traverseParticlePairs(*this);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
@@ -167,15 +169,15 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * Helper method to iterate over all clusters.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
    * @tparam inParallel If the iteration should be executed in parallel or sequential.
-   * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
+   * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, int
    * clusterSize, std::vector<Particle*> clusterNeighborList.
    */
   template <bool inParallel, class LoopBody>
   void traverseClusters(LoopBody &&loopBody) {
     if (inParallel) {
-      traverseClustersParallel<LoopBody>(std::forward(loopBody));
+      traverseClustersParallel<LoopBody>(std::forward<LoopBody>(loopBody));
     } else {
-      traverseClustersSequential<LoopBody>(std::forward(loopBody));
+      traverseClustersSequential<LoopBody>(std::forward<LoopBody>(loopBody));
     }
   }
 
@@ -198,7 +200,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
           Particle *iClusterStart = &grid[clusterInGrid * _clusterSize];
           auto &clusterNeighborList = gridNeighborList[clusterInGrid];
-          LoopBody(iClusterStart, _clusterSize, clusterNeighborList);
+          loopBody(iClusterStart, _clusterSize, clusterNeighborList);
         }
       }
     }
@@ -226,7 +228,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
           Particle *iClusterStart = &grid[clusterInGrid * _clusterSize];
           auto &clusterNeighborList = gridNeighborList[clusterInGrid];
-          LoopBody(iClusterStart, _clusterSize, clusterNeighborList);
+          loopBody(iClusterStart, _clusterSize, clusterNeighborList);
         }
       }
     }

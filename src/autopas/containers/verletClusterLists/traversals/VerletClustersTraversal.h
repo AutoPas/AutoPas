@@ -45,31 +45,32 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
    * @copydoc VerletClustersTraversalInterface::traverseParticlePairs
    */
   void traverseParticlePairs(VerletClusterLists<Particle> &verletClusterLists) override {
-    verletClusterLists.template traverseClusters<true>(
-        [functor = _functor](Particle *clusterStart, index_t clusterSize,
-                             std::vector<Particle *> &clusterNeighborList) {
-          for (auto neighbor : clusterNeighborList) {
-            if (clusterStart == neighbor) {
-              // self pair
-              for (int i = 0; i < clusterSize; i++) {
-                for (int j = i + 1; j < clusterSize; j++) {
-                  Particle *iParticle = clusterStart + i;
-                  Particle *jParticle = neighbor + j;
-                  functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
-                  if (not useNewton3) functor->AoSFunctor(*jParticle, *iParticle, useNewton3);
-                }
-              }
-            } else {
-              for (int i = 0; i < clusterSize; i++) {
-                for (int j = 0; j < clusterSize; j++) {
-                  Particle *iParticle = clusterStart + i;
-                  Particle *jParticle = neighbor + j;
-                  functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
-                }
-              }
+    const auto _clusterTraverseFunctor = [functor = _functor](Particle *clusterStart, int clusterSize,
+                                                              std::vector<Particle *> &clusterNeighborList) {
+      for (auto neighbor : clusterNeighborList) {
+        if (clusterStart == neighbor) {
+          // self pair
+          for (int i = 0; i < clusterSize; i++) {
+            for (int j = i + 1; j < clusterSize; j++) {
+              Particle *iParticle = clusterStart + i;
+              Particle *jParticle = neighbor + j;
+              functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
+              if (not useNewton3) functor->AoSFunctor(*jParticle, *iParticle, useNewton3);
             }
           }
-        });
+        } else {
+          for (int i = 0; i < clusterSize; i++) {
+            for (int j = 0; j < clusterSize; j++) {
+              Particle *iParticle = clusterStart + i;
+              Particle *jParticle = neighbor + j;
+              functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
+            }
+          }
+        }
+      }
+    };
+
+    verletClusterLists.template traverseClusters<true>(_clusterTraverseFunctor);
   }
 
  private:
