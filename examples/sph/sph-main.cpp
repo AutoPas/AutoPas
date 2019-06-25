@@ -308,6 +308,8 @@ int main() {
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
                                                        autopas::ContainerOption::verletLists,
                                                        autopas::ContainerOption::verletListsCells};
+  auto dataLayouts = autopas::allDataLayoutOptions;
+  dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
   sphSystem.setAllowedContainers(allowedContainers);
   sphSystem.init();
 
