@@ -7,14 +7,16 @@
 #pragma once
 
 #include <cmath>
-#include "VerletClusterMaths.h"
+#include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/utils/ArrayMath.h"
-#include "traversals/VerletClustersTraversalInterface.h"
 
 namespace autopas {
+
+template <class Particle>
+class VerletClustersTraversalInterface;
 
 /**
  * Particles are divided into clusters.
@@ -161,7 +163,75 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return ParticleIteratorWrapper<Particle>();
   }
 
+  /**
+   * Helper method to iterate over all clusters.
+   * @tparam LoopBody The type of the lambda to execute for all clusters.
+   * @tparam inParallel If the iteration should be executed in parallel or sequential.
+   * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
+   * clusterSize, std::vector<Particle*> clusterNeighborList.
+   */
+  template <bool inParallel, class LoopBody>
+  void traverseClusters(LoopBody &&loopBody) {
+    if (inParallel) {
+      traverseClustersParallel<LoopBody>(std::forward(loopBody));
+    } else {
+      traverseClustersSequential<LoopBody>(std::forward(loopBody));
+    }
+  }
+
  protected:
+  /**
+   * Helper method to sequentially iterate over all clusters.
+   * @tparam LoopBody The type of the lambda to execute for all clusters.
+   * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
+   * clusterSize, std::vector<Particle*> clusterNeighborList.
+   */
+  template <class LoopBody>
+  void traverseClustersSequential(LoopBody &&loopBody) {
+    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
+      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
+        auto &grid = _clusters[index];
+        auto &gridNeighborList = _neighborLists[index];
+
+        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
+          Particle *iClusterStart = &grid[clusterInGrid * _clusterSize];
+          auto &clusterNeighborList = gridNeighborList[clusterInGrid];
+          LoopBody(iClusterStart, _clusterSize, clusterNeighborList);
+        }
+      }
+    }
+  }
+
+  /**
+   * Helper method to iterate over all clusters in parallel.
+   * @tparam LoopBody The type of the lambda to execute for all clusters.
+   * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
+   * clusterSize, std::vector<Particle*> clusterNeighborList.
+   */
+  template <class LoopBody>
+  void traverseClustersParallel(LoopBody &&loopBody) {
+#if defined(AUTOPAS_OPENMP)
+    // @todo: find sensible chunksize
+#pragma omp parallel for schedule(dynamic) collapse(2)
+#endif
+    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
+      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
+        auto &grid = _clusters[index];
+        auto &gridNeighborList = _neighborLists[index];
+
+        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
+          Particle *iClusterStart = &grid[clusterInGrid * _clusterSize];
+          auto &clusterNeighborList = gridNeighborList[clusterInGrid];
+          LoopBody(iClusterStart, _clusterSize, clusterNeighborList);
+        }
+      }
+    }
+  }
+
   /**
    * Recalculate grids and clusters,
    * build verlet lists and

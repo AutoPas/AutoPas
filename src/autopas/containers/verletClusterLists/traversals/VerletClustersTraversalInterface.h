@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "../VerletClusterMaths.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
 
 namespace autopas {
 
@@ -23,13 +24,8 @@ class VerletClustersTraversalInterface {
 
   /**
    * Iterates over all particle pairs.
-   * @param cellsPerDim the cells per dimension of the container.
-   * @param clusterSize the cluster size.
-   * @param clusters the clusters of the container.
-   * @param neighborLists the neighbor lists of the container.
+   * @param verletClusterLists The container to traverse.
    */
-  virtual void traverseParticlePairs(std::array<VerletClusterMaths::index_t, 3> cellsPerDim, int clusterSize,
-                                     std::vector<FullParticleCell<Particle>> &clusters,
-                                     std::vector<std::vector<std::vector<Particle *>>> &neighborLists) = 0;
+  virtual void traverseParticlePairs(VerletClusterLists<Particle> &verletClusterLists) = 0;
 };
 }  // namespace autopas

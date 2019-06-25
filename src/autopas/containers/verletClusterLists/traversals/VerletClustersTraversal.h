@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "VerletClustersTraversalInterface.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 
 namespace autopas {
@@ -44,49 +44,32 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
   /**
    * @copydoc VerletClustersTraversalInterface::traverseParticlePairs
    */
-  void traverseParticlePairs(std::array<index_t, 3> cellsPerDim, int clusterSize,
-                             std::vector<FullParticleCell<Particle>> &clusters,
-                             std::vector<std::vector<std::vector<Particle *>>> &neighborLists) override {
-    const index_t end_x = cellsPerDim[0];
-    const index_t end_y = cellsPerDim[1];
-
-#if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) collapse(2)
-#endif
-    for (index_t x = 0; x < end_x; x++) {
-      for (index_t y = 0; y < end_y; y++) {
-        index_t index = VerletClusterMaths::index1D(x, y, cellsPerDim);
-        auto &grid = clusters[index];
-        auto &gridVerlet = neighborLists[index];
-
-        const index_t gridSize = grid.numParticles() / clusterSize;
-        for (index_t z = 0; z < gridSize; z++) {
-          Particle *iClusterStart = &grid[z * clusterSize];
-          for (auto neighbor : gridVerlet[z]) {
-            if (iClusterStart == neighbor) {
+  void traverseParticlePairs(VerletClusterLists<Particle> &verletClusterLists) override {
+    verletClusterLists.template traverseClusters<true>(
+        [functor = _functor](Particle *clusterStart, index_t clusterSize,
+                             std::vector<Particle *> &clusterNeighborList) {
+          for (auto neighbor : clusterNeighborList) {
+            if (clusterStart == neighbor) {
               // self pair
               for (int i = 0; i < clusterSize; i++) {
                 for (int j = i + 1; j < clusterSize; j++) {
-                  Particle *iParticle = iClusterStart + i;
+                  Particle *iParticle = clusterStart + i;
                   Particle *jParticle = neighbor + j;
-                  _functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
-                  if (not useNewton3) _functor->AoSFunctor(*jParticle, *iParticle, useNewton3);
+                  functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
+                  if (not useNewton3) functor->AoSFunctor(*jParticle, *iParticle, useNewton3);
                 }
               }
             } else {
               for (int i = 0; i < clusterSize; i++) {
                 for (int j = 0; j < clusterSize; j++) {
-                  Particle *iParticle = iClusterStart + i;
+                  Particle *iParticle = clusterStart + i;
                   Particle *jParticle = neighbor + j;
-                  _functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
+                  functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
                 }
               }
             }
           }
-        }
-      }
-    }
+        });
   }
 
  private:
