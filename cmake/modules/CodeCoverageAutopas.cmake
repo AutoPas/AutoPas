@@ -13,7 +13,7 @@ if (AUTOPAS_CODE_COVERAGE MATCHES ON)
             --gtest_output=xml:coverage.junit.xml
             .*gtest.*
         )
-    else()
+    else ()
         message(FATAL_ERROR "Code Coverage only works with CMAKE_BUILD_TYPE = Debug")
     endif ()
 endif ()
