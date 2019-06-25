@@ -23,7 +23,7 @@ class TraversalSelectorInfo {
   /**
    * Constructor of the TraversalSelector class.
    * @param dims Array with the dimension lengths of the domain
-   * @param cutoff Cutoff radius
+   * @param interactionLength Interaction length (cutoff radius + skin)
    * @param cellLength cell length.
    */
   explicit TraversalSelectorInfo(const std::array<unsigned long, 3> &dims, const double interactionLength = 1.0,

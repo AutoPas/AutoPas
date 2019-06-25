@@ -135,7 +135,7 @@ class VerletLists
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
    * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
-   * @param useNewton3
+   * @param traversal
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
