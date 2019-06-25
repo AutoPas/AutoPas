@@ -14,6 +14,7 @@
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/containers/cellPairTraversals/TraversalInterface.h"
+#include "autopas/containers/directSum/DirectSumKokkosTraversal.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
@@ -127,8 +128,10 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
     }
     case TraversalOption::dummyTraversal: {
       return std::make_unique<DummyTraversal<ParticleCell, dataLayout, useNewton3>>(info.dims);
-    }case TraversalOption::kokkosDirectSumTraversal: {
-      return std::make_unique<DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor);
+    }
+    case TraversalOption::kokkosDirectSumTraversal: {
+      return std::make_unique<DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          &pairwiseFunctor);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
