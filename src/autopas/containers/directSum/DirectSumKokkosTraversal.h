@@ -30,57 +30,61 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
-                                     public DirectSumTraversalInterface<ParticleCell> {
-        /**
-         * Constructor for the DirectSum traversal.
-         * @param pairwiseFunctor The functor that defines the interaction of two particles.
-         */
-    public:
-    DirectSumKokkosTraversal(PairwiseFunctor *pairwiseFunctor)
-    : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({2, 1, 1}),
-    _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
-            dataLayout, useNewton3, true>(pairwiseFunctor)),
-    _dataLayoutConverter(pairwiseFunctor) {}
+                                 public DirectSumTraversalInterface<ParticleCell> {
+  /**
+   * Constructor for the DirectSum traversal.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   */
+ public:
+  DirectSumKokkosTraversal(PairwiseFunctor *pairwiseFunctor)
+      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({2, 1, 1}),
+        _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
+                                           dataLayout, useNewton3, true>(pairwiseFunctor)),
+        _dataLayoutConverter(pairwiseFunctor) {}
 
-        TraversalOption getTraversalType() override { return TraversalOption::kokkosDirectSumTraversal; }
+  TraversalOption getTraversalType() const override { return TraversalOption::kokkosDirectSumTraversal; }
 
-        bool isApplicable() const override { return true; }
-        /**
-         * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-         * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
-         */
-        void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  bool isApplicable() const override { return true; }
+  /**
+   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
+   * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
+   */
+  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
-    private:
-        /**
-         * CellFunctor to be used for the traversal defining the interaction between two cells.
-         */
-        internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                true> _cellFunctor;
-    utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
-    };
+  void initTraversal(std::vector<ParticleCell> &cells) override {
+    //@TODO
+  }
+  void endTraversal(std::vector<ParticleCell> &cells) override {
+    //@TODO
+  }
+ private:
+  /**
+   * CellFunctor to be used for the traversal defining the interaction between two cells.
+   */
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+                        true>
+      _cellFunctor;
+  utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+};
 
-    template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-    void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseCellPairs(
-            std::vector<ParticleCell> &cells) {
-      // Assume cell[0] is the main domain and cell[1] is the halo
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseCellPairs(
+    std::vector<ParticleCell> &cells) {
+  // Assume cell[0] is the main domain and cell[1] is the halo
 
 #ifdef AUTOPAS_KOKKOS
-      Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i){
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i){
 
-      //@FIXME Kokkos cannot use non-const functions
-      // typedef Kokkos::View<CellFunctor<typename ParticleCell::ParticleType, ParticleCell,
-      // PairwiseFunctor, useSoA, useNewton3>(
-      //              pairwiseFunctor)*>   ViewVectorType;
-      // ViewVectorType functor( "functor", 1);
-      //_cellFunctor.processCell(cells[0]);
-      //_cellFunctor.processCellPair(cells[0], cells[1]);
+                              //@FIXME Kokkos cannot use non-const functions
+                              // typedef Kokkos::View<CellFunctor<typename ParticleCell::ParticleType, ParticleCell,
+                              // PairwiseFunctor, useSoA, useNewton3>(
+                              //              pairwiseFunctor)*>   ViewVectorType;
+                              // ViewVectorType functor( "functor", 1);
+                              //_cellFunctor.processCell(cells[0]);
+                              //_cellFunctor.processCellPair(cells[0], cells[1]);
 
-      });
+                          });
 #endif
-    }
-
-
-
+}
 
 }  // namespace autopas
