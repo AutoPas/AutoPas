@@ -25,7 +25,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"newton3", required_argument, nullptr, '3'},
                                          {"delta_t", required_argument, nullptr, 'D'},
                                          {"epsilon",required_argument, nullptr, 'e'},
-                                         {"sigma",required_argument, nullptr, 'a'},
+                                         {"sigma",required_argument, nullptr, 'A'},
                                          {"particle-mass", required_argument, nullptr,'M'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
@@ -55,7 +55,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
           }
           break;
       }
-      case 'a':{
+      case 'A':{
           try {
               sigma = stod(strArg);
           } catch (const exception &) {

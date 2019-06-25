@@ -118,7 +118,7 @@ public:
     * -sets/initializes the simulation domain with the particles generators
     * @todo -initialized Velocities and Positions (and forces?)
     */
-    void initialize(MDFlexParser parser);
+    void initialize(MDFlexParser *parser);
 
     /**
      * Does the ForceCalculation
@@ -155,34 +155,34 @@ AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas(
 }
 
 template<class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(MDFlexParser parser){
+void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser){
     //werte die man später für die initialisierung der Funktoren braucht, temporäre implementierung
     //std::array<double, 3> lowCorner = {0., 0., 0.};
     //std::array<double, 3> highCorner = {5., 5., 5.};
     //double epsilon,sigma  = 1.0;
-    string logFileName(parser.getLogFileName());
-    auto measureFlops(parser.getMeasureFlops()); //@todo un-used
-    auto numIterations(parser.getIterations());
-    auto particlesTotal(parser.getParticlesTotal());
-    auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
-    auto vtkFilename(parser.getWriteVTK()); //
-    auto boxLength(parser.getBoxLength());
-    auto containerChoice(parser.getContainerOptions());
-    auto selectorStrategy(parser.getSelectorStrategy());
-    auto cutoff(parser.getCutoff());
-    auto dataLayoutOptions(parser.getDataLayoutOptions());
-    auto distributionMean(parser.getDistributionMean());
-    auto distributionStdDev(parser.getDistributionStdDev());
-    auto functorChoice(parser.getFunctorOption());              //@todo un-used
-    auto generatorChoice(parser.getGeneratorOption());
-    auto newton3Options(parser.getNewton3Options());
-    auto particleSpacing(parser.getParticleSpacing());
-    auto particlesPerDim(parser.getParticlesPerDim());
-    auto traversalOptions(parser.getTraversalOptions());
-    auto tuningInterval(parser.getTuningInterval());
-    auto tuningSamples(parser.getTuningSamples());
-    auto verletSkinRadius(parser.getVerletSkinRadius());
-    this->delta_t = parser.getDeltaT();
+    string logFileName(parser->getLogFileName());
+    auto measureFlops(parser->getMeasureFlops()); //@todo un-used
+    auto numIterations(parser->getIterations());
+    auto particlesTotal(parser->getParticlesTotal());
+    auto verletRebuildFrequency(parser->getVerletRebuildFrequency());
+    auto vtkFilename(parser->getWriteVTK()); //
+    auto boxLength(parser->getBoxLength());
+    auto containerChoice(parser->getContainerOptions());
+    auto selectorStrategy(parser->getSelectorStrategy());
+    auto cutoff(parser->getCutoff());
+    auto dataLayoutOptions(parser->getDataLayoutOptions());
+    auto distributionMean(parser->getDistributionMean());
+    auto distributionStdDev(parser->getDistributionStdDev());
+    auto functorChoice(parser->getFunctorOption());              //@todo un-used
+    auto generatorChoice(parser->getGeneratorOption());
+    auto newton3Options(parser->getNewton3Options());
+    auto particleSpacing(parser->getParticleSpacing());
+    auto particlesPerDim(parser->getParticlesPerDim());
+    auto traversalOptions(parser->getTraversalOptions());
+    auto tuningInterval(parser->getTuningInterval());
+    auto tuningSamples(parser->getTuningSamples());
+    auto verletSkinRadius(parser->getVerletSkinRadius());
+    this->delta_t = parser->getDeltaT();
     this->iterations= numIterations;
     _autopas->setCutoff(cutoff);
     _autopas->setVerletSkin(verletSkinRadius);

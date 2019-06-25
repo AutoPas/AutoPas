@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
     autopas->init();
     autopas::Logger::get()->set_level(logLevel);
     Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
-    Simulation.initialize(parser);
+    Simulation.initialize(&parser);
     //Simulation
     long durationSimulate = Simulation.simulate();
     long durationPosition = Simulation.getDurationX();
