@@ -77,7 +77,6 @@ int main(int argc, char *argv[]) {
   double cutoff = .03;
 
   int numParticles = 16;
-  bool useNewton3 = false;
   double skin = 0.;
   int rebuildFrequency = 1;
   if (argc == 4) {
@@ -100,12 +99,12 @@ int main(int argc, char *argv[]) {
   addParticles(cont, numParticles);
 
   autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
-                        autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>, false,
-                        false>
+                        autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+                        autopas::DataLayoutOption::aos, false>
       dummyTraversal({0, 0, 0}, &func);
 
   // iterate to rebuild
-  cont.iteratePairwiseAoS(&func, &dummyTraversal, useNewton3);
+  cont.iteratePairwise(&func, &dummyTraversal);
 
   int newNumParticles = 0;
   for (auto iter = cont.begin(); iter.isValid(); ++iter) {

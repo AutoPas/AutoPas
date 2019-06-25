@@ -38,22 +38,29 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * neighbor lists are to be rebuild. A frequency of 1 means that they are
    * always rebuild, 10 means they are rebuild after 10 traversals
    * @param applicableTraversals all applicable traversals
+   * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
+   * (smaller values are set to 1.0).
    */
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const unsigned int rebuildFrequency,
-                        const std::vector<TraversalOption>& applicableTraversals)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin, applicableTraversals),
-        _linkedCells(boxMin, boxMax, cutoff + skin),
+                        const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin),
+        _linkedCells(boxMin, boxMax, cutoff + skin, std::max(1.0, cellSizeFactor)),
         _skin(skin),
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false) {}
+        _neighborListIsValid(false),
+        _verletBuiltNewton3(false) {
+    if (cellSizeFactor < 1.0) {
+      AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
+    }
+  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticle
    * @note This function invalidates the neighbor lists.
    */
-  void addParticle(Particle& p) override {
+  void addParticle(Particle &p) override {
     _neighborListIsValid = false;
     _linkedCells.addParticle(p);
   }
@@ -62,7 +69,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @copydoc autopas::ParticleContainerInterface::addHaloParticle
    * @note This function invalidates the neighbor lists.
    */
-  void addHaloParticle(Particle& haloParticle) override {
+  void addHaloParticle(Particle &haloParticle) override {
     _neighborListIsValid = false;
     _linkedCells.addHaloParticle(haloParticle);
   }
@@ -142,7 +149,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * and overwrites the found particle with the provided particle.
    * @param particle
    */
-  void updateHaloParticle(Particle& particle) {
+  void updateHaloParticle(Particle &particle) {
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), _skin);
     bool updated = false;
     for (auto cellptr : cells) {
@@ -170,19 +177,46 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, true);
   }
 
   /**
-   * get the dimension of the used cellblock including the haloboxes.
+   * Get the dimension of the used cellblock including the haloboxes.
    * @return the dimensions of the used cellblock
    */
-  const std::array<std::size_t, 3>& getCellsPerDimension() {
+  const std::array<std::size_t, 3> &getCellsPerDimension() {
     return _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+  }
+
+  /**
+   * Specifies whether the neighbor lists need to rebuild when using the given Newton 3 option.
+   * @param useNewton3 Specifies if newton3 should be used.
+   * @return True if the neighbor lists need to be rebuild, false otherwise.
+   */
+  bool needsRebuild(bool useNewton3) {
+    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
+    // if the neighbor list is NOT valid, we have not rebuild for _rebuildFrequency steps or useNewton3 changed
+    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency) or
+           (useNewton3 != _verletBuiltNewton3);
+  }
+
+  /**
+   * Specifies whether the neighbor lists need to be rebuild.
+   * @note Assumes that the newton3 type has NOT changed!
+   * @return True if the neighbor lists need to be rebuild, false otherwise.
+   */
+  bool needsRebuild() { return needsRebuild(_verletBuiltNewton3); }
+
+  /**
+   * Generates a traversal selector info for this container.
+   * @return Traversal selector info for this container.
+   */
+  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 
  protected:
@@ -194,7 +228,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * @param particleI
    * @return
    */
-  bool checkParticleInCellAndUpdate(LinkedParticleCell& cellI, Particle& particleI) {
+  bool checkParticleInCellAndUpdate(LinkedParticleCell &cellI, Particle &particleI) {
     for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
       if (iterator->getID() == particleI.getID()) {
         *iterator = particleI;
@@ -219,6 +253,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
 
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid;
+
+  /// specifies if the current verlet list was built for newton3
+  bool _verletBuiltNewton3;
 };
 
 }  // namespace autopas

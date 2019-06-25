@@ -58,7 +58,7 @@ TEST(TimeDTest, GeneralForceTest) {
   PrintableMolecule::setEpsilon(5.0);
   PrintableMolecule::setSigma(1.0);
   PrintableMolecule::setMass(1.0);
-  auto* autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
+  auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
   double epsilon = 5.0;
   double sigma = 1.0;
   double cutoff = 2;
@@ -84,7 +84,7 @@ TEST(TimeDTest, GeneralForceTest) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto* functor =
+  auto *functor =
       new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
                              true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
   // domain vorbeireiten: -Force initialisieren
@@ -123,7 +123,7 @@ TEST(TimeDTest, CalcX) {
   PrintableMolecule::setEpsilon(5.0);
   PrintableMolecule::setSigma(1.0);
   PrintableMolecule::setMass(1.0);
-  auto* autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
+  auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
   double epsilon = 5.0;
   double sigma = 1.0;
   double cutoff = 2;
@@ -149,7 +149,7 @@ TEST(TimeDTest, CalcX) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto* functor =
+  auto *functor =
       new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
                              true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
   // domain vorbeireiten: -Force initialisieren
@@ -185,7 +185,7 @@ TEST(TimeDTEst, CalcV) {
   PrintableMolecule::setEpsilon(5.0);
   PrintableMolecule::setSigma(1.0);
   PrintableMolecule::setMass(1.0);
-  auto* autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
+  auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
   double epsilon = 5.0;
   double sigma = 1.0;
   double cutoff = 2;
@@ -211,7 +211,7 @@ TEST(TimeDTEst, CalcV) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto* functor =
+  auto *functor =
       new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
                              true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
   // domain vorbeireiten: -Force initialisieren

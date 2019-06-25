@@ -8,8 +8,13 @@
 
 #include <iostream>
 #include <memory>
+#include <set>
+#include <type_traits>
 #include "autopas/autopasIncludes.h"
+#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 
@@ -41,11 +46,13 @@ class AutoPas {
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
         _numSamples(3),
-        _selectorStrategy(SelectorStrategy::fastestAbs),
+        _tuningStrategyOption(TuningStrategyOption::fullSearch),
+        _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
         _allowedTraversals(allTraversalOptions),
         _allowedDataLayouts(allDataLayoutOptions),
-        _allowedNewton3Options(allNewton3Options) {
+        _allowedNewton3Options(allNewton3Options),
+        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -86,8 +93,8 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, _allowedContainers, _allowedTraversals,
-        _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy, _tuningInterval, _numSamples);
+        _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, std::move(generateTuningStrategy()),
+        _selectorStrategy, _tuningInterval, _numSamples);
   }
 
   /**
@@ -135,6 +142,10 @@ class AutoPas {
    */
   template <class Functor>
   void iteratePairwise(Functor *f) {
+    static_assert(not std::is_same<Functor, autopas::Functor<Particle, ParticleCell>>::value,
+                  "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
+                  "derived type instead, e.g. by using a dynamic_cast.");
+
     _autoTuner->iteratePairwise(f);
   }
 
@@ -205,7 +216,43 @@ class AutoPas {
    * Set cutoff radius.
    * @param cutoff
    */
-  void setCutoff(double cutoff) { AutoPas::_cutoff = cutoff; }
+  void setCutoff(double cutoff) {
+    if (cutoff <= 0.0) {
+      AutoPasLog(error, "Cutoff <= 0.0: {}", cutoff);
+      utils::ExceptionHandler::exception("Error: Cutoff <= 0.0!");
+    }
+    AutoPas::_cutoff = cutoff;
+  }
+
+  /**
+   * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * @return
+   */
+  const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
+
+  /**
+   * Set allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * @param allowedCellSizeFactors
+   */
+  void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
+    if (allowedCellSizeFactors.getMin() <= 0.0) {
+      AutoPasLog(error, "cell size <= 0.0");
+      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+    }
+    AutoPas::_allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
+  }
+
+  /**
+   * Set allowed cell size factors to one element (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * @param cellSizeFactor
+   */
+  void setCellSizeFactor(double cellSizeFactor) {
+    if (cellSizeFactor <= 0.0) {
+      AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
+      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+    }
+    AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
+  }
 
   /**
    * Get length added to the cutoff for the Verlet lists' skin.
@@ -261,27 +308,27 @@ class AutoPas {
    * Get the selector configuration strategy.
    * @return
    */
-  SelectorStrategy getSelectorStrategy() const { return _selectorStrategy; }
+  SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
 
   /**
    * Set the selector configuration strategy.
    * For possible selector strategy choices see AutoPas::SelectorStrategy.
    * @param selectorStrategy
    */
-  void setSelectorStrategy(SelectorStrategy selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
+  void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
 
   /**
    * Get the list of allowed containers.
    * @return
    */
-  const std::vector<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
+  const std::set<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
 
   /**
    * Set the list of allowed containers.
    * For possible container choices see AutoPas::ContainerOption.
    * @param allowedContainers
    */
-  void setAllowedContainers(const std::vector<ContainerOption> &allowedContainers) {
+  void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
     AutoPas::_allowedContainers = allowedContainers;
   }
 
@@ -289,14 +336,14 @@ class AutoPas {
    * Get the list of allowed traversals.
    * @return
    */
-  const std::vector<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
+  const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
 
   /**
    * Set the list of allowed traversals.
    * For possible traversals choices see AutoPas::TraversalOption.
    * @param allowedTraversals
    */
-  void setAllowedTraversals(const std::vector<TraversalOption> &allowedTraversals) {
+  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
     AutoPas::_allowedTraversals = allowedTraversals;
   }
 
@@ -304,14 +351,14 @@ class AutoPas {
    * Get the list of allowed data layouts.
    * @return
    */
-  const std::vector<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
+  const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
 
   /**
    * Set the list of allowed data layouts.
    * For possible data layout choices see AutoPas::DataLayoutOption.
    * @param allowedDataLayouts
    */
-  void setAllowedDataLayouts(const std::vector<DataLayoutOption> &allowedDataLayouts) {
+  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
     AutoPas::_allowedDataLayouts = allowedDataLayouts;
   }
 
@@ -319,14 +366,14 @@ class AutoPas {
    * Get the list of allowed newton 3 options.
    * @return
    */
-  const std::vector<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+  const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
 
   /**
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see AutoPas::Newton3Option
    * @param allowedNewton3Options
    */
-  void setAllowedNewton3Options(const std::vector<Newton3Option> &allowedNewton3Options) {
+  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
     AutoPas::_allowedNewton3Options = allowedNewton3Options;
   }
 
@@ -354,7 +401,43 @@ class AutoPas {
    */
   const Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
 
+  /**
+   * Getter for the tuning strategy option.
+   * @return
+   */
+  TuningStrategyOption getTuningStrategyOption() const { return _tuningStrategyOption; }
+
+  /**
+   * Setter for the tuning strategy option.
+   * @param tuningStrategyOption
+   */
+  void setTuningStrategyOption(TuningStrategyOption tuningStrategyOption) {
+    _tuningStrategyOption = tuningStrategyOption;
+  }
+
  private:
+  /**
+   * Generates a new Tuning Strategy object from the member variables of this autopas object.
+   * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
+   */
+  std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
+    switch (_tuningStrategyOption) {
+      case TuningStrategyOption::fullSearch:
+        if (not _allowedCellSizeFactors->isFinite()) {
+          autopas::utils::ExceptionHandler::exception(
+              "AutoPas::generateTuningStrategy: fullSearch can not handle infinite cellSizeFactors!");
+          return nullptr;
+        }
+
+        return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
+                                            _allowedDataLayouts, _allowedNewton3Options);
+    }
+
+    autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
+                                                _tuningStrategyOption);
+    return nullptr;
+  }
+
   /**
    * Lower corner of the container.
    */
@@ -383,30 +466,41 @@ class AutoPas {
    * Number of samples the tuner should collect for each combination.
    */
   unsigned int _numSamples;
+
+  /**
+   * Strategy option for the auto tuner.
+   * For possible tuning strategy choices see AutoPas::TuningStrategy.
+   */
+  TuningStrategyOption _tuningStrategyOption;
+
   /**
    * Strategy for the configuration selector.
    * For possible container choices see AutoPas::SelectorStrategy.
    */
-  SelectorStrategy _selectorStrategy;
+  SelectorStrategyOption _selectorStrategy;
   /**
    * List of container types AutoPas can choose from.
    * For possible container choices see AutoPas::ContainerOption.
    */
-  std::vector<ContainerOption> _allowedContainers;
+  std::set<ContainerOption> _allowedContainers;
   /**
    * List of traversals AutoPas can choose from.
    * For possible container choices see AutoPas::TraversalOption.
    */
-  std::vector<TraversalOption> _allowedTraversals;
+  std::set<TraversalOption> _allowedTraversals;
   /**
    * List of data layouts AutoPas can choose from.
    * For possible container choices see AutoPas::DataLayoutOption.
    */
-  std::vector<DataLayoutOption> _allowedDataLayouts;
+  std::set<DataLayoutOption> _allowedDataLayouts;
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  std::vector<Newton3Option> _allowedNewton3Options;
+  std::set<Newton3Option> _allowedNewton3Options;
+  /**
+   * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   */
+  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
 
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
 };  // namespace autopas

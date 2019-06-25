@@ -228,4 +228,3 @@ TEST(Generator, MolSimTask) {
     delete functor;
     ASSERT_TRUE(true);
   }
-}

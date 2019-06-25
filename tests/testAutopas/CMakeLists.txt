@@ -1,19 +1,28 @@
-FILE(GLOB_RECURSE MY_SRC
-        "*.cpp"
-        "*.h"
-        )
+file(
+    GLOB_RECURSE
+    MY_SRC
+    "*.cpp"
+    "*.h"
+)
+if (AUTOPAS_ENABLE_CUDA)
+    file(
+        GLOB_RECURSE
+        CU_SRC
+        "*.cu"
+        "*.cuh"
+    )
+endif ()
 
-ADD_EXECUTABLE(runTests
-        ${MY_SRC}
-        )
+add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 
-TARGET_LINK_LIBRARIES(runTests
-        autopas
-        libgtest
-        libgmock
-        )
+target_link_libraries(
+    runTests
+    autopas
+    libgtest
+    libgmock
+)
 
 # this cmake module was only introduced in 3.10
 include(GoogleTest)
 # more robust, queries the compiled executable
-GTEST_DISCOVER_TESTS(runTests)
+gtest_discover_tests(runTests)

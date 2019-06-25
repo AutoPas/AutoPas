@@ -20,7 +20,7 @@ template <class Particle>
 class VerletListsCellsHelpers {
  public:
   /// Verlet list storage
-  typedef std::vector<std::vector<std::pair<Particle*, std::vector<Particle*>>>> VerletList_storage_type;
+  typedef std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> VerletList_storage_type;
 
   /// typedef for verlet-list particle cell type
   typedef FullParticleCell<Particle> VerletListParticleCellType;
@@ -39,13 +39,13 @@ class VerletListsCellsHelpers {
      * @param cellMap used to get the verletlist of a particle
      * @param cutoffskin
      */
-    VerletListGeneratorFunctor(VerletList_storage_type& verletLists,
-                               std::unordered_map<Particle*, std::pair<size_t, size_t>>& cellMap, double cutoffskin)
+    VerletListGeneratorFunctor(VerletList_storage_type &verletLists,
+                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &cellMap, double cutoffskin)
         : _verletLists(verletLists), _cellMap(cellMap), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
 
-    void AoSFunctor(Particle& i, Particle& j, bool newton3) override {
+    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
@@ -61,8 +61,8 @@ class VerletListsCellsHelpers {
     }
 
    private:
-    VerletList_storage_type& _verletLists;
-    std::unordered_map<Particle*, std::pair<size_t, size_t>>& _cellMap;
+    VerletList_storage_type &_verletLists;
+    std::unordered_map<Particle *, std::pair<size_t, size_t>> &_cellMap;
     double _cutoffskinsquared;
   };
 

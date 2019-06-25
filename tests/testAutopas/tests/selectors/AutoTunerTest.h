@@ -28,6 +28,6 @@ class AutoTunerTest : public AutoPasTestBase {
    * @param expectedBest
    * @param ignoredConfigAndTimes
    */
-  void testFastest(autopas::SelectorStrategy strategy, mapConfigTime configAndTimes,
+  void testFastest(autopas::SelectorStrategyOption strategy, mapConfigTime configAndTimes,
                    autopas::Configuration expectedBest, mapConfigTime ignoredConfigAndTimes = {});
 };

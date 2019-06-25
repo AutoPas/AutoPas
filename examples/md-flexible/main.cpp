@@ -4,6 +4,8 @@
  * @author F. Gratl
  */
 
+#include "Simulation.h"
+
 #include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
 #include <fstream>
@@ -13,7 +15,7 @@
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "MDFlexParser.h"
-#include "Simulation.h"
+#include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 
@@ -63,13 +65,13 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
  * @param array<double,3>
  * @return string
  * */
-string BoxToString(array<double, 3> input) {
-  std::ostringstream os;
-  for (double i : input) {
-    os << i;
-  }
-  std::string str(os.str());
-  return str;
+string BoxToString(array<double,3> input){
+    std::ostringstream os;
+    for (double i: input){
+        os << i;
+    }
+    std::string str(os.str());
+    return str;
 }
 
 int main(int argc, char **argv) {
@@ -86,6 +88,9 @@ int main(int argc, char **argv) {
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
   auto vtkFilename(parser.getWriteVTK());
   auto logLevel(parser.getLogLevel());
+  //@todo übernommen vom merge mit master->überprüfen
+  auto &cellSizeFactors(parser.getCellSizeFactors());
+  auto tuningStrategy(parser.getTuningStrategyOption());
 
   parser.printConfig();
 
@@ -107,6 +112,7 @@ int main(int argc, char **argv) {
   PrintableMolecule::setEpsilon(parser.getEpsilon());
   PrintableMolecule::setSigma(parser.getSigma());
   PrintableMolecule::setMass(parser.getMass());
+
   // Initializing Particles Map for ParticleClassLibrary
   // erstmal zum Testen default werte, mit 2 verschiedenen Particle Types, muss noch im Parser angepasst werden
   map<unsigned long, double> PC_Epsilon = {{0, 1.}, {1, 1.}, {2, 2.}};
@@ -115,13 +121,20 @@ int main(int argc, char **argv) {
   ParticleClassLibrary P_C_Library = ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
 
   // Initialization
+
   auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+
+  //@todo übernommen vom merge: -> prüfen
+  autopas->setTuningStrategyOption(tuningStrategy);
+  autopas->setAllowedCellSizeFactors(cellSizeFactors);
+  autopas::Logger::get()->set_level(logLevel);
+
   // setted default anderen boxMax--> sonst Fehler
   autopas->setBoxMax({2., 2., 2.});
   autopas->init();
   autopas::Logger::get()->set_level(logLevel);
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas, P_C_Library);
-  Simulation.initialize(parser);
+  Simulation.initialize(&parser);
   // Simulation
   long durationSimulate = Simulation.simulate();
   long durationPosition = Simulation.getDurationX();
@@ -131,6 +144,7 @@ int main(int argc, char **argv) {
   if (parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
     particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
   }
+
   if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
 
   // statistics for linked cells

@@ -9,7 +9,12 @@
 #include <vector>
 #include "DirectSumTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/DataLayoutConverter.h"
+#if defined(AUTOPAS_CUDA)
+#include "cuda_runtime.h"
+#endif
 
 namespace autopas {
 
@@ -18,25 +23,47 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+class DirectSumTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
+                           public DirectSumTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   DirectSumTraversal(PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>({2, 1, 1}),
-        _cellFunctor(
-            CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3>(
-                pairwiseFunctor)) {}
+      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({2, 1, 1}),
+        _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
+                                           dataLayout, useNewton3, true>(pairwiseFunctor)),
+        _dataLayoutConverter(pairwiseFunctor) {}
 
-  TraversalOption getTraversalType() override { return TraversalOption::directSumTraversal; }
+  TraversalOption getTraversalType() const override { return TraversalOption::directSumTraversal; }
 
-  bool isApplicable() override { return true; }
+  bool isApplicable() const override {
+    int nDevices = 0;
+#if defined(AUTOPAS_CUDA)
+    cudaGetDeviceCount(&nDevices);
+#endif
+    if (dataLayout == DataLayoutOption::cuda)
+      return nDevices > 0;
+    else
+      return true;
+  }
+
+  void initTraversal(std::vector<ParticleCell> &cells) override {
+    for (auto &cell : cells) {
+      _dataLayoutConverter.loadDataLayout(cell);
+    }
+  }
+
+  void endTraversal(std::vector<ParticleCell> &cells) override {
+    for (auto &cell : cells) {
+      _dataLayoutConverter.storeDataLayout(cell);
+    }
+  }
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -48,11 +75,18 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useSoA, useNewton3> _cellFunctor;
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+                        true>
+      _cellFunctor;
+
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool useSoA, bool useNewton3>
-void DirectSumTraversal<ParticleCell, PairwiseFunctor, useSoA, useNewton3>::traverseCellPairs(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+void DirectSumTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseCellPairs(
     std::vector<ParticleCell> &cells) {
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);
