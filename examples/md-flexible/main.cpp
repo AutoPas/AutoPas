@@ -4,7 +4,6 @@
  * @author F. Gratl
  */
 
-#include "Simulation.h"
 #include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
 #include <fstream>
@@ -14,6 +13,7 @@
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "MDFlexParser.h"
+#include "Simulation.h"
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 
@@ -63,79 +63,75 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
  * @param array<double,3>
  * @return string
  * */
-string BoxToString(array<double,3> input){
-    std::ostringstream os;
-    for (double i: input){
-        os << i;
-    }
-    std::string str(os.str());
-    return str;
+string BoxToString(array<double, 3> input) {
+  std::ostringstream os;
+  for (double i : input) {
+    os << i;
+  }
+  std::string str(os.str());
+  return str;
 }
 
-
 int main(int argc, char **argv) {
-    // Parsing
-    MDFlexParser parser;
-    if (not parser.parseInput(argc, argv)) {
-        exit(-1);
-    }
-    string logFileName(parser.getLogFileName());
-    auto measureFlops(parser.getMeasureFlops());
-    auto numIterations(parser.getIterations());
-    auto particlesTotal(parser.getParticlesTotal());
-    auto particlesPerDim(parser.getParticlesPerDim());
-    auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
-    auto vtkFilename(parser.getWriteVTK());
-    auto logLevel(parser.getLogLevel());
+  // Parsing
+  MDFlexParser parser;
+  if (not parser.parseInput(argc, argv)) {
+    exit(-1);
+  }
+  string logFileName(parser.getLogFileName());
+  auto measureFlops(parser.getMeasureFlops());
+  auto numIterations(parser.getIterations());
+  auto particlesTotal(parser.getParticlesTotal());
+  auto particlesPerDim(parser.getParticlesPerDim());
+  auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
+  auto vtkFilename(parser.getWriteVTK());
+  auto logLevel(parser.getLogLevel());
 
-    parser.printConfig();
+  parser.printConfig();
 
-    //Simulationsdauer ausgerechnet in main.cpp:
-    std::chrono::high_resolution_clock::time_point startTotal, stopTotal;
-    startTotal = std::chrono::high_resolution_clock::now();
+  // Simulationsdauer ausgerechnet in main.cpp:
+  std::chrono::high_resolution_clock::time_point startTotal, stopTotal;
+  startTotal = std::chrono::high_resolution_clock::now();
 
-    // select either std::out or a logfile for autopas log output.
-    // This does not affect md-flex output.
-    std::ofstream logFile;
-    std::streambuf *streamBuf;
-    if (logFileName.empty()) {
-        streamBuf = std::cout.rdbuf();
-    } else {
-        logFile.open(logFileName);
-        streamBuf = logFile.rdbuf();
-    }
-    std::ostream outputStream(streamBuf);
-    PrintableMolecule::setEpsilon(parser.getEpsilon());
-    PrintableMolecule::setSigma(parser.getSigma());
-    PrintableMolecule::setMass(parser.getMass());
-    //Initializing Particles Map for ParticleClassLibrary
-    //erstmal zum Testen default werte, mit 2 verschiedenen Particle Types, muss noch im Parser angepasst werden
-    map<unsigned long, double> PC_Epsilon = {{0,1.},{1, 1.}, {2, 2.}};
-    map<unsigned long, double> PC_Sigma = {{0,1.},{1, 1.}, {2, 1.5}};
-    map<unsigned long, double> PC_Mass = {{0,1.},{1, 1.}, {2, 2.}};
-    ParticleClassLibrary P_C_Library =ParticleClassLibrary(PC_Epsilon,PC_Sigma,PC_Mass);
+  // select either std::out or a logfile for autopas log output.
+  // This does not affect md-flex output.
+  std::ofstream logFile;
+  std::streambuf *streamBuf;
+  if (logFileName.empty()) {
+    streamBuf = std::cout.rdbuf();
+  } else {
+    logFile.open(logFileName);
+    streamBuf = logFile.rdbuf();
+  }
+  std::ostream outputStream(streamBuf);
+  PrintableMolecule::setEpsilon(parser.getEpsilon());
+  PrintableMolecule::setSigma(parser.getSigma());
+  PrintableMolecule::setMass(parser.getMass());
+  // Initializing Particles Map for ParticleClassLibrary
+  // erstmal zum Testen default werte, mit 2 verschiedenen Particle Types, muss noch im Parser angepasst werden
+  map<unsigned long, double> PC_Epsilon = {{0, 1.}, {1, 1.}, {2, 2.}};
+  map<unsigned long, double> PC_Sigma = {{0, 1.}, {1, 1.}, {2, 1.5}};
+  map<unsigned long, double> PC_Mass = {{0, 1.}, {1, 1.}, {2, 2.}};
+  ParticleClassLibrary P_C_Library = ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
 
-    // Initialization
-    auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
-    //setted default anderen boxMax--> sonst Fehler
-    autopas->setBoxMax({2.,2.,2.});
-    autopas->init();
-    autopas::Logger::get()->set_level(logLevel);
-    Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas,P_C_Library);
-    Simulation.initialize(parser);
-    //Simulation
-    long durationSimulate = Simulation.simulate();
-    long durationPosition = Simulation.getDurationX();
-    long durationVelocity = Simulation.getDurationV();
-    long durationForce = Simulation.getDurationF();
-    cout << endl;
-    if(parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid){
-        particlesTotal=particlesPerDim * particlesPerDim * particlesPerDim;
-    }
-    if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
-
-
-
+  // Initialization
+  auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+  // setted default anderen boxMax--> sonst Fehler
+  autopas->setBoxMax({2., 2., 2.});
+  autopas->init();
+  autopas::Logger::get()->set_level(logLevel);
+  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas, P_C_Library);
+  Simulation.initialize(parser);
+  // Simulation
+  long durationSimulate = Simulation.simulate();
+  long durationPosition = Simulation.getDurationX();
+  long durationVelocity = Simulation.getDurationV();
+  long durationForce = Simulation.getDurationF();
+  cout << endl;
+  if (parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
+    particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
+  }
+  if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
 
   // statistics for linked cells
   if (autopas->getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
@@ -159,18 +155,20 @@ int main(int argc, char **argv) {
   stopTotal = std::chrono::high_resolution_clock::now();
   cout << "Force calculation done!" << endl;
 
-  //FlopsPerKernelCall ließt vom Functor
-  switch (parser.getFunctorOption()){
-      case MDFlexParser::FunctorOption ::lj12_6:{
-          flopsPerKernelCall = LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-        break;
-      }
-      case MDFlexParser::FunctorOption ::lj12_6_AVX:{
-          flopsPerKernelCall = LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
-          break;
-      }
-      default:
-          throw std::runtime_error("Not allowed Functor choice");
+  // FlopsPerKernelCall ließt vom Functor
+  switch (parser.getFunctorOption()) {
+    case MDFlexParser::FunctorOption ::lj12_6: {
+      flopsPerKernelCall =
+          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexParser::FunctorOption ::lj12_6_AVX: {
+      flopsPerKernelCall =
+          LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      break;
+    }
+    default:
+      throw std::runtime_error("Not allowed Functor choice");
   }
 
   //  printMolecules(autopas);
@@ -179,18 +177,18 @@ int main(int argc, char **argv) {
   auto durationTotalSec = durationTotal * 1e-6;
   auto durationApplySec = durationApply * 1e-6;
 
-  //time statistics
-  cout << "Simulation duration without initilization: " << durationSimulate << " \u03bcs" <<  endl;
+  // time statistics
+  cout << "Simulation duration without initilization: " << durationSimulate << " \u03bcs" << endl;
   // Statistics
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
   cout << "Duration of Physics Calculations: " << endl;
-  cout << "Force:   " << durationForce  << " \u03bcs (" << durationForce*1e-6 << "s)" << endl;
-  cout << "Postion: " << durationPosition  << " \u03bcs (" << durationPosition*1e-6 << "s)" << endl;
-  cout << "Velocity " << durationVelocity  << " \u03bcs (" << durationVelocity*1e-6 << "s)" << endl;
+  cout << "Force:   " << durationForce << " \u03bcs (" << durationForce * 1e-6 << "s)" << endl;
+  cout << "Postion: " << durationPosition << " \u03bcs (" << durationPosition * 1e-6 << "s)" << endl;
+  cout << "Velocity " << durationVelocity << " \u03bcs (" << durationVelocity * 1e-6 << "s)" << endl;
 
-    if (numIterations > 0) {
+  if (numIterations > 0) {
     cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
          << "s)" << endl;
   }

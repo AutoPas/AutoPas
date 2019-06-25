@@ -56,37 +56,35 @@ class MoleculeLJ : public Particle {
   /**get mass
    * @return Mass
    */
-  static double getMass() { return MASS;}
+  static double getMass() { return MASS; }
 
-    /**set mass
+  /**set mass
    * @param Mass
    */
-  static void setMass(double mass) {MASS = mass;}
+  static void setMass(double mass) { MASS = mass; }
 
-    /**
-     * the type for the soa storage
-     */
+  /**
+   * the type for the soa storage
+   */
   typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
-    /**get OldForce
-    * @return OldForce
-    */
-  std::array<double,3> getOldf() const {return OLDF;}
+  /**get OldForce
+   * @return OldForce
+   */
+  std::array<double, 3> getOldf() const { return OLDF; }
 
-    /**set OldForce
-    * @param OldForce
-    */
-   void setOldf(const std::array<double, 3> &oldf) {
-        OLDF = oldf;
-    }
+  /**set OldForce
+   * @param OldForce
+   */
+  void setOldf(const std::array<double, 3> &oldf) { OLDF = oldf; }
 
-private:
+ private:
   static double EPSILON, SIGMA, MASS;
 
   /**
-  * Old Force of the particle experiences as 3D vector.
-  */
-  std::array<double,3>  OLDF = {0.,0.,0.};
+   * Old Force of the particle experiences as 3D vector.
+   */
+  std::array<double, 3> OLDF = {0., 0., 0.};
 };
 
 }  // namespace autopas

@@ -100,7 +100,7 @@ class Particle {
    * Set the velocity of the particle
    * @param v new velocity
    */
-  void setV(const    std::array<double, 3> &v) { _v = v; }
+  void setV(const std::array<double, 3> &v) { _v = v; }
 
   /**
    * Add a vector to the current velocity of the particle

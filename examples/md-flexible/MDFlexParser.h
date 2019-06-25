@@ -51,9 +51,9 @@ class MDFlexParser {
   bool parseInput(int argc, char **argv);
   void printConfig();
 
-    double getMass() const;
+  double getMass() const;
 
-private:
+ private:
   static constexpr size_t valueOffset = 32;
 
   // defaults:
@@ -82,8 +82,8 @@ private:
   string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
-  double epsilon= 5.0;
-  double sigma= 1.0;
+  double epsilon = 5.0;
+  double sigma = 1.0;
   double delta_t = 0.001;
   double mass = 1.0;
 };
