@@ -7,10 +7,10 @@
 #pragma once
 
 #include <cmath>
-#include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
