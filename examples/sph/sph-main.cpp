@@ -305,13 +305,16 @@ int main() {
   sphSystem.setCutoff(cutoff);
   sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
+
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
                                                        autopas::ContainerOption::verletLists,
                                                        autopas::ContainerOption::verletListsCells};
+  sphSystem.setAllowedContainers(allowedContainers);
+
   auto dataLayouts = autopas::allDataLayoutOptions;
   dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
   sphSystem.setAllowedDataLayouts(dataLayouts);
-  sphSystem.setAllowedContainers(allowedContainers);
+
   sphSystem.init();
 
   double dt;
