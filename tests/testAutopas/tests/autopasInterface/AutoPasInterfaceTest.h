@@ -10,8 +10,8 @@
 #include <tuple>
 #include "autopas/AutoPas.h"
 
-using testingTuple = std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption>, autopas::DataLayoutOption,
-                                autopas::Newton3Option, double /*cell size factor*/>;
+using testingTuple = std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption>,
+                                autopas::DataLayoutOption, autopas::Newton3Option, double /*cell size factor*/>;
 
 class AutoPasInterfaceTest : public testing::Test, public ::testing::WithParamInterface<testingTuple> {
  public:

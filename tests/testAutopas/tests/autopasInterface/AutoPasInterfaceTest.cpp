@@ -138,7 +138,7 @@ size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::ve
 
 void addHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::vector<Molecule> haloParticles) {
   for (auto &p : haloParticles) {
-    autoPas.addHaloParticle(p);
+    autoPas.addOrUpdateHaloParticle(p);
   }
 }
 
@@ -358,7 +358,7 @@ void testAdditionAndIteration(testingTuple options, bool alwaysAddAsHalo) {
         if (autopas::utils::inBox(pos, boxMin, boxMax) and not alwaysAddAsHalo) {
           autoPas.addParticle(p);
         } else {
-          autoPas.addHaloParticle(p);
+          autoPas.addOrUpdateHaloParticle(p);
         }
       }
     }
@@ -468,7 +468,7 @@ INSTANTIATE_TEST_SUITE_P(
               std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> tupleVector;
               for (const auto &containerOption : allContainerOptions) {
                 auto compatibleTraversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption);
-                for(const auto &traversalOption : compatibleTraversals){
+                for (const auto &traversalOption : compatibleTraversals) {
                   tupleVector.emplace_back(containerOption, traversalOption);
                 }
               }

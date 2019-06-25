@@ -71,7 +71,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addHaloParticle()
    */
-  void addHaloParticle(Particle &haloParticle) {
+  void addOrUpdateHaloParticle(Particle &haloParticle) {
     if (not isNeighborListValid()) {
       _autoTuner.getContainer()->addHaloParticle(haloParticle);
     } else {
