@@ -51,6 +51,7 @@
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/directSum/DirectSumKokkosTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"

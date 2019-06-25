@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "LJFunctor.h"
+
 #ifdef AUTOPAS_KOKKOS
 #include <Kokkos_Core.hpp>
 #endif
@@ -16,6 +18,8 @@ namespace autopas {
  * Class resembles LJFunctor.h
  * Class can process two KokkosParticles
  */
+template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both>
+
 class KokkosLJFunctor {
  private:
   float _cutoff_square, _epsilon24, _sigma_square;
@@ -26,7 +30,7 @@ class KokkosLJFunctor {
     _cutoff_square = 1;
     _sigma_square = 1;
     _epsilon24 = 1 * 24.0;
-    _newton3 = false;
+    _newton3 = (useNewton3 == FunctorN3Modes::Both || useNewton3 == FunctorN3Modes::Newton3Only);
   };
 
   /**
