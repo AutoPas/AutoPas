@@ -161,7 +161,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
                          shift6 = _shift6;
-    const bool duplicatedCalculations = _duplicatedCalculations;
+
+    if (calculateGlobals) {
+      // Checks if the cell is a halo cell, if it is, we skip it.
+      bool isHaloCell = ownedPtr[0] ? false : true;
+      if (isHaloCell) {
+        return;
+      }
+    }
 
     floatPrecision upotSum = 0.;
     floatPrecision virialSumX = 0.;
@@ -172,10 +179,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       floatPrecision fxacc = 0.;
       floatPrecision fyacc = 0.;
       floatPrecision fzacc = 0.;
-      floatPrecision inbox1Mul = 0.;
-      if (calculateGlobals and duplicatedCalculations) {  // only for duplicated calculations we need this value
-        inbox1Mul = ownedPtr[i] * .5;
-      }
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -219,20 +222,11 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           const floatPrecision virialz = drz * fz;
           const floatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          if (duplicatedCalculations) {
-            // for non-newton3 the division by 2 is in the post-processing step.
-            floatPrecision inboxMul = inbox1Mul + ownedPtr[j] * .5;
-            upotSum += upot * inboxMul;
-            virialSumX += virialx * inboxMul;
-            virialSumY += virialy * inboxMul;
-            virialSumZ += virialz * inboxMul;
-          } else {
-            // for non-newton3 we divide by 2 only in the postprocess step!
-            upotSum += upot;
-            virialSumX += virialx;
-            virialSumY += virialy;
-            virialSumZ += virialz;
-          }
+          // these calculations assume that this functor is not called for halo cells!
+          upotSum += upot;
+          virialSumX += virialx;
+          virialSumY += virialy;
+          virialSumZ += virialz;
         }
       }
 
@@ -272,8 +266,22 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    const bool duplicatedCalculations = _duplicatedCalculations;
 
+    bool isHaloCell1 = false;
+    bool isHaloCell2 = false;
+    // Checks whether the cells are halo cells.
+    // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
+    // defined. (as of 23.11.2018)
+    if (calculateGlobals) {
+      isHaloCell1 = ownedPtr1[0] ? false : true;
+      isHaloCell2 = ownedPtr2[0] ? false : true;
+
+      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
+      // correct!
+      /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
+        return;
+      }*/
+    }
     floatPrecision upotSum = 0.;
     floatPrecision virialSumX = 0.;
     floatPrecision virialSumY = 0.;
@@ -285,14 +293,6 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       floatPrecision fxacc = 0;
       floatPrecision fyacc = 0;
       floatPrecision fzacc = 0;
-
-      floatPrecision inbox1Mul = 0.;
-      if (calculateGlobals and duplicatedCalculations) {  // only for duplicated calculations we need this value
-        inbox1Mul = ownedPtr1[i];
-        if (newton3) {
-          inbox1Mul *= 0.5;
-        }
-      }
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -336,20 +336,10 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
           floatPrecision virialz = drz * fz;
           floatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          if (duplicatedCalculations) {
-            // for non-newton3 the division by 2 is in the post-processing step.
-            floatPrecision inboxMul = inbox1Mul + (newton3 ? ownedPtr2[j] * .5 : 0.);
-            upotSum += upot * inboxMul;
-            virialSumX += virialx * inboxMul;
-            virialSumY += virialy * inboxMul;
-            virialSumZ += virialz * inboxMul;
-          } else {
-            // for non-newton3 we divide by 2 only in the postprocess step!
-            upotSum += upot;
-            virialSumX += virialx;
-            virialSumY += virialy;
-            virialSumZ += virialz;
-          }
+          upotSum += upot;
+          virialSumX += virialx;
+          virialSumY += virialy;
+          virialSumZ += virialz;
         }
       }
       fx1ptr[i] += fxacc;
@@ -357,12 +347,23 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
       fz1ptr[i] += fzacc;
     }
     if (calculateGlobals) {
+      floatPrecision energyfactor = 1.;
+      if (_duplicatedCalculations) {
+        // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
+        // that we do not add the energy multiple times!
+        energyfactor = isHaloCell1 ? 0. : 1.;
+        if (newton3) {
+          energyfactor += isHaloCell2 ? 0. : 1.;
+          energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
+        }
+      }
+
       const int threadnum = autopas_get_thread_num();
 
-      _aosThreadData[threadnum].upotSum += upotSum;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+      _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
     }
   }
 
