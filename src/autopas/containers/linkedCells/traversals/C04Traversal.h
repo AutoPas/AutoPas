@@ -153,8 +153,6 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
     if (isIn) {
       const unsigned long ulIndex = threeToOneD(index, signedDims);
       _cellHandler.processBaseCell(cells, ulIndex);
-    } else {
-      continue;
     }
   }
 }
@@ -219,7 +217,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traver
   for (long z = startZ; z < endZ; z += 4) {
     for (long y = startY; y < endY; y += 4) {
       for (long x = startX; x < endX; x += 4) {
-        long par = parity(x, y, z);
+        const long par = parity(x, y, z);
 
         if (par != correctParity) {
           continue;
