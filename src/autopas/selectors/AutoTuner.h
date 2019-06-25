@@ -97,12 +97,11 @@ class AutoTuner {
    * This function only handles short-range interactions.
    * @tparam PairwiseFunctor
    * @param f Functor that describes the pair-potential.
-   * @param doListRebuild Indicates whether or not the verlet lists should be rebuild, is set to true, if the list
-   * needed to be rebuild due to an internal change.
+   * @param doListRebuild Indicates whether or not the verlet lists should be rebuild.
    * @return true if this was a tuning iteration.
    */
   template <class PairwiseFunctor>
-  bool iteratePairwise(PairwiseFunctor *f, bool &doListRebuild);
+  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild);
 
   /**
    * Returns whether the configuration will be changed in the next iteration.
@@ -221,7 +220,7 @@ void AutoTuner<Particle, ParticleCell>::selectCurrentContainer() {
 
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool &doListRebuild) {
+bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild) {
   bool isTuning = false;
   // tune if :
   // - more than one config exists
@@ -233,7 +232,6 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
     if (not isTuning) {
       _iterationsSinceTuning = 0;
     }
-    doListRebuild |= _samples.size() == 0;
   }
 
   // large case differentiation for data layout and newton 3

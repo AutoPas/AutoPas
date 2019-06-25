@@ -160,7 +160,8 @@ class LogicHandler {
   }
 
   bool isNeighborListValid() {
-    return _neighborListIsValid and _stepsSinceLastContainerRebuild < _verletRebuildFrequency;
+    return _neighborListIsValid and _stepsSinceLastContainerRebuild < _verletRebuildFrequency and
+           not _autoTuner.willRebuild();
   }
 
   /**
