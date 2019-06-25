@@ -320,7 +320,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
 
   auto iterateLambda = [&](auto containerPtr) {
     if (doListRebuild) {
-      getContainer()->rebuildNeighborLists(traversal.get());
+      containerPtr->rebuildNeighborLists(traversal.get());
     }
     containerPtr->iteratePairwise(f, traversal.get());
   };

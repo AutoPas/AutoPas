@@ -23,7 +23,7 @@ class AutoPasInterfaceTest : public testing::Test, public ::testing::WithParamIn
       str += autopas::utils::StringUtils::to_string(std::get<0>(std::get<0>(inputTuple))) + "_";
       str += autopas::utils::StringUtils::to_string(std::get<1>(std::get<0>(inputTuple))) + "_";
       str += autopas::utils::StringUtils::to_string(std::get<1>(inputTuple)) + "_";
-      str += autopas::utils::StringUtils::to_string(std::get<2>(inputTuple)) + "_";
+      str += "N3" + autopas::utils::StringUtils::to_string(std::get<2>(inputTuple)) + "_";
       str += std::string{"cellSizeFactor"} + autopas::utils::StringUtils::to_string(std::get<3>(inputTuple));
       std::replace(str.begin(), str.end(), '-', '_');
       std::replace(str.begin(), str.end(), '.', '_');

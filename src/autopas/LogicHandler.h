@@ -46,11 +46,11 @@ class LogicHandler {
    */
   std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
     if (not isNeighborListValid()) {
-      AutoPasLog(debug, "LogicHandler: Initiating container update.");
+      AutoPasLog(debug, "Initiating container update.");
       _neighborListIsValid = false;
       return std::move(_autoTuner.getContainer()->updateContainer());
     } else {
-      AutoPasLog(debug, "LogicHandler: Skipping container update.");
+      AutoPasLog(debug, "Skipping container update.");
       return std::vector<Particle>{};
     }
   }
@@ -63,7 +63,7 @@ class LogicHandler {
       _autoTuner.getContainer()->addParticle(p);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "adding of particles not allowed while neighborlists are still valid. Please invalidate the neighborlists "
+          "Adding of particles not allowed while neighborlists are still valid. Please invalidate the neighborlists "
           "by calling AutoPas::invalidateLists(). Do this on EVERY AutoPas instance, i.e., on all mpi processes!");
     }
   }
@@ -79,7 +79,7 @@ class LogicHandler {
                            ArrayMath::subScalar(_boxMax, _skin / 2))) {
         bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
         if (not updated) {
-          // a particle is only allowed not to be updated if it is NOT within cutoff + skin/2 of the bounding box
+          // a particle has to be updated if it is within cutoff + skin/2 of the bounding box
           double dangerousDistance = _cutoff + _skin / 2;
 
           bool dangerous = utils::inBox(haloParticle.getR(), ArrayMath::subScalar(_boxMin, dangerousDistance),
@@ -121,8 +121,8 @@ class LogicHandler {
    */
   template <class Functor>
   void iteratePairwise(Functor *f) {
-    bool doRebuild = not isNeighborListValid();
-    _autoTuner.iteratePairwise(f, doRebuild /*this value can be changed by the autoTuner!*/);
+    const bool doRebuild = not isNeighborListValid();
+    _autoTuner.iteratePairwise(f, doRebuild);
     if (doRebuild /*we have done a rebuild now*/) {
       // list is now valid
       _neighborListIsValid = true;

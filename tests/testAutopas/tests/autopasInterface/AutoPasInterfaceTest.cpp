@@ -463,7 +463,7 @@ INSTANTIATE_TEST_SUITE_P(
     // proper indent
     Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
               auto allContainerOptions = autopas::allContainerOptions;
-              // no verletClusterLists yet
+              /// @TODO no verletClusterLists yet
               allContainerOptions.erase(allContainerOptions.find(autopas::ContainerOption::verletClusterLists));
               std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> tupleVector;
               for (const auto &containerOption : allContainerOptions) {
@@ -476,7 +476,7 @@ INSTANTIATE_TEST_SUITE_P(
             }()),
             ValuesIn([]() -> std::set<autopas::DataLayoutOption> {
               auto all = autopas::allDataLayoutOptions;
-              // no cuda yet
+              /// @TODO no cuda yet
               if (all.find(autopas::DataLayoutOption::cuda) != all.end()) {
                 all.erase(all.find(autopas::DataLayoutOption::cuda));
               }

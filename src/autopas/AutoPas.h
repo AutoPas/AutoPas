@@ -127,12 +127,12 @@ class AutoPas {
   void addOrUpdateHaloParticle(Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
 
   /**
-   * Deletes all halo particles
+   * Deletes all halo particles.
    */
   void deleteHaloParticles() { _logicHandler->deleteHaloParticles(); }
 
   /**
-   * Deletes all particles
+   * Deletes all particles.
    */
   void deleteAllParticles() { _logicHandler->deleteAllParticles(); }
 

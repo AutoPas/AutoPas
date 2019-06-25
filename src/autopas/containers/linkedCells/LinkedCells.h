@@ -91,7 +91,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       }
     }
     AutoPasLog(trace,
-               "VerletLists: updateHaloParticle was not able to update particle at "
+               "UpdateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
                pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
     return false;

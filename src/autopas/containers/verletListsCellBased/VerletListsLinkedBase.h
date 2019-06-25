@@ -161,7 +161,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
       }
     }
     AutoPasLog(trace,
-               "VerletLists: updateHaloParticle was not able to update particle at "
+               "updateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
                pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
     return false;
