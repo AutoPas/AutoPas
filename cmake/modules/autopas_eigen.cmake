@@ -24,4 +24,4 @@ ExternalProject_Add(
 # Get GTest source and binary directories from CMake project
 ExternalProject_Get_Property(eigen3 source_dir)
 
-TARGET_INCLUDE_DIRECTORIES(autopas SYSTEM PUBLIC ${source_dir})
+target_include_directories(autopas SYSTEM PUBLIC ${source_dir})
