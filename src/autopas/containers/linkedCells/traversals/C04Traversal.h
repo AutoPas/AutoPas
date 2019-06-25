@@ -140,10 +140,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
     const std::array<long, 3> &end) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index;
-  std::array<long, 3> signedDims;
-  for (int d = 0; d < 3; ++d) {
-    signedDims[d] = static_cast<long>(this->_cellsPerDimension[d]);
-  }
+  const std::array<long, 3> signedDims = ArrayMath::static_cast_array<long>(this->_cellsPerDimension);
 
   for (auto Offset32Pack : _cellOffsets32Pack) {
     // compute 3D index
@@ -154,7 +151,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
     }
 
     if (isIn) {
-      unsigned long ulIndex = threeToOneD(index, signedDims);
+      const unsigned long ulIndex = threeToOneD(index, signedDims);
       _cellHandler.processBaseCell(cells, ulIndex);
     } else {
       continue;
@@ -228,7 +225,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traver
           continue;
         }
 
-        std::array<long, 3> base3DIndex = {x, y, z};
+        const std::array<long, 3> base3DIndex = {x, y, z};
         processBasePack32(cells, base3DIndex, start, end);
       }
     }
