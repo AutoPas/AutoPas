@@ -6,7 +6,7 @@ Please include a summary of the changes.
 
 - #PR
 
-## Resolved Issues # (issue)
+## Resolved Issues
 
 - [ ] #Issue
 

@@ -17,6 +17,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   autoPas.setBoxMax({3, 3, 3});
   autoPas.setCutoff(1);
   autoPas.setAllowedContainers({autopas::ContainerOption::directSum});
+  autoPas.setAllowedNewton3Options({autopas::Newton3Option::enabled});
   autoPas.init();
 
   std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0), Particle({1, 1, 2}, {0, 0, 0}, 1),
@@ -53,7 +54,6 @@ TEST_F(FlopCounterTest, testFlopCounterSoA4Mol) { test(autopas::DataLayoutOption
 
 TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
   bool newton3 = true;
-  std::string where_str = "inside";
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
 
@@ -88,7 +88,6 @@ TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
 
 TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
   bool newton3 = true;
-  std::string where_str = "inside";
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
 

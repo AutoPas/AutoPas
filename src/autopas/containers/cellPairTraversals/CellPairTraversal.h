@@ -18,8 +18,10 @@ namespace autopas {
  * This class handles traversals through the cell structures.
  * Derived classes handle the order through which the cells are traversed.
  * @tparam ParticleCell type of cells.
+ * @tparam dataLayout
+ * @tparam useNewton3
  */
-template <class ParticleCell>
+template <class ParticleCell, DataLayoutOption dataLayout, bool useNewton3>
 class CellPairTraversal : public TraversalInterface {
  public:
   /**
@@ -38,6 +40,22 @@ class CellPairTraversal : public TraversalInterface {
    * @param dims
    */
   virtual void rebuild(const std::array<unsigned long, 3> &dims) { _cellsPerDimension = dims; };
+
+  /**
+   * Load Data Layouts required for this Traversal.
+   * @param cells where the data should be loaded.
+   */
+  virtual void initTraversal(std::vector<ParticleCell> &cells) = 0;
+
+  /**
+   * Write Data to AoS.
+   * @param cells for which the data should be written back.
+   */
+  virtual void endTraversal(std::vector<ParticleCell> &cells) = 0;
+
+  bool getUseNewton3() const override { return useNewton3; };
+
+  DataLayoutOption getDataLayout() const override { return dataLayout; };
 
  protected:
   /**

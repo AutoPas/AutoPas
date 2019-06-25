@@ -64,11 +64,34 @@ TEST(ArrayMathTest, testAddScalar) {
   }
 }
 
+TEST(ArrayMathTest, testSubScalar) {
+  std::array<double, 3> a({1.1, 2.2, 3.3});
+  std::array<double, 3> correctResult({-0.9, 0.2, 1.3});
+  std::array<double, 3> result = ArrayMath::subScalar(a, 2.0);
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_NEAR(result[d], correctResult[d], 1e-15);
+  }
+}
+
 TEST(ArrayMathTest, testMulScalar) {
   std::array<double, 3> a({1.1, 2.2, 3.3});
   std::array<double, 3> correctResult({2.2, 4.4, 6.6});
   std::array<double, 3> result = ArrayMath::mulScalar(a, 2.0);
   for (int d = 0; d < 3; ++d) {
     ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
+  }
+}
+
+TEST(ArrayMathTest, teststatic_cast_array) {
+  {
+    std::array<long, 3> in({1l, 2l, 3l});
+    auto out = ArrayMath::static_cast_array<unsigned long>(in);
+    static_assert(std::is_same<decltype(out), std::array<unsigned long, 3>>::value, "Type mismatch");
+  }
+
+  {
+    std::array<long, 3> in({1l, 2l, 3l});
+    auto out = ArrayMath::static_cast_array<double>(in);
+    static_assert(std::is_same<decltype(out), std::array<double, 3>>::value, "Type mismatch");
   }
 }

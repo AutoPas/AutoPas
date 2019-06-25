@@ -52,7 +52,6 @@ class ExceptionHandler {
   template <class Exception>
   static void exception(const Exception e) {
     std::lock_guard<std::mutex> guard(exceptionMutex);
-    std::exception_ptr p;
     switch (_behavior) {
       case throwException:
         throw e;  // NOLINT
@@ -75,12 +74,7 @@ class ExceptionHandler {
    * @note this is a variadic function, and can thus incorporate an arbitrary amount of arguments
    */
   template <typename First, typename... Args>
-  static void exception(std::string exceptionString, First first, Args... args)  // recursive variadic function
-  {
-    std::string s = fmt::format(exceptionString, first, args...);
-
-    exception(s);
-  }
+  static void exception(std::string exceptionString, First first, Args... args);  // recursive variadic function
 
   /**
    * Rethrows the current exception or prints it.
@@ -104,7 +98,7 @@ class ExceptionHandler {
   static ExceptionBehavior _behavior;
   static std::function<void()> _customAbortFunction;
 
-  static void nonThrowException(const std::exception& e) {
+  static void nonThrowException(const std::exception &e) {
     switch (_behavior) {
       case ignore:
         // do nothing
@@ -139,7 +133,7 @@ class ExceptionHandler {
      * returns the description
      * @return
      */
-    const char* what() const noexcept override { return _description.c_str(); }
+    const char *what() const noexcept override { return _description.c_str(); }
 
    private:
     std::string _description;
@@ -158,6 +152,13 @@ void ExceptionHandler::exception(const std::string e);  // NOLINT
  * @param e the string to describe the exception
  */
 template <>
-void ExceptionHandler::exception(const char* const e);  // NOLINT
+void ExceptionHandler::exception(const char *const e);  // NOLINT
+
+template <typename First, typename... Args>
+void ExceptionHandler::exception(std::string exceptionString, First first, Args... args) {
+  std::string s = fmt::format(exceptionString, first, args...);
+  exception(s);
+}
+
 }  // namespace utils
 }  // namespace autopas

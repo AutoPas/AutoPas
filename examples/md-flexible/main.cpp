@@ -88,6 +88,9 @@ int main(int argc, char **argv) {
     auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
     auto vtkFilename(parser.getWriteVTK());
     auto logLevel(parser.getLogLevel());
+    //@todo übernommen vom merge mit master->überprüfen
+    auto &cellSizeFactors(parser.getCellSizeFactors());
+    auto tuningStrategy(parser.getTuningStrategyOption());
 
     parser.printConfig();
 
@@ -112,6 +115,13 @@ int main(int argc, char **argv) {
     // Initialization
 
     auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+
+    //@todo übernommen vom merge: -> prüfen
+    autopas->setTuningStrategyOption(tuningStrategy);
+    autopas->setAllowedCellSizeFactors(cellSizeFactors);
+    autopas::Logger::get()->set_level(logLevel);
+
+
     //setted default anderen boxMax--> sonst Fehler
     autopas->setBoxMax({2.,2.,2.});
     autopas->init();
@@ -129,9 +139,6 @@ int main(int argc, char **argv) {
     }
 
   if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
-
-
-
 
   // statistics for linked cells
   if (autopas->getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {

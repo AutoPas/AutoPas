@@ -8,6 +8,8 @@
 
 #include <vector>
 
+namespace autopas {
+
 /**
  * Interface for traversals used by the LinkedCell class.
  * @tparam ParticleCell
@@ -23,3 +25,5 @@ class LinkedCellTraversalInterface {
    */
   virtual void traverseCellPairs(std::vector<ParticleCell> &cells) = 0;
 };
+
+}  // namespace autopas

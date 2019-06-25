@@ -1,22 +1,23 @@
-file(GLOB_RECURSE MY_SRC
-        "*.cpp"
-        "*.h"
-        )
+file(
+    GLOB_RECURSE
+    MY_SRC
+    "*.cpp"
+    "*.h"
+)
 
-ADD_EXECUTABLE(sph-main-verlet
-        ${MY_SRC}
-        )
+add_executable(sph-main-verlet ${MY_SRC})
 
-TARGET_LINK_LIBRARIES(sph-main-verlet
-        autopas)
+target_link_libraries(sph-main-verlet autopas)
 
-#-----------------test-----------------
+# -----------------test-----------------
 # add check for current target
+# cmake-format: off
 add_test(
         NAME sph-main-verlet.test
         COMMAND sph-main-verlet | grep "time step" | tail -2 | head -1 | grep -q "time step 8"
         CONFIGURATIONS checkExamples
 )
+# cmake-format: on
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples sph-main-verlet)

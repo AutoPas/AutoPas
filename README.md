@@ -4,92 +4,87 @@ in the context of the **TaLPas** project. [![Build Status](https://www5.in.tum.d
 
 ## Documentation
 The documentation can be found at our website:
- https://www5.in.tum.de/AutoPas/doxygen_doc/master/
+ <https://www5.in.tum.de/AutoPas/doxygen_doc/master/>
 
 Alternatively you can build the documentation on your own:
-* requirements:
- doxygen
+* requirements: [Doxygen](http://www.doxygen.nl/)
 * `make doc_doxygen`
 
-
 ## Requirements
-* cmake 3.10 or newer
+* cmake 3.13 or newer
 * make (build-essentials) or ninja
 * a c++14 compiler (gcc7, clang6 and icpc 2018 are tested)
 
-
 ## Building AutoPas
 build instructions for make:
-```
+```bash
 mkdir build
 cd build
 cmake ..
 make
 ```
 if you want to use another compiler, specify it at the first cmake call, e.g.:
-```
+```bash
 mkdir build
 cd build
 CC=clang CXX=clang++ cmake ..
 make
 ```
 if you would like to use ninja instead of make:
-```
+```bash
 mkdir build
 cd build
 cmake -G Ninja ..
 ninja
 ```
-
-#### Building AutoPas on a Cluster
+### Building AutoPas on a Cluster
 HPC clusters often use module systems. CMake is sometimes not able to
 correctly detect the compiler you wished to use. If a wrong compiler is
 found please specify the compiler explicitly, e.g. for gcc:
-```
+```bash
 mkdir build
 cd build
 CC=`which gcc` CXX=`which g++` cmake ..
 make
 ```
 
-
-
 ## Testing
 ### Running Tests
 to run tests:
-```
+```bash
 make test
-// or
+# or
 ninja test
 ```
 or using the ctest environment:
-```
+```bash
 ctest
 ```
 to get verbose output:
-```
+```bash
 ctest --verbose
 ```
 * to run specific tests:
 use the --gtest_filter variable:
-```
+```bash
 ./tests/testAutopas/runTests --gtest_filter=ArrayMathTest.testAdd*
 ```
 or use the GTEST_FILTER environment variable:
-```
+```bash
 GTEST_FILTER="ArrayMathTest.testAdd*" ctest --verbose
 ```
 or `ctest` arguments like `-R` (run tests matching regex) and `-E` (exclude tests matching regex)
+```bash
+ctest -R 'Array.*testAdd' -E 'Double'
 ```
-ctest -R 'Array.*testAdd' -E `Double'
-```
+
 ### Debugging Tests
 Find out the command to start your desired test with `-N` aka. `--show-only`:
-```
+```bash
 ctest -R 'Array.*testAdd' -N
 ```
 Start the test with `gdb`
-```
+```bash
 gdb --args ${TestCommand}
 ```
 
@@ -100,10 +95,9 @@ We have, however, included a variety of examples in the **examples** directory. 
 * Smoothed particle hydrodynamics simulations
 * Gravity simulations
 
-
 ## Using AutoPas
-
 Steps to using AutoPas in your particle simulation program:
+
 ### Defining a Custom Particle Class
 First you will need to define a particle class.
 For that we provide some basic Particle classes defined
@@ -133,7 +127,6 @@ for(auto iter = container.begin(); iter.isValid(); ++iter) {
   auto position = iter->getR();
 }
 ```
-
 ### Updating the Container
 #### How
 You can update the container using
@@ -144,7 +137,6 @@ ParticleContainer::updateContainer()
 You have to update the container when the two conditions are fullfilled:
 * If you moved particles
 * You want to use `iteratePairwise()` or a RegionParticleIterator
-
 
 #### When it is not enough
 If you moved particles by more than one interaction length.
@@ -164,28 +156,10 @@ for (auto p: invalidParticles) {
 ```
 
 #### Special exceptions
-* Verlet-Lists, here it is safe to not update the container
-as long as particles move not more than a skin radius.
-
+* Verlet-Lists, here it is safe to not update the container as long as particles move not more than a skin radius.
 
 ## Developing AutoPas
-* We use the google code style with minor modifications (see .clang-format)
-* code style can be build with `make clangformat`
-* requirements:
-	clang-format-6.0 
-	(Version is important since formatting is not consistent)
-
-## Logging
-AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
-```
-AutoPasLog(warn, "Hello {}", name);
-```
-The global log level can be set at runtime with:
-```
-#include "autopas/utils/Logger.h"
-autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
-```
-Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `off`,
+Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
 ## Acknowledgements
 * TaLPas BMBF

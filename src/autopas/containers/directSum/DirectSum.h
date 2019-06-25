@@ -8,9 +8,13 @@
 #pragma once
 
 #include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/directSum/DirectSumTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
@@ -35,21 +39,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param cutoff
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
-        _cellBorderFlagManager() {
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff), _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
-
-  /**
-   * Lists all traversal options applicable for the Direct Sum container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allDSApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::directSumTraversal};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allDSApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::directSum; }
 
@@ -76,35 +68,25 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void deleteHaloParticles() override { getHaloCell()->clear(); }
 
   /**
-   * @copydoc LinkedCells::iteratePairwiseAoS
+   * Function to iterate over all pairs of particles
+   * @tparam ParticleFunctor
+   * @tparam Traversal
+   * @param f functor that describes the pair-potential
+   * @param traversal the traversal that will be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseAoS(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+
+    traversal->initTraversal(this->_cells);
     if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
+
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in DirectSum::iteratePairwiseAoS");
+          "trying to use a traversal of wrong type in DirectSum::iteratePairwise");
     }
-  }
-
-  /**
-   * @copydoc LinkedCells::iteratePairwiseSoA
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwiseSoA(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
-    f->SoALoader(*getCell(), (*getCell())._particleSoABuffer);
-    f->SoALoader(*getHaloCell(), (*getHaloCell())._particleSoABuffer);
-
-    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in DirectSum::iteratePairwiseSoA");
-    }
-
-    f->SoAExtractor((*getCell()), (*getCell())._particleSoABuffer);
-    f->SoAExtractor((*getHaloCell()), (*getHaloCell())._particleSoABuffer);
+    traversal->endTraversal(this->_cells);
   }
 
   void updateContainer() override {
@@ -135,9 +117,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
+  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelector<ParticleCell>({2, 0, 0});
+    return TraversalSelectorInfo<ParticleCell>({2, 0, 0});
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -145,8 +127,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     std::vector<size_t> cellsOfInterest;
@@ -169,7 +151,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
  private:
-  class DirectSumCellBorderAndFlagManager : public CellBorderAndFlagManager {
+  class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
     /**
      * the index type to access the particle cells
      */
