@@ -31,7 +31,7 @@ pipeline{
                             container('autopas-clang6-cmake-ninja-make'){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON .."
                                 sh "ninja clangformat"
-                                sh "ninja cmakeformat"
+                                sh "ninja cmakeformat" 
                             }
                             script{
                                 // return 2 if files have been modified by clang-format, 0 otherwise
