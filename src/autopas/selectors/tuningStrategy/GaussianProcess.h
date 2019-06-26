@@ -7,27 +7,10 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
-
-/**
- * Different acquisition functions
- */
-enum AcquisitionFunction {
-  /**
-   * Upper confidence bound
-   */
-  ucb,
-  /**
-   * Lower confidence bound
-   */
-  lcb,
-  /**
-   * mean
-   */
-  mean
-};
 
 /**
  * Gaussian process is a stochastical model. It predicts the
@@ -44,7 +27,7 @@ class GaussianProcess {
   /**
    * Constructor
    * @param theta prior variance
-   * @param dimScale scale each dimension of distance vectors before applying kernel
+   * @param dimScale scale of each dimension before applying kernel
    * @param sigma fixed noise
    */
   GaussianProcess(double theta, std::vector<double> dimScale, double sigma)
@@ -58,7 +41,7 @@ class GaussianProcess {
         _weights() {}
 
   /**
-   * Discard all evidences.
+   * Discard all evidence.
    */
   void clear() {
     // As long is _input is empty the matrices ar consided uninitialized.
@@ -67,10 +50,10 @@ class GaussianProcess {
   }
 
   /**
-   * Get the number of evidences provided.
+   * Get the number of evidence provided.
    * @return
    */
-  size_t numEvidences() const { return _inputs.size(); }
+  size_t numEvidence() const { return _inputs.size(); }
 
   /**
    * Provide a input-output pair as evidence.
@@ -99,7 +82,7 @@ class GaussianProcess {
   }
 
   /**
-   * Try to predict f(x) using the evidences
+   * Try to predict f(x) using the evidence
    * provided so far.
    * @param input x
    * @return expected output of f(x)
@@ -123,12 +106,13 @@ class GaussianProcess {
   }
 
   /**
-   * Calculate the acquisition function for given input.
-   * @param af
-   * @param feature
-   * @return
+   * Calculates the acquisition function for given input.
+   * @param af acquisition function a:Feature->double
+   * @param feature f
+   * @return a(f). This value can be compared with values a(x) of other features x to weigh which feature would give the
+   * most gain if its evidence were provided.
    */
-  inline double calcAcquisition(AcquisitionFunction af, const Vector &feature) const {
+  inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &feature) const {
     switch (af) {
       case ucb: {
         return predictMean(feature) + std::sqrt(predictVar(feature));
@@ -153,7 +137,7 @@ class GaussianProcess {
    * @param samples
    * @return
    */
-  Vector sampleAquisitionMax(AcquisitionFunction af, const std::vector<Vector> &samples) const {
+  Vector sampleAquisitionMax(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
     int maxIdx = -1;
     double maxVal = 0.;
 
@@ -177,11 +161,11 @@ class GaussianProcess {
    * @param samples
    * @return
    */
-  Vector sampleAquisitionMin(AcquisitionFunction af, const std::vector<Vector> &samples) const {
+  Vector sampleAquisitionMin(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
     int minIdx = -1;
     double minVal = 0.;
 
-    // find maximum from samples
+    // find minimum from samples
     for (unsigned i = 0; i < samples.size(); ++i) {
       double val = calcAcquisition(af, samples[i]);
 
@@ -208,7 +192,7 @@ class GaussianProcess {
   }
 
   /**
-   * Calulates the kernel between input and all evidences
+   * Calculates the kernel between input and all evidence.
    * @param input
    * @return Vector of covariances
    */

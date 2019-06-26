@@ -48,7 +48,7 @@ TEST(GaussianProcessTest, oneEvidence) {
   ASSERT_NEAR(gp.predictVar(f2), theta, epsilon);
 }
 
-TEST(GaussianProcessTest, twoEvidences) {
+TEST(GaussianProcessTest, twoEvidence) {
   double epsilon = 0.05;  // allowed error for tests
 
   double theta = 5.;     // default variance
@@ -69,7 +69,7 @@ TEST(GaussianProcessTest, twoEvidences) {
   gp.addEvidence(f1, out1);
   gp.addEvidence(f2, out2);
 
-  // predicting point same as evidences
+  // predicting point same as evidence
   // should expect same output as evidence because greate distance between inputs
   ASSERT_NEAR(gp.predictMean(f1), out1, epsilon);
   ASSERT_NEAR(gp.predictVar(f1), 0., epsilon);
@@ -101,7 +101,7 @@ TEST(GaussianProcessTest, clear) {
   gp.addEvidence(f2, out2);
   gp.clear();
 
-  // predicting points as deleted evidences
+  // predicting points as deleted evidence
   // they should not have effect on the prediction anymore
   ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
   ASSERT_NEAR(gp.predictVar(f1), theta, epsilon);
@@ -124,7 +124,7 @@ TEST(GaussianProcessTest, sine) {
   // gp should try to approximate the sine as blackbox function
   auto functor = [](double input) { return std::sin(input); };
   double epsilon = 0.02;           // allowed error
-  unsigned numEvidences = 9;       // number of evidences to provide
+  unsigned numEvidence = 9;        // number of evidence to provide
   unsigned numPredictions = 1000;  // number of predictions to make
   double domainStart = 0.;         // start of tested domain
   double domainEnd = 2 * M_PI;     // end of tested domain
@@ -132,8 +132,8 @@ TEST(GaussianProcessTest, sine) {
   GaussianProcess<Eigen::VectorXd> gp(0.5, {0.2}, 0.001);
 
   // create equidistant evidence over the domain
-  double evidenceStep = (domainEnd - domainStart) / (numEvidences - 1);
-  for (unsigned i = 0; i < numEvidences; ++i) {
+  double evidenceStep = (domainEnd - domainStart) / (numEvidence - 1);
+  for (unsigned i = 0; i < numEvidence; ++i) {
     double input = domainStart + evidenceStep * i;
     Eigen::VectorXd f(1);
     f << input;
@@ -166,10 +166,10 @@ TEST(GaussianProcessTest, 2dMax) {
   // max of function
   Eigen::VectorXd max(2);
   max << -1, 1;
-  unsigned numEvidences = 40;                             // number of samples allowed to make
-  unsigned lhsNumSamples = 1000;                          // number of sample to find max of acquisition function
-  AcquisitionFunction af = AcquisitionFunction::ucb;      // use upper confidence bound as af
-  AcquisitionFunction lastAf = AcquisitionFunction::lcb;  // use lower confidence bound for final prediction
+  unsigned numEvidence = 40;      // number of samples allowed to make
+  unsigned lhsNumSamples = 1000;  // number of sample to find max of acquisition function
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::ucb;      // use upper confidence bound as af
+  AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::lcb;  // use lower confidence bound for final prediction
 
   GaussianProcess<Eigen::VectorXd> gp(6, {0.2, 0.2}, 0.001);
 
@@ -178,7 +178,7 @@ TEST(GaussianProcessTest, 2dMax) {
   first << 0, 0;
   gp.addEvidence(first, functor(0, 0));
 
-  for (unsigned i = 1; i < numEvidences; ++i) {
+  for (unsigned i = 1; i < numEvidence; ++i) {
     // create lhs samples
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);
@@ -230,10 +230,10 @@ TEST(GaussianProcessTest, 2dMin) {
   // min of function
   Eigen::VectorXd min(2);
   min << 1, 1;
-  unsigned numEvidences = 40;                             // number of samples allowed to make
-  unsigned lhsNumSamples = 1000;                          // number of sample to find min of acquisition function
-  AcquisitionFunction af = AcquisitionFunction::lcb;      // use lower confidence bound as af
-  AcquisitionFunction lastAf = AcquisitionFunction::ucb;  // use upper confidence bound for final prediction
+  unsigned numEvidence = 40;      // number of samples allowed to make
+  unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::lcb;      // use lower confidence bound as af
+  AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::ucb;  // use upper confidence bound for final prediction
 
   GaussianProcess<Eigen::VectorXd> gp(6, {0.2, 0.2}, 0.001);
 
@@ -242,7 +242,7 @@ TEST(GaussianProcessTest, 2dMin) {
   first << 0, 0;
   gp.addEvidence(first, functor(0, 0));
 
-  for (unsigned i = 1; i < numEvidences; ++i) {
+  for (unsigned i = 1; i < numEvidence; ++i) {
     // create lhs samples
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);

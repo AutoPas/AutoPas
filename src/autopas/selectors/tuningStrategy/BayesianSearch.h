@@ -25,7 +25,6 @@ namespace autopas {
  * feature next.
  */
 class BayesianSearch : public TuningStrategyInterface {
-  const size_t featureSpaceDims = 4;
   /**
    * max limit of long as double
    */
@@ -41,17 +40,19 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param allowedCellSizeFactors
    * @param predAcqFunction acquisition function used for prediction while tuning.
    * @param predNumSamples number of samples used for prediction while tuning.
-   * @param maxEvidences stop tuning after given number evidences provided.
+   * @param maxEvidence stop tuning after given number of evidence provided.
    * @param lastAcqFunction acquisition function used for prediction of last tuning step.
    * @param lastNumSamples number of samples used for prediction of last tuning step.
+   * @param seed seed of random number generator (should only be used for tests)
    */
   BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = allContainerOptions,
                  const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
                  const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
                  const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
-                 const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidences = 10,
-                 AcquisitionFunction predAcqFunction = lcb, size_t predNumSamples = 1000,
-                 AcquisitionFunction lastAcqFunction = ucb, size_t lastNumSamples = 1000)
+                 const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidence = 10,
+                 AcquisitionFunctionOption predAcqFunction = lcb, size_t predNumSamples = 1000,
+                 AcquisitionFunctionOption lastAcqFunction = ucb, size_t lastNumSamples = 1000,
+                 unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
         _dataLayoutOptions(allowedDataLayoutOptions),
@@ -59,13 +60,13 @@ class BayesianSearch : public TuningStrategyInterface {
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _traversalContainerMap(),
         _currentConfig(),
-        _gp(1., std::vector<double>(featureSpaceDims, 1.), 0.001),
-        _maxEvidences(maxEvidences),
+        _gp(1., std::vector<double>(FeatureVector::featureSpaceDims, 1.), 0.001),
+        _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples),
         _lastAcqFunction(lastAcqFunction),
         _lastNumSamples(lastNumSamples),
-        _rng() {
+        _rng(seed) {
     /// @todo setting hyperparameters
 
     if (predNumSamples <= 0 or lastNumSamples <= 0) {
@@ -122,7 +123,7 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param n numSamples
    * @param af acquisition function
    */
-  inline FeatureVector sampleOptimalFeatureVector(size_t n, AcquisitionFunction af);
+  inline FeatureVector sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af);
 
   std::set<ContainerOption> _containerOptions;
   std::set<TraversalOption> _traversalOptions;
@@ -134,10 +135,10 @@ class BayesianSearch : public TuningStrategyInterface {
 
   Configuration _currentConfig;
   GaussianProcess<FeatureVector> _gp;
-  size_t _maxEvidences;
-  AcquisitionFunction _predAcqFunction;
+  size_t _maxEvidence;
+  AcquisitionFunctionOption _predAcqFunction;
   size_t _predNumSamples;
-  AcquisitionFunction _lastAcqFunction;
+  AcquisitionFunctionOption _lastAcqFunction;
   size_t _lastNumSamples;
   Random _rng;
 };
@@ -149,7 +150,7 @@ bool BayesianSearch::tune() {
     return false;
   }
 
-  if (_gp.numEvidences() >= _maxEvidences) {
+  if (_gp.numEvidence() >= _maxEvidence) {
     // select predicted best config
     _currentConfig = sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction);
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
@@ -161,7 +162,7 @@ bool BayesianSearch::tune() {
   return true;
 }
 
-FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunction af) {
+FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
   std::vector<FeatureVector> samples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _traversalOptions,
                                                                         _dataLayoutOptions, _newton3Options);

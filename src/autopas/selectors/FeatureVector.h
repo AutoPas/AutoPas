@@ -20,6 +20,11 @@ namespace autopas {
 class FeatureVector : public Configuration {
  public:
   /**
+   * Number of tuneable dimensions
+   */
+  static constexpr size_t featureSpaceDims = 4;
+
+  /**
    * Default constructor. Results in invalid vector.
    */
   FeatureVector() : Configuration() {}
@@ -61,7 +66,7 @@ class FeatureVector : public Configuration {
    * @return
    */
   operator Eigen::VectorXd() const {
-    Eigen::VectorXd result(4);
+    Eigen::VectorXd result(featureSpaceDims);
     result << cellSizeFactor, static_cast<double>(traversal), static_cast<double>(dataLayout),
         static_cast<double>(newton3);
 
@@ -69,19 +74,21 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Create n latin-hypercube-samples from given featureSpace
+   * Create n latin-hypercube-samples from given featureSpace.
+   * Container Option of samples are set to -1, because tuning currently
+   * ignores this option.
    * @param n number of samples
    * @param rng
    * @param cellSizeFactors
    * @param traversals
    * @param dataLayouts
    * @param newton3
-   * @return
+   * @return vector of sample featureVectors
    */
   static std::vector<FeatureVector> lhsSampleFeatures(size_t n, Random &rng, const NumberSet<double> &cellSizeFactors,
-                                                      std::set<TraversalOption> traversals,
-                                                      std::set<DataLayoutOption> dataLayouts,
-                                                      std::set<Newton3Option> newton3) {
+                                                      const std::set<TraversalOption> &traversals,
+                                                      const std::set<DataLayoutOption> &dataLayouts,
+                                                      const std::set<Newton3Option> &newton3) {
     // create n samples from each set
     auto csf = cellSizeFactors.uniformSample(n, rng);
     auto tr = rng.uniformSample(traversals, n);
