@@ -135,7 +135,7 @@ One simulation loop should always consist of the following phases:
    auto invalidParticles = autoPas.updateContainer();
    ```
 
-1. Handling the leaving particles
+2. Handling the leaving particles
    * Apply boundary conditions on them
    
    * Potentially send them to other mpi-processes
@@ -145,7 +145,7 @@ One simulation loop should always consist of the following phases:
       addParticle(particle)
       ```
 
-1. Handle halo particles:
+3. Handle halo particles:
    * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
 
    * Add the particles as haloParticles using 
@@ -153,7 +153,7 @@ One simulation loop should always consist of the following phases:
       addOrUpdateHaloParticle(haloParticle)
       ```
 
-1. Perform an iteratePairwise step.
+4. Perform an iteratePairwise step.
    ```C++
    autoPas.iteratePairwise(functor);
    ```
