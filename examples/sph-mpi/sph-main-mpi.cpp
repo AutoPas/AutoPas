@@ -461,9 +461,9 @@ int main(int argc, char *argv[]) {
   std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
   globalBoxMax[0] = 1.;
   globalBoxMax[1] = globalBoxMax[2] = globalBoxMax[0] / 8.0;
-  double cutoff = 0.03;  // 0.012*2.5=0.03; where 2.5 = kernel support radius
-  unsigned int rebuildFrequency = 6;
-  double skinToCutoffRatio = 0.04;
+  double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
+  unsigned int rebuildFrequency = 6;  // has to be multiple of 2
+  double skinToCutoffRatio = 0.1;
 
   std::array<double, 3> localBoxMin{}, localBoxMax{};
 
@@ -472,6 +472,8 @@ int main(int argc, char *argv[]) {
   MPI_Comm comm = getDecomposition(globalBoxMin, globalBoxMax, localBoxMin, localBoxMax);
 
   AutoPasContainer sphSystem;
+  sphSystem.setNumSamples(
+      6);  // has to be multiple of 2, should also be multiple of rebuildFrequency (but this is not necessary)
   sphSystem.setBoxMin(localBoxMin);
   sphSystem.setBoxMax(localBoxMax);
   sphSystem.setCutoff(cutoff);
