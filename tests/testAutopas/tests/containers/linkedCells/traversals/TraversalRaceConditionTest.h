@@ -33,10 +33,6 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
     bool isRelevantForTuning() override { return true; }
 
-    bool allowsNewton3() override { return true; }
-
-    bool allowsNonNewton3() override { return false; }
-
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
