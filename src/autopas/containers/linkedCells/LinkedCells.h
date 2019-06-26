@@ -63,25 +63,31 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   void addHaloParticle(Particle &haloParticle) override {
-    bool inHalo = _cellBlock.checkInHalo(haloParticle.getR());
-    if (inHalo) {
-      ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
-      cell.addParticle(haloParticle);
+    // halo particles can also be inside of the domain (assuming non-precise interfaces)
+    bool inContainer =
+        autopas::utils::inBox(haloParticle.getR(), _cellBlock.getHaloBoxMin(), _cellBlock.getHaloBoxMax());
+    // here we could also check whether the particle is too far inside of the domain; we would need the verlet skin for
+    // that.
+    if (inContainer) {
+      Particle pCopy = haloParticle;
+      pCopy.setOwned(false);
+      ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
+      cell.addParticle(pCopy);
     } else {
-      auto inInnerBox = autopas::utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax());
-      if (inInnerBox) {
-        utils::ExceptionHandler::exception(
-            "LinkedCells: Trying to add a halo particle that is actually in the bounding box.\n" +
-            haloParticle.toString());
-      } else {
-        AutoPasLog(trace,
-                   "LinkedCells: Trying to add a halo particle that is outside the halo box. Particle not added!\n{}",
-                   haloParticle.toString());
-      }
+      AutoPasLog(trace,
+                 "LinkedCells: Trying to add a halo particle that is outside the halo box. Particle not added!\n{}",
+                 haloParticle.toString());
     }
   }
 
-  void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
+  void deleteHaloParticles() override {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+      iter.deleteCurrentParticle();
+    }
+  }
 
   /**
    * @copydoc DirectSum::iteratePairwise
@@ -102,19 +108,15 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     traversal->endTraversal(this->_cells);
   }
 
-  void updateContainer() override {
-    auto haloIter = this->begin(IteratorBehavior::haloOnly);
-    if (haloIter.isValid()) {
-      utils::ExceptionHandler::exception(
-          "Linked Cells: Halo particles still present when updateContainer was called. First particle found:\n" +
-          haloIter->toString());
-    }
-
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
+    this->deleteHaloParticles();
+    std::vector<Particle> invalidParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif  // AUTOPAS_OPENMP
     {
-      std::vector<Particle> myInvalidParticles;
+      // private for each thread!
+      std::vector<Particle> myInvalidParticles, myInvalidNotOwnedParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp for
 #endif  // AUTOPAS_OPENMP
@@ -136,14 +138,25 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       // implicit barrier here
       // the barrier is needed because iterators are not threadsafe w.r.t. addParticle()
 
-      // this loop is executed for every thread
-      for (auto &&p : myInvalidParticles)
+      // this loop is executed for every thread and thus parallel. Don't use #pragma omp for here!
+      for (auto &&p : myInvalidParticles) {
         // if not in halo
-        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax()))
+        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
           addParticle(p);
-        else
-          addHaloParticle(p);
+        } else {
+          myInvalidNotOwnedParticles.push_back(p);
+        }
+      }
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      {
+        // merge private vectors to global one.
+        invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
+                                myInvalidNotOwnedParticles.end());
+      }
     }
+    return invalidParticles;
   }
 
   bool isContainerUpdateNeeded() override {

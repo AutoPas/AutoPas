@@ -41,7 +41,7 @@ class AutoPas {
   AutoPas(std::ostream &logOutputStream = std::cout)
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
-        _cutoff(1),
+        _cutoff(1.),
         _verletSkin(0.2),
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
@@ -101,8 +101,12 @@ class AutoPas {
    * Updates the internal container.
    * This is needed e.g. for linked-cells if particles move from one cell to another.
    * It resorts particles into appropriate cells and moves them to the halo, if necessary.
+   * @todo update doc
+   * @return A vector of invalid particles that do no belong in the current container.
    */
-  void updateContainer() { _autoTuner->getContainer()->updateContainer(); }
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
+    return _autoTuner->getContainer()->updateContainer();
+  }
 
   /**
    * Returns a pointer to the actual container.
