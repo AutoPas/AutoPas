@@ -146,7 +146,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
     pCopy.setOwned(false);
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdate(*cellptr, pCopy);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
       if (updated) {
         return true;
       }

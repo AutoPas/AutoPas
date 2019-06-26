@@ -14,17 +14,17 @@ namespace internal {
  * Updates a found particle within cellI to the values of particleI.
  * Checks whether a particle with the same id as particleI is within the cell
  * cellI and overwrites the particle with particleI, if it is found.
- * @param cellI
- * @param particleI
+ * @param cell
+ * @param particle
  * @tparam ParticleType
  * @tparam CellType
- * @return
+ * @return true if the particle was updated, false otherwise.
  */
 template <class ParticleType, class CellType>
-static bool checkParticleInCellAndUpdate(CellType &cellI, ParticleType &particleI) {
-  for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
-    if (iterator->getID() == particleI.getID()) {
-      *iterator = particleI;
+static bool checkParticleInCellAndUpdateByID(CellType &cell, const ParticleType &particle) {
+  for (auto iterator = cell.begin(); iterator.isValid(); ++iterator) {
+    if (iterator->getID() == particle.getID()) {
+      *iterator = particle;
       return true;
     }
   }
@@ -36,16 +36,16 @@ static bool checkParticleInCellAndUpdate(CellType &cellI, ParticleType &particle
  * to the other particle:
  * @copydoc checkParticleInCellAndUpdate()
  * @param absError maximal distance the previous particle is allowed to be away from the new particle.
- * @note this version is useful, if there might be more than one particle with the same id in the same cell.
+ * @note This version is useful, if there might be more than one particle with the same id in the same cell.
  */
 template <class ParticleType, class CellType>
-static bool checkParticleInCellAndUpdateNearPosition(CellType &cellI, ParticleType &particleI, double absError) {
-  for (auto iterator = cellI.begin(); iterator.isValid(); ++iterator) {
-    if (iterator->getID() == particleI.getID()) {
-      auto distanceVec = autopas::ArrayMath::sub(iterator->getR(), particleI.getR());
+static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const ParticleType &particle, double absError) {
+  for (auto iterator = cell.begin(); iterator.isValid(); ++iterator) {
+    if (iterator->getID() == particle.getID()) {
+      auto distanceVec = autopas::ArrayMath::sub(iterator->getR(), particle.getR());
       auto distanceSqr = autopas::ArrayMath::dot(distanceVec, distanceVec);
       if (distanceSqr < absError * absError) {
-        *iterator = particleI;
+        *iterator = particle;
         // found the particle, returning.
         return true;
       }
