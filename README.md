@@ -127,12 +127,31 @@ for(auto iter = container.begin(); iter.isValid(); ++iter) {
   auto position = iter->getR();
 }
 ```
-### Simulation Workflow
-The simulation should always consist of the following phases:
-1. blub
-2. blob
-3. blab
+### Simulation Loop
+One simulation loop should always consist of the following phases:
+1. Updating the Container, which returns a vector of all invalid == leaving particles!
+   ```C++
+   auto invalidParticles = autoPas.updateContainer();
+   ```
+2. Handling the leaving particles
+   - Apply boundary conditions on them 
+   - Potentially send them to other mpi-processes
+   - Add them to the containers using
+      ```C++
+      addParticle(particle)
+      ```
+3. Handle halo particles:
+   - Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
+   - Add the particles as haloParticles using 
+      ```C++
+      addOrUpdateHaloParticle(haloParticle)
+      ```
+4. Perform an iteratePairwise step.
+   ```C++
+   autoPas.iteratePairwise(functor);
+   ```
 
+In some iterations step 1. will return an empty list of invalid particles to benefit of not rebuilding the containers and the associated neighbor lists.
 
 #### When it is necessary
 You have to update the container when the two conditions are fullfilled:
