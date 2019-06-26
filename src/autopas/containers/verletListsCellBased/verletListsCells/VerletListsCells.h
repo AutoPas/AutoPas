@@ -117,12 +117,12 @@ class VerletListsCells
       case c08: {
         if (useNewton3) {
           auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, true>(
+                                             DataLayoutOption::aos, true>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         } else {
           auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, false>(
+                                             DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         }
@@ -131,12 +131,12 @@ class VerletListsCells
       case c18: {
         if (useNewton3) {
           auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, true>(
+                                             DataLayoutOption::aos, true>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         } else {
           auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, false>(
+                                             DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         }
@@ -145,7 +145,7 @@ class VerletListsCells
       case c01: {
         if (not useNewton3) {
           auto buildTraversal = C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, false>(
+                                             DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
           this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         } else {
