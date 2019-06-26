@@ -199,8 +199,8 @@ TEST(Generater, MolSimTask) {
   MolSimTaskGeneration(*autoPas);
   // initContainerGrid(*autoPas,20,.5);
   cout << "Number of particles generated " << autoPas->getNumberOfParticles() << endl;
-  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-    cout << iter->toString() << endl;
+//  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+//    cout << iter->toString() << endl;}
 
     double particleD = 0.01;
     int iterations = 0;
@@ -211,9 +211,9 @@ TEST(Generater, MolSimTask) {
                                autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
     // domain vorbeireiten: -Force initialisieren
     autoPas->iteratePairwise(functor);
-    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-      cout << iter->toString() << endl;
-    }
+//    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+//      cout << iter->toString() << endl;
+//    }
 
     writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
     while (iterations < 10) {
@@ -228,4 +228,4 @@ TEST(Generater, MolSimTask) {
     delete functor;
     ASSERT_TRUE(true);
   }
-}
+
