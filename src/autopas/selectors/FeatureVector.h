@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <vector>
 #include <Eigen/Dense>
+#include <vector>
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
@@ -62,10 +62,8 @@ class FeatureVector : public Configuration {
    */
   operator Eigen::VectorXd() const {
     Eigen::VectorXd result(4);
-    result << cellSizeFactor,
-              static_cast<double>(traversal),
-              static_cast<double>(dataLayout),
-              static_cast<double>(newton3);
+    result << cellSizeFactor, static_cast<double>(traversal), static_cast<double>(dataLayout),
+        static_cast<double>(newton3);
 
     return result;
   }

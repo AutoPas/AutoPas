@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <map>
 #include <set>
 #include "GaussianProcess.h"
 #include "TuningStrategyInterface.h"
@@ -51,6 +52,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _dataLayoutOptions(allowedDataLayoutOptions),
         _newton3Options(allowedNewton3Options),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
+        _traversalContainerMap(),
         _currentConfig(),
         _gp(0., std::vector<double>(featureSpaceDims, 1.), 0.001),
         _predAcqFunction(predAcqFunction),
@@ -61,9 +63,25 @@ class BayesianSearch : public TuningStrategyInterface {
         _rng() {
     /// @todo setting hyperparameters
 
-    if (predNumSamples == 0 or lastNumSamples == 0) {
+    if (predNumSamples <= 0 or lastNumSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
+    }
+
+    // map each travesal to a container
+    for (auto it = _traversalOptions.begin(); it != _traversalOptions.end();) {
+      auto compatibleContainerOptions = compatibleTraversals::allCompatibleContainers(*it);
+      std::set<ContainerOption> allowedAndCompatible;
+      std::set_intersection(allowedContainerOptions.begin(), allowedContainerOptions.end(),
+                            compatibleContainerOptions.begin(), compatibleContainerOptions.end(),
+                            std::inserter(allowedAndCompatible, allowedAndCompatible.begin()));
+      if (allowedAndCompatible.empty()) {
+        // no compatible container found
+        it = _traversalOptions.erase(it);
+      } else {
+        _traversalContainerMap[*it] = *allowedAndCompatible.begin();
+        ++it;
+      }
     }
 
     tune();
@@ -104,6 +122,8 @@ class BayesianSearch : public TuningStrategyInterface {
   std::set<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
 
+  std::map<TraversalOption, ContainerOption> _traversalContainerMap;
+
   Configuration _currentConfig;
   GaussianProcess<FeatureVector> _gp;
   AcquisitionFunction _predAcqFunction;
@@ -141,17 +161,8 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
   // sample minimum of acquisition function
   auto best = _gp.sampleAquisitionMin(af, samples);
 
-  // find container to traversal
-  for (const auto &container : allContainerOptions) {
-    auto allCompatible = compatibleTraversals::allCompatibleTraversals(container);
-    if (allCompatible.find(best.traversal) != allCompatible.end()) {
-      best.container = container;
-      return best;
-    }
-  }
-
-  utils::ExceptionHandler::exception("BayesianSearch: Could not find valid container for traversal {}",
-                                     utils::StringUtils::to_string(best.traversal));
+  // choose first compatible container
+  best.container = _traversalContainerMap[best.traversal];
   return best;
 }
 
