@@ -64,7 +64,8 @@ to get verbose output:
 ```bash
 ctest --verbose
 ```
-* to run specific tests:
+#### How to run specific tests
+
 use the --gtest_filter variable:
 ```bash
 ./tests/testAutopas/runTests --gtest_filter=ArrayMathTest.testAdd*
@@ -128,24 +129,31 @@ for(auto iter = autoPas.begin(); iter.isValid(); ++iter) {
 ```
 ### Simulation Loop
 One simulation loop should always consist of the following phases:
+
 1. Updating the Container, which returns a vector of all invalid == leaving particles!
    ```C++
    auto invalidParticles = autoPas.updateContainer();
    ```
-2. Handling the leaving particles
-   - Apply boundary conditions on them 
-   - Potentially send them to other mpi-processes
-   - Add them to the containers using
+
+1. Handling the leaving particles
+   * Apply boundary conditions on them
+   
+   * Potentially send them to other mpi-processes
+   
+   * Add them to the containers using
       ```C++
       addParticle(particle)
       ```
-3. Handle halo particles:
-   - Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
-   - Add the particles as haloParticles using 
+
+1. Handle halo particles:
+   * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
+
+   * Add the particles as haloParticles using 
       ```C++
       addOrUpdateHaloParticle(haloParticle)
       ```
-4. Perform an iteratePairwise step.
+
+1. Perform an iteratePairwise step.
    ```C++
    autoPas.iteratePairwise(functor);
    ```
@@ -157,12 +165,12 @@ In some iterations step 1. will return an empty list of invalid particles to ben
 AutoPas is able to work with simulation setups using multiple functors.
 A good example for that is the sph example found under examples/sph or examples/sph-mpi.
 There exist some things you have to be careful about when using multiple functors:
-- If you use multiple functors it is necessary that all functors support the same newton3 options.
-If there is one functor not supporting newton3, you have to disable newton3 support for AutoPas by calling
-   ```C++
-   autoPas.setAllowedNewton3Options({false});
-   ```
-- If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.   
+* If you use multiple functors it is necessary that all functors support the same newton3 options. If there is one functor not supporting newton3, you have to disable newton3 support for AutoPas by calling
+  ```C++
+  autoPas.setAllowedNewton3Options({false});
+  ```
+
+* If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.   
 
 ### Inserting additional particles
 When inserting additional particles, you always have to enforce a containerUpdate before doing that on ALL AutoPas instances, i.e., on all mpi processes, by calling  
