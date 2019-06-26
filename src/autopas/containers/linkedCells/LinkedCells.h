@@ -97,14 +97,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     return false;
   }
 
-  void deleteHaloParticles() override {
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-    for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-      iter.deleteCurrentParticle();
-    }
-  }
+  void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     // nothing to do.

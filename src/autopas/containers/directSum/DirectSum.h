@@ -77,15 +77,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return internal::checkParticleInCellAndUpdateByIDAndPosition(*getHaloCell(), pCopy, this->getSkin());
   }
 
-  void deleteHaloParticles() override {
-    getHaloCell()->clear();
-    // particles inside of a cell can also be halo particles (assuming non-precise interfaces)
-    for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
-      if (not iter->isOwned()) {
-        iter.deleteCurrentParticle();
-      }
-    }
-  }
+  void deleteHaloParticles() override { getHaloCell()->clear(); }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     // nothing to do.
