@@ -32,9 +32,9 @@ static bool checkParticleInCellAndUpdateByID(CellType &cell, const ParticleType 
 }
 
 /**
- * Same as checkParticleInCellAndUpdate(CellType, ParticleType), but additionally checks whether the particle is close
- * to the other particle:
- * @copydoc checkParticleInCellAndUpdate()
+ * Same as checkParticleInCellAndUpdateByID(CellType, ParticleType), but additionally checks whether the particle is
+ * close to the other particle:
+ * @copydoc checkParticleInCellAndUpdateByID()
  * @param absError maximal distance the previous particle is allowed to be away from the new particle.
  * @note This version is useful, if there might be more than one particle with the same id in the same cell.
  */
