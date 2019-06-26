@@ -24,6 +24,8 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
   autoPas.setVerletSkin(skin);
+  autoPas.setVerletRebuildFrequency(2);
+  autoPas.setNumSamples(2);
   // init autopas
   autoPas.init();
 }
@@ -42,6 +44,8 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
   for (auto aP : {&autoPas1, &autoPas2}) {
     aP->setCutoff(cutoff);
     aP->setVerletSkin(skin);
+    aP->setVerletRebuildFrequency(2);
+    aP->setNumSamples(2);
     // init autopas
     aP->init();
   }
@@ -301,6 +305,11 @@ void testSimulationLoop(testingTuple options) {
   doSimulationLoop(autoPas, &functor);
 
   doAssertions(autoPas, &functor);
+
+  // do third simulation loop, no position update this time.
+  doSimulationLoop(autoPas, &functor);
+
+  doAssertions(autoPas, &functor);
 }
 
 TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
@@ -539,6 +548,11 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   }
 
   // do second simulation loop
+  doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
+
+  doAssertions(autoPas1, autoPas2, &functor1, &functor2);
+
+  // do third simulation loop, no position update
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 
   doAssertions(autoPas1, autoPas2, &functor1, &functor2);
