@@ -30,7 +30,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
   RMMParticleCell2T() = default;
 
   /**
-   * @copydoc ParticleCell::addParticle()
+   * @copydoc ParticleCell::addParticle(Particle&)
    */
   void addParticle(const Particle &p) override {
     _particleSoABuffer.template push<Particle::AttributeNames::id>(p.getID());

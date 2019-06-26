@@ -61,12 +61,14 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   CellBlock3D &operator=(const CellBlock3D) = delete;
 
-  bool isHaloCell(index_t index1d) const override {
+  bool cellCanContainHaloParticles(index_t index1d) const override {
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
-      if (index3d[i] < _cellsPerInteractionLength or
-          index3d[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
+      // we can have halo particles inside the domain, so we add a factor of 2 here, so we have cells marked as halo
+      // even if they are only close to the halo.
+      if (index3d[i] < 2 * _cellsPerInteractionLength or
+          index3d[i] >= _cellsPerDimensionWithHalo[i] - 2 * _cellsPerInteractionLength) {
         isHaloCell = true;
         break;
       }
@@ -74,7 +76,19 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return isHaloCell;
   }
 
-  bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
+  bool cellCanContainOwnedParticles(index_t index1d) const override {
+    auto index3d = index3D(index1d);
+    bool isHaloCell = false;
+    for (size_t i = 0; i < 3; i++) {
+      // owned particles are always WITHIN the domain, so we don't need the factor 2 here!
+      if (index3d[i] < _cellsPerInteractionLength or
+          index3d[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
+        isHaloCell = true;
+        break;
+      }
+    }
+    return not isHaloCell;
+  }
 
   /**
    * get the ParticleCell of a specified 1d index
@@ -415,7 +429,7 @@ bool CellBlock3D<ParticleCell>::checkInHalo(const std::array<double, 3> &positio
 template <class ParticleCell>
 void CellBlock3D<ParticleCell>::clearHaloCells() {
   std::vector<index_t> haloSlices(2 * _cellsPerInteractionLength);
-  std::vector<index_t>::iterator mid(haloSlices.begin() + _cellsPerInteractionLength);
+  auto mid = haloSlices.begin() + _cellsPerInteractionLength;
   std::iota(haloSlices.begin(), mid, 0);
 
   // x: min and max of x

@@ -14,6 +14,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
+#include "autopas/utils/AutoPasMacros.h"
 
 namespace autopas {
 
@@ -146,9 +147,11 @@ class ParticleContainerInterface {
 
   /**
    * Updates the container.
-   * This resorts particles into appropriate cells and moves them to the halo, if necessary.
+   * This deletes halo particles, resorts particles into appropriate cells and might remove particles from the
+   * container, if necessary.
+   * @return A vector of invalid particles that do not belong into the container.
    */
-  virtual void updateContainer() = 0;
+  virtual std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() = 0;
 
   /**
    * Check whether a container is valid, i.e. whether it is safe to use
