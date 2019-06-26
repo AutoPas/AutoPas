@@ -604,7 +604,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       for (index_t y = 0; y < _cellsPerDim[1]; y++) {
         index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
         auto &grid = _clusters[index];
-        auto &gridNeighborList = _neighborLists[index];
 
         const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
         for (index_t clusterIndex = 0; clusterIndex < numClustersInGrid; clusterIndex++) {

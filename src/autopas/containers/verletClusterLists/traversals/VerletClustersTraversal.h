@@ -53,9 +53,8 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
 
     _clusterSoAs.resize(numClusters);
 
-    const auto _clusterTraverseFunctor = [this, &aosToSoaMap, &clusterList](
-                                             Particle *clusterStart, int clusterSize,
-                                             std::vector<Particle *> &clusterNeighborList) {
+    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
+                                                              std::vector<Particle *> &clusterNeighborList) {
       index_t currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
@@ -77,9 +76,8 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
 
     const auto &aosToSoaMap = clusterList.getAosToSoaMap();
 
-    const auto _clusterTraverseFunctor = [this, &aosToSoaMap, &clusterList](
-                                             Particle *clusterStart, int clusterSize,
-                                             std::vector<Particle *> &clusterNeighborList) {
+    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
+                                                              std::vector<Particle *> &clusterNeighborList) {
       index_t currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
