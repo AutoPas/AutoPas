@@ -55,3 +55,47 @@ TEST_F(BayesianSearchTest, testRemoveN3OptionRemoveSome) {
   EXPECT_FALSE(bayesianSearch.searchSpaceIsEmpty());
   EXPECT_FALSE(bayesianSearch.searchSpaceIsTrivial());
 }
+
+TEST_F(BayesianSearchTest, testMaxEvidences) {
+  size_t maxEvidences = 4;
+  autopas::BayesianSearch bayesSearch(
+      {autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1}),
+      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, maxEvidences);
+
+  // while #evidences < maxEvidences. tuning -> True
+  for (size_t i = 1; i < maxEvidences; ++i) {
+    bayesSearch.addEvidence(i);
+    EXPECT_TRUE(bayesSearch.tune());
+  }
+
+  // #evidences == maxEvidences. tuning -> False
+  bayesSearch.addEvidence(-1);
+  EXPECT_FALSE(bayesSearch.tune());
+}
+
+TEST_F(BayesianSearchTest, testFindBest) {
+  size_t maxEvidences = 4;
+  autopas::BayesianSearch bayesSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1, 2}),
+                                      {autopas::TraversalOption::c08, autopas::TraversalOption::c01},
+                                      {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
+                                      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled},
+                                      maxEvidences);
+
+  // configuration to find
+  autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
+                              autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
+
+  while (bayesSearch.tune()) {
+    autopas::FeatureVector current(bayesSearch.getCurrentConfiguration());
+
+    Eigen::VectorXd diff = static_cast<Eigen::VectorXd>(best - current);
+    double distanceSquared = diff.array().square().sum();
+    long dummyTime = static_cast<long>(654321 * distanceSquared);
+
+    bayesSearch.addEvidence(dummyTime);
+  }
+
+  autopas::FeatureVector prediction(bayesSearch.getCurrentConfiguration());
+  EXPECT_EQ(prediction, best);
+}

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <limits>
 #include <map>
 #include <set>
 #include "GaussianProcess.h"
@@ -25,6 +26,10 @@ namespace autopas {
  */
 class BayesianSearch : public TuningStrategyInterface {
   const size_t featureSpaceDims = 4;
+  /**
+   * max limit of long as double
+   */
+  const double longMax = static_cast<double>(std::numeric_limits<long>::max());
 
  public:
   /**
@@ -41,11 +46,11 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param lastNumSamples number of samples used for prediction of last tuning step.
    */
   BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = allContainerOptions,
-                 const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(0., 2.),
+                 const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
                  const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
                  const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
-                 const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options,
-                 AcquisitionFunction predAcqFunction = lcb, size_t predNumSamples = 1000, size_t maxEvidences = 10,
+                 const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidences = 10,
+                 AcquisitionFunction predAcqFunction = lcb, size_t predNumSamples = 1000,
                  AcquisitionFunction lastAcqFunction = ucb, size_t lastNumSamples = 1000)
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
@@ -54,10 +59,10 @@ class BayesianSearch : public TuningStrategyInterface {
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _traversalContainerMap(),
         _currentConfig(),
-        _gp(0., std::vector<double>(featureSpaceDims, 1.), 0.001),
+        _gp(1., std::vector<double>(featureSpaceDims, 1.), 0.001),
+        _maxEvidences(maxEvidences),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples),
-        _maxEvidences(maxEvidences),
         _lastAcqFunction(lastAcqFunction),
         _lastNumSamples(lastNumSamples),
         _rng() {
@@ -91,7 +96,10 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override { _gp.addEvidence(FeatureVector(_currentConfig), time); }
+  inline void addEvidence(long time) override {
+    // transform long to a value between -1 and 1
+    _gp.addEvidence(FeatureVector(_currentConfig), time / longMax);
+  }
 
   inline void reset() override {
     _gp.clear();
@@ -126,9 +134,9 @@ class BayesianSearch : public TuningStrategyInterface {
 
   Configuration _currentConfig;
   GaussianProcess<FeatureVector> _gp;
+  size_t _maxEvidences;
   AcquisitionFunction _predAcqFunction;
   size_t _predNumSamples;
-  size_t _maxEvidences;
   AcquisitionFunction _lastAcqFunction;
   size_t _lastNumSamples;
   Random _rng;

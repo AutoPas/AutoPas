@@ -85,7 +85,7 @@ class Random {
   }
 
  private:
-  std::default_random_engine _rng;
+  std::mt19937 _rng;
 };
 
 }  // namespace autopas

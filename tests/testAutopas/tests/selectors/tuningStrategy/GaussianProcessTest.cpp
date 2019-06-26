@@ -159,16 +159,17 @@ TEST(GaussianProcessTest, 2dMax) {
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.15;  // allowed error
+  double epsilon = 0.05;  // allowed error
   std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
                                              NumberInterval<double>(-2, 2)};  // domain of function
 
   // max of function
   Eigen::VectorXd max(2);
   max << -1, 1;
-  unsigned numEvidences = 40;                         // number of samples allowed to make
-  unsigned lhsNumSamples = 1000;                      // number of sample to find max of acquisition function
-  AcquisitionFunction af = AcquisitionFunction::ucb;  // use upper confidence bound as af
+  unsigned numEvidences = 40;                             // number of samples allowed to make
+  unsigned lhsNumSamples = 1000;                          // number of sample to find max of acquisition function
+  AcquisitionFunction af = AcquisitionFunction::ucb;      // use upper confidence bound as af
+  AcquisitionFunction lastAf = AcquisitionFunction::lcb;  // use lower confidence bound for final prediction
 
   GaussianProcess<Eigen::VectorXd> gp(6, {0.2, 0.2}, 0.001);
 
@@ -208,11 +209,75 @@ TEST(GaussianProcessTest, 2dMax) {
     lhsSamples.push_back(sample);
   }
 
-  // sample max of mean function
-  Eigen::VectorXd am = gp.sampleAquisitionMax(AcquisitionFunction::mean, lhsSamples);
+  // final sample
+  Eigen::VectorXd am = gp.sampleAquisitionMax(lastAf, lhsSamples);
 
   // check if predicted max is near real max
-  auto diff = am - max;
-  ASSERT_NEAR(diff[0], 0, epsilon);
-  ASSERT_NEAR(diff[1], 0, epsilon);
+  double predMax = functor(am[0], am[1]);
+  double realMax = functor(max[0], max[1]);
+  ASSERT_NEAR(predMax, realMax, epsilon);
+}
+
+TEST(GaussianProcessTest, 2dMin) {
+  Random rng(73);  // random generator
+
+  // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
+  auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
+  double epsilon = 0.05;  // allowed error
+  std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
+                                             NumberInterval<double>(-2, 2)};  // domain of function
+
+  // min of function
+  Eigen::VectorXd min(2);
+  min << 1, 1;
+  unsigned numEvidences = 40;                             // number of samples allowed to make
+  unsigned lhsNumSamples = 1000;                          // number of sample to find min of acquisition function
+  AcquisitionFunction af = AcquisitionFunction::lcb;      // use lower confidence bound as af
+  AcquisitionFunction lastAf = AcquisitionFunction::ucb;  // use upper confidence bound for final prediction
+
+  GaussianProcess<Eigen::VectorXd> gp(6, {0.2, 0.2}, 0.001);
+
+  // add first evidence
+  Eigen::VectorXd first(2);
+  first << 0, 0;
+  gp.addEvidence(first, functor(0, 0));
+
+  for (unsigned i = 1; i < numEvidences; ++i) {
+    // create lhs samples
+    std::vector<Eigen::VectorXd> lhsSamples;
+    lhsSamples.reserve(lhsNumSamples);
+
+    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
+    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
+    for (size_t i = 0; i < lhsNumSamples; ++i) {
+      Eigen::VectorXd sample(2);
+      sample << xSamples[i], ySamples[i];
+      lhsSamples.push_back(sample);
+    }
+
+    // sample min of acquisition function
+    Eigen::VectorXd am = gp.sampleAquisitionMin(af, lhsSamples);
+    double amOut = functor(am[0], am[1]);
+
+    gp.addEvidence(am, amOut);
+  }
+
+  // last lhs sample for predicted min
+  auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
+  auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
+  std::vector<Eigen::VectorXd> lhsSamples;
+  lhsSamples.reserve(lhsNumSamples);
+  for (size_t i = 0; i < lhsNumSamples; ++i) {
+    Eigen::VectorXd sample(2);
+    sample << xSamples[i], ySamples[i];
+    lhsSamples.push_back(sample);
+  }
+
+  // final sample
+  Eigen::VectorXd am = gp.sampleAquisitionMin(lastAf, lhsSamples);
+
+  // check if predicted min is near real min
+  double predMin = functor(am[0], am[1]);
+  double realMin = functor(min[0], min[1]);
+  ASSERT_NEAR(predMin, realMin, epsilon);
 }
