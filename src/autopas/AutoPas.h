@@ -103,9 +103,10 @@ class AutoPas {
 
   /**
    * Potentially updates the internal container.
-   * On an update, the particles are resorted into appropriate cells and will return particles that do no longer belong
-   * into the container. If the internal container is still valid and a rebuild of the container is not forced, this
-   * will return an empty list of particles.
+   * On an update, halo particles are deleted, the particles are resorted into appropriate cells and particles that do
+   * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
+   * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
+   * else will happen.
    * @return A vector of invalid particles that do no belong in the current container.
    */
   std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() { return _logicHandler->updateContainer(false); }
