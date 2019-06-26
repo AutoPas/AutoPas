@@ -600,18 +600,14 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   void buildAosToSoaMap() {
     index_t currentMapIndex = 0;
-    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
-      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
-        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
-        auto &grid = _clusters[index];
 
-        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
-        for (index_t clusterIndex = 0; clusterIndex < numClustersInGrid; clusterIndex++) {
-          Particle *clusterStart = &grid[clusterIndex * _clusterSize];
-          _aosToSoaMap[clusterStart] = currentMapIndex++;
-        }
-      }
-    }
+    const auto _clusterTraverseFunctor = [this, &currentMapIndex](Particle *clusterStart, int clusterSize,
+                                                              std::vector<Particle *> &clusterNeighborList) {
+      _aosToSoaMap[clusterStart] = currentMapIndex++;
+    };
+
+    // Cannot be parallelized at the moment.
+    this->template traverseClusters<false>(_clusterTraverseFunctor);
 
     _aosToSoaMapValid = true;
   }
