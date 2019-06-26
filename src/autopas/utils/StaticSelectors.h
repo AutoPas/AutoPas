@@ -7,6 +7,7 @@
 #pragma once
 
 #include <memory>
+#include "autopas/containers/adaptiveLinkedCells/AdaptiveLinkedCells.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
@@ -35,6 +36,9 @@ void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle, Particl
       return;
     case ContainerOption::linkedCells:
       function(dynamic_cast<autopas::LinkedCells<Particle, ParticleCell> *>(container_ptr));
+      return;
+    case ContainerOption::adaptiveLinkedCells:
+      function(dynamic_cast<autopas::AdaptiveLinkedCells<Particle, ParticleCell> *>(container_ptr));
       return;
     case ContainerOption::verletLists:
       function(dynamic_cast<autopas::VerletLists<Particle> *>(container_ptr));

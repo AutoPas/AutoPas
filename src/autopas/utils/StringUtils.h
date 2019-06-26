@@ -99,6 +99,9 @@ inline std::string to_string(const ContainerOption &option) {
     case autopas::ContainerOption::linkedCells: {
       return "LinkedCells";
     }
+    case autopas::ContainerOption::adaptiveLinkedCells: {
+      return "AdaptiveLinkedCells";
+    }
     case autopas::ContainerOption::verletLists: {
       return "VerletLists";
     }
@@ -321,6 +324,8 @@ inline std::set<autopas::ContainerOption> parseContainerOptions(const std::strin
       containerOptions.insert(autopas::ContainerOption::directSum);
     } else if (word.find("linked") != std::string::npos or word.find("lc") != std::string::npos) {
       containerOptions.insert(autopas::ContainerOption::linkedCells);
+    } else if (word.find("adap") != std::string::npos) {
+      containerOptions.insert(autopas::ContainerOption::adaptiveLinkedCells);
     } else if (word.find('v') != std::string::npos) {
       if (word.find("cl") != std::string::npos) {
         containerOptions.insert(autopas::ContainerOption::verletClusterLists);

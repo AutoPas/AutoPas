@@ -132,12 +132,16 @@ INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
                                    auto all = autopas::allContainerOptions;
                                    /// @todo: remove below line to enable testing of verletClusterLists.
                                    all.erase(autopas::ContainerOption::verletClusterLists);
+                                   /// @todo: remove below line to enable testing of adaptiveLinkedCells.
+                                   all.erase(autopas::ContainerOption::adaptiveLinkedCells);
                                    return all;
                                  }()),
                                  ValuesIn([]() -> std::set<autopas::ContainerOption> {
                                    auto all = autopas::allContainerOptions;
                                    /// @todo: remove below line to enable testing of verletClusterLists.
                                    all.erase(autopas::ContainerOption::verletClusterLists);
+                                   /// @todo: remove below line to enable testing of adaptiveLinkedCells.
+                                   all.erase(autopas::ContainerOption::adaptiveLinkedCells);
                                    return all;
                                  }())),
                          ContainerSelectorTest::PrintToStringParamName());

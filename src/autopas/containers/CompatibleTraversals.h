@@ -41,6 +41,16 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
 }
 
 /**
+ * Lists all traversal options applicable for the adaptive Linked Cells container.
+ * @return set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allALCCompatibleTraversals() {
+  // traversal not used but prevents usage of newton3
+  static const std::set<TraversalOption> s{};
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the Verlet Lists container.
  * @return set of all applicable traversal options.
  */
@@ -78,6 +88,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
   switch (container) {
     case ContainerOption::linkedCells: {
       return allLCCompatibleTraversals();
+    }
+    case ContainerOption::adaptiveLinkedCells: {
+      return allALCCompatibleTraversals();
     }
     case ContainerOption::directSum: {
       return allDSCompatibleTraversals();

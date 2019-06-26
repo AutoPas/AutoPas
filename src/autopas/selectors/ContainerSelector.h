@@ -9,6 +9,7 @@
 #include <array>
 #include <vector>
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/adaptiveLinkedCells/AdaptiveLinkedCells.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
@@ -84,6 +85,11 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
     case linkedCells: {
       container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff,
                                                                         containerInfo.cellSizeFactor);
+      break;
+    }
+    case adaptiveLinkedCells: {
+      container = std::make_unique<AdaptiveLinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff,
+                                                                                containerInfo.cellSizeFactor);
       break;
     }
     case verletLists: {

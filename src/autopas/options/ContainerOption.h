@@ -19,6 +19,7 @@ enum ContainerOption {
   verletLists = 2,
   verletListsCells = 3,
   verletClusterLists = 4,
+  adaptiveLinkedCells = 5,
 };
 
 /**
@@ -26,7 +27,7 @@ enum ContainerOption {
  */
 static const std::set<ContainerOption> allContainerOptions = {
     ContainerOption::directSum,        ContainerOption::linkedCells,        ContainerOption::verletLists,
-    ContainerOption::verletListsCells, ContainerOption::verletClusterLists,
+    ContainerOption::verletListsCells, ContainerOption::verletClusterLists, ContainerOption::adaptiveLinkedCells,
 };
 
 }  // namespace autopas
