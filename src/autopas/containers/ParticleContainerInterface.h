@@ -10,6 +10,7 @@
 #include <array>
 #include <vector>
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -70,6 +71,19 @@ class ParticleContainerInterface {
    * @param haloParticle Particle to be added.
    */
   virtual void addHaloParticle(Particle &haloParticle) = 0;
+
+  /**
+   * Update a halo particle of the container with the given haloParticle.
+   * @param haloParticle Particle to be updated.
+   * @return Returns true if the particle was updated, false if no particle could be found.
+   */
+  virtual bool updateHaloParticle(Particle &haloParticle) = 0;
+
+  /**
+   * Rebuilds the neighbor lists.
+   * @param traversal The used traversal.
+   */
+  virtual void rebuildNeighborLists(TraversalInterface *traversal) = 0;
 
   /**
    * Deletes all halo particles.
@@ -144,6 +158,24 @@ class ParticleContainerInterface {
    * @param cutoff
    */
   virtual void setCutoff(double cutoff) = 0;
+
+  /**
+   * Return the skin of the container.
+   * @return skin radius.
+   */
+  virtual double getSkin() const = 0;
+
+  /**
+   * Set the skin of the container.
+   * @param skin
+   */
+  virtual void setSkin(double skin) = 0;
+
+  /**
+   * Return the interaction length (cutoff+skin) of the container.
+   * @return interaction length
+   */
+  virtual double getInteractionLength() const = 0;
 
   /**
    * Updates the container.

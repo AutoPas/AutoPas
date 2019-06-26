@@ -17,6 +17,7 @@
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
 
@@ -38,9 +39,10 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param skin
    */
-  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff), _cellBorderFlagManager() {
+  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 
@@ -69,6 +71,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     }
   }
 
+  bool updateHaloParticle(Particle &haloParticle) override {
+    Particle pCopy = haloParticle;
+    pCopy.setOwned(false);
+    return internal::checkParticleInCellAndUpdateByIDAndPosition(*getHaloCell(), pCopy, this->getSkin());
+  }
+
   void deleteHaloParticles() override {
     getHaloCell()->clear();
     // particles inside of a cell can also be halo particles (assuming non-precise interfaces)
@@ -77,6 +85,10 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
         iter.deleteCurrentParticle();
       }
     }
+  }
+
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    // nothing to do.
   }
 
   /**

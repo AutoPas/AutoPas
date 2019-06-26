@@ -15,11 +15,10 @@
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-
-#include <bitset>
 
 namespace autopas {
 
@@ -41,13 +40,14 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param cellSizeFactor cell size factor ralative to cutoff
+   * @param skin
+   * @param cellSizeFactor cell size factor relative to cutoff
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff, cellSizeFactor) {}
+              const double skin, const double cellSizeFactor = 1.0)
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
   ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
 
@@ -80,6 +80,23 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
   }
 
+  bool updateHaloParticle(Particle &haloParticle) override {
+    Particle pCopy = haloParticle;
+    pCopy.setOwned(false);
+    auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getSkin());
+    for (auto cellptr : cells) {
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
+      if (updated) {
+        return true;
+      }
+    }
+    AutoPasLog(trace,
+               "UpdateHaloParticle was not able to update particle at "
+               "[{}, {}, {}]",
+               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
+    return false;
+  }
+
   void deleteHaloParticles() override {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -87,6 +104,10 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       iter.deleteCurrentParticle();
     }
+  }
+
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    // nothing to do.
   }
 
   /**
@@ -187,8 +208,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getCutoff(),
-                                               this->getCellBlock().getCellLength());
+    return TraversalSelectorInfo<ParticleCell>(this->getCellBlock().getCellsPerDimensionWithHalo(),
+                                               this->getInteractionLength(), this->getCellBlock().getCellLength());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

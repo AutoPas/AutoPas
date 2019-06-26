@@ -153,7 +153,7 @@ class ParticleBase {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
-  bool isOwned() { return _isOwned; }
+  bool isOwned() const { return _isOwned; }
 
   /**
    * Set the owned state to the given value
@@ -164,7 +164,7 @@ class ParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
+  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, owned };
 
   /**
    * Floating Point Type used for this particle
@@ -172,11 +172,11 @@ class ParticleBase {
   typedef floatType ParticleFloatingPointType;
 
   /**
-   * the type for the soa storage
+   * The type for the soa storage.
+   * owned is currently used as a floatType to ease calculations within the functors.
    */
-  typedef
-      typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType>::Type
-          SoAArraysType;
+  typedef typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType,
+                                           floatType>::Type SoAArraysType;
 
 #if defined(AUTOPAS_CUDA)
   /**

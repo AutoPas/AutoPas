@@ -294,7 +294,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
         std::vector<autopas::sph::SPHParticle> receiveParticles;
         receive(receiveParticles, diff, comm);
         for (auto &particle : receiveParticles) {
-          sphSystem.addHaloParticle(particle);
+          sphSystem.addOrUpdateHaloParticle(particle);
         }
         waitSend(sendRequest);
         buffer.clear();
@@ -302,12 +302,6 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
     }
   }
 }
-
-/**
- * deletes the halo particles
- * @param sphSystem
- */
-void deleteHaloParticles(AutoPasContainer &sphSystem) { sphSystem.deleteHaloParticles(); }
 
 void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm,
                             const std::vector<autopas::sph::SPHParticle> &invalidParticles,
@@ -384,8 +378,6 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
   }
 
   sphSystem.iteratePairwise(&densityFunctor);
-  // 1.3 delete halo particles, as their values are no longer valid
-  deleteHaloParticles(sphSystem);
 
   // 2. then update pressure
   setPressure(sphSystem);
@@ -405,8 +397,6 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
   }
 
   sphSystem.iteratePairwise(&hydroForceFunctor);
-  // 0.3.3 delete halo particles, as their values are no longer valid
-  deleteHaloParticles(sphSystem);
 }
 
 void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
@@ -471,9 +461,9 @@ int main(int argc, char *argv[]) {
   std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
   globalBoxMax[0] = 1.;
   globalBoxMax[1] = globalBoxMax[2] = globalBoxMax[0] / 8.0;
-  double cutoff = 0.03;  // 0.012*2.5=0.03; where 2.5 = kernel support radius
-  unsigned int rebuildFrequency = 6;
-  double skinToCutoffRatio = 0.04;
+  double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
+  unsigned int rebuildFrequency = 6;  // has to be multiple of 2
+  double skinToCutoffRatio = 0.1;
 
   std::array<double, 3> localBoxMin{}, localBoxMax{};
 
@@ -482,15 +472,25 @@ int main(int argc, char *argv[]) {
   MPI_Comm comm = getDecomposition(globalBoxMin, globalBoxMax, localBoxMin, localBoxMax);
 
   AutoPasContainer sphSystem;
+  sphSystem.setNumSamples(
+      6);  // has to be multiple of 2, should also be multiple of rebuildFrequency (but this is not necessary)
   sphSystem.setBoxMin(localBoxMin);
   sphSystem.setBoxMax(localBoxMax);
   sphSystem.setCutoff(cutoff);
   sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
+
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
                                                        autopas::ContainerOption::verletLists,
                                                        autopas::ContainerOption::verletListsCells};
   sphSystem.setAllowedContainers(allowedContainers);
+
+  auto dataLayouts = autopas::allDataLayoutOptions;
+  if (dataLayouts.find(autopas::DataLayoutOption::cuda) != dataLayouts.end()) {
+    dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
+  }
+  sphSystem.setAllowedDataLayouts(dataLayouts);
+
   sphSystem.init();
 
   double dt;

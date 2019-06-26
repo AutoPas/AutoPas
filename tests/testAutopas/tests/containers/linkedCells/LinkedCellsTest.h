@@ -12,4 +12,10 @@
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class LinkedCellsTest : public AutoPasTestBase {};
+class LinkedCellsTest : public AutoPasTestBase {
+ public:
+  LinkedCellsTest();
+
+ protected:
+  autopas::LinkedCells<Particle, FPCell> _linkedCells;
+};
