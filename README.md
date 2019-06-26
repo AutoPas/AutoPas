@@ -127,12 +127,13 @@ for(auto iter = container.begin(); iter.isValid(); ++iter) {
   auto position = iter->getR();
 }
 ```
-### Updating the Container
-#### How
-You can update the container using
-```C++
-ParticleContainer::updateContainer()
-```
+### Simulation Workflow
+The simulation should always consist of the following phases:
+1. blub
+2. blob
+3. blab
+
+
 #### When it is necessary
 You have to update the container when the two conditions are fullfilled:
 * If you moved particles
