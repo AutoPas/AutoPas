@@ -186,7 +186,7 @@ TEST(Generater, Behavior) {
   delete autoPas;
   ASSERT_TRUE(true);
 }
-TEST(Generator, MolSimTask) {
+TEST(Generater, MolSimTask) {
   auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
   double epsilon = 5.0;
   double sigma = 1.0;
