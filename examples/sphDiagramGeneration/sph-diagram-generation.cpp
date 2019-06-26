@@ -134,6 +134,8 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
+  std::cout << "rebuildFrequency " << rebuildFrequency << " currently unused!" << std::endl;
+
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
       boxMin, boxMax, cutoff, skin * cutoff);
   autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
@@ -218,7 +220,8 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       }
       break;
     }
-    default: {}
+    default: {
+    }
   }
   auto traversal = autopas::TraversalSelector<CellType>::template generateTraversal<Functor>(
       traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos,
