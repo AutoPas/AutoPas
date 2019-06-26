@@ -8,8 +8,8 @@
 #include "testingHelpers/NumThreadGuard.h"
 
 VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
-    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(), 2),
-      _verletListsCells_cs2(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(), 2,
+    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff()),
+      _verletListsCells_cs2(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(),
                             2.0) {
   double eps = 1.0;
   double sig = 1.0;

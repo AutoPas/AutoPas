@@ -88,20 +88,18 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       break;
     }
     case verletLists: {
-      container = std::make_unique<VerletLists<Particle>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
-          VerletLists<Particle>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
+      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                                          containerInfo.cellSizeFactor);
       break;
     }
     case verletListsCells: {
-      container = std::make_unique<VerletListsCells<Particle>>(
-          _boxMin, _boxMax, _cutoff, TraversalOption::c08, containerInfo.verletSkin,
-          containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::c08,
+                                                               containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
     case verletClusterLists: {
-      container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                 containerInfo.verletRebuildFrequency);
+      container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     default: {

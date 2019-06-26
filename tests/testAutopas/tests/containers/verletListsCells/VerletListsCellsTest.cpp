@@ -14,7 +14,7 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOption::c18, skin, 1,
+  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOption::c18, skin,
                                                   cellSizefactor);
 
   std::array<double, 3> r = {2, 2, 2};

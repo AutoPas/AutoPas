@@ -34,19 +34,15 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * Constructor of the VerletClusterLists class.
    * The neighbor lists are build using a estimated density.
    * The box is divided into cuboids with roughly the
-   * same side length. The rebuildFrequency should be chosen, s.t. the particles do
-   * not move more than a distance of skin/2 between two rebuilds of the lists.
+   * same side length.
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
-   * @param rebuildFrequency specifies after how many pair-wise traversals the
-   * neighbor lists are to be rebuild. A frequency of 1 means that they are
-   * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param clusterSize size of clusters
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
-                     double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
+                     double skin = 0, int clusterSize = 4)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _clusterSize(clusterSize),
         _boxMin(boxMin),
@@ -58,7 +54,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         _cutoff(cutoff),
         _interactionLengthSqr((cutoff + skin) * (cutoff + skin)),
         _traversalsSinceLastRebuild(UINT_MAX),
-        _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false) {
     rebuild();
   }
@@ -147,16 +142,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   TraversalSelectorInfo<FullParticleCell<Particle>> getTraversalSelectorInfo() override {
     return TraversalSelectorInfo<FullParticleCell<Particle>>(_cellsPerDim);
-  }
-
-  /**
-   * Specifies whether the neighbor lists need to be rebuild.
-   * @return true if the neighbor lists need to be rebuild, false otherwise
-   */
-  bool needsRebuild() {
-    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
-    // if the neighbor list is NOT valid or we have not rebuild for _rebuildFrequency steps
-    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -389,10 +374,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   template <class ParticleFunctor>
   void traverseVerletLists(ParticleFunctor *functor, bool useNewton3) {
-    if (needsRebuild()) {
-      rebuild();
-    }
-
     const index_t end_x = _cellsPerDim[0];
     const index_t end_y = _cellsPerDim[1];
 
@@ -513,10 +494,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
-
-  /// specifies after how many pairwise traversals the neighbor list is to be
-  /// rebuild
-  unsigned int _rebuildFrequency;
 
   // specifies if the neighbor list is currently valid
   bool _neighborListIsValid;

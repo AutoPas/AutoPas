@@ -619,7 +619,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
     double cutoff = 1.;                                                                                                \
     using autopas::sph::SPHParticle;                                                                                   \
                                                                                                                        \
-    autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 3);                        \
+    autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5);                           \
     autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.}, \
                                                                                            cutoff, 0.5, 1.);           \
                                                                                                                        \

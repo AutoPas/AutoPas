@@ -95,11 +95,10 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, std::move(generateTuningStrategy()),
-        _selectorStrategy, _tuningInterval, _numSamples);
-    _logicHandler = std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(
-        _autoTuner.get(), _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, _tuningInterval,
+        _boxMin, _boxMax, _cutoff, _verletSkin, std::move(generateTuningStrategy()), _selectorStrategy, _tuningInterval,
         _numSamples);
+    _logicHandler = std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(
+        *(_autoTuner.get()), _verletRebuildFrequency, _tuningInterval, _numSamples);
   }
 
   /**

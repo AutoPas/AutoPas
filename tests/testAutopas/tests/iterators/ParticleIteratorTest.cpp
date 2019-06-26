@@ -365,7 +365,7 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
-  VerletLists<MoleculeLJ> verletLists({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1);
+  VerletLists<MoleculeLJ> verletLists({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   verletLists.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);

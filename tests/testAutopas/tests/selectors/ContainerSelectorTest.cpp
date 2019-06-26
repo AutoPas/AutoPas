@@ -16,10 +16,9 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
-  const unsigned int verletRebuildFrequency = 1;
 
   autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin);
 
   // expect an exception if nothing is selected yet
   EXPECT_THROW((containerSelector.getCurrentContainer()), autopas::utils::ExceptionHandler::AutoPasException);
@@ -69,10 +68,9 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0.1;
-  const unsigned int verletRebuildFrequency = 1;
 
   autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin);
   // select container from which we want to convert from
   containerSelector.selectContainer(from, containerInfo);
 

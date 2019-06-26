@@ -52,25 +52,18 @@ class VerletLists
   /**
    * Constructor of the VerletLists class.
    * The neighbor lists are build using a search radius of cutoff + skin.
-   * The rebuildFrequency should be chosen, s.t. the particles do not move more
-   * than a distance of skin/2 between two rebuilds of the lists.
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius.
-   * @param rebuildFrequency Specifies after how many pair-wise traversals the
-   * neighbor lists are to be rebuild. A frequency of 1 means that they are
-   * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const unsigned int rebuildFrequency = 1,
-              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVLCompatibleTraversals(),
-            cellSizeFactor),
+            boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 

@@ -29,26 +29,20 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /**
    * Constructor of the VerletListsLinkedBase class.
    * The neighbor lists are build using a search radius of cutoff + skin.
-   * The rebuildFrequency should be chosen, s.t. the particles do not move more
-   * than a distance of skin/2 between two rebuilds of the lists.
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
-   * @param rebuildFrequency specifies after how many pair-wise traversals the
-   * neighbor lists are to be rebuild. A frequency of 1 means that they are
-   * always rebuild, 10 means they are rebuild after 10 traversals
    * @param applicableTraversals all applicable traversals
    * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
    * (smaller values are set to 1.0).
    */
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                        const double skin, const unsigned int rebuildFrequency,
-                        const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
+                        const double skin, const std::set<TraversalOption> &applicableTraversals,
+                        const double cellSizeFactor)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)),
         _traversalsSinceLastRebuild(UINT_MAX),
-        _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false),
         _verletBuiltNewton3(false) {
     if (cellSizeFactor < 1.0) {
@@ -193,25 +187,6 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   }
 
   /**
-   * Specifies whether the neighbor lists need to rebuild when using the given Newton 3 option.
-   * @param useNewton3 Specifies if newton3 should be used.
-   * @return True if the neighbor lists need to be rebuild, false otherwise.
-   */
-  bool needsRebuild(bool useNewton3) {
-    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
-    // if the neighbor list is NOT valid, we have not rebuild for _rebuildFrequency steps or useNewton3 changed
-    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency) or
-           (useNewton3 != _verletBuiltNewton3);
-  }
-
-  /**
-   * Specifies whether the neighbor lists need to be rebuild.
-   * @note Assumes that the newton3 type has NOT changed!
-   * @return True if the neighbor lists need to be rebuild, false otherwise.
-   */
-  bool needsRebuild() { return needsRebuild(_verletBuiltNewton3); }
-
-  /**
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
@@ -225,10 +200,6 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
 
   /// how many pairwise traversals have been done since the last traversal
   unsigned int _traversalsSinceLastRebuild;
-
-  /// specifies after how many pairwise traversals the neighbor list is to be
-  /// rebuild
-  unsigned int _rebuildFrequency;
 
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid;

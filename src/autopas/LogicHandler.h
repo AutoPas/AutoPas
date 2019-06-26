@@ -12,6 +12,8 @@ namespace autopas {
 
 /**
  * The LogicHandler takes care of the containers s.t. they are all in the same valid state.
+ * This is mainly done by incorporating a global container rebuild frequency, which defines when containers and their
+ * neighbor lists will be rebuild.
  */
 template <typename Particle, typename ParticleCell>
 class LogicHandler {
@@ -19,25 +21,16 @@ class LogicHandler {
   /**
    * Constructor of the LogicHandler.
    * @param autoTuner
-   * @param boxMin
-   * @param boxMax
-   * @param cutoff
-   * @param skin
    * @param rebuildFrequency
    * @param tuningInterval
    * @param numSamples
    */
-  LogicHandler(autopas::AutoTuner<Particle, ParticleCell> *autoTuner, const std::array<double, 3> &boxMin,
-               const std::array<double, 3> &boxMax, double cutoff, double skin, unsigned int rebuildFrequency,
+  LogicHandler(autopas::AutoTuner<Particle, ParticleCell> &autoTuner, unsigned int rebuildFrequency,
                unsigned int tuningInterval, unsigned int numSamples)
-      : _boxMin{boxMin},
-        _boxMax{boxMax},
-        _cutoff{cutoff},
-        _skin{skin},
-        _verletRebuildFrequency{rebuildFrequency},
+      : _containerRebuildFrequency{rebuildFrequency},
         _tuningInterval{tuningInterval},
         _numSamples{numSamples},
-        _autoTuner(*autoTuner) {
+        _autoTuner(autoTuner) {
     doAssertions();
   }
 
@@ -45,9 +38,9 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
-    if (not isNeighborListValid()) {
+    if (not isContainerValid()) {
       AutoPasLog(debug, "Initiating container update.");
-      _neighborListIsValid = false;
+      _containerIsValid = false;
       return std::move(_autoTuner.getContainer()->updateContainer());
     } else {
       AutoPasLog(debug, "Skipping container update.");
@@ -59,7 +52,7 @@ class LogicHandler {
    * @copydoc AutoPas::addParticle()
    */
   void addParticle(Particle &p) {
-    if (not isNeighborListValid()) {
+    if (not isContainerValid()) {
       _autoTuner.getContainer()->addParticle(p);
     } else {
       autopas::utils::ExceptionHandler::exception(
@@ -69,21 +62,23 @@ class LogicHandler {
   }
 
   /**
-   * @copydoc AutoPas::addHaloParticle()
+   * @copydoc AutoPas::addOrUpdateHaloParticle()
    */
   void addOrUpdateHaloParticle(Particle &haloParticle) {
-    if (not isNeighborListValid()) {
-      _autoTuner.getContainer()->addHaloParticle(haloParticle);
+    auto container = _autoTuner.getContainer();
+    if (not isContainerValid()) {
+      container->addHaloParticle(haloParticle);
     } else {
-      if (not utils::inBox(haloParticle.getR(), ArrayMath::addScalar(_boxMin, _skin / 2),
-                           ArrayMath::subScalar(_boxMax, _skin / 2))) {
+      if (not utils::inBox(haloParticle.getR(), ArrayMath::addScalar(container->getBoxMin(), container->getSkin() / 2),
+                           ArrayMath::subScalar(container->getBoxMax(), container->getSkin() / 2))) {
         bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
         if (not updated) {
           // a particle has to be updated if it is within cutoff + skin/2 of the bounding box
-          double dangerousDistance = _cutoff + _skin / 2;
+          double dangerousDistance = container->getCutoff() + container->getSkin() / 2;
 
-          bool dangerous = utils::inBox(haloParticle.getR(), ArrayMath::subScalar(_boxMin, dangerousDistance),
-                                        ArrayMath::addScalar(_boxMax, dangerousDistance));
+          bool dangerous =
+              utils::inBox(haloParticle.getR(), ArrayMath::subScalar(container->getBoxMin(), dangerousDistance),
+                           ArrayMath::addScalar(container->getBoxMax(), dangerousDistance));
           if (dangerous) {
             // throw exception, rebuild frequency not high enough / skin too small!
             utils::ExceptionHandler::exception(
@@ -104,7 +99,7 @@ class LogicHandler {
    * @copydoc AutoPas::deleteHaloParticles()
    */
   void deleteHaloParticles() {
-    _neighborListIsValid = false;
+    _containerIsValid = false;
     _autoTuner.getContainer()->deleteHaloParticles();
   }
 
@@ -112,7 +107,7 @@ class LogicHandler {
    * @copydoc AutoPas::deleteAllParticles()
    */
   void deleteAllParticles() {
-    _neighborListIsValid = false;
+    _containerIsValid = false;
     _autoTuner.getContainer()->deleteAllParticles();
   }
 
@@ -121,11 +116,11 @@ class LogicHandler {
    */
   template <class Functor>
   void iteratePairwise(Functor *f) {
-    const bool doRebuild = not isNeighborListValid();
+    const bool doRebuild = not isContainerValid();
     _autoTuner.iteratePairwise(f, doRebuild);
     if (doRebuild /*we have done a rebuild now*/) {
       // list is now valid
-      _neighborListIsValid = true;
+      _containerIsValid = true;
       _stepsSinceLastContainerRebuild = 0;
     }
     ++_stepsSinceLastContainerRebuild;
@@ -149,45 +144,29 @@ class LogicHandler {
 
  private:
   void doAssertions() {
+    auto container = _autoTuner.getContainer();
     // check boxSize at least cutoff + skin
     for (unsigned int dim = 0; dim < 3; ++dim) {
-      if (_boxMax[dim] - _boxMin[dim] < _cutoff + _skin) {
-        AutoPasLog(error, "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.", dim, _boxMin[dim], dim, _boxMax[dim]);
-        AutoPasLog(error, "Has to be at least cutoff({}) + skin({}) = {}.", _cutoff, _skin, _cutoff + _skin);
+      if (container->getBoxMax()[dim] - container->getBoxMin()[dim] < container->getCutoff() + container->getSkin()) {
+        AutoPasLog(error, "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.", dim, container->getBoxMin()[dim], dim,
+                   container->getBoxMax()[dim]);
+        AutoPasLog(error, "Has to be at least cutoff({}) + skin({}) = {}.", container->getCutoff(),
+                   container->getSkin(), container->getCutoff() + container->getSkin());
         autopas::utils::ExceptionHandler::exception("Box too small.");
       }
     }
   }
 
-  bool isNeighborListValid() {
-    return _neighborListIsValid and _stepsSinceLastContainerRebuild < _verletRebuildFrequency and
+  bool isContainerValid() {
+    return _containerIsValid and _stepsSinceLastContainerRebuild < _containerRebuildFrequency and
            not _autoTuner.willRebuild();
   }
 
   /**
-   * Lower corner of the container.
+   * Specifies after how many pair-wise traversals the container and their neighbor lists (if they exist) are to be
+   * rebuild.
    */
-  std::array<double, 3> _boxMin;
-
-  /**
-   * Upper corner of the container.
-   */
-  std::array<double, 3> _boxMax;
-
-  /**
-   * Cutoff radius to be used in this container.
-   */
-  double _cutoff;
-
-  /**
-   * Skin.
-   */
-  double _skin;
-
-  /**
-   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
-   */
-  unsigned int _verletRebuildFrequency;
+  unsigned int _containerRebuildFrequency;
 
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
@@ -207,7 +186,7 @@ class LogicHandler {
   /**
    * Specifies if the neighbor list is valid.
    */
-  bool _neighborListIsValid{false};
+  bool _containerIsValid{false};
 
   /**
    * Steps since last rebuild

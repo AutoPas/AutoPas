@@ -40,24 +40,17 @@ class VerletListsCells
   /**
    * Constructor of the VerletListsCells class.
    * The neighbor lists are build using a search radius of cutoff + skin.
-   * The rebuildFrequency should be chosen, s.t. the particles do not move more
-   * than a distance of skin/2 between two rebuilds of the lists.
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
-   * @param rebuildFrequency specifies after how many pair-wise traversals the
-   * neighbor lists are to be rebuild. A frequency of 1 means that they are
-   * always rebuild, 10 means they are rebuild after 10 traversals
    * @param buildTraversal the traversal used to build the verletlists
-   * @param cellSizeFactor cell size factor ralative to cutoff
+   * @param cellSizeFactor cell size factor relative to cutoff
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOption buildTraversal, const double skin = 0, const unsigned int rebuildFrequency = 1,
-                   const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, LinkedParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                                            compatibleTraversals::allVLCCompatibleTraversals(),
-                                                            cellSizeFactor),
+                   const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0)
+      : VerletListsLinkedBase<Particle, LinkedParticleCell>(
+            boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversal(buildTraversal) {}
 
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }

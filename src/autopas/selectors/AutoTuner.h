@@ -39,22 +39,20 @@ class AutoTuner {
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
-   * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            unsigned int verletRebuildFrequency, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
-            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+            std::unique_ptr<TuningStrategyInterface> tuningStrategy, SelectorStrategyOption selectorStrategy,
+            unsigned int tuningInterval, unsigned int maxSamples)
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
-        _verletRebuildFrequency(verletRebuildFrequency),
         _maxSamples(maxSamples),
         _samples(maxSamples) {
     if (_tuningStrategy->searchSpaceIsEmpty()) {
@@ -198,7 +196,6 @@ class AutoTuner {
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
   double _verletSkin;
-  double _verletRebuildFrequency;
 
   /**
    * How many times each configuration should be tested.
@@ -214,8 +211,7 @@ class AutoTuner {
 template <class Particle, class ParticleCell>
 void AutoTuner<Particle, ParticleCell>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
-  _containerSelector.selectContainer(conf.container,
-                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletRebuildFrequency));
+  _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
 }
 
 template <class Particle, class ParticleCell>
@@ -392,8 +388,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
-  _containerSelector.selectContainer(conf.container,
-                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletRebuildFrequency));
+  _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor>(
