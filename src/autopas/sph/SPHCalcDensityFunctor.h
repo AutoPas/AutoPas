@@ -27,10 +27,6 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
 
   bool isRelevantForTuning() override { return true; }
 
-  bool allowsNewton3() override { return true; }
-
-  bool allowsNonNewton3() override { return true; }
-
   /**
    * Calculates the density contribution of the interaction of particle i and j.
    * It is not symmetric, because the smoothing lenghts of the two particles can

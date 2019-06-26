@@ -49,7 +49,11 @@ if (CLANG_FORMAT)
         set(file_cf ".dummy/cf/${file_cf}_cf")
         add_custom_command(
             OUTPUT ${file_cf}
-            COMMAND ${CLANG_FORMAT} -style=file -i ${_file}
+            COMMAND
+                ${CLANG_FORMAT}
+                -style=file
+                -i
+                ${_file}
             DEPENDS ${_file}
         )
         list(APPEND dummyfiles ${file_cf})

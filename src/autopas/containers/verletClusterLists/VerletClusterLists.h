@@ -51,9 +51,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
-        _gridSideLength{0.},
-        _gridSideLengthReciprocal{0.},
-        _cellsPerDim{0},
         _skin(skin),
         _cutoff(cutoff),
         _cutoffSqr(cutoff * cutoff),
@@ -110,35 +107,15 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
-    // quick and dirty: iterate over all particles and delete halo particles
-    // @todo: make this proper
-    for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-      if (not iter->isOwned()) {
-        iter.deleteCurrentParticle();
-      }
-    }
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.deleteHaloParticles not yet implemented.");
   }
 
   /**
    * @copydoc VerletLists::updateContainer()
    */
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
+  void updateContainer() override {
     AutoPasLog(debug, "updating container");
-    // first delete all particles
-    this->deleteHaloParticles();
-
-    // next find invalid particles
-    std::vector<Particle> invalidParticles;
-    /// @todo: parallelize
-    for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      if (not utils::inBox(iter->getR(), _boxMin, _boxMax)) {
-        invalidParticles.push_back(*iter);
-        iter.deleteCurrentParticle();
-      }
-    }
-
     _neighborListIsValid = false;
-    return invalidParticles;
   }
 
   bool isContainerUpdateNeeded() override {

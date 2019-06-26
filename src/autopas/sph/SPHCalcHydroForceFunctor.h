@@ -27,10 +27,6 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
   bool isRelevantForTuning() override { return true; }
 
-  bool allowsNewton3() override { return true; }
-
-  bool allowsNonNewton3() override { return true; }
-
   /**
    * Calculates the contribution of the interaction of particle i and j to the
    * hydrodynamic force.
