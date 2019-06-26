@@ -65,10 +65,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
-      // we can have halo particles inside the domain, so we add a factor of 2 here, so we have cells marked as halo
-      // even if they are only close to the halo.
-      if (index3d[i] < 2 * _cellsPerInteractionLength or
-          index3d[i] >= _cellsPerDimensionWithHalo[i] - 2 * _cellsPerInteractionLength) {
+      if (index3d[i] < _cellsPerInteractionLength or
+          index3d[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
         isHaloCell = true;
         break;
       }
@@ -77,17 +75,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   }
 
   bool cellCanContainOwnedParticles(index_t index1d) const override {
-    auto index3d = index3D(index1d);
-    bool isHaloCell = false;
-    for (size_t i = 0; i < 3; i++) {
-      // owned particles are always WITHIN the domain, so we don't need the factor 2 here!
-      if (index3d[i] < _cellsPerInteractionLength or
-          index3d[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
-        isHaloCell = true;
-        break;
-      }
-    }
-    return not isHaloCell;
+    return not cellCanContainHaloParticles(index1d);
   }
 
   /**

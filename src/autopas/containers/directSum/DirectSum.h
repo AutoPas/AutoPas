@@ -172,11 +172,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     typedef std::size_t index_t;
 
    public:
-    bool cellCanContainHaloParticles(index_t index1d) const override {
-      // always return true, as there might be halo particles also within the domain, thus both cells can contain halo
-      // particles.
-      return true;
-    }
+    bool cellCanContainHaloParticles(index_t index1d) const override { return index1d == 1; }
 
     bool cellCanContainOwnedParticles(index_t index1d) const override { return index1d == 0; }
 
