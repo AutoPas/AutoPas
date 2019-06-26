@@ -131,7 +131,15 @@ class AutoPas {
    * Adds or updates a particle to/in the container that lies in the halo region of the container.
    * If the neighbor lists inside of AutoPas are NOT valid, the halo particle will be added.
    * If the neighbor lists of AutoPas are valid the particle will be used to update an already existing halo particle.
-   * In this case if there is no matching halo particle, haloParticle will be ignored.
+   * In this case if there is no matching halo particle, the given haloParticle will be ignored.
+   * @note Exceptions are thrown in the following cases:
+   * 1. If the halo particle is added and it is insided of the owned domain (defined by boxmin and boxmax)of the
+   * container.
+   * 2. If the halo particle should be updated and the given haloParticle is too far inside of the domain (by more than
+   * skin/2)
+   * 3. If the halo particle should be updated, but no matching particle is found, even though the given haloParticle is
+   * close enough to the domain (at most cutoff + skin/2)
+   *
    * @param haloParticle particle to be added or updated
    */
   void addOrUpdateHaloParticle(Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
