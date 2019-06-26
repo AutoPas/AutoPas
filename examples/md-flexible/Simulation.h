@@ -31,6 +31,7 @@ class Simulation {
   long durationV;
   double delta_t;
   int iterations;
+  bool AVXFunctor;
 
  public:
   virtual ~Simulation() {}
@@ -146,6 +147,7 @@ Simulation<Particle, ParticleCell>::Simulation(shared_ptr<AutoPas<Particle, Part
   durationF = 0;
   durationV = 0;
   durationX = 0;
+  AVXFunctor = false; //default wert
 }
 
 template <class Particle, class ParticleCell>
@@ -160,7 +162,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   // std::array<double, 3> highCorner = {5., 5., 5.};
   // double epsilon,sigma  = 1.0;
   string logFileName(parser->getLogFileName());
-  auto measureFlops(parser->getMeasureFlops());  //@todo un-used
   auto numIterations(parser->getIterations());
   auto particlesTotal(parser->getParticlesTotal());
   auto verletRebuildFrequency(parser->getVerletRebuildFrequency());
@@ -172,7 +173,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   auto dataLayoutOptions(parser->getDataLayoutOptions());
   auto distributionMean(parser->getDistributionMean());
   auto distributionStdDev(parser->getDistributionStdDev());
-  auto functorChoice(parser->getFunctorOption());  //@todo un-used
+  //auto functorChoice(parser->getFunctorOption());
   auto generatorChoice(parser->getGeneratorOption());
   auto newton3Options(parser->getNewton3Options());
   auto particleSpacing(parser->getParticleSpacing());
@@ -216,9 +217,9 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initContainerGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,
                                                            size_t particlesPerDim, double particelSpacing) {
+  double ppDxpS= (particlesPerDim)*particelSpacing;
   std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax(
-      {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
+  std::array<double, 3> boxMax({ppDxpS,ppDxpS,ppDxpS});
 
   autopas.setBoxMin(boxMin);
   autopas.setBoxMax(boxMax);
@@ -269,6 +270,9 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   //@ TODO: switch for other functors --> mit boolean object?
   //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
   //_autopas->iteratePairwise(this->_Functor);
+
+
+
   auto *functor = new autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true>(
       _autopas->getCutoff(), 1., 1.0, 0.0, _autopas->getBoxMin(), _autopas->getBoxMax(),
       true);  // cutoff, espi, sigma, shift, box min, box max
