@@ -303,12 +303,6 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
   }
 }
 
-/**
- * deletes the halo particles
- * @param sphSystem
- */
-void deleteHaloParticles(AutoPasContainer &sphSystem) { sphSystem.deleteHaloParticles(); }
-
 void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm,
                             const std::vector<autopas::sph::SPHParticle> &invalidParticles,
                             std::array<double, 3> globalBoxMin, std::array<double, 3> globalBoxMax) {
@@ -384,8 +378,6 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
   }
 
   sphSystem.iteratePairwise(&densityFunctor);
-  // 1.3 delete halo particles, as their values are no longer valid
-  deleteHaloParticles(sphSystem);
 
   // 2. then update pressure
   setPressure(sphSystem);
@@ -405,8 +397,6 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
   }
 
   sphSystem.iteratePairwise(&hydroForceFunctor);
-  // 0.3.3 delete halo particles, as their values are no longer valid
-  deleteHaloParticles(sphSystem);
 }
 
 void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {

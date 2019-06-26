@@ -20,7 +20,7 @@
 namespace autopas {
 
 /**
- * instance counter to help track the number of autopas instances. Needed for correct management of the logger.
+ * Instance counter to help track the number of autopas instances. Needed for correct management of the logger.
  */
 static unsigned int _instanceCounter = 0;
 
@@ -102,12 +102,23 @@ class AutoPas {
   }
 
   /**
-   * Updates the internal container.
-   * This is needed e.g. for linked-cells if particles move from one cell to another.
-   * It resorts particles into appropriate cells and will return particles that do no longer belong into the container.
+   * Potentially updates the internal container.
+   * On an update, the particles are resorted into appropriate cells and will return particles that do no longer belong
+   * into the container. If the internal container is still valid and a rebuild of the container is not forced, this
+   * will return an empty list of particles.
    * @return A vector of invalid particles that do no belong in the current container.
    */
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() { return _logicHandler->updateContainer(); }
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() { return _logicHandler->updateContainer(false); }
+
+  /**
+   * Forces a container update.
+   * On an update, the particles are resorted into appropriate cells and will return particles that do no longer belong
+   * into the container.
+   * @return A vector of invalid particles that do no belong in the current container.
+   */
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainerForced() {
+    return _logicHandler->updateContainer(true);
+  }
 
   /**
    * Adds a particle to the container.
@@ -126,12 +137,8 @@ class AutoPas {
   void addOrUpdateHaloParticle(Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
 
   /**
-   * Deletes all halo particles.
-   */
-  void deleteHaloParticles() { _logicHandler->deleteHaloParticles(); }
-
-  /**
    * Deletes all particles.
+   * @note This invalidates the container, a rebuild is forced on the next iteratePairwise() call.
    */
   void deleteAllParticles() { _logicHandler->deleteAllParticles(); }
 

@@ -198,12 +198,6 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
   }
 }
 
-/**
- * deletes the halo particles
- * @param sphSystem
- */
-void deleteHaloParticles(AutoPasContainer &sphSystem) { sphSystem.deleteHaloParticles(); }
-
 void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   // declare the used functors
   autopas::sph::SPHCalcDensityFunctor densityFunctor;
@@ -238,7 +232,6 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   sphSystem.iteratePairwise(&densityFunctor);
   std::cout << "calculation of density... completed" << std::endl;
   // 1.3 delete halo particles, as their values are no longer valid
-  deleteHaloParticles(sphSystem);
 
   // 2. then update pressure
   std::cout << "calculation of pressure... started" << std::endl;
@@ -274,8 +267,6 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   std::cout << "calculation of hydroforces... started" << std::endl;
   sphSystem.iteratePairwise(&hydroForceFunctor);
   std::cout << "calculation of hydroforces... completed" << std::endl;
-  // 0.3.3 delete halo particles, as their values are no longer valid
-  deleteHaloParticles(sphSystem);
 }
 
 void printConservativeVariables(AutoPasContainer &sphSystem) {

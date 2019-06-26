@@ -138,9 +138,9 @@ int main(int argc, char *argv[]) {
       boxMin, boxMax, cutoff, skin * cutoff);
   autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
       boxMin, boxMax, cutoff, skin * cutoff);
-  autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
-  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(
-      boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff, rebuildFrequency);
+  autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff);
+  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(boxMin, boxMax, cutoff,
+                                                                      autopas::TraversalOption::c08, skin * cutoff);
 
   addParticles(lcCont, numParticles);
 

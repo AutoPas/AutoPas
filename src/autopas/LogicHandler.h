@@ -36,9 +36,10 @@ class LogicHandler {
 
   /**
    * @copydoc AutoPas::updateContainer()
+   * @param forced specifies whether an update of the container is enforced.
    */
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() {
-    if (not isContainerValid()) {
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer(bool forced) {
+    if (not isContainerValid() or forced) {
       AutoPasLog(debug, "Initiating container update.");
       _containerIsValid = false;
       return std::move(_autoTuner.getContainer()->updateContainer());
@@ -57,7 +58,8 @@ class LogicHandler {
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Adding of particles not allowed while neighborlists are still valid. Please invalidate the neighborlists "
-          "by calling AutoPas::invalidateLists(). Do this on EVERY AutoPas instance, i.e., on all mpi processes!");
+          "by calling AutoPas::updateContainerForced(). Do this on EVERY AutoPas instance, i.e., on all mpi "
+          "processes!");
     }
   }
 
@@ -69,6 +71,8 @@ class LogicHandler {
     if (not isContainerValid()) {
       container->addHaloParticle(haloParticle);
     } else {
+      // check if the halo particle is actually a halo particle, i.e., not too far (more than skin/2) inside of the
+      // domain.
       if (not utils::inBox(haloParticle.getR(), ArrayMath::addScalar(container->getBoxMin(), container->getSkin() / 2),
                            ArrayMath::subScalar(container->getBoxMax(), container->getSkin() / 2))) {
         bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
@@ -93,14 +97,6 @@ class LogicHandler {
             "(more than skin/2). Rebuild frequency not high enough / skin too small!");
       }
     }
-  }
-
-  /**
-   * @copydoc AutoPas::deleteHaloParticles()
-   */
-  void deleteHaloParticles() {
-    _containerIsValid = false;
-    _autoTuner.getContainer()->deleteHaloParticles();
   }
 
   /**
