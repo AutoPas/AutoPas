@@ -23,7 +23,7 @@ namespace autopas {
  * If a different Particle class should be used with AutoPas this class must be used as a base to build your own
  * Particle class.
  */
-template <typename floatType>
+template <typename floatType, typename idType>
 class ParticleBase {
  public:
   ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
@@ -34,7 +34,7 @@ class ParticleBase {
    * @param v Velocity of the particle.
    * @param id Id of the particle.
    */
-  ParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id)
+  ParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, idType id)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
   /**
@@ -86,13 +86,13 @@ class ParticleBase {
    * Get the id of the particle
    * @return id
    */
-  unsigned long getID() const { return _id; }
+  idType getID() const { return _id; }
 
   /**
    * Set the id of the particle
    * @param id id
    */
-  void setID(unsigned long id) { _id = id; }
+  void setID(idType id) { _id = id; }
 
   /**
    * Get the position of the particle
@@ -163,14 +163,14 @@ class ParticleBase {
    * the type for the soa storage
    */
   typedef
-      typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType>::Type
+      typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType, floatType>::Type
           SoAArraysType;
 
 #if defined(AUTOPAS_CUDA)
   /**
    * The type for storage arrays for Cuda
    */
-  typedef typename autopas::utils::CudaSoAType<size_t, floatType, floatType, floatType, floatType, floatType,
+  typedef typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType, floatType,
                                                floatType>::Type CudaDeviceArraysType;
 #else
   /**
@@ -196,7 +196,7 @@ class ParticleBase {
   /**
    * Particle id.
    */
-  unsigned long _id;
+  idType _id;
 };
 
 }  // namespace autopas
