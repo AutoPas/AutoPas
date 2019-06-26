@@ -121,6 +121,7 @@ class LogicHandler {
    * @copydoc AutoPas::begin()
    */
   autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return _autoTuner.getContainer()->begin(behavior);
   }
 
@@ -130,6 +131,7 @@ class LogicHandler {
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
