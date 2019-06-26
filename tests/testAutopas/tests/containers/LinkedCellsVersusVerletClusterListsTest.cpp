@@ -32,8 +32,8 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
       verletTraversal(&func);
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  _verletLists.iteratePairwise(&func, &verletTraversal, useNewton3);
-  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ, useNewton3);
+  _verletLists.iteratePairwise(&func, &verletTraversal);
+  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
 
   std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, skip id=0 to avoid dummy particles
@@ -64,8 +64,8 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
   autopas::VerletClustersTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, dataLayout, useNewton3>
       traversalFLOPSVerlet(&flopsVerlet);
-  _verletLists.iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet, useNewton3);
-  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS, useNewton3);
+  _verletLists.iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet);
+  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS);
 
   if (not(dataLayout == autopas::DataLayoutOption::soa && not useNewton3)) {
     ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());

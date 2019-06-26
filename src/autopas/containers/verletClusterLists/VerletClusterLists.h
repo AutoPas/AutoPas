@@ -7,14 +7,18 @@
 #pragma once
 
 #include <cmath>
-#include "VerletClusterMaths.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
+#include "autopas/iterators/ParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "traversals/VerletClustersTraversalInterface.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
+
+template <class Particle>
+class VerletClustersTraversalInterface;
 
 /**
  * Particles are divided into clusters.
@@ -49,8 +53,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin,
-                                                                compatibleTraversals::allVCLCompatibleTraversals()),
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin),
         _clusterSize(clusterSize),
         _numClusters(0),
         _boxMin(boxMin),
@@ -74,10 +77,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @tparam Traversal The type of the traversal.
    * @param f not used
    * @param traversal The traversal to use for the iteration
-   * @param useNewton3 not used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
     if (traversal->getUseNewton3()) {
       /// @todo implement newton3 for VerletClusterLists
       AutoPasLog(error, "Newton3 not implemented yet.");
@@ -94,8 +96,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
-      traversalInterface->setTraversalInfo(_cellsPerDim, _numClusters, _clusterSize, _clusters, _neighborLists,
-                                           _aosToSoaMap);
+      traversalInterface->setTraversalInfo(this);
       traversalInterface->initClusterTraversal();
       traversalInterface->traverseParticlePairs();
       traversalInterface->endClusterTraversal();
@@ -173,7 +174,89 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return ParticleIteratorWrapper<Particle>();
   }
 
+  /**
+   * Helper method to iterate over all clusters.
+   * @tparam LoopBody The type of the lambda to execute for all clusters.
+   * @tparam inParallel If the iteration should be executed in parallel or sequential.
+   * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, int
+   * clusterSize, std::vector<Particle*> clusterNeighborList.
+   */
+  template <bool inParallel, class LoopBody>
+  void traverseClusters(LoopBody &&loopBody) {
+    if (inParallel) {
+      traverseClustersParallel<LoopBody>(std::forward<LoopBody>(loopBody));
+    } else {
+      traverseClustersSequential<LoopBody>(std::forward<LoopBody>(loopBody));
+    }
+  }
+
+  /**
+   * Returns the AoSToSoAMap for usage in the traversals of this container.
+   * @return the AoSToSoAMap.
+   */
+  const auto &getAosToSoaMap() const { return _aosToSoaMap; }
+
+  /**
+   * Returns the number of clusters in this container.
+   * @return The number of clusters in this container.
+   */
+  auto getNumClusters() const { return _numClusters; }
+
  protected:
+  /**
+   * Helper method to sequentially iterate over all clusters.
+   * @tparam LoopBody The type of the lambda to execute for all clusters.
+   * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
+   * clusterSize, std::vector<Particle*> clusterNeighborList.
+   */
+  template <class LoopBody>
+  void traverseClustersSequential(LoopBody &&loopBody) {
+    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
+      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
+        auto &grid = _clusters[index];
+        auto &gridNeighborList = _neighborLists[index];
+
+        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
+          Particle *iClusterStart = &grid[clusterInGrid * _clusterSize];
+          auto &clusterNeighborList = gridNeighborList[clusterInGrid];
+          loopBody(iClusterStart, _clusterSize, clusterNeighborList);
+        }
+      }
+    }
+  }
+
+  /**
+   * Helper method to iterate over all clusters in parallel.
+   * @tparam LoopBody The type of the lambda to execute for all clusters.
+   * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
+   * clusterSize, std::vector<Particle*> clusterNeighborList.
+   */
+  template <class LoopBody>
+  void traverseClustersParallel(LoopBody &&loopBody) {
+    const index_t endX = _cellsPerDim[0];
+    const index_t endY = _cellsPerDim[1];
+#if defined(AUTOPAS_OPENMP)
+    // @todo: find sensible chunksize
+#pragma omp parallel for schedule(dynamic) collapse(2)
+#endif
+    for (index_t x = 0; x < endX; x++) {
+      for (index_t y = 0; y < endY; y++) {
+        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
+        auto &grid = _clusters[index];
+        auto &gridNeighborList = _neighborLists[index];
+
+        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
+          Particle *iClusterStart = &grid[clusterInGrid * _clusterSize];
+          auto &clusterNeighborList = gridNeighborList[clusterInGrid];
+          loopBody(iClusterStart, _clusterSize, clusterNeighborList);
+        }
+      }
+    }
+  }
+
   /**
    * Recalculate grids and clusters,
    * build verlet lists and
