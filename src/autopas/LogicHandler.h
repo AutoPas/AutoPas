@@ -22,16 +22,10 @@ class LogicHandler {
    * Constructor of the LogicHandler.
    * @param autoTuner
    * @param rebuildFrequency
-   * @param tuningInterval
-   * @param numSamples
    */
-  LogicHandler(autopas::AutoTuner<Particle, ParticleCell> &autoTuner, unsigned int rebuildFrequency,
-               unsigned int tuningInterval, unsigned int numSamples)
-      : _containerRebuildFrequency{rebuildFrequency},
-        _tuningInterval{tuningInterval},
-        _numSamples{numSamples},
-        _autoTuner(autoTuner) {
-    doAssertions();
+  LogicHandler(autopas::AutoTuner<Particle, ParticleCell> &autoTuner, unsigned int rebuildFrequency)
+      : _containerRebuildFrequency{rebuildFrequency}, _autoTuner(autoTuner) {
+    checkMinimalSize();
   }
 
   /**
@@ -139,7 +133,7 @@ class LogicHandler {
   }
 
  private:
-  void doAssertions() {
+  void checkMinimalSize() {
     auto container = _autoTuner.getContainer();
     // check boxSize at least cutoff + skin
     for (unsigned int dim = 0; dim < 3; ++dim) {
@@ -154,8 +148,10 @@ class LogicHandler {
   }
 
   bool isContainerValid() {
-    return _containerIsValid and _stepsSinceLastContainerRebuild < _containerRebuildFrequency and
-           not _autoTuner.willRebuild();
+    if (_stepsSinceLastContainerRebuild >= _containerRebuildFrequency or _autoTuner.willRebuild()) {
+      _containerIsValid = false;
+    }
+    return _containerIsValid;
   }
 
   /**
@@ -163,16 +159,6 @@ class LogicHandler {
    * rebuild.
    */
   unsigned int _containerRebuildFrequency;
-
-  /**
-   * Number of timesteps after which the auto-tuner shall reevaluate all selections.
-   */
-  unsigned int _tuningInterval;
-
-  /**
-   * Number of samples the tuner should collect for each combination.
-   */
-  unsigned int _numSamples;
 
   /**
    * Reference to the AutoTuner that owns the container, ...
