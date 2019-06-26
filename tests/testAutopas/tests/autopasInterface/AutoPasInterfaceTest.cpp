@@ -310,7 +310,6 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
     testSimulationLoop(options);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
-    //if (str.find("without any measurements") != std::string::npos) {
     if (str.find("Trying to execute a traversal that is not applicable") != std::string::npos) {
       GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
     } else {
