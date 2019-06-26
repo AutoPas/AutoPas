@@ -371,6 +371,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
         // we found a valid config!
         break;
       } else {
+        AutoPasLog(debug, "Skip not applicable configuration {}",
+                   _tuningStrategy->getCurrentConfiguration().toString());
         stillTuning = _tuningStrategy->tune();
       }
     }

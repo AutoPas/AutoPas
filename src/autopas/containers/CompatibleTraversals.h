@@ -105,8 +105,8 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
  * @param traversal TraversalOption
  * @return set of all compatible container options.
  */
-static inline const std::set<ContainerOption> &allCompatibleContainers(TraversalOption traversal) {
-  static std::set<ContainerOption> result{};
+static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption traversal) {
+  std::set<ContainerOption> result{};
 
   for (const auto &container : allContainerOptions) {
     auto allCompatible = compatibleTraversals::allCompatibleTraversals(container);

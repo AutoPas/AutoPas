@@ -170,7 +170,7 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
   // sample minimum of acquisition function
   auto best = _gp.sampleAquisitionMin(af, samples);
 
-  // choose first compatible container
+  // set corresponding container
   best.container = _traversalContainerMap[best.traversal];
   return best;
 }
