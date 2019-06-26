@@ -602,7 +602,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     index_t currentMapIndex = 0;
 
     const auto _clusterTraverseFunctor = [this, &currentMapIndex](Particle *clusterStart, int clusterSize,
-                                                              std::vector<Particle *> &clusterNeighborList) {
+                                                                  std::vector<Particle *> &clusterNeighborList) {
       _aosToSoaMap[clusterStart] = currentMapIndex++;
     };
 
