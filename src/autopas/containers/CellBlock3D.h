@@ -74,9 +74,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return isHaloCell;
   }
 
-  bool cellCanContainOwnedParticles(index_t index1d) const override {
-    return not cellCanContainHaloParticles(index1d);
-  }
+  bool cellCanContainOwnedParticles(index_t index1d) const override { return not cellCanContainHaloParticles(index1d); }
 
   /**
    * get the ParticleCell of a specified 1d index
