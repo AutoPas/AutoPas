@@ -424,6 +424,8 @@ void MDFlexParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
+  cout << setw(valueOffset) << left << "Tuning Strategy"
+       << ":  " << autopas::utils::StringUtils::to_string(tuningStrategyOption) << endl;
   cout << setw(valueOffset) << left << "Tuning Interval"
        << ":  " << tuningInterval << endl;
   cout << setw(valueOffset) << left << "Tuning Samples"
