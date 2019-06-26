@@ -102,7 +102,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
    * Resets the cell structure of the traversal.
    * @param dims
    */
-  void rebuild(const std::array<unsigned long, 3> &dims) override;
+  void rebuild(const std::array<unsigned long, 3> &dims);
 
  protected:
   /**
@@ -153,8 +153,6 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::rebuild(
     const std::array<unsigned long, 3> &dims) {
-  CellPairTraversal<ParticleCell, dataLayout, useNewton3>::rebuild(dims);
-
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
   }
