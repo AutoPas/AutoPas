@@ -36,6 +36,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * Type of the ParticleCell.
    */
   typedef ParticleCell ParticleCellType;
+
   /**
    * Constructor of ParticleContainer
    * @param boxMin
