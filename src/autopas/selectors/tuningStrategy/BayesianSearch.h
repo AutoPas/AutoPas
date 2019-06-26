@@ -152,13 +152,13 @@ bool BayesianSearch::tune() {
 
   if (_gp.numEvidence() >= _maxEvidence) {
     // select predicted best config
-    _currentConfig = sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction);
+    _currentConfig = static_cast<Configuration>(sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction));
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }
 
   // select predicted best config for tuning
-  _currentConfig = sampleOptimalFeatureVector(_predNumSamples, _predAcqFunction);
+  _currentConfig = static_cast<Configuration>(sampleOptimalFeatureVector(_predNumSamples, _predAcqFunction));
   return true;
 }
 
