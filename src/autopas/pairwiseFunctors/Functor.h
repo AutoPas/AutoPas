@@ -200,7 +200,7 @@ class Functor {
    * @return true if and only if this functor provides an interface to
    * Newton3-like functions.
    */
-  virtual bool allowsNewton3() = 0;
+  virtual bool allowsNewton3() { return true; }
 
   /**
    * Specifies whether the functor is capable of non-Newton3-like functors.
@@ -210,7 +210,7 @@ class Functor {
    * @return true if and only if this functor provides an interface to functions
    * that do not utilize Newton3.
    */
-  virtual bool allowsNonNewton3() = 0;
+  virtual bool allowsNonNewton3() { return false; }
 
   /**
    * Specifies whether the functor should be considered for the auto-tuning process.

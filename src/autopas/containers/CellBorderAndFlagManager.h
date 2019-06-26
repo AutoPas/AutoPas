@@ -26,18 +26,19 @@ class CellBorderAndFlagManager {
   virtual ~CellBorderAndFlagManager() = default;
 
   /**
-   * Checks if the cell with the one-dimensional index index1d can contain halo particles.
+   * Checks if the cell with the one-dimensional index index1d is a halocell.
    * @param index1d the one-dimensional index of the cell that should be checked
-   * @return true if the cell can contain halo particles
+   * @return true if the cell is a halo cell
    */
-  virtual bool cellCanContainHaloParticles(index_t index1d) const = 0;
+  virtual bool isHaloCell(index_t index1d) const = 0;
 
   /**
-   * Checks if the cell with the one-dimensional index index1d can contain owned particles.
+   * Checks if the cell with the one-dimensional index index1d is owned by this
+   * process, i.e. it is NOT a halo cell.
    * @param index1d the one-dimensional index of the cell that should be checked
-   * @return true if the cell can contain owned particles
+   * @return true if the cell is owned by the current process.
    */
-  virtual bool cellCanContainOwnedParticles(index_t index1d) const = 0;
+  virtual bool isOwningCell(index_t index1d) const = 0;
 };
 }  // namespace internal
 }  // namespace autopas

@@ -14,7 +14,6 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
@@ -56,28 +55,17 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void addHaloParticle(Particle &p) override {
-    Particle p_copy = p;
-    p_copy.setOwned(false);
-    if (utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
-      getHaloCell()->addParticle(p_copy);
-    } else {  // particle is in own box
-      // we are adding it to the inner box, but have marked it as not owned.
-      // halo particles can also be inside of the domain (assuming non-precise interfaces)
-      // here we could also check whether the particle is too far inside of the domain; we would need the verlet skin
-      // for that.
-      getCell()->addParticle(p_copy);
+    if (utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+      getHaloCell()->addParticle(p);
+    } else {  // particle is not outside of own box
+      utils::ExceptionHandler::exception(
+          "DirectSum: trying to add a halo particle that is not OUTSIDE of the "
+          "bounding box.\n" +
+          p.toString());
     }
   }
 
-  void deleteHaloParticles() override {
-    getHaloCell()->clear();
-    // particles inside of a cell can also be halo particles (assuming non-precise interfaces)
-    for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
-      if (not iter->isOwned()) {
-        iter.deleteCurrentParticle();
-      }
-    }
-  }
+  void deleteHaloParticles() override { getHaloCell()->clear(); }
 
   /**
    * Function to iterate over all pairs of particles
@@ -101,17 +89,18 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     traversal->endTraversal(this->_cells);
   }
 
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
-    // first we delete halo particles, as we don't want them here.
-    deleteHaloParticles();
-    std::vector<Particle> invalidParticles{};
+  void updateContainer() override {
+    if (getHaloCell()->isNotEmpty()) {
+      utils::ExceptionHandler::exception(
+          "DirectSum: Halo particles still present when updateContainer was called. Found {} particles",
+          getHaloCell()->numParticles());
+    }
     for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-        invalidParticles.push_back(*iter);
+        addHaloParticle(*iter);
         iter.deleteCurrentParticle();
       }
     }
-    return invalidParticles;
   }
 
   bool isContainerUpdateNeeded() override {
@@ -145,11 +134,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     std::vector<size_t> cellsOfInterest;
 
     switch (behavior) {
+      case IteratorBehavior::haloOnly:
+        cellsOfInterest.push_back(1);
+        break;
       case IteratorBehavior::ownedOnly:
         cellsOfInterest.push_back(0);
         break;
-      case IteratorBehavior::haloOnly:
-        // for haloOnly all cells can contain halo particles!
       case IteratorBehavior::haloAndOwned:
         cellsOfInterest.push_back(0);
         cellsOfInterest.push_back(1);
@@ -168,14 +158,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     typedef std::size_t index_t;
 
    public:
-    bool cellCanContainHaloParticles(index_t index1d) const override {
-      // always return true, as there might be halo particles also within the domain, thus both cells can contain halo
-      // particles.
-      return true;
-    }
+    bool isHaloCell(index_t index1d) const override { return index1d == 1; }
 
-    bool cellCanContainOwnedParticles(index_t index1d) const override { return index1d == 0; }
-
+    bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
   } _cellBorderFlagManager;
 
   ParticleCell *getCell() { return &(this->_cells.at(0)); };

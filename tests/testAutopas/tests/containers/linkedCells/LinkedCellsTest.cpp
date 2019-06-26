@@ -23,9 +23,8 @@ TEST_F(LinkedCellsTest, testParticleAdding) {
           EXPECT_ANY_THROW(linkedCells.addParticle(p));     // outside, therefore not ok!
           EXPECT_NO_THROW(linkedCells.addHaloParticle(p));  // outside, therefore ok!
         } else {
-          EXPECT_NO_THROW(linkedCells.addParticle(p));  // inside, therefore ok!
-          EXPECT_NO_THROW(
-              linkedCells.addHaloParticle(p));  // inside, but still ok, as halo particle can be inside of the domain!
+          EXPECT_NO_THROW(linkedCells.addParticle(p));       // inside, therefore ok!
+          EXPECT_ANY_THROW(linkedCells.addHaloParticle(p));  // inside, therefore not ok!
         }
       }
     }
@@ -180,15 +179,13 @@ TEST_F(LinkedCellsTest, testUpdateContainer) {
   linkedCells.getCells()[62].begin()->setR({2.5, 1.5, 0.5});
   linkedCells.getCells()[63].begin()->setR({-0.5, -0.5, -0.5});
   linkedCells.getCells()[93].begin()->setR({1.6, 0.5, 0.5});
-  auto invalidParticles = linkedCells.updateContainer();
+  linkedCells.updateContainer();
 
-  ASSERT_EQ(invalidParticles.size(), 1);
-  EXPECT_EQ(invalidParticles[0].getID(), 3);
-
-  // verify particles are in correct new cells (and nowhere else)
+  // verify particles are in correct new cells (and nowhere else
   for (size_t i = 0; i < linkedCells.getCells().size(); ++i) {
     if (i == 0) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 0);
+      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
+      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 3);
     } else if (i == 32) {
       EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 2);
       auto pIter = linkedCells.getCells()[i].begin();
@@ -239,17 +236,11 @@ TEST_F(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   }
 
   // now update the container!
-  auto invalidParticles = linkedCells.updateContainer();
+  linkedCells.updateContainer();
 
   // the particles should no longer be in the inner cells!
   for (auto iter = linkedCells.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     EXPECT_EQ(movedIDs.count(iter->getID()), 0);
-  }
-
-  // the particles should now be inside of invalidParticles vector!
-  EXPECT_EQ(movedIDs.size(), invalidParticles.size());
-  for (auto &particle : invalidParticles) {
-    EXPECT_EQ(movedIDs.count(particle.getID()), 1);
   }
 }
 
@@ -263,12 +254,5 @@ TEST_F(LinkedCellsTest, testUpdateContainerHalo) {
   EXPECT_EQ(linkedCells.getCells()[0].numParticles(), 1);
   EXPECT_EQ(linkedCells.getCells()[0].begin()->getID(), 42);
 
-  auto invalidParticles = linkedCells.updateContainer();
-
-  // no particle should be returned
-  EXPECT_EQ(invalidParticles.size(), 0);
-
-  // no particle should remain
-  auto iter = linkedCells.begin();
-  EXPECT_FALSE(iter.isValid());
+  EXPECT_THROW(linkedCells.updateContainer();, autopas::utils::ExceptionHandler::AutoPasException);
 }
