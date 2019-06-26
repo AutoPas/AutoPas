@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include <limits>
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/Logger.h"
 
@@ -173,6 +174,6 @@ class LogicHandler {
   /**
    * Steps since last rebuild
    */
-  unsigned int _stepsSinceLastContainerRebuild{UINT32_MAX};
+  unsigned int _stepsSinceLastContainerRebuild{std::numeric_limits<unsigned int>::max()};
 };
 }  // namespace autopas

@@ -47,14 +47,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         _clusterSize(clusterSize),
         _boxMin(boxMin),
         _boxMax(boxMax),
-        _gridSideLength{0.},
-        _gridSideLengthReciprocal{0.},
-        _cellsPerDim{0},
         _skin(skin),
         _cutoff(cutoff),
-        _interactionLengthSqr((cutoff + skin) * (cutoff + skin)),
-        _traversalsSinceLastRebuild(UINT_MAX),
-        _neighborListIsValid(false) {
+        _interactionLengthSqr((cutoff + skin) * (cutoff + skin)) {
     rebuild();
   }
 
@@ -77,16 +72,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       autopas::utils::ExceptionHandler::exception("VerletClusterLists does not support newton3 yet.");
     }
     traverseVerletLists(f, useNewton3);
-
-    // we iterated, so increase traversal counter
-    _traversalsSinceLastRebuild++;
   }
 
   /**
    * @copydoc VerletLists::addParticle()
    */
   void addParticle(Particle &p) override {
-    _neighborListIsValid = false;
     // add particle somewhere, because lists will be rebuild anyways
     _clusters[0].addParticle(p);
   }
@@ -131,7 +122,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       }
     }
 
-    _neighborListIsValid = false;
     return invalidParticles;
   }
 
@@ -339,10 +329,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         }
       }
     }
-
-    // the neighbor list is now valid
-    _neighborListIsValid = true;
-    _traversalsSinceLastRebuild = 0;
   }
 
   /**
@@ -479,11 +465,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   std::array<double, 3> _boxMax;
 
   // side length of xy-grid and reciprocal
-  double _gridSideLength;
-  double _gridSideLengthReciprocal;
+  double _gridSideLength{0.};
+  double _gridSideLengthReciprocal{0.};
 
   // dimensions of grid
-  std::array<index_t, 3> _cellsPerDim;
+  std::array<index_t, 3> _cellsPerDim{};
 
   /// skin radius
   double _skin;
@@ -491,12 +477,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /// cutoff
   double _cutoff;
   double _interactionLengthSqr;
-
-  /// how many pairwise traversals have been done since the last traversal
-  unsigned int _traversalsSinceLastRebuild;
-
-  // specifies if the neighbor list is currently valid
-  bool _neighborListIsValid;
 };
 
 }  // namespace autopas

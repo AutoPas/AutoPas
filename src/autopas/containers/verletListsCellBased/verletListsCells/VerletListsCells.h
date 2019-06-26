@@ -80,9 +80,6 @@ class VerletListsCells
         autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
                                                     traversal->getTraversalType());
     }
-
-    // we iterated, so increase traversal counter
-    this->_traversalsSinceLastRebuild++;
   }
 
   /**
@@ -164,7 +161,6 @@ class VerletListsCells
 
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
-    this->_traversalsSinceLastRebuild = 0;
   }
 
  private:

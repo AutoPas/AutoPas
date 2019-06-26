@@ -41,10 +41,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
                         const double skin, const std::set<TraversalOption> &applicableTraversals,
                         const double cellSizeFactor)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
-        _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)),
-        _traversalsSinceLastRebuild(UINT_MAX),
-        _neighborListIsValid(false),
-        _verletBuiltNewton3(false) {
+        _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
@@ -198,14 +195,11 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
   LinkedCells<Particle, LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
 
-  /// how many pairwise traversals have been done since the last traversal
-  unsigned int _traversalsSinceLastRebuild;
-
   /// specifies if the neighbor list is currently valid
-  bool _neighborListIsValid;
+  bool _neighborListIsValid{false};
 
   /// specifies if the current verlet list was built for newton3
-  bool _verletBuiltNewton3;
+  bool _verletBuiltNewton3{false};
 };
 
 }  // namespace autopas

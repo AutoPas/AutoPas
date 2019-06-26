@@ -82,7 +82,6 @@ class VerletLists
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletLists::iteratePairwise");
     }
-    this->_traversalsSinceLastRebuild++;
   }
 
   /**
@@ -135,7 +134,6 @@ class VerletLists
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
-    this->_traversalsSinceLastRebuild = 0;
 
     if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
       // only do this if we need it, i.e., if we are using soa!
