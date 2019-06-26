@@ -314,6 +314,11 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(
       _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
 
+  if (not traversal->isApplicable()) {
+    autopas::utils::ExceptionHandler::exception(
+        "Error: Trying to execute a traversal that is not applicable. This normally happens only if the search space "
+        "is trivial, but no traversals are applicable.");
+  }
   auto iterateLambda = [&](auto containerPtr) {
     if (doListRebuild) {
       containerPtr->rebuildNeighborLists(traversal.get());
