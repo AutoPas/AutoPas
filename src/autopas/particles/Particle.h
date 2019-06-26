@@ -172,7 +172,8 @@ class ParticleBase {
   typedef floatType ParticleFloatingPointType;
 
   /**
-   * the type for the soa storage
+   * The type for the soa storage.
+   * owned is currently used as a floatType to ease calculations within the functors.
    */
   typedef typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType,
                                            floatType>::Type SoAArraysType;
