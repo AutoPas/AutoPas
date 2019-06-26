@@ -463,16 +463,12 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-/// @todo: use this instead of below to enable testing of VerletClusterLists.
-// INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest, ValuesIn(autopas::allContainerOptions),
-//                         AutoPasInterfaceTest::PrintToStringParamName());
-
 INSTANTIATE_TEST_SUITE_P(
     Generated, AutoPasInterfaceTest,
     // proper indent
     Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
               auto allContainerOptions = autopas::allContainerOptions;
-              /// @TODO no verletClusterLists yet
+              /// @TODO no verletClusterLists yet, so we erase it for now.
               allContainerOptions.erase(allContainerOptions.find(autopas::ContainerOption::verletClusterLists));
               std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> tupleVector;
               for (const auto &containerOption : allContainerOptions) {
@@ -485,7 +481,7 @@ INSTANTIATE_TEST_SUITE_P(
             }()),
             ValuesIn([]() -> std::set<autopas::DataLayoutOption> {
               auto all = autopas::allDataLayoutOptions;
-              /// @TODO no cuda yet
+              /// @TODO no cuda yet, so we erase it for now (if it is there)
               if (all.find(autopas::DataLayoutOption::cuda) != all.end()) {
                 all.erase(all.find(autopas::DataLayoutOption::cuda));
               }
