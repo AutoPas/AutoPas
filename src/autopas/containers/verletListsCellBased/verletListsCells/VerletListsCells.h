@@ -116,38 +116,38 @@ class VerletListsCells
     switch (_buildTraversal) {
       case c08: {
         if (useNewton3) {
-          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+          auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, true>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         } else {
-          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+          auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         }
         break;
       }
       case c18: {
         if (useNewton3) {
-          auto traversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+          auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, true>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         } else {
-          auto traversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+          auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         }
         break;
       }
       case c01: {
         if (not useNewton3) {
-          auto traversal = C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+          auto buildTraversal = C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
         } else {
           utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");
         }
