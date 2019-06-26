@@ -262,10 +262,10 @@ void testSimulationLoop(testingTuple options) {
   auto newton3Option = std::get<2>(options);
   auto cellSizeOption = std::get<3>(options);
 
-  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(std::set<autopas::TraversalOption>{traversalOption});
-  autoPas.setAllowedDataLayouts(std::set<autopas::DataLayoutOption>{dataLayoutOption});
-  autoPas.setAllowedNewton3Options(std::set<autopas::Newton3Option>{newton3Option});
+  autoPas.setAllowedContainers({containerOption});
+  autoPas.setAllowedTraversals({traversalOption});
+  autoPas.setAllowedDataLayouts({dataLayoutOption});
+  autoPas.setAllowedNewton3Options({newton3Option});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
 
   defaultInit(autoPas);
