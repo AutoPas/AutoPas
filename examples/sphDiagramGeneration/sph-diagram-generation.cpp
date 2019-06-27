@@ -198,7 +198,7 @@ template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
   using CellType = autopas::FullParticleCell<autopas::sph::SPHParticle>;
   // initialize to dummy values
-  autopas::TraversalSelectorInfo<CellType> traversalInfo = cont->getTraversalSelectorInfo();
+  auto traversalInfo = cont->getTraversalSelectorInfo();
   std::cout << "Cells: " << traversalInfo.dims[0] << " x " << traversalInfo.dims[1] << " x " << traversalInfo.dims[2]
             << std::endl;
   auto traversalType = autopas::TraversalOption::dummyTraversal;
