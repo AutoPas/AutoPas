@@ -64,8 +64,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         _traversalsSinceLastRebuild(UINT_MAX),
         _rebuildFrequency(rebuildFrequency),
         _neighborListIsValid(false),
-        _aosToSoaMapValid(false) {
-    rebuild();
+        _neighborListIsNewton3(false) {
+    rebuild(false);
   }
 
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
@@ -80,18 +80,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   template <class ParticleFunctor, class Traversal>
   void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
-    if (traversal->getUseNewton3()) {
-      /// @todo implement newton3 for VerletClusterLists
-      AutoPasLog(error, "Newton3 not implemented yet.");
-      autopas::utils::ExceptionHandler::exception("VerletClusterLists does not support newton3 yet.");
-    }
-
-    if (needsRebuild()) {
-      this->rebuild();
-    }
-
-    if (traversal->getDataLayout() == DataLayoutOption::soa && not _aosToSoaMapValid) {
-      buildAosToSoaMap();
+    if (needsRebuild(traversal->getUseNewton3())) {
+      this->rebuild(traversal->getUseNewton3());
     }
 
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
@@ -152,12 +142,14 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   /**
    * Specifies whether the neighbor lists need to be rebuild.
+   * @param useNewton3 If the neighbor lists should be build with newton 3.
    * @return true if the neighbor lists need to be rebuild, false otherwise
    */
-  bool needsRebuild() {
+  bool needsRebuild(bool useNewton3) {
     AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
     // if the neighbor list is NOT valid or we have not rebuild for _rebuildFrequency steps
-    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency);
+    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency) or
+           (_neighborListIsNewton3 != useNewton3);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -191,16 +183,22 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Returns the AoSToSoAMap for usage in the traversals of this container.
-   * @return the AoSToSoAMap.
+   * Returns the ClusterIndexMap for usage in the traversals of this container.
+   * @return the ClusterIndexMap.
    */
-  const auto &getAosToSoaMap() const { return _aosToSoaMap; }
+  const auto &getClusterIndexMap() const { return _clusterIndexMap; }
 
   /**
    * Returns the number of clusters in this container.
    * @return The number of clusters in this container.
    */
   auto getNumClusters() const { return _numClusters; }
+
+  /**
+   * Returns the neighbor lists of this container.
+   * @return the neighbor lists of this container.
+   */
+  const auto &getNeighborLists() const { return _neighborLists; }
 
  protected:
   /**
@@ -261,10 +259,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * Recalculate grids and clusters,
    * build verlet lists and
    * pad clusters.
+   * @param useNewton3 If the everything should be build using newton 3 or not.
    */
-  void rebuild() {
-    _aosToSoaMapValid = false;
-
+  void rebuild(bool useNewton3) {
     std::vector<Particle> invalidParticles = collectParticlesAndClearClusters();
 
     auto boxSize = ArrayMath::sub(_boxMax, _boxMin);
@@ -293,7 +290,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     clearNeighborLists();
 
-    updateVerletLists();
+    buildClusterIndexMap();
+
+    updateVerletLists(useNewton3);
     // fill last cluster with dummy particles, such that each cluster is a multiple of _clusterSize
     padClusters();
 
@@ -373,8 +372,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   /**
    * Update the verlet lists.
+   *
+   * @param useNewton3 If newton 3 should be used to build the neighbor lists or not.
    */
-  void updateVerletLists() {
+  void updateVerletLists(bool useNewton3) {
+    _neighborListIsNewton3 = useNewton3;
+
     const int boxRange = static_cast<int>(std::ceil((_cutoff + _skin) * _gridSideLengthReciprocal));
 
     const int gridMaxX = _cellsPerDim[0] - 1;
@@ -473,15 +476,26 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     // bbox in z of iGrid
     float iBBoxBot = iGrid[iClusterIndex * _clusterSize].getR()[2];
     float iBBoxTop = iGrid[iClusterIndex * _clusterSize + iClusterSize - 1].getR()[2];
-    auto &iClusterVerlet = iNeighbors[iClusterIndex];
+    auto &iClusterNeighborList = iNeighbors[iClusterIndex];
+    Particle *iClusterStart = &iGrid[iClusterIndex * _clusterSize];
 
     // iterate over full clusters of j-th grid.
-    for (index_t zj = 0; zj < jSize; zj++) {
-      addJClusterAsNeighborIfInRange(jGrid, zj, _clusterSize, iClusterVerlet, distXYsqr, iBBoxBot, iBBoxTop);
+    for (index_t jClusterIndex = 0; jClusterIndex < jSize; jClusterIndex++) {
+      Particle *jClusterStart = &jGrid[jClusterIndex * _clusterSize];
+      // If newton 3 is used, only add clusters as neighbors that have a equal or higher index. Skip otherwise.
+      if (_neighborListIsNewton3 && _clusterIndexMap.at(iClusterStart) < _clusterIndexMap.at(jClusterStart)) continue;
+
+      addJClusterAsNeighborIfInRange(jGrid, jClusterStart, _clusterSize, iClusterNeighborList, distXYsqr, iBBoxBot,
+                                     iBBoxTop);
     }
     // special case: last cluster not full
     if (jRest > 0) {
-      addJClusterAsNeighborIfInRange(jGrid, jSize, jRest, iClusterVerlet, distXYsqr, iBBoxBot, iBBoxTop);
+      Particle *jClusterStart = &jGrid[jSize * _clusterSize];
+      // If newton 3 is used, only add clusters as neighbors that have a equal or higher index. Skip otherwise.
+      if (not(_neighborListIsNewton3 && _clusterIndexMap.at(iClusterStart) < _clusterIndexMap.at(jClusterStart))) {
+        addJClusterAsNeighborIfInRange(jGrid, jClusterStart, jRest, iClusterNeighborList, distXYsqr, iBBoxBot,
+                                       iBBoxTop);
+      }
     }
   }
 
@@ -489,17 +503,16 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * Adds the given cluster in jGrid to the given neighbor list (iClusterNeighborList), if it is within the cutoff
    * radius.
    * @param jGrid The j-th grid.
-   * @param jClusterIndex The index of the cluster to work on in the j-th grid.
+   * @param jClusterStart A pointer to the start of the cluster to work on in the j-th grid.
    * @param jClusterSize The size of the cluster to work on in the j-th grid.
    * @param iClusterNeighborList The neighbor list of the cluster in the i-th grid to fill the neighbors for.
    * @param distXYsqr The distance between the i-th grid and the j-th grid in the xy-plane.
    * @param iBBoxBot The bottom z-coordinate of the cluster in the i-th grid.
    * @param iBBoxTop The top z-coordinate of the cluster in the i-th grid.
    */
-  void addJClusterAsNeighborIfInRange(FullParticleCell<Particle> &jGrid, index_t jClusterIndex, int jClusterSize,
+  void addJClusterAsNeighborIfInRange(FullParticleCell<Particle> &jGrid, Particle *jClusterStart, int jClusterSize,
                                       std::vector<Particle *> &iClusterNeighborList, double distXYsqr, float iBBoxBot,
                                       float iBBoxTop) {
-    Particle *jClusterStart = &jGrid[jClusterIndex * _clusterSize];
     // bbox in z of jGrid
     float jBBoxBot = jClusterStart->getR()[2];
     float jBBoxTop = (jClusterStart + (jClusterSize - 1))->getR()[2];
@@ -596,20 +609,28 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Builds the _aosToSoaMap to be up to date with _clusters.
+   * Builds the _clusterIndexMap to be up to date with _clusters.
    */
-  void buildAosToSoaMap() {
+  void buildClusterIndexMap() {
     index_t currentMapIndex = 0;
 
-    const auto _clusterTraverseFunctor = [this, &currentMapIndex](Particle *clusterStart, int clusterSize,
-                                                                  std::vector<Particle *> &clusterNeighborList) {
-      _aosToSoaMap[clusterStart] = currentMapIndex++;
-    };
+    // Cannot use traverseClusters(), because the clusters might not be padded yet when this method is called, and
+    // traverseClusters() cannot handle that.
+    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
+      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
+        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
+        auto &grid = _clusters[index];
+        auto &gridNeighborList = _neighborLists[index];
 
-    // Cannot be parallelized at the moment.
-    this->template traverseClusters<false>(_clusterTraverseFunctor);
-
-    _aosToSoaMapValid = true;
+        index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        int rest = grid.numParticles() % _clusterSize;
+        if (rest > 0) numClustersInGrid++;
+        for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
+          Particle *clusterStart = &grid[clusterInGrid * _clusterSize];
+          _clusterIndexMap[clusterStart] = currentMapIndex++;
+        }
+      }
+    }
   }
 
  private:
@@ -650,11 +671,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid;
 
-  /// Maps indices to the starting pointers for each cluster
-  std::unordered_map<Particle *, index_t> _aosToSoaMap;
+  /// Specifies if the neighbor list uses newton 3 or not.
+  bool _neighborListIsNewton3;
 
-  /// If _aosToSoaMap is valid currently; that means up to date with clusters.
-  bool _aosToSoaMapValid;
+  /// Maps indices to the starting pointers for each cluster.
+  std::unordered_map<Particle *, index_t> _clusterIndexMap;
 };
 
 }  // namespace autopas
