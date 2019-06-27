@@ -64,7 +64,13 @@ class LogicHandler {
   void addOrUpdateHaloParticle(Particle &haloParticle) {
     auto container = _autoTuner.getContainer();
     if (not isContainerValid()) {
-      container->addHaloParticle(haloParticle);
+      if (not utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
+                              _autoTuner.getContainer()->getBoxMax())) {
+        container->addHaloParticle(haloParticle);
+      } else {
+        utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +
+                                           haloParticle.toString());
+      }
     } else {
       // check if the halo particle is actually a halo particle, i.e., not too far (more than skin/2) inside of the
       // domain.

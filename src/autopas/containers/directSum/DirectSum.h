@@ -60,15 +60,7 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   void addHaloParticle(Particle &p) override {
     Particle p_copy = p;
     p_copy.setOwned(false);
-    if (utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
-      getHaloCell()->addParticle(p_copy);
-    } else {  // particle is in own box
-      // we are adding it to the inner box, but have marked it as not owned.
-      // halo particles can also be inside of the domain (assuming non-precise interfaces)
-      // here we could also check whether the particle is too far inside of the domain; we would need the verlet skin
-      // for that.
-      getCell()->addParticle(p_copy);
-    }
+    getHaloCell()->addParticle(p_copy);
   }
 
   bool updateHaloParticle(Particle &haloParticle) override {
