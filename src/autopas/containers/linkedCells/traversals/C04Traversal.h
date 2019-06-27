@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "C08CellHandler.h"
-#include "LinkedCellTraversalInterface.h"
+#include "autopas/containers/linkedCells/traversals/C08CellHandler.h"
+#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -20,7 +20,7 @@ namespace autopas {
  * This class provides the c04 traversal.
  *
  * The traversal uses the c04 base step performed on every single cell. Since
- * these steps overlap a domain coloring with eight colors is applied.
+ * these steps overlap a domain coloring with four colors is applied.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -111,7 +111,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::comput
   _cellOffsets32Pack[i++] = {2l, 1l, z};
   _cellOffsets32Pack[i++] = {2l, 2l, z};
 
-  /* z = 1ul; z = 2ul */
+  // z = 1ul; z = 2ul 
   for (z = 1l; z < 3l; ++z) {
     for (long y = 0l; y < 4l; y++) {
       for (long x = 0l; x < 4l; x++) {
@@ -147,7 +147,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
     bool isIn = true;
     for (int d = 0; d < 3; ++d) {
       index[d] = base3DIndex[d] + Offset32Pack[d];
-      isIn = isIn and (index[d] >= start[d]) and (index[d] < end[d]);
+      isIn &= (index[d] >= start[d]) and (index[d] < end[d]);
     }
 
     if (isIn) {
@@ -173,7 +173,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traver
       }
 #endif
     }
-  } /* close parallel region */
+  } // close parallel region
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
