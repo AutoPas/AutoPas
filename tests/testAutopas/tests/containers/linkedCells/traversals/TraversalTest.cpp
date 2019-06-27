@@ -104,6 +104,7 @@ TEST_P(TraversalTest, testTraversal_8x8x8_overlap2) {
   std::array<size_t, 3> domain = {8ul, 8ul, 8ul};
   const auto cutoff = 2.0;
 
+  // C04 doesn't support cellSizeFactors < 1.0
   if (traversalOption == autopas::TraversalOption::c04) {
     return;
   }
@@ -125,6 +126,7 @@ TEST_P(TraversalTest, testTraversal_6x7x8_overlap2) {
   std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
   const auto cutoff = 2.0;
 
+  // C04 doesn't support cellSizeFactors < 1.0
   if (traversalOption == autopas::TraversalOption::c04) {
     return;
   }
@@ -137,6 +139,7 @@ TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
   std::array<size_t, 3> domain = {7ul, 8ul, 9ul};
   const auto cutoff = 3.0;
 
+  // C04 doesn't support cellSizeFactors < 1.0
   if (traversalOption == autopas::TraversalOption::c04) {
     return;
   }

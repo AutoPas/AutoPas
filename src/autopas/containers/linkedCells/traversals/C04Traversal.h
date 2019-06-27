@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C08CellHandler.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -111,7 +111,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::comput
   _cellOffsets32Pack[i++] = {2l, 1l, z};
   _cellOffsets32Pack[i++] = {2l, 2l, z};
 
-  // z = 1ul; z = 2ul 
+  // z = 1ul; z = 2ul
   for (z = 1l; z < 3l; ++z) {
     for (long y = 0l; y < 4l; y++) {
       for (long x = 0l; x < 4l; x++) {
@@ -173,7 +173,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traver
       }
 #endif
     }
-  } // close parallel region
+  }  // close parallel region
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
