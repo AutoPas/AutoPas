@@ -86,7 +86,7 @@ INSTANTIATE_TEST_SUITE_P(
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
-  if (traversalOption == autopas::TraversalOption::c04SoA && dataLayout == autopas::DataLayoutOption::aos) {
+  if (traversalOption == autopas::TraversalOption::c04SoA and dataLayout == autopas::DataLayoutOption::aos) {
     return;
   }
 
