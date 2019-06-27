@@ -113,28 +113,40 @@ int main(int argc, char **argv) {
   PrintableMolecule::setSigma(parser.getSigma());
   PrintableMolecule::setMass(parser.getMass());
 
-  // Initializing Particles Map for ParticleClassLibrary
-  // erstmal zum Testen default werte, mit 2 verschiedenen Particle Types, muss noch im Parser angepasst werden
-  map<unsigned long, double> PC_Epsilon = {{0, 1.}, {1, 1.}, {2, 2.}};
-  map<unsigned long, double> PC_Sigma = {{0, 1.}, {1, 1.}, {2, 1.5}};
-  map<unsigned long, double> PC_Mass = {{0, 1.}, {1, 1.}, {2, 2.}};
-  ParticleClassLibrary P_C_Library = ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
+    // Initialization
 
-  // Initialization
+    auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);//@todo übernommen vom merge: -> prüfen
+    autopas->setTuningStrategyOption(tuningStrategy);
+    autopas->setAllowedCellSizeFactors(cellSizeFactors);
+    autopas::Logger::get()->set_level(logLevel);
+    //temporäre setBoxMax, damit code läuft->sonst BoxLength nicht ausreichend
+    autopas->setBoxMax({2., 2., 2.});
+    autopas->init();
+    autopas::Logger::get()->set_level(logLevel);
 
-  auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+  map<unsigned long, double> PC_Epsilon;
+  map<unsigned long, double> PC_Sigma ;
+  map<unsigned long, double> PC_Mass;
+  double numP=autopas->getNumberOfParticles();
+  cout << "num of P= " << numP << endl;
+  //temporäre implemetierung mit nur einer particle Class
+  double epsilon=parser.getEpsilon();
+  double sigma=parser.getSigma();
+  double mass=parser.getMass();
+  for(unsigned long i=0;i<numP;i++){
+      PC_Epsilon.emplace(i,epsilon);
+      PC_Sigma.emplace(i,sigma);
+      PC_Mass.emplace(i,mass);
+  }
+  cout << "size of epsilon container: " << PC_Epsilon.size() << endl;
+  cout << "size of sigma container: " << PC_Sigma.size() << endl;
+  cout << "size of mass container: " << PC_Mass.size() << endl;
 
-  //@todo übernommen vom merge: -> prüfen
-  autopas->setTuningStrategyOption(tuningStrategy);
-  autopas->setAllowedCellSizeFactors(cellSizeFactors);
-  autopas::Logger::get()->set_level(logLevel);
 
-  // setted default anderen boxMax--> sonst Fehler
-  autopas->setBoxMax({2., 2., 2.});
-  autopas->init();
-  autopas::Logger::get()->set_level(logLevel);
+    ParticleClassLibrary P_C_Library = ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas, P_C_Library);
   Simulation.initialize(&parser);
+
   // Simulation
   long durationSimulate = Simulation.simulate();
   long durationPosition = Simulation.getDurationX();

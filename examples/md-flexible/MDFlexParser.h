@@ -5,13 +5,8 @@
  */
 
 #pragma once
+#include "MDFlexParserInclude.h"
 
-#include <getopt.h>
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
-#include "autopas/AutoPas.h"
-#include "autopas/utils/NumberSet.h"
 
 using namespace std;
 

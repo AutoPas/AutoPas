@@ -9,13 +9,10 @@
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
-#include "LJFunctorMixing.h"
 #include "MDFlexParser.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
-#include "TimeDiscretization.h"
 
 
 using namespace autopas;
@@ -278,7 +275,7 @@ void Simulation<Particle, ParticleCell>::CalcF() {
 
   // auto* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both,
   // true>(_autopas->getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true);
-  auto *functor = new LJFunctorM<Particle, ParticleCell>(_autopas->getCutoff(), *_PCL, 0.0, _autopas->getBoxMin(),
+  auto *functor = new LJFunctor<Particle, ParticleCell>(_autopas->getCutoff(), *_PCL, 0.0, _autopas->getBoxMin(),
                                                          _autopas->getBoxMax());
   _autopas->iteratePairwise(functor);
   delete functor;
