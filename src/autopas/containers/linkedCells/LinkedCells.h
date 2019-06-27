@@ -190,8 +190,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   TraversalSelectorInfo getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(),
-                                               this->getInteractionLength(), this->getCellBlock().getCellLength());
+    return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
+                                 this->getCellBlock().getCellLength());
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

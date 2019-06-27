@@ -136,8 +136,8 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
 template <class ParticleCell>
 template <class PairwiseFunctor>
 std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
-    TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor,
-    const TraversalSelectorInfo &traversalInfo, DataLayoutOption dataLayout, Newton3Option newton3) {
+    TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &traversalInfo,
+    DataLayoutOption dataLayout, Newton3Option newton3) {
   switch (dataLayout) {
     case DataLayoutOption::aos: {
       if (newton3 == Newton3Option::enabled) {
