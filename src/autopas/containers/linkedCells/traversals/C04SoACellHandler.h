@@ -161,10 +161,10 @@ class C04SoACellHandler {
                            const unsigned int bufferSlice, const unsigned int cellSlice);
 
   /**
-   * Creates offset intervals (stored in offset) from _cellPairOffsets
-   * @param _cellPairOffsets Source for interval creation.
+   * Creates offset intervals (stored in offset) from cellPairOffsets
+   * @param cellPairOffsets Source for interval creation.
    */
-  void setupIntervals(std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &_cellPairOffsets);
+  void setupIntervals(std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets);
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
@@ -310,7 +310,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
     std::array<unsigned long, 3> cellsPerDimension) {
   using std::make_pair;
 
-  std::vector<std::vector<std::pair<unsigned long, unsigned long>>> _cellPairOffsets;
+  std::vector<std::vector<std::pair<unsigned long, unsigned long>>> cellPairOffsets;
 
   //////////////////////////////
   // @TODO: Replace following lines with vector to support asymmetric cells
@@ -325,8 +325,8 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
   std::vector<unsigned long> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
 
-  _cellPairOffsets.clear();
-  _cellPairOffsets.resize(overlap_1[0]);
+  cellPairOffsets.clear();
+  cellPairOffsets.resize(overlap_1[0]);
 
   const auto cutoffSquare(this->_cutoff * this->_cutoff);
 
@@ -349,7 +349,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
               ArrayMath::mul({std::max(0.0, x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
           if (distSquare <= cutoffSquare) {
-            _cellPairOffsets[x].push_back(make_pair(cellOffsets[z], offset));
+            cellPairOffsets[x].push_back(make_pair(cellOffsets[z], offset));
           }
         }
         // back left
@@ -359,7 +359,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
               {std::max(0.0, x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
           if (distSquare <= cutoffSquare) {
-            _cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared - ov1 + z], offset));
+            cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared - ov1 + z], offset));
           }
         }
         // front right
@@ -369,7 +369,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
               {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
           if (distSquare <= cutoffSquare) {
-            _cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * _overlap[0] + z], offset));
+            cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * _overlap[0] + z], offset));
           }
         }
         // back right
@@ -380,25 +380,25 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
               _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
           if (distSquare <= cutoffSquare) {
-            _cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * ov1 - ov1 + z], offset));
+            cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * ov1 - ov1 + z], offset));
           }
         }
       }
     }
   }
-  setupIntervals(_cellPairOffsets);
+  setupIntervals(cellPairOffsets);
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::setupIntervals(
-    std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &_cellPairOffsets) {
+    std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets) {
   // Create intervals
-  const unsigned long numStripes = _cellPairOffsets.size();
+  const unsigned long numStripes = cellPairOffsets.size();
   _offsets.resize(numStripes);
 
   // iterate over all stripes
   for (unsigned long i = 0; i < numStripes; ++i) {
-    auto &currentStripe = _cellPairOffsets[i];
+    auto &currentStripe = cellPairOffsets[i];
     // Sort
     std::stable_sort(currentStripe.begin(), currentStripe.end(),
                      [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
