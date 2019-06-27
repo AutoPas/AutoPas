@@ -206,6 +206,7 @@ int main(int argc, char **argv) {
   autopas.setTuningInterval(tuningInterval);
   autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
+  autopas.setMaxEvidence(tuningMaxEvidence);
   autopas.setSelectorStrategy(selectorStrategy);
   autopas.setAllowedContainers(containerChoice);
   autopas.setAllowedTraversals(traversalOptions);
