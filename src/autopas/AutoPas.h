@@ -47,6 +47,7 @@ class AutoPas {
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
         _numSamples(3),
+        _maxEvidence(10),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
@@ -306,6 +307,18 @@ class AutoPas {
   void setNumSamples(unsigned int numSamples) { AutoPas::_numSamples = numSamples; }
 
   /**
+   * Get maximum number of evidence for tuning
+   * @return
+   */
+  unsigned int getMaxEvidence() const { return _maxEvidence; }
+
+  /**
+   * Set maximum number of evidence for tuning
+   * @param maxEvidence
+   */
+  void setMaxEvidence(unsigned int maxEvidence) { AutoPas::_maxEvidence = maxEvidence; }
+
+  /**
    * Get the selector configuration strategy.
    * @return
    */
@@ -436,7 +449,7 @@ class AutoPas {
 
       case TuningStrategyOption::bayesianSearch: {
         return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-                                                _allowedDataLayouts, _allowedNewton3Options);
+                                                _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
       }
     }
 
@@ -473,6 +486,10 @@ class AutoPas {
    * Number of samples the tuner should collect for each combination.
    */
   unsigned int _numSamples;
+  /**
+   * Tuning Strategies which work on a fixed number of evidence should use this value.
+   */
+  unsigned int _maxEvidence;
 
   /**
    * Strategy option for the auto tuner.

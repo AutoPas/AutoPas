@@ -174,6 +174,7 @@ int main(int argc, char **argv) {
   auto tuningInterval(parser.getTuningInterval());
   auto tuningSamples(parser.getTuningSamples());
   auto tuningStrategy(parser.getTuningStrategyOption());
+  auto tuningMaxEvidence(parser.getTuningMaxEvidence());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
   auto verletSkinRadius(parser.getVerletSkinRadius());
   auto vtkFilename(parser.getWriteVTK());
