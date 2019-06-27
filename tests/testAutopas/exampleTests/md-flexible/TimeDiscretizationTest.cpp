@@ -114,9 +114,9 @@ TEST(TimeDTest, GeneralForceTest) {
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
   }
-  ASSERT_TRUE(true);
   delete functor;
   delete autoPas;
+  ASSERT_TRUE(true);
 }
 
 TEST(TimeDTest, CalcX) {
@@ -146,7 +146,7 @@ TEST(TimeDTest, CalcX) {
   //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
   //  }
   double particleD = 0.01;
-  int iterations = 0;
+  //  int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
   auto *functor =
@@ -178,6 +178,8 @@ TEST(TimeDTest, CalcX) {
   //    }
   //    iterations++;
   //  }
+  delete functor;
+  delete autoPas;
   ASSERT_TRUE(true);
 }
 
@@ -208,7 +210,7 @@ TEST(TimeDTEst, CalcV) {
   //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
   //  }
   double particleD = 0.01;
-  int iterations = 0;
+  //  int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
   auto *functor =
@@ -238,6 +240,8 @@ TEST(TimeDTEst, CalcV) {
   //      cout << endl;
   //    }
   //    iterations++;
-  //  }
+  //
+  delete functor;
+  delete autoPas;
   ASSERT_TRUE(true);
 }

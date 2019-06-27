@@ -95,9 +95,9 @@ void MolSimTaskGeneration(autopas::AutoPas<PrintableMolecule, FullParticleCell<P
   std::array<double, 3> boxMax({50., 30., 50.});
 
   std::array<double, 3> smallGridBoxMin({15., 15., 0});
-  std::array<double, 3> bigGridBoxMin({0., 0., 0.});
+  //  std::array<double, 3> bigGridBoxMin({0., 0., 0.});
 
-  std::array<double, 3> smallGridBoxMax({23., 23., 0});
+  //  std::array<double, 3> smallGridBoxMax({23., 23., 0});
   std::array<double, 3> bigGridBoxMax({40., 10., 0});
 
   std::array<double, 3> initialVelocitySmall({0., -10., 0.});
