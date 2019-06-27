@@ -317,7 +317,8 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   if (not traversal->isApplicable()) {
     autopas::utils::ExceptionHandler::exception(
         "Error: Trying to execute a traversal that is not applicable. This normally happens only if the search space "
-        "is trivial, but no traversals are applicable.");
+        "is trivial, but no traversals are applicable. Config: {}",
+        _tuningStrategy->getCurrentConfiguration().toString());
   }
   auto iterateLambda = [&](auto containerPtr) {
     if (doListRebuild) {
