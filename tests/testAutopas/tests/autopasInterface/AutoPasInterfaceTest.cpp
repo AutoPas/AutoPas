@@ -292,7 +292,7 @@ void testSimulationLoop(testingTuple options) {
 
   doAssertions(autoPas, &functor);
 
-  // update positions a bit (outside of domain!) + reset F and do loop again
+  // update positions a bit (outside of domain!) + reset F
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
@@ -538,7 +538,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   doAssertions(autoPas1, autoPas2, &functor1, &functor2);
 
-  // update positions a bit (outside of domain!) and do loop again
+  // update positions a bit (outside of domain!) + reset F
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto aP : {&autoPas1, &autoPas2}) {
@@ -553,6 +553,13 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 
   doAssertions(autoPas1, autoPas2, &functor1, &functor2);
+
+  // reset F
+  for (auto aP : {&autoPas1, &autoPas2}) {
+    for (auto iter = aP->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      iter->setF(zeroArr);
+    }
+  }
 
   // do third simulation loop, no position update
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
