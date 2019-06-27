@@ -103,7 +103,7 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
     }
     case TraversalOption::c04SoA: {
       return std::make_unique<C04SoATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::c01CombinedSoA: {
       return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>>(

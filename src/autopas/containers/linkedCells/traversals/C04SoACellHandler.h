@@ -1,7 +1,7 @@
 /**
- * @file C04CellHandler.h
- * @author S. Seckler
- * @date 10.01.2019
+ * @file C04SoACellHandler.h
+ * @author C.Menges
+ * @date 04.06.2019
  */
 
 #pragma once
@@ -14,7 +14,8 @@
 namespace autopas {
 
 /**
- * This class provides the base for traversals using the c04 base step.
+ * This class provides the base for traversals using the c08 base step, but rather use 4 instead of 8 colors for domain
+ * coloring. Using 4 instead of 8 colors allows combination of SoA buffers.
  *
  * The base step processBaseCell() computes one set of pairwise interactions
  * between two cells for each spatial direction based on the baseIndex.
@@ -27,19 +28,19 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C04CellHandler {
+class C04SoACellHandler {
  public:
   /**
-   * Constructor of the c04 traversal.
+   * Constructor of the c04 traversal with combined SoA buffers.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
    * @param cutoff Cutoff radius.
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
-  explicit C04CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
-                          const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
-                          const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
+  explicit C04SoACellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
+                             const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
+                             const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _cellFunctor(pairwiseFunctor),
         _cutoff(cutoff),
         _cellLength(cellLength),
@@ -161,7 +162,7 @@ class C04CellHandler {
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(
+inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
 
@@ -245,7 +246,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::writeCellIntoBuffer(
+inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::writeCellIntoBuffer(
     const std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
     std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned int bufferSlice,
     const unsigned int cellSlice) {
@@ -265,7 +266,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::writeBufferIntoCell(
+inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::writeBufferIntoCell(
     std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
     std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned long bufferSlice,
     const unsigned long cellSlice) {
@@ -299,7 +300,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets(
+inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets(
     std::array<unsigned long, 3> cellsPerDimension) {
   using std::make_pair;
 
@@ -383,7 +384,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::setupIntervals(
+inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::setupIntervals(
     std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &_cellPairOffsets) {
   // Create intervals
   const unsigned long numStripes = _cellPairOffsets.size();
@@ -420,7 +421,7 @@ inline void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::resizeBuffers() {
+void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::resizeBuffers() {
   const unsigned int numThreads = static_cast<unsigned int>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);

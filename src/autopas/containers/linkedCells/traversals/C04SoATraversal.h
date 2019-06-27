@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "C04CellHandler.h"
+#include "C04SoACellHandler.h"
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C04BasedTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
@@ -56,7 +56,7 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
   bool isApplicable() const override { return DataLayout == DataLayoutOption::soa; }
 
  private:
-  C04CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
+  C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
