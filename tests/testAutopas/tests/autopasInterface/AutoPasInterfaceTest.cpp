@@ -337,10 +337,8 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
 /**
  * Tests the addition and iteration over particles.
  * @param containerOption
- * @param alwaysAddAsHalo If this is true, all particles will be added as halo. This is to test, whether halo particles
- * inside of the domain are handled properly!
  */
-void testAdditionAndIteration(testingTuple options, bool alwaysAddAsHalo) {
+void testAdditionAndIteration(testingTuple options) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
 
@@ -370,7 +368,7 @@ void testAdditionAndIteration(testingTuple options, bool alwaysAddAsHalo) {
         Molecule p(pos, {0., 0., 0.}, id);
         ++id;
         // add the two particles!
-        if (autopas::utils::inBox(pos, boxMin, boxMax) and not alwaysAddAsHalo) {
+        if (autopas::utils::inBox(pos, boxMin, boxMax)) {
           autoPas.addParticle(p);
         } else {
           autoPas.addOrUpdateHaloParticle(p);
@@ -384,11 +382,8 @@ void testAdditionAndIteration(testingTuple options, bool alwaysAddAsHalo) {
       ++count;
       EXPECT_TRUE(iter->isOwned());
     }
-    if (alwaysAddAsHalo) {
-      EXPECT_EQ(count, 0);
-    } else {
-      EXPECT_EQ(count, 3 * 3 * 3);
-    }
+
+    EXPECT_EQ(count, 3 * 3 * 3);
   }
 
   // check number of halo particles
@@ -398,11 +393,8 @@ void testAdditionAndIteration(testingTuple options, bool alwaysAddAsHalo) {
       ++count;
       EXPECT_FALSE(iter->isOwned());
     }
-    if (alwaysAddAsHalo) {
-      EXPECT_EQ(count, 6 * 6 * 6);
-    } else {
-      EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
-    }
+
+    EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
   }
 
   // check number of particles
@@ -422,11 +414,8 @@ void testAdditionAndIteration(testingTuple options, bool alwaysAddAsHalo) {
       ++count;
       EXPECT_FALSE(iter->isOwned());
     }
-    if (alwaysAddAsHalo) {
-      EXPECT_EQ(count, 6 * 6 * 6);
-    } else {
-      EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
-    }
+
+    EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
   }
 
   // check number of particles for region iterator
@@ -446,22 +435,14 @@ void testAdditionAndIteration(testingTuple options, bool alwaysAddAsHalo) {
          iter.isValid(); ++iter) {
       ++count;
     }
-    if (alwaysAddAsHalo) {
-      EXPECT_EQ(count, 0);
-    } else {
-      EXPECT_EQ(count, 3 * 3 * 3);
-    }
+
+    EXPECT_EQ(count, 3 * 3 * 3);
   }
 }
 
 TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIteratorTestNormal) {
   auto options = GetParam();
-  testAdditionAndIteration(options, false);
-}
-
-TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIteratorTestHalo) {
-  auto options = GetParam();
-  testAdditionAndIteration(options, true);
+  testAdditionAndIteration(options);
 }
 
 using ::testing::Combine;
