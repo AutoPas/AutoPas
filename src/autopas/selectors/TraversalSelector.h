@@ -52,7 +52,7 @@ class TraversalSelector {
    */
   template <class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
   static std::unique_ptr<CellPairTraversal<ParticleCell, dataLayout, useNewton3>> generateTraversal(
-      TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo<ParticleCell> &info);
+      TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info);
 
   /**
    * Generates a given Traversal for the given properties. Requires less templates but only returns a TraversalInterface
@@ -68,7 +68,7 @@ class TraversalSelector {
   template <class PairwiseFunctor>
   static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
                                                                PairwiseFunctor &pairwiseFunctor,
-                                                               const TraversalSelectorInfo<ParticleCell> &info,
+                                                               const TraversalSelectorInfo &info,
                                                                DataLayoutOption dataLayout, Newton3Option useNewton3);
 };
 
@@ -76,7 +76,7 @@ template <class ParticleCell>
 template <class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 std::unique_ptr<CellPairTraversal<ParticleCell, dataLayout, useNewton3>>
 TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor,
-                                                   const TraversalSelectorInfo<ParticleCell> &info) {
+                                                   const TraversalSelectorInfo &info) {
   switch (traversalType) {
     // Direct sum
     case TraversalOption::directSumTraversal: {
@@ -137,7 +137,7 @@ template <class ParticleCell>
 template <class PairwiseFunctor>
 std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor,
-    const TraversalSelectorInfo<ParticleCell> &traversalInfo, DataLayoutOption dataLayout, Newton3Option newton3) {
+    const TraversalSelectorInfo &traversalInfo, DataLayoutOption dataLayout, Newton3Option newton3) {
   switch (dataLayout) {
     case DataLayoutOption::aos: {
       if (newton3 == Newton3Option::enabled) {

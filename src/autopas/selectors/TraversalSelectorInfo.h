@@ -12,7 +12,6 @@ namespace autopas {
  * Info for traversals of a specific container.
  * @tparam ParticleCell
  */
-template <class ParticleCell>
 class TraversalSelectorInfo {
  public:
   /**
