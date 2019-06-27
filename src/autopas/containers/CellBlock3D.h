@@ -61,7 +61,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   CellBlock3D &operator=(const CellBlock3D) = delete;
 
-  bool isHaloCell(index_t index1d) const override {
+  bool cellCanContainHaloParticles(index_t index1d) const override {
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
@@ -74,7 +74,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return isHaloCell;
   }
 
-  bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
+  bool cellCanContainOwnedParticles(index_t index1d) const override { return not cellCanContainHaloParticles(index1d); }
 
   /**
    * get the ParticleCell of a specified 1d index
@@ -412,7 +412,7 @@ bool CellBlock3D<ParticleCell>::checkInHalo(const std::array<double, 3> &positio
 template <class ParticleCell>
 void CellBlock3D<ParticleCell>::clearHaloCells() {
   std::vector<index_t> haloSlices(2 * _cellsPerInteractionLength);
-  std::vector<index_t>::iterator mid(haloSlices.begin() + _cellsPerInteractionLength);
+  auto mid = haloSlices.begin() + _cellsPerInteractionLength;
   std::iota(haloSlices.begin(), mid, 0);
 
   // x: min and max of x

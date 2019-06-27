@@ -35,14 +35,14 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
-                                                                                 cellLength),
-        _cellFunctor(pairwiseFunctor, cutoff) {
+                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                 interactionLength, cellLength),
+        _cellFunctor(pairwiseFunctor, interactionLength) {
     computeOffsets();
   }
 
@@ -116,7 +116,7 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
   _cellOffsets.resize(2 * this->_overlap[1] + 1, std::vector<offsetArray_t>(2 * this->_overlap[0] + 1));
   const std::array<long, 3> _overlap_s = ArrayMath::static_cast_array<long>(this->_overlap);
 
-  const auto cutoffSquare(this->_cutoff * this->_cutoff);
+  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
 
   for (long z = 0l; z <= _overlap_s[2]; ++z) {
     for (long y = -_overlap_s[1]; y <= _overlap_s[1]; ++y) {
@@ -139,7 +139,7 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
                 // calculate distance between base cell and other cell
                 const double distSquare = ArrayMath::dot(pos, pos);
                 // only add cell offset if cell is within cutoff radius
-                if (distSquare <= cutoffSquare) {
+                if (distSquare <= interactionLengthSquare) {
                   _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].push_back(
                       std::make_pair(offset, ArrayMath::normalize(pos)));
                 }

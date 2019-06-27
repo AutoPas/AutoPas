@@ -40,14 +40,15 @@ class C01Traversal
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction (incl. halo).
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff cutoff radius
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length in CellBlock3D
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C01BasedTraversal < ParticleCell,
-      PairwiseFunctor, DataLayout, useNewton3, (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, cutoff, cellLength),
-      _cellFunctor(pairwiseFunctor, cutoff), _pairwiseFunctor(pairwiseFunctor),
+      PairwiseFunctor, DataLayout, useNewton3,
+      (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, interactionLength, cellLength),
+      _cellFunctor(pairwiseFunctor, interactionLength), _pairwiseFunctor(pairwiseFunctor),
       _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
     computeOffsets();
   }
@@ -132,7 +133,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout
 inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
 
-  const auto cutoffSquare(this->_cutoff * this->_cutoff);
+  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
 
   for (long x = -this->_overlap[0]; x <= 0l; ++x) {
     for (long y = -this->_overlap[1]; y <= static_cast<long>(this->_overlap[1]); ++y) {
@@ -142,7 +143,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
         pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
         pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
         const double distSquare = ArrayMath::dot(pos, pos);
-        if (distSquare <= cutoffSquare) {
+        if (distSquare <= interactionLengthSquare) {
           const long currentOffset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
           const bool containCurrentOffset =
               std::any_of(_cellOffsets[x + this->_overlap[0]].cbegin(), _cellOffsets[x + this->_overlap[0]].cend(),
