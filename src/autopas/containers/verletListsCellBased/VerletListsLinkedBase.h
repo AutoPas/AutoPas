@@ -187,8 +187,8 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
-  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+  TraversalSelectorInfo getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 
  protected:

@@ -75,7 +75,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new traversal in `src/autopas/selectors/TraversalSelector.h::generateTraversal()`.
 * Check that the new option is added to the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseTraversalOptionsTest`).
 * Add new unit tests for your traversal.
 
 ### Adding a new Container
@@ -87,7 +87,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new container in `src/autopas/selectors/ContainerSelector.h::generateContainer()`.
 * Check that the new option is added to the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseContainerOptionsTest`).
 * Add new unit tests for your container.
 
 ### Adding a new Tuning Strategy

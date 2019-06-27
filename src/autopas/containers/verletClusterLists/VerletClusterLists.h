@@ -130,9 +130,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return false;
   }
 
-  TraversalSelectorInfo<FullParticleCell<Particle>> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<FullParticleCell<Particle>>(_cellsPerDim);
-  }
+  TraversalSelectorInfo getTraversalSelectorInfo() override { return TraversalSelectorInfo(_cellsPerDim); }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(

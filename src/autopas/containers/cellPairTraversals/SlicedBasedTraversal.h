@@ -52,7 +52,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
         _sliceThickness{},
         locks(),
         _dataLayoutConverter(pairwiseFunctor) {
-    rebuild(dims);
+    init(dims);
   }
 
   /**
@@ -99,13 +99,13 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
     }
   }
 
+ protected:
   /**
    * Resets the cell structure of the traversal.
    * @param dims
    */
-  void rebuild(const std::array<unsigned long, 3> &dims) override;
+  void init(const std::array<unsigned long, 3> &dims);
 
- protected:
   /**
    * The main traversal of the C01Traversal.
    * @copydetails C01BasedTraversal::c01Traversal()
@@ -152,10 +152,8 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::rebuild(
+inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::init(
     const std::array<unsigned long, 3> &dims) {
-  CellPairTraversal<ParticleCell, dataLayout, useNewton3>::rebuild(dims);
-
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
   }
