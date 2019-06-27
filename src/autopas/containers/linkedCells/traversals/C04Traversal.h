@@ -181,7 +181,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traver
     std::vector<ParticleCell> &cells, int color, const std::array<long, 3> &start, const std::array<long, 3> &end) {
   std::array<long, 3> intersectionStart(ArrayMath::subScalar(start, 2l));
 
-  // we need to traverse one BCC grid, which consists of two cartesian grids
+  // we need to traverse one body-centered cubic (BCC) grid, which consists of two cartesian grids
 
   // colors 0 and 2 form one cartesian grid
   // colors 1 and 3 form another cartesian grid, whose origin is shifted by (2,2,2)
