@@ -60,7 +60,7 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
  * @param numMolecules number of molecules in the container
  */
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
-  NumThreadGuard(1);
+  NumThreadGuard numThreadGuard(1);
 
   RandomGenerator::fillWithParticles(_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
                                      numMolecules);
