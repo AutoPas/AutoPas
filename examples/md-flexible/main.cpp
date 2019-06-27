@@ -116,6 +116,15 @@ int main(int argc, char **argv) {
     // Initialization
 
     auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);//@todo übernommen vom merge: -> prüfen
+    //@todo übernommen vom merge: -> prüfen
+    autopas->setTuningStrategyOption(tuningStrategy);
+    autopas->setAllowedCellSizeFactors(cellSizeFactors);
+    autopas::Logger::get()->set_level(logLevel);
+
+    // setted default anderen boxMax--> sonst Fehler
+    autopas->setBoxMax({2., 2., 2.});
+    autopas->init();
+    autopas::Logger::get()->set_level(logLevel);
     autopas->setTuningStrategyOption(tuningStrategy);
     autopas->setAllowedCellSizeFactors(cellSizeFactors);
     autopas::Logger::get()->set_level(logLevel);
@@ -144,6 +153,7 @@ int main(int argc, char **argv) {
 
 
     ParticleClassLibrary P_C_Library = ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
+
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas, P_C_Library);
   Simulation.initialize(&parser);
 
