@@ -76,10 +76,10 @@ TEST(TimeDTest, GeneralForceTest) {
   autoPas->addParticle(p1);
   PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
   autoPas->addParticle(p2);
-//  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-//    cout << iter->toString() << endl;
-//    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-//  }
+  //  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+  //    cout << iter->toString() << endl;
+  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+  //  }
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
@@ -90,29 +90,29 @@ TEST(TimeDTest, GeneralForceTest) {
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   // Dokumentation prints
-//  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//  cout << "-----AFTER INITIALIZATION----" << endl;
-//  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-//    cout << iter->toString() << "  __END" << endl;
-//    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-//  }
-//  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//  cout << "-------ITERATIONS START------" << endl;
-//  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+  //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+  //  cout << "-----AFTER INITIALIZATION----" << endl;
+  //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+  //  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+  //    cout << iter->toString() << "  __END" << endl;
+  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+  //  }
+  //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+  //  cout << "-------ITERATIONS START------" << endl;
+  //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
 
   while (iterations < 10) {
     td.VSCalculateX(autoPas);
     autoPas->iteratePairwise(functor);
     td.VSCalculateV(autoPas);
     iterations++;
-//    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-//      cout << iter->toString() << endl;
-//      cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-//    }
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+    //    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+    //      cout << iter->toString() << endl;
+    //      cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+    //    }
+    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
   }
   ASSERT_TRUE(true);
   delete functor;
@@ -141,10 +141,10 @@ TEST(TimeDTest, CalcX) {
   autoPas->addParticle(p1);
   PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
   autoPas->addParticle(p2);
-//  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-//    cout << iter->toString() << endl;
-//    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-//  }
+  //  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+  //    cout << iter->toString() << endl;
+  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+  //  }
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
@@ -155,29 +155,29 @@ TEST(TimeDTest, CalcX) {
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   cout << "delta_t value =  " << particleD << endl;
-//  while (iterations < 10) {
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-//      auto v = iter->getV();
-//      auto m = iter->getMass();
-//      auto f = iter->getF();
-//      iter->setOldf(f);
-//      cout << "Particle ID: " << iter->getID() << endl;
-//      cout << "initial Velocity: " << arrayString(v) << endl;
-//      v = autopas::ArrayMath::mulScalar(v, particleD);
-//      cout << "Velocity * delta_T= " << arrayString(v) << endl;
-//      cout << "initial F = " << arrayString(f) << endl;
-//      f = autopas::ArrayMath::mulScalar(f, (particleD * particleD / (2 * m)));
-//      cout << "F * delta² / 2*m = " << arrayString(f) << endl;
-//      cout << "Print old Positions:" << arrayString(iter->getR()) << endl;
-//      auto newR = autopas::ArrayMath::add(v, f);
-//      iter->addR(newR);
-//      cout << "Print new Positions: " << arrayString(iter->getR()) << endl;
-//      cout << endl;
-//    }
-//    iterations++;
-//  }
+  //  while (iterations < 10) {
+  //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+  //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+  //    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+  //      auto v = iter->getV();
+  //      auto m = iter->getMass();
+  //      auto f = iter->getF();
+  //      iter->setOldf(f);
+  //      cout << "Particle ID: " << iter->getID() << endl;
+  //      cout << "initial Velocity: " << arrayString(v) << endl;
+  //      v = autopas::ArrayMath::mulScalar(v, particleD);
+  //      cout << "Velocity * delta_T= " << arrayString(v) << endl;
+  //      cout << "initial F = " << arrayString(f) << endl;
+  //      f = autopas::ArrayMath::mulScalar(f, (particleD * particleD / (2 * m)));
+  //      cout << "F * delta² / 2*m = " << arrayString(f) << endl;
+  //      cout << "Print old Positions:" << arrayString(iter->getR()) << endl;
+  //      auto newR = autopas::ArrayMath::add(v, f);
+  //      iter->addR(newR);
+  //      cout << "Print new Positions: " << arrayString(iter->getR()) << endl;
+  //      cout << endl;
+  //    }
+  //    iterations++;
+  //  }
   ASSERT_TRUE(true);
 }
 
@@ -203,10 +203,10 @@ TEST(TimeDTEst, CalcV) {
   autoPas->addParticle(p1);
   PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
   autoPas->addParticle(p2);
-//  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-//    cout << iter->toString() << endl;
-//    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-//  }
+  //  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+  //    cout << iter->toString() << endl;
+  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+  //  }
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
@@ -216,28 +216,28 @@ TEST(TimeDTEst, CalcV) {
                              true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
-//  cout << "delta_t value =  " << particleD << endl;
-//  while (iterations < 10) {
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//
-//    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-//      auto m = iter->getMass();
-//      auto force = iter->getF();
-//      auto old_force = iter->getOldf();
-//      cout << "Particle ID: " << iter->getID() << endl;
-//      cout << "Old forces: " << arrayString(old_force) << endl;
-//      cout << "Current forces: " << arrayString(force) << endl;
-//      auto addedF = autopas::ArrayMath::add(force, old_force);
-//      cout << "OldF + Force =  " << arrayString(addedF) << endl;
-//      auto newV = autopas::ArrayMath::mulScalar(addedF, particleD / (2 * 1));
-//      cout << "Multiplied by delta_t and 2*m:" << endl << arrayString(newV) << endl;
-//      cout << "old Velocity= " << arrayString(iter->getV()) << endl;
-//      iter->addV(newV);
-//      cout << "new Velocity " << arrayString(iter->getV()) << endl;
-//      cout << endl;
-//    }
-//    iterations++;
-//  }
+  //  cout << "delta_t value =  " << particleD << endl;
+  //  while (iterations < 10) {
+  //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+  //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+  //
+  //    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+  //      auto m = iter->getMass();
+  //      auto force = iter->getF();
+  //      auto old_force = iter->getOldf();
+  //      cout << "Particle ID: " << iter->getID() << endl;
+  //      cout << "Old forces: " << arrayString(old_force) << endl;
+  //      cout << "Current forces: " << arrayString(force) << endl;
+  //      auto addedF = autopas::ArrayMath::add(force, old_force);
+  //      cout << "OldF + Force =  " << arrayString(addedF) << endl;
+  //      auto newV = autopas::ArrayMath::mulScalar(addedF, particleD / (2 * 1));
+  //      cout << "Multiplied by delta_t and 2*m:" << endl << arrayString(newV) << endl;
+  //      cout << "old Velocity= " << arrayString(iter->getV()) << endl;
+  //      iter->addV(newV);
+  //      cout << "new Velocity " << arrayString(iter->getV()) << endl;
+  //      cout << endl;
+  //    }
+  //    iterations++;
+  //  }
   ASSERT_TRUE(true);
 }
