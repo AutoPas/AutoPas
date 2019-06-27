@@ -30,14 +30,16 @@ class MockVerletLists : public autopas::VerletLists<Particle> {
 
   MOCK_METHOD1_T(addHaloParticle, void(Particle &haloParticle));
 
-  MOCK_METHOD0(updateContainer, void());
+  MOCK_METHOD0_T(updateContainer, std::vector<Particle>());
 
  protected:
   MOCK_METHOD1(updateVerletListsAoS, void(bool));
 
   void addParticleVerletLists(Particle &p) { autopas::VerletLists<Particle>::addParticle(p); }
   void addHaloParticleVerletLists(Particle &p) { autopas::VerletLists<Particle>::addHaloParticle(p); }
-  void updateContainerVerletLists() { autopas::VerletLists<Particle>::updateContainer(); }
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainerVerletLists() {
+    return autopas::VerletLists<Particle>::updateContainer();
+  }
 
   friend class VerletListsTest_testRebuildFrequencyAlways_Test;
   friend class VerletListsTest_testRebuildFrequencyEvery3_Test;

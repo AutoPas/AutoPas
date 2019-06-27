@@ -44,6 +44,10 @@ class TraversalTest : public AutoPasTestBase,
 
     bool isRelevantForTuning() override { return true; }
 
+    bool allowsNewton3() override { return true; }
+
+    bool allowsNonNewton3() override { return true; }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       const auto coordsI = i.getR();
       const auto coordsJ = j.getR();

@@ -16,11 +16,9 @@ add_custom_target(
         4
 )
 
-add_subdirectory(basic)
 add_subdirectory(md-flexible)
 add_subdirectory(sph)
 add_subdirectory(sph-mpi)
-add_subdirectory(sph-verlet)
 add_subdirectory(sphDiagramGeneration)
 add_subdirectory(sph-traversals)
 add_subdirectory(cluster-test)
