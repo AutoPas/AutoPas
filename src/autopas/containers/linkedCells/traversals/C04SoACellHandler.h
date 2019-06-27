@@ -45,7 +45,8 @@ class C04SoACellHandler {
         _cutoff(cutoff),
         _cellLength(cellLength),
         _overlap(overlap),
-        _cellsPerDimension(cellsPerDimension) {
+        _cellsPerDimension(cellsPerDimension),
+        _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
     computeOffsets(cellsPerDimension);
   }
 
@@ -127,6 +128,11 @@ class C04SoACellHandler {
   std::vector<std::vector<std::vector<unsigned long>>> _combinationSlicesOffsets;
 
   /**
+   * Offset factor to avoid false sharing.
+   */
+  const unsigned int _cacheOffset;
+
+  /**
    * Writes buffer content back to cell.
    * @param cells
    * @param baseIndex Index of base cell.
@@ -168,7 +174,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
 
   // get all information for current thread
   const auto threadID = autopas_get_thread_num();
-  auto &currentSlice = _currentSlices[threadID];
+  auto &currentSlice = _currentSlices[threadID * _cacheOffset];
   auto &combinationSlice = _combinationSlices[threadID];
   auto &combinationSlicesOffsets = _combinationSlicesOffsets[threadID];
 
@@ -431,7 +437,7 @@ void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::r
     _combinationSlicesOffsets.resize(numThreads);
     std::for_each(_combinationSlicesOffsets.begin(), _combinationSlicesOffsets.end(),
                   [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
-    _currentSlices.resize(numThreads);
+    _currentSlices.resize(numThreads * _cacheOffset);
   }
 }
 
