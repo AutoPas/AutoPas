@@ -119,9 +119,7 @@ class AutoPas {
    * @return A vector of invalid particles that do no belong in the current container.
    */
   AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<Particle> updateContainerForced() {
-    return _logicHandler->updateContainer(true);
-  }
+  std::vector<Particle> updateContainerForced() { return _logicHandler->updateContainer(true); }
 
   /**
    * Adds a particle to the container.
