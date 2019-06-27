@@ -36,14 +36,17 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * Type of the ParticleCell.
    */
   typedef ParticleCell ParticleCellType;
+
   /**
    * Constructor of ParticleContainer
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param skin
    */
-  ParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff)
-      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff) {}
+  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+                    const double skin)
+      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**
    * destructor of ParticleContainer
@@ -66,40 +69,49 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   ParticleContainer &operator=(const ParticleContainer &other) = delete;
 
   /**
-   * Get the upper corner of the container
-   * @return upper corner of the container
+   * @copydoc autopas::ParticleContainerInterface::getBoxMax()
    */
   const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
 
   /**
-   * Set the upper corner of the container
-   * @param boxMax upper corner to be set
+   * @copydoc autopas::ParticleContainerInterface::setBoxMax()
    */
   void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
 
   /**
-   * Get the lower corner of the container
-   * @return lower corner of the container
+   * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
   const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
 
   /**
-   * Set the lower corner of the container
-   * @param boxMin lower corner to be set
+   * @copydoc autopas::ParticleContainerInterface::setBoxMin()
    */
   void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
 
   /**
-   * Return the cutoff of the container
-   * @return
+   * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
   double getCutoff() const override final { return _cutoff; }
 
   /**
-   * Set the cutoff of the container
-   * @param cutoff
+   * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getSkin()
+   */
+  double getSkin() const override final { return _skin; }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setSkin()
+   */
+  void setSkin(double skin) override final { _skin = skin; }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
+   */
+  double getInteractionLength() const override final { return _cutoff + _skin; }
 
   /**
    * Checks if the given traversals are applicable to this container.
@@ -159,6 +171,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
   double _cutoff;
+  double _skin;
 };
 
 }  // namespace autopas

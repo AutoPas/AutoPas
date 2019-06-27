@@ -27,15 +27,16 @@ class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
  public:
   /**
    * Constructor of the c08 traversal.
-   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
+   * @param dims The dimensions of the cell block, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                             const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
+                             const double interactionLength = 1.0,
+                             const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, interactionLength,
                                                                                cellLength) {}
 
  protected:

@@ -22,9 +22,9 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
 
   GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
 
-  NumThreadGuard(4);
+  NumThreadGuard numThreadGuard(4);
 
-  autopas::TraversalSelectorInfo<FPCell> tsi(edgeLength, cutoff);
+  autopas::TraversalSelectorInfo tsi(edgeLength, cutoff);
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
     traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,

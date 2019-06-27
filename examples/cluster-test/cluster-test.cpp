@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
   int numParticles = 16;
   double skin = 0.;
-  int rebuildFrequency = 1;
+  /*int rebuildFrequency = 1;*/
   if (argc == 4) {
     numParticles = atoi(argv[1]);
     boxMax[0] = boxMax[1] = boxMax[2] = atof(argv[2]);
@@ -90,8 +90,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  autopas::VerletClusterLists<autopas::MoleculeLJ> cont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency,
-                                                        CLUSTER_SIZE);
+  autopas::VerletClusterLists<autopas::MoleculeLJ> cont(boxMin, boxMax, cutoff, skin * cutoff, CLUSTER_SIZE);
 
   autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func(
       cutoff, autopas::MoleculeLJ::getEpsilon(), autopas::MoleculeLJ::getSigma(), 0.0);
@@ -104,6 +103,7 @@ int main(int argc, char *argv[]) {
       dummyTraversal({0, 0, 0}, &func);
 
   // iterate to rebuild
+  cont.rebuildNeighborLists(&dummyTraversal);
   cont.iteratePairwise(&func, &dummyTraversal);
 
   int newNumParticles = 0;

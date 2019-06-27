@@ -29,6 +29,10 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
  public:
   bool isRelevantForTuning() override { return false; }
 
+  bool allowsNewton3() override { return true; }
+
+  bool allowsNonNewton3() override { return true; }
+
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
