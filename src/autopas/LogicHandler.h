@@ -65,7 +65,7 @@ class LogicHandler {
     auto container = _autoTuner.getContainer();
     if (not isContainerValid()) {
       if (not utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
-                              _autoTuner.getContainer()->getBoxMax())) {
+                           _autoTuner.getContainer()->getBoxMax())) {
         container->addHaloParticle(haloParticle);
       } else {
         utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +
