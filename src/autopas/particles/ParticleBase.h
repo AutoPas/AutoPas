@@ -160,6 +160,11 @@ class ParticleBase {
   typedef floatType ParticleFloatingPointType;
 
   /**
+   * Id Type used for this particle
+   */
+  typedef idType ParticleIdType;
+
+  /**
    * the type for the soa storage
    */
   typedef
