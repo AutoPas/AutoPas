@@ -8,7 +8,8 @@
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 
 CudaTraversalVersusDirectSumTest::CudaTraversalVersusDirectSumTest()
-    : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
+    : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.),
+      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0., 1. /*cell size factor*/) {}
 
 double CudaTraversalVersusDirectSumTest::fRand(double fMin, double fMax) const {
   double f = static_cast<double>(rand()) / RAND_MAX;
