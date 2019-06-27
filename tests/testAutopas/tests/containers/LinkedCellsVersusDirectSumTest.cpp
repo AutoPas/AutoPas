@@ -8,7 +8,8 @@
 #include "testingHelpers/RandomGenerator.h"
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
-    : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
+    : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.),
+      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0., 1.) {}
 
 void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   autopas::MoleculeLJ defaultParticle;

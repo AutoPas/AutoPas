@@ -86,23 +86,23 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
     // Linked cell
     case TraversalOption::c08: {
       return std::make_unique<C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::sliced: {
       return std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::c18: {
       return std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::c01: {
       return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::c01CombinedSoA: {
       return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>>(
-          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     // Verlet
     case TraversalOption::slicedVerlet: {
