@@ -138,11 +138,11 @@ One simulation loop should always consist of the following phases:
 2. Handling the leaving particles
    * Apply boundary conditions on them
    
-   * Potentially send them to other mpi-processes
+   * Potentially send them to other mpi-processes, skip this if MPI is not needed
    
    * Add them to the containers using
       ```C++
-      addParticle(particle)
+      autoPas.addParticle(particle)
       ```
 
 3. Handle halo particles:
@@ -150,7 +150,7 @@ One simulation loop should always consist of the following phases:
 
    * Add the particles as haloParticles using 
       ```C++
-      addOrUpdateHaloParticle(haloParticle)
+      autoPas.addOrUpdateHaloParticle(haloParticle)
       ```
 
 4. Perform an iteratePairwise step.
@@ -162,8 +162,8 @@ In some iterations step 1. will return an empty list of invalid particles to ben
 
 ### Using multiple functors
 
-AutoPas is able to work with simulation setups using multiple functors.
-A good example for that is the sph example found under examples/sph or examples/sph-mpi.
+AutoPas is able to work with simulation setups using multiple functors that describe different forces.
+A good demonstration for that is the sph example found under examples/sph or examples/sph-mpi.
 There exist some things you have to be careful about when using multiple functors:
 * If you use multiple functors it is necessary that all functors support the same newton3 options. If there is one functor not supporting newton3, you have to disable newton3 support for AutoPas by calling
   ```C++
@@ -173,7 +173,9 @@ There exist some things you have to be careful about when using multiple functor
 * If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.   
 
 ### Inserting additional particles
-When inserting additional particles, you always have to enforce a containerUpdate before doing that on ALL AutoPas instances, i.e., on all mpi processes, by calling  
+Before inserting additional particles (e.g. through a grand-canonical thermostat ), 
+you always have to enforce a containerUpdate on ALL AutoPas instances, i.e., 
+on all mpi processes, by calling  
 ```C++
 autoPas.updateContainerForced();
 ``` 
