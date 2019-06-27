@@ -6,12 +6,14 @@ Please keep in mind the following notes while working.
 
 ## C++
 ### General Notes
-* Cpp standard: C++14. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++17` including the alternative version of the code. For now, we are stuck with C++14 due to the CUDA dependency.
-* Pointers: Always use smart pointers when you are managing memory. Don't use new or delete.
+* Cpp standard: C++17. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++20` including the alternative version of the code.
+* Pointers: Always use smart pointers when you are managing memory. Don't use `new` or `delete`.
 * OpenMP: Use AutoPas wrapper functions for OpenMP (`src/autopas/utils/WrapOpenMP.h`) instead of OpenMP functions to allow building without enabled OpenMP.
 * `#pragma once` instead of header guards.
+* `#include` of files from within AutoPas shall be given with the full path (starting with `autopas/`) and using `""`. 
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
+* Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Descriptive error message")` instead.
 
 ### Code Style
 * Private attributes are prefixed with `_`.
@@ -50,8 +52,8 @@ Please keep in mind the following notes while working.
 
 ## AutoPas
 ### Namespaces
-* Code in folder `src` should belong to namespace `autopas`
-* Classes which shouldn't be used externally should belong to namespace `internal` declared as `inline`
+* Code in folder `src` should belong to namespace `autopas`.
+* Classes which shouldn't be used externally should belong to namespace `internal`.
 
 ### Logging
 AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
@@ -70,10 +72,10 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Think about inheriting from a similar traversal. At least derive your new traversal from `src/autopas/containers/cellPairTraversals/TraversalInterface.h`.
 * Add a new enum entry to `src/autopas/options/TraversalOption.h`.
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
-* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`
+* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new traversal in `src/autopas/selectors/TraversalSelector.h::generateTraversal()`.
 * Check that the new option is added to the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseTraversalOptionsTest`).
 * Add new unit tests for your traversal.
 
 ### Adding a new Container
@@ -81,18 +83,18 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Derive your new container from `src/autopas/containers/ParticleContainer.h` or a more similar one.
 * Add a new enum entry to `src/autopas/options/ContainerOption.h`.
 * Create a new set of compatible traversals in `src/autopas/containers/CompatibleTraversals.h`.
-* Create a new `case` statement in `src/autopas/utils/StaticSelectors.h`
-* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`
+* Create a new `case` statement in `src/autopas/utils/StaticSelectors.h`.
+* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new container in `src/autopas/selectors/ContainerSelector.h::generateContainer()`.
 * Check that the new option is added to the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseContainerOptionsTest`).
 * Add new unit tests for your container.
 
 ### Adding a new Tuning Strategy
 * Create a new tuning strategy class under `src/autopas/selectors/tuningStrategy`.
 * Derive your new strategy from `src/autopas/selectors/tuningStrategy/TuningStrategyInterface.h` or a more similar one.
 * Add a new enum entry to `src/autopas/options/TuningStrategyOption.h` along with a brief description.
-* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`
+* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new strategy in `src/autopas/AutoPas.h::generateTuningStrategy()`.
 * Check that the new option is added to the md-flexible example.
 * Add new unit tests for your strategy.
@@ -100,5 +102,5 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 ### Adding a new Option
 * If applicable add a new setter to `src/autopas/AutoPas.h`.
 * Check that the new option is added to the md-flexible example. Parser and main.
-* Global options, which are represented by an enum, should be defined in an additional file in `src/autopas/options`
+* Global options, which are represented by an enum, should be defined in an additional file in `src/autopas/options`.
 * Add new unit tests for your option.

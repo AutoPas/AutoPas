@@ -36,12 +36,6 @@ class CellPairTraversal : public TraversalInterface {
   ~CellPairTraversal() override = default;
 
   /**
-   * Resets the cell structure of the traversal.
-   * @param dims
-   */
-  virtual void rebuild(const std::array<unsigned long, 3> &dims) { _cellsPerDimension = dims; };
-
-  /**
    * Load Data Layouts required for this Traversal.
    * @param cells where the data should be loaded.
    */

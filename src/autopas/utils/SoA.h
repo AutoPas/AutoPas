@@ -56,6 +56,19 @@ class SoA {
   }
 
   /**
+   * @brief Writes / updates the value of an attribute for a specific particle.
+   * @tparam attribute Attribute to update.
+   * @tparam ValueType type of the attribute
+   * @param particleId Particle to update.
+   * @param value New value.
+   */
+  template <int attribute, class ValueType>
+  void write(size_t particleId, const ValueType &value) {
+    soaStorage.template get<attribute>().at(particleId) = value;
+  }
+
+  /**
+   * @brief Writes / updates values of attributes for a specific particle.
    * Appends the other SoA buffer.
    * @param other other buffer.
    */

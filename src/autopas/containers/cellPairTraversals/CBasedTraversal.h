@@ -31,17 +31,17 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const double cutoff, const std::array<double, 3> &cellLength)
+                           const double interactionLength, const std::array<double, 3> &cellLength)
       : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
-        _cutoff(cutoff),
+        _interactionLength(interactionLength),
         _cellLength(cellLength),
         _dataLayoutConverter(pairwiseFunctor) {
     for (unsigned int d = 0; d < 3; d++) {
-      _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
+      _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     }
   }
 
@@ -95,9 +95,9 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
                          const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
 
   /**
-   * cutoff radius.
+   * Interaction length (cutoff + skin).
    */
-  const double _cutoff;
+  const double _interactionLength;
 
   /**
    * cell length in CellBlock3D.
