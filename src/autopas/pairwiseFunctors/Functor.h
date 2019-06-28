@@ -35,6 +35,8 @@ class VerletListHelpers;
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class Functor {
  public:
+  Functor(typename Particle::ParticleFloatingPointType cutoff) : _cutoff(cutoff){};
+
   virtual ~Functor() = default;
 
   /**
@@ -234,6 +236,11 @@ class Functor {
     return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
   }
 #endif
+
+  typename Particle::ParticleFloatingPointType getCutoff() const { return _cutoff; }
+
+ private:
+  typename Particle::ParticleFloatingPointType _cutoff;
 };
 
 /**
