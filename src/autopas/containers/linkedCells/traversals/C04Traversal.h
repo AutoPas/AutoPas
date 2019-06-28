@@ -48,15 +48,12 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
     computeOffsets32Pack();
   }
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
   void traverseCellPairs(std::vector<ParticleCell> &cells) override;
 
   TraversalOption getTraversalType() const override { return TraversalOption::c04; }
 
   /**
-   * C04 traversals are always usable, if cellSizeFactor >= 1.0.
+   * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
    * @return
    */
   bool isApplicable() const override {
