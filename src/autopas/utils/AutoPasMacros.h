@@ -6,15 +6,8 @@
 
 #pragma once
 
-#if defined(__GNUC__) or defined(__clang__)
 /**
- * For gcc + clang: warn if return value is not used.
- * @todo c++17: __attribute__((warn_unused_result)) should be replaced with [[nodiscard]]
+ * Highly encourages the compiler to produce a warning if the return value is ignored.
+ * @note: this is c++17
  */
-#define AUTOPAS_WARN_UNUSED_RESULT __attribute__((warn_unused_result))
-#else
-/**
- * empty if not gnu
- */
-#define AUTOPAS_WARN_UNUSED_RESULT
-#endif
+#define AUTOPAS_WARN_UNUSED_RESULT [[nodiscard]]

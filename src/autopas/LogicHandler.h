@@ -33,7 +33,8 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    * @param forced specifies whether an update of the container is enforced.
    */
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer(bool forced) {
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::vector<Particle> updateContainer(bool forced) {
     if (not isContainerValid() or forced) {
       AutoPasLog(debug, "Initiating container update.");
       _containerIsValid = false;

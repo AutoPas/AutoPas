@@ -107,7 +107,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * @copydoc VerletLists::updateContainer()
    */
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::vector<Particle> updateContainer() override {
     AutoPasLog(debug, "updating container");
     // first delete all particles
     this->deleteHaloParticles();
