@@ -183,7 +183,8 @@ class ParticleContainerInterface {
    * container, if necessary.
    * @return A vector of invalid particles that do not belong into the container.
    */
-  virtual std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() = 0;
+  AUTOPAS_WARN_UNUSED_RESULT
+  virtual std::vector<Particle> updateContainer() = 0;
 
   /**
    * Check whether a container is valid, i.e. whether it is safe to use
