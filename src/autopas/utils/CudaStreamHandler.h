@@ -66,7 +66,7 @@ class CudaStreamHandler {
   /**
    * @brief empty Dummy default Constructor in case there is no cuda support
    */
-  CudaStreamHandler() {}
+  CudaStreamHandler() = default;
 #endif
 };
 

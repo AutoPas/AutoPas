@@ -9,8 +9,7 @@
 
 #include <chrono>
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * Timer class to stop times.
@@ -36,5 +35,4 @@ class Timer {
  private:
   std::chrono::high_resolution_clock::time_point _startTime;
 };
-}  // namespace utils
 }  // namespace autopas

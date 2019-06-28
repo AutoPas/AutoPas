@@ -8,8 +8,7 @@
 
 #include <tuple>
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * SoAStorage is a helper to access the stored SoA's.
@@ -64,5 +63,4 @@ class SoAStorage {
   SoAArraysType soaStorageTuple;
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils

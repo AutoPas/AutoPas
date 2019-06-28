@@ -8,8 +8,7 @@
 
 #include <cstdlib>
 
-namespace autopas {
-namespace memoryProfiler {
+namespace autopas::memoryProfiler {
 
 /**
  * path to status file of current process
@@ -22,5 +21,4 @@ constexpr const char *statusFileName = "/proc/self/status";
  */
 size_t currentMemoryUsage();
 
-}  // namespace memoryProfiler
-}  // namespace autopas
+}  // namespace autopas::memoryProfiler

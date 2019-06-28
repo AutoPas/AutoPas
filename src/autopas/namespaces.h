@@ -31,6 +31,13 @@ namespace sph {}  // namespace sph
  * @details These classes reside mostly in the utils directory. However, most commonly used function inside the utils
  * directory might not be in the utils namespace.
  */
-namespace utils {}  // namespace utils
+namespace utils {
+
+/**
+ * Some functions to parse enums from (input-) strings.
+ */
+namespace StringUtils {}  // namespace StringUtils
+
+}  // namespace utils
 
 }  // namespace autopas
