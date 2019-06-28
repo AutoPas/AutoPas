@@ -25,6 +25,10 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   /// particle cell type
   typedef FullParticleCell<Particle> ParticleCell;
 
+  SPHCalcHydroForceFunctor()
+      // for the cutoff sanity check this works only if smoothing length is never > 1. (currently hard coded to 0.012)
+      : autopas::Functor<Particle, ParticleCell>(autopas::sph::SPHKernels::getKernelSupportRadius()){};
+
   bool isRelevantForTuning() override { return true; }
 
   bool allowsNewton3() override { return true; }
