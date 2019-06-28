@@ -21,10 +21,9 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Build environment (please complete the following information):**
- - OS: [e.g. Linux, Windows]
- - Compiler: [e.g. gcc 6, icc 2017, clang]
- - Build System: [e.g. Make, ninja]
-
+* OS: (e.g. Linux, Windows)
+* Compiler: (e.g. gcc 6, icc 2017, clang)
+* Build System: (e.g. Make, ninja)
 
 **Additional context**
 Add any other context about the problem here.

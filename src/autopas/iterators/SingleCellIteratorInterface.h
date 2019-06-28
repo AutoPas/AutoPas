@@ -54,7 +54,6 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
 };
 
 namespace internal {
-
 /**
  * All implementations of the interface should inherit from this class. It extends the interface just by the clone
  * method, which is needed by the Wrapper.

@@ -36,8 +36,9 @@
  * @param lvl Possible levels: trace, debug, info, warn, error, critical.
  * @param fmt Message with formatting tokens
  * @param ... Formatting arguments
+ * @note A ';' is enforced at the end of the macro.
  */
-#define AutoPasLog(lvl, fmt, ...) spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__);
+#define AutoPasLog(lvl, fmt, ...) spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__)
 
 #endif
 
@@ -59,7 +60,7 @@ class Logger {
    * create a logger writing to the file system
    * @param filename
    */
-  static void create(std::string& filename) {
+  static void create(std::string &filename) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     spdlog::basic_logger_mt(loggerName(), filename);
@@ -70,7 +71,7 @@ class Logger {
    * default is std::cout
    * @param oss
    */
-  static void create(std::ostream& oss = std::cout) {
+  static void create(std::ostream &oss = std::cout) {
     // drop an already registered Logger if it exists
     if (spdlog::get(loggerName())) spdlog::drop(loggerName());
     std::shared_ptr<spdlog::sinks::sink> ostream_sink;

@@ -32,16 +32,16 @@ class ParticleIteratorInterface {
    * Used to jump to the next particle
    * @return next particle, usually ignored
    */
-  virtual ParticleIteratorInterface<Particle>& operator++() = 0;
+  virtual ParticleIteratorInterface<Particle> &operator++() = 0;
 
-  virtual ~ParticleIteratorInterface(){};
+  virtual ~ParticleIteratorInterface() = default;
 
   /**
    * access the particle using *iterator
    * this is the indirection operator
    * @return current particle
    */
-  virtual Particle& operator*() const = 0;
+  virtual Particle &operator*() const = 0;
 
   /**
    * access particle using iterator->
@@ -49,7 +49,7 @@ class ParticleIteratorInterface {
    * this is the member of pointer operator
    * @return current particle
    */
-  virtual inline Particle* operator->() const final { return &(this->operator*()); }
+  virtual inline Particle *operator->() const final { return &(this->operator*()); }
 
   /**
    * Deletes the current particle
@@ -64,7 +64,6 @@ class ParticleIteratorInterface {
 };
 
 namespace internal {
-
 /**
  * All implementations of the interface should inherit from this class. It extends the interface just by the clone
  * method, which is needed by the Wrapper.
@@ -77,7 +76,7 @@ class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle>
    * Clones the current object, should allocate new object and return it.
    * @return the clone
    */
-  virtual ParticleIteratorInterfaceImpl<Particle>* clone() const = 0;
+  virtual ParticleIteratorInterfaceImpl<Particle> *clone() const = 0;
 };
 
 }  // namespace internal

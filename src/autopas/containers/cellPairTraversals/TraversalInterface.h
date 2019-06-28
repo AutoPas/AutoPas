@@ -28,13 +28,25 @@ class TraversalInterface {
    * Return a enum representing the name of the traversal class.
    * @return Enum representing traversal.
    */
-  virtual TraversalOption getTraversalType() = 0;
+  virtual TraversalOption getTraversalType() const = 0;
 
   /**
    * Checks if the traversal is applicable to the current state of the domain.
    * @return true iff the traversal can be applied.
    */
-  virtual bool isApplicable() = 0;
+  virtual bool isApplicable() const = 0;
+
+  /**
+   * Return whether the traversal uses newton 3.
+   * @return true iff newton 3 is used.
+   */
+  virtual bool getUseNewton3() const = 0;
+
+  /**
+   * Return the data layout option
+   * @return
+   */
+  virtual DataLayoutOption getDataLayout() const = 0;
 };
 
 }  // namespace autopas

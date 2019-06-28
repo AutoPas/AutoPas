@@ -14,7 +14,7 @@ using ::testing::Bool;
 using ::testing::Combine;
 using ::testing::ValuesIn;
 
-void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3>& edgeLength,
+void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3> &edgeLength,
                    int interactions, double cutoff = 1.0) {
   TraversalTest::CountFunctor functor;
   functor.setCutoff(cutoff);
@@ -22,16 +22,16 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
 
   GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
 
-  NumThreadGuard(4);
+  NumThreadGuard numThreadGuard(4);
 
-  autopas::TraversalSelectorInfo<FPCell> tsi(edgeLength, cutoff);
-  std::unique_ptr<autopas::CellPairTraversal<FPCell>> Traversal;
+  autopas::TraversalSelectorInfo tsi(edgeLength, cutoff);
+  std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
-    Traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
+    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
                                                                                autopas::DataLayoutOption::aos, true>(
         traversalOption, functor, tsi);
   } else {
-    Traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
+    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
                                                                                autopas::DataLayoutOption::aos, false>(
         traversalOption, functor, tsi);
   }
@@ -58,7 +58,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     }
   }
 
-  auto* traversalInterface = dynamic_cast<LinkedCellTraversalInterface<FPCell>*>(Traversal.get());
+  auto *traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell> *>(traversal.get());
   traversalInterface->traverseCellPairs(cells);
 }
 
@@ -138,6 +138,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
                          Combine(ValuesIn([]() -> std::set<autopas::TraversalOption> {
                                    auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
                                    allTraversals.erase(autopas::TraversalOption::c01Cuda);
+                                   allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
                                    return allTraversals;
                                  }()),
                                  Bool()),

@@ -26,7 +26,7 @@ namespace autopas {
 template <typename floatType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
+  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0), _isOwned{true} {}
 
   /**
    * Constructor of the Particle class.
@@ -35,7 +35,7 @@ class ParticleBase {
    * @param id Id of the particle.
    */
   ParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _isOwned{true} {}
 
   /**
    * Destructor of ParticleBase class
@@ -150,9 +150,21 @@ class ParticleBase {
   }
 
   /**
+   * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
+   * @return true if the particle is owned by the current AutoPas object, false otherwise
+   */
+  bool isOwned() const { return _isOwned; }
+
+  /**
+   * Set the owned state to the given value
+   * @param owned
+   */
+  void setOwned(bool owned) { _isOwned = owned; }
+
+  /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ };
+  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, owned };
 
   /**
    * Floating Point Type used for this particle
@@ -160,11 +172,11 @@ class ParticleBase {
   typedef floatType ParticleFloatingPointType;
 
   /**
-   * the type for the soa storage
+   * The type for the soa storage.
+   * owned is currently used as a floatType to ease calculations within the functors.
    */
-  typedef
-      typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType>::Type
-          SoAArraysType;
+  typedef typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType,
+                                           floatType>::Type SoAArraysType;
 
 #if defined(AUTOPAS_CUDA)
   /**
@@ -197,6 +209,11 @@ class ParticleBase {
    * Particle id.
    */
   unsigned long _id;
+
+  /**
+   * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
+   */
+  bool _isOwned;
 };
 /**
  * Particle with all variables in 32 bit precision

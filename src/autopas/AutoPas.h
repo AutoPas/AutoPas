@@ -10,15 +10,17 @@
 #include <memory>
 #include <set>
 #include <type_traits>
+#include "autopas/LogicHandler.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 
 /**
- * instance counter to help track the number of autopas instances. Needed for correct management of the logger.
+ * Instance counter to help track the number of autopas instances. Needed for correct management of the logger.
  */
 static unsigned int _instanceCounter = 0;
 
@@ -37,11 +39,10 @@ class AutoPas {
    * Constructor for the autopas class.
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
-  AutoPas(std::ostream &logOutputStream = std::cout)
+  explicit AutoPas(std::ostream &logOutputStream = std::cout)
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
-        _cutoff(1),
-        _cellSizeFactor(1),
+        _cutoff(1.),
         _verletSkin(0.2),
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
@@ -51,7 +52,8 @@ class AutoPas {
         _allowedContainers(allContainerOptions),
         _allowedTraversals(allTraversalOptions),
         _allowedDataLayouts(allDataLayoutOptions),
-        _allowedNewton3Options(allNewton3Options) {
+        _allowedNewton3Options(allNewton3Options),
+        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -79,6 +81,7 @@ class AutoPas {
    */
   AutoPas &operator=(AutoPas &&other) noexcept {
     _autoTuner = std::move(other._autoTuner);
+    _logicHandler = std::move(other._logicHandler);
     return *this;
   }
 
@@ -92,47 +95,61 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _cellSizeFactor, _verletSkin, _verletRebuildFrequency,
-        std::move(generateTuningStrategy()), _selectorStrategy, _tuningInterval, _numSamples);
+        _boxMin, _boxMax, _cutoff, _verletSkin, std::move(generateTuningStrategy()), _selectorStrategy, _tuningInterval,
+        _numSamples);
+    _logicHandler =
+        std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
   }
 
   /**
-   * Updates the internal container.
-   * This is needed e.g. for linked-cells if particles move from one cell to another.
-   * It resorts particles into appropriate cells and moves them to the halo, if necessary.
+   * Potentially updates the internal container.
+   * On an update, halo particles are deleted, the particles are resorted into appropriate cells and particles that do
+   * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
+   * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
+   * else will happen.
+   * @return A vector of invalid particles that do no belong in the current container.
    */
-  void updateContainer() { _autoTuner->getContainer()->updateContainer(); }
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() { return _logicHandler->updateContainer(false); }
 
   /**
-   * Returns a pointer to the actual container.
-   * @todo do we need the whole container functionality available to the outside
-   * @return container
+   * Forces a container update.
+   * On an update, the particles are resorted into appropriate cells and will return particles that do no longer belong
+   * into the container.
+   * @return A vector of invalid particles that do no belong in the current container.
    */
-  // @todo: remove this once we are convinced all necessary container functions are wrapped
-  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _autoTuner->getContainer().get(); }
+  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainerForced() {
+    return _logicHandler->updateContainer(true);
+  }
 
   /**
    * Adds a particle to the container.
+   * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
    */
-  void addParticle(Particle &p) { _autoTuner->getContainer()->addParticle(p); }
+  void addParticle(Particle &p) { _logicHandler->addParticle(p); }
 
   /**
-   * adds a particle to the container that lies in the halo region of the
-   * container
-   * @param haloParticle particle to be added
+   * Adds or updates a particle to/in the container that lies in the halo region of the container.
+   * If the neighbor lists inside of AutoPas are NOT valid, the halo particle will be added.
+   * If the neighbor lists of AutoPas are valid the particle will be used to update an already existing halo particle.
+   * In this case if there is no matching halo particle, the given haloParticle will be ignored.
+   * @note Exceptions are thrown in the following cases:
+   * 1. If the halo particle is added and it is insided of the owned domain (defined by boxmin and boxmax)of the
+   * container.
+   * 2. If the halo particle should be updated and the given haloParticle is too far inside of the domain (by more than
+   * skin/2)
+   * 3. If the halo particle should be updated, but no matching particle is found, even though the given haloParticle is
+   * close enough to the domain (at most cutoff + skin/2)
+   *
+   * @param haloParticle particle to be added or updated
    */
-  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); }
+  void addOrUpdateHaloParticle(Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
 
   /**
-   * deletes all halo particles
+   * Deletes all particles.
+   * @note This invalidates the container, a rebuild is forced on the next iteratePairwise() call.
    */
-  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); }
-
-  /**
-   * deletes all particles
-   */
-  void deleteAllParticles() { _autoTuner->getContainer()->deleteAllParticles(); }
+  void deleteAllParticles() { _logicHandler->deleteAllParticles(); }
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -145,7 +162,7 @@ class AutoPas {
                   "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                   "derived type instead, e.g. by using a dynamic_cast.");
 
-    _autoTuner->iteratePairwise(f);
+    _logicHandler->iteratePairwise(f);
   }
 
   /**
@@ -156,7 +173,7 @@ class AutoPas {
    * @return iterator to the first particle
    */
   autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _autoTuner->getContainer()->begin(behavior);
+    return _logicHandler->begin(behavior);
   }
 
   /**
@@ -172,7 +189,7 @@ class AutoPas {
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**
@@ -180,6 +197,12 @@ class AutoPas {
    * @return the number of particles in this container.
    */
   unsigned long getNumberOfParticles() { return _autoTuner->getContainer()->getNumParticles(); }
+
+  /**
+   * Returns the type of the currently used container.
+   * @return The type of the used container is returned.
+   */
+  unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
 
   /**
    * Get the lower corner of the container.
@@ -224,13 +247,25 @@ class AutoPas {
   }
 
   /**
-   * Get cell size factor (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */
-  double getCellSizeFactor() const { return _cellSizeFactor; }
+  const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
 
   /**
-   * Set cell size factor (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * Set allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * @param allowedCellSizeFactors
+   */
+  void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
+    if (allowedCellSizeFactors.getMin() <= 0.0) {
+      AutoPasLog(error, "cell size <= 0.0");
+      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+    }
+    AutoPas::_allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
+  }
+
+  /**
+   * Set allowed cell size factors to one element (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @param cellSizeFactor
    */
   void setCellSizeFactor(double cellSizeFactor) {
@@ -238,7 +273,7 @@ class AutoPas {
       AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
-    AutoPas::_cellSizeFactor = cellSizeFactor;
+    AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
   /**
@@ -365,24 +400,6 @@ class AutoPas {
   }
 
   /**
-   * Checks if the container needs to be updated.
-   * Will return false if no lists are used.
-   * This function can indicate whether you should send only halo particles or whether you should send leaving particles
-   * as well.
-   * @return True if the lists are valid, false if a rebuild is needed.
-   */
-  bool needsContainerUpdate() {
-    if (_autoTuner->willRebuild()) {
-      return true;
-    }
-    if (auto container = dynamic_cast<VerletLists<Particle> *>(_autoTuner->getContainer().get())) {
-      return container->needsRebuild();
-    } else {
-      return true;
-    }
-  }
-
-  /**
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
    */
@@ -410,8 +427,14 @@ class AutoPas {
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
       case TuningStrategyOption::fullSearch:
-        return std::make_unique<FullSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
-                                            _allowedNewton3Options);
+        if (not _allowedCellSizeFactors->isFinite()) {
+          autopas::utils::ExceptionHandler::exception(
+              "AutoPas::generateTuningStrategy: fullSearch can not handle infinite cellSizeFactors!");
+          return nullptr;
+        }
+
+        return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
+                                            _allowedDataLayouts, _allowedNewton3Options);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
@@ -431,10 +454,6 @@ class AutoPas {
    * Cutoff radius to be used in this container.
    */
   double _cutoff;
-  /**
-   * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
-   */
-  double _cellSizeFactor;
   /**
    * Length added to the cutoff for the verlet lists' skin.
    */
@@ -482,7 +501,19 @@ class AutoPas {
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
   std::set<Newton3Option> _allowedNewton3Options;
+  /**
+   * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   */
+  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
 
+  /**
+   * LogicHandler of autopas.
+   */
+  std::unique_ptr<autopas::LogicHandler<Particle, ParticleCell>> _logicHandler;
+
+  /**
+   * This is the AutoTuner that owns the container, ...
+   */
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
-};  // namespace autopas
+};  // class AutoPas
 }  // namespace autopas

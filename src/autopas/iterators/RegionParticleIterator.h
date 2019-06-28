@@ -37,7 +37,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
    */
   explicit RegionParticleIterator(std::vector<ParticleCell> *cont, std::array<double, 3> startRegion,
                                   std::array<double, 3> endRegion, std::vector<size_t> &indicesInRegion,
-                                  CellBorderAndFlagManager *flagManager = nullptr,
+                                  internal::CellBorderAndFlagManager *flagManager = nullptr,
                                   IteratorBehavior behavior = haloAndOwned)
       : ParticleIterator<Particle, ParticleCell>(cont, flagManager, behavior),
         _startRegion(startRegion),
@@ -50,24 +50,22 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
       this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
     } else {
       this->_iteratorAcrossCells = cont->end();
+      return;
     }
-
-    this->_flagManager = flagManager;
-    this->_behavior = behavior;
 
     if (not this->isCellTypeBehaviorCorrect()) {
       this->next_non_empty_cell();
     }
 
-    // ParticleIterator's constructor will initialize the Iterator, such that it
-    // points to the first particle if one is found, otherwise the pointer is
-    // not valid
-    if (ParticleIterator<Particle, ParticleCell>::isValid()) {  // if there is NO particle, we can not dereference
-                                                                // it, so we need a check.
+    // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
+    // we check it here!
+    if (ParticleIterator<Particle, ParticleCell>::isValid()) {
+      // The iterator is valid, so there is a particle, now we need to check whether it's actually in the box!
       if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
         operator++();
       }
     } else if (this->_iteratorAcrossCells != cont->end()) {
+      // the iterator is invalid + we still have particles, so we increment it!
       operator++();
     }
   }

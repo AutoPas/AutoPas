@@ -15,6 +15,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/options/ContainerOption.h"
+#include "autopas/selectors/ContainerSelectorInfo.h"
 #include "autopas/utils/StringUtils.h"
 
 namespace autopas {
@@ -36,26 +37,16 @@ class ContainerSelector {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
-   * VerletListsCells).
-   * @param verletSkin Length added to the cutoff for the verlet lists' skin.
-   * @param verletRebuildFrequency Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
-  ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                    double cellSizeFactor, double verletSkin, unsigned int verletRebuildFrequency)
-      : _boxMin(boxMin),
-        _boxMax(boxMax),
-        _cutoff(cutoff),
-        _cellSizeFactor(cellSizeFactor),
-        _verletSkin(verletSkin),
-        _verletRebuildFrequency(verletRebuildFrequency),
-        _currentContainer(nullptr) {}
+  ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff)
+      : _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _currentContainer(nullptr), _currentInfo() {}
 
   /**
    * Sets the container to the given option.
-   * @param containerOption
+   * @param containerOption container to generate
+   * @param containerInfo additional parameter for the container
    */
-  void selectContainer(ContainerOption containerOption);
+  void selectContainer(ContainerOption containerOption, ContainerSelectorInfo containerInfo);
 
   /**
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
@@ -67,50 +58,48 @@ class ContainerSelector {
   /**
    * Container factory that also copies all particles to the new container
    * @param containerChoice container to generate
+   * @param containerInfo additional parameter for the container
    * @return smartpointer to new container
    */
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
-      ContainerOption containerChoice);
+      ContainerOption containerChoice, ContainerSelectorInfo containerInfo);
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
-  double _cellSizeFactor;
-  double _verletSkin;
-  unsigned int _verletRebuildFrequency;
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
+  ContainerSelectorInfo _currentInfo;
 };
 
 template <class Particle, class ParticleCell>
 std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
-ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption containerChoice) {
+ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption containerChoice,
+                                                             ContainerSelectorInfo containerInfo) {
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> container;
 
   switch (containerChoice) {
     case directSum: {
-      container = std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
+      container =
+          std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     case linkedCells: {
-      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, _cellSizeFactor);
+      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
     case verletLists: {
-      // @todo determine verletSkin and verletRebuildFrequency via tuning
-      container = std::make_unique<VerletLists<Particle>>(
-          _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency,
-          VerletLists<Particle>::BuildVerletListType::VerletSoA, _cellSizeFactor);
+      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                                          containerInfo.cellSizeFactor);
       break;
     }
     case verletListsCells: {
-      // @todo determine verletSkin and verletRebuildFrequency via tuning
       container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::c08,
-                                                               _verletSkin, _verletRebuildFrequency, _cellSizeFactor);
+                                                               containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
     case verletClusterLists: {
-      // @todo determine verletSkin and verletRebuildFrequency via tuning
-      container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, _verletSkin,
-                                                                 _verletRebuildFrequency);
+      container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     default: {
@@ -126,7 +115,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       // try to add every particle as inner. If it fails try as a halo.
       try {
         container->addParticle(*particleIter);
-      } catch (const autopas::utils::ExceptionHandler::AutoPasException &e) {
+      } catch (const autopas::utils::ExceptionHandler::AutoPasException &) {
         container->addHaloParticle(*particleIter);
       }
     }
@@ -146,14 +135,13 @@ ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
 }
 
 template <class Particle, class ParticleCell>
-void ContainerSelector<Particle, ParticleCell>::selectContainer(ContainerOption containerOption) {
+void ContainerSelector<Particle, ParticleCell>::selectContainer(ContainerOption containerOption,
+                                                                ContainerSelectorInfo containerInfo) {
   // if we already have this container do nothing.
-  if (_currentContainer == nullptr) {
-    _currentContainer = generateContainer(containerOption);
-  }
-
-  if (_currentContainer and _currentContainer->getContainerType() != containerOption) {
-    _currentContainer = std::move(generateContainer(containerOption));
+  if (_currentContainer == nullptr or _currentContainer->getContainerType() != containerOption or
+      _currentInfo != containerInfo) {
+    _currentContainer = std::move(generateContainer(containerOption, containerInfo));
+    _currentInfo = containerInfo;
   }
 }
 }  // namespace autopas

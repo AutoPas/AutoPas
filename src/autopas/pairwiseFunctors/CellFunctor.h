@@ -12,7 +12,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
-
+namespace internal {
 /**
  * A cell functor. This functor is build from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
@@ -106,7 +106,8 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCell(
     ParticleCell &cell) {
-  if (cell.numParticles() == 0) {
+  if ((DataLayout == DataLayoutOption::soa && cell._particleSoABuffer.getNumParticles() == 0) ||
+      (DataLayout == DataLayoutOption::aos && cell.numParticles() == 0)) {
     return;
   }
 
@@ -139,7 +140,9 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
     ParticleCell &cell1, ParticleCell &cell2) {
-  if (cell1.numParticles() == 0 || cell2.numParticles() == 0) {
+  if ((DataLayout == DataLayoutOption::soa &&
+       (cell1._particleSoABuffer.getNumParticles() == 0 || cell2._particleSoABuffer.getNumParticles() == 0)) ||
+      (DataLayout == DataLayoutOption::aos && (cell1.numParticles() == 0 || cell2.numParticles() == 0))) {
     return;
   }
 
@@ -307,5 +310,5 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     ParticleCell &cell) {
   _functor->CudaFunctor(cell._particleSoABufferDevice, true);
 }
-
+}  // namespace internal
 }  // namespace autopas

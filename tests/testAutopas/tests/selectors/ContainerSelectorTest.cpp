@@ -16,19 +16,47 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
-  const unsigned int verletRebuildFrequency = 1;
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin,
-                                                                 verletRebuildFrequency);
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin);
 
   // expect an exception if nothing is selected yet
   EXPECT_THROW((containerSelector.getCurrentContainer()), autopas::utils::ExceptionHandler::AutoPasException);
 
   // test all individual options
   for (auto containerOp : autopas::allContainerOptions) {
-    containerSelector.selectContainer(containerOp);
+    containerSelector.selectContainer(containerOp, containerInfo);
 
     EXPECT_EQ(containerOp, containerSelector.getCurrentContainer()->getContainerType());
+  }
+}
+
+/**
+ * This function stores a copy of each particle depending on the position in ListInner, ListHalo or ListHaloVerletOnly.
+ * @param bBoxMin Bounding box min.
+ * @param bBoxMax Bounding box max.
+ * @param cutoff Cutoff radius.
+ * @param containerSelector Container selector used to retrieve the current container.
+ * @param ListInner All particles inside the bounding box.
+ * @param ListHalo All particles in the halo.
+ * @param ListHaloVerletOnly All particles in the halo.
+ */
+void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3> &bBoxMax, const double cutoff,
+               autopas::ContainerSelector<Particle, FPCell> &containerSelector, std::vector<Particle> &ListInner,
+               std::vector<Particle> &ListHalo, std::vector<Particle> &ListHaloVerletOnly) {
+  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid();
+       ++iter) {
+    ListInner.push_back(*iter);
+  }
+  const auto haloBoxMin = autopas::ArrayMath::subScalar(bBoxMin, cutoff);
+  const auto haloBoxMax = autopas::ArrayMath::addScalar(bBoxMax, cutoff);
+  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
+       ++iter) {
+    if (autopas::utils::inBox(iter->getR(), haloBoxMin, haloBoxMax)) {
+      ListHalo.push_back(*iter);
+    } else {
+      ListHaloVerletOnly.push_back(*iter);
+    }
   }
 }
 
@@ -36,16 +64,15 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   auto from = std::get<0>(GetParam());
   auto to = std::get<1>(GetParam());
 
-  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
+  const std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0.1;
-  const unsigned int verletRebuildFrequency = 1;
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin,
-                                                                 verletRebuildFrequency);
+  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin);
   // select container from which we want to convert from
-  containerSelector.selectContainer(from);
+  containerSelector.selectContainer(from, containerInfo);
 
   // fill witch problematic particles
   {
@@ -55,61 +82,34 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
                                    min - cutoff - verletSkin - 1e-3};
     };
     size_t id = 0;
+    // const auto haloBoxMin = autopas::ArrayMath::subScalar(bBoxMin, cutoff);
+    // const auto haloBoxMax = autopas::ArrayMath::addScalar(bBoxMax, cutoff);
+
     for (auto x : getPossible1DPositions(bBoxMin[0], bBoxMax[0])) {
       for (auto y : getPossible1DPositions(bBoxMin[1], bBoxMax[1])) {
         for (auto z : getPossible1DPositions(bBoxMin[2], bBoxMax[2])) {
-          std::array<double, 3> pos{x, y, z};
+          const std::array<double, 3> pos{x, y, z};
           Particle p(pos, {0., 0., 0.}, id);
           if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
             container->addParticle(p);
           } else {
-            if (autopas::utils::inBox(pos, autopas::ArrayMath::sub(bBoxMin, std::array<double, 3>{cutoff}),
-                                      autopas::ArrayMath::add(bBoxMin, std::array<double, 3>{cutoff})) or
-                autopas::utils::StringUtils::to_string(container->getContainerType()).find("Verlet") !=
-                    std::string::npos) {
-              /// @todo: the above string comparison will most likely be unnecessary once the verlet interface is
-              /// properly introduced.
-              container->addHaloParticle(p);
-            }
+            container->addHaloParticle(p);
           }
           ++id;
         }
       }
     }
   }
+
   std::vector<Particle> beforeListInner, beforeListHalo,
       beforeListHaloVerletOnly /*for particles only in verlet containers*/;
-  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid();
-       ++iter) {
-    beforeListInner.push_back(*iter);
-  }
-  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
-       ++iter) {
-    if (autopas::utils::inBox(iter->getR(), autopas::ArrayMath::sub(bBoxMin, std::array<double, 3>{cutoff}),
-                              autopas::ArrayMath::add(bBoxMax, std::array<double, 3>{cutoff}))) {
-      beforeListHalo.push_back(*iter);
-    } else {
-      beforeListHaloVerletOnly.push_back(*iter);
-    }
-  }
+  getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, beforeListInner, beforeListHalo, beforeListHaloVerletOnly);
 
   // select container to which we want to convert to
-  containerSelector.selectContainer(to);
+  containerSelector.selectContainer(to, containerInfo);
 
   std::vector<Particle> afterListInner, afterListHalo, afterListHaloVerletOnly;
-  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid();
-       ++iter) {
-    afterListInner.push_back(*iter);
-  }
-  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
-       ++iter) {
-    if (autopas::utils::inBox(iter->getR(), autopas::ArrayMath::sub(bBoxMin, std::array<double, 3>{cutoff}),
-                              autopas::ArrayMath::add(bBoxMax, std::array<double, 3>{cutoff}))) {
-      afterListHalo.push_back(*iter);
-    } else {
-      afterListHaloVerletOnly.push_back(*iter);
-    }
-  }
+  getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, afterListInner, afterListHalo, afterListHaloVerletOnly);
 
   EXPECT_THAT(afterListInner, UnorderedElementsAreArray(beforeListInner));
   EXPECT_THAT(afterListHalo, UnorderedElementsAreArray(beforeListHalo));
@@ -119,17 +119,20 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   }
 }
 
+/// @todo: use this instead of below to enable testing of VerletClusterLists.
+// INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
+//                         Combine(ValuesIn(autopas::allContainerOptions), ValuesIn(autopas::allContainerOptions)),
+//                         ContainerSelectorTest::PrintToStringParamName());
+
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
                          Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
                                    auto all = autopas::allContainerOptions;
-                                   /// @todo: remove below line to enable testing of verletClusterLists.
-                                   all.erase(autopas::ContainerOption::verletClusterLists);
+                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }()),
                                  ValuesIn([]() -> std::set<autopas::ContainerOption> {
                                    auto all = autopas::allContainerOptions;
-                                   /// @todo: remove below line to enable testing of verletClusterLists.
-                                   all.erase(autopas::ContainerOption::verletClusterLists);
+                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }())),
                          ContainerSelectorTest::PrintToStringParamName());
