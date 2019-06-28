@@ -540,14 +540,14 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
                             auto cellIter = cell.begin();
                             // load particles in SoAs
                             for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-                              idptr[i] = cellIter->getID();
-                              xptr[i] = cellIter->getR()[0];
-                              yptr[i] = cellIter->getR()[1];
-                              zptr[i] = cellIter->getR()[2];
-                              fxptr[i] = cellIter->getF()[0];
-                              fyptr[i] = cellIter->getF()[1];
-                              fzptr[i] = cellIter->getF()[2];
-                              ownedptr[i] = cellIter->isOwned() ? 1. : 0.;
+                              idptr[i] = cellIter->template get<Particle::AttributeNames::id>();
+                              xptr[i] = cellIter->template get<Particle::AttributeNames::posX>();
+                              yptr[i] = cellIter->template get<Particle::AttributeNames::posY>();
+                              zptr[i] = cellIter->template get<Particle::AttributeNames::posZ>();
+                              fxptr[i] = cellIter->template get<Particle::AttributeNames::forceX>();
+                              fyptr[i] = cellIter->template get<Particle::AttributeNames::forceY>();
+                              fzptr[i] = cellIter->template get<Particle::AttributeNames::forceZ>();
+                              ownedptr[i] = cellIter->template get<Particle::AttributeNames::owned>();
                             })
 
   /**

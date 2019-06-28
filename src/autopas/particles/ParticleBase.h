@@ -183,6 +183,34 @@ class ParticleBase {
   typedef typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType, floatType,
                                            floatType>::Type SoAArraysType;
 
+  /**
+   * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
+   * @tparam attribute Attribute name.
+   * @return Value of the requested attribute.
+   * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
+   */
+  template <AttributeNames attribute>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    switch (attribute) {
+      case AttributeNames::id:
+        return getID();
+      case AttributeNames::posX:
+        return getR()[0];
+      case AttributeNames::posY:
+        return getR()[1];
+      case AttributeNames::posZ:
+        return getR()[2];
+      case AttributeNames::forceX:
+        return getF()[0];
+      case AttributeNames::forceY:
+        return getF()[1];
+      case AttributeNames::forceZ:
+        return getF()[2];
+      case AttributeNames::owned:
+        return isOwned() ? 1. : 0.;
+    }
+  }
+
 #if defined(AUTOPAS_CUDA)
   /**
    * The type for storage arrays for Cuda
