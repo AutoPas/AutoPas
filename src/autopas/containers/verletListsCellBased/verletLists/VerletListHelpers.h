@@ -46,7 +46,10 @@ class VerletListHelpers {
      * @param cutoffskin
      */
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
-        : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskin * cutoffskin) {}
+        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(
+              typename Particle::ParticleFloatingPointType(0.)),
+          _verletListsAoS(verletListsAoS),
+          _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
 

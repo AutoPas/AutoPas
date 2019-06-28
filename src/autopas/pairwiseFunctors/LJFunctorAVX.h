@@ -47,7 +47,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    */
   explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift, bool duplicatedCalculation = false)
 #ifdef __AVX__
-      : _one{_mm256_set1_pd(1.)},
+      : Functor<Particle, ParticleCell>(cutoff),
+        _one{_mm256_set1_pd(1.)},
         _masks{
             _mm256_set_epi64x(0, 0, 0, -1),
             _mm256_set_epi64x(0, 0, -1, -1),
