@@ -35,4 +35,4 @@ class Timer {
  private:
   std::chrono::high_resolution_clock::time_point _startTime;
 };
-}  // namespace autopas
+}  // namespace autopas::utils
