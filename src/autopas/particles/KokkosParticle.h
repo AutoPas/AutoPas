@@ -150,6 +150,12 @@ class KokkosParticle : public Particle {
   KOKKOS_INLINE_FUNCTION
   FloatVectorType get_f_inline() const { return _f; }
 #endif
+
+/**
+ * type of SoA storage, used for compatibility reasons
+ */
+typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
+
 };
 
 }  // namespace autopas

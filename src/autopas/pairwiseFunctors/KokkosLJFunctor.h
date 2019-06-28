@@ -10,6 +10,8 @@
 
 #ifdef AUTOPAS_KOKKOS
 #include <Kokkos_Core.hpp>
+#include "autopas/utils/KokkosTypes.h"
+#include "autopas/utils/KokkosHelper.h"
 #endif
 
 namespace autopas {
@@ -20,7 +22,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both>
 
-class KokkosLJFunctor {
+class KokkosLJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType>{
+    using SoAArraysType = typename Particle::SoAArraysType;
  private:
   float _cutoff_square, _epsilon24, _sigma_square;
   bool _newton3;
@@ -47,21 +50,26 @@ class KokkosLJFunctor {
     _newton3 = newton3;
   }
 #ifdef AUTOPAS_KOKKOS
-
   KOKKOS_INLINE_FUNCTION
-  void AoSFunctorInline(const KokkosParticle &i, const KokkosParticle &j) const {
-    // precondition, newton3 off
-    KOKKOS_FLOAT dr2 = KokkosHelper::subDot(i.get_r_inline(), j.get_r_inline());
-    KOKKOS_FLOAT invdr2 = 1. / dr2;
-    KOKKOS_FLOAT lj6 = _sigma_square * invdr2;
-    lj6 = lj6 * lj6 * lj6;
-    KOKKOS_FLOAT lj12 = lj6 * lj6;
-    KOKKOS_FLOAT lj12m6 = lj12 - lj6;
-    KOKKOS_FLOAT fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
-
-    KokkosHelper::subDotMulScalarAddF(i.get_r_inline(), j.get_r_inline(), i.get_f_inline(), fac);  // to parallel_for
-  }
+  void AoSFunctorInline(const Particle &i, const Particle &j) const;
 #endif
 };
 
+#ifdef AUTOPAS_KOKKOS
+    template<class Particle, class ParticleCell, FunctorN3Modes useNewton3>
+    KOKKOS_INLINE_FUNCTION
+    void KokkosLJFunctor<Particle, ParticleCell, useNewton3>::AoSFunctorInline(const Particle &i, const Particle &j) const {
+      KOKKOS_FLOAT dr2 = KokkosHelper::subDot(i.get_r_inline(), j.get_r_inline());
+      KOKKOS_FLOAT invdr2 = 1. / dr2;
+      KOKKOS_FLOAT lj6 = _sigma_square * invdr2;
+      lj6 = lj6 * lj6 * lj6;
+      KOKKOS_FLOAT lj12 = lj6 * lj6;
+      KOKKOS_FLOAT lj12m6 = lj12 - lj6;
+      KOKKOS_FLOAT fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
+
+      KokkosHelper::subDotMulScalarAddF(i.get_r_inline(), j.get_r_inline(), i.get_f_inline(), fac);  // to parallel_for
+
+    }
+
+#endif
 }  // namespace autopas
