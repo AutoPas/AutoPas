@@ -11,9 +11,9 @@ Alternatively you can build the documentation on your own:
 * `make doc_doxygen`
 
 ## Requirements
-* cmake 3.13 or newer
+* cmake 3.14 or newer
 * make (build-essentials) or ninja
-* a c++17 compiler (gcc7, clang8 and icpc 2018 are tested)
+* a c++17 compiler (gcc7, clang8 and icpc 2019 are tested)
 
 ## Building AutoPas
 build instructions for make:
