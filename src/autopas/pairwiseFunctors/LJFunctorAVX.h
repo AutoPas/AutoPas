@@ -337,7 +337,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, _epsilon24);
     const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
 
-      //TODO #####################################################                v
     const __m256d facMasked = masked
                                   ? _mm256_and_pd(fac, _mm256_and_pd(cutoffMask, mask))
                                   : _mm256_and_pd(fac, cutoffMask);
@@ -397,16 +396,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
                      double* const x2ptr, double* const y2ptr, double* const z2ptr, double* fx2ptr, double* fy2ptr, double* fz2ptr, int r2,
                      __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum, bool newton3){
 
-    int permArray[4][4] = {{0,1,2,3},{1,2,3,0},{2,3,0,1},{3,0,1,2}};
-
-
-    unsigned long masks [4][4] = {{ULONG_MAX, ULONG_MAX, ULONG_MAX, ULONG_MAX},{ULONG_MAX,0,0,0},{ULONG_MAX,ULONG_MAX,0,0},{ULONG_MAX,ULONG_MAX,ULONG_MAX,0}};
-    unsigned long *mask1ptr = masks[r1]; //depends on r1
-    unsigned long *mask2ptr = masks[r2]; //depends on r2
-
-
-    __m256i mask1 = _mm256_loadu_si256((__m256i *) &mask1ptr[0]);
-    __m256i mask2 = _mm256_loadu_si256((__m256i *) &mask2ptr[0]);
+    __m256i mask1 = _masks[r1-1];
+    __m256i mask2 = _masks[r2-1];
 
     __m256d x1 = masked1 ? _mm256_maskload_pd(&x1ptr[0], mask1) : _mm256_load_pd(&x1ptr[0]);
     __m256d y1 = masked1 ? _mm256_maskload_pd(&y1ptr[0], mask1) : _mm256_load_pd(&y1ptr[0]);
@@ -426,7 +417,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
 
     for (unsigned int a = 0; a < 4; a++) {
-
 
 
       __m256d mask1and2;
@@ -556,14 +546,14 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
 
           //std::cout << "########## false, false " << i << " " << j << std::endl;
-          SoAPermKernel<false, false>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], 0,
-                               &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], 0,
+          SoAPermKernel<false, false>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], 1,
+                               &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], 1,
                                &virialSumX, &virialSumY, &virialSumZ, &upotSum, newton3);
         }
         const int rest2 = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest2 > 0) {
           //std::cout << "########## false, true " << i << std::endl;
-          SoAPermKernel<false, true>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], 0,
+          SoAPermKernel<false, true>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], 1,
                                &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], rest2,
                                &virialSumX, &virialSumY, &virialSumZ, &upotSum, newton3);
 
@@ -578,7 +568,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
             //std::cout << "########## true, false " << j << std::endl;
             SoAPermKernel<true, false>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], rest1,
-                                 &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], 0,
+                                 &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], 1,
                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, newton3);
             }
           const int rest2 = (int)(soa2.getNumParticles() & (vecLength - 1));
