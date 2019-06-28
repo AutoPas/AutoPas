@@ -20,8 +20,9 @@ namespace autopas {
 
 /**
  * Default size for a cache line.
+ * @todo C++17: replace value by std::hardware_destructive_interference_size
+ * not yet possible: as of 27.06.2019 this(P0154R1) is in neither libstc++ (gnu) nor libc++ (clang)
  */
-// @todo C++17: replace value by std::hardware_destructive_interference_size
 constexpr unsigned int DEFAULT_CACHE_LINE_SIZE{64};
 
 /**
