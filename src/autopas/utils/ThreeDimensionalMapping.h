@@ -10,12 +10,12 @@
 #include <array>
 #include <type_traits>
 
-namespace autopas::utils {
 /**
  * Namespace to handle the conversion between one dimensional and three dimensional indices.
  * The running index is x.
  */
-namespace ThreeDimensionalMapping {
+namespace autopas::utils::ThreeDimensionalMapping {
+
 /**
  * Convert a 3d index to a 1d index.
  * @tparam T Type of the indices.
@@ -61,5 +61,4 @@ constexpr std::array<T, 3> oneToThreeD(T ind, const std::array<T, 3> &dims) {
   return pos;
 }
 
-}  // namespace ThreeDimensionalMapping
-}  // namespace autopas::utils
+}  // namespace autopas::utils::ThreeDimensionalMapping

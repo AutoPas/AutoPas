@@ -38,5 +38,11 @@ namespace utils {
  */
 namespace StringUtils {}  // namespace StringUtils
 
+/**
+ * Namespace to handle the conversion between one dimensional and three dimensional indices.
+ * The running index is x.
+ */
+namespace ThreeDimensionalMapping {}  // namespace ThreeDimensionalMapping
+
 }  // namespace utils
 }  // namespace autopas
