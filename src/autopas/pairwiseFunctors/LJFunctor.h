@@ -146,8 +146,15 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
    * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
+   * @todo: Remove __attribute__((no_sanitize_thread)) when #285 is fixed.
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void
+#if defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+      __attribute__((no_sanitize_thread))
+#endif
+#endif
+      SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();

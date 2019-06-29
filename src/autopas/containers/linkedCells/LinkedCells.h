@@ -111,7 +111,8 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     traversal->endTraversal(this->_cells);
   }
 
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::vector<Particle> updateContainer() override {
     this->deleteHaloParticles();
     std::vector<Particle> invalidParticles;
 #ifdef AUTOPAS_OPENMP
