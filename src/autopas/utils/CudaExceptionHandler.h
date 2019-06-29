@@ -11,8 +11,7 @@
 #include "cuda_runtime.h"
 #endif
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 /**
  * Handles exceptions in the context of cuda
  */
@@ -47,5 +46,4 @@ class CudaExceptionHandler {
 #endif
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils

@@ -10,8 +10,8 @@
 //#include <functional>
 #include "autopas/utils/Logger.h"
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
+
 /**
  * enum that defines the behavior of the expectionhandling
  * please check the enum values for a more detailed description
@@ -160,5 +160,4 @@ void ExceptionHandler::exception(std::string exceptionString, First first, Args.
   exception(s);
 }
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils
