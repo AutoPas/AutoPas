@@ -337,12 +337,9 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   }
 
   _vec1D->resize(_numCells);
-
-  //	ParticleCell::_cellBorderAndFlagManager.init(
-  //		_cellsPerDimensionWithHalo,
-  //		_haloBoxMin, _haloBoxMax,
-  //		_boxMin, _boxMax,
-  //		_cellLength);
+  for (auto &cell : *_vec1D) {
+    cell.setCellLength(_cellLength);
+  }
 }
 
 template <class ParticleCell>
