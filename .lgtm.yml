@@ -1,3 +1,6 @@
+path_classifiers:
+  library:
+    - include: "libs/*"
 extraction:
   cpp:
     prepare:    # Customizable step used by all languages.
