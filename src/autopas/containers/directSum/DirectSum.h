@@ -97,7 +97,8 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     traversal->endTraversal(this->_cells);
   }
 
-  std::vector<Particle> AUTOPAS_WARN_UNUSED_RESULT updateContainer() override {
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::vector<Particle> updateContainer() override {
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
     std::vector<Particle> invalidParticles{};
