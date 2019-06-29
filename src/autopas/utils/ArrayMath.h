@@ -9,12 +9,7 @@
 
 #include <array>
 
-namespace autopas {
-
-/**
- * Namespace to handle mathematical operations of floating point std::array's.
- */
-namespace ArrayMath {
+namespace autopas::ArrayMath {
 
 /**
  * Adds two arrays, returns the result.
@@ -153,6 +148,4 @@ constexpr std::array<output_t, SIZE> static_cast_array(const std::array<input_t,
   return result;
 }
 
-}  // namespace ArrayMath
-
-}  // namespace autopas
+}  // namespace autopas::ArrayMath

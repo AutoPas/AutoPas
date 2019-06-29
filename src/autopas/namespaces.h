@@ -15,6 +15,11 @@
 namespace autopas {
 
 /**
+ * Namespace to handle mathematical operations of floating point std::array's.
+ */
+namespace ArrayMath {}
+
+/**
  * This namespace is used for implementation specifics.
  * If you are a developer of AutoPas you might want to take a look inside here.
  */
