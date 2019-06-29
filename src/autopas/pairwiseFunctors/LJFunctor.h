@@ -572,7 +572,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
                                for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
                                  assert(idptr[i] == cellIter->getID());
-                                 cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
+                                 cellIter->template set<Particle::AttributeNames::forceX>(fxptr[i]);
+                                 cellIter->template set<Particle::AttributeNames::forceY>(fyptr[i]);
+                                 cellIter->template set<Particle::AttributeNames::forceZ>(fzptr[i]);
                                })
 
   /**

@@ -211,6 +211,42 @@ class ParticleBase {
     }
   }
 
+  /**
+   * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
+   * @tparam attribute Attribute name.
+   * @param value New value of the requested attribute.
+   * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
+   */
+  template <AttributeNames attribute>
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+    switch (attribute) {
+      case AttributeNames::id:
+        setID(value);
+        break;
+      case AttributeNames::posX:
+        _r[0] = value;
+        break;
+      case AttributeNames::posY:
+        _r[1] = value;
+        break;
+      case AttributeNames::posZ:
+        _r[2] = value;
+        break;
+      case AttributeNames::forceX:
+        _f[0] = value;
+        break;
+      case AttributeNames::forceY:
+        _f[1] = value;
+        break;
+      case AttributeNames::forceZ:
+        _f[2] = value;
+        break;
+      case AttributeNames::owned:
+        setOwned(value == 1.);
+        break;
+    }
+  }
+
 #if defined(AUTOPAS_CUDA)
   /**
    * The type for storage arrays for Cuda
