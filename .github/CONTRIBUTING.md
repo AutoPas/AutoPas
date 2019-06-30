@@ -62,6 +62,7 @@ docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda \
   && cmake -G Ninja .. \
   && ninja"
 ```
+You will not be able to completely compile the unit tests with CUDA without a GPU in your system since CMake will try to run tests during the build process.
 
 ## AutoPas
 ### Namespaces
