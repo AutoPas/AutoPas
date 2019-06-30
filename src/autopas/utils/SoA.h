@@ -74,7 +74,7 @@ class SoA {
    */
   void append(const SoA<SoAArraysType> &other) {
     if (other.getNumParticles() > 0) {
-      append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
   }
 
@@ -217,7 +217,7 @@ class SoA {
 
   // helper function to append a single array
   template <std::size_t attribute>
-  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays, const long viewStart) {
+  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     const auto &otherVector = valArrays.template get<attribute>();
     currentVector.insert(currentVector.end(), otherVector.cbegin() + viewStart, otherVector.cend());
