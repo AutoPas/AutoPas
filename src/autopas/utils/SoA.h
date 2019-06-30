@@ -225,11 +225,9 @@ class SoA {
 
   // actual implementation of append
   template <std::size_t... Is>
-  void append_impl(const SoA<SoAArraysType> &other, std::index_sequence<Is...>) {
-    // @TODO: This is a rather bad solution, but necessary since C++14 lacks fold expressions
-    // @TODO: C++17: replace by (appendSingleArray<Is>(valArrays),...);
-    int unusedArray[] = {(appendSingleArray<Is>(other.soaStorage, other.viewStart), 0)...};
-    (void)unusedArray;  // avoid unused variable warning
+  void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+    // fold expression
+    (appendSingleArray<Is>(valArrays), ...);
   }
 
   // ------------- members ---------------
