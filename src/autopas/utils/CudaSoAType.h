@@ -11,8 +11,7 @@
 #include <vector>
 #include "autopas/utils/CudaDeviceVector.h"
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * Helper struct to get a the CudaSoAType.
@@ -28,5 +27,4 @@ struct CudaSoAType {
   typedef std::tuple<autopas::utils::CudaDeviceVector<soatypes>...> Type;
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils
