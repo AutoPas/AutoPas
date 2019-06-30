@@ -50,6 +50,19 @@ Please keep in mind the following notes while working.
 * Use meaningful commit messages.
 * Please avoid using commits to save your unfinished work before switching branches, this pollutes the commit history. Please use `git stash` instead.
 
+## Docker
+You want to compile AutoPas with CUDA or any sanitizers but do not have the appropriate compiler? Don't fret! There are docker containers for that. The containers are built from the [AutoPas-Dockerfiles repository](https://github.com/AutoPas/AutoPas-Dockerfiles) and prebuilds are hosted at [dockerhub](https://hub.docker.com/r/autopas/) (LINK BROKEN / REPO PRIVATE!). To use a compiler from a container either mount your AutoPas folder and start bash in the container:
+```bash
+docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda bash
+```
+or directly start the compilation process:
+```bash
+docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda \
+  bash -c "cd autopas \
+  && cmake -G Ninja .. \
+  && ninja"
+```
+
 ## AutoPas
 ### Namespaces
 * Code in folder `src` should belong to namespace `autopas`.
