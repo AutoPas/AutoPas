@@ -12,8 +12,7 @@
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
-namespace internal {
+namespace autopas::internal {
 /**
  * RegionParticleIterator to iterate over all particles within a specific region
  * @todo optimize the region particle iterater. Currently we iterate over all
@@ -130,5 +129,4 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
   std::vector<size_t> _indicesInRegion;
   size_t _currentRegionIndex;
 };
-}  // namespace internal
-}  // namespace autopas
+}  // namespace autopas::internal
