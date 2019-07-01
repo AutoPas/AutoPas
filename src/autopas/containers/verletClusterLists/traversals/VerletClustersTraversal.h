@@ -22,7 +22,6 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout
 class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
-  using index_t = typename VerletClusterMaths::index_t;
 
  public:
   /**
@@ -36,7 +35,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
 
   DataLayoutOption getDataLayout() const override { return dataLayout; }
   bool getUseNewton3() const override { return useNewton3; }
-  bool isApplicable() const override { return (dataLayout == DataLayoutOption::aos) && not useNewton3; }
+  bool isApplicable() const override { return (dataLayout == DataLayoutOption::aos) and not useNewton3; }
 
   void initTraversal(std::vector<ParticleCell> &cells) override {}
   void endTraversal(std::vector<ParticleCell> &cells) override {}

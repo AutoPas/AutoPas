@@ -31,10 +31,9 @@ class VerletClustersTraversalInterface;
 template <class Particle>
 class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<Particle>> {
   /**
-   * the index type to access the particle cells
-   */
-  using index_t = typename VerletClusterMaths::index_t;
-
+ * the index type to access the particle cells
+ */
+  typedef VerletClusterMaths::index_t index_t;
  public:
   /**
    * Constructor of the VerletClusterLists class.
@@ -164,7 +163,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * Helper method to iterate over all clusters.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
-   * @tparam inParallel If the iteration should be executed in parallel or sequential.
+   * @tparam inParallel If the iteration should be executed in parallel or sequential.  See traverseClustersParallel()
+   * for thread safety.
    * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, int
    * clusterSize, std::vector<Particle*> clusterNeighborList.
    */
@@ -203,7 +203,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Helper method to iterate over all clusters in parallel.
+   * Helper method to iterate over all clusters in parallel. It is safe to modify the particles in the clusters.
+   * Particles must not be added or removed during the traversal.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
    * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
    * clusterSize, std::vector<Particle*> clusterNeighborList.
@@ -242,7 +243,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     auto boxSize = ArrayMath::sub(_boxMax, _boxMin);
 
-    _gridSideLength = guessOptimalGridSideLength(invalidParticles.size(), boxSize);
+    _gridSideLength = estimateOptimalGridSideLength(invalidParticles.size(), boxSize);
     _gridSideLengthReciprocal = 1 / _gridSideLength;
 
     _cellsPerDim = calculateCellsPerDim(boxSize);
@@ -287,12 +288,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Guesses the optimal grid side length.
+   * Estimates the optimal grid side length.
    * @param numParticles The number of particles in the container.
    * @param boxSize The size of the domain.
    * @return an estimated optimal grid side length.
    */
-  virtual double guessOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize) const {
+  virtual double estimateOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize) const {
     double volume = boxSize[0] * boxSize[1] * boxSize[2];
     if (numParticles > 0) {
       // estimate particle density
