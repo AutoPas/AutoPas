@@ -11,9 +11,9 @@ Alternatively you can build the documentation on your own:
 * `make doc_doxygen`
 
 ## Requirements
-* cmake 3.13 or newer
+* cmake 3.14 or newer
 * make (build-essentials) or ninja
-* a c++14 compiler (gcc7, clang6 and icpc 2018 are tested)
+* a c++17 compiler (gcc7, clang8 and icpc 2019 are tested)
 
 ## Building AutoPas
 build instructions for make:
@@ -64,7 +64,8 @@ to get verbose output:
 ```bash
 ctest --verbose
 ```
-* to run specific tests:
+#### How to run specific tests
+
 use the --gtest_filter variable:
 ```bash
 ./tests/testAutopas/runTests --gtest_filter=ArrayMathTest.testAdd*
@@ -109,8 +110,7 @@ class SPHParticle : public autopas::Particle {
 
 }
 ```
-### AutoPas and Containers
-creating your container, adding particles,
+
 ### Functors
 Once you have defined your particle you can start with functors;
 #### Definition
@@ -122,41 +122,64 @@ The particle can be accesses using `iter->` (`*iter` is also possible).
 When created inside a OpenMP parallel region, work is automatically spread over all iterators.
 ```C++
 #pragma omp parallel
-for(auto iter = container.begin(); iter.isValid(); ++iter) {
+for(auto iter = autoPas.begin(); iter.isValid(); ++iter) {
   // user code:
   auto position = iter->getR();
 }
 ```
-### Updating the Container
-#### How
-You can update the container using
-```C++
-ParticleContainer::updateContainer()
-```
-#### When it is necessary
-You have to update the container when the two conditions are fullfilled:
-* If you moved particles
-* You want to use `iteratePairwise()` or a RegionParticleIterator
+### Simulation Loop
+One simulation loop should always consist of the following phases:
 
-#### When it is not enough
-If you moved particles by more than one interaction length.
-If you are planning to move particles by a long distance,
-e.g. because of boundary conditions please delete the particles and add them again:
-```C++
-std::vector<autopas::sph::SPHParticle> invalidParticles;
-for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-  if (/*check*/) {
-    invalidParticles.push_back(*part);
-    part.deleteCurrentParticle();
-  }
-}
-for (auto p: invalidParticles) {
-  sphSystem.addParticle(p);
-}
-```
+1. Updating the Container, which returns a vector of all invalid == leaving particles!
+   ```C++
+   auto invalidParticles = autoPas.updateContainer();
+   ```
 
-#### Special exceptions
-* Verlet-Lists, here it is safe to not update the container as long as particles move not more than a skin radius.
+2. Handling the leaving particles
+   * Apply boundary conditions on them
+   
+   * Potentially send them to other mpi-processes, skip this if MPI is not needed
+   
+   * Add them to the containers using
+      ```C++
+      autoPas.addParticle(particle)
+      ```
+
+3. Handle halo particles:
+   * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
+
+   * Add the particles as haloParticles using 
+      ```C++
+      autoPas.addOrUpdateHaloParticle(haloParticle)
+      ```
+
+4. Perform an iteratePairwise step.
+   ```C++
+   autoPas.iteratePairwise(functor);
+   ```
+
+In some iterations step 1. will return an empty list of invalid particles to benefit of not rebuilding the containers and the associated neighbor lists.
+
+### Using multiple functors
+
+AutoPas is able to work with simulation setups using multiple functors that describe different forces.
+A good demonstration for that is the sph example found under examples/sph or examples/sph-mpi.
+There exist some things you have to be careful about when using multiple functors:
+* If you use multiple functors it is necessary that all functors support the same newton3 options. If there is one functor not supporting newton3, you have to disable newton3 support for AutoPas by calling
+  ```C++
+  autoPas.setAllowedNewton3Options({false});
+  ```
+
+* If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.   
+
+### Inserting additional particles
+Before inserting additional particles (e.g. through a grand-canonical thermostat ), 
+you always have to enforce a containerUpdate on ALL AutoPas instances, i.e., 
+on all mpi processes, by calling  
+```C++
+autoPas.updateContainerForced();
+``` 
+This will invalidate the internal neighbor lists and containers.
 
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).

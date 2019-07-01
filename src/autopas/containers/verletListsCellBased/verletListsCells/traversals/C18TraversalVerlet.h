@@ -43,6 +43,7 @@ class C18TraversalVerlet
    */
   void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
                                                              useNewton3>::verlet_storage_type &verlet) override;
+
   TraversalOption getTraversalType() const override { return TraversalOption::c18Verlet; };
 
   bool isApplicable() const override { return DataLayout == DataLayoutOption::aos; }

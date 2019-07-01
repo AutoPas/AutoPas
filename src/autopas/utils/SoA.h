@@ -56,6 +56,19 @@ class SoA {
   }
 
   /**
+   * @brief Writes / updates the value of an attribute for a specific particle.
+   * @tparam attribute Attribute to update.
+   * @tparam ValueType type of the attribute
+   * @param particleId Particle to update.
+   * @param value New value.
+   */
+  template <int attribute, class ValueType>
+  void write(size_t particleId, const ValueType &value) {
+    soaStorage.template get<attribute>().at(particleId) = value;
+  }
+
+  /**
+   * @brief Writes / updates values of attributes for a specific particle.
    * Appends the other SoA buffer.
    * @param other other buffer.
    */
@@ -205,10 +218,8 @@ class SoA {
   // actual implementation of append
   template <std::size_t... Is>
   void append_impl(utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
-    // @TODO: This is a rather bad solution, but necessary since C++14 lacks fold expressions
-    // @TODO: C++17: replace by (appendSingleArray<Is>(valArrays),...);
-    int unusedArray[] = {(appendSingleArray<Is>(valArrays), 0)...};
-    (void)unusedArray;  // avoid unused variable warning
+    // fold expression
+    (appendSingleArray<Is>(valArrays), ...);
   }
 
   // ------------- members ---------------

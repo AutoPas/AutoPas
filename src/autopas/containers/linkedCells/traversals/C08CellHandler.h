@@ -32,17 +32,17 @@ class C08CellHandler {
    * Constructor of the c08 traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
   explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
-                          const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
+                          const double interactionLength = 1.0,
+                          const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
                           const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
-      : _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
-                                           DataLayout, useNewton3>(pairwiseFunctor)),
+      : _cellFunctor(pairwiseFunctor, interactionLength),
         _cellPairOffsets{},
-        _cutoff(cutoff),
+        _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlap(overlap) {
     computeOffsets(cellsPerDimension);
@@ -74,12 +74,12 @@ class C08CellHandler {
   /**
    * Pair sets for processBaseCell().
    */
-  std::vector<std::pair<unsigned long, unsigned long>> _cellPairOffsets;
+  std::vector<std::tuple<unsigned long, unsigned long, std::array<double, 3>>> _cellPairOffsets;
 
   /**
-   * cutoff radius.
+   * Interaction length (cutoff + skin).
    */
-  const double _cutoff;
+  const double _interactionLength;
 
   /**
    * cell length in CellBlock3D.
@@ -99,12 +99,12 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
 
   const int num_pairs = _cellPairOffsets.size();
   for (int j = 0; j < num_pairs; ++j) {
-    pair<unsigned long, unsigned long> current_pair = _cellPairOffsets[j];
+    const auto &current_pair = _cellPairOffsets[j];
 
-    unsigned long offset1 = current_pair.first;
+    unsigned long offset1 = std::get<0>(current_pair);
     unsigned long cellIndex1 = baseIndex + offset1;
 
-    unsigned long offset2 = current_pair.second;
+    unsigned long offset2 = std::get<1>(current_pair);
     unsigned long cellIndex2 = baseIndex + offset2;
 
     ParticleCell &cell1 = cells[cellIndex1];
@@ -113,7 +113,7 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
     if (cellIndex1 == cellIndex2) {
       this->_cellFunctor.processCell(cell1);
     } else {
-      this->_cellFunctor.processCellPair(cell1, cell2);
+      this->_cellFunctor.processCellPair(cell1, cell2, std::get<2>(current_pair));
     }
   }
 }
@@ -136,7 +136,7 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
 
   _cellPairOffsets.clear();
 
-  const auto cutoffSquare(this->_cutoff * this->_cutoff);
+  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
 
   for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
@@ -151,43 +151,46 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
         const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
         // origin
         {
-          // check whether cell is within cutoff radius
+          // check whether cell is within interaction length
           auto distVec =
               ArrayMath::mul({std::max(0.0, x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
-          if (distSquare <= cutoffSquare) {
-            _cellPairOffsets.push_back(make_pair(cellOffsets[z], offset));
+          if (distSquare <= interactionLengthSquare) {
+            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[z], offset, ArrayMath::normalize(distVec)));
           }
         }
         // back left
         if (y != _overlap[1] and z != 0) {
-          // check whether cell is within cutoff radius
+          // check whether cell is within interaction length
           auto distVec = ArrayMath::mul(
               {std::max(0.0, x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
-          if (distSquare <= cutoffSquare) {
-            _cellPairOffsets.push_back(make_pair(cellOffsets[ov1_squared - ov1 + z], offset));
+          if (distSquare <= interactionLengthSquare) {
+            _cellPairOffsets.push_back(
+                std::make_tuple(cellOffsets[ov1_squared - ov1 + z], offset, ArrayMath::normalize(distVec)));
           }
         }
         // front right
         if (x != _overlap[0] and (y != 0 or z != 0)) {
-          // check whether cell is within cutoff radius
+          // check whether cell is within interaction length
           auto distVec = ArrayMath::mul(
               {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
-          if (distSquare <= cutoffSquare) {
-            _cellPairOffsets.push_back(make_pair(cellOffsets[ov1_squared * _overlap[0] + z], offset));
+          if (distSquare <= interactionLengthSquare) {
+            _cellPairOffsets.push_back(
+                std::make_tuple(cellOffsets[ov1_squared * _overlap[0] + z], offset, ArrayMath::normalize(distVec)));
           }
         }
         // back right
         if (y != _overlap[1] and x != _overlap[0] and z != 0) {
-          // check whether cell is within cutoff radius
+          // check whether cell is within interaction length
           auto distVec = ArrayMath::mul(
               {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)},
               _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
-          if (distSquare <= cutoffSquare) {
-            _cellPairOffsets.push_back(make_pair(cellOffsets[ov1_squared * ov1 - ov1 + z], offset));
+          if (distSquare <= interactionLengthSquare) {
+            _cellPairOffsets.push_back(
+                std::make_tuple(cellOffsets[ov1_squared * ov1 - ov1 + z], offset, ArrayMath::normalize(distVec)));
           }
         }
       }
