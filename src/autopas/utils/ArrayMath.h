@@ -11,12 +11,7 @@
 #include <cmath>
 #include <numeric>
 
-namespace autopas {
-
-/**
- * Namespace to handle mathematical operations of floating point std::array's.
- */
-namespace ArrayMath {
+namespace autopas::ArrayMath {
 
 /**
  * Adds two arrays, returns the result.
@@ -168,5 +163,4 @@ constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
   return mulScalar(a, static_cast<T>(1) / length);
 }
 
-}  // namespace ArrayMath
-}  // namespace autopas
+}  // namespace autopas::ArrayMath

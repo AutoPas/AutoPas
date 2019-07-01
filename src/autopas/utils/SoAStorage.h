@@ -8,8 +8,7 @@
 
 #include <tuple>
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * SoAStorage is a helper to access the stored SoA's.
@@ -18,14 +17,12 @@ namespace utils {
 template <class SoAArraysType>
 class SoAStorage {
  private:
-  // End of iteration/recursion.
   template <std::size_t I = 0, typename FunctorT>
-  inline typename std::enable_if<I == std::tuple_size<SoAArraysType>::value, void>::type for_each(FunctorT) {}
-
-  template <std::size_t I = 0, typename FunctorT>
-  inline typename std::enable_if<(I < std::tuple_size<SoAArraysType>::value), void>::type for_each(FunctorT f) {
-    f(get<I>());
-    for_each<I + 1, FunctorT>(f);
+  inline void for_each(FunctorT f) {
+    if constexpr (I < std::tuple_size<SoAArraysType>::value) {
+      f(get<I>());
+      for_each<I + 1, FunctorT>(f);
+    }
   }
 
  public:
@@ -36,6 +33,7 @@ class SoAStorage {
    * @tparam FunctorT the type of the functor
    * @param func a functor, that should be applied on all vectors (e.g. lambda functions, should take `auto& list` as an
    * argument)
+   * @todo c++20: replace with expansion statement: `for... (auto& elem : tup) {}`
    */
   template <typename FunctorT>
   void apply(FunctorT func) {
@@ -65,5 +63,4 @@ class SoAStorage {
   SoAArraysType soaStorageTuple;
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils
