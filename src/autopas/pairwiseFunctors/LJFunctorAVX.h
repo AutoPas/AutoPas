@@ -473,6 +473,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
                               ownedptr[i] = cellIter->isOwned() ? 1. : 0.;
                             })
 
+  constexpr static std::array<typename Particle::AttributeNames, 8> neededAttr{
+      Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+      Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+      Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+
+  constexpr static std::array<typename Particle::AttributeNames, 3> computedAttr{
+      Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
   /**
    * soaextractor
    * @param cell

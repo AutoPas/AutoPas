@@ -512,6 +512,22 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
     }
   })
 
+  constexpr static std::array<typename Particle::AttributeNames, 16> neededAttr{
+      autopas::sph::SPHParticle::AttributeNames::mass,     autopas::sph::SPHParticle::AttributeNames::density,
+      autopas::sph::SPHParticle::AttributeNames::smth,     autopas::sph::SPHParticle::AttributeNames::soundSpeed,
+      autopas::sph::SPHParticle::AttributeNames::pressure, autopas::sph::SPHParticle::AttributeNames::vsigmax,
+      autopas::sph::SPHParticle::AttributeNames::engDot,   autopas::sph::SPHParticle::AttributeNames::posX,
+      autopas::sph::SPHParticle::AttributeNames::posY,     autopas::sph::SPHParticle::AttributeNames::posZ,
+      autopas::sph::SPHParticle::AttributeNames::velX,     autopas::sph::SPHParticle::AttributeNames::velY,
+      autopas::sph::SPHParticle::AttributeNames::velZ,     autopas::sph::SPHParticle::AttributeNames::accX,
+      autopas::sph::SPHParticle::AttributeNames::accY,     autopas::sph::SPHParticle::AttributeNames::accZ};
+
+  constexpr static std::array<typename Particle::AttributeNames, 5> computedAttr{
+      autopas::sph::SPHParticle::AttributeNames::vsigmax, autopas::sph::SPHParticle::AttributeNames::engDot,
+      autopas::sph::SPHParticle::AttributeNames::accX,    autopas::sph::SPHParticle::AttributeNames::accY,
+      autopas::sph::SPHParticle::AttributeNames::accZ,
+  };
+
   /**
    * SoAExtractor for SPHCalcDensityFunctor.
    * Extracts vsigmax, acceleration and engdot.

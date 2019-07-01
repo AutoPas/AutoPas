@@ -246,6 +246,12 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     }
   })
 
+  constexpr static std::array<typename Particle::AttributeNames, 6> neededAttr{
+      Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+      Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::density};
+
+  constexpr static std::array<typename Particle::AttributeNames, 1> computedAttr{Particle::AttributeNames::density};
+
   /**
    * SoAExtractor for SPHCalcDensityFunctor.
    * Extracts density.
