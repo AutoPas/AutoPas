@@ -15,8 +15,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 
-namespace autopas {
-namespace internal {
+namespace autopas::internal {
 /**
  * ParticleIterator class to access particles inside of a container.
  * The particles can be accessed using "iterator->" or "*iterator". The next
@@ -224,5 +223,4 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    */
   IteratorBehavior _behavior;
 };
-}  // namespace internal
-}  // namespace autopas
+}  // namespace autopas::internal

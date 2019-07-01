@@ -7,9 +7,7 @@
 #pragma once
 #include "autopas/utils/ArrayMath.h"
 
-namespace autopas {
-
-namespace internal {
+namespace autopas::internal {
 /**
  * Updates a found particle within cellI to the values of particleI.
  * Checks whether a particle with the same id as particleI is within the cell
@@ -53,5 +51,4 @@ static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const Pa
   }
   return false;
 }
-}  // namespace internal
-}  // namespace autopas
+}  // namespace autopas::internal
