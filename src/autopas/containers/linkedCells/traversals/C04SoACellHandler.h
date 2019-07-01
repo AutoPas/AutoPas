@@ -173,7 +173,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
 
   // get all information for current thread
-  const auto threadID = autopas_get_thread_num();
+  const auto threadID = static_cast<size_t>(autopas_get_thread_num());
   auto &currentSlice = _currentSlices[threadID * _cacheOffset];
   auto &combinationSlice = _combinationSlices[threadID];
   auto &combinationSlicesOffsets = _combinationSlicesOffsets[threadID];
@@ -428,7 +428,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::resizeBuffers() {
-  const unsigned int numThreads = static_cast<unsigned int>(autopas_get_max_threads());
+  const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);
     const auto cellOffsetsSize = _overlap[0] + 1;
