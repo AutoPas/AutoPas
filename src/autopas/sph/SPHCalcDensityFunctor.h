@@ -25,6 +25,9 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   /// particle cell type
   typedef FullParticleCell<Particle> ParticleCell;
 
+  SPHCalcDensityFunctor()
+      : autopas::Functor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType(0.)){};
+
   bool isRelevantForTuning() override { return true; }
 
   bool allowsNewton3() override { return true; }
