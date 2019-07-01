@@ -62,7 +62,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     return std::make_tuple(TraversalOption::verletClusterCellsTraversal, DataLayout, useNewton3);
   }
 
-  void setVerletListPointer(unsigned int *clusterSize, std::vector<std::vector<size_t>> *neighborCellIds,
+  void setVerletListPointer(unsigned int *clusterSize, std::vector<std::vector<std::vector<size_t>>> *neighborCellIds,
                             size_t *neighborMatrixDim, utils::CudaDeviceVector<unsigned int> *neighborMatrix) override {
     _clusterSize = clusterSize;
     _neighborCellIds = neighborCellIds;
@@ -73,6 +73,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   void rebuildVerlet(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
                      std::vector<std::array<double, 6>> &boundingBoxes, double distance) override {
     this->_cellsPerDimension = dims;
+    int interactionRadius = 3;
 
     const size_t cellsSize = cells.size();
     _neighborCellIds->clear();
@@ -80,48 +81,24 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
 
     if (DataLayout == DataLayoutOption::aos or DataLayout == DataLayoutOption::soa) {
       for (size_t i = 0; i < cellsSize; ++i) {
-        for (size_t j = i + 1; j < cellsSize; ++j) {
-          if (boxesOverlap(boundingBoxes[i], boundingBoxes[j], distance)) {
-            (*_neighborCellIds)[i].push_back(j);
+        auto pos = utils::ThreeDimensionalMapping::oneToThreeD(i, this->_cellsPerDimension);
+        for (int x = -interactionRadius; x <= interactionRadius; ++x) {
+          if (pos[0] + x < this->_cellsPerDimension[0]) {
+            for (int y = -interactionRadius; y <= interactionRadius; ++y) {
+              if (pos[1] + y < this->_cellsPerDimension[1]) {
+                // add neighbors
+                auto other = utils::ThreeDimensionalMapping::threeToOneD(pos[0] + x, pos[1] + y, pos[0],
+                                                                         this->_cellsPerDimension);
+                boxesOverlap(boundingBoxes[i][cid], boundingBoxes[other][cid], distance);
+              }
+            }
           }
         }
       }
       return;
+
     } else if (DataLayout == DataLayoutOption::cuda) {
       size_t neighborMatrixDim = 0;
-      for (size_t i = 0; i < cellsSize; ++i) {
-        for (size_t j = i + 1; j < cellsSize; ++j) {
-          if (boxesOverlap(boundingBoxes[i], boundingBoxes[j], distance)) {
-            if (useNewton3) {
-              // load balance greedy
-              if ((*_neighborCellIds)[i].size() < (*_neighborCellIds)[j].size())
-                (*_neighborCellIds)[i].push_back(j);
-              else
-                (*_neighborCellIds)[j].push_back(i);
-
-            } else {
-              (*_neighborCellIds)[i].push_back(j);
-              (*_neighborCellIds)[j].push_back(i);
-            }
-          }
-        }
-        // self
-        if (not useNewton3) (*_neighborCellIds)[i].push_back(i);
-        neighborMatrixDim = std::max((*_neighborCellIds)[i].size(), neighborMatrixDim);
-      }
-      ++neighborMatrixDim;
-
-      std::vector<unsigned int> neighborMatrix;
-      for (auto &neighborCellId : (*_neighborCellIds)) {
-        size_t j = 0;
-        for (; j < neighborCellId.size(); ++j) {
-          neighborMatrix.push_back(neighborCellId[j]);
-        }
-
-        for (; j < neighborMatrixDim; ++j) {
-          neighborMatrix.push_back(UINT_MAX);
-        }
-      }
 
       *_neighborMatrixDim = neighborMatrixDim;
 #ifdef AUTOPAS_CUDA
@@ -247,7 +224,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
    * Returns true if the two boxes are within distance
    * @param box1
    * @param box2
-   * @param distance betwwen the boxes to return true
+   * @param distance between the boxes to return true
    * @return true if the boxes are overlapping
    */
   inline bool boxesOverlap(std::array<double, 6> &box1, std::array<double, 6> &box2, double distance) {
@@ -274,7 +251,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   ParticleCell _storageCell;
 
   // id of neighbor clusters of a clusters
-  std::vector<std::vector<size_t>> *_neighborCellIds;
+  std::vector<std::vector<std::vector<size_t>>> *_neighborCellIds;
 
   size_t *_neighborMatrixDim;
   utils::CudaDeviceVector<unsigned int> *_neighborMatrix;
