@@ -19,12 +19,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/NumberSet.h"
 
-namespace autopas {
-namespace utils {
-/**
- * Some functions to parse enums from (input-) strings.
- */
-namespace StringUtils {
+namespace autopas::utils::StringUtils {
 
 /**
  * Converts a Newton3Option to its respective string representation.
@@ -125,6 +120,9 @@ inline std::string to_string(const TraversalOption &option) {
     }
     case autopas::TraversalOption::c01: {
       return "c01";
+    }
+    case autopas::TraversalOption::c04: {
+      return "c04";
     }
     case autopas::TraversalOption::c08: {
       return "c08";
@@ -280,6 +278,8 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
       } else {
         traversalOptions.insert(autopas::TraversalOption::c01);
       }
+    } else if (word.find("c04") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::c04);
     } else if (word.find("c08") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::c08);
     } else if (word.find("18") != std::string::npos) {
@@ -473,6 +473,4 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::str
   std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString, ignoreUnknownOptions);
   return std::make_unique<autopas::NumberSetFinite<double>>(values);
 }
-}  // namespace StringUtils
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils::StringUtils

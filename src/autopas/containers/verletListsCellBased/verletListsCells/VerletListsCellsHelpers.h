@@ -45,6 +45,18 @@ class VerletListsCellsHelpers {
 
     bool isRelevantForTuning() override { return false; }
 
+    bool allowsNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    bool allowsNonNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);

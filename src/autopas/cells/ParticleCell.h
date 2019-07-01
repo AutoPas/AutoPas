@@ -35,7 +35,7 @@ class ParticleCell {
    * adds a Particle to the cell
    * @param p the particle to be added
    */
-  virtual void addParticle(Particle &p) = 0;
+  virtual void addParticle(const Particle &p) = 0;
 
   /**
    * Get an iterator to the start of a ParticleCell
@@ -67,6 +67,18 @@ class ParticleCell {
    * @param index the index of the particle that shall be deleted
    */
   virtual void deleteByIndex(size_t index) = 0;
+
+  /**
+   * Set the side lengths of this cell.
+   * @param cellLength cell side length
+   */
+  virtual void setCellLength(std::array<double, 3> &cellLength) = 0;
+
+  /**
+   * Get the side lengths of this cell.
+   * @return cell side length
+   */
+  virtual std::array<double, 3> getCellLength() const = 0;
 };
 
 }  // namespace autopas

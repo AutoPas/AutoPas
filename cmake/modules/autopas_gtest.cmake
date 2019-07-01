@@ -27,8 +27,8 @@ ExternalProject_Get_Property(gtest source_dir binary_dir)
 # Create a libgtest target to be used as a dependency by test programs
 add_library(
     libgtest
-    IMPORTED
     STATIC
+    IMPORTED
     GLOBAL
 )
 
@@ -47,8 +47,8 @@ set_target_properties(
 # Create a libgmock target to be used as a dependency by test programs
 add_library(
     libgmock
-    IMPORTED
     STATIC
+    IMPORTED
     GLOBAL
 )
 
