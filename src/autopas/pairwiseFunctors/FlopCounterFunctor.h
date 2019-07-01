@@ -38,7 +38,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
    * @param cutoffRadius the cutoff radius
    */
   explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
-      : autopas::Functor<Particle, ParticleCell>(),
+      : Functor<Particle, ParticleCell>(),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}

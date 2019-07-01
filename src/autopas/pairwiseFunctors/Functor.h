@@ -11,6 +11,9 @@
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoA.h"
+
+#include <type_traits>
+
 #if defined(AUTOPAS_CUDA)
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 #endif
@@ -19,6 +22,20 @@ namespace autopas {
 
 template <class Particle>
 class VerletListHelpers;
+
+namespace internal {
+/**
+ * Dummy class to provide empty arrays.
+ * @tparam Particle
+ */
+template <class Particle>
+class Dummy {
+ public:
+  constexpr static std::array<typename Particle::AttributeNames, 0> neededAttr{};
+
+  constexpr static std::array<typename Particle::AttributeNames, 0> computedAttr{};
+};
+}  // namespace internal
 
 /**
  * Functor class. This class describes the pairwise interactions between
@@ -32,7 +49,8 @@ class VerletListHelpers;
  * @tparam Particle the type of Particle
  * @tparam ParticleCell the type of ParticleCell
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
+template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType,
+          typename Impl_t = internal::Dummy<Particle>>
 class Functor {
  public:
   virtual ~Functor() = default;
@@ -176,8 +194,16 @@ class Functor {
    * to the SoA with the specified offset.
    */
   virtual void SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
-    utils::ExceptionHandler::exception("Functor::SoALoader: not yet implemented");
+    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::neededAttr.size()>{});
   }
+
+  /** @copydoc SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) */
+  /*template <typename = std::enable_if_t<not std::is_same<
+                typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
+  void SoALoader(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
+                 ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::neededAttr.size()>{});
+  }*/
 
   /**
    * @brief Copies the data stored in the soa back into the cell.
@@ -234,6 +260,32 @@ class Functor {
     return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
   }
 #endif
+
+ private:
+  /**
+   * Implements loading of SoA buffers.
+   * @tparam cell_t Cell type.
+   * @tparam I Attribute.
+   * @param cell Cell from where the data is loaded.
+   * @param soa  Structure of arrays where the data is copied to.
+   * @param offset Offset within the SoA. The data of the cell should be added
+   * to the SoA with the specified offset.
+   */
+  template <typename cell_t, std::size_t... I>
+  void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
+    soa.resizeArrays(offset + cell.numParticles());
+
+    if (cell.numParticles() == 0) return;
+
+    auto const pointer = std::make_tuple(soa.template begin<I>()...);
+
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      //(assign<I>(pointer, cellIter->template get<Impl_t::neededAttr[I]>(), i), ...);
+      ((std::get<I>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[I]>()), ...);
+    }
+  }
 };
 
 /**
