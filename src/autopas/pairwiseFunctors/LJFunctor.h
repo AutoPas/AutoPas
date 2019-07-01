@@ -528,60 +528,59 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @param soa
    * @param offset
    */
-  AUTOPAS_FUNCTOR_SOALOADER(
-      cell, soa, offset,
-      // @todo it is probably better to resize the soa only once, before calling
-      // SoALoader (verlet-list only)
-      soa.resizeArrays(offset + cell.numParticles());
+  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
+                            // @todo it is probably better to resize the soa only once, before calling
+                            // SoALoader (verlet-list only)
+                            soa.resizeArrays(offset + cell.numParticles());
 
-      if (cell.numParticles() == 0) return;
+                            if (cell.numParticles() == 0) return;
 
-      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-      auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-      auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-      auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-      auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-      auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-      auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-      auto *const __restrict__ ownedptr = soa.template begin<Particle::AttributeNames::owned>();
+                            auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+                            auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+                            auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+                            auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+                            auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+                            auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+                            auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+                            auto *const __restrict__ ownedptr = soa.template begin<Particle::AttributeNames::owned>();
 
-      auto cellIter = cell.begin();
-      // load particles in SoAs
-      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-        idptr[i] = cellIter->getID();
-        xptr[i] = cellIter->getR()[0];
-        yptr[i] = cellIter->getR()[1];
-        zptr[i] = cellIter->getR()[2];
-        fxptr[i] = cellIter->getF()[0];
-        fyptr[i] = cellIter->getF()[1];
-        fzptr[i] = cellIter->getF()[2];
-        ownedptr[i] = cellIter->isOwned() ? 1. : 0.;
-      })
+                            auto cellIter = cell.begin();
+                            // load particles in SoAs
+                            for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+                              idptr[i] = cellIter->getID();
+                              xptr[i] = cellIter->getR()[0];
+                              yptr[i] = cellIter->getR()[1];
+                              zptr[i] = cellIter->getR()[2];
+                              fxptr[i] = cellIter->getF()[0];
+                              fyptr[i] = cellIter->getF()[1];
+                              fzptr[i] = cellIter->getF()[2];
+                              ownedptr[i] = cellIter->isOwned() ? 1. : 0.;
+                            })
+
   /**
    * soaextractor
    * @param cell
    * @param soa
    * @param offset
    */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(
-      cell, soa, offset,
-      // body start
-      if (soa.getNumParticles() == 0) return;
+  AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset,
+                               // body start
+                               if (soa.getNumParticles() == 0) return;
 
-      auto cellIter = cell.begin();
+                               auto cellIter = cell.begin();
 
 #ifndef NDEBUG
-      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
+                               auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
 #endif
 
-      auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-      auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-      auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+                               auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+                               auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+                               auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-      for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
-        assert(idptr[i] == cellIter->getID());
-        cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
-      })
+                               for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
+                                 assert(idptr[i] == cellIter->getID());
+                                 cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
+                               })
 
   /**
    * Get the number of flops used per kernel call. This should count the
