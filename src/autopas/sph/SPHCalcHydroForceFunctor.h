@@ -26,8 +26,8 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   typedef FullParticleCell<Particle> ParticleCell;
 
   SPHCalcHydroForceFunctor()
-      // for the cutoff sanity check this works only if smoothing length is never > 1. (currently hard coded to 0.012)
-      : autopas::Functor<Particle, ParticleCell>(autopas::sph::SPHKernels::getKernelSupportRadius()){};
+      // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
+      : autopas::Functor<Particle, ParticleCell>(0.){};
 
   bool isRelevantForTuning() override { return true; }
 
