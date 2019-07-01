@@ -343,6 +343,11 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
                               zptr[i] = cellIter->getR()[2];
                             })
 
+  constexpr static std::array<typename Particle::AttributeNames, 3> neededAttr{
+      Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ};
+
+  constexpr static std::array<typename Particle::AttributeNames, 0> computedAttr{/*Nothing*/};
+
   /**
    * Empty SoAExtractor.
    * Nothing to be done yet.
