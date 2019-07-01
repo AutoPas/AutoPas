@@ -26,6 +26,7 @@ enum TraversalOption {
   verletTraversal = 9,
   c01CombinedSoA = 10,
   c04SoA = 11,
+  c04 = 12,
   dummyTraversal = 666,
 };
 
@@ -45,6 +46,7 @@ static const std::set<TraversalOption> allTraversalOptions = {
     TraversalOption::verletTraversal,
     TraversalOption::c01CombinedSoA,
     TraversalOption::c04SoA,
+    TraversalOption::c04,
 };
 
 }  // namespace autopas
