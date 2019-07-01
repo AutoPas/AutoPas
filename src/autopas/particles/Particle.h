@@ -14,7 +14,7 @@ namespace autopas {
 /**
  * Particle with all variables in 32 bit precision
  */
-typedef ParticleBase<float, unsigned int> ParticleFP32;
+typedef ParticleBase<float, unsigned long> ParticleFP32;
 /**
  * Particle with all variables in 64 bit precision
  */
