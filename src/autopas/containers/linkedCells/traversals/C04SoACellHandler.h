@@ -208,9 +208,22 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
         cell1->_particleSoABuffer.setViewStart(0);
         if (slice == currentSlice) {
           // process stripe with itself
-          // make sure no previously applied view is active
-          cell1->_particleSoABuffer.setViewLength(-1);
+          const auto numParticlesBaseCell = cells[baseIndex].numParticles();
+
+          cell1->_particleSoABuffer.setViewLength(numParticlesBaseCell);
+
           this->_cellFunctor.processCell(*cell1);
+          /// @todo fix interactions of base cell slices
+          /*cell1->_particleSoABuffer.setViewStart(numParticlesBaseCell);
+
+          cells[baseIndex]._particleSoABuffer.clear();
+          cells[baseIndex]._particleSoABuffer.append(cell1->_particleSoABuffer);
+
+          cell1->_particleSoABuffer.setViewStart(0);
+          cell1->_particleSoABuffer.resizeArrays(numParticlesBaseCell);
+          this->_cellFunctor.processCellPair(*cell1, cells[baseIndex]);
+
+          cell1->_particleSoABuffer.append(cells[baseIndex]._particleSoABuffer);*/
           continue;
         } else {
           // interval in other stripe
