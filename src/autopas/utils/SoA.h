@@ -74,7 +74,7 @@ class SoA {
    */
   void append(const SoA<SoAArraysType> &other) {
     if (other.getNumParticles() > 0) {
-      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+      append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
   }
 
@@ -161,6 +161,8 @@ class SoA {
    */
   void clear() {
     soaStorage.apply([](auto &list) { list.clear(); });
+    viewStart = 0;
+    viewLength = -1;
   }
 
   /**
@@ -217,17 +219,20 @@ class SoA {
 
   // helper function to append a single array
   template <std::size_t attribute>
-  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
+  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays, const size_t otherViewStart) {
     auto &currentVector = soaStorage.template get<attribute>();
     const auto &otherVector = valArrays.template get<attribute>();
-    currentVector.insert(currentVector.end(), otherVector.cbegin() + viewStart, otherVector.cend());
+    if (otherVector.size() < otherViewStart) {
+      return;
+    }
+    currentVector.insert(currentVector.end(), otherVector.begin() + otherViewStart, otherVector.end());
   }
 
   // actual implementation of append
   template <std::size_t... Is>
-  void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+  void append_impl(const SoA<SoAArraysType> &other, std::index_sequence<Is...>) {
     // fold expression
-    (appendSingleArray<Is>(valArrays), ...);
+    (appendSingleArray<Is>(other.soaStorage, other.viewStart), ...);
   }
 
   // ------------- members ---------------
