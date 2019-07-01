@@ -200,6 +200,30 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   const auto &getNeighborLists() const { return _neighborLists; }
 
+  /**
+   * Returns the grid side length of the grids in the container.
+   * @return the grid side length of the grids in the container.
+   */
+  auto getGridSideLength() const { return _gridSideLength; }
+
+  /**
+   * Returns the number of grids per dimension on the container.
+   * @return the number of grids per dimension on the container.
+   */
+  auto getCellsPerDimension() const { return _cellsPerDim; }
+
+  /**
+   * Returns the grids of this container for usage in traversals.
+   * @return the grids of this container for usage in traversals.
+   */
+  auto &getGrids() { return _clusters; }
+
+  /**
+   * Returns the number of particles in each cluster.
+   * @return the number of particles in each cluster.
+   */
+  auto getClusterSize() const { return _clusterSize; }
+
  protected:
   /**
    * Helper method to sequentially iterate over all clusters.
