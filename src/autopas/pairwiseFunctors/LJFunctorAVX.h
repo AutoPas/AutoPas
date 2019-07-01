@@ -235,7 +235,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
 
     const __m256d facMasked = masked
-                                  ? _mm256_and_pd(fac, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                                  //? _mm256_and_pd(fac, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                                  ? _mm256_and_pd(fac, _mm256_and_pd(cutoffMask, (__m256d)(_masks[rest - 1])))
                                   : _mm256_and_pd(fac, cutoffMask);
 
     const __m256d fx = _mm256_mul_pd(drx, facMasked);
@@ -272,7 +273,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m256d shift6V = _mm256_set1_pd(_shift6);
       const __m256d upotPART2 = _mm256_add_pd(shift6V, upotPART1);
       const __m256d upot =
-          masked ? _mm256_and_pd(upotPART2, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
+          masked ? _mm256_and_pd(upotPART2, _mm256_and_pd(cutoffMask, (__m256d)(_masks[rest - 1])))
                  : _mm256_and_pd(upotPART2, cutoffMask);
 
       *virialSumX = _mm256_add_pd(*virialSumX, virialx);
@@ -365,7 +366,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
  private:
   template <bool stage>
-  __m256d permute(__m256d in) {
+  inline __m256d permute(__m256d in) {
     if (stage) {
       return _mm256_permute_pd(in, 0x05);           // [x2  x3  x0  x1]
     } else {
@@ -394,6 +395,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d y2 = masked2 ? _mm256_maskload_pd(&y2ptr[0], mask2) : _mm256_load_pd(&y2ptr[0]);
     __m256d z2 = masked2 ? _mm256_maskload_pd(&z2ptr[0], mask2) : _mm256_load_pd(&z2ptr[0]);
 
+    //TODO only if newton 3 - else all 0s
     __m256d fx2 = masked2 ? _mm256_maskload_pd(&fx2ptr[0], mask2) : _mm256_load_pd(&fx2ptr[0]);
     __m256d fy2 = masked2 ? _mm256_maskload_pd(&fy2ptr[0], mask2) : _mm256_load_pd(&fy2ptr[0]);
     __m256d fz2 = masked2 ? _mm256_maskload_pd(&fz2ptr[0], mask2) : _mm256_load_pd(&fz2ptr[0]);
@@ -403,19 +405,15 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
 
       __m256d mask1and2;
-      bool masked = false;
       if (masked1 and masked2) {
-        mask1and2 = _mm256_and_pd(_mm256_castsi256_pd(mask1), _mm256_castsi256_pd(mask2));
-        masked = true;
+        mask1and2 = _mm256_and_pd((__m256d)(mask1), (__m256d)(mask2));
       } else if (masked1) {
-        mask1and2 = _mm256_castsi256_pd(mask1);
-        masked = true;
+        mask1and2 = (__m256d)(mask1);
       } else if (masked2) {
-        mask1and2 = _mm256_castsi256_pd(mask2);
-        masked = true;
+        mask1and2 = (__m256d)(mask2);
       }
 
-      if (masked) {
+      if (masked1 || masked2) {
         if (newton3) {
           SoAKernelNew<true, true>(x1, y1, z1, x2, y2, z2, &fx1, &fy1, &fz1, &fx2, &fy2, &fz2,
                                     virialSumX, virialSumY, virialSumZ, upotSum, mask1and2);
@@ -435,7 +433,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       
 
 
-      if (a%2) {
+      if (a&1) {
       x2 = permute<true>(x2);
       y2 = permute<true>(y2);
       z2 = permute<true>(z2);
@@ -447,7 +445,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           fz2 = permute<true>(fz2);
         }
 
-      mask2 = _mm256_castpd_si256(permute<true>(_mm256_castsi256_pd(mask2)));
+      mask2 = _mm256_castpd_si256(permute<true>((__m256d)(mask2)));
       } else {
       x2 = permute<false>(x2);
       y2 = permute<false>(y2);
@@ -460,7 +458,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           fz2 = permute<false>(fz2);
         }
 
-      mask2 = _mm256_castpd_si256(permute<false>(_mm256_castsi256_pd(mask2)));
+      mask2 = _mm256_castpd_si256(permute<false>((__m256d)(mask2)));
       }
     }
 
@@ -562,67 +560,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
         }
       }
-
-/*
- *    for (unsigned int i = 0; i < soa1.getNumParticles(); i ++) {
- *      __m256d fxacc = _mm256_setzero_pd();
- *      __m256d fyacc = _mm256_setzero_pd();
- *      __m256d fzacc = _mm256_setzero_pd();
- *
- *      const __m256d x1 = _mm256_broadcast_sd(&x1ptr[i]);
- *      const __m256d y1 = _mm256_broadcast_sd(&y1ptr[i]);
- *      const __m256d z1 = _mm256_broadcast_sd(&z1ptr[i]);
- *
- *      // floor soa2 numParticles to multiple of vecLength
- *      // soon to be deprecated
- *      if (newton3) {
- *        unsigned int j = 0;
- *        for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
- *          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
- *                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum);
- *        }
- *        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
- *        if (rest > 0)
- *          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
- *                                &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
- *      } else {
- *        unsigned int j = 0;
- *        for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
- *          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
- *                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum);
- *        }
- *        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
- *        if (rest > 0)
- *          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
- *                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
- *      }
- *
- *      // horizontally reduce fDacc to sumfD
- *      // deprecated
- *      const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
- *      const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
- *
- *      const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
- *      const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
- *
- *      const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
- *      const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
- *
- *      const union {
- *        __m128d reg;
- *        double arr[2];
- *      } sumfxfyVEC = {.reg = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh)};
- *      const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
- *
- *      const double sumfx = sumfxfyVEC.arr[0];
- *      const double sumfy = sumfxfyVEC.arr[1];
- *      const double sumfz = _mm_cvtsd_f64(sumfzVEC);
- *
- *      fx1ptr[i] += sumfx;
- *      fy1ptr[i] += sumfy;
- *      fz1ptr[i] += sumfz;
- *    }
- */
 
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
