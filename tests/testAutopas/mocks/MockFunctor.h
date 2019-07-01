@@ -23,6 +23,8 @@
 template <class Particle, class ParticleCell>
 class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
  public:
+  MockFunctor() : autopas::Functor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType(0.)){};
+
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
   MOCK_METHOD3_T(AoSFunctor, void(Particle &i, Particle &j, bool newton3));
 

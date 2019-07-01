@@ -8,8 +8,8 @@
 #include "testingHelpers/NumThreadGuard.h"
 
 VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
-    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(), 2),
-      _verletListsCells_cs2(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(), 2,
+    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff()),
+      _verletListsCells_cs2(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(),
                             2.0) {
   double eps = 1.0;
   double sig = 1.0;
@@ -34,10 +34,15 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
       traversalC18N3FLOPS(dim, &flopsC18N3);
   autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, true>
       traversalSliN3FLOPS(dim, &flopsSliN3);
+  verletListsCells.rebuildNeighborLists(&traversalC01FLOPS);
   verletListsCells.iteratePairwise(&flopsC01, &traversalC01FLOPS);
+  verletListsCells.rebuildNeighborLists(&traversalC18FLOPS);
   verletListsCells.iteratePairwise(&flopsC18, &traversalC18FLOPS);
+  verletListsCells.rebuildNeighborLists(&traversalSliFLOPS);
   verletListsCells.iteratePairwise(&flopsSli, &traversalSliFLOPS);
+  verletListsCells.rebuildNeighborLists(&traversalC18N3FLOPS);
   verletListsCells.iteratePairwise(&flopsC18N3, &traversalC18N3FLOPS);
+  verletListsCells.rebuildNeighborLists(&traversalSliN3FLOPS);
   verletListsCells.iteratePairwise(&flopsSliN3, &traversalSliN3FLOPS);
 
   EXPECT_EQ(flopsC18.getKernelCalls(), flopsC01.getKernelCalls());
@@ -55,7 +60,7 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
  * @param numMolecules number of molecules in the container
  */
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
-  NumThreadGuard(1);
+  NumThreadGuard numThreadGuard(1);
 
   RandomGenerator::fillWithParticles(_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
                                      numMolecules);

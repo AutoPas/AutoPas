@@ -29,12 +29,16 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
  public:
   bool isRelevantForTuning() override { return false; }
 
+  bool allowsNewton3() override { return true; }
+
+  bool allowsNonNewton3() override { return true; }
+
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
-      : autopas::Functor<Particle, ParticleCell>(),
+  explicit FlopCounterFunctor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType cutoffRadius)
+      : autopas::Functor<Particle, ParticleCell>(cutoffRadius),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}

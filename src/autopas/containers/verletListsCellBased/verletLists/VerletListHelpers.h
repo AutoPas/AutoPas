@@ -46,11 +46,25 @@ class VerletListHelpers {
      * @param cutoffskin
      */
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
-        : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskin * cutoffskin) {}
+        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(cutoffskin),
+          _verletListsAoS(verletListsAoS),
+          _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
 
-    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    bool allowsNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    bool allowsNonNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());
       double distsquare = ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
@@ -61,9 +75,7 @@ class VerletListHelpers {
         // also the list is not allowed to be resized!
 
         _verletListsAoS.at(&i).push_back(&j);
-        if (not newton3) {
-          _verletListsAoS.at(&j).push_back(&i);
-        }
+        // no newton3 here, as AoSFunctor(j,i) will also be called if newton3 is disabled.
       }
     }
 
@@ -98,6 +110,7 @@ class VerletListHelpers {
           if (dr2 < _cutoffskinsquared) {
             currentList.push_back(idptr[j]);
             if (not newton3) {
+              // we need this here, as SoAFunctor(soa) will only be called once for both newton3=true and false.
               _verletListsAoS.at(idptr[j]).push_back(idptr[i]);
             }
           }
@@ -109,6 +122,7 @@ class VerletListHelpers {
      * SoAFunctor for the verlet list generation. (two cell version)
      * @param soa1 soa of first cell
      * @param soa2 soa of second cell
+     * @note: newton3 is ignored here, as for newton3=false SoAFunctor(soa2, soa1) will also be called.
      */
     void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
@@ -207,12 +221,27 @@ class VerletListHelpers {
     /**
      * Constructor
      * @param verletListsAoS
-     * @param cutoffsquared
+     * @param cutoff
      */
-    VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
-        : _verletListsAoS(verletListsAoS), _cutoffsquared(cutoffsquared), _valid(true) {}
+    VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoff)
+        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(cutoff),
+          _verletListsAoS(verletListsAoS),
+          _cutoffsquared(cutoff * cutoff),
+          _valid(true) {}
 
     bool isRelevantForTuning() override { return false; }
+
+    bool allowsNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    bool allowsNonNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());

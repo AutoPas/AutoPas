@@ -68,11 +68,12 @@ int main(int argc, char **argv) {
 
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({33., 33., 33.});
   double cutoff = 3.0;
+  double skin = 0.;
   double epsilon = 2.0;
   double sigma = 0.4;
 
-  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
-  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
+  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff, skin);
+  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff, skin);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.8, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);

@@ -27,7 +27,7 @@ class MoleculeLJ : public Particle {
    */
   explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
 
-  virtual ~MoleculeLJ() = default;
+  ~MoleculeLJ() override = default;
 
   /**
    * get epsilon (characteristic energy of the lj potential)
