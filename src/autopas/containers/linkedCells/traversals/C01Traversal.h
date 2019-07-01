@@ -176,7 +176,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   if (combineSoA) {
     // Iteration along x
 
-    const auto threadID = static_cast<unsigned int>(autopas_get_thread_num());
+    const auto threadID = static_cast<size_t>(autopas_get_thread_num());
     auto &currentSlice = _currentSlices[threadID * _cacheOffset];
     auto &combinationSlice = _combinationSlices[threadID];
 
@@ -270,7 +270,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   }
   // resize buffers
   if (DataLayout == DataLayoutOption::soa) {
-    const auto numThreads = static_cast<unsigned int>(autopas_get_max_threads());
+    const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
     if (_combinationSlices.size() != numThreads) {
       _combinationSlices.resize(numThreads);
       const auto cellOffsetsSize = _cellOffsets.size();
