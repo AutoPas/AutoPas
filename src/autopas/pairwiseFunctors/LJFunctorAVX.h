@@ -69,7 +69,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
   }
 #else
-      : _one{0}, _masks{0, 0, 0}, _cutoffsquare{0}, _epsilon24{0}, _sigmasquare{0} {
+      : Functor<Particle, ParticleCell>(cutoff),
+        _one{0},
+        _masks{0, 0, 0},
+        _cutoffsquare{0},
+        _epsilon24{0},
+        _sigmasquare{0} {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
