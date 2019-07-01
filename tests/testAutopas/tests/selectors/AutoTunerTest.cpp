@@ -37,7 +37,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 #ifndef AUTOPAS_CUDA
   const size_t expectedNumberOfIterations = 36 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 48 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 50 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;
