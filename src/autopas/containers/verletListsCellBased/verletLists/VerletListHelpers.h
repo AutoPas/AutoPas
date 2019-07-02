@@ -195,18 +195,7 @@ class VerletListHelpers {
              /*AttributeNames::id,     AttributeNames::posX,   AttributeNames::posY,
               AttributeNames::posZ*/};
 
-    constexpr static std::array<int, 3> computedAttr{AttributeNames::forceX, AttributeNames::forceY,
-                                                     AttributeNames::forceZ};
-    /**
-     * SoAExtractor for verlet list generation.
-     * Currently empty.
-     * @param cell
-     * @param soa
-     * @param offset
-     */
-    void SoAExtractor(ParticleCell_t &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
-      // nothing yet...
-    }
+    constexpr static std::array<int, 0> computedAttr{/*nothing yet...*/};
 
    private:
     AoS_verletlist_storage_type &_verletListsAoS;

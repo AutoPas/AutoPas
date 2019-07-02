@@ -533,33 +533,6 @@ class LJFunctor
       Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
 
   /**
-   * soaextractor
-   * @param cell
-   * @param soa
-   * @param offset
-   */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset,
-                               // body start
-                               if (soa.getNumParticles() == 0) return;
-
-                               auto cellIter = cell.begin();
-
-#ifndef NDEBUG
-                               auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-#endif
-
-                               auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-                               auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-                               auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-                               for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
-                                 assert(idptr[i] == cellIter->getID());
-                                 cellIter->template set<Particle::AttributeNames::forceX>(fxptr[i]);
-                                 cellIter->template set<Particle::AttributeNames::forceY>(fyptr[i]);
-                                 cellIter->template set<Particle::AttributeNames::forceZ>(fzptr[i]);
-                               })
-
-  /**
    * Get the number of flops used per kernel call. This should count the
    * floating point operations needed for two particles that lie within a cutoff
    * radius.

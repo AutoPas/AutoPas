@@ -66,8 +66,6 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
       j.subF(f);
     }
 
-    AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , );
-
    private:
     const double _cutoffSquare;
   };

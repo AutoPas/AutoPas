@@ -62,9 +62,10 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
 
   // virtual void SoAExtractor(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell_t &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
-  MOCK_METHOD3_T(SoAExtractor,
-                 void(ParticleCell_t &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
+  MOCK_METHOD2_T(SoAExtractor,
+                 void(autopas::ParticleCell<Particle> &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD3_T(SoAExtractor, void(autopas::ParticleCell<Particle> &cell,
+                                    autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   MOCK_METHOD3_T(SoAExtractorVerlet,
                  void(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,

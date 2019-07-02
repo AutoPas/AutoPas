@@ -452,31 +452,6 @@ class LJFunctorAVX
 
   constexpr static std::array<typename Particle::AttributeNames, 3> computedAttr{
       Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
-  /**
-   * soaextractor
-   * @param cell
-   * @param soa
-   * @param offset
-   */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(
-      cell, soa, offset,
-      // body start
-      if (soa.getNumParticles() == 0) return;
-
-      auto cellIter = cell.begin();
-
-#ifndef NDEBUG
-      auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-#endif
-
-      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-      for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
-        assert(idptr[i] == cellIter->getID());
-        cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
-      })
 
   /**
    * Get the number of flops used per kernel call. This should count the

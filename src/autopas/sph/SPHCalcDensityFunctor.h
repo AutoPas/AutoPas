@@ -223,25 +223,6 @@ class SPHCalcDensityFunctor
       Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::density};
 
   constexpr static std::array<typename Particle::AttributeNames, 1> computedAttr{Particle::AttributeNames::density};
-
-  /**
-   * SoAExtractor for SPHCalcDensityFunctor.
-   * Extracts density.
-   * @param cell
-   * @param soa
-   * @param offset
-   */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, {
-    // function body
-    if (cell.numParticles() == 0) return;
-    double *const __restrict__ densptr = soa.begin<Particle::AttributeNames::density>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      cellIter->setDensity(densptr[i]);
-    }
-  })
 };
 }  // namespace sph
 }  // namespace autopas

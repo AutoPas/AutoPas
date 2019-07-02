@@ -220,8 +220,8 @@ class Functor {
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
-    utils::ExceptionHandler::exception("Functor::SoAExtractor: not yet implemented");
+  virtual void SoAExtractor(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+    SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Impl_t::computedAttr.size()>{});
   }
 
   /**
@@ -290,7 +290,7 @@ class Functor {
 
     if (cell.numParticles() == 0) return;
 
-    auto const pointer = std::make_tuple(soa.template begin<I>()...);
+    auto const pointer = std::make_tuple(soa.template begin<Impl_t::neededAttr[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
@@ -299,31 +299,31 @@ class Functor {
     }
   }
 
+  /**
+   * Implements extraction of SoA buffers.
+   * @tparam cell_t Cell type.
+   * @tparam I Attribute.
+   * @param cell Cell.
+   * @param soa SoA buffer.
+   * @param offset Offset
+   */
+  template <typename cell_t, std::size_t... I>
+  void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
+    soa.resizeArrays(offset + cell.numParticles());
+
+    if (cell.numParticles() == 0) return;
+
+    auto const pointer = std::make_tuple(soa.template begin<Impl_t::computedAttr[I]>()...);
+
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      (cellIter->template set<Impl_t::computedAttr[I]>(std::get<I>(pointer)[i]), ...);
+    }
+  }
+
   typename Particle::ParticleFloatingPointType _cutoff;
 };
-
-/**
- * Macro to define the SoAExtractors. The body to be executed is the variadic argument.
- * @param cell name for cell like parameter
- * @param soa name for soa
- * @param offset name for offset
- *
- * @note ParticleCell and SoAArraysType need defined via typedefs in the functor.
- * @note The last Argument is variadic such that commas pose no problem.
- * @note generates two extractors, one for verlet lists, one for the normal case.
- * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
- */
-#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, ...)                                                        \
-  void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override {           \
-    __VA_ARGS__                                                                                                     \
-  }                                                                                                                 \
-  /** @copydoc SoAExtractor(ParticleCell &, ::autopas::SoA<SoAArraysType> &, size_t) */                             \
-  template <typename = std::enable_if_t<not std::is_same<                                                           \
-                typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>> \
-  void SoAExtractor(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,              \
-                    ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {                                        \
-    __VA_ARGS__                                                                                                     \
-  }
 
 }  // namespace autopas
 

@@ -480,32 +480,6 @@ class SPHCalcHydroForceFunctor
   };
 
   /**
-   * SoAExtractor for SPHCalcDensityFunctor.
-   * Extracts vsigmax, acceleration and engdot.
-   * @param cell
-   * @param soa
-   * @param offset
-   */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, {
-    // function body
-    if (cell.numParticles() == 0) return;
-
-    double *const __restrict__ vsigmaxPtr = soa.begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotPtr = soa.begin<Particle::AttributeNames::engDot>();
-    double *const __restrict__ accXPtr = soa.begin<Particle::AttributeNames::accX>();
-    double *const __restrict__ accYPtr = soa.begin<Particle::AttributeNames::accY>();
-    double *const __restrict__ accZPtr = soa.begin<Particle::AttributeNames::accZ>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      cellIter->setVSigMax(vsigmaxPtr[i]);
-      cellIter->setEngDot(engDotPtr[i]);
-      cellIter->setAcceleration({accXPtr[i], accYPtr[i], accZPtr[i]});
-    }
-  })
-
-  /**
    * Get the number of floating point operations used in one full kernel call
    * @return the number of floating point operations
    */
