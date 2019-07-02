@@ -194,7 +194,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
 
   // compute interactions
   for (unsigned long slice = 0; slice < numSlices; slice++) {
-    for (auto const& [offset1, interval] : _offsets[(slice + currentSlice) % numSlices]) {
+    for (auto const &[offset1, interval] : _offsets[(slice + currentSlice) % numSlices]) {
       ParticleCell *cell1;
 
       // special cases (cell1 one is also stored in a combination slice)
