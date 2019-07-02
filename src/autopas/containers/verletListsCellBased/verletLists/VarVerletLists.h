@@ -26,9 +26,13 @@ class VarVerletLists
 
  public:
   /**
-   * @copydoc VerletLists::VerletLists
-   *
-   * @todo Decide if buildVerletListType makes sense and implement it if it does
+   * Constructor of the Variable VerletLists class.
+   * The neighbor lists are build using a search radius of cutoff + skin.
+   * @param boxMin The lower corner of the domain.
+   * @param boxMax The upper corner of the domain.
+   * @param cutoff The cutoff radius of the interaction.
+   * @param skin The skin radius.
+   * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                  const double skin, const double cellSizeFactor = 1.0)
