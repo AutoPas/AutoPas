@@ -165,6 +165,7 @@ int main(int argc, char **argv) {
   auto logLevel(parser.getLogLevel());
   string logFileName(parser.getLogFileName());
   auto measureFlops(parser.getMeasureFlops());
+  auto modelLink(parser.getModelLink());
   auto newton3Options(parser.getNewton3Options());
   auto numIterations(parser.getIterations());
   auto particleSpacing(parser.getParticleSpacing());
@@ -206,6 +207,7 @@ int main(int argc, char **argv) {
   autopas.setTuningInterval(tuningInterval);
   autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
+  autopas.setModelLink(modelLink);
   autopas.setSelectorStrategy(selectorStrategy);
   autopas.setAllowedContainers(containerChoice);
   autopas.setAllowedTraversals(traversalOptions);

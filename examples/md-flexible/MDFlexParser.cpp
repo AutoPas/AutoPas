@@ -33,6 +33,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"tuning-strategy", required_argument, nullptr, 'T'},
                                          {"log-level", required_argument, nullptr, 'l'},
                                          {"log-file", required_argument, nullptr, 'L'},
+                                         {"model-link", required_argument, nullptr, 'M'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk", required_argument, nullptr, 'w'},
@@ -306,6 +307,10 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'M': {
+          modelLink = strArg;
+          break;
+      }
       default: {
         // error message handled by getopt
         displayHelp = true;
@@ -483,3 +488,5 @@ std::set<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { retur
 const string &MDFlexParser::getLogFileName() const { return logFileName; }
 
 autopas::TuningStrategyOption MDFlexParser::getTuningStrategyOption() const { return tuningStrategyOption; }
+
+std::string MDFlexParser::getModelLink() const { return modelLink; }

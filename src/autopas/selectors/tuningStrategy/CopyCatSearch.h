@@ -32,8 +32,9 @@ class CopyCatSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   CopyCatSearch(const std::set<ContainerOption> &allowedContainerOptions,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options)
-      : _containerOptions(allowedContainerOptions) {
+                const std::set<Newton3Option> &allowedNewton3Options,
+                const std::string modelLink)
+      : _containerOptions(allowedContainerOptions), _modelLink(modelLink) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
                         allowedNewton3Options);
@@ -65,7 +66,7 @@ class CopyCatSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   }
 
  private:
-  void generateMLPredictions();
+  void generateMLPredictions(std::string file);
 
   /**
    * Fills the search space with the cartesian product of the given options (minus invalid combinations).
@@ -90,6 +91,7 @@ class CopyCatSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   int _configCounter;
   double _particleCount, _boxLength, _cutoff, _verletSkin;
   bool _hasStatistics{false};
+  std::string _modelLink;
 };
 
 template <typename Particle, typename ParticleCell>
@@ -160,20 +162,20 @@ void CopyCatSearch<Particle, ParticleCell>::populateSearchSpace(
 }
 
 template <typename Particle, typename ParticleCell>
-void CopyCatSearch<Particle, ParticleCell>::generateMLPredictions() {
+void CopyCatSearch<Particle, ParticleCell>::generateMLPredictions(std::string file) {
   // at the start of each configuration, fill a global array with n elements for most efficient configurations
-  const auto model = fdeep::load_model("fdeep_model.json");
+  const auto model = fdeep::load_model(file);
   double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
 
   const auto result = model.predict({fdeep::tensor5(
       fdeep::shape5(1, 1, 1, 1, 4),
-      {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
-       static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
-  std::cout << fdeep::show_tensor5s(result) << std::endl;
-  std::vector<float> probabilityVector = *result[0].as_vector();
+  {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
+            static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
+    std::cout << fdeep::show_tensor5s(result) << std::endl;
+    std::vector<float> probabilityVector = *result[0].as_vector();
 
-  std::cout << "ML Suggestions are:" << std::endl;
-  // find 5 largest values in propabilityVector
+    std::cout << "ML Suggestions are:" << std::endl;
+    // find 5 largest values in propabilityVector
   for (int i = 0; i < 5; ++i) {
     // auto index = find_min(propabilityVector);
     auto index = std::max_element(probabilityVector.begin(), probabilityVector.end()) - probabilityVector.begin();
@@ -193,7 +195,7 @@ bool CopyCatSearch<Particle, ParticleCell>::tune() {
                  _containerSelector->getCurrentContainer()->getBoxMin()[0];
     _cutoff = _containerSelector->getCurrentContainer()->getCutoff();
     _verletSkin = _containerSelector->getCurrentContainer()->getCutoff();
-    generateMLPredictions();
+    generateMLPredictions(_modelLink);
     _hasStatistics = true;
   } else {
     ++_currentConfig;

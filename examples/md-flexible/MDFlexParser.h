@@ -42,6 +42,7 @@ class MDFlexParser {
   unsigned int getTuningInterval() const;
   unsigned int getTuningSamples() const;
   autopas::TuningStrategyOption getTuningStrategyOption() const;
+  std::string getModelLink() const;
   std::string getWriteVTK() const;
   const std::set<autopas::TraversalOption> &getTraversalOptions() const;
   unsigned int getVerletRebuildFrequency() const;
@@ -79,6 +80,7 @@ class MDFlexParser {
   unsigned int tuningSamples = 3;
   std::string writeVTK = "";
   std::string logFileName = "";
+  std::string modelLink = "fdeep_model.json";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
 };

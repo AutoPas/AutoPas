@@ -47,6 +47,7 @@ class AutoPas {
         _verletRebuildFrequency(20),
         _tuningInterval(5000),
         _numSamples(3),
+        _modelLink("fdeep_model.json"),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
@@ -403,6 +404,18 @@ class AutoPas {
     _tuningStrategyOption = tuningStrategyOption;
   }
 
+    /**
+   * Get path to model
+   * @return
+   */
+    std::string getModelLink() const { return _modelLink; }
+
+    /**
+     * Set tuning interval.
+     * @param modelLink
+     */
+    void setModelLink(std::string modelLink) { AutoPas::_modelLink = modelLink; }
+
  private:
   /**
    * Generates a new Tuning Strategy object from the member variables of this autopas object.
@@ -415,7 +428,8 @@ class AutoPas {
                                                                     _allowedDataLayouts, _allowedNewton3Options);
       case TuningStrategyOption::copyCatSearch:
         return std::make_unique<CopyCatSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
-                                                                       _allowedDataLayouts, _allowedNewton3Options);
+                                                                       _allowedDataLayouts, _allowedNewton3Options,
+                                                                       _modelLink);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
@@ -455,6 +469,10 @@ class AutoPas {
    * Number of samples the tuner should collect for each combination.
    */
   unsigned int _numSamples;
+  /*
+   * The path to the learned ML model.
+   */
+  std::string _modelLink;
 
   /**
    * Strategy option for the auto tuner.
