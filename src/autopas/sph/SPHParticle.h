@@ -403,6 +403,49 @@ class SPHParticle : public autopas::Particle {
   typedef autopas::utils::SoAType<double, double, double, double, double, double, double, double, double, double,
                                   double, double, double, double, double, double>::Type SoAArraysType;
 
+  /**
+   * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
+   * @tparam attribute Attribute name.
+   * @return Value of the requested attribute.
+   */
+  template <AttributeNames attribute>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    switch (attribute) {
+      case AttributeNames::mass:
+        return getMass();
+      case AttributeNames::posX:
+        return getR()[0];
+      case AttributeNames::posY:
+        return getR()[1];
+      case AttributeNames::posZ:
+        return getR()[2];
+      case AttributeNames::smth:
+        return getSmoothingLength();
+      case AttributeNames::density:
+        return getDensity();
+      case AttributeNames::velX:
+        return getV()[0];
+      case AttributeNames::velY:
+        return getV()[1];
+      case AttributeNames::velZ:
+        return getV()[2];
+      case AttributeNames::soundSpeed:
+        return getSoundSpeed();
+      case AttributeNames::pressure:
+        return getPressure();
+      case AttributeNames::vsigmax:
+        return getVSigMax();
+      case AttributeNames::accX:
+        return getAcceleration()[0];
+      case AttributeNames::accY:
+        return getAcceleration()[1];
+      case AttributeNames::accZ:
+        return getAcceleration()[2];
+      case AttributeNames::engDot:
+        return getEngDot();
+    }
+  }
+
  private:
   double _density;   // density
   double _pressure;  // pressure
