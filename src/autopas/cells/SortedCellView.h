@@ -27,21 +27,29 @@ namespace autopas {
 template <class Particle, class ParticleCellType>
 class SortedCellView : public ParticleCell<Particle> {
  public:
+  SortedCellView() = default;
   /**
    * Constructs a FullSortedParticleCell.
    * @param cell Cell whose particles are sorted.
    * @param r Normalized vector along particles are sorted.
    */
-  SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
-    _particles.reserve(cell.numParticles());
-    for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
+  SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) { rebuild(r); }
+
+  void addParticle(const Particle &p) override { _cell->addParticle(p); }
+
+  /**
+   * Rebuilds the internal sorted data structure.
+   * @param r Normalized vector along particles are sorted.
+   */
+  void rebuild(const std::array<double, 3> &r) {
+    _particles.clear();
+    _particles.reserve(_cell->numParticles());
+    for (auto p = getStaticCellIter(*_cell); p.isValid(); ++p) {
       _particles.push_back(std::make_pair(ArrayMath::dot(p->getR(), r), &(*p)));
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
   }
-
-  void addParticle(const Particle &m) override {}
 
   SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
 
@@ -81,7 +89,5 @@ class SortedCellView : public ParticleCell<Particle> {
    * Underlying cell.
    */
   ParticleCellType *_cell;
-
- private:
 };
 }  // namespace autopas
