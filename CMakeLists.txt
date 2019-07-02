@@ -8,9 +8,9 @@ cmake_policy(SET CMP0079 NEW)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 14)
-if(NOT CYGWIN)
+if (NOT CYGWIN)
     set(CMAKE_CXX_EXTENSIONS OFF)
-endif()
+endif ()
 
 set(SUPPORTED_COMPILERS "GNU;Intel;Clang")
 
