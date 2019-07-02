@@ -48,7 +48,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate autopas) 
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
-  for (auto iter = autopas->getContainer()->begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
     auto v = iter->getV();
     auto m = iter->getMass();
     auto f = iter->getF();
@@ -68,7 +68,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate autopas) 
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
-  for (auto iter = autopas->getContainer()->begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
     auto m = iter->getMass();
     auto force = iter->getF();
     auto old_force = iter->getOldf();
