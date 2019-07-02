@@ -204,14 +204,6 @@ class Functor {
     SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::neededAttr.size()>{});
   }
 
-  /** @copydoc SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) */
-  /*template <typename cell_t>
-  void SoALoader(cell_t &cell,
-                 ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0, typename std::enable_if_t<not
-  std::is_same<cell_t, ParticleCell_t>::value> = 0) { SoALoaderImpl(cell, soa, offset,
-  std::make_index_sequence<Impl_t::neededAttr.size()>{});
-  }*/
-
   /**
    * @brief Copies the data stored in the soa back into the cell.
    *
