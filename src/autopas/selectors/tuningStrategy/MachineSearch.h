@@ -1,5 +1,5 @@
 /**
- * @file CopyCatSearch.h
+ * @file MachineSearch.h
  * @date 6/16/19
  */
 
@@ -20,16 +20,16 @@ namespace autopas {
  * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
  */
 template <typename Particle, typename ParticleCell>
-class CopyCatSearch : public TuningStrategyInterface<Particle, ParticleCell> {
+class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
  public:
   /**
-   * Constructor for the CopyCatSearch that generates the search space from the allowed options.
+   * Constructor for the MachineSearch that generates the search space from the allowed options.
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    */
-  CopyCatSearch(const std::set<ContainerOption> &allowedContainerOptions,
+  MachineSearch(const std::set<ContainerOption> &allowedContainerOptions,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options,
@@ -95,7 +95,7 @@ class CopyCatSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 };
 
 template <typename Particle, typename ParticleCell>
-void CopyCatSearch<Particle, ParticleCell>::populateSearchSpace(
+void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options) {
   //@TODO dummyTraversal needed until all containers support propper traversals
@@ -155,14 +155,14 @@ void CopyCatSearch<Particle, ParticleCell>::populateSearchSpace(
   }
 
   if (_searchSpace.empty()) {
-    autopas::utils::ExceptionHandler::exception("CopyCatSearch: No valid configurations could be created.");
+    autopas::utils::ExceptionHandler::exception("MachineSearch: No valid configurations could be created.");
   }
 
   _currentConfig = _searchSpace.begin();
 }
 
 template <typename Particle, typename ParticleCell>
-void CopyCatSearch<Particle, ParticleCell>::generateMLPredictions(std::string file) {
+void MachineSearch<Particle, ParticleCell>::generateMLPredictions(std::string file) {
   // at the start of each configuration, fill a global array with n elements for most efficient configurations
   const auto model = fdeep::load_model(file);
   double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
@@ -186,8 +186,8 @@ void CopyCatSearch<Particle, ParticleCell>::generateMLPredictions(std::string fi
 }
 
 template <typename Particle, typename ParticleCell>
-bool CopyCatSearch<Particle, ParticleCell>::tune() {
-  AutoPasLog(debug, "You are in CopyCatSearch::tune()");
+bool MachineSearch<Particle, ParticleCell>::tune() {
+  AutoPasLog(debug, "You are in MachineSearch::tune()");
   bool getStatistics = not _hasStatistics;
   if (getStatistics) {
     _particleCount = _containerSelector->getCurrentContainer()->getNumParticles();
@@ -218,7 +218,7 @@ bool CopyCatSearch<Particle, ParticleCell>::tune() {
 }
 
 template <typename Particle, typename ParticleCell>
-void CopyCatSearch<Particle, ParticleCell>::selectOptimalConfiguration() {
+void MachineSearch<Particle, ParticleCell>::selectOptimalConfiguration() {
   if (_searchSpace.size() == 1) {
     _currentConfig = _searchSpace.begin();
     return;
@@ -227,7 +227,7 @@ void CopyCatSearch<Particle, ParticleCell>::selectOptimalConfiguration() {
   // Time measure strategy
   if (_traversalTimes.empty()) {
     utils::ExceptionHandler::exception(
-        "CopyCatSearch: Trying to determine fastest configuration without any measurements! "
+        "MachineSearch: Trying to determine fastest configuration without any measurements! "
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
@@ -240,7 +240,7 @@ void CopyCatSearch<Particle, ParticleCell>::selectOptimalConfiguration() {
   // sanity check
   if (_currentConfig == _searchSpace.end()) {
     autopas::utils::ExceptionHandler::exception(
-        "CopyCatSearch: Optimal configuration not found in list of configurations!");
+        "MachineSearch: Optimal configuration not found in list of configurations!");
   }
 
   // measurements are not needed anymore
@@ -250,7 +250,7 @@ void CopyCatSearch<Particle, ParticleCell>::selectOptimalConfiguration() {
 }
 
 template <typename Particle, typename ParticleCell>
-void CopyCatSearch<Particle, ParticleCell>::removeN3Option(Newton3Option badNewton3Option) {
+void MachineSearch<Particle, ParticleCell>::removeN3Option(Newton3Option badNewton3Option) {
   for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
     if (ssIter->_newton3 == badNewton3Option) {
       // change current config to the next non-deleted

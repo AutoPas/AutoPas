@@ -14,7 +14,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
-#include "autopas/selectors/tuningStrategy/CopyCatSearch.h"
+#include "autopas/selectors/tuningStrategy/MachineSearch.h"
 
 namespace autopas {
 
@@ -426,8 +426,8 @@ class AutoPas {
       case TuningStrategyOption::fullSearch:
         return std::make_unique<FullSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
                                                                     _allowedDataLayouts, _allowedNewton3Options);
-      case TuningStrategyOption::copyCatSearch:
-        return std::make_unique<CopyCatSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
+      case TuningStrategyOption::machineSearch:
+        return std::make_unique<MachineSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
                                                                        _allowedDataLayouts, _allowedNewton3Options,
                                                                        _modelLink);
     }

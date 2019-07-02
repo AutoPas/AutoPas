@@ -22,7 +22,7 @@ enum TuningStrategyOption {
   /**
    * Sends parameters to local ML model and chooses the best option from them.
    */
-  copyCatSearch = 1,
+  machineSearch = 1,
 };
 
 /**
@@ -30,6 +30,6 @@ enum TuningStrategyOption {
  */
 static const std::set<TuningStrategyOption> allTuningStrategyOptions = {
     TuningStrategyOption::fullSearch,
-    TuningStrategyOption::copyCatSearch,
+    TuningStrategyOption::machineSearch,
 };
 }  // namespace autopas
