@@ -446,6 +446,65 @@ class SPHParticle : public autopas::Particle {
     }
   }
 
+  /**
+   * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
+   * @tparam attribute Attribute name.
+   * @param value New value of the requested attribute.
+   */
+  template <AttributeNames attribute>
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+    switch (attribute) {
+      case AttributeNames::mass:
+        setMass(value);
+        break;
+      case AttributeNames::posX:
+        _r[0] = value;
+        break;
+      case AttributeNames::posY:
+        _r[1] = value;
+        break;
+      case AttributeNames::posZ:
+        _r[2] = value;
+        break;
+      case AttributeNames::smth:
+        setSmoothingLength(value);
+        break;
+      case AttributeNames::density:
+        setDensity(value);
+        break;
+      case AttributeNames::velX:
+        _v[0] = value;
+        break;
+      case AttributeNames::velY:
+        _v[1] = value;
+        break;
+      case AttributeNames::velZ:
+        _v[2] = value;
+        break;
+      case AttributeNames::soundSpeed:
+        setSoundSpeed(value);
+        break;
+      case AttributeNames::pressure:
+        setPressure(value);
+        break;
+      case AttributeNames::vsigmax:
+        setVSigMax(value);
+        break;
+      case AttributeNames::accX:
+        _acc[0] = value;
+        break;
+      case AttributeNames::accY:
+        _acc[1] = value;
+        break;
+      case AttributeNames::accZ:
+        _acc[2] = value;
+        break;
+      case AttributeNames::engDot:
+        setEngDot(value);
+        break;
+    }
+  }
+
  private:
   double _density;   // density
   double _pressure;  // pressure
