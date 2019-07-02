@@ -188,8 +188,7 @@ int main(int argc, char **argv) {
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (measureFlops) {
-    FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-        autopas->getCutoff());
+    FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(autopas->getCutoff());
     autopas->iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
