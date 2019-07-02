@@ -27,7 +27,7 @@ class TuningStrategyInterface {
    * Returns the currently selected configuration object.
    * @return
    */
-  virtual Configuration getCurrentConfiguration() = 0;
+  virtual const Configuration &getCurrentConfiguration() = 0;
 
   /**
    * Selects the next configuration to test or the optimum.

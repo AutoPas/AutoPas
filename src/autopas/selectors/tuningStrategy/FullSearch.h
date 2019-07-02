@@ -50,7 +50,7 @@ class FullSearch : public TuningStrategyInterface {
     }
   }
 
-  inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
+  inline const Configuration &getCurrentConfiguration() override { return *_currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 

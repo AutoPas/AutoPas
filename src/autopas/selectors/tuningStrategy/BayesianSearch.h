@@ -93,13 +93,13 @@ class BayesianSearch : public TuningStrategyInterface {
     tune();
   }
 
-  inline Configuration getCurrentConfiguration() override { return _currentConfig; }
+  inline const Configuration &getCurrentConfiguration() override { return _currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time) override {
     // transform long to a value between -1 and 1
-    _gp.addEvidence(FeatureVector(_currentConfig), time / longMax);
+    _gp.addEvidence(_currentConfig, time / longMax);
   }
 
   inline void reset() override {
@@ -133,7 +133,7 @@ class BayesianSearch : public TuningStrategyInterface {
 
   std::map<TraversalOption, ContainerOption> _traversalContainerMap;
 
-  Configuration _currentConfig;
+  FeatureVector _currentConfig;
   GaussianProcess<FeatureVector> _gp;
   size_t _maxEvidence;
   AcquisitionFunctionOption _predAcqFunction;
@@ -146,19 +146,19 @@ class BayesianSearch : public TuningStrategyInterface {
 bool BayesianSearch::tune() {
   if (searchSpaceIsEmpty()) {
     // no valid configuration
-    _currentConfig = Configuration();
+    _currentConfig = FeatureVector();
     return false;
   }
 
   if (_gp.numEvidence() >= _maxEvidence) {
     // select predicted best config
-    _currentConfig = static_cast<Configuration>(sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction));
+    _currentConfig = sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction);
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }
 
   // select predicted best config for tuning
-  _currentConfig = static_cast<Configuration>(sampleOptimalFeatureVector(_predNumSamples, _predAcqFunction));
+  _currentConfig = sampleOptimalFeatureVector(_predNumSamples, _predAcqFunction);
   return true;
 }
 

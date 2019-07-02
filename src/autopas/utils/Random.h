@@ -25,6 +25,7 @@ class Random {
 
   /**
    * Construct with seed.
+   * @param seed
    */
   explicit Random(unsigned long seed) : _rng(seed) {}
 
@@ -78,6 +79,8 @@ class Random {
   /**
    * Reorders the elements in the given range [first, last) such that each possible
    * permutation of those elements has equal probability of appearance.
+   * @param first
+   * @param last
    */
   template <class RandomIt>
   inline void shuffle(RandomIt first, RandomIt last) {
