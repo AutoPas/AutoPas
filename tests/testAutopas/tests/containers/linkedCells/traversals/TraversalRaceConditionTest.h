@@ -64,8 +64,6 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
     AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , );
 
-    AUTOPAS_FUNCTOR_SOALOADER(, , , );
-
    private:
     // in a grid with separation 1 this includes all neighbors with a Chebyshev
     // distance of 1

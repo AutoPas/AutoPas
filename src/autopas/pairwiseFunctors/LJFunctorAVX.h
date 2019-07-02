@@ -27,7 +27,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
-class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
+class LJFunctorAVX
+    : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctorAVX<Particle, ParticleCell>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -437,41 +438,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
                   size_t iTo, bool newton3) override {
     utils::ExceptionHandler::exception("Verlet SoA functor not implemented!");
   }
-
-  /**
-   * SoALoader
-   * @param cell
-   * @param soa
-   * @param offset
-   */
-  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
-                            // @todo it is probably better to resize the soa only once, before calling
-                            // SoALoader (verlet-list only)
-                            soa.resizeArrays(offset + cell.numParticles());
-
-                            if (cell.numParticles() == 0) return;
-
-                            auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-                            double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-                            double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-                            double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-                            double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-                            double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-                            double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-                            auto *const __restrict__ ownedptr = soa.template begin<Particle::AttributeNames::owned>();
-
-                            auto cellIter = cell.begin();
-                            // load particles in SoAs
-                            for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-                              idptr[i] = cellIter->getID();
-                              xptr[i] = cellIter->getR()[0];
-                              yptr[i] = cellIter->getR()[1];
-                              zptr[i] = cellIter->getR()[2];
-                              fxptr[i] = cellIter->getF()[0];
-                              fyptr[i] = cellIter->getF()[1];
-                              fzptr[i] = cellIter->getF()[2];
-                              ownedptr[i] = cellIter->isOwned() ? 1. : 0.;
-                            })
 
   constexpr static std::array<typename Particle::AttributeNames, 8> neededAttr{
       Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,

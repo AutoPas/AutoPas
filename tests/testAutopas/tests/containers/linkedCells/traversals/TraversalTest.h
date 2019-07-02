@@ -76,8 +76,6 @@ class TraversalTest : public AutoPasTestBase,
     // The following definitions are needed to fullfill requirements of autopas::functor
     AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , );
 
-    AUTOPAS_FUNCTOR_SOALOADER(, , , );
-
    private:
     double cutoffSquare;
   };

@@ -23,7 +23,8 @@ namespace autopas {
  * @tparam ParticleCell
  */
 template <class Particle, class ParticleCell>
-class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
+class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
+                                          FlopCounterFunctor<Particle, ParticleCell>> {
   typedef typename Particle::SoAArraysType SoAArraysType;
 
  public:
@@ -38,10 +39,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
    * @param cutoffRadius the cutoff radius
    */
   explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
-      : Functor<Particle, ParticleCell>(),
-        _cutoffSquare(cutoffRadius * cutoffRadius),
-        _distanceCalculations(0ul),
-        _kernelCalls(0ul) {}
+      : _cutoffSquare(cutoffRadius * cutoffRadius), _distanceCalculations(0ul), _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
@@ -324,24 +322,6 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
 #endif
   }
-
-  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
-                            // body start
-                            soa.resizeArrays(offset + cell.numParticles());
-
-                            if (cell.numParticles() == 0) return;
-
-                            double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-                            double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-                            double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-                            auto cellIter = cell.begin();
-                            // load particles in SoAs
-                            for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-                              xptr[i] = cellIter->getR()[0];
-                              yptr[i] = cellIter->getR()[1];
-                              zptr[i] = cellIter->getR()[2];
-                            })
 
   constexpr static std::array<typename Particle::AttributeNames, 3> neededAttr{
       Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ};

@@ -36,8 +36,9 @@ class VerletListHelpers {
    * This functor can generate verlet lists using the typical pairwise
    * traversal.
    */
-  class VerletListGeneratorFunctor : public autopas::Functor<Particle, VerletListParticleCellType, SoAArraysType> {
-    typedef VerletListParticleCellType ParticleCell;
+  class VerletListGeneratorFunctor
+      : public autopas::Functor<Particle, VerletListParticleCellType, SoAArraysType, VerletListGeneratorFunctor> {
+    typedef VerletListParticleCellType ParticleCell_t;
 
    public:
     /**
@@ -166,7 +167,7 @@ class VerletListHelpers {
      * @param soa
      * @param offset
      */
-    void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+    void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
       assert(offset == 0);
       soa.resizeArrays(cell.numParticles());
 
@@ -188,6 +189,12 @@ class VerletListHelpers {
       }
     }
 
+    constexpr static std::array<int, 0> neededAttr{
+             /*AttributeNames::id,     AttributeNames::posX,   AttributeNames::posY,
+              AttributeNames::posZ*/};
+
+    constexpr static std::array<int, 3> computedAttr{AttributeNames::forceX, AttributeNames::forceY,
+                                                     AttributeNames::forceZ};
     /**
      * SoAExtractor for verlet list generation.
      * Currently empty.
@@ -195,7 +202,7 @@ class VerletListHelpers {
      * @param soa
      * @param offset
      */
-    void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+    void SoAExtractor(ParticleCell_t &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
       // nothing yet...
     }
 

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/cells/ParticleCell.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -47,9 +48,9 @@ class Dummy {
  * overriding allowsNonNewton3 resp. allowsNewton3
  *
  * @tparam Particle the type of Particle
- * @tparam ParticleCell the type of ParticleCell
+ * @tparam ParticleCell_t the type of ParticleCell
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType,
+template <class Particle, class ParticleCell_t, class SoAArraysType = typename Particle::SoAArraysType,
           typename Impl_t = internal::Dummy<Particle>>
 class Functor {
  public:
@@ -193,16 +194,16 @@ class Functor {
    * @param offset Offset within the SoA. The data of the cell should be added
    * to the SoA with the specified offset.
    */
-  virtual void SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+  virtual void SoALoader(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
     SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::neededAttr.size()>{});
   }
 
   /** @copydoc SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) */
-  /*template <typename = std::enable_if_t<not std::is_same<
-                typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
-  void SoALoader(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
-                 ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
-    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::neededAttr.size()>{});
+  /*template <typename cell_t>
+  void SoALoader(cell_t &cell,
+                 ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0, typename std::enable_if_t<not
+  std::is_same<cell_t, ParticleCell_t>::value> = 0) { SoALoaderImpl(cell, soa, offset,
+  std::make_index_sequence<Impl_t::neededAttr.size()>{});
   }*/
 
   /**
@@ -213,7 +214,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+  virtual void SoAExtractor(ParticleCell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
     utils::ExceptionHandler::exception("Functor::SoAExtractor: not yet implemented");
   }
 
@@ -282,31 +283,10 @@ class Functor {
     auto cellIter = cell.begin();
     // load particles in SoAs
     for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      //(assign<I>(pointer, cellIter->template get<Impl_t::neededAttr[I]>(), i), ...);
       ((std::get<I>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[I]>()), ...);
     }
   }
 };
-
-/**
- * Macro to define the SoALoaders. The body to be executed is the variadic argument.
- * @param cell name for cell like parameter
- * @param soa name for soa
- * @param offset name for offset
- *
- * @note The last Argument is variadic such that commas pose no problem.
- * @note generates two loaders, one for verlet lists, one for the normal case.
- * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
- */
-#define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, ...)                                                            \
-  void SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { __VA_ARGS__ } \
-  /** @copydoc SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) */                   \
-  template <typename = std::enable_if_t<not std::is_same<                                                            \
-                typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>  \
-  void SoALoader(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,                  \
-                 ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {                                            \
-    __VA_ARGS__                                                                                                      \
-  }
 
 /**
  * Macro to define the SoAExtractors. The body to be executed is the variadic argument.

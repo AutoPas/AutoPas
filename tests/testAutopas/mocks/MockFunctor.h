@@ -8,6 +8,7 @@
 
 #include <gmock/gmock.h>
 #include "autopas/autopasIncludes.h"
+#include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #if defined(AUTOPAS_CUDA)
 #include "autopas/utils/CudaSoA.h"
@@ -20,8 +21,8 @@
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 #endif
 
-template <class Particle, class ParticleCell>
-class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
+template <class Particle, class ParticleCell_t>
+class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
  public:
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
   MOCK_METHOD3_T(AoSFunctor, void(Particle &i, Particle &j, bool newton3));
@@ -41,16 +42,17 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
 
   // virtual void SoALoader(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoALoader, void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
-  MOCK_METHOD3_T(SoALoader,
-                 void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
+  MOCK_METHOD2_T(SoALoader,
+                 void(autopas::ParticleCell<Particle> &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD3_T(SoALoader, void(autopas::ParticleCell<Particle> &cell,
+                                 autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   MOCK_METHOD3_T(SoALoaderVerlet, void(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
                                        autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   template <typename /*dummy*/ = void,
             typename = std::enable_if_t<not std::is_same<
-                typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
+                typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell_t>::value>>
   void SoALoader(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
                  autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset = 0) {
     SoALoaderVerlet(cell, soa, offset);
@@ -58,16 +60,16 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
 
   // virtual void SoAExtractor(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD2_T(SoAExtractor, void(ParticleCell_t &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
   MOCK_METHOD3_T(SoAExtractor,
-                 void(ParticleCell &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
+                 void(ParticleCell_t &cell, autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   MOCK_METHOD3_T(SoAExtractorVerlet,
                  void(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
                       autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   template <typename = std::enable_if_t<not std::is_same<
-                typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>
+                typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell_t>::value>>
   void SoAExtractor(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
                     autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset = 0) {
     SoAExtractorVerlet(cell, soa, offset);
