@@ -86,13 +86,19 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     enum AttributeNames : int { id, posX, posY, posZ };
 
    public:
+    bool allowsNewton3() override { return true; }
+    bool allowsNonNewton3() override { return true; }
+
     /**
      * Constructor of the functor.
      * @param neighborList The neighbor list to fill.
      * @param cutoffskin The cutoff skin to use.
      */
     VarVerletListPairGeneratorFunctor(VerletNeighborListAsBuild &neighborList, double cutoffskin)
-        : _list(neighborList), _cutoffskinsquared(cutoffskin * cutoffskin) {}
+        : autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
+                           typename VerletListHelpers<Particle>::SoAArraysType>(cutoffskin),
+          _list(neighborList),
+          _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
 
@@ -280,9 +286,9 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     }
 
     if (useNewton3) {
-      startFunctor<true>(linkedCells.getCutoff());
+      startFunctor<true>(linkedCells.getInteractionLength());
     } else {
-      startFunctor<false>(linkedCells.getCutoff());
+      startFunctor<false>(linkedCells.getInteractionLength());
     }
   }
 

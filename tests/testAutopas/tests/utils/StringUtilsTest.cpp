@@ -8,8 +8,8 @@
 
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOption>(autopas::allTraversalOptions,
-                                              "c01, c08, c18, direct; sliced v01, c18verlet, verlet-sliced, cuda-c01, "
-                                              "verlet-lists, c01-combined, var-verlet-lists-as-build",
+                                              "c01, c04, c08, c18, direct; sliced v01, c18verlet, verlet-sliced, "
+                                              "cuda-c01, verlet-lists, c01-combined, var-verlet-lists-as-build",
                                               autopas::utils::StringUtils::parseTraversalOptions);
 }
 

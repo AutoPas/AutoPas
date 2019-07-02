@@ -30,7 +30,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   std::array<double, 3> boxMax = {(double)particlesPerDimension[0], (double)particlesPerDimension[1],
                                   (double)particlesPerDimension[2]};
 
-  NumThreadGuard(8);
+  NumThreadGuard numThreadGuard(8);
 
   /// @todo: test all containers similar to Newton3OnOffTest
   for (auto &container : {autopas::ContainerOption::linkedCells}) {
@@ -62,7 +62,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
         auto defaultParticle = Particle({0, 0, 0}, {0, 0, 0}, 0);
         GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
 
-        SimpleFunctor functor;
+        SimpleFunctor functor(cellLength);
 
         autoPas.iteratePairwise(&functor);
 

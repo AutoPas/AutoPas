@@ -30,9 +30,9 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
   RMMParticleCell2T() = default;
 
   /**
-   * @copydoc ParticleCell::addParticle()
+   * @copydoc ParticleCell::addParticle(const Particle&)
    */
-  void addParticle(Particle &p) override {
+  void addParticle(const Particle &p) override {
     _particleSoABuffer.template push<Particle::AttributeNames::id>(p.getID());
     _particleSoABuffer.template push<Particle::AttributeNames::posX>(p.getR()[0]);
     _particleSoABuffer.template push<Particle::AttributeNames::posY>(p.getR()[1]);
@@ -40,6 +40,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
     _particleSoABuffer.template push<Particle::AttributeNames::forceX>(p.getF()[0]);
     _particleSoABuffer.template push<Particle::AttributeNames::forceY>(p.getF()[1]);
     _particleSoABuffer.template push<Particle::AttributeNames::forceZ>(p.getF()[2]);
+    _particleSoABuffer.template push<Particle::AttributeNames::owned>(p.isOwned());
   }
 
   SingleCellIteratorWrapper<Particle> begin() override {
@@ -60,6 +61,10 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
     _particleSoABuffer.pop_back();
   }
 
+  void setCellLength(std::array<double, 3> &cellLength) override {}
+
+  std::array<double, 3> getCellLength() const override { return std::array<double, 3>{0., 0., 0.}; }
+
   /**
    * The soa buffer of the particle, all information is stored here.
    */
@@ -73,6 +78,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
     rmm_or_not_pointer->setF(
         _particleSoABuffer.template readMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
                                                  Particle::AttributeNames::forceZ>(i));
+    rmm_or_not_pointer->setOwned(_particleSoABuffer.template read<Particle::AttributeNames::owned>(i));
   }
 
   void writeParticleToSoA(size_t index, Particle &particle) {
@@ -80,6 +86,7 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
                                               Particle::AttributeNames::posZ>(index, particle.getR());
     _particleSoABuffer.template writeMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
                                               Particle::AttributeNames::forceZ>(index, particle.getF());
+    _particleSoABuffer.template write<Particle::AttributeNames::owned>(index, particle.isOwned());
   }
 
   /**

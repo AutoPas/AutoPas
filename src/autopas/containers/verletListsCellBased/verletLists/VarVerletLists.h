@@ -31,10 +31,9 @@ class VarVerletLists
    * @todo Decide if buildVerletListType makes sense and implement it if it does
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                 const double skin, const unsigned int rebuildFrequency = 1, const double cellSizeFactor = 1.0)
+                 const double skin, const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, rebuildFrequency, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(),
-            cellSizeFactor),
+            boxMin, boxMax, cutoff, skin, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 
   ContainerOption getContainerType() override { return _neighborList.getContainerType(); }
@@ -43,21 +42,11 @@ class VarVerletLists
    * @copydoc VerletLists::iteratePairwise
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = true) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
     if (auto *traversalInterface = dynamic_cast<VarVerletTraversalInterface<NeighborList> *>(traversal)) {
-      if (this->needsRebuild(traversal->getUseNewton3())) {
-        this->rebuildVerletLists(traversal->getUseNewton3());
-      }
-
-      if (traversal->getDataLayout() == DataLayoutOption::soa and not _neighborList.isSoAListValid()) {
-        _neighborList.generateSoAFromAoS();
-      }
-
       traversalInterface->initVerletTraversal(_neighborList);
       traversalInterface->iterateVerletLists(_neighborList);
       traversalInterface->endVerletTraversal(_neighborList);
-
-      this->_traversalsSinceLastRebuild++;
     } else {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VarVerletLists::iteratePairwise");
@@ -78,7 +67,7 @@ class VarVerletLists
       return false;
     }
 
-    return _neighborList.checkNeighborListValidity(useNewton3, this->_linkedCells.getCutoff() - this->_skin);
+    return _neighborList.checkNeighborListValidity(useNewton3, this->getCutoff());
   }
 
   /**
@@ -87,18 +76,15 @@ class VarVerletLists
    */
   long getNumberOfNeighborPairs() const { return _neighborList.getNumberOfNeighborPairs(); }
 
- protected:
-  /**
-   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwise() appropriately!
-   * @param useNewton3
-   */
-  void rebuildVerletLists(bool useNewton3 = true) {
-    this->_verletBuiltNewton3 = useNewton3;
-    _neighborList.buildNeighborList(this->_linkedCells, useNewton3);
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    this->_verletBuiltNewton3 = traversal->getUseNewton3();
+    _neighborList.buildNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
-    this->_traversalsSinceLastRebuild = 0;
+
+    if (traversal->getDataLayout() == DataLayoutOption::soa and not _neighborList.isSoAListValid()) {
+      _neighborList.generateSoAFromAoS();
+    }
   }
 
  private:

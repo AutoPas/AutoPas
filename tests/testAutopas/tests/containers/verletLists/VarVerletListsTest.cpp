@@ -15,7 +15,10 @@
 
 using ::testing::_;
 using ::testing::AtLeast;
+using ::testing::Each;
+using ::testing::Eq;
 using ::testing::Invoke;
+using ::testing::Values;
 
 TEST_F(VarVerletListsTest, VerletListConstructor) {
   std::array<double, 3> min = {1, 1, 1};
@@ -85,7 +88,8 @@ TEST_F(VarVerletListsTest, testVerletListBuild) {
   autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
+  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -110,7 +114,8 @@ TEST_F(VarVerletListsTest, testVerletList) {
 
   autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&mockFunctor);
-  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
+  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -136,7 +141,8 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
   autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&mockFunctor);
 
-  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
+  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -161,9 +167,10 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
   autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
+  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -191,7 +198,8 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
   autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
+  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -216,16 +224,17 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
   autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
+  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
 
 TEST_F(VarVerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
   autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 1);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
@@ -240,7 +249,8 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
       dummyTraversal(&emptyFunctor);
 
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
+  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
 
   // check validity - should return true
   EXPECT_TRUE(verletLists.checkNeighborListsAreValid());
@@ -248,7 +258,7 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
 
 TEST_F(VarVerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
   autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 1);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
 
@@ -262,7 +272,7 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
       dummyTraversal(&emptyFunctor);
 
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
 
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
@@ -276,7 +286,7 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsAreValidAfterSmallMove) {
 
 TEST_F(VarVerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
   autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 1);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
 
@@ -290,7 +300,7 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
       dummyTraversal(&emptyFunctor);
 
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal, true);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
 
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
@@ -298,13 +308,13 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsAreInvalidAfterMoveLarge) {
     }
   }
 
-  // check validity - should return true
+  // check validity - should return false
   EXPECT_FALSE(verletLists.checkNeighborListsAreValid());
 }
 
 TEST_F(VarVerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
   autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 1);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
 
@@ -318,7 +328,7 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
       dummyTraversal(&emptyFunctor);
 
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
 
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
@@ -333,7 +343,7 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsInvalidMoveFarOutsideCell) {
 
 TEST_F(VarVerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
   autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 1);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
 
@@ -347,7 +357,7 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
       dummyTraversal(&emptyFunctor);
 
   // this will build the verlet list
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.rebuildNeighborLists(&dummyTraversal);
 
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 1) {
@@ -361,63 +371,65 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsValidMoveLittleOutsideCell) {
 }
 
 template <class Container, class Particle>
-void moveUpdateAndExpectEqual(Container &container, Particle &particle, std::array<double, 3> newPosition) {
+bool moveUpdateAndExpectEqual(Container &container, Particle &particle, std::array<double, 3> newPosition) {
   particle.setR(newPosition);
-  container.updateHaloParticle(particle);
-  {
+  /// @todo: uncomment
+  bool updated = container.updateHaloParticle(particle);
+  if (updated) {
     auto iter = container.begin();
     auto r = iter->getR();
-    EXPECT_EQ(r[0], newPosition[0]);
-    EXPECT_EQ(r[1], newPosition[1]);
-    EXPECT_EQ(r[2], newPosition[2]);
+    EXPECT_THAT(r, Eq(newPosition));
   }
-};
+  return updated;
+}
 
 TEST_F(VarVerletListsTest, testUpdateHaloParticle) {
   autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
-      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 3);
+      {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 1);
 
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
 
   // test same position, change velocity
   p.setV({.1, .1, .1});
-  verletLists.updateHaloParticle(p);
+
+  EXPECT_TRUE(verletLists.updateHaloParticle(p));
+
   {
     auto iter = verletLists.begin();
     auto v = iter->getV();
-    for (int i = 0; i < 3; i++) EXPECT_EQ(v[i], 0.1);
+    EXPECT_THAT(v, Each(0.1));
   }
 
   // test different position, same cell
-  moveUpdateAndExpectEqual(verletLists, p, {-.05, 10.1, -.1});
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.05, 10.1, -.1}));
 
   // test different position, neighboring cells
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, -.1}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, -.1}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 10.1, .05}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, .05}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, .05}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, -.1}));
-  EXPECT_NO_THROW(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, .05}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, -.1}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, -.1}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.1, 10.1, .05}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, .05}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, .05}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, -.1}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, .05}));
 
   // check for particle with wrong id
   Particle p2({-.1, -.1, -.1}, {0., 0., 0.}, 2);
-  EXPECT_ANY_THROW(verletLists.updateHaloParticle(p2));
+  EXPECT_FALSE(verletLists.updateHaloParticle(p2));
 
   // test move far, expect throw
-  EXPECT_ANY_THROW(moveUpdateAndExpectEqual(verletLists, p, {3, 3, 3}););
+  EXPECT_FALSE(moveUpdateAndExpectEqual(verletLists, p, {3, 3, 3}));
 
   // test particles at intermediate positions (not at corners)
   Particle p3({-1., 4., 2.}, {0., 0., 0.}, 3);
   verletLists.addHaloParticle(p3);
-  EXPECT_NO_THROW(verletLists.updateHaloParticle(p3));
+  EXPECT_TRUE(verletLists.updateHaloParticle(p3));
   Particle p4({4., 10.2, 2.}, {0., 0., 0.}, 4);
   verletLists.addHaloParticle(p4);
-  EXPECT_NO_THROW(verletLists.updateHaloParticle(p4));
+  EXPECT_TRUE(verletLists.updateHaloParticle(p4));
   Particle p5({5., 4., 10.2}, {0., 0., 0.}, 3);
   verletLists.addHaloParticle(p5);
-  EXPECT_NO_THROW(verletLists.updateHaloParticle(p5));
+  EXPECT_TRUE(verletLists.updateHaloParticle(p5));
 }
 
 TEST_F(VarVerletListsTest, testIsContainerNeeded) {

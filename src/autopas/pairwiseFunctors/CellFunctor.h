@@ -7,12 +7,13 @@
 
 #pragma once
 
+#include "autopas/cells/SortedCellView.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
-
+namespace internal {
 /**
  * A cell functor. This functor is build from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
@@ -31,57 +32,63 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 class CellFunctor {
  public:
   /**
-   * The constructor of CellFunctor
-   * @param f the particlefunctor which should be used for the interaction.
+   * The constructor of CellFunctor.
+   * @param f The particlefunctor which should be used for the interaction.
+   * @param cutoff Cutoff radius. This parameter is only relevant for optimization (sorting). If no parameter is given,
+   * an infinite cutoff radius is used which results in no optimization by sorting.
    */
-  explicit CellFunctor(ParticleFunctor *f) : _functor(f) {}
+  explicit CellFunctor(ParticleFunctor *f, const double cutoff = std::numeric_limits<double>::max())
+      : _functor(f), _cutoff(cutoff) {}
 
   /**
-   * process the interactions inside one cell
+   * Process the interactions inside one cell.
    * @param cell all pairwise interactions of particles inside this cell are
    * calculated
    */
   void processCell(ParticleCell &cell);
 
   /**
-   * process the interactions between the particles of cell1 with particles of
-   * cell2.
+   * Process the interactions between the particles of cell1 with particles of cell2.
    * @param cell1
    * @param cell2
+   * @param r Normalized vector connecting centers of cell1 and cell2. If no parameter is given, a default value is used
+   * which is always applicable.
    */
-  void processCellPair(ParticleCell &cell1, ParticleCell &cell2);
+  void processCellPair(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r = {1., 0., 0.});
 
  private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of
-   * motion
+   * motion.
    * @param cell
    */
   void processCellAoSN3(ParticleCell &cell);
 
   /**
    * Applies the functor to all particle pairs without exploiting newtons third
-   * law of motion
+   * law of motion.
    * @param cell
    */
   void processCellAoSNoN3(ParticleCell &cell);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
-   * exploiting newtons third law of motion
+   * exploiting newtons third law of motion.
    * @param cell1
    * @param cell2
+   * @param r normalized vector connecting centers of cell1 and cell2
    */
-  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2);
+  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
-   * without exploiting newtons third law of motion
+   * without exploiting newtons third law of motion.
    * @param cell1
    * @param cell2
+   * @param r normalized vector connecting centers of cell1 and cell2
    */
 
-  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2);
+  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r);
 
   void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
 
@@ -100,6 +107,13 @@ class CellFunctor {
   void processCellCudaN3(ParticleCell &cell);
 
   ParticleFunctor *_functor;
+
+  const double _cutoff;
+
+  /**
+   * Min. number of particles to start sorting.
+   */
+  constexpr static unsigned long _startSorting = 8;
 };
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
@@ -139,7 +153,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
-    ParticleCell &cell1, ParticleCell &cell2) {
+
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
   if ((DataLayout == DataLayoutOption::soa &&
        (cell1._particleSoABuffer.getNumParticles() == 0 || cell2._particleSoABuffer.getNumParticles() == 0)) ||
       (DataLayout == DataLayoutOption::aos && (cell1.numParticles() == 0 || cell2.numParticles() == 0))) {
@@ -149,9 +164,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   switch (DataLayout) {
     case DataLayoutOption::aos:
       if (useNewton3) {
-        processCellPairAoSN3(cell1, cell2);
+        processCellPairAoSN3(cell1, cell2, r);
       } else {
-        processCellPairAoSNoN3(cell1, cell2);
+        processCellPairAoSNoN3(cell1, cell2, r);
       }
       break;
     case DataLayoutOption::soa:
@@ -175,16 +190,35 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoSN3(
     ParticleCell &cell) {
-  auto outer = getStaticCellIter(cell);
-  for (; outer.isValid(); ++outer) {
-    Particle &p1 = *outer;
+  if (cell.numParticles() > _startSorting) {
+    SortedCellView<Particle, ParticleCell> cellSorted(cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
-    auto inner = outer;
-    ++inner;
-    for (; inner.isValid(); ++inner) {
-      Particle &p2 = *inner;
+    auto outer = cellSorted._particles.begin();
+    for (; outer != cellSorted._particles.end(); ++outer) {
+      Particle &p1 = *outer->second;
 
-      _functor->AoSFunctor(p1, p2, true);
+      auto inner = outer;
+      ++inner;
+      for (; inner != cellSorted._particles.end(); ++inner) {
+        if (std::abs(outer->first - inner->first) > _cutoff) {
+          break;
+        }
+        Particle &p2 = *inner->second;
+        _functor->AoSFunctor(p1, p2, true);
+      }
+    }
+  } else {
+    auto outer = getStaticCellIter(cell);
+    for (; outer.isValid(); ++outer) {
+      Particle &p1 = *outer;
+
+      auto inner = outer;
+      ++inner;
+      for (; inner.isValid(); ++inner) {
+        Particle &p2 = *inner;
+
+        _functor->AoSFunctor(p1, p2, true);
+      }
     }
   }
 }
@@ -193,26 +227,56 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoSNoN3(
     ParticleCell &cell) {
-  auto outer = getStaticCellIter(cell);
-  auto innerStart = outer;
+  if (cell.numParticles() > _startSorting) {
+    SortedCellView<Particle, ParticleCell> cellSorted(cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
-  for (; outer.isValid(); ++outer) {
-    Particle &p1 = *outer;
+    auto outer = cellSorted._particles.begin();
+    auto innerStart = outer;
 
-    // loop over everything until outer
-    auto inner = innerStart;
-    for (; inner != outer; ++inner) {
-      Particle &p2 = *inner;
+    for (; outer != cellSorted._particles.end(); ++outer) {
+      Particle &p1 = *outer->second;
 
-      _functor->AoSFunctor(p1, p2, false);
+      // loop over everything until outer
+      auto inner = innerStart;
+      for (; inner != outer; ++inner) {
+        Particle &p2 = *inner->second;
+
+        _functor->AoSFunctor(p1, p2, false);
+      }
+      // skip over the outer one
+      ++inner;
+
+      // loop over everything after outer
+      for (; inner != cellSorted._particles.end(); ++inner) {
+        if (std::abs(outer->first - inner->first) > _cutoff) {
+          break;
+        }
+        Particle &p2 = *inner->second;
+        _functor->AoSFunctor(p1, p2, false);
+      }
     }
-    // skip over the outer one
-    ++inner;
+  } else {
+    auto outer = getStaticCellIter(cell);
+    auto innerStart = outer;
 
-    // loop over everything after outer
-    for (; inner.isValid(); ++inner) {
-      Particle &p2 = *inner;
-      _functor->AoSFunctor(p1, p2, false);
+    for (; outer.isValid(); ++outer) {
+      Particle &p1 = *outer;
+
+      // loop over everything until outer
+      auto inner = innerStart;
+      for (; inner != outer; ++inner) {
+        Particle &p2 = *inner;
+
+        _functor->AoSFunctor(p1, p2, false);
+      }
+      // skip over the outer one
+      ++inner;
+
+      // loop over everything after outer
+      for (; inner.isValid(); ++inner) {
+        Particle &p2 = *inner;
+        _functor->AoSFunctor(p1, p2, false);
+      }
     }
   }
 }
@@ -220,17 +284,34 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2) {
-  auto outer = getStaticCellIter(cell1);
-  auto innerStart = getStaticCellIter(cell2);
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
+  if (cell1.numParticles() + cell2.numParticles() > _startSorting) {
+    SortedCellView<Particle, ParticleCell> baseSorted(cell1, r);
+    SortedCellView<Particle, ParticleCell> outerSorted(cell2, r);
 
-  for (; outer.isValid(); ++outer) {
-    Particle &p1 = *outer;
+    for (auto &outer : baseSorted._particles) {
+      Particle &p1 = *outer.second;
 
-    for (auto inner = innerStart; inner.isValid(); ++inner) {
-      Particle &p2 = *inner;
+      for (auto &inner : outerSorted._particles) {
+        if (std::abs(outer.first - inner.first) > _cutoff) {
+          break;
+        }
+        Particle &p2 = *inner.second;
+        _functor->AoSFunctor(p1, p2, true);
+      }
+    }
+  } else {
+    auto outer = getStaticCellIter(cell1);
+    auto innerStart = getStaticCellIter(cell2);
 
-      _functor->AoSFunctor(p1, p2, true);
+    for (; outer.isValid(); ++outer) {
+      Particle &p1 = *outer;
+
+      for (auto inner = innerStart; inner.isValid(); ++inner) {
+        Particle &p2 = *inner;
+
+        _functor->AoSFunctor(p1, p2, true);
+      }
     }
   }
 }
@@ -238,17 +319,36 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
-                 bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2) {
-  auto innerStart = getStaticCellIter(cell2);
+                 bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
+                                                        const std::array<double, 3> &r) {
+  if (cell1.numParticles() + cell2.numParticles() > _startSorting) {
+    SortedCellView<Particle, ParticleCell> baseSorted(cell1, r);
+    SortedCellView<Particle, ParticleCell> outerSorted(cell2, r);
 
-  for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
-    Particle &p1 = *outer;
+    for (auto &outer : baseSorted._particles) {
+      Particle &p1 = *outer.second;
 
-    for (auto inner = innerStart; inner.isValid(); ++inner) {
-      Particle &p2 = *inner;
+      for (auto &inner : outerSorted._particles) {
+        if (std::abs(outer.first - inner.first) > _cutoff) {
+          break;
+        }
+        Particle &p2 = *inner.second;
+        _functor->AoSFunctor(p1, p2, false);
+        if (bidirectional) _functor->AoSFunctor(p2, p1, false);
+      }
+    }
+  } else {
+    auto innerStart = getStaticCellIter(cell2);
 
-      _functor->AoSFunctor(p1, p2, false);
-      if (bidirectional) _functor->AoSFunctor(p2, p1, false);
+    for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
+      Particle &p1 = *outer;
+
+      for (auto inner = innerStart; inner.isValid(); ++inner) {
+        Particle &p2 = *inner;
+
+        _functor->AoSFunctor(p1, p2, false);
+        if (bidirectional) _functor->AoSFunctor(p2, p1, false);
+      }
     }
   }
 }
@@ -310,5 +410,5 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     ParticleCell &cell) {
   _functor->CudaFunctor(cell._particleSoABufferDevice, true);
 }
-
+}  // namespace internal
 }  // namespace autopas

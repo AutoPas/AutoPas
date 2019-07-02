@@ -34,7 +34,7 @@ class ParticleIteratorInterface {
    */
   virtual ParticleIteratorInterface<Particle> &operator++() = 0;
 
-  virtual ~ParticleIteratorInterface(){};
+  virtual ~ParticleIteratorInterface() = default;
 
   /**
    * access the particle using *iterator
@@ -64,7 +64,6 @@ class ParticleIteratorInterface {
 };
 
 namespace internal {
-
 /**
  * All implementations of the interface should inherit from this class. It extends the interface just by the clone
  * method, which is needed by the Wrapper.

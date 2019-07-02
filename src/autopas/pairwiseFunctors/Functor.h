@@ -35,6 +35,12 @@ class VerletListHelpers;
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
 class Functor {
  public:
+  /**
+   * Constructor
+   * @param cutoff
+   */
+  Functor(typename Particle::ParticleFloatingPointType cutoff) : _cutoff(cutoff){};
+
   virtual ~Functor() = default;
 
   /**
@@ -200,7 +206,7 @@ class Functor {
    * @return true if and only if this functor provides an interface to
    * Newton3-like functions.
    */
-  virtual bool allowsNewton3() { return true; }
+  virtual bool allowsNewton3() = 0;
 
   /**
    * Specifies whether the functor is capable of non-Newton3-like functors.
@@ -210,7 +216,7 @@ class Functor {
    * @return true if and only if this functor provides an interface to functions
    * that do not utilize Newton3.
    */
-  virtual bool allowsNonNewton3() { return false; }
+  virtual bool allowsNonNewton3() = 0;
 
   /**
    * Specifies whether the functor should be considered for the auto-tuning process.
@@ -234,6 +240,15 @@ class Functor {
     return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
   }
 #endif
+
+  /**
+   * Getter for the functor's cutoff
+   * @return
+   */
+  typename Particle::ParticleFloatingPointType getCutoff() const { return _cutoff; }
+
+ private:
+  typename Particle::ParticleFloatingPointType _cutoff;
 };
 
 /**
