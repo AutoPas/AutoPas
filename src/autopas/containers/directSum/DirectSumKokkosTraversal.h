@@ -61,6 +61,9 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, dataLayo
 
   }
 
+
+
+
     void processCell(ParticleCell &cell);
 
     void processCellPair(ParticleCell &cell1, ParticleCell &cell2);

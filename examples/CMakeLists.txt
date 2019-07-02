@@ -17,6 +17,7 @@ add_custom_target(
 )
 
 add_subdirectory(basic)
+add_subdirectory(kokkos-test)
 add_subdirectory(md-flexible)
 add_subdirectory(sph)
 add_subdirectory(sph-mpi)

@@ -49,6 +49,76 @@ class KokkosLJFunctor : public Functor<Particle, ParticleCell, typename Particle
     _epsilon24 = epsilon * 24.0;
     _newton3 = newton3;
   }
+
+    bool isRelevantForTuning() override {
+      return false;
+    }
+
+    ~KokkosLJFunctor() override = default;
+
+    void initTraversal() override {
+
+    }
+
+    void endTraversal(bool newton3) override {
+
+    }
+
+    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+
+    }
+
+    void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+
+    }
+
+    void SoAFunctor(SoA<SoAArraysType> &soa,
+                    const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
+                    size_t iFrom, size_t iTo, bool newton3) override {
+
+    }
+
+    void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+
+    }
+
+    void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
+
+    }
+
+    void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
+                     CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
+
+    }
+
+    void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
+                         CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
+
+    }
+
+    void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
+                            CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
+
+    }
+
+    AUTOPAS_FUNCTOR_SOALOADER(
+            cell, soa, offset,
+    )
+
+    AUTOPAS_FUNCTOR_SOAEXTRACTOR(
+            cell, soa, offset,
+    )
+
+    bool allowsNewton3() override {
+      return false;
+    }
+
+    bool allowsNonNewton3() override {
+      return true;
+    }
+
+
+
 #ifdef AUTOPAS_KOKKOS
   KOKKOS_INLINE_FUNCTION
   void AoSFunctorInline(const Particle &i, const Particle &j) const;
