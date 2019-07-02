@@ -7,12 +7,10 @@
 #include "LinkedCellsVersusVerletClusterListsTest.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 
-LinkedCellsVersusVerletClusterListsTest::LinkedCellsVersusVerletClusterListsTest() {}
-
 template <autopas::DataLayoutOption dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   Verlet _verletLists{getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2};
-  Linked _linkedCells{getBoxMin(), getBoxMax(), getCutoff()};
+  Linked _linkedCells{getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*cell size factor*/};
 
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
   // now fill second container with the molecules from the first one, because
@@ -30,8 +28,9 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
 
   autopas::VerletClustersTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3>
       verletTraversal(&func);
-  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
-      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3>
+      traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  _verletLists.rebuildNeighborLists(&verletTraversal);
   _verletLists.iteratePairwise(&func, &verletTraversal);
   _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
 

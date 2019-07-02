@@ -37,21 +37,22 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                                const double interactionLength = 1.0,
+                                const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
         _overlap{},
         _dimsPerLength{},
-        _cutoff(cutoff),
+        _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlapLongestAxis(0),
         _sliceThickness{},
         locks(),
         _dataLayoutConverter(pairwiseFunctor) {
-    rebuild(dims);
+    init(dims);
   }
 
   /**
@@ -98,13 +99,13 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
     }
   }
 
+ protected:
   /**
    * Resets the cell structure of the traversal.
    * @param dims
    */
-  void rebuild(const std::array<unsigned long, 3> &dims) override;
+  void init(const std::array<unsigned long, 3> &dims);
 
- protected:
   /**
    * The main traversal of the C01Traversal.
    * @copydetails C01BasedTraversal::c01Traversal()
@@ -124,9 +125,9 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
   std::array<int, 3> _dimsPerLength;
 
   /**
-   * cutoff radius.
+   * Interaction length (cutoff + skin).
    */
-  double _cutoff;
+  double _interactionLength;
 
   /**
    * cell length in CellBlock3D.
@@ -151,12 +152,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::rebuild(
+inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::init(
     const std::array<unsigned long, 3> &dims) {
-  CellPairTraversal<ParticleCell, dataLayout, useNewton3>::rebuild(dims);
-
   for (unsigned int d = 0; d < 3; d++) {
-    _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
+    _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
   }
 
   // find longest dimension

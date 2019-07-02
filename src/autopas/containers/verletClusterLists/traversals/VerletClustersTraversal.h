@@ -22,7 +22,6 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout
 class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
-  using index_t = typename VerletClusterMaths::index_t;
 
  public:
   /**
@@ -36,8 +35,9 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
 
   DataLayoutOption getDataLayout() const override { return dataLayout; }
   bool getUseNewton3() const override { return useNewton3; }
+
   bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa) && not useNewton3;
+    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa) and not useNewton3;
   }
 
   void initTraversal(std::vector<ParticleCell> &cells) override {}
@@ -55,7 +55,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
 
     const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
                                                               std::vector<Particle *> &clusterNeighborList) {
-      index_t currentClusterIndex = aosToSoaMap.at(clusterStart);
+      auto currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
       for (int i = 0; i < clusterSize; i++) {
@@ -78,7 +78,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
 
     const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
                                                               std::vector<Particle *> &clusterNeighborList) {
-      index_t currentClusterIndex = aosToSoaMap.at(clusterStart);
+      auto currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
       for (int i = 0; i < clusterSize; i++) {

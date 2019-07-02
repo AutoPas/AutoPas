@@ -12,8 +12,7 @@
 #include "cuda_runtime.h"
 #endif
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * This class handles storage of vectors on the gpu.
@@ -118,5 +117,4 @@ class CudaDeviceVector {
 #endif
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils

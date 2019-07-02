@@ -27,7 +27,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
     autoPas.addParticle(m);
   }
 
-  autopas::FlopCounterFunctor<Particle, FPCell> flopCounterFunctor(autoPas.getContainer()->getCutoff());
+  autopas::FlopCounterFunctor<Particle, FPCell> flopCounterFunctor(autoPas.getCutoff());
 
   autoPas.iteratePairwise(&flopCounterFunctor);
 
