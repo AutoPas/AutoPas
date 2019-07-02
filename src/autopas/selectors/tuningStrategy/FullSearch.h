@@ -61,7 +61,7 @@ class FullSearch : public TuningStrategyInterface {
     _currentConfig = _searchSpace.begin();
   }
 
-  inline bool tune() override;
+  inline bool tune(bool = false) override;
 
   inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; }
 
@@ -130,7 +130,7 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
   _currentConfig = _searchSpace.begin();
 }
 
-bool FullSearch::tune() {
+bool FullSearch::tune(bool) {
   // repeat as long as traversals are not applicable or we run out of configs
   ++_currentConfig;
   if (_currentConfig == _searchSpace.end()) {

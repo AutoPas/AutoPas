@@ -9,6 +9,7 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <unordered_set>
 #include "GaussianProcess.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/selectors/ContainerSelector.h"
@@ -28,7 +29,11 @@ class BayesianSearch : public TuningStrategyInterface {
   /**
    * max limit of long as double
    */
-  const double longMax = static_cast<double>(std::numeric_limits<long>::max());
+  constexpr static double longMax = static_cast<double>(std::numeric_limits<long>::max());
+  /**
+   * The maximum number of attempts to sample an optimum.
+   */
+  constexpr static size_t maxAttempts = 32;
 
  public:
   /**
@@ -61,6 +66,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _traversalContainerMap(),
         _currentConfig(),
         _gp(1., std::vector<double>(FeatureVector::featureSpaceDims, 1.), 0.001),
+        _invalidConfigs(),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples),
@@ -98,7 +104,7 @@ class BayesianSearch : public TuningStrategyInterface {
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time) override {
-    // transform long to a value between -1 and 1
+    // transform time to a value between 0 and 1
     _gp.addEvidence(_currentConfig, time / longMax);
   }
 
@@ -107,7 +113,7 @@ class BayesianSearch : public TuningStrategyInterface {
     tune();
   }
 
-  inline bool tune() override;
+  inline bool tune(bool currentInvalid = false) override;
 
   inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; }
 
@@ -122,6 +128,7 @@ class BayesianSearch : public TuningStrategyInterface {
    * generates the smallest value.
    * @param n numSamples
    * @param af acquisition function
+   * @return optimal FeatureVector
    */
   inline FeatureVector sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af);
 
@@ -135,6 +142,7 @@ class BayesianSearch : public TuningStrategyInterface {
 
   FeatureVector _currentConfig;
   GaussianProcess<FeatureVector> _gp;
+  std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
   size_t _maxEvidence;
   AcquisitionFunctionOption _predAcqFunction;
   size_t _predNumSamples;
@@ -143,7 +151,11 @@ class BayesianSearch : public TuningStrategyInterface {
   Random _rng;
 };
 
-bool BayesianSearch::tune() {
+bool BayesianSearch::tune(bool currentInvalid) {
+  if (currentInvalid) {
+    _invalidConfigs.insert(_currentConfig);
+  }
+
   if (searchSpaceIsEmpty()) {
     // no valid configuration
     _currentConfig = FeatureVector();
@@ -163,16 +175,39 @@ bool BayesianSearch::tune() {
 }
 
 FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af) {
-  // create n lhs samples
-  std::vector<FeatureVector> samples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _traversalOptions,
-                                                                        _dataLayoutOptions, _newton3Options);
+  for (size_t i = 0; i < maxAttempts; ++i) {
+    // create n lhs samples
+    std::vector<FeatureVector> samples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _traversalOptions,
+                                                                          _dataLayoutOptions, _newton3Options);
 
-  // sample minimum of acquisition function
-  auto best = _gp.sampleAquisitionMin(af, samples);
+    // map container and calculate all acquisition function values
+    std::map<FeatureVector, double> acquisitions;
+    for (auto &sample : samples) {
+      sample.container = _traversalContainerMap[sample.traversal];
+      acquisitions[sample] = _gp.calcAcquisition(af, sample);
+    }
 
-  // set corresponding container
-  best.container = _traversalContainerMap[best.traversal];
-  return best;
+    // sort by acquisition
+    std::sort(samples.begin(), samples.end(), [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
+      return acquisitions[f1] < acquisitions[f2];
+    });
+
+    // find first valid configuration
+    auto best = std::find_if(samples.begin(), samples.end(), [this](const FeatureVector &fv) {
+      return _invalidConfigs.find(fv) == _invalidConfigs.end();
+    });
+
+    if (best != samples.end()) {
+      // valid config found!
+      return *best;
+    } else {
+      // No valid configuration. This should rarely happen.
+      AutoPasLog(debug, "BayesianSearch: Tuning could not generate a valid configuration.");
+    }
+  }
+
+  utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector");
+  return FeatureVector();
 }
 
 bool BayesianSearch::searchSpaceIsTrivial() {

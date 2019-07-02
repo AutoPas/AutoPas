@@ -384,7 +384,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
       } else {
         AutoPasLog(debug, "Skip not applicable configuration {}",
                    _tuningStrategy->getCurrentConfiguration().toString());
-        stillTuning = _tuningStrategy->tune();
+        stillTuning = _tuningStrategy->tune(true);
       }
     }
   }
