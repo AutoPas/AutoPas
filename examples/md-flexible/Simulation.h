@@ -270,8 +270,7 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   //_autopas->iteratePairwise(this->_Functor);
 
   auto *functor = new autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true>(
-      _autopas->getCutoff(), 1., 1.0, 0.0, _autopas->getBoxMin(), _autopas->getBoxMax(),
-      true);  // cutoff, espi, sigma, shift, box min, box max
+      _autopas->getCutoff(), 1., 1.0, 0.0);  // cutoff, espi, sigma, shift, box min, box max
 
   _autopas->iteratePairwise(functor);
   delete functor;

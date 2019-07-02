@@ -123,7 +123,12 @@ int main(int argc, char **argv) {
   // setted default anderen boxMax--> sonst Fehler
   autopas->setBoxMax({2., 2., 2.});
   autopas->init();
+
   autopas::Logger::get()->set_level(logLevel);
+  for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
+    iter->toString();
+  }
+
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
   Simulation.initialize(&parser);
   // Simulation
