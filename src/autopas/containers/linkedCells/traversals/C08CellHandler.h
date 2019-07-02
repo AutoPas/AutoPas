@@ -95,17 +95,9 @@ class C08CellHandler {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
-  using std::pair;
-
-  const int num_pairs = _cellPairOffsets.size();
-  for (int j = 0; j < num_pairs; ++j) {
-    const auto &current_pair = _cellPairOffsets[j];
-
-    unsigned long offset1 = std::get<0>(current_pair);
-    unsigned long cellIndex1 = baseIndex + offset1;
-
-    unsigned long offset2 = std::get<1>(current_pair);
-    unsigned long cellIndex2 = baseIndex + offset2;
+  for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
+    const unsigned long cellIndex1 = baseIndex + offset1;
+    const unsigned long cellIndex2 = baseIndex + offset2;
 
     ParticleCell &cell1 = cells[cellIndex1];
     ParticleCell &cell2 = cells[cellIndex2];
@@ -113,7 +105,7 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
     if (cellIndex1 == cellIndex2) {
       this->_cellFunctor.processCell(cell1);
     } else {
-      this->_cellFunctor.processCellPair(cell1, cell2, std::get<2>(current_pair));
+      this->_cellFunctor.processCellPair(cell1, cell2, r);
     }
   }
 }

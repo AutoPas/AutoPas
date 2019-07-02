@@ -63,7 +63,8 @@ class LJFunctor
    */
   explicit LJFunctor(floatPrecision cutoff, floatPrecision epsilon, floatPrecision sigma, floatPrecision shift,
                      bool duplicatedCalculation = true)
-      : _cutoffsquare{cutoff * cutoff},
+      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
+        _cutoffsquare{cutoff * cutoff},
         _epsilon24{epsilon * (floatPrecision)24.0},
         _sigmasquare{sigma * sigma},
         _shift6{shift * (floatPrecision)6.0},

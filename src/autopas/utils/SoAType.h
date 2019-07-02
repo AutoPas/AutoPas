@@ -11,8 +11,7 @@
 #include <vector>
 #include "autopas/utils/AlignedAllocator.h"
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * Helper struct to get a the SoAType.
@@ -28,5 +27,4 @@ struct SoAType {
   typedef std::tuple<std::vector<soatypes, autopas::AlignedAllocator<soatypes>>...> Type;
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils

@@ -26,6 +26,10 @@ class SPHCalcHydroForceFunctor
   /// particle cell type
   typedef FullParticleCell<Particle> ParticleCell;
 
+  SPHCalcHydroForceFunctor()
+      // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
+      : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcHydroForceFunctor>(0.){};
+
   bool isRelevantForTuning() override { return true; }
 
   bool allowsNewton3() override { return true; }

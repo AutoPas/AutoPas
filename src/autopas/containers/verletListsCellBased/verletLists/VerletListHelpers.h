@@ -47,7 +47,9 @@ class VerletListHelpers {
      * @param cutoffskin
      */
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
-        : _verletListsAoS(verletListsAoS), _cutoffskinsquared(cutoffskin * cutoffskin) {}
+        : Functor<Particle, VerletListParticleCellType, SoAArraysType, VerletListGeneratorFunctor>(cutoffskin),
+          _verletListsAoS(verletListsAoS),
+          _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
 
@@ -226,10 +228,13 @@ class VerletListHelpers {
     /**
      * Constructor
      * @param verletListsAoS
-     * @param cutoffsquared
+     * @param cutoff
      */
-    VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffsquared)
-        : _verletListsAoS(verletListsAoS), _cutoffsquared(cutoffsquared), _valid(true) {}
+    VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoff)
+        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(cutoff),
+          _verletListsAoS(verletListsAoS),
+          _cutoffsquared(cutoff * cutoff),
+          _valid(true) {}
 
     bool isRelevantForTuning() override { return false; }
 

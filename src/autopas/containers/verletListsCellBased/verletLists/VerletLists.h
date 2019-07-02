@@ -112,7 +112,7 @@ class VerletLists
 
     // particles can also simply be very close already:
     typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell> validityCheckerFunctor(
-        _aosNeighborLists, (this->getCutoff() * this->getCutoff()));
+        _aosNeighborLists, (this->getCutoff()));
 
     auto traversal =
         C08Traversal<LinkedParticleCell,

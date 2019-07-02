@@ -38,8 +38,12 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
-      : _cutoffSquare(cutoffRadius * cutoffRadius), _distanceCalculations(0ul), _kernelCalls(0ul) {}
+  explicit FlopCounterFunctor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType cutoffRadius)
+      : autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
+                         FlopCounterFunctor<Particle, ParticleCell>>(cutoffRadius),
+        _cutoffSquare(cutoffRadius * cutoffRadius),
+        _distanceCalculations(0ul),
+        _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto dr = ArrayMath::sub(i.getR(), j.getR());
