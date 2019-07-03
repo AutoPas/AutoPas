@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 #include "TraversalSelectorInfo.h"
+#include "autopas/containers/adaptiveLinkedCells/traversals/C01TraversalAdaptive.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/containers/cellPairTraversals/TraversalInterface.h"
@@ -102,6 +103,11 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
     }
     case TraversalOption::c01CombinedSoA: {
       return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>>(
+          info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
+    }
+    // Adaptive linked cell
+    case TraversalOption::c01Adaptive: {
+      return std::make_unique<C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
     }
     // Verlet

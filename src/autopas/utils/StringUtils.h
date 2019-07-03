@@ -159,6 +159,9 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::c01CombinedSoA: {
       return "c01-combined-SoA";
     }
+    case autopas::TraversalOption::c01Adaptive: {
+      return "c01-adaptive";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TraversalOption (" + std::to_string(option) + ")";
@@ -275,6 +278,8 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
         traversalOptions.insert(autopas::TraversalOption::c01Cuda);
       } else if (word.find("com") != std::string::npos) {
         traversalOptions.insert(autopas::TraversalOption::c01CombinedSoA);
+      } else if (word.find("adap") != std::string::npos) {
+        traversalOptions.insert(autopas::TraversalOption::c01Adaptive);
       } else if (word.find('v') != std::string::npos) {
         traversalOptions.insert(autopas::TraversalOption::c01Verlet);
       } else {

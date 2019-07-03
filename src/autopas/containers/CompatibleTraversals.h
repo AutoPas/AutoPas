@@ -46,7 +46,7 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
  */
 static const std::set<TraversalOption> &allALCCompatibleTraversals() {
   // traversal not used but prevents usage of newton3
-  static const std::set<TraversalOption> s{};
+  static const std::set<TraversalOption> s{TraversalOption::c01Adaptive};
   return s;
 }
 

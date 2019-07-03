@@ -37,7 +37,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // total number of possible configurations * number of samples + last iteration after tuning
   // number of configs manually counted
 #ifndef AUTOPAS_CUDA
-  size_t expectedNumberOfIterations = 30 * maxSamples + 1;
+  size_t expectedNumberOfIterations = 32 * maxSamples + 1;
 #else
   size_t expectedNumberOfIterations = 42 * maxSamples + 1;
 #endif
