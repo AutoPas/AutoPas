@@ -40,6 +40,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                      sliced              with (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                      c18                 with (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                      c01                 with (AoS <=> SoA, noNewton3)             = 2
+  //                      c04                 with (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                      c01-combined-SoA    with (SoA, noNewton3)                     = 1
   // VerletLists:         verlet-lists        with (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // VerletListsCells:    verlet-sliced       with (AoS, newton3 <=> noNewton3)         = 2
@@ -47,11 +48,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                      verlet-c01          with (AoS, noNewton3)                     = 1
   // VerletClusterLists:  verlet-clusters     with (AoS <=> SoA, noNewton3)             = 2
   //                                                                               --------
-  //                                                                                     30
+  //                                                                                     34
 #ifndef AUTOPAS_CUDA
-  size_t expectedNumberOfIterations = 30 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 34 * maxSamples + 1;
 #else
-  size_t expectedNumberOfIterations = 41 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 47 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

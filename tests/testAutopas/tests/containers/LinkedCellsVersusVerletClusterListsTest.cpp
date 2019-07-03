@@ -28,8 +28,8 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
 
   autopas::VerletClustersTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3>
       verletTraversal(&func);
-  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3>
-      traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   _verletLists.rebuildNeighborLists(&verletTraversal);
   _verletLists.iteratePairwise(&func, &verletTraversal);
   _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
