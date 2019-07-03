@@ -13,9 +13,12 @@
 namespace autopas {
 
 /**
- * A verlet list traversal.
+ * This class provides the Traversal Interface for the verlet lists cells container.
+ *
  * This class handles traversals through the cell structures with neighbor lists.
  * Derived classes handle the order through which the cells are traversed.
+ *
+ * The container only accepts traversals in its iteratePairwise() method that implement this interface.
  */
 template <class Particle>
 class VerletListsCellsTraversal {

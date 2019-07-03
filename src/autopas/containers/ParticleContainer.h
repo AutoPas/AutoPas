@@ -8,7 +8,7 @@
 #pragma once
 
 #include <array>
-#include "TraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 
 #ifdef AUTOPAS_OPENMP

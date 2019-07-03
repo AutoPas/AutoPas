@@ -39,6 +39,10 @@ class CellPairTraversal : public TraversalInterface {
    */
   virtual void rebuild(const std::array<unsigned long, 3> &dims) { _cellsPerDimension = dims; };
 
+  /**
+   * Gives the traversal the cells to traverse over.
+   * @param cells The cells to traverse over.
+   */
   virtual void setCellsToTraverse(std::vector<ParticleCell> &cells) { _cells = &cells; }
 
  protected:
