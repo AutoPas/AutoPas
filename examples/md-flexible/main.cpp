@@ -233,6 +233,9 @@ int main(int argc, char **argv) {
       return -1;
   }
 
+  // call reset on tuningStrategy so that MachineSearch works properly
+  autopas.resetAutoTuner();
+
   PrintableMolecule::setEpsilon(1.0);
   PrintableMolecule::setSigma(1.0);
   cout << endl;

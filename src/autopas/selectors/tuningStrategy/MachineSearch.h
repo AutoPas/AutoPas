@@ -50,7 +50,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
     _traversalTimes.clear();
     _currentConfig = _searchSpace.begin();
     _configCounter = 0;
-    _hasStatistics = false;
+    generateMLPredictions(_modelLink);
   }
 
   inline bool tune() override;
@@ -66,7 +66,16 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   }
 
  private:
+
+  /*
+   * Uses the trained ML model to choose configurations
+   */
   void generateMLPredictions(std::string file);
+
+  /*
+   * Finds the next applicable ML suggestion (including current config)
+   */
+  void findNextSuggestion();
 
   /**
    * Fills the search space with the cartesian product of the given options (minus invalid combinations).
@@ -95,6 +104,45 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 };
 
 template <typename Particle, typename ParticleCell>
+void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
+  while (_currentConfig != _searchSpace.end()) {
+    bool isSuggestion = std::count(_mlSuggestions, _mlSuggestions + 5, _configCounter) != 0;
+    if (isSuggestion) break;
+    ++_currentConfig;
+    ++_configCounter;
+  }
+}
+
+template <typename Particle, typename ParticleCell>
+void MachineSearch<Particle, ParticleCell>::generateMLPredictions(std::string file) {
+  // at the start of each configuration, fill a global array with n elements for most efficient configurations
+  const auto model = fdeep::load_model(file);
+  double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
+  _particleCount = _containerSelector->getCurrentContainer()->getNumParticles();
+  _boxLength = _containerSelector->getCurrentContainer()->getBoxMax()[0] -
+               _containerSelector->getCurrentContainer()->getBoxMin()[0];
+  _cutoff = _containerSelector->getCurrentContainer()->getCutoff();
+  _verletSkin = _containerSelector->getCurrentContainer()->getCutoff();
+
+  const auto result = model.predict({fdeep::tensor5(
+          fdeep::shape5(1, 1, 1, 1, 4),
+          {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
+           static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
+  std::cout << fdeep::show_tensor5s(result) << std::endl;
+  std::vector<float> probabilityVector = *result[0].as_vector();
+
+  std::cout << "ML Suggestions are:" << std::endl;
+  // find 5 largest values in propabilityVector
+  for (int i = 0; i < 5; ++i) {
+    // auto index = find_min(propabilityVector);
+    auto index = std::max_element(probabilityVector.begin(), probabilityVector.end()) - probabilityVector.begin();
+    _mlSuggestions[i] = index;
+    probabilityVector[index] = 0;  // set to 0, so we don't find this again.
+    std::cout << _mlSuggestions[i] << std::endl;
+  }
+}
+
+template <typename Particle, typename ParticleCell>
 void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options) {
@@ -103,38 +151,6 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
   std::set<TraversalOption> allowedTraversalOptionsPlusDummy;
   std::set_union(allowedTraversalOptions.begin(), allowedTraversalOptions.end(), dummySet.begin(), dummySet.end(),
                  std::inserter(allowedTraversalOptionsPlusDummy, allowedTraversalOptionsPlusDummy.begin()));
-
-  /*
-  std::tuple<ContainerOption, TraversalOption, DataLayoutOption, Newton3Option> mloption[] = {
-          std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c01, DataLayoutOption::aos,
-  Newton3Option::disabled), std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c18,
-  DataLayoutOption::aos, Newton3Option::disabled), std::make_tuple(ContainerOption::verletListsCells,
-  TraversalOption::c18, DataLayoutOption::aos, Newton3Option::enabled),
-          std::make_tuple(ContainerOption::verletListsCells, TraversalOption::slicedVerlet, DataLayoutOption::aos,
-  Newton3Option::disabled), std::make_tuple(ContainerOption::verletListsCells, TraversalOption::slicedVerlet,
-  DataLayoutOption::aos, Newton3Option::enabled), std::make_tuple(ContainerOption::verletLists,
-  TraversalOption::verletTraversal, DataLayoutOption::soa, Newton3Option::disabled),
-          std::make_tuple(ContainerOption::verletLists, TraversalOption::verletTraversal, DataLayoutOption::soa,
-  Newton3Option::enabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08, DataLayoutOption::soa,
-  Newton3Option::disabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::sliced,
-  DataLayoutOption::aos, Newton3Option::disabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08,
-  DataLayoutOption::soa, Newton3Option::enabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08,
-  DataLayoutOption::aos, Newton3Option::disabled), std::make_tuple(ContainerOption::linkedCells,
-  TraversalOption::sliced, DataLayoutOption::soa, Newton3Option::enabled), std::make_tuple(ContainerOption::linkedCells,
-  TraversalOption::c08, DataLayoutOption::aos, Newton3Option::enabled), std::make_tuple(ContainerOption::linkedCells,
-  TraversalOption::sliced, DataLayoutOption::soa, Newton3Option::disabled),
-          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::aos,
-  Newton3Option::disabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::soa,
-  Newton3Option::enabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::sliced, DataLayoutOption::aos,
-  Newton3Option::enabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::soa,
-  Newton3Option::disabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::c01, DataLayoutOption::aos,
-  Newton3Option::disabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::aos,
-  Newton3Option::enabled), std::make_tuple(ContainerOption::linkedCells, TraversalOption::c01, DataLayoutOption::soa,
-  Newton3Option::disabled), std::make_tuple(ContainerOption::verletLists, TraversalOption::verletTraversal,
-  DataLayoutOption::aos, Newton3Option::enabled), std::make_tuple(ContainerOption::verletLists,
-  TraversalOption::verletTraversal, DataLayoutOption::aos, Newton3Option::disabled),
-  };
-  */
 
   // generate all potential configs
   for (auto &containerOption : allowedContainerOptions) {
@@ -159,57 +175,18 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
   }
 
   _currentConfig = _searchSpace.begin();
-}
-
-template <typename Particle, typename ParticleCell>
-void MachineSearch<Particle, ParticleCell>::generateMLPredictions(std::string file) {
-  // at the start of each configuration, fill a global array with n elements for most efficient configurations
-  const auto model = fdeep::load_model(file);
-  double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
-
-  const auto result = model.predict({fdeep::tensor5(
-      fdeep::shape5(1, 1, 1, 1, 4),
-  {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
-            static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
-    std::cout << fdeep::show_tensor5s(result) << std::endl;
-    std::vector<float> probabilityVector = *result[0].as_vector();
-
-    std::cout << "ML Suggestions are:" << std::endl;
-    // find 5 largest values in propabilityVector
-  for (int i = 0; i < 5; ++i) {
-    // auto index = find_min(propabilityVector);
-    auto index = std::max_element(probabilityVector.begin(), probabilityVector.end()) - probabilityVector.begin();
-    _mlSuggestions[i] = index;
-    probabilityVector[index] = 0;  // set to 0, so we don't find this again.
-    std::cout << _mlSuggestions[i] << std::endl;
-  }
+  _configCounter = 0;
+  //generateMLPredictions(_modelLink);
+  //findNextSuggestion();
 }
 
 template <typename Particle, typename ParticleCell>
 bool MachineSearch<Particle, ParticleCell>::tune() {
   AutoPasLog(debug, "You are in MachineSearch::tune()");
-  bool getStatistics = not _hasStatistics;
-  if (getStatistics) {
-    _particleCount = _containerSelector->getCurrentContainer()->getNumParticles();
-    _boxLength = _containerSelector->getCurrentContainer()->getBoxMax()[0] -
-                 _containerSelector->getCurrentContainer()->getBoxMin()[0];
-    _cutoff = _containerSelector->getCurrentContainer()->getCutoff();
-    _verletSkin = _containerSelector->getCurrentContainer()->getCutoff();
-    generateMLPredictions(_modelLink);
-    _hasStatistics = true;
-  } else {
-    ++_currentConfig;
-    ++_configCounter;
-  }
-
   // repeat as long as traversals are not applicable or we run out of configs
-  while (_currentConfig != _searchSpace.end()) {
-    bool isSuggestion = std::count(_mlSuggestions, _mlSuggestions + 5, _configCounter) != 0;
-
-    if (isSuggestion) break;
-    ++_currentConfig;
-    ++_configCounter;
-  }
+  ++_currentConfig;
+  ++_configCounter;
+  findNextSuggestion();
   if (_currentConfig == _searchSpace.end()) {
     selectOptimalConfiguration();
     return false;

@@ -416,6 +416,8 @@ class AutoPas {
      */
     void setModelLink(std::string modelLink) { AutoPas::_modelLink = modelLink; }
 
+    void resetAutoTuner() { _autoTuner->resetTuning(); }
+
  private:
   /**
    * Generates a new Tuning Strategy object from the member variables of this autopas object.

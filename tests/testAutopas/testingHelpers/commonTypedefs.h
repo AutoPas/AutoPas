@@ -8,6 +8,7 @@
 
 #include "autopas/options/DataLayoutOption.h"
 #include "mocks/MockFunctor.h"
+#include "fdeep/fdeep.hpp"
 
 // a place for typedefs that are commonly used in tests
 

@@ -179,6 +179,10 @@ class AutoTuner {
    */
   const std::set<Configuration> &getAllowedConfigurations() const;
 
+  void resetTuning() {
+    return _tuningStrategy->reset();
+  }
+
  private:
   void selectOptimalConfiguration();
 
@@ -463,4 +467,5 @@ template <class Particle, class ParticleCell>
 const autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
   return _tuningStrategy->getCurrentConfiguration();
 }
+
 }  // namespace autopas

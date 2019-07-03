@@ -218,3 +218,17 @@ TEST_F(AutoPasTest, checkArgumentValidation) {
   EXPECT_ANY_THROW(autoPas.setCellSizeFactor(0.0));
   EXPECT_NO_THROW(autoPas.setCellSizeFactor(0.5));
 }
+
+TEST_F(AutoPasTest, checkIfFileLinkingWorks) {
+  std::string defModel = "fdeep_model.json";
+  EXPECT_EQ(autoPas.getModelLink(), defModel);
+  std::ifstream f1(defModel);
+  EXPECT_TRUE(f1.good());
+  EXPECT_NO_THROW(fdeep::load_model(defModel));
+  std::string altModel = "dummyDirectory/fdeep_model.json";
+  autoPas.setModelLink(altModel);
+  EXPECT_EQ(autoPas.getModelLink(), altModel);
+  std::ifstream f2(altModel);
+  EXPECT_TRUE(f2.good());
+  EXPECT_NO_THROW(fdeep::load_model(altModel));
+}
