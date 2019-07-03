@@ -32,8 +32,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   MachineSearch(const std::set<ContainerOption> &allowedContainerOptions,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options,
-                const std::string modelLink)
+                const std::set<Newton3Option> &allowedNewton3Options, const std::string modelLink)
       : _containerOptions(allowedContainerOptions), _modelLink(modelLink) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
@@ -66,7 +65,6 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   }
 
  private:
-
   /*
    * Uses the trained ML model to choose configurations
    */
@@ -125,9 +123,9 @@ void MachineSearch<Particle, ParticleCell>::generateMLPredictions(std::string fi
   _verletSkin = _containerSelector->getCurrentContainer()->getCutoff();
 
   const auto result = model.predict({fdeep::tensor5(
-          fdeep::shape5(1, 1, 1, 1, 4),
-          {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
-           static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
+      fdeep::shape5(1, 1, 1, 1, 4),
+      {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
+       static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
   std::cout << fdeep::show_tensor5s(result) << std::endl;
   std::vector<float> probabilityVector = *result[0].as_vector();
 
@@ -176,8 +174,8 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
 
   _currentConfig = _searchSpace.begin();
   _configCounter = 0;
-  //generateMLPredictions(_modelLink);
-  //findNextSuggestion();
+  // generateMLPredictions(_modelLink);
+  // findNextSuggestion();
 }
 
 template <typename Particle, typename ParticleCell>

@@ -15,8 +15,7 @@ TEST_F(MachineSearchTest, testSearchSpaceExpectedOptions) {
       autopas::allTraversalOptions, autopas::allDataLayoutOptions, autopas::allNewton3Options, "fdeep_model.json");
   EXPECT_FALSE(machineSearch.searchSpaceIsEmpty());
   EXPECT_FALSE(machineSearch.searchSpaceIsTrivial());
-  EXPECT_THAT(machineSearch.getAllowedContainerOptions(),
-              ::testing::Contains(autopas::ContainerOption::linkedCells));
+  EXPECT_THAT(machineSearch.getAllowedContainerOptions(), ::testing::Contains(autopas::ContainerOption::linkedCells));
 }
 
 TEST_F(MachineSearchTest, testTune) {
