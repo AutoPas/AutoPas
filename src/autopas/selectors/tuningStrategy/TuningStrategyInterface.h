@@ -36,7 +36,8 @@ class TuningStrategyInterface {
    * The new configuration can be obtained by getCurrentConfiguration. It is the configuration which is either the next
    * configuration to test (=true) or the optimum (=false).
    *
-   * @param currentInvalid Tells the tune() function that the currently selected configuration is invalid. This can be used to avoid getting stuck in an invalid optimum.
+   * @param currentInvalid Tells the tune() function that the currently selected configuration is invalid. This can be
+   * used to avoid getting stuck in an invalid optimum.
    * @return false iff new configuration is the selected optimum.
    */
   virtual bool tune(bool currentInvalid = false) = 0;
