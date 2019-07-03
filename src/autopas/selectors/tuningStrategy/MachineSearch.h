@@ -182,7 +182,7 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
     autopas::utils::ExceptionHandler::exception("MachineSearch: No valid configurations could be created.");
   }
 
-  _currentConfig = _searchSpace.begin();
+  _currentConfig = _searchSpace.end();
   _configCounter = 0;
   // generateMLPredictions(_modelLink);
   // findNextSuggestion();
