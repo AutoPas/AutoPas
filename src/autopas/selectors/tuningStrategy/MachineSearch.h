@@ -1,3 +1,5 @@
+#include <utility>
+
 /**
  * @file MachineSearch.h
  * @date 6/16/19
@@ -32,8 +34,8 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   MachineSearch(const std::set<ContainerOption> &allowedContainerOptions,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options, const std::string& modelLink)
-      : _containerOptions(allowedContainerOptions), _modelLink(modelLink) {
+                const std::set<Newton3Option> &allowedNewton3Options, std::string modelLink)
+      : _containerOptions(allowedContainerOptions), _modelLink(std::move(modelLink)) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
                         allowedNewton3Options);
