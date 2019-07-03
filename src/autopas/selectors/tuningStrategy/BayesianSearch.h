@@ -33,7 +33,7 @@ class BayesianSearch : public TuningStrategyInterface {
   /**
    * The maximum number of attempts to sample an optimum.
    */
-  constexpr static size_t maxAttempts = 32;
+  constexpr static size_t maxAttempts = 10;
 
  public:
   /**
@@ -202,7 +202,7 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
       return *best;
     } else {
       // No valid configuration. This should rarely happen.
-      AutoPasLog(debug, "BayesianSearch: Tuning could not generate a valid configuration.");
+      AutoPasLog(debug, "Tuning could not generate a valid configuration.");
     }
   }
 
