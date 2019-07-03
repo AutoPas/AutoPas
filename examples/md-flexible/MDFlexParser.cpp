@@ -41,7 +41,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   string strArg;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
     if (optarg != nullptr) strArg = optarg;
-    if(option != 'M') {
+    if (option != 'M') {
       transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     }
     switch (option) {
