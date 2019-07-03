@@ -110,8 +110,11 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 
 template <typename Particle, typename ParticleCell>
 void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
-  if (_currentConfig != _searchSpace.end()) {
+  if (_currentConfig == _searchSpace.end()) {
     _currentConfig = _searchSpace.begin();
+  } else {
+    ++_currentConfig;
+    ++_configCounter;
   }
   while (_currentConfig != _searchSpace.end()) {
     bool isSuggestion = std::count(_mlSuggestions, _mlSuggestions + 5, _configCounter) != 0;
@@ -182,7 +185,7 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
     autopas::utils::ExceptionHandler::exception("MachineSearch: No valid configurations could be created.");
   }
 
-  _currentConfig = _searchSpace.end();
+  _currentConfig = _searchSpace.begin();  // this has to be valid, to add particles to the container
   _configCounter = 0;
   // generateMLPredictions(_modelLink);
   // findNextSuggestion();
@@ -192,8 +195,6 @@ template <typename Particle, typename ParticleCell>
 bool MachineSearch<Particle, ParticleCell>::tune() {
   AutoPasLog(debug, "You are in MachineSearch::tune()");
   // repeat as long as traversals are not applicable or we run out of configs
-  ++_currentConfig;
-  ++_configCounter;
   findNextSuggestion();
   if (_currentConfig == _searchSpace.end()) {
     selectOptimalConfiguration();
