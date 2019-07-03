@@ -173,19 +173,7 @@ class AutoTuner {
    */
   const autopas::Configuration getCurrentConfig() const;
 
-  /**
-   * Get the set of all allowed configurations.
-   * @return
-   */
-  const std::set<Configuration> &getAllowedConfigurations() const;
-
-  void resetTuning() {
-    return _tuningStrategy->reset();
-  }
-
  private:
-  void selectOptimalConfiguration();
-
   template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
   void iteratePairwiseTemplateHelper(PairwiseFunctor *f);
 
