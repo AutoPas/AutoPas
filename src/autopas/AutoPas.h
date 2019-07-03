@@ -404,17 +404,17 @@ class AutoPas {
     _tuningStrategyOption = tuningStrategyOption;
   }
 
-    /**
+  /**
    * Get path to model
    * @return
    */
-    std::string getModelLink() const { return _modelLink; }
+  std::string getModelLink() const { return _modelLink; }
 
-    /**
-     * Set tuning interval.
-     * @param modelLink
-     */
-    void setModelLink(std::string modelLink) { AutoPas::_modelLink = modelLink; }
+  /**
+   * Set tuning interval.
+   * @param modelLink
+   */
+  void setModelLink(std::string modelLink) { AutoPas::_modelLink = modelLink; }
 
  private:
   /**
@@ -427,9 +427,8 @@ class AutoPas {
         return std::make_unique<FullSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
                                                                     _allowedDataLayouts, _allowedNewton3Options);
       case TuningStrategyOption::machineSearch:
-        return std::make_unique<MachineSearch<Particle, ParticleCell>>(_allowedContainers, _allowedTraversals,
-                                                                       _allowedDataLayouts, _allowedNewton3Options,
-                                                                       _modelLink);
+        return std::make_unique<MachineSearch<Particle, ParticleCell>>(
+            _allowedContainers, _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options, _modelLink);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",

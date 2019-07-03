@@ -308,8 +308,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'M': {
-          modelLink = strArg;
-          break;
+        modelLink = strArg;
+        break;
       }
       default: {
         // error message handled by getopt

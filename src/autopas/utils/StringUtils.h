@@ -386,8 +386,7 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
   auto tuningStrategy(autopas::TuningStrategyOption(-1));
   if (tuningStrategyString.find("full") != std::string::npos or tuningStrategyString.find("ex") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
-  }
-  else if (tuningStrategyString.find("machine") != std::string::npos) {
+  } else if (tuningStrategyString.find("machine") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::machineSearch;
   }
   return tuningStrategy;
