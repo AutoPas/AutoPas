@@ -447,7 +447,7 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
       break;
     }
   }
-
+  AutoPasLog(debug, "Config {} applicable: {}", conf.toString(), traversalApplicable);
   return traversalApplicable;
 }
 
