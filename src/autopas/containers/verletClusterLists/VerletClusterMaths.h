@@ -23,7 +23,7 @@ using index_t = std::size_t;
  * @param cellsPerDim the cells per dimension of the container
  * @return index in vector
  */
-static index_t index1D(const index_t x, const index_t y, std::array<index_t, 3> cellsPerDim) {
+static inline index_t index1D(const index_t x, const index_t y, std::array<index_t, 3> cellsPerDim) {
   return x + y * cellsPerDim[0];
 }
 
