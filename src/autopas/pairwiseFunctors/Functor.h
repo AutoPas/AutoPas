@@ -282,7 +282,8 @@ class Functor {
 
     if (cell.numParticles() == 0) return;
 
-    auto const pointer = std::make_tuple(soa.template begin<Impl_t::neededAttr[I]>()...);
+    // maybe_unused necessary because gcc doesnt understand that pointer is used later
+    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::neededAttr[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
@@ -304,7 +305,8 @@ class Functor {
 
     if (cell.numParticles() == 0) return;
 
-    auto const pointer = std::make_tuple(soa.template begin<Impl_t::computedAttr[I]>()...);
+    // maybe_unused necessary because gcc doesnt understand that pointer is used later
+    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::computedAttr[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
