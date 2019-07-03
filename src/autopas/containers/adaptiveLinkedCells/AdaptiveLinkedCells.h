@@ -9,8 +9,7 @@
 
 #include <autopas/cells/SortedCellView.h>
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/adaptiveLinkedCells/OctreeExternalNode.h"
-#include "autopas/containers/adaptiveLinkedCells/OctreeInternalNode.h"
+#include "autopas/containers/adaptiveLinkedCells/Octree.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -47,31 +46,34 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
    */
   AdaptiveLinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                       const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff) {
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff),
+        octree(this->_cells, boxMin, boxMax) {
     // set global values for tree
-    OctreeExternalNode<Particle, ParticleCell>::setMaxElements(64);
-    OctreeInternalNode<Particle, ParticleCell>::setMinElements(32);
+    Octree<Particle, ParticleCell>::setMaxElements(64);
+    Octree<Particle, ParticleCell>::setMinElements(32);
     // compute cell length
-    unsigned long _numCells = 1ul;
-    for (int d = 0; d < 3; ++d) {
-      const double diff = this->getBoxMax()[d] - this->getBoxMin()[d];
-      auto cellsPerDim = static_cast<size_t>(std::floor(diff / (this->getCutoff() * cellSizeFactor)));
+
+    for (unsigned int d = 0; d < 3; ++d) {
+      _cellLength[d] = this->getBoxMax()[d] - this->getBoxMin()[d];
+      _cellsPerDimension[d] = static_cast<size_t>(std::floor(_cellLength[d] / (this->getCutoff() * cellSizeFactor)));
       // at least one central cell
-      cellsPerDim = std::max(cellsPerDim, 1ul);
-
-      //_cellLength[d] = diff / cellsPerDim;
-
-      //_cellLengthReciprocal[d] = cellsPerDim / diff;  // compute with least rounding possible
-
-      _numCells *= cellsPerDim;
-
-      AutoPasLog(debug, "CellsPerDimension[{}]={}", d, cellsPerDim);
+      _cellsPerDimension[d] = std::max(_cellsPerDimension[d], 1ul);
+      // round down to next exponential of 2
+      _cellsPerDimension[d] = 1 << static_cast<int>(log2(_cellsPerDimension[d]));
     }
+    // make sure all axis have the same size
+    _cellsPerDimension.fill(*std::min_element(_cellsPerDimension.cbegin(), _cellsPerDimension.cend()));
+    AutoPasLog(debug, "CellsPerDimension[{}, {}, {}]", _cellsPerDimension[0], _cellsPerDimension[1],
+               _cellsPerDimension[2]);
+
+    for (unsigned int d = 0; d < 3; ++d) {
+      _cellLength[d] /= _cellsPerDimension[d];
+    }
+
+    size_t numCells = _cellsPerDimension[0] * _cellsPerDimension[1] * _cellsPerDimension[2];
     // +1, since last cell represents halo
-    this->_cells.resize(_numCells + 1ul);
-    // setup tree
-    octree = std::make_unique<OctreeExternalNode<Particle, ParticleCell>>(
-        this->_cells, 0, ArrayMath::mulScalar(ArrayMath::sub(boxMax, boxMin), 0.5), 0);
+    this->_cells.resize(numCells + 1ul);
+    octree.init(_cellsPerDimension);
   }
 
   void addHaloParticle(Particle &haloParticle) override {
@@ -93,12 +95,13 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
   void addParticle(Particle &p) override {
     bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
     if (inBox) {
-      ParticleCell &cell = octree->getContainingCell(p.getR());
+      ParticleCell &cell = octree.getContainingCell(p.getR());
       cell.addParticle(p);
     } else {
       utils::ExceptionHandler::exception(
           "LinkedCells: Trying to add a particle that is not inside the bounding box.\n" + p.toString());
     }
+    AutoPasLog(debug, "Number of particles {} ", getCells()[0].numParticles());
   }
 
   /**
@@ -120,13 +123,12 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
     traversal->endTraversal(this->_cells);
   }
 
-  void updateContainer() override { /*octree = octree.update(); */
-  }
+  void updateContainer() override { octree.update(); }
 
-  bool isContainerUpdateNeeded() override { return octree->isUpdateNeeded(); }
+  bool isContainerUpdateNeeded() override { return octree.isUpdateNeeded(); }
 
   TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<ParticleCell>({0ul, 0ul, 0ul}, this->getCutoff(), {0.0, 0.0, 0.0});
+    return TraversalSelectorInfo<ParticleCell>(_cellsPerDimension, this->getCutoff(), _cellLength);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -146,13 +148,12 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
    * returns reference to the data of AdaptiveLinkedCells
    * @return the data
    */
-  std::vector<ParticleCell> &getCells() {
-    // @todo add implementation
-    return std::vector<ParticleCell>{};
-  }
+  std::vector<ParticleCell> &getCells() { return this->_cells; }
 
  protected:
-  std::unique_ptr<OctreeNode<Particle, ParticleCell>> octree;
+  Octree<Particle, ParticleCell> octree;
+  std::array<unsigned long, 3> _cellsPerDimension;
+  std::array<double, 3> _cellLength;
 };
 
 }  // namespace autopas

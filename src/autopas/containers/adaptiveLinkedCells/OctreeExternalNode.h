@@ -8,10 +8,13 @@
 
 #include <array>
 #include <memory>
-#include "autopas/containers/adaptiveLinkedCells/OctreeInternalNode.h"
 #include "autopas/containers/adaptiveLinkedCells/OctreeNode.h"
 
 namespace autopas {
+namespace internal {
+
+template <class Particle, class ParticleCell>
+class OctreeInternalNode;
 
 /**
  * Class representing an external node (leaf) in an octree.
@@ -21,15 +24,25 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
  public:
   OctreeExternalNode() = default;
 
-  OctreeExternalNode(std::array<std::unique_ptr<OctreeNode<Particle, ParticleCell>>, 8> content,
-                     const std::array<double, 3> &center, const unsigned int level)
-      : OctreeNode<Particle, ParticleCell>(level), _center(center) {
-    // add all elements from content to underlying container
+  OctreeExternalNode(std::vector<ParticleCell> &cells, unsigned long index,
+                     std::array<OctreeNode<Particle, ParticleCell> *, 8> nodes, const std::array<double, 3> &center,
+                     const unsigned int level)
+      : OctreeNode<Particle, ParticleCell>(level, index),
+        _center(center),
+        _cellView(cells.at(index), std::array<double, 3>{1, 0, 0}) {
+    for (auto *node : nodes) {
+      const size_t index = node->getIndex();
+      // Move all particles to base cell
+      for (auto it = cells[index].begin(); it.isValid(); ++it) {
+        cells[index].addParticle(*it);
+      }
+      cells[index].clear();
+    }
   }
 
   OctreeExternalNode(std::vector<ParticleCell> &cells, unsigned long index, const std::array<double, 3> &center,
                      const unsigned int level)
-      : OctreeNode<Particle, ParticleCell>(level),
+      : OctreeNode<Particle, ParticleCell>(level, index),
         _center(center),
         _cellView(cells.at(index), std::array<double, 3>{1, 0, 0}){
             // add all elements from content to underlying container
@@ -39,7 +52,7 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
 
   size_t getSize() const override;
 
-  // std::unique_ptr<OctreeNode<ParticleCell>> update() override;
+  OctreeNode<Particle, ParticleCell> *update(std::vector<ParticleCell> &cells) override;
 
   bool isUpdateNeeded() const override;
 
@@ -67,22 +80,21 @@ template <class Particle, class ParticleCell>
 size_t OctreeExternalNode<Particle, ParticleCell>::getSize() const {
   return _cellView._cell->numParticles();
 }
-/*
+
 template <class Particle, class ParticleCell>
-std::unique_ptr<OctreeNode<ParticleCell>> OctreeExternalNode<ParticleCell>::update() {
-  if (getSize() > _maxElements) {
+OctreeNode<Particle, ParticleCell> *OctreeExternalNode<Particle, ParticleCell>::update(
+    std::vector<ParticleCell> &cells) {
+  if (getSize() > _maxElements and this->_level > 0) {
     // split
-    return OctreeInternalNode<ParticleCell>(); // _cell, _center, this->_level + 1ul
-}  // namespace autopas
-else {
-  return *this;
+    return new OctreeInternalNode<Particle, ParticleCell>(cells, this->getIndex(), _center, this->_level - 3);
+  } else {
+    return this;
+  }
 }
-}
-*/
 
 template <class Particle, class ParticleCell>
 bool OctreeExternalNode<Particle, ParticleCell>::isUpdateNeeded() const {
-  return getSize() > _maxElements;
+  return getSize() > _maxElements;  //@Todo outliers
 }
-
+}  // namespace internal
 }  // namespace autopas

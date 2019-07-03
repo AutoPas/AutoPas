@@ -8,8 +8,10 @@
 
 #include <array>
 #include <memory>
+#include <optional>
 
 namespace autopas {
+namespace internal {
 
 /**
  * Class representing a single node in an octree.
@@ -20,8 +22,9 @@ class OctreeNode {
   /**
    * Constructor for OctreeNode
    * @param level
+   * @param index
    */
-  OctreeNode(const unsigned int level) : _level(level) {}
+  OctreeNode(const unsigned int level, const unsigned int index) : _level(level), _index(index) {}
 
   /**
    * Destructor of OctreeNode.
@@ -45,7 +48,7 @@ class OctreeNode {
    * Updates the tree.
    * @return new child.
    */
-  // virtual std::unique_ptr<OctreeNode<ParticleCell>> update() = 0;
+  virtual OctreeNode<Particle, ParticleCell> *update(std::vector<ParticleCell> &cells) = 0;
 
   /**
    * Returns whether update() would change the tree.
@@ -53,9 +56,16 @@ class OctreeNode {
    */
   virtual bool isUpdateNeeded() const = 0;
 
- private:
+  /**
+   * Return the base index.
+   * @return
+   */
+  virtual size_t getIndex() const { return _index; }
+
+ protected:
   const unsigned int _level;
-  static std::vector<ParticleCell> *_cells;
+  const unsigned int _index;
 };
 
+}  // namespace internal
 }  // namespace autopas
