@@ -302,7 +302,6 @@ class Functor {
    */
   template <typename cell_t, std::size_t... I>
   void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
-
     if (cell.numParticles() == 0) return;
 
     // maybe_unused necessary because gcc doesnt understand that pointer is used later
