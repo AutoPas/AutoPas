@@ -7,6 +7,6 @@
 
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/tuningStrategy/MachineSearch.h"
+#include "autopas/AutoPas.h"
 
 class MachineSearchTest : public AutoPasTestBase {};
