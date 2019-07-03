@@ -41,7 +41,12 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
                         allowedNewton3Options);
   }
 
-  inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
+  inline Configuration getCurrentConfiguration() override {
+    if (_currentConfig == _searchSpace.end()) {
+      return {};  // return default initialized configuration, which is always invalid!
+    }
+    return *_currentConfig;
+  }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
@@ -49,7 +54,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 
   inline void reset() override {
     _traversalTimes.clear();
-    _currentConfig = _searchSpace.begin();
+    _currentConfig = _searchSpace.end();
     _configCounter = 0;
     generateMLPredictions(_modelLink);
   }
@@ -70,7 +75,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   /*
    * Uses the trained ML model to choose configurations
    */
-  void generateMLPredictions(std::string file);
+  void generateMLPredictions(const std::string &file);
 
   /*
    * Finds the next applicable ML suggestion (including current config)
@@ -105,6 +110,9 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 
 template <typename Particle, typename ParticleCell>
 void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
+  if (_currentConfig != _searchSpace.end()) {
+    _currentConfig = _searchSpace.begin();
+  }
   while (_currentConfig != _searchSpace.end()) {
     bool isSuggestion = std::count(_mlSuggestions, _mlSuggestions + 5, _configCounter) != 0;
     if (isSuggestion) break;
@@ -114,7 +122,7 @@ void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
 }
 
 template <typename Particle, typename ParticleCell>
-void MachineSearch<Particle, ParticleCell>::generateMLPredictions(std::string file) {
+void MachineSearch<Particle, ParticleCell>::generateMLPredictions(const std::string &file) {
   // at the start of each configuration, fill a global array with n elements for most efficient configurations
   const auto model = fdeep::load_model(file);
   double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
