@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
   }
 
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff);
+      boxMin, boxMax, cutoff, skin * cutoff);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc08(
       boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff, rebuildFrequency);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc18(
@@ -252,6 +252,7 @@ void measureContainer(Container *cont, autopas::sph::SPHCalcDensityFunctor *func
   autopas::utils::Timer t;
 
   t.start();
+  cont->rebuildNeighborLists(traversal);
   for (int i = 0; i < numIterations; ++i) {
     cont->iteratePairwise(traversal);
   }

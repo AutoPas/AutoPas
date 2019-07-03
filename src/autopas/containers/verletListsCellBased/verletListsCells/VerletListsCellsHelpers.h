@@ -41,9 +41,24 @@ class VerletListsCellsHelpers {
      */
     VerletListGeneratorFunctor(VerletList_storage_type &verletLists,
                                std::unordered_map<Particle *, std::pair<size_t, size_t>> &cellMap, double cutoffskin)
-        : _verletLists(verletLists), _cellMap(cellMap), _cutoffskinsquared(cutoffskin * cutoffskin) {}
+        : Functor<Particle, VerletListParticleCellType>(typename Particle::ParticleFloatingPointType(0.)),
+          _verletLists(verletLists),
+          _cellMap(cellMap),
+          _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
+
+    bool allowsNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    bool allowsNonNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = ArrayMath::sub(i.getR(), j.getR());

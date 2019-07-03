@@ -34,8 +34,8 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
    */
   explicit DirectSumTraversal(PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
-        _cellFunctor(CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout,
-                                 useNewton3, true>(pairwiseFunctor)),
+        _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
+                                           dataLayout, useNewton3, true>(pairwiseFunctor)),
         _dataLayoutConverter(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::directSumTraversal; }
@@ -79,7 +79,8 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+                        true>
       _cellFunctor;
 
   /**

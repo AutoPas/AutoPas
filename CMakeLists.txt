@@ -1,11 +1,16 @@
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(AutoPas)
-
-cmake_minimum_required(VERSION 3.10)
 
 # CMAKE policies, etc.
 cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0057 NEW)
-set(CMAKE_CXX_STANDARD 14)
+cmake_policy(SET CMP0079 NEW)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_STANDARD 14)
+if (NOT CYGWIN)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+endif ()
 
 set(SUPPORTED_COMPILERS "GNU;Intel;Clang")
 
@@ -58,6 +63,7 @@ include(clang-format)
 include(clang-sanitizers)
 include(clang-tidy)
 include(cmake-format)
+include(format)
 include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
