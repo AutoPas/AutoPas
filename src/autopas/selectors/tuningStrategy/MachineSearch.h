@@ -1,14 +1,12 @@
-#include <utility>
-
 /**
  * @file MachineSearch.h
  * @date 6/16/19
  */
 
 #pragma once
-
 #include <set>
 #include <sstream>
+#include <utility>
 #include "TuningStrategyInterface.h"
 #include "autopas/AutoPas.h"
 #include "autopas/selectors/ContainerSelector.h"
