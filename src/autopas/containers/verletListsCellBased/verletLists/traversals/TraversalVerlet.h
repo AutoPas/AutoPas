@@ -34,7 +34,6 @@ class TraversalVerlet
  public:
   /**
    * Constructor for Verlet Traversal
-   * @param dims dimensions of the underlying container
    * @param pairwiseFunctor Functor to be used with this Traversal
    */
   explicit TraversalVerlet(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
@@ -71,11 +70,6 @@ class TraversalVerlet
     }
   }
 
-  /**
-   * Iterates over the Particles as specified in the Neighbor lists
-   * @param aosNeighborLists neighbor lists in aos format
-   * @param soaNeighborLists neighbor lists as index list for the soa format
-   */
   void traverseParticlePairs() override {
     auto &aosNeighborLists = *(this->_aosNeighborLists);
     auto &soaNeighborLists = *(this->_soaNeighborLists);

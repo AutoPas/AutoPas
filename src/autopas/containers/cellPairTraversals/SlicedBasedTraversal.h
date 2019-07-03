@@ -73,7 +73,6 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
 
   /**
    * Load Data Layouts required for this Traversal.
-   * @param cells where the data should be loaded.
    */
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -88,7 +87,6 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
 
   /**
    * Write Data to AoS.
-   * @param cells for which the data should be written back.
    */
   void endTraversal() override {
     auto &cells = *(this->_cells);

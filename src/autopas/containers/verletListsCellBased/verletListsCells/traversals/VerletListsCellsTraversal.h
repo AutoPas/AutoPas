@@ -35,8 +35,11 @@ class VerletListsCellsTraversal {
  protected:
   /**
    * Iterate over the verlet list of a given cell.
+   * @tparam PairwiseFunctor
+   * @tparam useNewton3
    * @param verlet
    * @param cellIndex
+   * @param pairwiseFunctor
    */
   template <class PairwiseFunctor, bool useNewton3>
   void iterateVerletListsCell(verlet_storage_type &verlet, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
@@ -50,6 +53,9 @@ class VerletListsCellsTraversal {
   }
 
  protected:
+  /**
+   * The verlet list to iterate over.
+   */
   verlet_storage_type *_verletList;
 };
 

@@ -43,9 +43,18 @@ class VerletTraversalInterface {
   }
 
  protected:
+  /**
+   * The cells of the underlying linked cells container of the verlet lists container.
+   */
   std::vector<LinkedParticleCell> *_cells;
+  /**
+   * The AoS neighbor list of the verlet lists container.
+   */
   std::unordered_map<typename LinkedParticleCell::ParticleType *,
                      std::vector<typename LinkedParticleCell::ParticleType *>> *_aosNeighborLists;
+  /**
+   * The SoA neighbor list of the verlet lists container.
+   */
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> *_soaNeighborLists;
 };
 

@@ -48,9 +48,6 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
    */
   void computeOffsets();
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
   void traverseParticlePairs() override;
 
   void initTraversal() override {}

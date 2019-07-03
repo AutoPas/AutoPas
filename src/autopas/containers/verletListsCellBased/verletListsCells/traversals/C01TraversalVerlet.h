@@ -37,9 +37,6 @@ class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFuncto
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
         _functor(pairwiseFunctor) {}
 
-  /**
-   * @copydoc VerletListsCellsTraversal::traverseCellVerlet
-   */
   void traverseParticlePairs() override;
 
   TraversalOption getTraversalType() const override { return TraversalOption::c01Verlet; }
