@@ -31,9 +31,10 @@ class VerletClustersTraversalInterface;
 template <class Particle>
 class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<Particle>> {
   /**
- * the index type to access the particle cells
- */
+   * the index type to access the particle cells
+   */
   typedef VerletClusterMaths::index_t index_t;
+
  public:
   /**
    * Constructor of the VerletClusterLists class.
@@ -203,8 +204,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Helper method to iterate over all clusters in parallel. It is safe to modify the particles in the clusters.
-   * Particles must not be added or removed during the traversal.
+   * Helper method to iterate over all clusters in parallel.
+   *
+   * It is alwys safe to modify the particles in the cluster that is passed to the given loop body. However, when
+   * modifying particles from other clusters, the caller has to make sure that no data races occur. Particles must not
+   * be added or removed during the traversal.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
    * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
    * clusterSize, std::vector<Particle*> clusterNeighborList.
