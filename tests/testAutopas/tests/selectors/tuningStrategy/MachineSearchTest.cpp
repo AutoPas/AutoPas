@@ -16,7 +16,7 @@ TEST_F(MachineSearchTest, testSearchSpaceExpectedOptions) {
   EXPECT_FALSE(machineSearch.searchSpaceIsEmpty());
   EXPECT_FALSE(machineSearch.searchSpaceIsTrivial());
   EXPECT_THAT(machineSearch.getAllowedContainerOptions(),
-              ::testing::ElementsAre(autopas::ContainerOption::linkedCells));
+              ::testing::Contains(autopas::ContainerOption::linkedCells));
 }
 
 TEST_F(MachineSearchTest, testTune) {
