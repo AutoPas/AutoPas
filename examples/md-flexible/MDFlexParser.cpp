@@ -41,7 +41,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   string strArg;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
     if (optarg != nullptr) strArg = optarg;
-    transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+    if(option != 'M') {
+      transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+    }
     switch (option) {
       case '3': {
         newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
