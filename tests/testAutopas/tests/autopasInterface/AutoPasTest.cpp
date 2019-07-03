@@ -219,7 +219,7 @@ TEST_F(AutoPasTest, checkArgumentValidation) {
   EXPECT_NO_THROW(autoPas.setCellSizeFactor(0.5));
 }
 
-TEST_F(AutoPasTest, checkIfFileLinkingWorks) {
+TEST_F(AutoPasTest, checkMLFileLoading) {
   std::string defModel = "fdeep_model.json";
   EXPECT_EQ(autoPas.getModelLink(), defModel);
   std::ifstream f1(defModel);
