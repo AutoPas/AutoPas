@@ -33,14 +33,18 @@ template <class Particle>
 class Dummy final {
  public:
   /**
-   * Attributes needed for computation.
+   * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> neededAttr{};
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
 
   /**
-   * Attributes computed by this functor.
+   * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> computedAttr{};
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
 };
 }  // namespace internal
 
@@ -96,16 +100,22 @@ class Functor {
   }
 
   /**
-   * Attributes needed for computation.
-   * @note Should be shadowed by child class.
+   * Get attributes needed for computation.
+   * @return Attributes needed for computation.
+   * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> neededAttr{};
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
 
   /**
-   * Attributes computed by this functor.
-   * @note Should be shadowed by child class.
+   * Get attributes computed by this functor.
+   * @return Attributes computed by this functor.
+   * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> computedAttr{};
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
 
   /**
    * @brief Functor for structure of arrays (SoA)
@@ -219,7 +229,7 @@ class Functor {
    * to the SoA with the specified offset.
    */
   virtual void SoALoader(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
-    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::neededAttr.size()>{});
+    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getNeededAttr().size()>{});
   }
 
   /**
@@ -231,7 +241,7 @@ class Functor {
    * extracted starting at offset.
    */
   virtual void SoAExtractor(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
-    SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Impl_t::computedAttr.size()>{});
+    SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getComputedAttr().size()>{});
   }
 
   /**
@@ -305,7 +315,7 @@ class Functor {
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesnt understand that pointer is used later
-    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::neededAttr[I]>()...);
+    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::getNeededAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
@@ -317,7 +327,7 @@ class Functor {
        * ((std::get<0>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[0]>()),
        * (std::get<1>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[1]>()))
        */
-      ((std::get<I>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[I]>()), ...);
+      ((std::get<I>(pointer)[i] = cellIter->template get<Impl_t::getNeededAttr()[I]>()), ...);
     }
   }
 
@@ -338,7 +348,7 @@ class Functor {
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesnt understand that pointer is used later
-    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::computedAttr[I]>()...);
+    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::getComputedAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // write values in SoAs back to particles
@@ -351,7 +361,7 @@ class Functor {
        * (cellIter->template set<Impl_t::computedAttr[0]>(std::get<0>(pointer)[i]),
        * cellIter->template set<Impl_t::computedAttr[1]>(std::get<1>(pointer)[i]))
        */
-      (cellIter->template set<Impl_t::computedAttr[I]>(std::get<I>(pointer)[i]), ...);
+      (cellIter->template set<Impl_t::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
     }
   }
 

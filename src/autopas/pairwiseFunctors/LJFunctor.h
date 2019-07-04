@@ -519,17 +519,28 @@ class LJFunctor
   }
 
   /**
-   * Attributes needed for computation.
+   * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 8> neededAttr{
-      Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-      Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+  constexpr static const auto getNeededAttr() {
+    if constexpr (useNewton3 == FunctorN3Modes::Newton3Off) {
+      return std::array<typename Particle::AttributeNames, 8>{
+          Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+          Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+    } else {
+      return std::array<typename Particle::AttributeNames, 11>{
+          Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+          Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ,
+          Particle::AttributeNames::posZ,   Particle::AttributeNames::owned};
+    }
+  }
 
   /**
-   * Attributes computed by this functor.
+   * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> computedAttr{
-      Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+  constexpr static const std::array<typename Particle::AttributeNames, 3> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 3>{
+        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+  }
 
   /**
    * Get the number of flops used per kernel call. This should count the

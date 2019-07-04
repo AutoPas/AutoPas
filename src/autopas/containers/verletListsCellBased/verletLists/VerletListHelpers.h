@@ -193,16 +193,19 @@ class VerletListHelpers {
     }
 
     /**
-     * Attributes needed for computation.
-     * @note This attribute is not used be Functor to load values into the SoA buffer.
+     * @copydoc Functor::getNeededAttr()
      */
-    constexpr static const std::array<AttributeNames, 4> neededAttr{AttributeNames::ptr, AttributeNames::posX,
-                                                                    AttributeNames::posY, AttributeNames::posZ};
+    constexpr static const std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle::AttributeNames, 4>{AttributeNames::ptr, AttributeNames::posX,
+                                                              AttributeNames::posY, AttributeNames::posZ};
+    }
 
     /**
-     * Attributes computed by this functor.
+     * @copydoc Functor::getComputedAttr()
      */
-    constexpr static const std::array<AttributeNames, 0> computedAttr{/*nothing yet...*/};
+    constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
+    }
 
    private:
     AoS_verletlist_storage_type &_verletListsAoS;

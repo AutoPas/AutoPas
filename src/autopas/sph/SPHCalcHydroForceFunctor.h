@@ -464,26 +464,29 @@ class SPHCalcHydroForceFunctor
   }
 
   /**
-   * Attributes needed for computation.
+   * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename autopas::sph::SPHParticle::AttributeNames, 16> neededAttr{
-      autopas::sph::SPHParticle::AttributeNames::mass,     autopas::sph::SPHParticle::AttributeNames::density,
-      autopas::sph::SPHParticle::AttributeNames::smth,     autopas::sph::SPHParticle::AttributeNames::soundSpeed,
-      autopas::sph::SPHParticle::AttributeNames::pressure, autopas::sph::SPHParticle::AttributeNames::vsigmax,
-      autopas::sph::SPHParticle::AttributeNames::engDot,   autopas::sph::SPHParticle::AttributeNames::posX,
-      autopas::sph::SPHParticle::AttributeNames::posY,     autopas::sph::SPHParticle::AttributeNames::posZ,
-      autopas::sph::SPHParticle::AttributeNames::velX,     autopas::sph::SPHParticle::AttributeNames::velY,
-      autopas::sph::SPHParticle::AttributeNames::velZ,     autopas::sph::SPHParticle::AttributeNames::accX,
-      autopas::sph::SPHParticle::AttributeNames::accY,     autopas::sph::SPHParticle::AttributeNames::accZ};
+  constexpr static const std::array<typename SPHParticle::AttributeNames, 16> getNeededAttr() {
+    ///@todo distinguish between N3 and notN3
+    return std::array<typename SPHParticle::AttributeNames, 16>{
+        SPHParticle::AttributeNames::mass,     SPHParticle::AttributeNames::density,
+        SPHParticle::AttributeNames::smth,     SPHParticle::AttributeNames::soundSpeed,
+        SPHParticle::AttributeNames::pressure, SPHParticle::AttributeNames::vsigmax,
+        SPHParticle::AttributeNames::engDot,   SPHParticle::AttributeNames::posX,
+        SPHParticle::AttributeNames::posY,     SPHParticle::AttributeNames::posZ,
+        SPHParticle::AttributeNames::velX,     SPHParticle::AttributeNames::velY,
+        SPHParticle::AttributeNames::velZ,     SPHParticle::AttributeNames::accX,
+        SPHParticle::AttributeNames::accY,     SPHParticle::AttributeNames::accZ};
+  }
 
   /**
-   * Attributes computed by this functor.
+   * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename autopas::sph::SPHParticle::AttributeNames, 5> computedAttr{
-      autopas::sph::SPHParticle::AttributeNames::vsigmax, autopas::sph::SPHParticle::AttributeNames::engDot,
-      autopas::sph::SPHParticle::AttributeNames::accX,    autopas::sph::SPHParticle::AttributeNames::accY,
-      autopas::sph::SPHParticle::AttributeNames::accZ,
-  };
+  constexpr static const std::array<typename sph::SPHParticle::AttributeNames, 5> getComputedAttr() {
+    return std::array<typename SPHParticle::AttributeNames, 5>{
+        SPHParticle::AttributeNames::vsigmax, SPHParticle::AttributeNames::engDot, SPHParticle::AttributeNames::accX,
+        SPHParticle::AttributeNames::accY, SPHParticle::AttributeNames::accZ};
+  }
 
   /**
    * Get the number of floating point operations used in one full kernel call
