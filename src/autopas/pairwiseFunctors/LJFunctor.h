@@ -875,7 +875,7 @@ class LJFunctor
   // make sure of the size of AoSThreadData
   // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  floatPrecision _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
+  const floatPrecision _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   floatPrecision _upotSum;
