@@ -445,12 +445,18 @@ class LJFunctorAVX
     utils::ExceptionHandler::exception("Verlet SoA functor not implemented!");
   }
 
-  constexpr static std::array<typename Particle::AttributeNames, 8> neededAttr{
+  /**
+   * Attributes needed for computation.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 8> neededAttr{
       Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
       Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
       Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
 
-  constexpr static std::array<typename Particle::AttributeNames, 3> computedAttr{
+  /**
+   * Attributes computed by this functor.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 3> computedAttr{
       Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
 
   /**

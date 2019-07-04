@@ -30,11 +30,17 @@ namespace internal {
  * @tparam Particle
  */
 template <class Particle>
-class Dummy {
+class Dummy final {
  public:
-  constexpr static std::array<typename Particle::AttributeNames, 0> neededAttr{};
+  /**
+   * Attributes needed for computation.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> neededAttr{};
 
-  constexpr static std::array<typename Particle::AttributeNames, 0> computedAttr{};
+  /**
+   * Attributes computed by this functor.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> computedAttr{};
 };
 }  // namespace internal
 

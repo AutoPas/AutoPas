@@ -36,8 +36,7 @@ class VerletListHelpers {
    * This functor can generate verlet lists using the typical pairwise
    * traversal.
    */
-  class VerletListGeneratorFunctor
-      : public autopas::Functor<Particle, VerletListParticleCellType, SoAArraysType, VerletListGeneratorFunctor> {
+  class VerletListGeneratorFunctor : public autopas::Functor<Particle, VerletListParticleCellType, SoAArraysType> {
     typedef VerletListParticleCellType ParticleCell_t;
 
    public:
@@ -47,7 +46,7 @@ class VerletListHelpers {
      * @param cutoffskin
      */
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
-        : Functor<Particle, VerletListParticleCellType, SoAArraysType, VerletListGeneratorFunctor>(cutoffskin),
+        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(cutoffskin),
           _verletListsAoS(verletListsAoS),
           _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
@@ -191,11 +190,17 @@ class VerletListHelpers {
       }
     }
 
-    constexpr static std::array<int, 0> neededAttr{
-             /*AttributeNames::ptr,     AttributeNames::posX,   AttributeNames::posY,
-              AttributeNames::posZ*/};
+    /**
+     * Attributes needed for computation.
+     * @note This attribute is not used be Functor to load values into the SoA buffer.
+     */
+    constexpr static const std::array<AttributeNames, 4> neededAttr{AttributeNames::ptr, AttributeNames::posX,
+                                                                    AttributeNames::posY, AttributeNames::posZ};
 
-    constexpr static std::array<int, 0> computedAttr{/*nothing yet...*/};
+    /**
+     * Attributes computed by this functor.
+     */
+    constexpr static const std::array<AttributeNames, 0> computedAttr{/*nothing yet...*/};
 
    private:
     AoS_verletlist_storage_type &_verletListsAoS;

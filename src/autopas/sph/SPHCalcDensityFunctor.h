@@ -218,11 +218,18 @@ class SPHCalcDensityFunctor
     }
   }
 
-  constexpr static std::array<typename Particle::AttributeNames, 6> neededAttr{
+  /**
+   * Attributes needed for computation.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 6> neededAttr{
       Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
       Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::density};
 
-  constexpr static std::array<typename Particle::AttributeNames, 1> computedAttr{Particle::AttributeNames::density};
+  /**
+   * Attributes computed by this functor.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 1> computedAttr{
+      Particle::AttributeNames::density};
 };
 }  // namespace sph
 }  // namespace autopas

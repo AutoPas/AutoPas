@@ -327,10 +327,16 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
 #endif
   }
 
-  constexpr static std::array<typename Particle::AttributeNames, 3> neededAttr{
+  /**
+   * Attributes needed for computation.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 3> neededAttr{
       Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ};
 
-  constexpr static std::array<typename Particle::AttributeNames, 0> computedAttr{/*Nothing*/};
+  /**
+   * Attributes computed by this functor.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> computedAttr{/*Nothing*/};
 
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
