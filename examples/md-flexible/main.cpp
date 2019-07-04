@@ -113,10 +113,17 @@ int main(int argc, char **argv) {
   PrintableMolecule::setSigma(parser.getSigma());
   PrintableMolecule::setMass(parser.getMass());
 
+  //tried to get autopas->getNumberOfParticles(), but didnt work ->@todo need to make it work with get function
+  //only workaround with parser arguments:
+  double numP;
+  if(parser.getGeneratorOption()==MDFlexParser::GeneratorOption::grid){
+      numP=parser.getParticlesPerDim()*parser.getParticlesPerDim()*parser.getParticlesPerDim();
+  }else{
+      numP=parser.getParticlesTotal();
+  }
     // Initialization
 
-    auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);//@todo übernommen vom merge: -> prüfen
-    //@todo übernommen vom merge: -> prüfen
+    auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
     autopas->setTuningStrategyOption(tuningStrategy);
     autopas->setAllowedCellSizeFactors(cellSizeFactors);
     autopas::Logger::get()->set_level(logLevel);
@@ -136,8 +143,6 @@ int main(int argc, char **argv) {
   map<unsigned long, double> PC_Epsilon;
   map<unsigned long, double> PC_Sigma ;
   map<unsigned long, double> PC_Mass;
-  double numP=autopas->getNumberOfParticles();
-  cout << "num of P= " << numP << endl;
   //temporäre implemetierung mit nur einer particle Class
   double epsilon=parser.getEpsilon();
   double sigma=parser.getSigma();
@@ -147,10 +152,6 @@ int main(int argc, char **argv) {
       PC_Sigma.emplace(i,sigma);
       PC_Mass.emplace(i,mass);
   }
-  cout << "size of epsilon container: " << PC_Epsilon.size() << endl;
-  cout << "size of sigma container: " << PC_Sigma.size() << endl;
-  cout << "size of mass container: " << PC_Mass.size() << endl;
-
 
     ParticleClassLibrary P_C_Library = ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
 
