@@ -26,7 +26,7 @@ namespace autopas {
 /**
  * Newton 3 modes for the LJFunctor.
  */
-enum FunctorN3Modes {
+enum class FunctorN3Modes {
   Newton3Only,
   Newton3Off,
   Both,
