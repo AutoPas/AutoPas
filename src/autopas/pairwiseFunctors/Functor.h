@@ -282,12 +282,23 @@ class Functor {
 
     if (cell.numParticles() == 0) return;
 
+    /**
+     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * in the following loop.
+     */
     // maybe_unused necessary because gcc doesnt understand that pointer is used later
     [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::neededAttr[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
     for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      /**
+       * The following statement writes the values of all attributes defined in neededAttr into the respective position
+       * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
+       * times over the comma operator. E.g. like this (std::index_sequence<I...> = 0, 1):
+       * ((std::get<0>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[0]>()),
+       * (std::get<1>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[1]>()))
+       */
       ((std::get<I>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[I]>()), ...);
     }
   }
@@ -304,12 +315,24 @@ class Functor {
   void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
     if (cell.numParticles() == 0) return;
 
+    /**
+     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * in the following loop.
+     */
     // maybe_unused necessary because gcc doesnt understand that pointer is used later
     [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::computedAttr[I]>()...);
 
     auto cellIter = cell.begin();
-    // load particles in SoAs
+    // write values in SoAs back to particles
     for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      /**
+       * The following statement writes the value of all attributes defined in computedAttr back into the particle.
+       * I represents the index inside computedAttr.
+       * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
+       * (std::index_sequence<I...> = 0, 1):
+       * (cellIter->template set<Impl_t::computedAttr[0]>(std::get<0>(pointer)[i]),
+       * cellIter->template set<Impl_t::computedAttr[1]>(std::get<1>(pointer)[i]))
+       */
       (cellIter->template set<Impl_t::computedAttr[I]>(std::get<I>(pointer)[i]), ...);
     }
   }
