@@ -96,6 +96,18 @@ class Functor {
   }
 
   /**
+   * Attributes needed for computation.
+   * @note Should be shadowed by child class.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> neededAttr{};
+
+  /**
+   * Attributes computed by this functor.
+   * @note Should be shadowed by child class.
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> computedAttr{};
+
+  /**
    * @brief Functor for structure of arrays (SoA)
    *
    * This functor should calculate the forces or any other pair-wise interaction
