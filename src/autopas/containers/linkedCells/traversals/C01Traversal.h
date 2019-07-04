@@ -100,6 +100,17 @@ class C01Traversal
   inline void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
   /**
+   * Appends all needed Attributes to the SoA buffer in cell.
+   * @tparam I
+   * @param cell
+   * @param appendCell
+   */
+  template <std::size_t... I>
+  inline constexpr void appendNeeded(ParticleCell &cell, ParticleCell &appendCell, std::index_sequence<I...>) {
+    cell._particleSoABuffer.template append<PairwiseFunctor::neededAttr[I]...>(appendCell._particleSoABuffer);
+  }
+
+  /**
    * Pairs for processBaseCell().
    * @note std::map not applicable since ordering arising from insertion is important for later processing!
    */
@@ -173,7 +184,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   ParticleCell &baseCell = cells[baseIndex];
   const size_t cOffSize = _cellOffsets.size();
 
-  if (combineSoA) {
+  if constexpr (combineSoA) {
     // Iteration along x
 
     const auto threadID = static_cast<size_t>(autopas_get_thread_num());
@@ -188,7 +199,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
         for (const auto &offset : _cellOffsets[offsetSlice]) {
           const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
-          combinationSlice[offsetSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+          appendNeeded(combinationSlice[offsetSlice], otherCell,
+                       std::make_index_sequence<std::size(PairwiseFunctor::neededAttr)>{});
         }
       }
     } else {
@@ -211,7 +223,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
              ++offsetIndex) {
           const unsigned long otherIndex = baseIndex + _cellOffsets[i][offsetIndex].first;
           ParticleCell &otherCell = cells[otherIndex];
-          combinationSlice[slice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+          appendNeeded(combinationSlice[slice], otherCell,
+                       std::make_index_sequence<std::size(PairwiseFunctor::neededAttr)>{});
         }
       }
 
