@@ -70,7 +70,7 @@ class LJFunctorAVX
     }
   }
 #else
-      : Functor<Particle, ParticleCell>(cutoff),
+      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
         _one{0},
         _masks{0, 0, 0},
         _cutoffsquare{0},
