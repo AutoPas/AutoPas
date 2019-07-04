@@ -522,9 +522,8 @@ class LJFunctor
    * Attributes needed for computation.
    */
   constexpr static const std::array<typename Particle::AttributeNames, 8> neededAttr{
-      Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-      Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-      Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+      Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+      Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
 
   /**
    * Attributes computed by this functor.
