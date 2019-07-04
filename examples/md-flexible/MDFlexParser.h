@@ -7,7 +7,6 @@
 #pragma once
 #include "MDFlexParserInclude.h"
 
-
 using namespace std;
 
 class MDFlexParser {

@@ -1,18 +1,7 @@
 //
 // Created by nicola on 22.05.19.
 //
-
-#include <gtest/gtest.h>
-#include <math.h>
-#include "../../../../examples/md-flexible/MDFlexParser.h"
-#include "../../../../examples/md-flexible/PrintableMolecule.h"
-#include "../../../../examples/md-flexible/TimeDiscretization.h"
-#include "../../../../src/autopas/utils/ArrayMath.h"
-#include "../../testingHelpers/GridGenerator.h"
-#include "../../testingHelpers/RandomGenerator.h"
-#include "autopas/AutoPas.h"
-#include "testingHelpers/commonTypedefs.h"
-
+#include "TimeDiscretizationTest.h"
 using namespace std;
 using namespace autopas;
 
@@ -43,7 +32,7 @@ std::array<double, 3> lennardForceCalculation(std::array<double, 3> x1, std::arr
                                               (std::pow(sigma / distance, 6) - 2 * std::pow(sigma / distance, 12)));
 }
 
-TEST(TimeDTest, LennardJonesCalculation) {
+TEST_F(TimeDiscretizationTest, LennardJonesCalculation) {
   // dient zum vergleich zu den Forces die im Functor ausgerechnet werden
   std::array<double, 3> x1 = {1, 1, 1};
   std::array<double, 3> x2 = {1.5, 1.5, 1.5};
@@ -51,19 +40,12 @@ TEST(TimeDTest, LennardJonesCalculation) {
   ASSERT_TRUE(true);
 }
 
-// Testet und visualisiert die Kräfte berechnungen und TimeDiscreatization Classe
-TEST(TimeDTest, GeneralForceTest) {
-  // auto container = autopas::LinkedCells<PrintableMolecule,ParticleCell<PrintableMolecule>>({0., 0., 0.},{10.,
-  // 10., 10.},1);
-  PrintableMolecule::setEpsilon(5.0);
-  PrintableMolecule::setSigma(1.0);
+// Testet und visualisiert die Kräfte berechnungen und TimeDiscreatization Klasse
+TEST_F(TimeDiscretizationTest, GeneralForceTest) {
+  PrintableMolecule::setEpsilon(epsilon);
+  PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  double epsilon = 5.0;
-  double sigma = 1.0;
-  double cutoff = 2;
-  array<double, 3> boxmin = {0., 0., 0.};
-  array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
@@ -84,9 +66,6 @@ TEST(TimeDTest, GeneralForceTest) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor =
-      new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
-                             true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   // Dokumentation prints
@@ -115,20 +94,14 @@ TEST(TimeDTest, GeneralForceTest) {
     cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
   }
   ASSERT_TRUE(true);
-  delete functor;
   delete autoPas;
 }
 
-TEST(TimeDTest, CalcX) {
-  PrintableMolecule::setEpsilon(5.0);
-  PrintableMolecule::setSigma(1.0);
+TEST_F(TimeDiscretizationTest, CalcX) {
+  PrintableMolecule::setEpsilon(epsilon);
+  PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  double epsilon = 5.0;
-  double sigma = 1.0;
-  double cutoff = 2;
-  array<double, 3> boxmin = {0., 0., 0.};
-  array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
@@ -149,9 +122,6 @@ TEST(TimeDTest, CalcX) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor =
-      new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
-                             true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   cout << "delta_t value =  " << particleD << endl;
@@ -181,16 +151,11 @@ TEST(TimeDTest, CalcX) {
   ASSERT_TRUE(true);
 }
 
-TEST(TimeDTEst, CalcV) {
-  PrintableMolecule::setEpsilon(5.0);
-  PrintableMolecule::setSigma(1.0);
+TEST_F(TimeDiscretizationTest, CalcV) {
+  PrintableMolecule::setEpsilon(epsilon);
+  PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  double epsilon = 5.0;
-  double sigma = 1.0;
-  double cutoff = 2;
-  array<double, 3> boxmin = {0., 0., 0.};
-  array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
@@ -211,9 +176,6 @@ TEST(TimeDTEst, CalcV) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor =
-      new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
-                             true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   cout << "delta_t value =  " << particleD << endl;
@@ -222,7 +184,6 @@ TEST(TimeDTEst, CalcV) {
     cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
 
     for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-      auto m = iter->getMass();
       auto force = iter->getF();
       auto old_force = iter->getOldf();
       cout << "Particle ID: " << iter->getID() << endl;

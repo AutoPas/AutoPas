@@ -12,6 +12,8 @@ class ParticleClassLibrary {
   ParticleClassLibrary(map<unsigned long, double> sigma, map<unsigned long, double> epsilon,
                        map<unsigned long, double> mass);
 
+  ParticleClassLibrary();
+
   ~ParticleClassLibrary() {}
 
   /**Getter for Particle Epsilon
@@ -72,6 +74,7 @@ class ParticleClassLibrary {
 ParticleClassLibrary::ParticleClassLibrary(map<unsigned long, double> sigma, map<unsigned long, double> epsilon,
                                            map<unsigned long, double> mass)
     : Epsilon(epsilon), Sigma(sigma), Mass(mass) {}
+ParticleClassLibrary::ParticleClassLibrary() {}
 
 double ParticleClassLibrary::getEpsilon(Particle i) { return Epsilon.at(i.getID()); }
 
