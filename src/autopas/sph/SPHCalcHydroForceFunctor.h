@@ -466,7 +466,7 @@ class SPHCalcHydroForceFunctor
   /**
    * Attributes needed for computation.
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 16> neededAttr{
+  constexpr static const std::array<typename autopas::sph::SPHParticle::AttributeNames, 16> neededAttr{
       autopas::sph::SPHParticle::AttributeNames::mass,     autopas::sph::SPHParticle::AttributeNames::density,
       autopas::sph::SPHParticle::AttributeNames::smth,     autopas::sph::SPHParticle::AttributeNames::soundSpeed,
       autopas::sph::SPHParticle::AttributeNames::pressure, autopas::sph::SPHParticle::AttributeNames::vsigmax,
@@ -479,7 +479,7 @@ class SPHCalcHydroForceFunctor
   /**
    * Attributes computed by this functor.
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 5> computedAttr{
+  constexpr static const std::array<typename autopas::sph::SPHParticle::AttributeNames, 5> computedAttr{
       autopas::sph::SPHParticle::AttributeNames::vsigmax, autopas::sph::SPHParticle::AttributeNames::engDot,
       autopas::sph::SPHParticle::AttributeNames::accX,    autopas::sph::SPHParticle::AttributeNames::accY,
       autopas::sph::SPHParticle::AttributeNames::accZ,
