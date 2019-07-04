@@ -36,7 +36,7 @@ class VerletListHelpers {
    * This functor can generate verlet lists using the typical pairwise
    * traversal.
    */
-  class VerletListGeneratorFunctor : public autopas::Functor<Particle, VerletListParticleCellType, SoAArraysType> {
+  class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType, SoAArraysType> {
     typedef VerletListParticleCellType ParticleCell_t;
 
    public:
@@ -169,7 +169,9 @@ class VerletListHelpers {
      * @param offset
      */
     void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
-      assert(offset == 0);
+      if (offset > 0) {
+        utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset > 0");
+      }
       soa.resizeArrays(cell.numParticles());
 
       if (cell.numParticles() == 0) return;
@@ -217,7 +219,7 @@ class VerletListHelpers {
    * @tparam ParticleCell
    */
   template <class ParticleCell>
-  class VerletListValidityCheckerFunctor : public autopas::Functor<Particle, ParticleCell, SoAArraysType> {
+  class VerletListValidityCheckerFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
    public:
     /**
      * Constructor
