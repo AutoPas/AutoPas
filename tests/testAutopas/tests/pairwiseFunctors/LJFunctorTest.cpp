@@ -9,7 +9,12 @@
 #include "testingHelpers/commonTypedefs.h"
 
 void LJFunctorTest::testAoSNoGlobals(bool newton3) {
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, epsilon, sigma, shift);
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < 2; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
@@ -60,8 +65,12 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
 
 void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
   // test is for the soa functors the forces are calculated correctly
-
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, epsilon, sigma, shift);
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < 2; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
 
   FMCell cell1, cell2;
   {
@@ -179,17 +188,22 @@ TEST_F(LJFunctorTest, testSoAFunctorNoGlobals) {
 }
 
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < 2; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
   bool duplicatedCalculation = true;
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
   {
     // throw if lowcorner == highcorner, but calculateglobals and duplicatedCalculation are true
     typedef autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functortype;
-    EXPECT_THROW(functortype functor(cutoff, epsilon, sigma, shift, lowCorner, {0., 0., 0.}, duplicatedCalculation),
+    EXPECT_THROW(functortype functor(cutoff, PCL, shift, lowCorner, {0., 0., 0.}, duplicatedCalculation),
                  exception_type);
   }
 
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(
-      cutoff, epsilon, sigma, shift, lowCorner, highCorner, duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift, lowCorner,
+                                                                                    highCorner, duplicatedCalculation);
 
   // getupot without postprocessing is not allowed
   EXPECT_THROW(functor.getUpot(), exception_type);
@@ -208,8 +222,13 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
 }
 
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(
-      cutoff, epsilon, sigma, shift, lowCorner, highCorner, duplicatedCalculation);
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < 2; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift, lowCorner,
+                                                                                    highCorner, duplicatedCalculation);
   double xOffset;
   double whereFactor;
   std::string where_str;
@@ -270,8 +289,14 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(
-      cutoff, epsilon, sigma, shift, lowCorner, highCorner, duplicatedCalculation);
+  unsigned long numP = additionalParticlesToVerletNumber + 2;
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < numP; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift, lowCorner,
+                                                                                    highCorner, duplicatedCalculation);
   double xOffset;
   double whereFactor;
   std::string where_str;
@@ -428,9 +453,13 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
 
   Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
   Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
-
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(
-      cutoff, epsilon, sigma, shift, lowCorner, highCorner, duplicatedCalculation);
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < 4; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift, lowCorner,
+                                                                                    highCorner, duplicatedCalculation);
 
   functor.initTraversal();
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in

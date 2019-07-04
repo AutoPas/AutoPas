@@ -21,10 +21,6 @@ template <class Particle, class ParticleCell>
 class Simulation {
  private:
   shared_ptr<AutoPas<Particle, ParticleCell>> _autopas;
-
-  // autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* _Functor = new
-  // autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0.,
-  // 0.},{5., 5., 5.},true);
   long durationX;
   long durationF;
   long durationV;
@@ -162,7 +158,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   // std::array<double, 3> highCorner = {5., 5., 5.};
   // double epsilon,sigma  = 1.0;
   string logFileName(parser->getLogFileName());
-  auto measureFlops(parser->getMeasureFlops());  //@todo un-used
+  //  auto measureFlops(parser->getMeasureFlops());  //@todo un-used
   auto numIterations(parser->getIterations());
   auto particlesTotal(parser->getParticlesTotal());
   auto verletRebuildFrequency(parser->getVerletRebuildFrequency());
@@ -174,7 +170,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   auto dataLayoutOptions(parser->getDataLayoutOptions());
   auto distributionMean(parser->getDistributionMean());
   auto distributionStdDev(parser->getDistributionStdDev());
-  auto functorChoice(parser->getFunctorOption());  //@todo un-used
+  //  auto functorChoice(parser->getFunctorOption());  //@todo un-used
   auto generatorChoice(parser->getGeneratorOption());
   auto newton3Options(parser->getNewton3Options());
   auto particleSpacing(parser->getParticleSpacing());

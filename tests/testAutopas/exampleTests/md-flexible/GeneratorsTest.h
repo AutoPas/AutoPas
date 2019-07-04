@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 #include <math.h>
 #include <vector>
-#include "../../../../examples/md-flexible/MDFlexParser.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
@@ -11,7 +10,7 @@
 #include "../../testingHelpers/GridGenerator.h"
 #include "../../testingHelpers/RandomGenerator.h"
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPas.h"  //vielleicht kann an des machen und des hilt
 #include "testingHelpers/commonTypedefs.h"
 
 class GeneratorsTest : public AutoPasTestBase {
