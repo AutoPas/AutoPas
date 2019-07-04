@@ -521,13 +521,15 @@ class LJFunctor
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const auto getNeededAttr() {
+  constexpr static const std::array<typename Particle::AttributeNames,
+                                    (useNewton3 == FunctorN3Modes::Newton3Off) ? 5 : 8>
+  getNeededAttr() {
     if constexpr (useNewton3 == FunctorN3Modes::Newton3Off) {
-      return std::array<typename Particle::AttributeNames, 8>{
+      return std::array<typename Particle::AttributeNames, 5>{
           Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
           Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
     } else {
-      return std::array<typename Particle::AttributeNames, 11>{
+      return std::array<typename Particle::AttributeNames, 8>{
           Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
           Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ,
           Particle::AttributeNames::posZ,   Particle::AttributeNames::owned};
