@@ -208,6 +208,9 @@ class ParticleBase {
         return getF()[2];
       case AttributeNames::owned:
         return isOwned() ? 1. : 0.;
+      default:
+        utils::ExceptionHandler::exception("ParticleBase::get: unknown attribute");
+        return 0;
     }
   }
 

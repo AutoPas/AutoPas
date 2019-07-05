@@ -443,6 +443,9 @@ class SPHParticle : public autopas::Particle {
         return getAcceleration()[2];
       case AttributeNames::engDot:
         return getEngDot();
+      default:
+        utils::ExceptionHandler::exception("SPHParticle::get: unknown attribute");
+        return 0;
     }
   }
 
