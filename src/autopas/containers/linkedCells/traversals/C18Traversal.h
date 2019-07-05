@@ -176,14 +176,14 @@ void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
 
   ParticleCell &baseCell = cells[baseIndex];
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
-  for (const auto &offset : offsets) {
-    unsigned long otherIndex = baseIndex + offset.first;
+  for (auto const &[offset, r] : offsets) {
+    unsigned long otherIndex = baseIndex + offset;
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
       this->_cellFunctor.processCell(baseCell);
     } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell, offset.second);
+      this->_cellFunctor.processCellPair(baseCell, otherCell, r);
     }
   }
 }
