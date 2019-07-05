@@ -10,6 +10,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
 #include "testingHelpers/RandomGenerator.h"
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+
 
 class LJFunctorTest : public AutoPasTestBase {
  public:

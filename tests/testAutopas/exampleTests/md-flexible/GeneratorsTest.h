@@ -5,12 +5,13 @@
 #include <vector>
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
 #include "../../testingHelpers/GaussianGenerator.h"
 #include "../../testingHelpers/GridGenerator.h"
 #include "../../testingHelpers/RandomGenerator.h"
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"  //vielleicht kann an des machen und des hilt
+#include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class GeneratorsTest : public AutoPasTestBase {

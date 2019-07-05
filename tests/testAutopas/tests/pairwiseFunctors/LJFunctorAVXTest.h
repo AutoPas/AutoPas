@@ -10,6 +10,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+
 
 class LJFunctorAVXTest : public AutoPasTestBase {
  public:

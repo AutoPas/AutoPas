@@ -10,6 +10,7 @@
 #include <chrono>
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 
 class AoSvsSoATest : public AutoPasTestBase {
  public:

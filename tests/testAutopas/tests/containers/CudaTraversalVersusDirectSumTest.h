@@ -11,6 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+
 
 class CudaTraversalVersusDirectSumTest : public AutoPasTestBase {
  public:

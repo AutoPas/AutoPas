@@ -15,6 +15,8 @@
 #include "mocks/MockVerletLists.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "../../../../../examples/md-flexible/ParticleClassLibrary.h"
+
 
 class VerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<double> {
  public:

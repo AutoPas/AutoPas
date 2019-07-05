@@ -10,6 +10,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+
 
 class AutoTunerTest : public AutoPasTestBase {
  public:

@@ -15,6 +15,8 @@
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+
 
 class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
  public:
