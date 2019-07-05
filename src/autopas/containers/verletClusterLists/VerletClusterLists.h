@@ -323,13 +323,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     clearNeighborLists();
 
-    buildClusterIndexMap();
+    _numClusters = buildClusterIndexMap();
 
     updateVerletLists(useNewton3);
     // fill last cluster with dummy particles, such that each cluster is a multiple of _clusterSize
     padClusters();
-
-    _numClusters = calculateNumClusters();
   }
 
   /**
@@ -579,27 +577,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Calculates the number of clusters in this container.
-   * @return The number of clusters in this container.
-   */
-  index_t calculateNumClusters() {
-    // iterate over all clusters
-    index_t currentClusterIndex = 0;
-    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
-      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
-        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
-        auto &grid = _clusters[index];
-
-        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
-        for (index_t clusterIndex = 0; clusterIndex < numClustersInGrid; clusterIndex++) {
-          currentClusterIndex++;
-        }
-      }
-    }
-    return currentClusterIndex;
-  }
-
-  /**
    * Calculates the distance of two bounding boxes in one dimension.
    * @param min1 minimum coordinate of first bbox in tested dimension
    * @param max1 maximum coordinate of first bbox in tested dimension
@@ -656,8 +633,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * and the neighbor cell to the left have a lower index. Inside of each color cell, the clusters of each grid have a
    * similar relationship with the neighbor grids. In each grid, the clusters that are higher in z-direction have a
    * higher index.
+   *
+   * @return The number of clusters in the container.
    */
-  void buildClusterIndexMap() {
+  index_t buildClusterIndexMap() {
     index_t nextFreeMapIndex = 0;
 
     int gridsPerColoringCell = static_cast<int>(std::ceil(_cutoff / _gridSideLength));
@@ -672,6 +651,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         nextFreeMapIndex = indexColorCell(xColorCell, yColorCell, gridsPerColoringCell, nextFreeMapIndex);
       }
     }
+
+    return nextFreeMapIndex;
   }
 
  private:
