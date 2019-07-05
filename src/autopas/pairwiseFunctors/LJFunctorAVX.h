@@ -448,19 +448,20 @@ class LJFunctorAVX
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames,
-                                    (useNewton3 == FunctorN3Modes::Newton3Off) ? 5 : 8>
-  getNeededAttr() {
-    if constexpr (useNewton3 == FunctorN3Modes::Newton3Off) {
-      return std::array<typename Particle::AttributeNames, 5>{
-          Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-          Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
-    } else {
-      return std::array<typename Particle::AttributeNames, 8>{
-          Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-          Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ,
-          Particle::AttributeNames::posZ,   Particle::AttributeNames::owned};
-    }
+  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 8>{
+        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 5>{
+        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
   }
 
   /**

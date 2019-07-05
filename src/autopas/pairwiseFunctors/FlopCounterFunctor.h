@@ -336,6 +336,13 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   }
 
   /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr(std::false_type) {
+    return getNeededAttr();
+  }
+
+  /**
    * @copydoc Functor::getComputedAttr()
    */
   constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {

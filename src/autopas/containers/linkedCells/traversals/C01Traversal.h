@@ -107,7 +107,8 @@ class C01Traversal
    */
   template <std::size_t... I>
   inline constexpr void appendNeeded(ParticleCell &cell, ParticleCell &appendCell, std::index_sequence<I...>) {
-    cell._particleSoABuffer.template append<PairwiseFunctor::getNeededAttr()[I]...>(appendCell._particleSoABuffer);
+    cell._particleSoABuffer.template append<std::get<I>(PairwiseFunctor::getNeededAttr(std::false_type()))...>(
+        appendCell._particleSoABuffer);
   }
 
   /**
@@ -200,7 +201,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
           const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
           appendNeeded(combinationSlice[offsetSlice], otherCell,
-                       std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>{});
+                       std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
         }
       }
     } else {
@@ -224,7 +225,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
           const unsigned long otherIndex = baseIndex + _cellOffsets[i][offsetIndex].first;
           ParticleCell &otherCell = cells[otherIndex];
           appendNeeded(combinationSlice[slice], otherCell,
-                       std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>{});
+                       std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
         }
       }
 
@@ -234,7 +235,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
         const unsigned long otherIndex = baseIndex + offset.first;
         ParticleCell &otherCell = cells[otherIndex];
         appendNeeded(combinationSlice[currentSlice], otherCell,
-                     std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>{});
+                     std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
       }
 
       ++currentSlice %= cOffSize;

@@ -228,6 +228,15 @@ class SPHCalcDensityFunctor
   }
 
   /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static const std::array<typename SPHParticle::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 5>{
+        Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::smth};
+  }
+
+  /**
    * @copydoc Functor::getComputedAttr()
    */
   constexpr static const std::array<typename SPHParticle::AttributeNames, 1> getComputedAttr() {

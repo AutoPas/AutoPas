@@ -109,6 +109,15 @@ class Functor {
   }
 
   /**
+   * Get attributes needed for computation without N3 optimization.
+   * @return Attributes needed for computation.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
+    return Impl_t::getNeededAttr();
+  }
+
+  /**
    * Get attributes computed by this functor.
    * @return Attributes computed by this functor.
    * @todo C++20: make this function virtual

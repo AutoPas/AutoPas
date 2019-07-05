@@ -480,6 +480,20 @@ class SPHCalcHydroForceFunctor
   }
 
   /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static const std::array<typename SPHParticle::AttributeNames, 11> getNeededAttr(std::false_type) {
+    ///@todo distinguish between N3 and notN3
+    return std::array<typename SPHParticle::AttributeNames, 11>{
+        SPHParticle::AttributeNames::mass,     SPHParticle::AttributeNames::density,
+        SPHParticle::AttributeNames::smth,     SPHParticle::AttributeNames::soundSpeed,
+        SPHParticle::AttributeNames::pressure, SPHParticle::AttributeNames::posX,
+        SPHParticle::AttributeNames::posY,     SPHParticle::AttributeNames::posZ,
+        SPHParticle::AttributeNames::velX,     SPHParticle::AttributeNames::velY,
+        SPHParticle::AttributeNames::velZ};
+  }
+
+  /**
    * @copydoc Functor::getComputedAttr()
    */
   constexpr static const std::array<typename sph::SPHParticle::AttributeNames, 5> getComputedAttr() {
