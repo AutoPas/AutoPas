@@ -12,8 +12,11 @@
 namespace autopas {
 
 /**
- * A traversal for VerletClusterLists that uses a coloring over the grids of the container. It only supports newton 3
- * and AoS at the moment.
+ * A traversal for VerletClusterLists that uses a coloring over the grids of the container.
+ *
+ * The traversal uses a 2D coloring with a stride of x=3, y=2, so 3*2=6 colors.
+ *
+ * It only supports newton 3 and AoS at the moment.
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
  * @tparam dataLayout
@@ -24,6 +27,11 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
                                         public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
   using index_t = typename VerletClusterMaths::index_t;
+  /**
+   * This stride is determined by the way the neighbor list with newton 3 of the VerletClusterLists container is build.
+   * @see VerletClusterLists::updateVerletLists(bool)
+   */
+  static constexpr std::array<unsigned long, 3> stride{3ul, 2ul, 1ul};
 
  private:
   /**
@@ -75,9 +83,9 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
     double gridSideLength = clusterList.getGridSideLength();
     double cutoff = clusterList.getCutoff();
     double gridsPerColoringCell = std::ceil(cutoff / gridSideLength);
-    std::array<unsigned long, 3> cellsPerDimColoring{};
+    std::array<unsigned long, 3> coloringCellsPerDim{};
     for (int i = 0; i < 3; i++) {
-      cellsPerDimColoring[i] =
+      coloringCellsPerDim[i] =
           static_cast<unsigned long>(std::ceil(clusterList.getCellsPerDimension()[i] / gridsPerColoringCell));
     }
 
@@ -85,12 +93,13 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
       processColorCell(x, y, z, gridsPerColoringCell);
     };
 
-    const auto end = ArrayMath::sub(cellsPerDimColoring, {0ul, 0ul, 0ul});
+    const auto end = ArrayMath::sub(coloringCellsPerDim, {0ul, 0ul, 0ul});
     // We are only doing a 2D coloring.
     assert(end[2] == 1);
-    // TODO: Document why stride is 3 in x and 2 in y direction.
-    const std::array<unsigned long, 3> stride{3ul, 2ul, 1ul};
-    this->cTraversal(std::forward<decltype(loopBody)>(loopBody), end, stride);
+
+    // localStride is necessary because stride is constexpr and cTraversal() wants a const &
+    auto localStride = stride;
+    this->cTraversal(std::forward<decltype(loopBody)>(loopBody), end, localStride);
   }
 
  private:
@@ -114,11 +123,11 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
       unsigned long y = yColorCell * gridsPerColoringCell + yInner;
       unsigned long x = xColorCell * gridsPerColoringCell + xInner;
 
-      unsigned long gridIndex1D = VerletClusterMaths::index1D(x, y, cellsPerDim);
       // Not every coloring cell has to have gridsPerColoringCell grids in every direction.
-      if (gridIndex1D >= grids.size()) {
+      if (x >= cellsPerDim[0] || y >= cellsPerDim[1]) {
         continue;
       }
+      unsigned long gridIndex1D = VerletClusterMaths::index1D(x, y, cellsPerDim);
 
       auto &currentGrid = grids[gridIndex1D];
       auto numClusters = currentGrid.numParticles() / clusterSize;

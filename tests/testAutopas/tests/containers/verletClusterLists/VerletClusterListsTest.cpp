@@ -53,7 +53,7 @@ int sumNumClusterNeighbors(const std::vector<std::vector<std::vector<autopas::Pa
 
 TEST_F(VerletClusterListsTest, testVerletListNewton3Build) {
   std::array<double, 3> min = {0, 0, 0};
-  std::array<double, 3> max = {3, 3, 3};
+  std::array<double, 3> max = {8, 8, 8};
   double cutoff = 1.;
   double skin = 0.1;
   autopas::VerletClusterLists<Particle> verletListsNoNewton3(min, max, cutoff, skin);
@@ -68,6 +68,7 @@ TEST_F(VerletClusterListsTest, testVerletListNewton3Build) {
 
   // Generate neighbor list without newton 3.
   MockFunctor<Particle, FPCell> emptyFunctor;
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
   autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> noNewton3Traversal(
       &emptyFunctor);
   verletListsNoNewton3.iteratePairwise(&emptyFunctor, &noNewton3Traversal);
@@ -116,3 +117,37 @@ TEST_F(VerletClusterListsTest, testVerletListNewton3Build) {
     }
   }
 }
+
+#if defined(AUTOPAS_OPENMP)
+TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace) {
+  std::array<double, 3> min = {0, 0, 0};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.1;
+  int numParticles = 5000;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+
+  RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, numParticles);
+
+  CollectParticlesPerThreadFunctor functor;
+  ColoringTraversalWithColorChangeNotify traversal(
+      &functor, [](int currentColor) { CollectParticlesPerThreadFunctor::nextColor(currentColor); });
+  functor.initTraversal();
+  verletLists.iteratePairwise(&functor, &traversal);
+  functor.endTraversal(true);
+
+  // Check that particles in the same color are only accessed by one thread.
+  auto &list = functor._particlesPerThreadPerColor;
+  for (int color = 0; color < 8; color++) {
+    auto &colorList = list[color];
+    for (unsigned long i = 0; i < colorList.size(); i++) {
+      for (auto particlePtr : colorList[i]) {
+        for (unsigned long j = i + 1; j < colorList.size(); j++) {
+          EXPECT_TRUE(colorList[j].find(particlePtr) == colorList[j].end())
+              << particlePtr->toString() << " was accessed by " << i << " and " << j;
+        }
+      }
+    }
+  }
+}
+#endif

@@ -182,6 +182,15 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
+  unsigned long getNumParticles() override {
+    unsigned long sum = 0;
+    for (const auto &cluster : _clusters) {
+      sum += cluster.numParticles();
+    }
+
+    return sum;
+  }
+
   /**
    * Returns the ClusterIndexMap for usage in the traversals of this container.
    * @return the ClusterIndexMap.
@@ -397,7 +406,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * Update the verlet lists.
    *
-   * @param useNewton3 If newton 3 should be used to build the neighbor lists or not.
+   * @param useNewton3 If newton 3 should be used to build the neighbor lists or not. If true, only saves neighbor
+   * clusters that have a higher index that the current cluster. (@see buildClusterIndexMap())
    */
   void updateVerletLists(bool useNewton3) {
     _neighborListIsNewton3 = useNewton3;
@@ -507,7 +517,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     for (index_t jClusterIndex = 0; jClusterIndex < jSize; jClusterIndex++) {
       Particle *jClusterStart = &jGrid[jClusterIndex * _clusterSize];
       // If newton 3 is used, only add clusters as neighbors that have a equal or higher index. Skip otherwise.
-      if (_neighborListIsNewton3 && _clusterIndexMap.at(iClusterStart) < _clusterIndexMap.at(jClusterStart)) continue;
+      if (_neighborListIsNewton3 && _clusterIndexMap.at(iClusterStart) > _clusterIndexMap.at(jClusterStart)) continue;
 
       addJClusterAsNeighborIfInRange(jGrid, jClusterStart, _clusterSize, iClusterNeighborList, distXYsqr, iBBoxBot,
                                      iBBoxTop);
@@ -516,7 +526,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     if (jRest > 0) {
       Particle *jClusterStart = &jGrid[jSize * _clusterSize];
       // If newton 3 is used, only add clusters as neighbors that have a equal or higher index. Skip otherwise.
-      if (not(_neighborListIsNewton3 && _clusterIndexMap.at(iClusterStart) < _clusterIndexMap.at(jClusterStart))) {
+      if (not(_neighborListIsNewton3 && _clusterIndexMap.at(iClusterStart) > _clusterIndexMap.at(jClusterStart))) {
         addJClusterAsNeighborIfInRange(jGrid, jClusterStart, jRest, iClusterNeighborList, distXYsqr, iBBoxBot,
                                        iBBoxTop);
       }
@@ -634,38 +644,87 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   /**
    * Builds the _clusterIndexMap to be up to date with _clusters.
+   *
+   * Every cluster gets an index assigned. The indices are given in a way so that the VerletClustersColoringTraversal
+   * works as easy as possible with newton 3. The newton 3 neighbor list just has to only save neighbors with a higher
+   * index, and there will be no data races.
+   *
+   * The domain in the xy-plane is divided in color cells that have at least the size of the cutoff, and the grids (that
+   * have variable sizes depending on the number of particles) are sorted into these color cells. Now, for every color
+   * cell, the indices of all clusters in it are assigned in a way so that all clusters in the three neighbor cells
+   * below and the neighbor cell to the right have a higher index, and the clusters in the three neighbor cells above
+   * and the neighbor cell to the left have a lower index. Inside of each color cell, the clusters of each grid have a
+   * similar relationship with the neighbor grids. In each grid, the clusters that are higher in z-direction have a
+   * higher index.
    */
   void buildClusterIndexMap() {
-    index_t currentMapIndex = 0;
+    index_t nextFreeMapIndex = 0;
 
-    // Cannot use traverseClusters(), because the clusters might not be padded yet when this method is called, and
-    // traverseClusters() cannot handle that.
-    for (index_t x = 0; x < _cellsPerDim[0]; x++) {
-      for (index_t y = 0; y < _cellsPerDim[1]; y++) {
-        index_t index = VerletClusterMaths::index1D(x, y, _cellsPerDim);
-        auto &grid = _clusters[index];
-        auto &gridNeighborList = _neighborLists[index];
+    int gridsPerColoringCell = static_cast<int>(std::ceil(_cutoff / _gridSideLength));
+    std::array<unsigned long, 3> coloringCellsPerDim{};
+    for (int i = 0; i < 3; i++) {
+      coloringCellsPerDim[i] =
+          static_cast<unsigned long>(std::ceil(_cellsPerDim[i] / static_cast<double>(gridsPerColoringCell)));
+    }
 
-        index_t numClustersInGrid = grid.numParticles() / _clusterSize;
-        int rest = grid.numParticles() % _clusterSize;
-        if (rest > 0) numClustersInGrid++;
-        for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
-          Particle *clusterStart = &grid[clusterInGrid * _clusterSize];
-          _clusterIndexMap[clusterStart] = currentMapIndex++;
-        }
+    for (unsigned long yColorCell = 0; yColorCell < coloringCellsPerDim[1]; yColorCell++) {
+      for (unsigned long xColorCell = 0; xColorCell < coloringCellsPerDim[0]; xColorCell++) {
+        nextFreeMapIndex = indexColorCell(xColorCell, yColorCell, gridsPerColoringCell, nextFreeMapIndex);
       }
     }
   }
 
  private:
-  /// neighbors of clusters for each grid
+  /**
+   * Indexes all clusters of one color cell (inserts value into _clusterIndexMap) starting with currentMapIndex.
+   *
+   * The scheme follows the documentation from buildClusterIndexMap().
+   * @param xColorCell The x coordinate of the color cell.
+   * @param yColorCell The y coordinate of the color cell.
+   * @param gridsPerColoringCell The number of grids in x and y dimension of this color cell.
+   * @param currentMapIndex The first index to use.
+   * @return The next available index after this cell.
+   */
+  index_t indexColorCell(unsigned long xColorCell, unsigned long yColorCell, int gridsPerColoringCell,
+                         index_t currentMapIndex) {
+    for (int yInner = 0; yInner < gridsPerColoringCell; yInner++) {
+      for (int xInner = 0; xInner < gridsPerColoringCell; xInner++) {
+        unsigned long y = yColorCell * gridsPerColoringCell + yInner;
+        unsigned long x = xColorCell * gridsPerColoringCell + xInner;
+
+        // Not every coloring cell has to have gridsPerColoringCell grids in every direction.
+        if (x >= _cellsPerDim[0] || y >= _cellsPerDim[1]) {
+          continue;
+        }
+
+        unsigned long gridIndex1D = VerletClusterMaths::index1D(x, y, _cellsPerDim);
+        auto &currentGrid = _clusters[gridIndex1D];
+
+        auto numClusters = currentGrid.numParticles() / _clusterSize;
+        int rest = currentGrid.numParticles() % _clusterSize;
+        if (rest > 0) numClusters++;
+
+        for (unsigned int currentCluster = 0; currentCluster < numClusters; currentCluster++) {
+          Particle *clusterStart = &currentGrid[currentCluster * _clusterSize];
+          _clusterIndexMap[clusterStart] = currentMapIndex++;
+        }
+      }
+    }
+    return currentMapIndex;
+  }
+
+ private:
+  /**
+   * Neighbors of clusters for each grid. If it uses newton 3 is saved in _neighborListIsNewton3.
+   * If it uses newton 3: Only the neighbor clusters that have a higher index are saved. (@see _clusterIndexMap)
+   */
   std::vector<std::vector<std::vector<Particle *>>> _neighborLists;
 
   /// internal storage, particles are split into a grid in xy-dimension
   std::vector<FullParticleCell<Particle>> _clusters;
   int _clusterSize;
 
-  /// The number of clusters. This is not equal to _cluseters.size(), as every grid might contain multiple clusters.
+  /// The number of clusters. This is not equal to _clusters.size(), as every grid might contain multiple clusters.
   index_t _numClusters;
 
   std::array<double, 3> _boxMin;
@@ -698,7 +757,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /// Specifies if the neighbor list uses newton 3 or not.
   bool _neighborListIsNewton3;
 
-  /// Maps indices to the starting pointers for each cluster.
+  /**
+   * Maps indices to the starting pointers for each cluster. For the idea behind the assignment, @see
+   * buildClusterIndexMap().
+   */
   std::unordered_map<Particle *, index_t> _clusterIndexMap;
 };
 
