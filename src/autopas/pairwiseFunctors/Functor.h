@@ -74,7 +74,21 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) {
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) { SoAFunctor(soa, 0, soa.getNumParticles(), newton3); }
+
+  /**
+   * @brief Functor for structure of arrays (SoA)
+   *
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between \p numParticles particles from \p beginIndex on in an soa.
+   * This should include a cutoff check if needed!
+   *
+   * @param soa Structure of arrays
+   * @param beginIndex the index to begin in the SoA.
+   * @param numParticles the number of particles to work on from \p beginIndex in the SoA.
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa, const size_t beginIndex, const size_t numParticles, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(one soa): not yet implemented");
   }
 
@@ -115,6 +129,28 @@ class Functor {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) {
+    SoAFunctor(soa1, 0, soa1.getNumParticles(), soa2, 0, soa2.getNumParticles(), newton3);
+  }
+
+  /**
+   * @brief Functor for structure of arrays (SoA)
+   *
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between particles of soa1 and soa2. In each SoA, the particles to work with are between \p beginIndex1, \p
+   * beginIndex2 and \p numParticles1, \p numParticles2.
+   * This should include a cutoff check if needed!
+   *
+   * @param soa1 First structure of arrays.
+   * @param beginIndex1 the index to begin in the \p soa1.
+   * @param numParticles1 the number of particles to work on from \p beginIndex1 in the \p soa1.
+   * @param soa2 Second structure of arrays.
+   * @param beginIndex2 the index to begin in the \p soa2.
+   * @param numParticles2 the number of particles to work on from \p beginIndex2 in the \p soa2.
+   * @param newton3 defines whether or whether not to use newton 3.
+   */
+  virtual void SoAFunctor(SoA<SoAArraysType> &soa1, const size_t beginIndex1, const size_t numParticles1,
+                          SoA<SoAArraysType> &soa2, const size_t beginIndex2, const size_t numParticles2,
+                          bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 

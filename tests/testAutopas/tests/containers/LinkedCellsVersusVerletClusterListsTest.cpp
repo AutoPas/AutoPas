@@ -147,6 +147,22 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersTest2000) {
   }
 }
 
+TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTestTemp) {
+  unsigned long numMolecules = 5;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1.5e-14;
+
+  for (auto boxMax : {getBoxMaxSmall()}) {
+    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
+                                               autopas::TraversalOption::verletClustersColoring, boxMax);
+    // test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
+    //                                            autopas::TraversalOption::verletClustersColoring, boxMax);
+  }
+}
+
 TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest100) {
   unsigned long numMolecules = 100;
 
@@ -159,6 +175,10 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest100) {
     test<autopas::DataLayoutOption::aos, true>(numMolecules, rel_err_tolerance,
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
     test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
+                                               autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
                                                 autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
@@ -176,6 +196,10 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest1000) 
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
     test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
                                                 autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
+                                               autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
 
@@ -191,6 +215,10 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest2000) 
     test<autopas::DataLayoutOption::aos, true>(numMolecules, rel_err_tolerance,
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
     test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
+                                               autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
                                                 autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }

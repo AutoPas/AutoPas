@@ -100,21 +100,32 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     utils::ExceptionHandler::exception("LJFunctorAVX.AoSFunctor() not implemented!");
   }
 
+  // clang-format off
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
+   */
+  // clang-format on
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+    Functor<Particle, ParticleCell>::SoAFunctor(soa, newton3);
+  }
+
+  // clang-format off
+  /**
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const size_t beginIndex, const size_t numParticles, bool newton3)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  // clang-format on
+  void SoAFunctor(SoA<SoAArraysType> &soa, const size_t beginIndex, const size_t numParticles, bool newton3) override {
 #ifdef __AVX__
-    if (soa.getNumParticles() == 0) return;
+    if (numParticles == 0) return;
 
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>() + beginIndex;
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>() + beginIndex;
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>() + beginIndex;
 
-    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>() + beginIndex;
+    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>() + beginIndex;
+    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>() + beginIndex;
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -136,7 +147,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
-    for (size_t i = soa.getNumParticles() - 1; (long)i >= 0; --i) {
+    for (size_t i = numParticles - 1; (long)i >= 0; --i) {
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
       __m256d fzacc = _mm256_setzero_pd();
@@ -300,26 +311,39 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
  public:
+  // clang-format off
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
+  // clang-format on
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+    Functor<Particle, ParticleCell>::SoAFunctor(soa1, soa2, newton3);
+  }
+
+  // clang-format off
+  /**
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, const size_t beginIndex1, const size_t numParticles1, SoA<SoAArraysType> &soa2, const size_t beginIndex2, const size_t numParticles2, bool newton3)
+   */
+  // clang-format on
+  void SoAFunctor(SoA<SoAArraysType> &soa1, const size_t beginIndex1, const size_t numParticles1,
+                  SoA<SoAArraysType> &soa2, const size_t beginIndex2, const size_t numParticles2,
+                  bool newton3) override {
 #ifdef __AVX__
-    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+    if (numParticles1 == 0 || numParticles2 == 0) return;
 
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>() + beginIndex1;
+    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>() + beginIndex1;
+    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>() + beginIndex1;
+    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>() + beginIndex2;
+    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>() + beginIndex2;
+    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>() + beginIndex2;
 
-    double *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    double *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    double *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>() + beginIndex1;
+    double *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>() + beginIndex1;
+    double *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>() + beginIndex1;
+    double *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>() + beginIndex2;
+    double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>() + beginIndex2;
+    double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>() + beginIndex2;
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -347,7 +371,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       }*/
     }
 
-    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
+    for (unsigned int i = 0; i < numParticles1; ++i) {
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
       __m256d fzacc = _mm256_setzero_pd();
@@ -359,21 +383,21 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // floor soa2 numParticles to multiple of vecLength
       if (newton3) {
         unsigned int j = 0;
-        for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
+        for (; j < (numParticles2 & ~(vecLength - 1)); j += 4) {
           SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum);
         }
-        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
+        const int rest = (int)(numParticles2 & (vecLength - 1));
         if (rest > 0)
           SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       } else {
         unsigned int j = 0;
-        for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
+        for (; j < (numParticles2 & ~(vecLength - 1)); j += 4) {
           SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
                                   &virialSumX, &virialSumY, &virialSumZ, &upotSum);
         }
-        const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
+        const int rest = (int)(numParticles2 & (vecLength - 1));
         if (rest > 0)
           SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
