@@ -75,8 +75,27 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   _verletLists.iteratePairwise(&flopsVerlet, &*traversalFLOPSVerlet);
   _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS);
 
-  if (not(dataLayout == autopas::DataLayoutOption::soa && not useNewton3)) {
-    ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
+  // LinkedCells always uses newton 3 for particles inside the same cell when using soa, so the kernel calls cannot be
+  // the same.
+  if (not(dataLayout == autopas::DataLayoutOption::soa and not useNewton3)) {
+    unsigned long linkedKernelCalls = flopsLinked.getKernelCalls();
+    unsigned long verletKernelCalls = flopsVerlet.getKernelCalls();
+
+    // Special case: The coloring traversal always uses newton 3 for particles inside the same cluster, so the number of
+    // kernel calls of the verlet cluster list here might be lower.
+    if (traversalOption == autopas::TraversalOption::verletClustersColoring and not useNewton3 and
+        dataLayout == autopas::DataLayoutOption::aos) {
+      int maxNumKernelCallsInsideOneCluster = _verletLists.getClusterSize() * (_verletLists.getClusterSize() - 1);
+      auto maxVerletLeftOutKernelCalls = _verletLists.getNumClusters() * (maxNumKernelCallsInsideOneCluster / 2);
+      auto linkedVerletKernelCallsDiff = linkedKernelCalls - verletKernelCalls;
+      // LinkedCells should always yield equal or more kernel calls.
+      EXPECT_GE(linkedVerletKernelCallsDiff, 0);
+      // VerletClusterLists can only leave out maxVerletLeftOutKernelCalls, not more.
+      EXPECT_LE(linkedVerletKernelCallsDiff, maxVerletLeftOutKernelCalls);
+
+    } else {
+      EXPECT_EQ(linkedKernelCalls, verletKernelCalls);
+    }
   }
 }
 
@@ -139,6 +158,8 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest100) {
   for (auto boxMax : {getBoxMaxBig(), getBoxMaxSmall()}) {
     test<autopas::DataLayoutOption::aos, true>(numMolecules, rel_err_tolerance,
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
 
@@ -153,6 +174,8 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest1000) 
   for (auto boxMax : {getBoxMaxBig(), getBoxMaxSmall()}) {
     test<autopas::DataLayoutOption::aos, true>(numMolecules, rel_err_tolerance,
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
 
@@ -167,5 +190,7 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest2000) 
   for (auto boxMax : {getBoxMaxBig(), getBoxMaxSmall()}) {
     test<autopas::DataLayoutOption::aos, true>(numMolecules, rel_err_tolerance,
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }

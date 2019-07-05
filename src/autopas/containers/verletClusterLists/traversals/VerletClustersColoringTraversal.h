@@ -16,7 +16,10 @@ namespace autopas {
  *
  * The traversal uses a 2D coloring with a stride of x=3, y=2, so 3*2=6 colors.
  *
- * It only supports newton 3 and AoS at the moment.
+ * It only supports AoS at the moment.
+ *
+ * When disabling newton 3, interactions inside a cluster are still calculated using newton 3.
+ *
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
  * @tparam dataLayout
