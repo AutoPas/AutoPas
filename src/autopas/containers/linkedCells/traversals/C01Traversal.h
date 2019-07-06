@@ -296,8 +296,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   if (not this->isApplicable()) {
     if constexpr (combineSoA) {
       utils::ExceptionHandler::exception(
-          "The C01 traversal with combined SoA buffers cannot work with enabled newton3 (unless only one thread is "
-          "used) and data layout AoS!");
+          "The C01 traversal with combined SoA buffers cannot work with data layout AoS and enabled newton3 (unless "
+          "only one thread is used)!");
     } else {
       utils::ExceptionHandler::exception(
           "The C01 traversal cannot work with enabled newton3 (unless only one thread is used)!");
