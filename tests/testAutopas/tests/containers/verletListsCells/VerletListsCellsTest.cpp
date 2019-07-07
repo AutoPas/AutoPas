@@ -14,7 +14,7 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOption::c18, skin, 1,
+  autopas::VerletListsCells<Particle> verletLists(min, max, cutoff, autopas::TraversalOption::c18, skin,
                                                   cellSizefactor);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -26,15 +26,17 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
 
   autopas::C18TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
       verletLists.getCellsPerDimension(), &functor);
-  verletLists.iteratePairwise(&functor, &traversal, true);
+  verletLists.rebuildNeighborLists(&traversal);
+  verletLists.iteratePairwise(&functor, &traversal);
 
   std::vector<Particle *> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
 
   EXPECT_EQ(list.size(), 2);
   int partners = 0;
-  for (auto p : list) {
-    partners += verletLists.getVerletList(p).size();
+
+  for (auto &pl : list) {
+    partners += verletLists.getVerletList(pl).size();
   }
   EXPECT_EQ(partners, 1);
 }

@@ -13,8 +13,7 @@
 #include "cuda_runtime.h"
 #endif
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * Handles an Array of Cuda streams and provides different access Methods.
@@ -66,9 +65,8 @@ class CudaStreamHandler {
   /**
    * @brief empty Dummy default Constructor in case there is no cuda support
    */
-  CudaStreamHandler() {}
+  CudaStreamHandler() = default;
 #endif
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils

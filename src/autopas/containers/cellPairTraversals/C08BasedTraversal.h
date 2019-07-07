@@ -19,23 +19,25 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the c08 traversal.
-   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
+   * @param dims The dimensions of the cell block, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                             const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : CBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout>(dims, pairwiseFunctor, cutoff, cellLength) {}
+                             const double interactionLength = 1.0,
+                             const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, interactionLength,
+                                                                               cellLength) {}
 
  protected:
   /**

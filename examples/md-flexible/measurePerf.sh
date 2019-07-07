@@ -53,7 +53,7 @@ traversals__DirectSum=directSumTraversal
 traversals__LinkedCells=c08
 traversals__VerletLists=verlet-lists
 traversals__VerletCells=verletC18
-traversals__VerletCluster=c01
+traversals__VerletCluster=verlet-clusters
 
 # iterate over containers
 for container in LinkedCells VerletLists DirectSum VerletCluster VerletCells ;
@@ -105,6 +105,18 @@ do
 
                     # workaround because there is no traversal for Verlet clusters with newton 3 yet.
                     if [[ ${container} =~ 'VerletCluster' && ${newton3Opt} =~ 'on' ]];
+                    then
+                        continue
+                    fi
+
+                    # workaround because there is no traversal for Verlet clusters with SoA yet.
+                    if [[ ${container} =~ 'VerletCluster' && ${dataLayout} =~ 'SoA' ]];
+                    then
+                        continue
+                    fi
+
+                    # workaround because there is no traversal for Verlet cells with soa yet.
+                    if [[ ${container} =~ 'VerletCells' && ${dataLayout} =~ 'SoA' ]];
                     then
                         continue
                     fi

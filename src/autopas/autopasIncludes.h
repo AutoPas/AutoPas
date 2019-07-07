@@ -13,6 +13,7 @@
 
 // utils
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/Logger.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/StaticSelectors.h"
@@ -40,6 +41,7 @@
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"

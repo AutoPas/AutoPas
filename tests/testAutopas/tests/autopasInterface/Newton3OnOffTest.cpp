@@ -44,14 +44,16 @@ INSTANTIATE_TEST_SUITE_P(
                 }
 
                 autopas::ContainerSelector<Particle, FPCell> containerSelector({0, 0, 0}, {10, 10, 10}, 1);
-                autopas::ContainerSelectorInfo containerInfo(1, 0, 10);
+                autopas::ContainerSelectorInfo containerInfo(1, 0);
 
                 containerSelector.selectContainer(containerOption, containerInfo);
 
                 auto container = containerSelector.getCurrentContainer();
 
                 for (auto traversalOption : container->getAllTraversals()) {
-                  if (traversalOption == autopas::TraversalOption::c01 /*and autopas::autopas_get_max_threads() > 1*/) {
+                  if (traversalOption == autopas::TraversalOption::c01 ||
+                      traversalOption ==
+                          autopas::TraversalOption::c01CombinedSoA /*and autopas::autopas_get_max_threads() > 1*/) {
                     continue;
                   }
                   if (traversalOption == autopas::TraversalOption::c01Cuda) {
@@ -85,7 +87,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
   autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
-  autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), getVerletRebuildFrequency());
+  autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin());
 
   containerSelector.selectContainer(containerOption, containerInfo);
 
@@ -100,7 +102,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
     // loader and extractor will be called, we don't care how often.
-    EXPECT_CALL(mockFunctor, SoALoader(_, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoALoader(_, _))
+        .Times(testing::AtLeast(1))
+        .WillRepeatedly(testing::WithArgs<1>(testing::Invoke([](auto &buf) { buf.resizeArrays(1); })));
     EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
   }
 
@@ -230,7 +234,5 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 template <class ParticleFunctor, class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
                                autopas::Newton3Option newton3, ParticleFunctor *f) {
-  withStaticContainerType(container, [&](auto container) {
-    container->iteratePairwise(f, traversal.get(), newton3 == autopas::Newton3Option::enabled);
-  });
+  withStaticContainerType(container, [&](auto container) { container->iteratePairwise(f, traversal.get()); });
 }
