@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <iostream>
 #include "autopas/AutoPas.h"
+#include "autopas/utils/NumberSet.h"
 
 using namespace std;
 
@@ -25,7 +26,7 @@ class MDFlexParser {
   std::set<autopas::ContainerOption> getContainerOptions() const;
   autopas::SelectorStrategyOption getSelectorStrategy() const;
   double getCutoff() const;
-  double getCellSizeFactor() const;
+  const autopas::NumberSet<double> &getCellSizeFactors() const;
   std::set<autopas::DataLayoutOption> getDataLayoutOptions() const;
   double getDistributionMean() const;
   double getDistributionStdDev() const;
@@ -61,11 +62,12 @@ class MDFlexParser {
   std::set<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
+  std::unique_ptr<autopas::NumberSet<double>> cellSizeFactors =
+      std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{1.});
 
   // Simulation Options:
   double boxLength = -1;
   double cutoff = 1.;
-  double cellSizeFactor = 1.;
   double distributionMean = 5.;
   double distributionStdDev = 2.;
   FunctorOption functorOption = FunctorOption::lj12_6;

@@ -7,18 +7,17 @@
 #include "FullSearchTest.h"
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
-#include "testingHelpers/commonTypedefs.h"
 
 TEST_F(FullSearchTest, testSearchSpaceEmpty) {
-  autopas::FullSearch<Particle, FPCell> fullSearch({});
+  autopas::FullSearch fullSearch({});
   EXPECT_TRUE(fullSearch.searchSpaceIsEmpty());
   EXPECT_FALSE(fullSearch.searchSpaceIsTrivial());
   EXPECT_THAT(fullSearch.getAllowedContainerOptions(), ::testing::IsEmpty());
 }
 
 TEST_F(FullSearchTest, testSearchSpaceOneOption) {
-  autopas::FullSearch<Particle, FPCell> fullSearch(
-      {autopas::Configuration(autopas::ContainerOption::directSum, autopas::TraversalOption::directSumTraversal,
+  autopas::FullSearch fullSearch(
+      {autopas::Configuration(autopas::ContainerOption::directSum, 1., autopas::TraversalOption::directSumTraversal,
                               autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)});
   EXPECT_FALSE(fullSearch.searchSpaceIsEmpty());
   EXPECT_TRUE(fullSearch.searchSpaceIsTrivial());
@@ -26,17 +25,17 @@ TEST_F(FullSearchTest, testSearchSpaceOneOption) {
 }
 
 TEST_F(FullSearchTest, testSearchSpaceMoreOptions) {
-  autopas::FullSearch<Particle, FPCell> fullSearch({autopas::ContainerOption::linkedCells},
-                                                   {autopas::TraversalOption::c08}, {autopas::DataLayoutOption::soa},
-                                                   {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
+  autopas::FullSearch fullSearch({autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08},
+                                 {autopas::DataLayoutOption::soa},
+                                 {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
   EXPECT_FALSE(fullSearch.searchSpaceIsEmpty());
   EXPECT_FALSE(fullSearch.searchSpaceIsTrivial());
   EXPECT_THAT(fullSearch.getAllowedContainerOptions(), ::testing::ElementsAre(autopas::ContainerOption::linkedCells));
 }
 
 TEST_F(FullSearchTest, testRemoveN3OptionRemoveAll) {
-  autopas::FullSearch<Particle, FPCell> fullSearch(
-      {autopas::ContainerOption::linkedCells}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
+  autopas::FullSearch fullSearch(
+      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos}, {autopas::Newton3Option::enabled});
 
   EXPECT_THROW(fullSearch.removeN3Option(autopas::Newton3Option::enabled),
@@ -44,10 +43,10 @@ TEST_F(FullSearchTest, testRemoveN3OptionRemoveAll) {
 }
 
 TEST_F(FullSearchTest, testRemoveN3OptionRemoveSome) {
-  autopas::FullSearch<Particle, FPCell> fullSearch({autopas::ContainerOption::linkedCells},
-                                                   {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-                                                   {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-                                                   {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
+  autopas::FullSearch fullSearch({autopas::ContainerOption::linkedCells}, {1.},
+                                 {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
+                                 {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
+                                 {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
 
   EXPECT_NO_THROW(fullSearch.removeN3Option(autopas::Newton3Option::enabled));
   EXPECT_FALSE(fullSearch.searchSpaceIsEmpty());
@@ -55,30 +54,30 @@ TEST_F(FullSearchTest, testRemoveN3OptionRemoveSome) {
 }
 
 TEST_F(FullSearchTest, testTune) {
-  autopas::FullSearch<Particle, FPCell> fullSearch(
-      {autopas::ContainerOption::linkedCells},
+  autopas::FullSearch fullSearch(
+      {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
 
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(10);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, autopas::TraversalOption::sliced,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(1);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c01,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c01,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(20);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, autopas::TraversalOption::sliced,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
 }
