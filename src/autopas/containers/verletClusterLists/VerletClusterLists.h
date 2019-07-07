@@ -260,9 +260,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Recalculate grids and clusters,
-   * build verlet lists and
-   * pad clusters.
+   * Recalculate grids and clusters, build verlet lists and pad clusters.
    */
   void rebuild() {
     _aosToSoaMapValid = false;

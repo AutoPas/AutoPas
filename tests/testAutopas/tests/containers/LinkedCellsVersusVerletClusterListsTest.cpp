@@ -9,7 +9,7 @@
 
 template <autopas::DataLayoutOption dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
-  Verlet _verletLists{getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2};
+  Verlet _verletLists{getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff()};
   Linked _linkedCells{getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*cell size factor*/};
 
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
