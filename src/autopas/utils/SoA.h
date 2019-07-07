@@ -16,6 +16,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
+#include "autopas/utils/SoAView.h"
 
 namespace autopas {
 
@@ -183,6 +184,23 @@ class SoA {
    */
   void setViewStart(size_t start) { viewStart = start; }
 
+  /**
+   * Constructs a SoAView for the whole SoA and returns it.
+   * @return the constructed SoAView on the whole SoA.
+   */
+  SoAView<SoAArraysType> constructView() { return {this, 0, getNumParticles()}; }
+
+  /**
+   * Constructs a view that starts at \p startIndex (inclusive) and ends at \p endIndex (exclusive).
+   *
+   * \p startIndex and \p endIndex have to be between 0 (inclusive) and `this->getNumParticles()` (inclusive). \p
+   * endIndex has to be greater or equal to \p startIndex.
+   * @param startIndex The index of the first entry to view.
+   * @param endIndex The index of the entry after the last entry to view.
+   * @return the constructed SoAView from \p startIndex (inclusive) to \p endIndex (exclusive).
+   */
+  SoAView<SoAArraysType> constructView(size_t startIndex, size_t endIndex) { return {this, startIndex, endIndex}; }
+
  private:
   // actual implementation of read
   template <int attribute, int... attributes, class ValueArrayType>
@@ -228,5 +246,5 @@ class SoA {
   utils::SoAStorage<SoAArraysType> soaStorage;
 
   size_t viewStart = 0;
-};
+};  // namespace autopas
 }  // namespace autopas
