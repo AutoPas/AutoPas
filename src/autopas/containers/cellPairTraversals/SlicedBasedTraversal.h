@@ -118,7 +118,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   inline void slicedTraversal(LoopBody &&loopBody);
 
   /**
-   * overlap of interacting cells. Array allows asymmetric cell sizes.
+   * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   std::array<unsigned long, 3> _overlap;
 
@@ -134,12 +134,12 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   double _interactionLength;
 
   /**
-   * cell length in CellBlock3D.
+   * Cell length in CellBlock3D.
    */
   std::array<double, 3> _cellLength;
 
   /**
-   * overlap of interacting cells along the longest axis.
+   * Overlap of interacting cells along the longest axis.
    */
   unsigned long _overlapLongestAxis;
 
@@ -150,7 +150,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   std::vector<AutoPasLock> locks;
 
   /**
-   * Data Layout Converter to be used with this traversal
+   * Data Layout Converter to be used with this traversal.
    */
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };

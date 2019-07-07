@@ -34,7 +34,7 @@ class CellPairTraversal : public TraversalInterface {
   ~CellPairTraversal() override = default;
 
   /**
-   * Sets the cells to iterate over.
+   * Sets the cells to iterate over. Should always be called before initTraversal().
    * @param cells The cells to iterate over.
    */
   virtual void setCellsToTraverse(std::vector<ParticleCell> &cells) { _cells = &cells; }
