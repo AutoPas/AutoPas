@@ -72,30 +72,34 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   /**
-   * Load Data Layouts required for this Traversal.
+   * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
    */
   void initTraversal() override {
-    auto &cells = *(this->_cells);
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.loadDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.loadDataLayout(cells[i]);
+      }
     }
   }
 
   /**
-   * Write Data to AoS.
+   * Write Data to AoS if cells have been set through setCellsToTraverse().
    */
   void endTraversal() override {
-    auto &cells = *(this->_cells);
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.storeDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.storeDataLayout(cells[i]);
+      }
     }
   }
 
