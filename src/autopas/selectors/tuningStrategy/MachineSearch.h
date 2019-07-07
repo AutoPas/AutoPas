@@ -33,7 +33,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options, std::string modelLink)
-      : _containerOptions(allowedContainerOptions), _modelLink(std::move(modelLink)) {
+      : _containerOptions(allowedContainerOptions), _mlmodel(fdeep::load_model(modelLink)) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
                         allowedNewton3Options);
@@ -54,7 +54,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
     _traversalTimes.clear();
     _currentConfig = _searchSpace.end();
     _configCounter = 0;
-    generateMLPredictions(_modelLink);
+    generateMLPredictions();
   }
 
   inline bool tune() override;
@@ -73,7 +73,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   /*
    * Uses the trained ML model to choose configurations
    */
-  void generateMLPredictions(const std::string &file);
+  void generateMLPredictions();
 
   /*
    * Finds the next applicable ML suggestion (including current config)
@@ -102,8 +102,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   int _mlSuggestions[5];
   int _configCounter;
   double _particleCount, _boxLength, _cutoff, _verletSkin;
-  bool _hasStatistics{false};
-  std::string _modelLink;
+  fdeep::model _mlmodel;
 };
 
 template <typename Particle, typename ParticleCell>
@@ -123,9 +122,8 @@ void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
 }
 
 template <typename Particle, typename ParticleCell>
-void MachineSearch<Particle, ParticleCell>::generateMLPredictions(const std::string &file) {
+void MachineSearch<Particle, ParticleCell>::generateMLPredictions() {
   // at the start of each configuration, fill a global array with n elements for most efficient configurations
-  const auto model = fdeep::load_model(file);
   double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
   _particleCount = _containerSelector->getCurrentContainer()->getNumParticles();
   _boxLength = _containerSelector->getCurrentContainer()->getBoxMax()[0] -
@@ -133,7 +131,7 @@ void MachineSearch<Particle, ParticleCell>::generateMLPredictions(const std::str
   _cutoff = _containerSelector->getCurrentContainer()->getCutoff();
   _verletSkin = _containerSelector->getCurrentContainer()->getCutoff();
 
-  const auto result = model.predict({fdeep::tensor5(
+  const auto result = _mlmodel.predict({fdeep::tensor5(
       fdeep::shape5(1, 1, 1, 1, 4),
       {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
        static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
@@ -148,6 +146,65 @@ void MachineSearch<Particle, ParticleCell>::generateMLPredictions(const std::str
     _mlSuggestions[i] = index;
     probabilityVector[index] = 0;  // set to 0, so we don't find this again.
     std::cout << _mlSuggestions[i] << std::endl;
+  }
+  _searchSpace.clear(); // empty the set
+
+
+  std::tuple<ContainerOption, TraversalOption, DataLayoutOption, Newton3Option> mloption[] = {
+          std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c01, DataLayoutOption::aos,
+                          Newton3Option::disabled),
+          std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c18,
+                          DataLayoutOption::aos, Newton3Option::disabled),
+          std::make_tuple(ContainerOption::verletListsCells,
+                          TraversalOption::c18, DataLayoutOption::aos, Newton3Option::enabled),
+          std::make_tuple(ContainerOption::verletListsCells, TraversalOption::slicedVerlet, DataLayoutOption::aos,
+                          Newton3Option::disabled),
+          std::make_tuple(ContainerOption::verletListsCells, TraversalOption::slicedVerlet,
+                          DataLayoutOption::aos, Newton3Option::enabled), std::make_tuple(ContainerOption::verletLists,
+                                                                                          TraversalOption::verletTraversal,
+                                                                                          DataLayoutOption::soa,
+                                                                                          Newton3Option::disabled),
+          std::make_tuple(ContainerOption::verletLists, TraversalOption::verletTraversal, DataLayoutOption::soa,
+                          Newton3Option::enabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08, DataLayoutOption::soa,
+                          Newton3Option::disabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::sliced,
+                          DataLayoutOption::aos, Newton3Option::disabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08,
+                          DataLayoutOption::soa, Newton3Option::enabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08,
+                          DataLayoutOption::aos, Newton3Option::disabled), std::make_tuple(ContainerOption::linkedCells,
+                                                                                           TraversalOption::sliced,
+                                                                                           DataLayoutOption::soa,
+                                                                                           Newton3Option::enabled),
+          std::make_tuple(ContainerOption::linkedCells,
+                          TraversalOption::c08, DataLayoutOption::aos, Newton3Option::enabled),
+          std::make_tuple(ContainerOption::linkedCells,
+                          TraversalOption::sliced, DataLayoutOption::soa, Newton3Option::disabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::aos,
+                          Newton3Option::disabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::soa,
+                          Newton3Option::enabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::sliced, DataLayoutOption::aos,
+                          Newton3Option::enabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::soa,
+                          Newton3Option::disabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c01, DataLayoutOption::aos,
+                          Newton3Option::disabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::aos,
+                          Newton3Option::enabled),
+          std::make_tuple(ContainerOption::linkedCells, TraversalOption::c01, DataLayoutOption::soa,
+                          Newton3Option::disabled),
+          std::make_tuple(ContainerOption::verletLists, TraversalOption::verletTraversal,
+                          DataLayoutOption::aos, Newton3Option::enabled), std::make_tuple(ContainerOption::verletLists,
+                                                                                          TraversalOption::verletTraversal,
+                                                                                          DataLayoutOption::aos,
+                                                                                          Newton3Option::disabled),
+  };
+
+
+  for (int i = 0; i < 5; ++i) {
+    std::apply(_searchSpace.emplace(mloption[_mlSuggestions[i]]));
   }
 }
 
