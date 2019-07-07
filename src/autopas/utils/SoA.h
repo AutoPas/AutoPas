@@ -68,7 +68,7 @@ class SoA {
   }
 
   /**
-   * @brief Appends the other SoA buffer.
+   * Appends the other SoA buffer to this.
    * @param other Other buffer.
    */
   void append(SoA<SoAArraysType> &other) {
@@ -78,7 +78,7 @@ class SoA {
   }
 
   /**
-   * @brief Appends the specified attributes from the other SoA buffer.
+   * Appends the specified attributes from the other SoA buffer to this.
    * @tparam attributes Attributes to append.
    * @param other Other buffer.
    */
