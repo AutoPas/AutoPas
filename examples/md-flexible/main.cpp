@@ -75,41 +75,6 @@ int main(int argc, char **argv) {
 
   // Initialization
   simulation.initialize(&parser);
-
-<<<<<<< HEAD
-  auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
-
-  //@todo übernommen vom merge: -> prüfen
-  autopas->setTuningStrategyOption(tuningStrategy);
-  autopas->setAllowedCellSizeFactors(cellSizeFactors);
-  autopas::Logger::get()->set_level(logLevel);
-
-  // setted default anderen boxMax--> sonst Fehler
-  autopas->setBoxMax({2., 2., 2.});
-  autopas->init();
-
-  autopas::Logger::get()->set_level(logLevel);
-  for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
-    iter->toString();
-  }
-
-  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas);
-  Simulation.initialize(&parser);
-  // Simulation
-  long durationSimulate = Simulation.simulate();
-  long durationPosition = Simulation.getDurationX();
-  long durationVelocity = Simulation.getDurationV();
-  long durationForce = Simulation.getDurationF();
-  cout << endl;
-  if (parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
-    particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
-  }
-
-  if (not vtkFilename.empty()) {
-    writeVTKFile(vtkFilename, particlesTotal, autopas);
-  }
-=======
->>>>>>> fe7b66bb907e9a2e9f96c7d01fbae8565c2ec4cb
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
   // Simulation

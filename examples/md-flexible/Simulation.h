@@ -25,10 +25,6 @@ class Simulation {
   MDFlexParser *_parser;
   std::ofstream _logFile;
 
-  // autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>* _Functor = new
-  // autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both, true>(1, 1.0, 1.0, 0.0,{0., 0.,
-  // 0.},{5., 5., 5.},true);
-
   struct timers {
     long durationPositionUpdate, durationForceUpdate, durationVelocityUpdate, durationSimulate;
     std::chrono::system_clock::time_point startTotal, stopTotal;
@@ -175,8 +171,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   PrintableMolecule::setSigma(parser->getSigma());
   PrintableMolecule::setMass(parser->getMass());
 
-  auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
-
+  _autopas= make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
   _autopas->setCutoff(cutoff);
   _autopas->setVerletSkin(verletSkinRadius);
   _autopas->setVerletRebuildFrequency(verletRebuildFrequency);
@@ -268,18 +263,15 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
   //_autopas->iteratePairwise(this->_Functor);
 
-<<<<<<< HEAD
-  auto *functor = new autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true>(
-=======
-  auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
+  auto* functor = new autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
                                     true /* relevant for tuning */>(
->>>>>>> fe7b66bb907e9a2e9f96c7d01fbae8565c2ec4cb
       _autopas->getCutoff(), 1., 1.0, 0.0);  // cutoff, espi, sigma, shift, box min, box max
 
-  _autopas->iteratePairwise(&functor);
+  _autopas->iteratePairwise(functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
   _timers.durationForceUpdate += durationCalcF;
+  delete functor;
 }
 
 template <class Particle, class ParticleCell>
