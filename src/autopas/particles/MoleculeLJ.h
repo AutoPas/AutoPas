@@ -66,7 +66,7 @@ class MoleculeLJ : public Particle {
   /**
    * the type for the soa storage
    */
-//  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
+  //  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
   /**get OldForce
    * @return OldForce

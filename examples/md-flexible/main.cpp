@@ -73,7 +73,6 @@ int main(int argc, char **argv) {
   parser.printConfig();
   cout << endl;
 
-
   // Initialization
   simulation.initialize(&parser);
 

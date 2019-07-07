@@ -325,23 +325,24 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 #endif
   }
 
-  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
-                            // body start
-                            soa.resizeArrays(offset + cell.numParticles());
+  AUTOPAS_FUNCTOR_SOALOADER(
+      cell, soa, offset,
+      // body start
+      soa.resizeArrays(offset + cell.numParticles());
 
-                            if (cell.numParticles() == 0) return;
+      if (cell.numParticles() == 0) return;
 
-                            double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-                            double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-                            double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-                            auto cellIter = cell.begin();
-                            // load particles in SoAs
-                            for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-                              xptr[i] = cellIter->getR()[0];
-                              yptr[i] = cellIter->getR()[1];
-                              zptr[i] = cellIter->getR()[2];
-                            })
+      auto cellIter = cell.begin();
+      // load particles in SoAs
+      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+        xptr[i] = cellIter->getR()[0];
+        yptr[i] = cellIter->getR()[1];
+        zptr[i] = cellIter->getR()[2];
+      })
 
   /**
    * Empty SoAExtractor.
