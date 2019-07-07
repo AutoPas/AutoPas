@@ -26,7 +26,7 @@ class CellPairTraversal : public TraversalInterface {
    * Constructor of CellPairTraversal.
    * @param dims the dimensions of the cellblock.
    */
-  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims) {}
+  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims), _cells(nullptr) {}
 
   /**
    * Destructor of CellPairTraversal.
