@@ -268,11 +268,11 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
   //_autopas->iteratePairwise(this->_Functor);
 
-  //    auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
-  //                                      true /* relevant for tuning */>(
-  //        _autopas->getCutoff(), 1., 1.0, 0.0);  // cutoff, espi, sigma, shift, box min, box max
+  auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
+                                    true /* relevant for tuning */>(
+      _autopas->getCutoff(), 1., 1.0, 0.0);  // cutoff, espi, sigma, shift, box min, box max
 
-  //    _autopas->iteratePairwise(&functor);
+  _autopas->iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
   _timers.durationForceUpdate += durationCalcF;
