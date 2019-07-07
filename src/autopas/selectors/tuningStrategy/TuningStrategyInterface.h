@@ -7,14 +7,12 @@
 #pragma once
 
 #include "autopas/selectors/Configuration.h"
-#include "autopas/selectors/ContainerSelector.h"
 
 namespace autopas {
 
 /**
  * Interface for tuning strategies for the auto tuner.
  */
-template <class Particle, class ParticleCell>
 class TuningStrategyInterface {
  public:
   virtual ~TuningStrategyInterface() = default;
@@ -71,12 +69,5 @@ class TuningStrategyInterface {
    * @return
    */
   virtual bool searchSpaceIsEmpty() = 0;
-
-  /**
-   * Adds containerSelector to the class
-   * @param containerSelector
-   * @todo: add const
-   */
-  virtual void addContainerSelector(/*const*/ ContainerSelector<Particle, ParticleCell>& containerSelector) = 0;
 };
 }  // namespace autopas

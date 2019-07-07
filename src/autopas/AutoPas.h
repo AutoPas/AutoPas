@@ -14,6 +14,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/selectors/tuningStrategy/MachineSearch.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas {
@@ -415,7 +416,14 @@ class AutoPas {
     _tuningStrategyOption = tuningStrategyOption;
   }
 
- private:
+  /**
+   * Set tuning interval.
+   * @param modelLink
+   */
+  void setModelLink(std::string modelLink) { AutoPas::_modelLink = modelLink; }
+
+
+private:
   /**
    * Generates a new Tuning Strategy object from the member variables of this autopas object.
    * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
@@ -431,6 +439,10 @@ class AutoPas {
 
         return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
                                             _allowedDataLayouts, _allowedNewton3Options);
+
+        case TuningStrategyOption::machineSearch:
+        return std::make_unique<MachineSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
+                                               _allowedNewton3Options, _modelLink, &this);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
@@ -466,6 +478,11 @@ class AutoPas {
    * Number of samples the tuner should collect for each combination.
    */
   unsigned int _numSamples;
+
+  /*
+   * The path to the learned ML model.
+   */
+  std::string _modelLink;
 
   /**
    * Strategy option for the auto tuner.

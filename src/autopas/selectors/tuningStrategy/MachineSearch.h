@@ -19,8 +19,7 @@ namespace autopas {
 /**
  * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
  */
-template <typename Particle, typename ParticleCell>
-class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
+class MachineSearch : public TuningStrategyInterface {
  public:
   /**
    * Constructor for the MachineSearch that generates the search space from the allowed options.
@@ -32,19 +31,15 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   MachineSearch(const std::set<ContainerOption> &allowedContainerOptions,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options, std::string modelLink)
-      : _containerOptions(allowedContainerOptions), _mlmodel(fdeep::load_model(modelLink)) {
+                const std::set<Newton3Option> &allowedNewton3Options,
+                std::string modelLink, AutoPas &autopas)
+      : _containerOptions(allowedContainerOptions), _mlmodel(fdeep::load_model(modelLink), _autopas(autopas)) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
                         allowedNewton3Options);
   }
 
-  inline Configuration getCurrentConfiguration() override {
-    if (_currentConfig == _searchSpace.end()) {
-      return {};  // return default initialized configuration, which is always invalid!
-    }
-    return *_currentConfig;
-  }
+  inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
@@ -64,10 +59,6 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   inline bool searchSpaceIsTrivial() override { return _searchSpace.size() == 1; }
 
   inline bool searchSpaceIsEmpty() override { return _searchSpace.empty(); }
-
-  void addContainerSelector(/*const*/ ContainerSelector<Particle, ParticleCell> &containerSelector) override {
-    _containerSelector = &containerSelector;
-  }
 
  private:
   /*
@@ -92,9 +83,6 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                   const std::set<Newton3Option> &allowedNewton3Options);
 
-  inline void selectOptimalConfiguration();
-
-  ContainerSelector<Particle, ParticleCell> *_containerSelector{nullptr};
   std::set<ContainerOption> _containerOptions;
   std::set<Configuration> _searchSpace;
   std::set<Configuration>::iterator _currentConfig;
@@ -103,10 +91,10 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   int _configCounter;
   double _particleCount, _boxLength, _cutoff, _verletSkin;
   fdeep::model _mlmodel;
+  AutoPas _autopas;
 };
 
-template <typename Particle, typename ParticleCell>
-void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
+void MachineSearch::findNextSuggestion() {
   if (_currentConfig == _searchSpace.end()) {
     _currentConfig = _searchSpace.begin();
   } else {
@@ -121,15 +109,13 @@ void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
   }
 }
 
-template <typename Particle, typename ParticleCell>
-void MachineSearch<Particle, ParticleCell>::generateMLPredictions() {
+void MachineSearch::generateMLPredictions() {
   // at the start of each configuration, fill a global array with n elements for most efficient configurations
   double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
-  _particleCount = _containerSelector->getCurrentContainer()->getNumParticles();
-  _boxLength = _containerSelector->getCurrentContainer()->getBoxMax()[0] -
-               _containerSelector->getCurrentContainer()->getBoxMin()[0];
-  _cutoff = _containerSelector->getCurrentContainer()->getCutoff();
-  _verletSkin = _containerSelector->getCurrentContainer()->getCutoff();
+  _particleCount = _autopas->getNumParticles();
+  _boxLength = _autopas->getCurrentContainer()->getBoxMax()[0] - _autopas->getCurrentContainer()->getBoxMin()[0];
+  _cutoff = _autopas->getCurrentContainer()->getCutoff();
+  _verletSkin = _autopas->getCurrentContainer()->getCutoff();
 
   const auto result = _mlmodel.predict({fdeep::tensor5(
       fdeep::shape5(1, 1, 1, 1, 4),
@@ -208,8 +194,7 @@ void MachineSearch<Particle, ParticleCell>::generateMLPredictions() {
   }
 }
 
-template <typename Particle, typename ParticleCell>
-void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
+void MachineSearch::populateSearchSpace(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options) {
   //@TODO dummyTraversal needed until all containers support propper traversals
@@ -246,8 +231,7 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
   // findNextSuggestion();
 }
 
-template <typename Particle, typename ParticleCell>
-bool MachineSearch<Particle, ParticleCell>::tune() {
+bool MachineSearch::tune() {
   AutoPasLog(debug, "You are in MachineSearch::tune()");
   // repeat as long as traversals are not applicable or we run out of configs
   findNextSuggestion();
@@ -258,8 +242,7 @@ bool MachineSearch<Particle, ParticleCell>::tune() {
   return true;
 }
 
-template <typename Particle, typename ParticleCell>
-void MachineSearch<Particle, ParticleCell>::selectOptimalConfiguration() {
+void MachineSearch::selectOptimalConfiguration() {
   if (_searchSpace.size() == 1) {
     _currentConfig = _searchSpace.begin();
     return;
@@ -290,8 +273,7 @@ void MachineSearch<Particle, ParticleCell>::selectOptimalConfiguration() {
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
 
-template <typename Particle, typename ParticleCell>
-void MachineSearch<Particle, ParticleCell>::removeN3Option(Newton3Option badNewton3Option) {
+void MachineSearch::removeN3Option(Newton3Option badNewton3Option) {
   for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
     if (ssIter->_newton3 == badNewton3Option) {
       // change current config to the next non-deleted
