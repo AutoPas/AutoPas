@@ -148,7 +148,6 @@ class LJFunctor
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
    * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
-   * @todo: Remove __attribute__((no_sanitize_thread)) when #285 is fixed.
    */
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
