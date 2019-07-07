@@ -171,7 +171,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   PrintableMolecule::setSigma(parser->getSigma());
   PrintableMolecule::setMass(parser->getMass());
 
-  _autopas= make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+  _autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
   _autopas->setCutoff(cutoff);
   _autopas->setVerletSkin(verletSkinRadius);
   _autopas->setVerletRebuildFrequency(verletRebuildFrequency);
@@ -263,8 +263,8 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
   //_autopas->iteratePairwise(this->_Functor);
 
-  auto* functor = new autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
-                                    true /* relevant for tuning */>(
+  auto *functor = new autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
+                                         true /* relevant for tuning */>(
       _autopas->getCutoff(), 1., 1.0, 0.0);  // cutoff, espi, sigma, shift, box min, box max
 
   _autopas->iteratePairwise(functor);
