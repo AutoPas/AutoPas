@@ -112,7 +112,8 @@ class C01Traversal
   }
 
   /**
-   * Resizes all buffers needed for combined SoA buffers.
+   * Resizes all buffers needed for combined SoA buffers (_combinationSlices, _currentSlices) to fit the current number
+   * of threads and cell offsets (= _cellOffsets.size()).
    */
   void resizeBuffers();
 

@@ -27,6 +27,7 @@ class VerletListHelpers;
 namespace internal {
 /**
  * Dummy class to provide empty arrays.
+ * This class is needed to provide a default argument to the implementation type (Impl_t) template parameter of Functor.
  * @tparam Particle
  */
 template <class Particle>
