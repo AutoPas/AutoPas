@@ -65,13 +65,13 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
  * @param array<double,3>
  * @return string
  * */
-string BoxToString(array<double,3> input){
-    std::ostringstream os;
-    for (double i: input){
-        os << i;
-    }
-    std::string str(os.str());
-    return str;
+string BoxToString(array<double, 3> input) {
+  std::ostringstream os;
+  for (double i : input) {
+    os << i;
+  }
+  std::string str(os.str());
+  return str;
 }
 
 int main(int argc, char **argv) {
@@ -113,47 +113,47 @@ int main(int argc, char **argv) {
   PrintableMolecule::setSigma(parser.getSigma());
   PrintableMolecule::setMass(parser.getMass());
 
-  //tried to get autopas->getNumberOfParticles(), but didnt work ->@todo need to make it work with get function
-  //only workaround with parser arguments:
+  // tried to get autopas->getNumberOfParticles(), but didnt work ->@todo need to make it work with get function
+  // only workaround with parser arguments:
   double numP;
-  if(parser.getGeneratorOption()==MDFlexParser::GeneratorOption::grid){
-      numP=parser.getParticlesPerDim()*parser.getParticlesPerDim()*parser.getParticlesPerDim();
-  }else{
-      numP=parser.getParticlesTotal();
+  if (parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
+    numP = parser.getParticlesPerDim() * parser.getParticlesPerDim() * parser.getParticlesPerDim();
+  } else {
+    numP = parser.getParticlesTotal();
   }
-    // Initialization
+  // Initialization
 
-    auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
-    autopas->setTuningStrategyOption(tuningStrategy);
-    autopas->setAllowedCellSizeFactors(cellSizeFactors);
-    autopas::Logger::get()->set_level(logLevel);
+  auto autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+  autopas->setTuningStrategyOption(tuningStrategy);
+  autopas->setAllowedCellSizeFactors(cellSizeFactors);
+  autopas::Logger::get()->set_level(logLevel);
 
-    // setted default anderen boxMax--> sonst Fehler
-    autopas->setBoxMax({2., 2., 2.});
-    autopas->init();
-    autopas::Logger::get()->set_level(logLevel);
-    autopas->setTuningStrategyOption(tuningStrategy);
-    autopas->setAllowedCellSizeFactors(cellSizeFactors);
-    autopas::Logger::get()->set_level(logLevel);
-    //temporäre setBoxMax, damit code läuft->sonst BoxLength nicht ausreichend
-    autopas->setBoxMax({2., 2., 2.});
-    autopas->init();
-    autopas::Logger::get()->set_level(logLevel);
+  // setted default anderen boxMax--> sonst Fehler
+  autopas->setBoxMax({2., 2., 2.});
+  autopas->init();
+  autopas::Logger::get()->set_level(logLevel);
+  autopas->setTuningStrategyOption(tuningStrategy);
+  autopas->setAllowedCellSizeFactors(cellSizeFactors);
+  autopas::Logger::get()->set_level(logLevel);
+  // temporäre setBoxMax, damit code läuft->sonst BoxLength nicht ausreichend
+  autopas->setBoxMax({2., 2., 2.});
+  autopas->init();
+  autopas::Logger::get()->set_level(logLevel);
 
   map<unsigned long, double> PC_Epsilon;
-  map<unsigned long, double> PC_Sigma ;
+  map<unsigned long, double> PC_Sigma;
   map<unsigned long, double> PC_Mass;
-  //temporäre implemetierung mit nur einer particle Class
-  double epsilon=parser.getEpsilon();
-  double sigma=parser.getSigma();
-  double mass=parser.getMass();
-  for(unsigned long i=0;i<numP;i++){
-      PC_Epsilon.emplace(i,epsilon);
-      PC_Sigma.emplace(i,sigma);
-      PC_Mass.emplace(i,mass);
+  // temporäre implemetierung mit nur einer particle Class
+  double epsilon = parser.getEpsilon();
+  double sigma = parser.getSigma();
+  double mass = parser.getMass();
+  for (unsigned long i = 0; i < numP; i++) {
+    PC_Epsilon.emplace(i, epsilon);
+    PC_Sigma.emplace(i, sigma);
+    PC_Mass.emplace(i, mass);
   }
 
-    ParticleClassLibrary P_C_Library = ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
+  ParticleClassLibrary P_C_Library = ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
 
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> Simulation(autopas, P_C_Library);
   Simulation.initialize(&parser);

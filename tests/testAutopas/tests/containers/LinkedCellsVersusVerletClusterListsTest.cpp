@@ -23,7 +23,12 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < numMolecules; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), PCL, shift);
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
       dummyTraversal({0, 0, 0}, &func);

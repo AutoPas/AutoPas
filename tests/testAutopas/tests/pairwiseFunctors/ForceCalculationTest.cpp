@@ -31,9 +31,13 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
 
   autopas::MoleculeLJ::setEpsilon(epsilon);
   autopas::MoleculeLJ::setSigma(sigma);
-
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor(cutoff, epsilon,
-                                                                                                  sigma, 0.0);
+  unsigned long numParticles = autoPas.getNumberOfParticles();
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < numParticles; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor(cutoff, PCL, 0.0);
 
   autoPas.iteratePairwise(&functor);
 

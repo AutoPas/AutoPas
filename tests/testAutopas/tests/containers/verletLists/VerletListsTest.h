@@ -7,6 +7,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include "../../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/cells/FullParticleCell.h"

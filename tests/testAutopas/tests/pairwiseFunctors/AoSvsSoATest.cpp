@@ -35,8 +35,13 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   auto particlesAoS = std::vector<autopas::Particle>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
-
-  LJFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> ljFunctor(PARTICLES_PER_DIM * 10, 1, 1, 0);
+  unsigned long numParticles = PARTICLES_PER_DIM * PARTICLES_PER_DIM;
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < numParticles; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  LJFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> ljFunctor(PARTICLES_PER_DIM * 10, PCL, 0);
 
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;

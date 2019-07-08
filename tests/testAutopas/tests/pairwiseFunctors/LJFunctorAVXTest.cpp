@@ -93,9 +93,13 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   // copy cells
   FPCell cell1NoAVX(cell1AVX);
   FPCell cell2NoAVX(cell2AVX);
-
-  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(
-      _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < numParticles; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0,
+                                                                                           _lowCorner, _highCorner);
   autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(
       _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
 
@@ -149,9 +153,13 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
 
   // copy cells
   FPCell cellNoAVX(cellAVX);
-
-  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(
-      _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < numParticles; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0,
+                                                                                           _lowCorner, _highCorner);
   autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(
       _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
 

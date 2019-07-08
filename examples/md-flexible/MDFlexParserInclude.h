@@ -5,7 +5,7 @@
 #include <iostream>
 #include "autopas/utils/NumberSet.h"
 
-//enspricht genau #include <autopas.h> bloß ohne LJFunctor.h um multiple declarations zu vermeiden
+// enspricht genau #include <autopas.h> bloß ohne LJFunctor.h um multiple declarations zu vermeiden
 // utils
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Logger.h"
