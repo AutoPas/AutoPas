@@ -122,10 +122,13 @@ void MachineSearch::generateMLPredictions() {
   _cutoff = _autopas.getCutoff();
   _verletSkin = _autopas.getVerletSkin();
 
+  float in_par = (_particleCount > max_particle_count) ? 1 : _particleCount / max_particle_count;
+  float in_box = (_boxLength > max_box_length) ? 1 : _boxLength / max_box_length;
+  float in_cut = (_cutoff > max_cutoff) ? 1 : _cutoff / max_cutoff;
+  float in_ver = (_verletSkin > max_v_skin_rad) ? 1 : _verletSkin / max_v_skin_rad;
+
   const auto result = _mlmodel.predict({fdeep::tensor5(
-      fdeep::shape5(1, 1, 1, 1, 4),
-      {static_cast<float>(_particleCount / max_particle_count), static_cast<float>(_boxLength / max_box_length),
-       static_cast<float>(_cutoff / max_cutoff), static_cast<float>(_verletSkin / max_v_skin_rad)})});
+      fdeep::shape2(1, 4), {in_par, in_box, in_cut, in_ver})});
   std::cout << fdeep::show_tensor5s(result) << std::endl;
   std::vector<float> probabilityVector = *result[0].as_vector();
 
