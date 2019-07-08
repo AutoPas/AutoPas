@@ -166,7 +166,8 @@ TEST_F(GeneratorsTest, MolSimTask) {
   MolSimTaskGeneration(*autoPas);
   cout << "Number of particles generated " << autoPas->getNumberOfParticles() << endl;
   for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-    // cout << iter->toString() << endl;
+      // cout << iter->toString() << endl;
+  }
     double particleD = 0.01;
     int iterations = 0;
     // iterationen beginnend
@@ -182,7 +183,6 @@ TEST_F(GeneratorsTest, MolSimTask) {
       writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
     }
     delete autoPas;
-    delete functor;
     ASSERT_TRUE(true);
-  }
+
 }

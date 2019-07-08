@@ -58,10 +58,10 @@ TEST_F(TimeDiscretizationTest, GeneralForceTest) {
   autoPas->addParticle(p1);
   PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
   autoPas->addParticle(p2);
-  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-    cout << iter->toString() << endl;
-    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-  }
+//  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+//    cout << iter->toString() << endl;
+//    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+//  }
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
@@ -69,29 +69,29 @@ TEST_F(TimeDiscretizationTest, GeneralForceTest) {
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   // Dokumentation prints
-  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  cout << "-----AFTER INITIALIZATION----" << endl;
-  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-    cout << iter->toString() << "  __END" << endl;
-    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-  }
-  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  cout << "-------ITERATIONS START------" << endl;
-  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//  cout << "-----AFTER INITIALIZATION----" << endl;
+//  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+//    cout << iter->toString() << "  __END" << endl;
+//    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+//  }
+//  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//  cout << "-------ITERATIONS START------" << endl;
+//  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
 
   while (iterations < 10) {
     td.VSCalculateX(autoPas);
     autoPas->iteratePairwise(functor);
     td.VSCalculateV(autoPas);
     iterations++;
-    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-      cout << iter->toString() << endl;
-      cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-    }
-    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+//      cout << iter->toString() << endl;
+//      cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+//    }
+//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
   }
   ASSERT_TRUE(true);
   delete autoPas;
@@ -114,10 +114,10 @@ TEST_F(TimeDiscretizationTest, CalcX) {
   autoPas->addParticle(p1);
   PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
   autoPas->addParticle(p2);
-  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-    cout << iter->toString() << endl;
-    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-  }
+//  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+//    cout << iter->toString() << endl;
+//    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+//  }
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
@@ -126,8 +126,8 @@ TEST_F(TimeDiscretizationTest, CalcX) {
   autoPas->iteratePairwise(functor);
   cout << "delta_t value =  " << particleD << endl;
   while (iterations < 10) {
-    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
     for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
       auto v = iter->getV();
       auto m = iter->getMass();
