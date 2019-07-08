@@ -150,6 +150,7 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         "The Cuda traversal cannot work with Data Layouts other than DataLayoutOption::cuda!");
   }
 #if defined(AUTOPAS_CUDA)
+  auto &cells = *(this->_cells);
   // load CUDA SOA
   std::vector<size_t> cellSizePartialSum = {0};
   size_t maxParticlesInCell = 0;
