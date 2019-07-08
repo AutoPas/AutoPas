@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 
 namespace autopas {
@@ -19,7 +19,7 @@ namespace autopas {
  * @tparam useNewton3 If newton 3 should be used. Currently, only false is supported.
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class VerletClustersTraversal : public CellPairTraversal<ParticleCell>,
+class VerletClustersTraversal : public TraversalInterface,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -28,8 +28,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell>,
    * Constructor of the VerletClustersTraversal.
    * @param pairwiseFunctor The functor to use for the traveral.
    */
-  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>({0, 0, 0}), _functor(pairwiseFunctor) {}
+  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::verletClusters; }
 
