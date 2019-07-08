@@ -204,7 +204,7 @@ class NumberInterval : public NumberSet<Number> {
     result.push_back(_max);
 
     // randomize the sample
-    rng.shuffle(std::begin(result), std::end(result));
+    std::shuffle(std::begin(result), std::end(result), rng);
 
     return result;
   }

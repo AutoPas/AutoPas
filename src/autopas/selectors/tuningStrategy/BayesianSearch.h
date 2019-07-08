@@ -65,14 +65,14 @@ class BayesianSearch : public TuningStrategyInterface {
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _traversalContainerMap(),
         _currentConfig(),
-        _gp(1., std::vector<double>(FeatureVector::featureSpaceDims, 1.), 0.001),
         _invalidConfigs(),
+        _rng(seed),
+        _gp(FeatureVector::featureSpaceDims, 0.001, _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples),
         _lastAcqFunction(lastAcqFunction),
-        _lastNumSamples(lastNumSamples),
-        _rng(seed) {
+        _lastNumSamples(lastNumSamples) {
     /// @todo setting hyperparameters
 
     if (predNumSamples <= 0 or lastNumSamples <= 0) {
@@ -141,14 +141,15 @@ class BayesianSearch : public TuningStrategyInterface {
   std::map<TraversalOption, ContainerOption> _traversalContainerMap;
 
   FeatureVector _currentConfig;
-  GaussianProcess<FeatureVector> _gp;
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
+
+  Random _rng;
+  GaussianProcess<FeatureVector> _gp;
   size_t _maxEvidence;
   AcquisitionFunctionOption _predAcqFunction;
   size_t _predNumSamples;
   AcquisitionFunctionOption _lastAcqFunction;
   size_t _lastNumSamples;
-  Random _rng;
 };
 
 bool BayesianSearch::tune(bool currentInvalid) {

@@ -16,18 +16,18 @@ namespace autopas {
 /**
  * Class for random algorithms.
  */
-class Random {
+class Random : public std::mt19937 {
  public:
   /**
    * Constructor
    */
-  Random() : _rng(std::random_device()()) {}
+  Random() : std::mt19937(std::random_device()()) {}
 
   /**
    * Construct with seed.
    * @param seed
    */
-  explicit Random(unsigned long seed) : _rng(seed) {}
+  explicit Random(unsigned long seed) : std::mt19937(seed) {}
 
   /**
    * Class should not be copied constructed
@@ -64,31 +64,17 @@ class Random {
     if (result.size() > n) {
       // randomize the last copy of the set
       size_t extra = result.size() - n;
-      std::shuffle(std::end(result) - extra, std::end(result), _rng);
+      std::shuffle(std::end(result) - extra, std::end(result), *this);
 
       // truncate the rest
       result.resize(n);
     }
 
     // randomize the sample
-    std::shuffle(std::begin(result), std::end(result), _rng);
+    std::shuffle(std::begin(result), std::end(result), *this);
 
     return result;
   }
-
-  /**
-   * Reorders the elements in the given range [first, last) such that each possible
-   * permutation of those elements has equal probability of appearance.
-   * @param first
-   * @param last
-   */
-  template <class RandomIt>
-  inline void shuffle(RandomIt first, RandomIt last) {
-    return std::shuffle(first, last, _rng);
-  }
-
- private:
-  std::mt19937 _rng;
 };
 
 }  // namespace autopas
