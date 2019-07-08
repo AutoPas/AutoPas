@@ -12,7 +12,7 @@
 namespace autopas {
 
 /**
- * Traversal for VerletClusterLists.
+ * Traversal for VerletClusterLists. Does not support newton 3.
  * @tparam ParticleCell
  * @tparam PairwiseFunctor The type of the functor.
  * @tparam dataLayout The data layout to use. Currently, only AoS is supported.
