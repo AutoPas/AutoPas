@@ -157,9 +157,10 @@ class AutoPas {
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
    * @param f Functor that describes the pair-potential.
+   * @return true if this was a tuning iteration.
    */
   template <class Functor>
-  void iteratePairwise(Functor *f) {
+  bool iteratePairwise(Functor *f) {
     static_assert(not std::is_same<Functor, autopas::Functor<Particle, ParticleCell>>::value,
                   "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                   "derived type instead, e.g. by using a dynamic_cast.");
@@ -167,7 +168,7 @@ class AutoPas {
       utils::ExceptionHandler::exception("Functor cutoff ({}) must not be larger than container cutoff ({})",
                                          f->getCutoff(), this->getCutoff());
     }
-    _logicHandler->iteratePairwise(f);
+    return _logicHandler->iteratePairwise(f);
   }
 
   /**

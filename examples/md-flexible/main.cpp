@@ -8,6 +8,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <utility>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
@@ -121,15 +122,15 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
  * @param autopas
  * @param cutoff
  * @param numIterations
- * @return Time for all calculation iterations in microseconds.
+ * @return time for all tuning iterations and time for all non-tuning iterations in microseconds.
  */
 template <class FunctorChoice, class AutoPasTemplate>
-long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
+std::pair<long, long> calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
   auto functor = FunctorChoice(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
 
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
-
-  startCalc = std::chrono::high_resolution_clock::now();
+  long tuningDuration = 0;
+  long nonTuningDuration = 0;
 
   // actual Calculation
   for (unsigned int i = 0; i < numIterations; ++i) {
@@ -137,12 +138,15 @@ long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
       cout << "Iteration " << i << endl;
       cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
     }
-    autopas.iteratePairwise(&functor);
-  }
-  stopCalc = std::chrono::high_resolution_clock::now();
+    startCalc = std::chrono::high_resolution_clock::now();
+    bool tuning = autopas.iteratePairwise(&functor);
+    stopCalc = std::chrono::high_resolution_clock::now();
 
-  auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
-  return durationCalc;
+    (tuning ? tuningDuration : nonTuningDuration) +=
+        std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
+  }
+
+  return std::make_pair(tuningDuration, nonTuningDuration);
 }
 
 int main(int argc, char **argv) {
@@ -245,21 +249,23 @@ int main(int argc, char **argv) {
 
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
-  long durationApply = 0;
+  long tuningDuration = 0;
+  long nonTuningDuration = 0;
   unsigned long flopsPerKernelCall = 0;
   cout << "Starting force calculation... " << endl;
 
   switch (functorChoice) {
     case MDFlexParser::FunctorOption::lj12_6: {
-      durationApply =
+      std::tie(tuningDuration, nonTuningDuration) =
           calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff, numIterations);
       flopsPerKernelCall =
           LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexParser::FunctorOption::lj12_6_AVX: {
-      durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff,
-                                                                                                      numIterations);
+      std::tie(tuningDuration, nonTuningDuration) =
+          calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff,
+                                                                                          numIterations);
       flopsPerKernelCall =
           LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
@@ -270,21 +276,26 @@ int main(int argc, char **argv) {
   cout << "Force calculation done!" << endl;
 
   //  printMolecules(autopas);
-
   auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();
   auto durationTotalSec = durationTotal * 1e-6;
+
+  auto tuningDurationSec = tuningDuration * 1e-6;
+  auto nonTuningDurationSec = nonTuningDuration * 1e-6;
+  auto durationApply = tuningDuration + nonTuningDuration;
   auto durationApplySec = durationApply * 1e-6;
 
   // Statistics
   cout << fixed << setprecision(2);
   cout << endl << "Measurements:" << endl;
-  cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
+  cout << "Time tuning    : " << tuningDuration << " \u03bcs (" << tuningDurationSec << "s)" << endl;
+  cout << "Time not tuning: " << nonTuningDuration << " \u03bcs (" << nonTuningDurationSec << "s)" << endl;
+  cout << "Time total     : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
   if (numIterations > 0) {
-    cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
+    cout << "One iteration  : " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
          << "s)" << endl;
   }
   auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
-  cout << "MFUPs/sec    : " << mfups << endl;
+  cout << "MFUPs/sec      : " << mfups << endl;
 
   if (measureFlops) {
     FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(autopas.getCutoff());
@@ -298,9 +309,9 @@ int main(int argc, char **argv) {
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
           floor(numIterations / verletRebuildFrequency);
 
-    cout << "GFLOPs       : " << flops * 1e-9 << endl;
-    cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
-    cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+    cout << "GFLOPs         : " << flops * 1e-9 << endl;
+    cout << "GFLOPs/sec     : " << flops * 1e-9 / durationApplySec << endl;
+    cout << "Hit rate       : " << flopCounterFunctor.getHitRate() << endl;
   }
 
   if (not logFileName.empty()) {

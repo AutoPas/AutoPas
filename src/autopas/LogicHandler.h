@@ -113,15 +113,17 @@ class LogicHandler {
    * @copydoc AutoPas::iteratePairwise()
    */
   template <class Functor>
-  void iteratePairwise(Functor *f) {
+  bool iteratePairwise(Functor *f) {
     const bool doRebuild = not isContainerValid();
-    _autoTuner.iteratePairwise(f, doRebuild);
+    bool result = _autoTuner.iteratePairwise(f, doRebuild);
     if (doRebuild /*we have done a rebuild now*/) {
       // list is now valid
       _containerIsValid = true;
       _stepsSinceLastContainerRebuild = 0;
     }
     ++_stepsSinceLastContainerRebuild;
+
+    return result;
   }
 
   /**
