@@ -200,7 +200,7 @@ void MachineSearch<Particle, ParticleCell>::generateMLPredictions() {
   for (int i = 0; i < 5; ++i) {
     // std::apply(_searchSpace.emplace, mloption[_mlSuggestions[i]]);
     auto tuple = mloption[_mlSuggestions[i]];
-    _searchSpace.emplace(std::get<0>(tuple), 1, std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple));
+    _searchSpace.emplace(std::get<0>(tuple), 1., std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple));
   }
 }
 
@@ -227,7 +227,7 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
     for (auto &traversalOption : allowedAndApplicable) {
       for (auto &dataLayoutOption : allowedDataLayoutOptions) {
         for (auto &newton3Option : allowedNewton3Options) {
-          _searchSpace.emplace(containerOption, 1, traversalOption, dataLayoutOption, newton3Option);
+          _searchSpace.emplace(containerOption, 1., traversalOption, dataLayoutOption, newton3Option);
         }
       }
     }
