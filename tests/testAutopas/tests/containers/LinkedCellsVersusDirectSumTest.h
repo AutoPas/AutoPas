@@ -7,11 +7,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
-
 
 class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
  public:

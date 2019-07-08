@@ -1,9 +1,9 @@
 #pragma once
 #include <gtest/gtest.h>
 #include <math.h>
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
 #include "../../testingHelpers/GridGenerator.h"
 #include "../../testingHelpers/RandomGenerator.h"

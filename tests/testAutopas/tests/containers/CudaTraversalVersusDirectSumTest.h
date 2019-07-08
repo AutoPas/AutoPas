@@ -8,11 +8,10 @@
 
 #include <gtest/gtest.h>
 #include <cstdlib>
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
-
 
 class CudaTraversalVersusDirectSumTest : public AutoPasTestBase {
  public:

@@ -9,11 +9,10 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <vector>
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/GridGenerator.h"
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
-
 
 class ForceCalculationTest : public AutoPasTestBase {
  public:

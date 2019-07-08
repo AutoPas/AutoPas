@@ -8,10 +8,10 @@
 
 #include <gtest/gtest.h>
 #include <cstdlib>
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/RandomGenerator.h"
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LinkedCellsVersusVerletListsCellsTest : public AutoPasTestBase {

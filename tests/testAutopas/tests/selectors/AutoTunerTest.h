@@ -7,11 +7,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
-
 
 class AutoTunerTest : public AutoPasTestBase {
  public:

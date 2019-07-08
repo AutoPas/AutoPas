@@ -28,7 +28,7 @@ double ParticleClassLibrary::mixingE(unsigned long i, unsigned long j) { return 
 double ParticleClassLibrary::mixingS(Particle i, Particle j) { return (Sigma.at(i.getID()) + Sigma.at(j.getID())) / 2; }
 
 double ParticleClassLibrary::mixing24E(unsigned long i, unsigned long j) {
-  return 24 * sqrt(Epsilon.at(i) + Epsilon.at(j));
+  return 24 * sqrt(Epsilon.at(i) * Epsilon.at(j));
 }
 
 double ParticleClassLibrary::mixingSS(unsigned long i, unsigned long j) {

@@ -166,23 +166,22 @@ TEST_F(GeneratorsTest, MolSimTask) {
   MolSimTaskGeneration(*autoPas);
   cout << "Number of particles generated " << autoPas->getNumberOfParticles() << endl;
   for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-      // cout << iter->toString() << endl;
+    // cout << iter->toString() << endl;
   }
-    double particleD = 0.01;
-    int iterations = 0;
-    // iterationen beginnend
-    TimeDiscretization<decltype(autoPas)> td(particleD);
-    // domain vorbeireiten: -Force initialisieren
+  double particleD = 0.01;
+  int iterations = 0;
+  // iterationen beginnend
+  TimeDiscretization<decltype(autoPas)> td(particleD);
+  // domain vorbeireiten: -Force initialisieren
+  autoPas->iteratePairwise(functor);
+  writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
+  while (iterations < 10) {
+    td.VSCalculateX(autoPas);
     autoPas->iteratePairwise(functor);
+    td.VSCalculateV(autoPas);
+    iterations++;
     writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
-    while (iterations < 10) {
-      td.VSCalculateX(autoPas);
-      autoPas->iteratePairwise(functor);
-      td.VSCalculateV(autoPas);
-      iterations++;
-      writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
-    }
-    delete autoPas;
-    ASSERT_TRUE(true);
-
+  }
+  delete autoPas;
+  ASSERT_TRUE(true);
 }
