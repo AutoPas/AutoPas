@@ -280,6 +280,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   }
 }
 
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::resizeBuffers() {
   const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
@@ -289,8 +290,8 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
                   [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
     _currentSlices.resize(numThreads * _cacheOffset);
   }
-}  
-  
+}
+
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
