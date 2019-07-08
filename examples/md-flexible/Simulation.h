@@ -181,8 +181,8 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   _autopas->setAllowedTraversals(traversalOptions);
   _autopas->setAllowedDataLayouts(dataLayoutOptions);
   _autopas->setAllowedNewton3Options(newton3Options);
-  //so that a test in jenkins passes:
-  _autopas->setBoxMax({5.,5.,5.});
+  // so that a test in jenkins passes:
+  _autopas->setBoxMax({5., 5., 5.});
   //@todo übernommen vom merge: -> prüfen
   _autopas->setTuningStrategyOption(tuningStrategy);
   _autopas->setAllowedCellSizeFactors(cellSizeFactors);
