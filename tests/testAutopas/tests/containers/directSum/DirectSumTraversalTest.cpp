@@ -84,7 +84,8 @@ TEST_F(DirectSumTraversalTest, testTraversalCuda) {
   EXPECT_CALL(functor, CudaFunctor(_, true)).Times(1);
   // domain SoA with halo
   EXPECT_CALL(functor, CudaFunctor(_, _, true)).Times(1);
-  traversal.traverseCellPairs(cells);
+  traversal.setCellsToTraverse(cells);
+  traversal.traverseParticlePairs();
 }
 
 #endif
