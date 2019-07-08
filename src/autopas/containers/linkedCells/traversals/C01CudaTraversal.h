@@ -145,7 +145,6 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
-  auto &cells = *(this->_cells);
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception(
         "The Cuda traversal cannot work with Data Layouts other than DataLayoutOption::cuda!");
