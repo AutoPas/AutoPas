@@ -26,7 +26,7 @@ class Simulation {
   std::ofstream _logFile;
 
   struct timers {
-    long durationPositionUpdate, durationForceUpdate, durationVelocityUpdate, durationSimulate;
+    long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
     std::chrono::system_clock::time_point startTotal, stopTotal;
   } _timers;
 
@@ -138,7 +138,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   auto particlesPerDim(parser->getParticlesPerDim());
   auto verletRebuildFrequency(parser->getVerletRebuildFrequency());
   auto logLevel(parser->getLogLevel());
-  //@todo übernommen vom merge mit master->überprüfen
   auto &cellSizeFactors(parser->getCellSizeFactors());
   auto tuningStrategy(parser->getTuningStrategyOption());
   auto boxLength(parser->getBoxLength());

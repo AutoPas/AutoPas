@@ -62,7 +62,6 @@ TEST(TimeDTest, GeneralForceTest) {
   double epsilon = 5.0;
   double sigma = 1.0;
   double cutoff = 2;
-  array<double, 3> boxmin = {0., 0., 0.};
   array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
@@ -84,9 +83,8 @@ TEST(TimeDTest, GeneralForceTest) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor =
-      new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
-                             true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
+  auto *functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
+                                         autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   // Dokumentation prints
@@ -127,7 +125,6 @@ TEST(TimeDTest, CalcX) {
   double epsilon = 5.0;
   double sigma = 1.0;
   double cutoff = 2;
-  array<double, 3> boxmin = {0., 0., 0.};
   array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
@@ -149,9 +146,8 @@ TEST(TimeDTest, CalcX) {
   //  int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor =
-      new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
-                             true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
+  auto *functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
+                                         autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   cout << "delta_t value =  " << particleD << endl;
@@ -191,7 +187,6 @@ TEST(TimeDTEst, CalcV) {
   double epsilon = 5.0;
   double sigma = 1.0;
   double cutoff = 2;
-  array<double, 3> boxmin = {0., 0., 0.};
   array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
@@ -213,9 +208,8 @@ TEST(TimeDTEst, CalcV) {
   //  int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor =
-      new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
-                             true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
+  auto *functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
+                                         autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   //  cout << "delta_t value =  " << particleD << endl;

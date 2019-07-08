@@ -186,8 +186,6 @@ TEST(Generater, MolSimTask) {
   double epsilon = 5.0;
   double sigma = 1.0;
   double cutoff = 0.5;
-  std::array<double, 3> boxmin({0., 0., 0.});
-  std::array<double, 3> boxmax({50., 30., 50.});
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
@@ -201,9 +199,8 @@ TEST(Generater, MolSimTask) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor =
-      new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both,
-                             true>(cutoff, epsilon, sigma, 0.0, boxmin, boxmax, true);
+  auto *functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
+                                         autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   //    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
