@@ -104,7 +104,7 @@ class ParticleBase {
    * Set the position of the particle
    * @param r new position
    */
-  void setR(const std::array<floatType, 3> &r) { _r = r; }
+  virtual void setR(const std::array<floatType, 3> &r) { _r = r; }
 
   /**
    * Add a distance vector to the position of the particle

@@ -14,7 +14,8 @@
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/cells/FullParticleCell.h"
-
+#include "autopas/cells/ParticleCell.h"
+#include "autopas/particles/KokkosParticle.h"
 #ifdef AUTOPAS_KOKKOS
 #include <Kokkos_Core.hpp>
 #include "autopas/pairwiseFunctors/KokkosLJFunctor.h"
@@ -33,6 +34,7 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
                                  public DirectSumTraversalInterface<ParticleCell> {
+
   /**
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
@@ -42,11 +44,13 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, dataLayo
       : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({2, 1, 1}),
         _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
                                            dataLayout, useNewton3, true>(pairwiseFunctor)),
-        _dataLayoutConverter(pairwiseFunctor) {}
+        _dataLayoutConverter(pairwiseFunctor), _functor(pairwiseFunctor) {
+
+  }
 
   TraversalOption getTraversalType() const override { return TraversalOption::kokkosDirectSumTraversal; }
 
-  bool isApplicable() const override { return true; }
+  bool isApplicable() const override { return std::is_same<typename ParticleCell::ParticleType, KokkosParticle>::value; }
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
@@ -75,6 +79,7 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, dataLayo
   internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
                         true>
       _cellFunctor;
+  PairwiseFunctor *_functor;
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
@@ -85,7 +90,7 @@ void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
 
 #ifdef AUTOPAS_KOKKOS
   processCell(cells[0]);
-  //processCellPair(cells[0], cells[1]);
+  processCellPair(cells[0], cells[1]);
 #endif
 }
 
@@ -93,12 +98,11 @@ void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
     void
     DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processCell(ParticleCell &cell) {
 #ifdef AUTOPAS_KOKKOS
-      KokkosLJFunctor<ParticleCell, FullParticleCell<ParticleCell>> functor{1.0,1.0,1.0, false};
       auto particles = cell._particles;
       Kokkos::parallel_for(particles.size(), KOKKOS_LAMBDA(const int i){
       for(int l = i + 1; l < particles.size(); l++) {
-        functor.AoSFunctorInline(particles[i], particles[l]);
-        functor.AoSFunctorInline(particles[l], particles[i]);
+        _functor->AoSFunctorInline(particles[i], particles[l]);
+        _functor->AoSFunctorInline(particles[l], particles[i]);
       }
     });
 #endif
@@ -108,13 +112,12 @@ void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
     void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processCellPair(
             ParticleCell &cell1, ParticleCell &cell2) {
 #ifdef AUTOPAS_KOKKOS
-      KokkosLJFunctor<ParticleCell, FullParticleCell<ParticleCell>> functor{1.0,1.0,1.0, false};
       auto part0 = cell1._particles;
       auto part1 = cell2._particles;
       Kokkos::parallel_for (part0.size(), KOKKOS_LAMBDA(const int i){
       for (int l = 0; l < part1.size(); l++) {
-        functor.AoSFunctorInline(part0[i], part1[l]);
-        functor.AoSFunctorInline(part1[l], part0[i]);
+        _functor->AoSFunctorInline(part0[i], part1[l]);
+        _functor->AoSFunctorInline(part1[l], part0[i]);
       }
     });
 #endif

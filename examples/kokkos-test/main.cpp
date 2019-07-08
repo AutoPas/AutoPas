@@ -66,16 +66,26 @@ int main(){
   autopas.setAllowedNewton3Options(newton3Options);
   //autopas.setAllowedCellSizeFactors(cellSizeFactors);
 
+  //set boxMin and boxMax
+  double boxLength = 10;
+  std::array<double, 3> boxMin({0., 0., 0.});
+  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
+
+  autopas.setBoxMin(boxMin);
+  autopas.setBoxMax(boxMax);
+
   autopas.init();//init autopas before particles are added
 
   std::array<KokkosParticle, 5> arrParticles{};
   for (int i = 0; i < 5; ++i) {
-    arrParticles[i] = KokkosParticle({0.0 , 0, 0},{0.0, 0, 0}, i);
+    arrParticles[i] = KokkosParticle({0.1 * i , 0.2 * i, 0.3 * i},{0.0, 0.0, 0.0}, i);
   }
   for (int i = 0; i < 5; ++i) {
     autopas.addParticle(arrParticles[i]);
   }
   autopas.iteratePairwise(&functor);//iterate
-
+  for (int i = 0; i < 5; ++i) {
+    std::cout <<arrParticles[i].toString() << "\n";
+  }
   return EXIT_SUCCESS;
 }

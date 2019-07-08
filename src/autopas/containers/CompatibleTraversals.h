@@ -20,7 +20,7 @@ namespace compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allDSCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::directSumTraversal};
+  static const std::set<TraversalOption> s{TraversalOption::directSumTraversal, TraversalOption::kokkosDirectSumTraversal};
   return s;
 }
 

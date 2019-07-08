@@ -16,8 +16,10 @@
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/utils/NumberSet.h"
 
+//#define AUTOPAS_KOKKOS
+
 #ifdef AUTOPAS_KOKKOS
-#include <Kokkos_Core.hpp>
+#include "Kokkos_Core.hpp"
 #endif
 
 namespace autopas {

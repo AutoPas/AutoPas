@@ -6,13 +6,21 @@
 
 #pragma once
 #include "autopas/particles/Particle.h"
+#ifdef AUTOPAS_KOKKOS
+#include "Kokkos_Core.hpp"
+#include "autopas/utils/KokkosTypes.h"
+#include "autopas/utils/KokkosHelper.h"
+#endif
 
 namespace autopas {
 
-// template <typename floatType>
+
 /**
  * particle class desinged for kokkos functionalities
  */
+//template <typename floatType>
+typedef double floatType;
+
 class KokkosParticle : public Particle {
  private:
 #ifdef AUTOPAS_KOKKOS
@@ -59,6 +67,7 @@ class KokkosParticle : public Particle {
     Kokkos::deep_copy(_r, h_r);
     Kokkos::deep_copy(_v, h_v);
 #endif
+    _id = id;
   }
 
 #ifdef AUTOPAS_KOKKOS
@@ -125,6 +134,7 @@ class KokkosParticle : public Particle {
   void addV(FloatVectorType &v) { KokkosHelper::addDir(_v, v); }
 
   std::string toString() override {
+
     std::ostringstream text;
     FloatVectorType::HostMirror h_r = Kokkos::create_mirror_view(_r);
     Kokkos::deep_copy(h_r, _r);
@@ -149,6 +159,13 @@ class KokkosParticle : public Particle {
 
   KOKKOS_INLINE_FUNCTION
   FloatVectorType get_f_inline() const { return _f; }
+
+  void setR(const std::array<floatType, 3> &r) override{
+    //@TODO  _r = r;
+  }
+
+
+
 #endif
 
 /**
