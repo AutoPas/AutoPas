@@ -17,6 +17,7 @@
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/selectors/tuningStrategy/MachineSearch.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/NoTemplateInterface.h"
 
 namespace autopas {
 
@@ -34,7 +35,7 @@ static unsigned int _instanceCounter = 0;
  * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle, class ParticleCell>
-class AutoPas {
+class AutoPas : NoTemplateInterface {
  public:
   /**
    * Constructor for the autopas class.
@@ -449,7 +450,7 @@ private:
 
         case TuningStrategyOption::machineSearch:
         return std::make_unique<MachineSearch>(_allowedContainers, _allowedTraversals, _allowedDataLayouts,
-                                               _allowedNewton3Options, _modelLink, &this);
+                                               _allowedNewton3Options, _modelLink, this);
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",

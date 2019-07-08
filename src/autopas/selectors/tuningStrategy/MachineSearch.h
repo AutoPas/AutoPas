@@ -6,19 +6,19 @@
 #pragma once
 #include <set>
 #include <sstream>
-#include <utility>
 #include "TuningStrategyInterface.h"
-#include "autopas/AutoPas.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "fdeep/fdeep.hpp"
+#include "autopas/NoTemplateInterface.h"
 
 namespace autopas {
 
 /**
  * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
  */
+
 class MachineSearch : public TuningStrategyInterface {
  public:
   /**
@@ -28,15 +28,17 @@ class MachineSearch : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    */
-  MachineSearch(const std::set<ContainerOption> &allowedContainerOptions,
+  MachineSearch(const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options,
-                std::string modelLink, AutoPas &autopas)
-      : _containerOptions(allowedContainerOptions), _mlmodel(fdeep::load_model(modelLink), _autopas(autopas)) {
+                std::string modelLink, NoTemplateInterface autopas)
+      : _containerOptions(allowedContainerOptions), _mlmodel(fdeep::load_model(modelLink)) {
     // sets search space and current config
-    populateSearchSpace(allowedContainerOptions, allowedTraversalOptions, allowedDataLayoutOptions,
-                        allowedNewton3Options);
+    populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
+                        allowedDataLayoutOptions, allowedNewton3Options);
+
+    _autopas = autopas;
   }
 
   inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
@@ -79,9 +81,12 @@ class MachineSearch : public TuningStrategyInterface {
    * @param allowedNewton3Options
    */
   inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                  const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                   const std::set<Newton3Option> &allowedNewton3Options);
+
+  inline void selectOptimalConfiguration();
 
   std::set<ContainerOption> _containerOptions;
   std::set<Configuration> _searchSpace;
@@ -91,7 +96,7 @@ class MachineSearch : public TuningStrategyInterface {
   int _configCounter;
   double _particleCount, _boxLength, _cutoff, _verletSkin;
   fdeep::model _mlmodel;
-  AutoPas _autopas;
+  NoTemplateInterface _autopas;
 };
 
 void MachineSearch::findNextSuggestion() {
@@ -112,10 +117,10 @@ void MachineSearch::findNextSuggestion() {
 void MachineSearch::generateMLPredictions() {
   // at the start of each configuration, fill a global array with n elements for most efficient configurations
   double max_particle_count = 125000, max_box_length = 12, max_cutoff = 4, max_v_skin_rad = 0.3;
-  _particleCount = _autopas->getNumParticles();
-  _boxLength = _autopas->getCurrentContainer()->getBoxMax()[0] - _autopas->getCurrentContainer()->getBoxMin()[0];
-  _cutoff = _autopas->getCurrentContainer()->getCutoff();
-  _verletSkin = _autopas->getCurrentContainer()->getCutoff();
+  _particleCount = _autopas.getNumberOfParticles();
+  _boxLength = _autopas.getBoxMax()[0] - _autopas.getBoxMin()[0];
+  _cutoff = _autopas.getCutoff();
+  _verletSkin = _autopas.getVerletSkin();
 
   const auto result = _mlmodel.predict({fdeep::tensor5(
       fdeep::shape5(1, 1, 1, 1, 4),
@@ -190,13 +195,16 @@ void MachineSearch::generateMLPredictions() {
 
 
   for (int i = 0; i < 5; ++i) {
-    std::apply(_searchSpace.emplace(mloption[_mlSuggestions[i]]));
+    //std::apply(_searchSpace.emplace, mloption[_mlSuggestions[i]]);
+    auto tuple = mloption[_mlSuggestions[i]];
+    _searchSpace.emplace(std::get<0>(tuple), 1, std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple));
   }
 }
 
 void MachineSearch::populateSearchSpace(
-    const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
-    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options) {
+    const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
+    const std::set<TraversalOption> &allowedTraversalOptions, const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+    const std::set<Newton3Option> &allowedNewton3Options) {
   //@TODO dummyTraversal needed until all containers support propper traversals
   auto dummySet = {TraversalOption::dummyTraversal};
   std::set<TraversalOption> allowedTraversalOptionsPlusDummy;
@@ -215,7 +223,7 @@ void MachineSearch::populateSearchSpace(
     for (auto &traversalOption : allowedAndApplicable) {
       for (auto &dataLayoutOption : allowedDataLayoutOptions) {
         for (auto &newton3Option : allowedNewton3Options) {
-          _searchSpace.emplace(containerOption, traversalOption, dataLayoutOption, newton3Option);
+          _searchSpace.emplace(containerOption, 1, traversalOption, dataLayoutOption, newton3Option);
         }
       }
     }
@@ -241,6 +249,7 @@ bool MachineSearch::tune() {
   }
   return true;
 }
+
 
 void MachineSearch::selectOptimalConfiguration() {
   if (_searchSpace.size() == 1) {
@@ -275,7 +284,7 @@ void MachineSearch::selectOptimalConfiguration() {
 
 void MachineSearch::removeN3Option(Newton3Option badNewton3Option) {
   for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
-    if (ssIter->_newton3 == badNewton3Option) {
+    if (ssIter->newton3 == badNewton3Option) {
       // change current config to the next non-deleted
       if (ssIter == _currentConfig) {
         ssIter = _searchSpace.erase(ssIter);
