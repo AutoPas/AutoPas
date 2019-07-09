@@ -6,62 +6,6 @@
 
 #include "DirectSumContainerTest.h"
 
-TEST_F(DirectSumContainerTest, testParticleAdding) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum(
-      {0., 0., 0.}, {10., 10., 10.}, 1., 0.);
-  int id = 1;
-  for (double x : {-.5, 0., 5., 9.999, 10., 10.5}) {
-    for (double y : {-.5, 0., 5., 9.999, 10., 10.5}) {
-      for (double z : {-.5, 0., 5., 9.999, 10., 10.5}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
-        if (x == 10. or y == 10. or z == 10. or x == -.5 or y == -.5 or z == -.5 or x == 10.5 or y == 10.5 or
-            z == 10.5) {
-          EXPECT_ANY_THROW(directSum.addParticle(p));     // outside, therefore not ok!
-          EXPECT_NO_THROW(directSum.addHaloParticle(p));  // outside, therefore ok!
-        } else {
-          EXPECT_NO_THROW(directSum.addParticle(p));      // inside, therefore ok!
-          EXPECT_NO_THROW(directSum.addHaloParticle(p));  // inside, but ok, as we have inprecise boundaries!
-        }
-      }
-    }
-  }
-}
-
-TEST_F(DirectSumContainerTest, testGetNumParticles) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum(
-      {0., 0., 0.}, {10., 10., 10.}, 1., 0.);
-  EXPECT_EQ(directSum.getNumParticles(), 0);
-
-  std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
-  directSum.addParticle(p);
-  EXPECT_EQ(directSum.getNumParticles(), 1);
-
-  std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
-  directSum.addParticle(p2);
-  EXPECT_EQ(directSum.getNumParticles(), 2);
-}
-
-TEST_F(DirectSumContainerTest, testDeleteAllParticles) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum(
-      {0., 0., 0.}, {10., 10., 10.}, 1., 0.);
-  EXPECT_EQ(directSum.getNumParticles(), 0);
-
-  std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
-  directSum.addParticle(p);
-  EXPECT_EQ(directSum.getNumParticles(), 1);
-
-  std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
-  directSum.addParticle(p2);
-  EXPECT_EQ(directSum.getNumParticles(), 2);
-
-  directSum.deleteAllParticles();
-  EXPECT_EQ(directSum.getNumParticles(), 0);
-}
-
 TEST_F(DirectSumContainerTest, testIsContainerUpdateNeeded) {
   std::array<double, 3> boxMin{0, 0, 0};
   std::array<double, 3> boxMax{10, 10, 10};
@@ -128,21 +72,4 @@ TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
   for (auto &particle : invalidParticles) {
     EXPECT_EQ(movedIDs.count(particle.getID()), 1);
   }
-}
-
-TEST_F(DirectSumContainerTest, testUpdateContainerHalo) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.},
-                                                                                                {3., 3., 3.}, 1., 0.);
-
-  autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);
-  directSum.addHaloParticle(p);
-
-  // update container, will delete halo particles
-  auto invalidParticles = directSum.updateContainer();
-  // no particle should be returned
-  EXPECT_EQ(invalidParticles.size(), 0);
-
-  // no particle should remain
-  auto iter = directSum.begin();
-  EXPECT_FALSE(iter.isValid());
 }

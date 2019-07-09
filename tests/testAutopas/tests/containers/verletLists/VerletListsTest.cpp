@@ -14,50 +14,6 @@ using ::testing::Eq;
 using ::testing::Invoke;
 using ::testing::Values;
 
-TEST_P(VerletListsTest, testAddParticleNumParticle) {
-  std::array<double, 3> min = {1, 1, 1};
-  std::array<double, 3> max = {3, 3, 3};
-  double cutoff = 1.;
-  double skin = 0.2;
-  const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(
-      min, max, cutoff, skin, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
-  EXPECT_EQ(verletLists.getNumParticles(), 0);
-
-  std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
-  verletLists.addParticle(p);
-  EXPECT_EQ(verletLists.getNumParticles(), 1);
-
-  std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
-  verletLists.addParticle(p2);
-  EXPECT_EQ(verletLists.getNumParticles(), 2);
-}
-
-TEST_P(VerletListsTest, testDeleteAllParticles) {
-  std::array<double, 3> min = {1, 1, 1};
-  std::array<double, 3> max = {3, 3, 3};
-  double cutoff = 1.;
-  double skin = 0.2;
-  const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(
-      min, max, cutoff, skin, autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA, cellSizeFactor);
-  EXPECT_EQ(verletLists.getNumParticles(), 0);
-
-  std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
-  verletLists.addParticle(p);
-
-  std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
-  verletLists.addParticle(p2);
-  EXPECT_EQ(verletLists.getNumParticles(), 2);
-
-  verletLists.deleteAllParticles();
-  EXPECT_EQ(verletLists.getNumParticles(), 0);
-}
-
 TEST_P(VerletListsTest, testVerletListBuildAndIterate) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
