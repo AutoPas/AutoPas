@@ -28,11 +28,20 @@ class GaussianProcess {
   /**
    * Constructor
    * @param dims number of input dimensions
+   * @param theta default variance
    * @param sigma fixed noise
    * @param rngRef reference to rng
    */
-  GaussianProcess(size_t dims, double sigma, Random &rngRef)
-      : _inputs(), _outputs(), _dims(dims), _sigma(sigma), _covMat(), _covMatInv(), _weights(), _rng(rngRef) {
+  GaussianProcess(size_t dims, double theta, double sigma, Random &rngRef)
+      : _inputs(),
+        _outputs(),
+        _dims(dims),
+        _defaultTheta(theta),
+        _sigma(sigma),
+        _covMat(),
+        _covMatInv(),
+        _weights(),
+        _rng(rngRef) {
     updateHyperparameters();
   }
 
@@ -71,6 +80,50 @@ class GaussianProcess {
     _outputs(newSize - 1) = output;
 
     updateHyperparameters();
+  }
+
+  /**
+   * Get the evidence with the smallest output value
+   * @return input of min
+   */
+  Vector getEvidenceMin() {
+    if (_inputs.empty()) {
+      utils::ExceptionHandler::exception("GaussianProcess has no evidence");
+    }
+
+    double min = _outputs[0];
+    Vector minVec = _inputs[1];
+
+    for (size_t i = 1; i < _inputs.size(); ++i) {
+      if (_outputs[i] < min) {
+        min = _outputs[i];
+        minVec = _inputs[i];
+      }
+    }
+
+    return minVec;
+  }
+
+  /**
+   * Get the evidence with the highest output value
+   * @return input of max
+   */
+  Vector getEvidenceMax() {
+    if (_inputs.empty()) {
+      utils::ExceptionHandler::exception("GaussianProcess has no evidence");
+    }
+
+    double max = _outputs[0];
+    Vector maxVec = _inputs[1];
+
+    for (size_t i = 1; i < _inputs.size(); ++i) {
+      if (_outputs[i] > max) {
+        max = _outputs[i];
+        maxVec = _inputs[i];
+      }
+    }
+
+    return maxVec;
   }
 
   /**
@@ -185,20 +238,27 @@ class GaussianProcess {
  private:
   /**
    * Update the hyperparameters: theta, dimScale.
-   * To do so, hyperparameter-samples are drawn from a lognormal distribution.
+   * To do so, hyperparameter-samples are randomly generated.
    * The samples are combined using a weighted average. The weight of a sample
    * equals to the probability that given evidence and hyperparameter-sample
    * generates given output.
    */
   inline void updateHyperparameters() {
-    static std::lognormal_distribution<double> distr(0.25, 0.5);
-    const size_t mt_size = 100;
+    // distribution of theta: gamma distribution with expectation _defaultTheta.
+    std::gamma_distribution<double> thetaDistribution(3., _defaultTheta / 3.);
+    // distribution of dimScale: gamma distribution with expectation 1.
+    std::gamma_distribution<double> dimScaleDistribution(3., 1. / 3.);
+
+    // size of monte carlo simulation
+    const size_t mt_size = 1000;
+
+    // number of evidence
     size_t newSize = _inputs.size();
 
     // if no evidence
     if (newSize == 0) {
       // use default values
-      _theta = 1.;
+      _theta = _defaultTheta;
       _dimScale = Eigen::VectorXd::Ones(_dims);
       return;
     }
@@ -213,12 +273,12 @@ class GaussianProcess {
     // @TODO parallelize?
     for (size_t t = 0; t < mt_size; ++t) {
       // generate theta
-      double theta = distr(_rng);
+      double theta = thetaDistribution(_rng);
 
       // generate dimScale
       std::vector<double> dimScaleData;
       for (size_t d = 0; d < _dims; ++d) {
-        dimScaleData.push_back(distr(_rng));
+        dimScaleData.push_back(dimScaleDistribution(_rng));
       }
       Eigen::VectorXd dimScale = Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size());
 
@@ -296,8 +356,12 @@ class GaussianProcess {
   /**
    * input dimensions
    */
-  size_t _dims;
+  const size_t _dims;
 
+  /**
+   * default prior variance
+   */
+  const double _defaultTheta;
   /**
    * prior variance
    */

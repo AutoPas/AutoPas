@@ -81,8 +81,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
                                       {autopas::TraversalOption::c08, autopas::TraversalOption::c01},
                                       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
                                       {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, maxEvidence,
-                                      autopas::AcquisitionFunctionOption::lcb, 1000,
-                                      autopas::AcquisitionFunctionOption::ucb, 1000, seed);
+                                      autopas::AcquisitionFunctionOption::lcb, 1000, seed);
 
   // configuration to find
   autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,

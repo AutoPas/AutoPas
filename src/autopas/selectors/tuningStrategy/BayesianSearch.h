@@ -56,7 +56,6 @@ class BayesianSearch : public TuningStrategyInterface {
                  const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
                  const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidence = 10,
                  AcquisitionFunctionOption predAcqFunction = lcb, size_t predNumSamples = 1000,
-                 AcquisitionFunctionOption lastAcqFunction = ucb, size_t lastNumSamples = 1000,
                  unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
@@ -67,15 +66,13 @@ class BayesianSearch : public TuningStrategyInterface {
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _gp(FeatureVector::featureSpaceDims, 0.001, _rng),
+        _gp(FeatureVector::featureSpaceDims, 1., 0.001, _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
-        _predNumSamples(predNumSamples),
-        _lastAcqFunction(lastAcqFunction),
-        _lastNumSamples(lastNumSamples) {
+        _predNumSamples(predNumSamples) {
     /// @todo setting hyperparameters
 
-    if (predNumSamples <= 0 or lastNumSamples <= 0) {
+    if (predNumSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
     }
@@ -148,8 +145,6 @@ class BayesianSearch : public TuningStrategyInterface {
   size_t _maxEvidence;
   AcquisitionFunctionOption _predAcqFunction;
   size_t _predNumSamples;
-  AcquisitionFunctionOption _lastAcqFunction;
-  size_t _lastNumSamples;
 };
 
 bool BayesianSearch::tune(bool currentInvalid) {
@@ -165,7 +160,7 @@ bool BayesianSearch::tune(bool currentInvalid) {
 
   if (_gp.numEvidence() >= _maxEvidence) {
     // select predicted best config
-    _currentConfig = sampleOptimalFeatureVector(_lastNumSamples, _lastAcqFunction);
+    _currentConfig = _gp.getEvidenceMin();
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }

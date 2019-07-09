@@ -11,7 +11,7 @@ using namespace autopas;
 
 TEST(GaussianProcessTest, wrongDimension) {
   Random rng(32);
-  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
+  GaussianProcess<Eigen::VectorXd> gp(2, 1., 0.001, rng);
 
   Eigen::VectorXd f1 = Eigen::VectorXd::Ones(1);
   Eigen::VectorXd f2 = Eigen::VectorXd::Zero(3);
@@ -25,15 +25,16 @@ TEST(GaussianProcessTest, noEvidence) {
 
   double epsilon = 0.05;  // allowed error for tests
 
+  double theta = 1.;
   double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
+  GaussianProcess<Eigen::VectorXd> gp(1, theta, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
 
   // predict without information -> should return default values
   ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), 1., epsilon);
+  ASSERT_NEAR(gp.predictVar(f1), theta, epsilon);
 }
 
 TEST(GaussianProcessTest, oneEvidence) {
@@ -41,7 +42,7 @@ TEST(GaussianProcessTest, oneEvidence) {
 
   double epsilon = 0.05;
   double sigma = 0.001;
-  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
+  GaussianProcess<Eigen::VectorXd> gp(1, 1., sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
@@ -65,7 +66,7 @@ TEST(GaussianProcessTest, twoEvidence) {
 
   double epsilon = 0.05;  // allowed error for tests
   double sigma = 0.001;   // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
+  GaussianProcess<Eigen::VectorXd> gp(1, 1., sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -97,8 +98,9 @@ TEST(GaussianProcessTest, clear) {
   Random rng;
 
   double epsilon = 0.05;  // allowed error for tests
-  double sigma = 0.001;   // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
+  double theta = 1.;
+  double sigma = 0.001;  // noise
+  GaussianProcess<Eigen::VectorXd> gp(1, theta, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -115,10 +117,10 @@ TEST(GaussianProcessTest, clear) {
   // predicting points as deleted evidence
   // they should not have effect on the prediction anymore
   ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), 1., epsilon);
+  ASSERT_NEAR(gp.predictVar(f1), theta, epsilon);
 
   ASSERT_NEAR(gp.predictMean(f2), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f2), 1., epsilon);
+  ASSERT_NEAR(gp.predictVar(f2), theta, epsilon);
 
   // test new evidence at deleted point
   out2 = 10.;
@@ -141,7 +143,7 @@ TEST(GaussianProcessTest, sine) {
   double domainStart = 0.;         // start of tested domain
   double domainEnd = 2 * M_PI;     // end of tested domain
 
-  GaussianProcess<Eigen::VectorXd> gp(1, 0.001, rng);
+  GaussianProcess<Eigen::VectorXd> gp(1, 1., 0.001, rng);
 
   // create equidistant evidence over the domain
   double evidenceStep = (domainEnd - domainStart) / (numEvidence - 1);
@@ -183,7 +185,7 @@ TEST(GaussianProcessTest, 2dMax) {
   AcquisitionFunctionOption af = AcquisitionFunctionOption::ucb;      // use upper confidence bound as af
   AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::lcb;  // use lower confidence bound for final prediction
 
-  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
+  GaussianProcess<Eigen::VectorXd> gp(2, 1., 0.001, rng);
 
   // add first evidence
   Eigen::VectorXd first(2);
@@ -247,7 +249,7 @@ TEST(GaussianProcessTest, 2dMin) {
   AcquisitionFunctionOption af = AcquisitionFunctionOption::lcb;      // use lower confidence bound as af
   AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::ucb;  // use upper confidence bound for final prediction
 
-  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
+  GaussianProcess<Eigen::VectorXd> gp(2, 1., 0.001, rng);
 
   // add first evidence
   Eigen::VectorXd first(2);
