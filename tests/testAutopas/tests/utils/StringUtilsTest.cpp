@@ -54,7 +54,7 @@ TEST(StringUtilsTest, parseSelectorOptionsTest) {
 }
 
 TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
-  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search"},
+  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search", "bayesian-search"},
                                                  autopas::utils::StringUtils::parseTuningStrategyOption);
 }
 
