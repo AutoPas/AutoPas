@@ -96,18 +96,12 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
                                      const std::set<TraversalOption> &allowedTraversalOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                      const std::set<Newton3Option> &allowedNewton3Options) {
-  //@TODO dummyTraversal needed until all containers support propper traversals
-  auto dummySet = {TraversalOption::dummyTraversal};
-  std::set<TraversalOption> allowedTraversalOptionsPlusDummy;
-  std::set_union(allowedTraversalOptions.begin(), allowedTraversalOptions.end(), dummySet.begin(), dummySet.end(),
-                 std::inserter(allowedTraversalOptionsPlusDummy, allowedTraversalOptionsPlusDummy.begin()));
-
   // generate all potential configs
   for (auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
-    std::set<TraversalOption> allContainerTraversals = compatibleTraversals::allCompatibleTraversals(containerOption);
+    const std::set<TraversalOption>& allContainerTraversals = compatibleTraversals::allCompatibleTraversals(containerOption);
     std::set<TraversalOption> allowedAndApplicable;
-    std::set_intersection(allowedTraversalOptionsPlusDummy.begin(), allowedTraversalOptionsPlusDummy.end(),
+    std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
