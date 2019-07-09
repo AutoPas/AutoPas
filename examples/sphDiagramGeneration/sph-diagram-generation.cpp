@@ -9,7 +9,6 @@
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
-#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
 
@@ -201,7 +200,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   auto traversalInfo = cont->getTraversalSelectorInfo();
   std::cout << "Cells: " << traversalInfo.dims[0] << " x " << traversalInfo.dims[1] << " x " << traversalInfo.dims[2]
             << std::endl;
-  auto traversalType = autopas::TraversalOption::dummyTraversal;
+  auto traversalType = autopas::TraversalOption(-1);
   switch (cont->getContainerType()) {
     case autopas::ContainerOption::linkedCells: {
       traversalType = autopas::TraversalOption::c08;
