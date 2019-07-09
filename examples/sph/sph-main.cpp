@@ -265,6 +265,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   }
 
   std::cout << "calculation of hydroforces... started" << std::endl;
+
   sphSystem.iteratePairwise(&hydroForceFunctor);
   std::cout << "calculation of hydroforces... completed" << std::endl;
 }

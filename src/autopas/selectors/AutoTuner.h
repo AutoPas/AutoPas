@@ -320,20 +320,16 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
         "is trivial, but no traversals are applicable. Config: {}",
         _tuningStrategy->getCurrentConfiguration().toString());
   }
-  auto iterateLambda = [&](auto containerPtr) {
-    if (doListRebuild) {
-      containerPtr->rebuildNeighborLists(traversal.get());
-    }
-    containerPtr->iteratePairwise(f, traversal.get());
-  };
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
     auto start = std::chrono::high_resolution_clock::now();
 
     f->initTraversal();
-
-    withStaticContainerType(containerPtr, iterateLambda);
+    if (doListRebuild) {
+      containerPtr->rebuildNeighborLists(traversal.get());
+    }
+    containerPtr->iteratePairwise(traversal.get());
     f->endTraversal(useNewton3);
 
     auto stop = std::chrono::high_resolution_clock::now();
@@ -342,7 +338,10 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     addTimeMeasurement(*f, runtime);
   } else {
     f->initTraversal();
-    withStaticContainerType(containerPtr, iterateLambda);
+    if (doListRebuild) {
+      containerPtr->rebuildNeighborLists(traversal.get());
+    }
+    containerPtr->iteratePairwise(traversal.get());
     f->endTraversal(useNewton3);
   }
 }

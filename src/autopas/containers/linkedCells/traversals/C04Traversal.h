@@ -48,9 +48,13 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
     computeOffsets32Pack();
   }
 
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
 
   TraversalOption getTraversalType() const override { return TraversalOption::c04; }
+
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
@@ -146,8 +150,8 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
