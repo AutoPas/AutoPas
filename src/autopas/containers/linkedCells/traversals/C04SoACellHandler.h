@@ -211,7 +211,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
 
           this->_cellFunctor.processCell(*cell1);
           /// @todo fix interactions of base cell slices
-          /*cell1->_particleSoABuffer.setViewStart(numParticlesBaseCell);
+          cell1->_particleSoABuffer.setViewStart(numParticlesBaseCell);
 
           cells[baseIndex]._particleSoABuffer.clear();
           cells[baseIndex]._particleSoABuffer.append(cell1->_particleSoABuffer);
@@ -220,7 +220,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
           cell1->_particleSoABuffer.resizeArrays(numParticlesBaseCell);
           this->_cellFunctor.processCellPair(*cell1, cells[baseIndex]);
 
-          cell1->_particleSoABuffer.append(cells[baseIndex]._particleSoABuffer);*/
+          cell1->_particleSoABuffer.append(cells[baseIndex]._particleSoABuffer);
           continue;
         } else {
           // interval in other stripe
