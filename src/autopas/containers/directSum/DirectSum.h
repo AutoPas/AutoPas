@@ -10,6 +10,7 @@
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/directSum/DirectSumTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
@@ -75,26 +76,22 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     // nothing to do.
   }
 
-  /**
-   * Function to iterate over all pairs of particles
-   * @tparam ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+  void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
-    traversal->initTraversal(this->_cells);
-    if (auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
+    if (traversalInterface && cellPairTraversal) {
+      cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in DirectSum::iteratePairwise");
     }
-    traversal->endTraversal(this->_cells);
+
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   AUTOPAS_WARN_UNUSED_RESULT

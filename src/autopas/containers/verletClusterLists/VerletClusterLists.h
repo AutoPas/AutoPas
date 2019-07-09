@@ -63,37 +63,25 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
-  /**
-   * Function to iterate over all pairs of particles. (Only AoS)
-   * This function only handles short-range interactions.
-   * @tparam The type of the ParticleFunctor.
-   * @tparam Traversal The type of the traversal.
-   * @param f not used
-   * @param traversal The traversal to use for the iteration
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
-    if (traversal->getUseNewton3()) {
-      /// @todo implement newton3 for VerletClusterLists
-      AutoPasLog(error, "Newton3 not implemented yet.");
-      autopas::utils::ExceptionHandler::exception("VerletClusterLists does not support newton3 yet.");
+  void iteratePairwise(TraversalInterface *traversal) override {
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+
+    auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
+    if (traversalInterface) {
+      traversalInterface->setClusterLists(*this);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
+          traversal->getTraversalType());
     }
 
     if (traversal->getDataLayout() == DataLayoutOption::soa && not _aosToSoaMapValid) {
       buildAosToSoaMap();
     }
 
-    auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
-    if (traversalInterface) {
-      traversalInterface->setTraversalInfo(this);
-      traversalInterface->initClusterTraversal();
-      traversalInterface->traverseParticlePairs();
-      traversalInterface->endClusterTraversal();
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
-          traversal->getTraversalType());
-    }
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   /**
