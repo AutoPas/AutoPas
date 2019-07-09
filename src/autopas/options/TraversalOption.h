@@ -26,7 +26,8 @@ enum TraversalOption {
   verletTraversal = 9,
   c01CombinedSoA = 10,
   c04SoA = 11,
-  c04 = 12,
+  verletClusters = 12,
+  c04 = 13,
   dummyTraversal = 666,
 };
 
@@ -46,6 +47,7 @@ static const std::set<TraversalOption> allTraversalOptions = {
     TraversalOption::verletTraversal,
     TraversalOption::c01CombinedSoA,
     TraversalOption::c04SoA,
+    TraversalOption::verletClusters,
     TraversalOption::c04,
 };
 

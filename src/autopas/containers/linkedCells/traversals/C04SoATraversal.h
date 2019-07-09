@@ -43,11 +43,13 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
                                                                                     cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
+
   TraversalOption getTraversalType() const override { return TraversalOption::c04SoA; }
+
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * c04SoA traversals are only usable with DataLayout SoA.
@@ -60,9 +62,9 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C04SoATraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+inline void C04SoATraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
   _cellHandler.resizeBuffers();
+  auto &cells = *(this->_cells);
   this->c04Traversal(
       [&](unsigned long x, unsigned long y, unsigned long z) { _cellHandler.processBaseCell(cells, x, y, z); });
 }

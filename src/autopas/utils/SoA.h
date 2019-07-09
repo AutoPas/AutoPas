@@ -68,13 +68,26 @@ class SoA {
   }
 
   /**
-   * @brief Writes / updates values of attributes for a specific particle.
-   * Appends the other SoA buffer.
-   * @param other other buffer.
+   * Appends the other SoA buffer to this.
+   * @param other Other buffer.
    */
   void append(const SoA<SoAArraysType> &other) {
     if (other.getNumParticles() > 0) {
       append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+    }
+  }
+
+  /**
+   * Appends the specified attributes from the other SoA buffer to this.
+   * @tparam attributes Attributes to append.
+   * @param other Other buffer.
+   */
+  template <int... attributes>
+  void append(const SoA<SoAArraysType> &other) {
+    if (other.getNumParticles() > 0) {
+      const auto newSize = getNumParticles() + other.getNumParticles();
+      append_impl(other, std::index_sequence<attributes...>{});
+      resizeArrays(newSize);
     }
   }
 

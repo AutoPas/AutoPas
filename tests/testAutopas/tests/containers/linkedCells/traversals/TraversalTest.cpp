@@ -16,8 +16,7 @@ using ::testing::ValuesIn;
 
 void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3> &edgeLength,
                    int interactions, double cutoff = 1.0) {
-  TraversalTest::CountFunctor functor;
-  functor.setCutoff(cutoff);
+  TraversalTest::CountFunctor functor(cutoff);
   std::vector<FPCell> cells(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
   GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
@@ -58,8 +57,9 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     }
   }
 
-  auto *traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell> *>(traversal.get());
-  traversalInterface->traverseCellPairs(cells);
+  auto *traversalInterface = dynamic_cast<autopas::CellPairTraversal<FPCell> *>(traversal.get());
+  traversalInterface->setCellsToTraverse(cells);
+  traversalInterface->traverseParticlePairs();
 }
 
 TEST_P(TraversalTest, testTraversal_2x2x2) {

@@ -16,7 +16,8 @@ namespace sph {
  * Class that defines the hydrodynamic force functor.
  * It is used to calculate the force based on the given SPH kernels.
  */
-class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SPHParticle>> {
+class SPHCalcHydroForceFunctor
+    : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType, SPHCalcHydroForceFunctor> {
  public:
   /// particle type
   typedef SPHParticle Particle;
@@ -24,6 +25,10 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   typedef SPHParticle::SoAArraysType SoAArraysType;
   /// particle cell type
   typedef FullParticleCell<Particle> ParticleCell;
+
+  SPHCalcHydroForceFunctor()
+      // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
+      : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcHydroForceFunctor>(0.){};
 
   bool isRelevantForTuning() override { return true; }
 
@@ -459,84 +464,43 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   }
 
   /**
-   * SoALoader for SPHCalcDensityFunctor.
-   * Loads mass, position, smoothing length, density, velocity, speed of sound, pressure, vsigmax, acceleration and
-   * engdot.
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr()
    */
-  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, {
-    // @todo it is probably better to resize the soa only once, before calling
-    // SoALoader (verlet-list only)
-    soa.resizeArrays(offset + cell.numParticles());
-
-    if (cell.numParticles() == 0) return;
-
-    double *const __restrict__ massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
-    double *const __restrict__ xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      massptr[i] = cellIter->getMass();
-      densityptr[i] = cellIter->getDensity();
-      smthlngthptr[i] = cellIter->getSmoothingLength();
-      soundSpeedptr[i] = cellIter->getSoundSpeed();
-      pressureptr[i] = cellIter->getPressure();
-      vsigmaxptr[i] = cellIter->getVSigMax();
-      engDotptr[i] = cellIter->getEngDot();
-      xptr[i] = cellIter->getR()[0];
-      yptr[i] = cellIter->getR()[1];
-      zptr[i] = cellIter->getR()[2];
-      velXptr[i] = cellIter->getV()[0];
-      velYptr[i] = cellIter->getV()[1];
-      velZptr[i] = cellIter->getV()[2];
-      accXptr[i] = cellIter->getAcceleration()[0];
-      accYptr[i] = cellIter->getAcceleration()[1];
-      accZptr[i] = cellIter->getAcceleration()[2];
-    }
-  })
+  constexpr static const std::array<typename SPHParticle::AttributeNames, 16> getNeededAttr() {
+    ///@todo distinguish between N3 and notN3
+    return std::array<typename SPHParticle::AttributeNames, 16>{
+        SPHParticle::AttributeNames::mass,     SPHParticle::AttributeNames::density,
+        SPHParticle::AttributeNames::smth,     SPHParticle::AttributeNames::soundSpeed,
+        SPHParticle::AttributeNames::pressure, SPHParticle::AttributeNames::vsigmax,
+        SPHParticle::AttributeNames::engDot,   SPHParticle::AttributeNames::posX,
+        SPHParticle::AttributeNames::posY,     SPHParticle::AttributeNames::posZ,
+        SPHParticle::AttributeNames::velX,     SPHParticle::AttributeNames::velY,
+        SPHParticle::AttributeNames::velZ,     SPHParticle::AttributeNames::accX,
+        SPHParticle::AttributeNames::accY,     SPHParticle::AttributeNames::accZ};
+  }
 
   /**
-   * SoAExtractor for SPHCalcDensityFunctor.
-   * Extracts vsigmax, acceleration and engdot.
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, {
-    // function body
-    if (cell.numParticles() == 0) return;
+  constexpr static const std::array<typename SPHParticle::AttributeNames, 11> getNeededAttr(std::false_type) {
+    ///@todo distinguish between N3 and notN3
+    return std::array<typename SPHParticle::AttributeNames, 11>{
+        SPHParticle::AttributeNames::mass,     SPHParticle::AttributeNames::density,
+        SPHParticle::AttributeNames::smth,     SPHParticle::AttributeNames::soundSpeed,
+        SPHParticle::AttributeNames::pressure, SPHParticle::AttributeNames::posX,
+        SPHParticle::AttributeNames::posY,     SPHParticle::AttributeNames::posZ,
+        SPHParticle::AttributeNames::velX,     SPHParticle::AttributeNames::velY,
+        SPHParticle::AttributeNames::velZ};
+  }
 
-    double *const __restrict__ vsigmaxPtr = soa.begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotPtr = soa.begin<Particle::AttributeNames::engDot>();
-    double *const __restrict__ accXPtr = soa.begin<Particle::AttributeNames::accX>();
-    double *const __restrict__ accYPtr = soa.begin<Particle::AttributeNames::accY>();
-    double *const __restrict__ accZPtr = soa.begin<Particle::AttributeNames::accZ>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      cellIter->setVSigMax(vsigmaxPtr[i]);
-      cellIter->setEngDot(engDotPtr[i]);
-      cellIter->setAcceleration({accXPtr[i], accYPtr[i], accZPtr[i]});
-    }
-  })
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static const std::array<typename sph::SPHParticle::AttributeNames, 5> getComputedAttr() {
+    return std::array<typename SPHParticle::AttributeNames, 5>{
+        SPHParticle::AttributeNames::vsigmax, SPHParticle::AttributeNames::engDot, SPHParticle::AttributeNames::accX,
+        SPHParticle::AttributeNames::accY, SPHParticle::AttributeNames::accZ};
+  }
 
   /**
    * Get the number of floating point operations used in one full kernel call

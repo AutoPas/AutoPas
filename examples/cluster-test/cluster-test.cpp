@@ -97,14 +97,15 @@ int main(int argc, char *argv[]) {
 
   addParticles(cont, numParticles);
 
-  autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
-                        autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
-                        autopas::DataLayoutOption::aos, false>
-      dummyTraversal({0, 0, 0}, &func);
+  autopas::VerletClustersTraversal<
+      autopas::FullParticleCell<autopas::MoleculeLJ>,
+      autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+      autopas::DataLayoutOption::aos, false>
+      verletTraversal(&func);
 
   // iterate to rebuild
-  cont.rebuildNeighborLists(&dummyTraversal);
-  cont.iteratePairwise(&func, &dummyTraversal);
+  cont.rebuildNeighborLists(&verletTraversal);
+  cont.iteratePairwise(&verletTraversal);
 
   int newNumParticles = 0;
   for (auto iter = cont.begin(); iter.isValid(); ++iter) {

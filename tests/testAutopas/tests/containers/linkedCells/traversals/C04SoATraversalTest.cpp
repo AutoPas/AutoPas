@@ -23,9 +23,10 @@ void testC04SoATraversal(const std::array<size_t, 3> &edgeLength, unsigned long 
 
   autopas::C04SoATraversal<FPCell, autopas::LJFunctor<autopas::Particle, FPCell>, autopas::DataLayoutOption::soa, true>
       c04SoATraversal(edgeLength, &functor, overlap);
-  c04SoATraversal.initTraversal(cells);
-  c04SoATraversal.traverseCellPairs(cells);
-  c04SoATraversal.endTraversal(cells);
+  c04SoATraversal.setCellsToTraverse(cells);
+  c04SoATraversal.initTraversal();
+  c04SoATraversal.traverseParticlePairs();
+  c04SoATraversal.endTraversal();
   size_t innerCell1 = autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, edgeLength);
   size_t innerCell2 = autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 2ul, 1ul, edgeLength);
   // Forces inside the domain should be equivalent

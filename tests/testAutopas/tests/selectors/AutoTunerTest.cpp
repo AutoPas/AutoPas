@@ -33,11 +33,27 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
                                            autopas::DataLayoutOption(-1), autopas::Newton3Option(-1));
 
   // total number of possible configurations * number of samples + last iteration after tuning
-  // number of configs manually counted
+  // number of configs manually counted:
+  //
+  // Direct Sum:          directSum traversal with (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  // LinkedCells:         c08 traversal       with (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                      sliced              with (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                      c18                 with (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                      c01                 with (AoS <=> SoA, noNewton3)             = 2
+  //                      c04                 with (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                      c01-combined-SoA    with (SoA, noNewton3)                     = 1
+  //                      c04-combined-SoA    with (SoA, newton3 <=> noNewton3)         = 2
+  // VerletLists:         verlet-lists        with (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  // VerletListsCells:    verlet-sliced       with (AoS, newton3 <=> noNewton3)         = 2
+  //                      verlet-c18          with (AoS, newton3 <=> noNewton3)         = 2
+  //                      verlet-c01          with (AoS, noNewton3)                     = 1
+  // VerletClusterLists:  verlet-clusters     with (AoS <=> SoA, noNewton3)             = 2
+  //                                                                               --------
+  //                                                                                     36
 #ifndef AUTOPAS_CUDA
   const size_t expectedNumberOfIterations = 36 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 50 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 49 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

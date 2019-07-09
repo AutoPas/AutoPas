@@ -7,10 +7,10 @@
 #include "StringUtilsTest.h"
 
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
-  testParseMultiple<autopas::TraversalOption>(
-      autopas::allTraversalOptions,
-      "c01, c04, c08, c18, direct, sliced v01, c18verlet, verlet-sliced, cuda-c01, verlet-lists, c01-combined, c04s",
-      autopas::utils::StringUtils::parseTraversalOptions);
+  testParseMultiple<autopas::TraversalOption>(autopas::allTraversalOptions,
+                                              "c01, c04, c08, c18, direct; sliced v01, c18verlet, verlet-sliced, "
+                                              "cuda-c01, verlet-lists, c01-combined, verlet-clusters, c04s",
+                                              autopas::utils::StringUtils::parseTraversalOptions);
 }
 
 TEST(StringUtilsTest, parseContainerOptionsTest) {
@@ -52,7 +52,7 @@ TEST(StringUtilsTest, parseSelectorOptionsTest) {
 }
 
 TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
-  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search"},
+  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search", "bayesian-search"},
                                                  autopas::utils::StringUtils::parseTuningStrategyOption);
 }
 

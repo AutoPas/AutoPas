@@ -27,7 +27,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
-class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
+class LJFunctorAVX
+    : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctorAVX<Particle, ParticleCell>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -47,7 +48,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    */
   explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift, bool duplicatedCalculation = false)
 #ifdef __AVX__
-      : _one{_mm256_set1_pd(1.)},
+      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
+        _one{_mm256_set1_pd(1.)},
         _masks{
             _mm256_set_epi64x(0, 0, 0, -1),
             _mm256_set_epi64x(0, 0, -1, -1),
@@ -68,7 +70,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
   }
 #else
-      : _one{0}, _masks{0, 0, 0}, _cutoffsquare{0}, _epsilon24{0}, _sigmasquare{0} {
+      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
+        _one{0},
+        _masks{0, 0, 0},
+        _cutoffsquare{0},
+        _epsilon24{0},
+        _sigmasquare{0} {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -439,65 +446,31 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
   /**
-   * SoALoader
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr()
    */
-  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
-                            // @todo it is probably better to resize the soa only once, before calling
-                            // SoALoader (verlet-list only)
-                            soa.resizeArrays(offset + cell.numParticles());
-
-                            if (cell.numParticles() == 0) return;
-
-                            auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-                            double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-                            double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-                            double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-                            double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-                            double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-                            double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-                            auto *const __restrict__ ownedptr = soa.template begin<Particle::AttributeNames::owned>();
-
-                            auto cellIter = cell.begin();
-                            // load particles in SoAs
-                            for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-                              idptr[i] = cellIter->getID();
-                              xptr[i] = cellIter->getR()[0];
-                              yptr[i] = cellIter->getR()[1];
-                              zptr[i] = cellIter->getR()[2];
-                              fxptr[i] = cellIter->getF()[0];
-                              fyptr[i] = cellIter->getF()[1];
-                              fzptr[i] = cellIter->getF()[2];
-                              ownedptr[i] = cellIter->isOwned() ? 1. : 0.;
-                            })
+  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 8>{
+        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+  }
 
   /**
-   * soaextractor
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(
-      cell, soa, offset,
-      // body start
-      if (soa.getNumParticles() == 0) return;
+  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 5>{
+        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+  }
 
-      auto cellIter = cell.begin();
-
-#ifndef NDEBUG
-      auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-#endif
-
-      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-      for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
-        assert(idptr[i] == cellIter->getID());
-        cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
-      })
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 3> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 3>{
+        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+  }
 
   /**
    * Get the number of flops used per kernel call. This should count the

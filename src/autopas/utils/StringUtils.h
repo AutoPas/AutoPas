@@ -157,6 +157,9 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::c01CombinedSoA: {
       return "c01-combined-SoA";
     }
+    case autopas::TraversalOption::verletClusters: {
+      return "verlet-clusters";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TraversalOption (" + std::to_string(option) + ")";
@@ -171,6 +174,9 @@ inline std::string to_string(const TuningStrategyOption &option) {
   switch (option) {
     case autopas::TuningStrategyOption::fullSearch: {
       return "full-Search";
+    }
+    case autopas::TuningStrategyOption::bayesianSearch: {
+      return "bayesian-Search";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -266,7 +272,9 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
   auto words = tokenize(traversalOptionsString, delimiters);
 
   for (auto &word : words) {
-    if (word.find("verlet-lists") != std::string::npos) {
+    if (word.find("verlet-clusters") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::verletClusters);
+    } else if (word.find("verlet-lists") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::verletTraversal);
     } else if (word.find("01") != std::string::npos) {
       if (word.find("cuda") != std::string::npos) {
@@ -411,6 +419,8 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
   auto tuningStrategy(autopas::TuningStrategyOption(-1));
   if (tuningStrategyString.find("full") != std::string::npos or tuningStrategyString.find("ex") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
+  } else if (tuningStrategyString.find("bayes") != std::string::npos) {
+    tuningStrategy = autopas::TuningStrategyOption::bayesianSearch;
   }
   return tuningStrategy;
 }

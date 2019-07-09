@@ -46,7 +46,7 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
  */
 static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
   // traversal not used but prevents usage of newton3
-  static const std::set<TraversalOption> s{TraversalOption::c01};
+  static const std::set<TraversalOption> s{TraversalOption::verletClusters};
   return s;
 }
 
@@ -93,11 +93,29 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     }
   }
 
-  autopas::utils::ExceptionHandler::exception("OptionSelector: Unknown selector strategy {}!",
+  autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {}!",
                                               autopas::utils::StringUtils::to_string(container));
 
   static const std::set<TraversalOption> s{};
   return s;
+}
+
+/**
+ * Lists all container options which given traversal can be applied to.
+ * @param traversal TraversalOption
+ * @return set of all compatible container options.
+ */
+static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption traversal) {
+  std::set<ContainerOption> result{};
+
+  for (const auto &container : allContainerOptions) {
+    auto allCompatible = compatibleTraversals::allCompatibleTraversals(container);
+    if (allCompatible.find(traversal) != allCompatible.end()) {
+      result.insert(container);
+    }
+  }
+
+  return result;
 }
 
 }  // namespace compatibleTraversals
