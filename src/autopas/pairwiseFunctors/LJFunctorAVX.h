@@ -257,9 +257,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m256d fy2new = _mm256_sub_pd(fy2, fy);
       const __m256d fz2new = _mm256_sub_pd(fz2, fz);
 
-      masked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new) : _mm256_store_pd(&fx2ptr[j], fx2new);
-      masked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new) : _mm256_store_pd(&fy2ptr[j], fy2new);
-      masked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new) : _mm256_store_pd(&fz2ptr[j], fz2new);
+      masked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new) : _mm256_storeu_pd(&fx2ptr[j], fx2new);
+      masked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new) : _mm256_storeu_pd(&fy2ptr[j], fy2new);
+      masked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new) : _mm256_storeu_pd(&fz2ptr[j], fz2new);
     }
 
     if (calculateGlobals) {
@@ -376,20 +376,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
  private:
   template <bool masked1, bool masked2>
-  inline void SoAPermKernel(double* const x1ptr, double* const y1ptr, double* const z1ptr, double* fx1ptr, double* fy1ptr, double* fz1ptr, int r1, 
+  inline void SoAPermKernel(__m256d const x1, __m256d const y1, __m256d const z1, __m256d &fx1, __m256d &fy1, __m256d &fz1, int r1, 
                      double* const x2ptr, double* const y2ptr, double* const z2ptr, double* fx2ptr, double* fy2ptr, double* fz2ptr, int r2,
                      __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum, bool newton3){
 
     __m256i mask1 = _masks[r1-1];
     __m256i mask2 = _masks[r2-1];
-
-    __m256d x1 = masked1 ? _mm256_maskload_pd(&x1ptr[0], mask1) : _mm256_load_pd(&x1ptr[0]);
-    __m256d y1 = masked1 ? _mm256_maskload_pd(&y1ptr[0], mask1) : _mm256_load_pd(&y1ptr[0]);
-    __m256d z1 = masked1 ? _mm256_maskload_pd(&z1ptr[0], mask1) : _mm256_load_pd(&z1ptr[0]);
-
-    __m256d fx1 = masked1 ? _mm256_maskload_pd(&fx1ptr[0], mask1) : _mm256_load_pd(&fx1ptr[0]);
-    __m256d fy1 = masked1 ? _mm256_maskload_pd(&fy1ptr[0], mask1) : _mm256_load_pd(&fy1ptr[0]);
-    __m256d fz1 = masked1 ? _mm256_maskload_pd(&fz1ptr[0], mask1) : _mm256_load_pd(&fz1ptr[0]);
 
     __m256d x2 = masked2 ? _mm256_maskload_pd(&x2ptr[0], mask2) : _mm256_load_pd(&x2ptr[0]);
     __m256d y2 = masked2 ? _mm256_maskload_pd(&y2ptr[0], mask2) : _mm256_load_pd(&y2ptr[0]);
@@ -463,14 +455,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
 
     if (newton3) {
-      masked2 ? _mm256_maskstore_pd(&fx2ptr[0], mask2, fx2) : _mm256_store_pd(&fx2ptr[0], fx2);
-      masked2 ? _mm256_maskstore_pd(&fy2ptr[0], mask2, fy2) : _mm256_store_pd(&fy2ptr[0], fy2);
-      masked2 ? _mm256_maskstore_pd(&fz2ptr[0], mask2, fz2) : _mm256_store_pd(&fz2ptr[0], fz2);
+      masked2 ? _mm256_maskstore_pd(&fx2ptr[0], mask2, fx2) : _mm256_storeu_pd(&fx2ptr[0], fx2);
+      masked2 ? _mm256_maskstore_pd(&fy2ptr[0], mask2, fy2) : _mm256_storeu_pd(&fy2ptr[0], fy2);
+      masked2 ? _mm256_maskstore_pd(&fz2ptr[0], mask2, fz2) : _mm256_storeu_pd(&fz2ptr[0], fz2);
     }
 
-    masked1 ? _mm256_maskstore_pd(&fx1ptr[0], mask1, fx1) : _mm256_store_pd(&fx1ptr[0], fx1);
-    masked1 ? _mm256_maskstore_pd(&fy1ptr[0], mask1, fy1) : _mm256_store_pd(&fy1ptr[0], fy1);
-    masked1 ? _mm256_maskstore_pd(&fz1ptr[0], mask1, fz1) : _mm256_store_pd(&fz1ptr[0], fz1);
   }
 
  public:
@@ -522,43 +511,64 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
     unsigned int i = 0;
     for (; i < (soa1.getNumParticles() & ~(vecLength - 1)); i += 4) {
+
+      __m256d x1 = _mm256_load_pd(&x1ptr[i]);
+      __m256d y1 = _mm256_load_pd(&y1ptr[i]);
+      __m256d z1 = _mm256_load_pd(&z1ptr[i]);
+
+      __m256d fx1 = _mm256_load_pd(&fx1ptr[i]);
+      __m256d fy1 = _mm256_load_pd(&fy1ptr[i]);
+      __m256d fz1 = _mm256_load_pd(&fz1ptr[i]);
+
       unsigned int j = 0;
       for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
 
-          //std::cout << "########## false, false " << i << " " << j << std::endl;
-          SoAPermKernel<false, false>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], 1,
+          SoAPermKernel<false, false>(x1, y1, z1, fx1, fy1, fz1, 1,
                                &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], 1,
                                &virialSumX, &virialSumY, &virialSumZ, &upotSum, newton3);
         }
         const int rest2 = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest2 > 0) {
-          //std::cout << "########## false, true " << i << std::endl;
-          SoAPermKernel<false, true>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], 1,
+          SoAPermKernel<false, true>(x1, y1, z1, fx1, fy1, fz1, 1,
                                &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], rest2,
                                &virialSumX, &virialSumY, &virialSumZ, &upotSum, newton3);
 
         }
+
+       _mm256_storeu_pd(&fx1ptr[i], fx1);
+       _mm256_storeu_pd(&fy1ptr[i], fy1);
+       _mm256_storeu_pd(&fz1ptr[i], fz1);
+
       }
 
       const int rest1 = (int)(soa1.getNumParticles() & (vecLength - 1));
       if (rest1 > 0) {
-        
+
+        __m256d x1 = _mm256_maskload_pd(&x1ptr[i], _masks[rest1 - 1]);
+        __m256d y1 = _mm256_maskload_pd(&y1ptr[i], _masks[rest1 - 1]);
+        __m256d z1 = _mm256_maskload_pd(&z1ptr[i], _masks[rest1 - 1]);
+                                                           
+        __m256d fx1 = _mm256_maskload_pd(&fx1ptr[i], _masks[rest1 - 1]);
+        __m256d fy1 = _mm256_maskload_pd(&fy1ptr[i], _masks[rest1 - 1]);
+        __m256d fz1 = _mm256_maskload_pd(&fz1ptr[i], _masks[rest1 - 1]);
+
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-
-            //std::cout << "########## true, false " << j << std::endl;
-            SoAPermKernel<true, false>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], rest1,
+            SoAPermKernel<true, false>(x1, y1, z1, fx1, fy1, fz1, rest1,
                                  &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], 1,
                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, newton3);
             }
           const int rest2 = (int)(soa2.getNumParticles() & (vecLength - 1));
           if (rest2 > 0) {
-            //std::cout << "########## true, true " << std::endl;
-            SoAPermKernel<true, true>(&x1ptr[i], &y1ptr[i], &z1ptr[i], &fx1ptr[i], &fy1ptr[i], &fz1ptr[i], rest1,
+            SoAPermKernel<true, true>(x1, y1, z1, fx1, fy1, fz1, rest1,
                                  &x2ptr[j], &y2ptr[j], &z2ptr[j], &fx2ptr[j], &fy2ptr[j], &fz2ptr[j], rest2,
                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, newton3);
 
         }
+        _mm256_maskstore_pd(&fx1ptr[i], _masks[rest1 - 1], fx1);
+        _mm256_maskstore_pd(&fy1ptr[i], _masks[rest1 - 1], fy1);
+        _mm256_maskstore_pd(&fz1ptr[i], _masks[rest1 - 1], fz1);
+
       }
 
     if (calculateGlobals) {
