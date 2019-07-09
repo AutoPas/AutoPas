@@ -20,9 +20,16 @@ namespace autopas {
  */
 template <class Particle>
 class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, ColorChangeObserver {
-  // Add generator functor as friend so it can call addPair() and checkPair().
-  friend internal::AsBuildPairGeneratorFunctor<Particle, true>;
-  friend internal::AsBuildPairGeneratorFunctor<Particle, false>;
+  /**
+   * Adds the generator functor for validation checks as friend so it can call checkPair().
+   *  @param true mark that it is for validation checks.
+   */
+  friend class internal::AsBuildPairGeneratorFunctor<Particle, true>;
+  /**
+   * Adds the generator functor for adding pairs as friend so it can call addPair().
+   *  @param false test mark that it is for adding pairs.
+   */
+  friend class internal::AsBuildPairGeneratorFunctor<Particle, false>;
 
  private:
   /**

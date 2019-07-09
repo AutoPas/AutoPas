@@ -17,6 +17,7 @@ namespace internal {
  * This functor can generate or check variable verlet lists using the typical pairwise
  * traversal.
  *
+ * @tparam Particle The particle class.
  * @tparam callCheckInstead If false, generate a neighbor list. If true, check the current for validity. Checking
  * validity only works with the AoSFunctor().
  */
@@ -24,9 +25,6 @@ template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
     : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                               typename VerletListHelpers<Particle>::SoAArraysType> {
-  // Friend neighbor list to be able to call addPair() and checkPair()
-  friend VerletNeighborListAsBuild<Particle>;
-
   /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
   typedef typename utils::SoAType<Particle *, double, double, double>::Type SoAArraysType;
 
@@ -68,6 +66,11 @@ class AsBuildPairGeneratorFunctor
     }
   }
 
+  /**
+   * Adds all pairs of the SoA to the neighbor list.
+   * @param soa The SoA to add.
+   * @param newton3 Whether to use newton 3 or not.
+   */
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
@@ -99,6 +102,11 @@ class AsBuildPairGeneratorFunctor
     }
   }
 
+  /**
+   * Adds all pairs (p1, p2), p1 element soa1, p2 element soa2 to the neighbor list.
+   * @param soa1
+   * @param soa2
+   */
   void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -133,6 +141,12 @@ class AsBuildPairGeneratorFunctor
     }
   }
 
+  /**
+   * Loads all particles of the cell into the SoA.
+   * @param cell
+   * @param soa
+   * @param offset
+   */
   void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
     assert(offset == 0);
     soa.resizeArrays(cell.numParticles());
@@ -155,6 +169,12 @@ class AsBuildPairGeneratorFunctor
     }
   }
 
+  /**
+   * Does nothing
+   * @param cell
+   * @param soa
+   * @param offset
+   */
   void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {}
 
  private:

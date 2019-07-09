@@ -25,9 +25,16 @@ class VarVerletTraversalInterface {
    */
   virtual ~VarVerletTraversalInterface() = default;
 
+  /**
+   * Sets the neighbor list to traverse.
+   * @param neighborList the neighbor list to traverse.
+   */
   virtual void setNeighborListToTraverse(NeighborList &neighborList) { _neighborList = &neighborList; }
 
  protected:
+  /**
+   * The neighbor list to traverse.
+   */
   NeighborList *_neighborList;
 };
 
