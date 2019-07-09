@@ -133,7 +133,6 @@ void Newton3OnOffTest::iterate(Container container, Traversal traversal, autopas
 template <bool useNewton3, class Container, class Traversal>
 std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataLayout, Container &container,
                                                  Traversal traversalOption) {
-  // without newton 3:
   std::atomic<unsigned int> callsSC(0ul);
   std::atomic<unsigned int> callsPair(0ul);
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(useNewton3));
