@@ -612,57 +612,6 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   EXPECT_NEAR(sphParticle4.getDt(), sphParticle2.getDt(), 1e-10);
 }
 
-#define TESTVERLETVSLC(mode, functor, init, check)                                                                     \
-  TEST_F(SPHTest, testVerletVsLC##mode##functor) {                                                                     \
-    unsigned int numMolecules = 50;                                                                                    \
-    double rel_err_tolerance = 1e-10;                                                                                  \
-    double cutoff = 1.;                                                                                                \
-    using autopas::sph::SPHParticle;                                                                                   \
-                                                                                                                       \
-    autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5);                           \
-    autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.}, \
-                                                                                           cutoff, 0.5, 1.);           \
-                                                                                                                       \
-    autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,                                  \
-                                                 cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);    \
-    RandomGenerator::fillWithParticles(_verletLists, defaultSPHParticle, numMolecules);                                \
-                                                                                                                       \
-    /*init particles in verlet list container*/                                                                        \
-    init(_verletLists);                                                                                                \
-                                                                                                                       \
-    /* now fill second container with the molecules from the first one, because otherwise we generate new particles */ \
-    for (auto it = _verletLists.begin(); it.isValid(); ++it) {                                                         \
-      _linkedCells.addParticle(*it);                                                                                   \
-    }                                                                                                                  \
-                                                                                                                       \
-    autopas::sph::functor fnctr;                                                                                       \
-    if (strcmp(#mode, "AoS") == 0) {                                                                                   \
-      autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor,                             \
-                            autopas::DataLayoutOption::aos, true>                                                      \
-          traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                             \
-                                                                                                                       \
-      autopas::TraversalVerlet<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor,                          \
-                               autopas::DataLayoutOption::aos, true>                                                   \
-          traversalLJVerlet(&fnctr);                                                                                   \
-                                                                                                                       \
-      _verletLists.rebuildNeighborLists(&traversalLJVerlet);                                                           \
-      _verletLists.iteratePairwise(&traversalLJVerlet);                                                                \
-      _linkedCells.iteratePairwise(&traversalLJ);                                                                      \
-    } else {                                                                                                           \
-      autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor,                             \
-                            autopas::DataLayoutOption::soa, true>                                                      \
-          traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                             \
-      autopas::TraversalVerlet<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor,                          \
-                               autopas::DataLayoutOption::soa, true>                                                   \
-          traversalLJVerlet(&fnctr);                                                                                   \
-                                                                                                                       \
-      _verletLists.rebuildNeighborLists(&traversalLJVerlet);                                                           \
-      _verletLists.iteratePairwise(&traversalLJVerlet);                                                                \
-      _linkedCells.iteratePairwise(&traversalLJ);                                                                      \
-    }                                                                                                                  \
-    check(_verletLists, _linkedCells, numMolecules, rel_err_tolerance);                                                \
-  }
-
 void densityCheck(
     autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
     autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
@@ -684,7 +633,7 @@ void densityCheck(
     double d2 = densityLinked[i];
     EXPECT_NEAR(d1, d2, std::fabs(d1 * rel_err_tolerance));
   }
-}
+};
 
 void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
   for (auto itVerlet = verletLists.begin(); itVerlet.isValid(); ++itVerlet) {
@@ -693,7 +642,7 @@ void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
     itVerlet->setDensity(density);
     itVerlet->setPressure(pressure);
   }
-}
+};
 
 void hydroCheck(
     autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
@@ -724,12 +673,68 @@ void hydroCheck(
     EXPECT_NEAR(accVerlet[i][1], accLinked[i][1], rel_err_tolerance * fabs(accLinked[i][1]));
     EXPECT_NEAR(accVerlet[i][2], accLinked[i][2], rel_err_tolerance * fabs(accLinked[i][2]));
   }
+};
+
+template <typename FunctorType, typename InitType, typename CheckType>
+void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas::DataLayoutOption dataLayoutOption) {
+  unsigned int numMolecules = 50;
+  double rel_err_tolerance = 1e-10;
+  double cutoff = 1.;
+  using autopas::sph::SPHParticle;
+
+  autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5);
+  autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.},
+                                                                                         cutoff, 0.5, 1.);
+
+  autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
+                                               cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);
+  RandomGenerator::fillWithParticles(_verletLists, defaultSPHParticle, numMolecules);
+
+  // init particles in verlet list container
+  init(_verletLists);
+
+  // now fill second container with the molecules from the first one, because otherwise we generate new particles
+  for (auto it = _verletLists.begin(); it.isValid(); ++it) {
+    _linkedCells.addParticle(*it);
+  }
+
+  if (dataLayoutOption == autopas::DataLayoutOption::aos) {
+    autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::aos, true>
+        traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);
+
+    autopas::TraversalVerlet<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::aos, true>
+        traversalLJVerlet(&fnctr);
+
+    _verletLists.rebuildNeighborLists(&traversalLJVerlet);
+    _verletLists.iteratePairwise(&traversalLJVerlet);
+    _linkedCells.iteratePairwise(&traversalLJ);
+  } else {
+    autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::soa, true>
+        traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);
+    autopas::TraversalVerlet<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::soa, true>
+        traversalLJVerlet(&fnctr);
+
+    _verletLists.rebuildNeighborLists(&traversalLJVerlet);
+    _verletLists.iteratePairwise(&traversalLJVerlet);
+    _linkedCells.iteratePairwise(&traversalLJ);
+  }
+  check(_verletLists, _linkedCells, numMolecules, rel_err_tolerance);
 }
 
-TESTVERLETVSLC(AoS, SPHCalcDensityFunctor, , densityCheck);
+TEST_P(SPHTest, testVerletVsLC) {
+  auto params = GetParam();
+  auto [dataLayoutOption, sphFunctorType] = params;
+  if (sphFunctorType == SPHFunctorType::density) {
+    autopas::sph::SPHCalcDensityFunctor densityFunctor;
+    testVerLetVsLC(densityFunctor, [](auto & /*ignored*/) {}, densityCheck, dataLayoutOption);
+  } else {
+    autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+    testVerLetVsLC(hydroForceFunctor, hydroInit, hydroCheck, dataLayoutOption);
+  }
+}
 
-TESTVERLETVSLC(SoA, SPHCalcDensityFunctor, , densityCheck);
-
-TESTVERLETVSLC(AoS, SPHCalcHydroForceFunctor, hydroInit, hydroCheck);
-
-TESTVERLETVSLC(SoA, SPHCalcHydroForceFunctor, hydroInit, hydroCheck);
+INSTANTIATE_TEST_SUITE_P(Generated, SPHTest,
+                         ::testing::Combine(::testing::Values(autopas::DataLayoutOption::aos,
+                                                              autopas::DataLayoutOption::soa),
+                                            ::testing::Values(SPHFunctorType::density, SPHFunctorType::hydro)),
+                         SPHTest::PrintToStringParamName());
