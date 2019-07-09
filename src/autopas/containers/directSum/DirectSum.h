@@ -117,9 +117,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
+  std::unique_ptr<TraversalSelectorInfo<ParticleCell>> getTraversalSelectorInfo() override {
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelectorInfo<ParticleCell>({2, 0, 0});
+    return std::make_unique<TraversalSelectorInfo<ParticleCell>>(std::array<unsigned long, 3>{2ul, 0ul, 0ul});
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

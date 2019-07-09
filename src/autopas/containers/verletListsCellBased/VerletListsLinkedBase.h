@@ -215,8 +215,9 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
-  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+  std::unique_ptr<TraversalSelectorInfo<ParticleCell>> getTraversalSelectorInfo() override {
+    return std::make_unique<TraversalSelectorInfo<ParticleCell>>(
+        this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
   }
 
  protected:

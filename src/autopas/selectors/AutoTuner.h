@@ -315,7 +315,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   AutoPasLog(debug, "Iterating with configuration: {}", _tuningStrategy->getCurrentConfiguration().toString());
 
   auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(
-      _tuningStrategy->getCurrentConfiguration().traversal, *f, container->getTraversalSelectorInfo());
+      _tuningStrategy->getCurrentConfiguration().traversal, *f, std::move(container->getTraversalSelectorInfo()));
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
@@ -388,7 +388,7 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor>(
-             conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
+             conf.traversal, pairwiseFunctor, std::move(traversalInfo), conf.dataLayout, conf.newton3)
       ->isApplicable();
 }
 

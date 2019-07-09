@@ -15,6 +15,7 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/selectors/TraversalSelectorInfoAdaptive.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -127,8 +128,9 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
 
   bool isContainerUpdateNeeded() override { return octree.isUpdateNeeded(); }
 
-  TraversalSelectorInfo<ParticleCell> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<ParticleCell>(_cellsPerDimension, this->getCutoff(), _cellLength);
+  std::unique_ptr<TraversalSelectorInfo<ParticleCell>> getTraversalSelectorInfo() override {
+    return std::make_unique<TraversalSelectorInfoAdaptive<ParticleCell>>(_cellsPerDimension, this->getCutoff(),
+                                                                         _cellLength, octree);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

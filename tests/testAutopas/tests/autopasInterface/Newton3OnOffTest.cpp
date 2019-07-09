@@ -39,7 +39,8 @@ INSTANTIATE_TEST_SUITE_P(
                 // @TODO: let verlet lists support Newton 3
                 if (containerOption == autopas::ContainerOption::verletLists ||
                     containerOption == autopas::ContainerOption::verletListsCells ||
-                    containerOption == autopas::ContainerOption::verletClusterLists) {
+                    containerOption == autopas::ContainerOption::verletClusterLists ||
+                    containerOption == autopas::ContainerOption::adaptiveLinkedCells) {
                   continue;
                 }
 
@@ -92,7 +93,6 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   containerSelector.selectContainer(containerOption, containerInfo);
 
   auto container = containerSelector.getCurrentContainer();
-  auto traversalSelectorInfo = container->getTraversalSelectorInfo();
 
   autopas::MoleculeLJ defaultParticle;
   RandomGenerator::fillWithParticles(*container, defaultParticle, 100);
@@ -114,6 +114,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(true));
   EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
 
+  auto traversalSelectorInfo = container->getTraversalSelectorInfo();
+
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
@@ -131,7 +133,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
       iterate(container,
               autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
                                                                              autopas::DataLayoutOption::soa, true>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
+                  traversalOption, mockFunctor, std::move(traversalSelectorInfo)),
               dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
       break;
     }
@@ -144,7 +146,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
       iterate(container,
               autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
                                                                              autopas::DataLayoutOption::aos, true>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
+                  traversalOption, mockFunctor, std::move(traversalSelectorInfo)),
               dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
       break;
       case autopas::DataLayoutOption::cuda: {
@@ -153,7 +155,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
         iterate(container,
                 autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
                                                                                autopas::DataLayoutOption::aos, true>(
-                    traversalOption, mockFunctor, traversalSelectorInfo),
+                    traversalOption, mockFunctor, std::move(traversalSelectorInfo)),
                 dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
         break;
       }
@@ -167,6 +169,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   std::atomic<unsigned int> callsNonNewton3Pair(0ul);
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(false));
   EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(true));
+
+  auto traversalSelectorInfo2 = container->getTraversalSelectorInfo();
 
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
@@ -185,7 +189,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
       iterate(container,
               autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
                                                                              autopas::DataLayoutOption::soa, false>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
+                  traversalOption, mockFunctor, std::move(traversalSelectorInfo2)),
               dataLayout, autopas::Newton3Option::disabled, &mockFunctor);
       break;
     }
@@ -199,7 +203,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
       iterate(container,
               autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
                                                                              autopas::DataLayoutOption::aos, false>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
+                  traversalOption, mockFunctor, std::move(traversalSelectorInfo2)),
               dataLayout, autopas::Newton3Option::disabled, &mockFunctor);
       break;
     }
@@ -209,7 +213,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
       iterate(container,
               autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
                                                                              autopas::DataLayoutOption::aos, true>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
+                  traversalOption, mockFunctor, std::move(traversalSelectorInfo2)),
               dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
       break;
     }

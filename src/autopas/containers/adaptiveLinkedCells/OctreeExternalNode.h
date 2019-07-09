@@ -8,6 +8,7 @@
 
 #include <array>
 #include <memory>
+#include "autopas/cells/SortedCellView.h"
 #include "autopas/containers/adaptiveLinkedCells/OctreeNode.h"
 
 namespace autopas {

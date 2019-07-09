@@ -24,16 +24,16 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
 
   NumThreadGuard(4);
 
-  autopas::TraversalSelectorInfo<FPCell> tsi(edgeLength, cutoff);
+  auto tsi = std::make_unique<autopas::TraversalSelectorInfo<FPCell>>(edgeLength, cutoff);
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
     traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
                                                                                autopas::DataLayoutOption::aos, true>(
-        traversalOption, functor, tsi);
+        traversalOption, functor, std::move(tsi));
   } else {
     traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
                                                                                autopas::DataLayoutOption::aos, false>(
-        traversalOption, functor, tsi);
+        traversalOption, functor, std::move(tsi));
   }
 
   unsigned long cellId = 0;

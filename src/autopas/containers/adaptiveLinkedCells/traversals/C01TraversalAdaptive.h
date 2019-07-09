@@ -6,10 +6,12 @@
 
 #pragma once
 
+#include "autopas/containers/adaptiveLinkedCells/Octree.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/selectors/TraversalSelectorInfoAdaptive.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -39,12 +41,14 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, 
    * @param cutoff cutoff radius
    * @param cellLength min. cell length
    */
-  explicit C01TraversalAdaptive(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
-        _cellFunctor(pairwiseFunctor, cutoff),
+  explicit C01TraversalAdaptive(PairwiseFunctor *pairwiseFunctor,
+                                std::unique_ptr<TraversalSelectorInfo<ParticleCell>> info)
+      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(info->dims),
+        _cellFunctor(pairwiseFunctor, info->cutoff),
         _pairwiseFunctor(pairwiseFunctor),
-        _dataLayoutConverter(pairwiseFunctor) {}
+        _dataLayoutConverter(pairwiseFunctor) /*,
+         _octree(reinterpret_cast<TraversalSelectorInfoAdaptive<ParticleCell>*>(info.get())->octree)*/
+  {}
 
   /**
    * Computes pairs used in processBaseCell()
@@ -95,13 +99,12 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, 
  private:
   /**
    * Computes all interactions between the base
-   * cell and adjacent cells.
+   * cell, which is represented by an octree node, and adjacent cells.
    * @param cells vector of all cells.
-   * @param x X-index of base cell.
-   * @param y Y-index of base cell.
-   * @param z Z-index of base cell.
+   * @param node The current node in the octree.
    */
-  inline void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  inline void processBaseCell(std::vector<ParticleCell> &cells,
+                              internal::OctreeNode<typename ParticleCell::ParticleType, ParticleCell> &node);
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -119,7 +122,7 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, 
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 inline void C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
+    std::vector<ParticleCell> &cells, internal::OctreeNode<typename ParticleCell::ParticleType, ParticleCell> &node) {
   /// @todo add implementation
 }
 

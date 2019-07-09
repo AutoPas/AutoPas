@@ -16,18 +16,23 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
 
   // this should be high enough so that sliced is still valid for the current processors thread count.
   constexpr size_t domainSize = 900;
-  autopas::TraversalSelectorInfo<FPCell> traversalSelectorInfo({domainSize, domainSize, domainSize});
+  {
+    auto traversalSelectorInfo = std::make_unique<autopas::TraversalSelectorInfo<FPCell>>(
+        std::array<size_t, 3>{domainSize, domainSize, domainSize});
 
-  // expect an exception if nothing is selected yet
-  EXPECT_THROW(
-      (autopas::TraversalSelector<FPCell>::template generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(
-          autopas::TraversalOption(-1), functor, traversalSelectorInfo)),
-      autopas::utils::ExceptionHandler::AutoPasException);
+    // expect an exception if nothing is selected yet
+    EXPECT_THROW((autopas::TraversalSelector<FPCell>::template generateTraversal<MFunctor,
+                                                                                 autopas::DataLayoutOption::aos, false>(
+                     autopas::TraversalOption(-1), functor, std::move(traversalSelectorInfo))),
+                 autopas::utils::ExceptionHandler::AutoPasException);
+  }
 
   for (auto &traversalOption : autopas::allTraversalOptions) {
+    auto traversalSelectorInfo = std::make_unique<autopas::TraversalSelectorInfo<FPCell>>(
+        std::array<size_t, 3>{domainSize, domainSize, domainSize});
     auto traversal =
         autopas::TraversalSelector<FPCell>::template generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(
-            traversalOption, functor, traversalSelectorInfo);
+            traversalOption, functor, std::move(traversalSelectorInfo));
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())

@@ -123,8 +123,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return false;
   }
 
-  TraversalSelectorInfo<FullParticleCell<Particle>> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<FullParticleCell<Particle>>(_cellsPerDim);
+  std::unique_ptr<TraversalSelectorInfo<FullParticleCell<Particle>>> getTraversalSelectorInfo() override {
+    return std::make_unique<TraversalSelectorInfo<FullParticleCell<Particle>>>(_cellsPerDim);
   }
 
   /**
