@@ -38,5 +38,5 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iteratePairwise(&emptyFunctor, &verletTraversal);
+  verletLists.iteratePairwise(&verletTraversal);
 }
