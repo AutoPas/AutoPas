@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 
 namespace autopas {
@@ -19,7 +19,7 @@ namespace autopas {
  * @tparam useNewton3 If newton 3 should be used. Currently, only false is supported.
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
+class VerletClustersTraversal : public TraversalInterface,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -28,8 +28,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
    * Constructor of the VerletClustersTraversal.
    * @param pairwiseFunctor The functor to use for the traveral.
    */
-  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({0, 0, 0}), _functor(pairwiseFunctor) {}
+  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::verletClusters; }
 
@@ -40,10 +39,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
     return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa) and not useNewton3;
   }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {}
-  void endTraversal(std::vector<ParticleCell> &cells) override {}
-
-  void initClusterTraversal() override {
+  void initTraversal() override {
     if (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
@@ -69,7 +65,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
     clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
   }
 
-  void endClusterTraversal() override {
+  void endTraversal() override {
     if (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
@@ -94,9 +90,6 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
     clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
   }
 
-  /**
-   * @copydoc VerletClustersTraversalInterface::traverseParticlePairs
-   */
   void traverseParticlePairs() override {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 

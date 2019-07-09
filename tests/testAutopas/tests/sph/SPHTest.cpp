@@ -643,22 +643,22 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
                                                                                                                        \
       autopas::TraversalVerlet<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor,                          \
                                autopas::DataLayoutOption::aos, true>                                                   \
-          traversalLJVerlet(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                       \
+          traversalLJVerlet(&fnctr);                                                                                   \
                                                                                                                        \
       _verletLists.rebuildNeighborLists(&traversalLJVerlet);                                                           \
-      _verletLists.iteratePairwise(&fnctr, &traversalLJVerlet);                                                        \
-      _linkedCells.iteratePairwise(&fnctr, &traversalLJ);                                                              \
+      _verletLists.iteratePairwise(&traversalLJVerlet);                                                                \
+      _linkedCells.iteratePairwise(&traversalLJ);                                                                      \
     } else {                                                                                                           \
       autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor,                             \
                             autopas::DataLayoutOption::soa, true>                                                      \
           traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                             \
       autopas::TraversalVerlet<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor,                          \
                                autopas::DataLayoutOption::soa, true>                                                   \
-          traversalLJVerlet(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                       \
+          traversalLJVerlet(&fnctr);                                                                                   \
                                                                                                                        \
       _verletLists.rebuildNeighborLists(&traversalLJVerlet);                                                           \
-      _verletLists.iteratePairwise(&fnctr, &traversalLJVerlet);                                                        \
-      _linkedCells.iteratePairwise(&fnctr, &traversalLJ);                                                              \
+      _verletLists.iteratePairwise(&traversalLJVerlet);                                                                \
+      _linkedCells.iteratePairwise(&traversalLJ);                                                                      \
     }                                                                                                                  \
     check;                                                                                                             \
   }

@@ -172,6 +172,9 @@ inline std::string to_string(const TuningStrategyOption &option) {
     case autopas::TuningStrategyOption::fullSearch: {
       return "full-Search";
     }
+    case autopas::TuningStrategyOption::bayesianSearch: {
+      return "bayesian-Search";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TuningStrategyOption (" + std::to_string(option) + ")";
@@ -411,6 +414,8 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
   auto tuningStrategy(autopas::TuningStrategyOption(-1));
   if (tuningStrategyString.find("full") != std::string::npos or tuningStrategyString.find("ex") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
+  } else if (tuningStrategyString.find("bayes") != std::string::npos) {
+    tuningStrategy = autopas::TuningStrategyOption::bayesianSearch;
   }
   return tuningStrategy;
 }

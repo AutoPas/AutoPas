@@ -11,8 +11,8 @@
 #include <unordered_map>
 #include <vector>
 #include "TraversalSelectorInfo.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
@@ -52,8 +52,9 @@ class TraversalSelector {
    * @return Smartpointer to the traversal.
    */
   template <class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-  static std::unique_ptr<CellPairTraversal<ParticleCell, dataLayout, useNewton3>> generateTraversal(
-      TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info);
+  static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
+                                                               PairwiseFunctor &pairwiseFunctor,
+                                                               const TraversalSelectorInfo &info);
 
   /**
    * Generates a given Traversal for the given properties. Requires less templates but only returns a TraversalInterface
@@ -75,9 +76,8 @@ class TraversalSelector {
 
 template <class ParticleCell>
 template <class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-std::unique_ptr<CellPairTraversal<ParticleCell, dataLayout, useNewton3>>
-TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor,
-                                                   const TraversalSelectorInfo &info) {
+std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
+    TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info) {
   switch (traversalType) {
     // Direct sum
     case TraversalOption::directSumTraversal: {
@@ -127,8 +127,7 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
           info.dims, &pairwiseFunctor);
     }
     case TraversalOption::verletTraversal: {
-      return std::make_unique<TraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(info.dims,
-                                                                                                      &pairwiseFunctor);
+      return std::make_unique<TraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor);
     }
     case TraversalOption::verletClusters: {
       return std::make_unique<VerletClustersTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
@@ -137,7 +136,7 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
                                               utils::StringUtils::to_string(traversalType));
-  return std::unique_ptr<CellPairTraversal<ParticleCell, dataLayout, useNewton3>>(nullptr);
+  return std::unique_ptr<TraversalInterface>(nullptr);
 }
 template <class ParticleCell>
 template <class PairwiseFunctor>
