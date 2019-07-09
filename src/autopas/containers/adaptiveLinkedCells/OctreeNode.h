@@ -13,6 +13,8 @@
 namespace autopas {
 namespace internal {
 
+enum class ExecutionPolicy { seq, par };
+
 /**
  * Class representing a single node in an octree.
  */
@@ -49,6 +51,8 @@ class OctreeNode {
    * @return new child.
    */
   virtual OctreeNode<Particle, ParticleCell> *update(std::vector<ParticleCell> &cells) = 0;
+
+  virtual void apply(std::function<void(OctreeNode<Particle, ParticleCell> &)> func, ExecutionPolicy policy) = 0;
 
   /**
    * Returns whether update() would change the tree.

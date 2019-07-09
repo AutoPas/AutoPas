@@ -55,6 +55,8 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
 
   OctreeNode<Particle, ParticleCell> *update(std::vector<ParticleCell> &cells) override;
 
+  void apply(std::function<void(OctreeNode<Particle, ParticleCell> &)> func, ExecutionPolicy policy) override;
+
   bool isUpdateNeeded() const override;
 
   /**
@@ -96,6 +98,12 @@ OctreeNode<Particle, ParticleCell> *OctreeExternalNode<Particle, ParticleCell>::
 template <class Particle, class ParticleCell>
 bool OctreeExternalNode<Particle, ParticleCell>::isUpdateNeeded() const {
   return getSize() > _maxElements;  //@Todo outliers
+}
+
+template <class Particle, class ParticleCell>
+void OctreeExternalNode<Particle, ParticleCell>::apply(std::function<void(OctreeNode<Particle, ParticleCell> &)> func,
+                                                       ExecutionPolicy) {
+  func(*this);
 }
 }  // namespace internal
 }  // namespace autopas

@@ -80,6 +80,11 @@ class Octree {
    */
   bool isUpdateNeeded() const { return root->isUpdateNeeded(); }
 
+  void apply(std::function<void(internal::OctreeNode<Particle, ParticleCell> &)> func,
+             internal::ExecutionPolicy policy) {
+    root->apply(func, policy);
+  }
+
   /**
    * Sets min. number of elements inside of each node.
    * @param minElements Min. number of elements.

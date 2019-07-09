@@ -37,6 +37,8 @@ class OctreeInternalNode : public OctreeNode<Particle, ParticleCell> {
 
   OctreeNode<Particle, ParticleCell> *update(std::vector<ParticleCell> &cells) override;
 
+  void apply(std::function<void(OctreeNode<Particle, ParticleCell> &)> func, ExecutionPolicy policy) override;
+
   bool isUpdateNeeded() const override;
 
   /**
@@ -111,6 +113,27 @@ bool OctreeInternalNode<Particle, ParticleCell>::isUpdateNeeded() const {
   } else {
     // call isUpdateNeeded on all children
     return std::any_of(_children.cbegin(), _children.cend(), [](const auto e) { return e->isUpdateNeeded(); });
+  }
+}
+
+template <class Particle, class ParticleCell>
+void OctreeInternalNode<Particle, ParticleCell>::apply(std::function<void(OctreeNode<Particle, ParticleCell> &)> func,
+                                                       ExecutionPolicy policy) {
+  switch (policy) {
+    case ExecutionPolicy::seq: {
+      for (int i = 0; i < 8; ++i) {
+        _children[i]->apply(func, policy);
+      }
+    }
+    case ExecutionPolicy::par: {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel
+#pragma omp taskloop if (this->_level > 1)
+#endif
+      for (int i = 0; i < 8; ++i) {
+        _children[i]->apply(func, policy);
+      }
+    }
   }
 }
 
