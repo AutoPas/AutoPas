@@ -42,19 +42,20 @@ class VarVerletLists
 
   ContainerOption getContainerType() override { return _neighborList.getContainerType(); }
 
-  /**
-   * @copydoc VerletLists::iteratePairwise
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
-    if (auto *traversalInterface = dynamic_cast<VarVerletTraversalInterface<NeighborList> *>(traversal)) {
-      traversalInterface->initVerletTraversal(_neighborList);
-      traversalInterface->iterateVerletLists(_neighborList);
-      traversalInterface->endVerletTraversal(_neighborList);
+  void iteratePairwise(TraversalInterface *traversal) override {
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+
+    auto *traversalInterface = dynamic_cast<VarVerletTraversalInterface<NeighborList> *>(traversal);
+    if (traversalInterface) {
+      traversalInterface->setNeighborListToTraverse(_neighborList);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VarVerletLists::iteratePairwise");
     }
+
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   /**

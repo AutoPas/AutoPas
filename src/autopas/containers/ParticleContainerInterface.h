@@ -10,7 +10,7 @@
 #include <array>
 #include <vector>
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -122,6 +122,12 @@ class ParticleContainerInterface {
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool incSearchRegion = false) = 0;
+
+  /**
+   * Iterates over all particle pairs in the container.
+   * @param traversal The traversal to use for the iteration.
+   */
+  virtual void iteratePairwise(TraversalInterface *traversal) = 0;
 
   /**
    * Get the upper corner of the container.

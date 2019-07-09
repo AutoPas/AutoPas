@@ -77,13 +77,11 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   class VarVerletListPairGeneratorFunctor
       : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                 typename VerletListHelpers<Particle>::SoAArraysType> {
-    typedef typename VerletListHelpers<Particle>::VerletListParticleCellType ParticleCell;
-
     /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-    typedef utils::SoAType<size_t, double, double, double>::Type SoAArraysType;
+    typedef typename utils::SoAType<Particle*, double, double, double>::Type SoAArraysType;
 
     /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
-    enum AttributeNames : int { id, posX, posY, posZ };
+    enum AttributeNames : int { ptr, posX, posY, posZ };
 
    public:
     bool allowsNewton3() override { return true; }
@@ -123,10 +121,10 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
-      auto **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
-      double *const __restrict__ xptr = soa.begin<AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.begin<AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.begin<AttributeNames::posZ>();
+      auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
+      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
 
       size_t numPart = soa.getNumParticles();
       for (unsigned int i = 0; i < numPart; ++i) {
@@ -142,9 +140,9 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
           const double dr2 = drx2 + dry2 + drz2;
 
           if (dr2 < _cutoffskinsquared) {
-            _list.addPair(idptr[i], idptr[j]);
+            _list.addPair(ptrptr[i], ptrptr[j]);
             if (not newton3) {
-              _list.addPair(idptr[j], idptr[i]);
+              _list.addPair(ptrptr[j], ptrptr[i]);
             }
           }
         }
@@ -154,15 +152,15 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-      auto **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());
-      double *const __restrict__ x1ptr = soa1.begin<AttributeNames::posX>();
-      double *const __restrict__ y1ptr = soa1.begin<AttributeNames::posY>();
-      double *const __restrict__ z1ptr = soa1.begin<AttributeNames::posZ>();
+      auto **const __restrict__ ptrptr1 = soa1.template begin<AttributeNames::ptr>();
+      double *const __restrict__ x1ptr = soa1.template begin<AttributeNames::posX>();
+      double *const __restrict__ y1ptr = soa1.template begin<AttributeNames::posY>();
+      double *const __restrict__ z1ptr = soa1.template begin<AttributeNames::posZ>();
 
-      auto **const __restrict__ id2ptr = reinterpret_cast<Particle **const>(soa2.begin<AttributeNames::id>());
-      double *const __restrict__ x2ptr = soa2.begin<AttributeNames::posX>();
-      double *const __restrict__ y2ptr = soa2.begin<AttributeNames::posY>();
-      double *const __restrict__ z2ptr = soa2.begin<AttributeNames::posZ>();
+      auto **const __restrict__ ptrptr2 = soa2.template begin<AttributeNames::ptr>();
+      double *const __restrict__ x2ptr = soa2.template begin<AttributeNames::posX>();
+      double *const __restrict__ y2ptr = soa2.template begin<AttributeNames::posY>();
+      double *const __restrict__ z2ptr = soa2.template begin<AttributeNames::posZ>();
 
       size_t numPart1 = soa1.getNumParticles();
       for (unsigned int i = 0; i < numPart1; ++i) {
@@ -179,35 +177,35 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
           const double dr2 = drx2 + dry2 + drz2;
 
           if (dr2 < _cutoffskinsquared) {
-            _list.addPair(id1ptr[i], id2ptr[j]);
+            _list.addPair(ptrptr1[i], ptrptr2[j]);
           }
         }
       }
     }
 
-    void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+    void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
       assert(offset == 0);
       soa.resizeArrays(cell.numParticles());
 
       if (cell.numParticles() == 0) return;
 
-      unsigned long *const __restrict__ idptr = soa.begin<AttributeNames::id>();
-      double *const __restrict__ xptr = soa.begin<AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.begin<AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.begin<AttributeNames::posZ>();
+      auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
+      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
 
       auto cellIter = cell.begin();
       // load particles in SoAs.
       for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
         Particle *pptr = &(*cellIter);
-        idptr[i] = reinterpret_cast<std::uintptr_t>(pptr);
+        ptrptr[i] = pptr;
         xptr[i] = cellIter->getR()[0];
         yptr[i] = cellIter->getR()[1];
         zptr[i] = cellIter->getR()[2];
       }
     }
 
-    void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {}
+    void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {}
 
    private:
     /**
@@ -235,7 +233,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
         C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                       VarVerletListPairGeneratorFunctor<callCheckInstead>, dataLayout, useNewton3>(
             _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
-    _baseLinkedCells->iteratePairwise(&functor, &traversal);
+    _baseLinkedCells->iteratePairwise(&traversal);
   }
 
  public:

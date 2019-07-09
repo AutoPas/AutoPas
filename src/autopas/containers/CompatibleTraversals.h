@@ -41,12 +41,12 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
 }
 
 /**
- * Lists all traversal options applicable for the Verlet Lists container.
+ * Lists all traversal options applicable for the Verlet Cluster Lists container.
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
   // traversal not used but prevents usage of newton3
-  static const std::set<TraversalOption> s{TraversalOption::c01};
+  static const std::set<TraversalOption> s{TraversalOption::verletClusters};
   return s;
 }
 

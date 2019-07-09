@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   int containerTypeInt = 0;
   enum ContainerType { linkedCells, verletListsCells, verletCluster } containerType;
   int traversalInt = 0;
-  enum TraversalType { c01, c08, c18, sliced } traversalType;
+  enum TraversalType { c01, c08, c18, sliced, clusters } traversalType;
 
   bool useNewton3 = true;
   double skin = 0.;
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
-  if (traversalInt <= sliced) {
+  if (traversalInt <= clusters) {
     traversalType = static_cast<TraversalType>(traversalInt);
   } else {
     std::cerr << "Error: wrong traversalType " << traversalInt << std::endl
@@ -226,12 +226,12 @@ int main(int argc, char *argv[]) {
       exit(3);
     }
   } else if (containerType == verletCluster) {
-    if (traversalType == c01) {
+    if (traversalType == clusters) {
       if (not useNewton3) {
-        autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, autopas::sph::SPHCalcDensityFunctor,
-                              autopas::DataLayoutOption::aos, false>
-            dummyTraversal({0, 0, 0}, &func);
-        measureContainer(&verletClusterCont, &func, &dummyTraversal, numParticles, numIterations, useNewton3);
+        autopas::VerletClustersTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>,
+                                         autopas::sph::SPHCalcDensityFunctor, autopas::DataLayoutOption::aos, false>
+            verletTraversal(&func);
+        measureContainer(&verletClusterCont, &func, &verletTraversal, numParticles, numIterations, useNewton3);
       } else {
         std::cout << "c01 does not support newton3" << std::endl;
         exit(3);
@@ -254,7 +254,7 @@ void measureContainer(Container *cont, autopas::sph::SPHCalcDensityFunctor *func
   t.start();
   cont->rebuildNeighborLists(traversal);
   for (int i = 0; i < numIterations; ++i) {
-    cont->iteratePairwise(func, traversal);
+    cont->iteratePairwise(traversal);
   }
   double elapsedTime = t.stop();
   double MFUPS = numParticles * numIterations / elapsedTime * 1e-6;

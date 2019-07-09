@@ -15,8 +15,6 @@
 
 class LinkedCellsVersusVerletClusterListsTest : public AutoPasTestBase {
  public:
-  LinkedCellsVersusVerletClusterListsTest();
-
   ~LinkedCellsVersusVerletClusterListsTest() override = default;
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
@@ -26,8 +24,9 @@ class LinkedCellsVersusVerletClusterListsTest : public AutoPasTestBase {
   double getCutoff() const { return 1.0; }
 
  protected:
+  template <autopas::DataLayoutOption dataLayout, bool useNewton3>
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  autopas::VerletClusterLists<autopas::MoleculeLJ> _verletLists;
-  autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
+  using Verlet = autopas::VerletClusterLists<autopas::MoleculeLJ>;
+  using Linked = autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>;
 };

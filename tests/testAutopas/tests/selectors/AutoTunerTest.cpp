@@ -33,11 +33,27 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
                                            autopas::DataLayoutOption(-1), autopas::Newton3Option(-1));
 
   // total number of possible configurations * number of samples + last iteration after tuning
-  // number of configs manually counted
+  // number of configs manually counted:
+  //
+  // Direct Sum:            directSum traversal         (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  // LinkedCells:           c08 traversal               (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        sliced                      (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        c18                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        c01                         (AoS <=> SoA, noNewton3)             = 2
+  //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        c01-combined-SoA            (SoA, noNewton3)                     = 1
+  // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  // VerletListsCells:      verlet-sliced               (AoS, newton3 <=> noNewton3)         = 2
+  //                        verlet-c18                  (AoS, newton3 <=> noNewton3)         = 2
+  //                        verlet-c01                  (AoS, noNewton3)                     = 1
+  // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
+  // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                                                                                    --------
+  //                                                                                          38
 #ifndef AUTOPAS_CUDA
   const size_t expectedNumberOfIterations = 38 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 52 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 51 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

@@ -89,7 +89,7 @@ TEST_F(VarVerletListsTest, testVerletListBuild) {
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -115,7 +115,7 @@ TEST_F(VarVerletListsTest, testVerletList) {
   autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&mockFunctor);
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -142,7 +142,7 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
       dummyTraversal(&mockFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iteratePairwise(&mockFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -168,9 +168,9 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -199,7 +199,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
   autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -225,9 +225,9 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -250,7 +250,7 @@ TEST_F(VarVerletListsTest, testCheckNeighborListsAreValidAfterBuild) {
 
   // this will build the verlet list
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iteratePairwise(&emptyFunctor, &dummyTraversal);
+  verletLists.iteratePairwise(&dummyTraversal);
 
   // check validity - should return true
   EXPECT_TRUE(verletLists.checkNeighborListsAreValid());

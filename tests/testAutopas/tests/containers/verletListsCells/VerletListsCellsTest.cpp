@@ -26,8 +26,9 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
 
   autopas::C18TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
       verletLists.getCellsPerDimension(), &functor);
+
   verletLists.rebuildNeighborLists(&traversal);
-  verletLists.iteratePairwise(&functor, &traversal);
+  verletLists.iteratePairwise(&traversal);
 
   std::vector<Particle *> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);

@@ -24,7 +24,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3> {
+class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
   /**
    * Constructor of the CBasedTraversal.
@@ -36,7 +36,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
    */
   explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            const double interactionLength, const std::array<double, 3> &cellLength)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
+      : CellPairTraversal<ParticleCell>(dims),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _dataLayoutConverter(pairwiseFunctor) {
@@ -52,30 +52,34 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
 
  public:
   /**
-   * load Data Layouts required for this Traversal.
-   * @param cells where the data should be loaded
+   * load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
    */
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  void initTraversal() override {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.loadDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.loadDataLayout(cells[i]);
+      }
     }
   }
 
   /**
-   * write Data to AoS.
-   * @param cells for which the data should be written back
+   * write Data to AoS if cells have been set through setCellsToTraverse().
    */
-  void endTraversal(std::vector<ParticleCell> &cells) override {
+  void endTraversal() override {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.storeDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.storeDataLayout(cells[i]);
+      }
     }
   }
 
