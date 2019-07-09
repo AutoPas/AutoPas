@@ -11,6 +11,8 @@ namespace autopas {
 template <class Particle>
 class VerletNeighborListAsBuild;
 
+namespace internal {
+
 /**
  * This functor can generate or check variable verlet lists using the typical pairwise
  * traversal.
@@ -22,6 +24,7 @@ template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
     : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                               typename VerletListHelpers<Particle>::SoAArraysType> {
+  // Friend neighbor list to be able to call addPair() and checkPair()
   friend VerletNeighborListAsBuild<Particle>;
 
   /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
@@ -164,5 +167,7 @@ class AsBuildPairGeneratorFunctor
    */
   double _cutoffskinsquared;
 };
+
+}  // namespace internal
 
 }  // namespace autopas

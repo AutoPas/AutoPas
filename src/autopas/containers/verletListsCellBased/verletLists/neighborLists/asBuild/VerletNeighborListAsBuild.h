@@ -20,8 +20,9 @@ namespace autopas {
  */
 template <class Particle>
 class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, ColorChangeObserver {
-  friend AsBuildPairGeneratorFunctor<Particle, true>;
-  friend AsBuildPairGeneratorFunctor<Particle, false>;
+  // Add generator functor as friend so it can call addPair() and checkPair().
+  friend internal::AsBuildPairGeneratorFunctor<Particle, true>;
+  friend internal::AsBuildPairGeneratorFunctor<Particle, false>;
 
  private:
   /**
@@ -32,13 +33,13 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   template <bool useNewton3, bool callCheckInstead = false>
   void startFunctor(double cutoff) {
-    AsBuildPairGeneratorFunctor<Particle, callCheckInstead> functor(*this, cutoff);
+    internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead> functor(*this, cutoff);
     // Use SoA traversal for generation and AoS traversal for validation check.
     constexpr DataLayoutOption dataLayout = callCheckInstead ? DataLayoutOption::aos : DataLayoutOption::soa;
-    auto traversal =
-        C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                      AsBuildPairGeneratorFunctor<Particle, callCheckInstead>, dataLayout, useNewton3>(
-            _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
+    auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
+                                                   internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead>,
+                                                   dataLayout, useNewton3>(
+        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
     _baseLinkedCells->iteratePairwise(&traversal);
   }
 
