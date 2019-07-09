@@ -110,9 +110,10 @@ void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, dataLayo
 #pragma omp for schedule(static)
 #endif
       for (unsigned int thread = 0; thread < list[c].size(); thread++) {
-        for (const auto &pair : list[c][thread]) {
-          for (auto second : pair.second) {
-            _functor->AoSFunctor(*(pair.first), *second, useNewton3);
+        const auto &currentParticleToNeighborMap = list[c][thread];
+        for (const auto &[currentParticle, neighborParticles] : currentParticleToNeighborMap) {
+          for (auto neighborParticle : neighborParticles) {
+            _functor->AoSFunctor(*(currentParticle), *neighborParticle, useNewton3);
           }
         }
       }
@@ -125,12 +126,12 @@ void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, dataLayo
     VerletNeighborListAsBuild<Particle> &neighborList) {
   const auto &soaNeighborList = neighborList.getInternalSoANeighborList();
 
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel num_threads(soaNeighborList[0].size())
+#endif
   {
     constexpr int numColors = 8;
     for (int color = 0; color < numColors; color++) {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel num_threads(soaNeighborList[color].size())
-#endif
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(static)
 #endif

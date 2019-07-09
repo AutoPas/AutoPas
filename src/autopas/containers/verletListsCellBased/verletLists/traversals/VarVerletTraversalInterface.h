@@ -25,12 +25,10 @@ class VarVerletTraversalInterface {
    */
   virtual ~VarVerletTraversalInterface() = default;
 
-  virtual void setNeighborListToTraverse(NeighborList &neighborList) {
-    _neighborList = &neighborList;
-  }
+  virtual void setNeighborListToTraverse(NeighborList &neighborList) { _neighborList = &neighborList; }
 
  protected:
-  NeighborList* _neighborList;
+  NeighborList *_neighborList;
 };
 
 }  // namespace autopas

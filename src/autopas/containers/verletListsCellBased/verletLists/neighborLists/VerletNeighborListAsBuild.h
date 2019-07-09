@@ -7,57 +7,10 @@
 #pragma once
 
 #include "VerletNeighborListInterface.h"
+#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/C08TraversalColorChangeNotify.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
-
-/**
- * Observer interface that specifies handling color changes during a CBasedTraversal.
- */
-class TraversalColorChangeObserver {
- public:
-  /**
-   * Gets called when the color changes during the observed traversal.
-   * @param newColor The new color that the traversal handles now.
-   */
-  virtual void receiveColorChange(unsigned long newColor) = 0;
-};
-
-/**
- * @copydoc C08Traversal
- *
- * It furthermore notifies an observer when color changes during the traversal happen.
- */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class C08TraversalColorChangeNotify : public C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
- public:
-  /**
-   * Constructor of the traversal.
-   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
-   * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param observer The observer to notify when a color change happens during the traversal.
-   */
-  C08TraversalColorChangeNotify(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                TraversalColorChangeObserver *observer)
-      : C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor),
-        _observer(observer) {}
-
- protected:
-  /**
-   * Notifies the observer.
-   * @param newColor The new color to notify the observer about.
-   */
-  void notifyColorChange(unsigned long newColor) override {
-    if (_observer) _observer->receiveColorChange(newColor);
-  }
-
- private:
-  /**
-   * The observer of the traversal.
-   */
-  TraversalColorChangeObserver *_observer;
-};
 
 /**
  * This class implements a neighbor list that remembers which thread added which particle pair and at which color
@@ -65,20 +18,21 @@ class C08TraversalColorChangeNotify : public C08Traversal<ParticleCell, Pairwise
  * @tparam Particle The particle type the class uses.
  */
 template <class Particle>
-class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, TraversalColorChangeObserver {
+class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, ColorChangeObserver {
  private:
   /**
    * This functor can generate or check variable verlet lists using the typical pairwise
    * traversal.
    *
-   * @tparam callCheckInstead If false, generate a neighbor list. If true, check the current for validity.
+   * @tparam callCheckInstead If false, generate a neighbor list. If true, check the current for validity. Checking
+   * validity only works with the AoSFunctor().
    */
   template <bool callCheckInstead = false>
   class VarVerletListPairGeneratorFunctor
       : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                 typename VerletListHelpers<Particle>::SoAArraysType> {
     /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-    typedef typename utils::SoAType<Particle*, double, double, double>::Type SoAArraysType;
+    typedef typename utils::SoAType<Particle *, double, double, double>::Type SoAArraysType;
 
     /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
     enum AttributeNames : int { ptr, posX, posY, posZ };
@@ -446,14 +400,12 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
 
   /**
    * Helper method for checkPair()
-   * @return True, if the pair is not present, false otherwise.
+   * @return True, if the pair is present, false otherwise.
    */
   bool isPairInList(ThreadNeighborList &currentNeighborList, Particle *first, Particle *second) {
-    auto found = std::find(currentNeighborList[first].begin(), currentNeighborList[first].end(), second);
-    if (found == currentNeighborList[first].end()) {
-      return false;
-    }
-    return true;
+    auto iteratorFound = std::find(currentNeighborList[first].begin(), currentNeighborList[first].end(), second);
+
+    return iteratorFound != currentNeighborList[first].end();
   }
 
  private:
