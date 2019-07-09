@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "../../../../linkedCells/traversals/C08Traversal.h"
 #include "ColorChangeObserver.h"
-#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 
 namespace autopas {
 

@@ -7,7 +7,7 @@
 #pragma once
 
 #include <autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h>
-#include <autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListAsBuild.h>
+#include <autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h>
 #include <array>
 #include <vector>
 #include "autopas/containers/ParticleContainer.h"

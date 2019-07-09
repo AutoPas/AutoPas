@@ -14,7 +14,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListAsBuild.h"
+#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
