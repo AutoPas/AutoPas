@@ -43,7 +43,7 @@ class SoA {
    * @param length new length.
    */
   void resizeArrays(size_t length) {
-    soaStorage.apply([=](auto &list) { list.resize(length + viewStart); });
+    soaStorage.apply([=](auto &list) { list.resize(length); });
   }
 
   /**
@@ -88,7 +88,7 @@ class SoA {
    */
   template <int... attributes, class ValueArrayType>
   void writeMultiple(size_t particleId, const ValueArrayType &values) {
-    write_impl<attributes...>(particleId + viewStart, values);
+    write_impl<attributes...>(particleId, values);
   }
 
   /**
@@ -100,7 +100,7 @@ class SoA {
    */
   template <int... attributes, size_t N = sizeof...(attributes)>
   inline void writeMultiple(size_t particleId, std::array<double, N> values) {
-    write_impl<attributes...>(particleId + viewStart, values);
+    write_impl<attributes...>(particleId, values);
   }
 
   /**
@@ -120,7 +120,7 @@ class SoA {
           getNumParticles());
       return retArray;
     }
-    read_impl<attributes...>(particleId + viewStart, retArray);
+    read_impl<attributes...>(particleId, retArray);
     return retArray;
   }
 
@@ -132,7 +132,7 @@ class SoA {
    */
   template <std::size_t attribute>
   auto read(size_t particleId) {
-    return soaStorage.template get<attribute>().at(particleId + viewStart);
+    return soaStorage.template get<attribute>().at(particleId);
   }
 
   /**
@@ -142,7 +142,7 @@ class SoA {
    */
   template <std::size_t attribute>
   auto begin() {
-    return soaStorage.template get<attribute>().data() + viewStart;
+    return soaStorage.template get<attribute>().data();
   }
 
   /**
@@ -153,7 +153,7 @@ class SoA {
    *
    * @return Number of particles.
    */
-  inline size_t getNumParticles() const { return soaStorage.template get<0>().size() - viewStart; }
+  inline size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
 
   /**
    * delete all particles in the soa
@@ -177,12 +177,6 @@ class SoA {
   void pop_back() {
     soaStorage.apply([](auto &list) { list.pop_back(); });
   }
-
-  /**
-   * Set index of the particle which is externally shown as the first particle in the buffer.
-   * @param start index of the first element
-   */
-  void setViewStart(size_t start) { viewStart = start; }
 
   /**
    * Constructs a SoAView for the whole SoA and returns it.
@@ -244,7 +238,5 @@ class SoA {
 
   // storage container for the SoA's
   utils::SoAStorage<SoAArraysType> soaStorage;
-
-  size_t viewStart = 0;
 };  // namespace autopas
 }  // namespace autopas
