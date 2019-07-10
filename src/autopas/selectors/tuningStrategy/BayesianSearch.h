@@ -27,10 +27,6 @@ namespace autopas {
  */
 class BayesianSearch : public TuningStrategyInterface {
   /**
-   * max limit of long as double
-   */
-  constexpr static double longMax = static_cast<double>(std::numeric_limits<long>::max());
-  /**
    * The maximum number of attempts to sample an optimum.
    */
   constexpr static size_t maxAttempts = 10;
@@ -64,7 +60,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _gp(FeatureVector::featureSpaceDims, 1., 0.001, _rng),
+        _gp(FeatureVector::featureSpaceDims, 0.001, _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples) {
@@ -96,10 +92,7 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override {
-    // transform time to a value between 0 and 1
-    _gp.addEvidence(_currentConfig, time / longMax);
-  }
+  inline void addEvidence(long time) override { _gp.addEvidence(_currentConfig, time); }
 
   inline void reset() override {
     _gp.clear();

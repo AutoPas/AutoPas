@@ -11,7 +11,7 @@ using namespace autopas;
 
 TEST(GaussianProcessTest, wrongDimension) {
   Random rng(32);
-  GaussianProcess<Eigen::VectorXd> gp(2, 1., 0.001, rng);
+  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
   Eigen::VectorXd f1 = Eigen::VectorXd::Ones(1);
   Eigen::VectorXd f2 = Eigen::VectorXd::Zero(3);
@@ -25,16 +25,15 @@ TEST(GaussianProcessTest, noEvidence) {
 
   double epsilon = 0.05;  // allowed error for tests
 
-  double theta = 1.;
   double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, theta, sigma, rng);
+  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
 
   // predict without information -> should return default values
-  ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), theta, epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), 0., epsilon);
+  EXPECT_NEAR(gp.predictVar(f1), 1., epsilon);
 }
 
 TEST(GaussianProcessTest, oneEvidence) {
@@ -42,7 +41,7 @@ TEST(GaussianProcessTest, oneEvidence) {
 
   double epsilon = 0.05;
   double sigma = 0.001;
-  GaussianProcess<Eigen::VectorXd> gp(1, 1., sigma, rng);
+  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
@@ -54,11 +53,11 @@ TEST(GaussianProcessTest, oneEvidence) {
   gp.addEvidence(f1, out1);
 
   // predicting point same as evidence -> should expect same output as evidence
-  ASSERT_NEAR(gp.predictMean(f1), out1, epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), 0., epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), out1, epsilon);
+  EXPECT_NEAR(gp.predictVar(f1), 0., epsilon);
 
-  // prediction far away from evidence should expect default.
-  ASSERT_NEAR(gp.predictMean(f2), 0., epsilon);
+  // not enough information, so other inputs lead to same mean
+  EXPECT_NEAR(gp.predictMean(f2), out1, epsilon);
 }
 
 TEST(GaussianProcessTest, twoEvidence) {
@@ -66,7 +65,7 @@ TEST(GaussianProcessTest, twoEvidence) {
 
   double epsilon = 0.05;  // allowed error for tests
   double sigma = 0.001;   // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, 1., sigma, rng);
+  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -84,23 +83,22 @@ TEST(GaussianProcessTest, twoEvidence) {
 
   // predicting point same as evidence
   // should expect same output as evidence because great distance between inputs
-  ASSERT_NEAR(gp.predictMean(f1), out1, epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), 0., epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), out1, epsilon);
+  EXPECT_NEAR(gp.predictVar(f1), 0., epsilon);
 
-  ASSERT_NEAR(gp.predictMean(f2), out2, epsilon);
-  ASSERT_NEAR(gp.predictVar(f2), 0., epsilon);
+  EXPECT_NEAR(gp.predictMean(f2), out2, epsilon);
+  EXPECT_NEAR(gp.predictVar(f2), 0., epsilon);
 
-  // prediction far away from evidence should expect default.
-  ASSERT_NEAR(gp.predictMean(f3), 0., epsilon);
+  // prediction far away from evidence should expect mean of outputs
+  EXPECT_NEAR(gp.predictMean(f3), (out1 + out2) / 2., epsilon);
 }
 
 TEST(GaussianProcessTest, clear) {
   Random rng;
 
   double epsilon = 0.05;  // allowed error for tests
-  double theta = 1.;
-  double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, theta, sigma, rng);
+  double sigma = 0.001;   // noise
+  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -116,20 +114,20 @@ TEST(GaussianProcessTest, clear) {
 
   // predicting points as deleted evidence
   // they should not have effect on the prediction anymore
-  ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), theta, epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), 0., epsilon);
+  EXPECT_NEAR(gp.predictVar(f1), 1., epsilon);
 
-  ASSERT_NEAR(gp.predictMean(f2), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f2), theta, epsilon);
+  EXPECT_NEAR(gp.predictMean(f2), 0., epsilon);
+  EXPECT_NEAR(gp.predictVar(f2), 1., epsilon);
 
   // test new evidence at deleted point
   out2 = 10.;
   gp.addEvidence(f2, out2);
 
-  ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), out2, epsilon);
 
-  ASSERT_NEAR(gp.predictMean(f2), out2, epsilon);
-  ASSERT_NEAR(gp.predictVar(f2), 0., epsilon);
+  EXPECT_NEAR(gp.predictMean(f2), out2, epsilon);
+  EXPECT_NEAR(gp.predictVar(f2), 0., epsilon);
 }
 
 TEST(GaussianProcessTest, sine) {
@@ -143,7 +141,7 @@ TEST(GaussianProcessTest, sine) {
   double domainStart = 0.;         // start of tested domain
   double domainEnd = 2 * M_PI;     // end of tested domain
 
-  GaussianProcess<Eigen::VectorXd> gp(1, 1., 0.001, rng);
+  GaussianProcess<Eigen::VectorXd> gp(1, 0.001, rng);
 
   // create equidistant evidence over the domain
   double evidenceStep = (domainEnd - domainStart) / (numEvidence - 1);
@@ -164,7 +162,7 @@ TEST(GaussianProcessTest, sine) {
     f << input;
     double output = functor(input);
 
-    ASSERT_NEAR(gp.predictMean(f), output, epsilon);
+    EXPECT_NEAR(gp.predictMean(f), output, epsilon);
   }
 }
 
@@ -185,7 +183,7 @@ TEST(GaussianProcessTest, 2dMax) {
   AcquisitionFunctionOption af = AcquisitionFunctionOption::ucb;      // use upper confidence bound as af
   AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::lcb;  // use lower confidence bound for final prediction
 
-  GaussianProcess<Eigen::VectorXd> gp(2, 1., 0.001, rng);
+  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
   // add first evidence
   Eigen::VectorXd first(2);
@@ -229,7 +227,7 @@ TEST(GaussianProcessTest, 2dMax) {
   // check if predicted max is near real max
   double predMax = functor(am[0], am[1]);
   double realMax = functor(max[0], max[1]);
-  ASSERT_NEAR(predMax, realMax, epsilon);
+  EXPECT_NEAR(predMax, realMax, epsilon);
 }
 
 TEST(GaussianProcessTest, 2dMin) {
@@ -249,7 +247,7 @@ TEST(GaussianProcessTest, 2dMin) {
   AcquisitionFunctionOption af = AcquisitionFunctionOption::lcb;      // use lower confidence bound as af
   AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::ucb;  // use upper confidence bound for final prediction
 
-  GaussianProcess<Eigen::VectorXd> gp(2, 1., 0.001, rng);
+  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
   // add first evidence
   Eigen::VectorXd first(2);
@@ -293,5 +291,5 @@ TEST(GaussianProcessTest, 2dMin) {
   // check if predicted min is near real min
   double predMin = functor(am[0], am[1]);
   double realMin = functor(min[0], min[1]);
-  ASSERT_NEAR(predMin, realMin, epsilon);
+  EXPECT_NEAR(predMin, realMin, epsilon);
 }

@@ -28,20 +28,11 @@ class GaussianProcess {
   /**
    * Constructor
    * @param dims number of input dimensions
-   * @param theta default variance
    * @param sigma fixed noise
    * @param rngRef reference to rng
    */
-  GaussianProcess(size_t dims, double theta, double sigma, Random &rngRef)
-      : _inputs(),
-        _outputs(),
-        _dims(dims),
-        _defaultTheta(theta),
-        _sigma(sigma),
-        _covMat(),
-        _covMatInv(),
-        _weights(),
-        _rng(rngRef) {
+  GaussianProcess(size_t dims, double sigma, Random &rngRef)
+      : _inputs(), _outputs(), _dims(dims), _sigma(sigma), _covMat(), _covMatInv(), _weights(), _rng(rngRef) {
     updateHyperparameters();
   }
 
@@ -139,9 +130,9 @@ class GaussianProcess {
                                          inputVec.size(), _dims);
     }
 
-    if (_inputs.size() == 0) return 0.;
+    if (_inputs.size() == 0) return _mean;
 
-    return kernelVector(input).dot(_weights);
+    return _mean + kernelVector(input).dot(_weights);
   }
 
   /**
@@ -244,62 +235,78 @@ class GaussianProcess {
    * generates given output.
    */
   inline void updateHyperparameters() {
-    // distribution of theta: gamma distribution with expectation _defaultTheta.
-    std::gamma_distribution<double> thetaDistribution(3., _defaultTheta / 3.);
-    // distribution of dimScale: gamma distribution with expectation 1.
-    std::gamma_distribution<double> dimScaleDistribution(3., 1. / 3.);
-
     // size of monte carlo simulation
     const size_t mt_size = 1000;
 
     // number of evidence
     size_t newSize = _inputs.size();
+    _covMat.resize(newSize, newSize);
 
     // if no evidence
     if (newSize == 0) {
       // use default values
-      _theta = _defaultTheta;
+      _mean = 0;
+      _theta = 1.;
       _dimScale = Eigen::VectorXd::Ones(_dims);
       return;
     }
 
-    _covMat.resize(newSize, newSize);
+    // use mean of outputs as mean
+    _mean = _outputs.sum() / newSize;
 
-    // initialize sums to 0
-    double scoreSum = 0;
-    double thetaSum = 0;
-    Eigen::VectorXd dimScaleSum = Eigen::VectorXd::Zero(_dims);
+    // mean of output shifted to zero
+    Eigen::VectorXd outputCentered = _outputs - _mean * Eigen::VectorXd::Ones(newSize);
 
-    // @TODO parallelize?
-    for (size_t t = 0; t < mt_size; ++t) {
-      // generate theta
-      double theta = thetaDistribution(_rng);
+    if (newSize == 1) {
+      // default values for one evidence
+      _theta = _outputs[0] * _outputs[0];
+      _dimScale = Eigen::VectorXd::Ones(_dims);
+    } else {
+      // sample variance
+      double var = outputCentered.squaredNorm() / newSize;
 
-      // generate dimScale
-      std::vector<double> dimScaleData;
-      for (size_t d = 0; d < _dims; ++d) {
-        dimScaleData.push_back(dimScaleDistribution(_rng));
-      }
-      Eigen::VectorXd dimScale = Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size());
+      // distribution of theta: gamma distribution with expectation equal to sample variance.
+      std::gamma_distribution<double> thetaDistribution(2., var / 2.);
+      // distribution of dimScale
+      std::gamma_distribution<double> dimScaleDistribution(2., 1.);
 
-      // calculate covariance matrix
-      for (size_t i = 0; i < newSize; ++i) {
-        _covMat(i, i) = kernel(_inputs[i], _inputs[i], theta, dimScale) + _sigma;
-        for (size_t j = i + 1; j < newSize; ++j) {
-          _covMat(i, j) = _covMat(j, i) = kernel(_inputs[i], _inputs[j], theta, dimScale);
+      // initialize sums to 0
+      double scoreSum = 0;
+      double thetaSum = 0;
+      Eigen::VectorXd dimScaleSum = Eigen::VectorXd::Zero(_dims);
+
+      // @TODO parallelize?
+      for (size_t t = 0; t < mt_size; ++t) {
+        // generate theta
+        double theta = thetaDistribution(_rng);
+
+        // generate dimScale
+        std::vector<double> dimScaleData;
+        for (size_t d = 0; d < _dims; ++d) {
+          dimScaleData.push_back(dimScaleDistribution(_rng));
         }
+        Eigen::VectorXd dimScale = Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size());
+
+        // calculate covariance matrix
+        for (size_t i = 0; i < newSize; ++i) {
+          _covMat(i, i) = kernel(_inputs[i], _inputs[i], theta, dimScale) + _sigma;
+          for (size_t j = i + 1; j < newSize; ++j) {
+            _covMat(i, j) = _covMat(j, i) = kernel(_inputs[i], _inputs[j], theta, dimScale);
+          }
+        }
+
+        // weight tested hyperparameter by probability to fit evidence
+        double score = std::exp(
+            -0.5 * (outputCentered.dot(_covMat.llt().solve(outputCentered)) + std::log(_covMat.determinant())));
+        thetaSum += theta * score;
+        dimScaleSum += dimScale * score;
+        scoreSum += score;
       }
 
-      // weight tested hyperparameter by probability to fit evidence
-      double score = std::exp(-0.5 * (_outputs.dot(_covMat.llt().solve(_outputs)) + std::log(_covMat.determinant())));
-      thetaSum += theta * score;
-      dimScaleSum += dimScale * score;
-      scoreSum += score;
+      // get weighted average;
+      _theta = thetaSum / scoreSum;
+      _dimScale = dimScaleSum / scoreSum;
     }
-
-    // get weighted average;
-    _theta = thetaSum / scoreSum;
-    _dimScale = dimScaleSum / scoreSum;
 
     // calculate needed matrix and vector for predictions
     for (size_t i = 0; i < newSize; ++i) {
@@ -309,7 +316,7 @@ class GaussianProcess {
       }
     }
     _covMatInv = _covMat.llt().solve(Eigen::MatrixXd::Identity(newSize, newSize));
-    _weights = _covMatInv * _outputs;
+    _weights = _covMatInv * outputCentered;
   }
 
   /**
@@ -359,9 +366,9 @@ class GaussianProcess {
   const size_t _dims;
 
   /**
-   * default prior variance
+   * prior mean
    */
-  const double _defaultTheta;
+  double _mean;
   /**
    * prior variance
    */
