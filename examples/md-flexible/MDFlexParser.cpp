@@ -30,6 +30,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
+                                         {"tuning-max-evidence", required_argument, nullptr, 'E'},
                                          {"tuning-strategy", required_argument, nullptr, 'T'},
                                          {"log-level", required_argument, nullptr, 'l'},
                                          {"log-file", required_argument, nullptr, 'L'},
@@ -256,6 +257,19 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'E': {
+        try {
+          tuningMaxEvidence = (unsigned int)stoul(strArg);
+          if (tuningMaxEvidence < 1) {
+            cerr << "Tuning max evidence has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing number of tuning max evidence: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 't': {
         traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
@@ -269,7 +283,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(strArg);
         if (tuningStrategyOption == autopas::TuningStrategyOption(-1)) {
           cerr << "Unknown Tuning Strategy: " << strArg << endl;
-          cerr << "Please use 'full-search'!" << endl;
+          cerr << "Please use 'full-search' or 'bayesian-search'!" << endl;
           displayHelp = true;
         }
         break;
@@ -424,10 +438,14 @@ void MDFlexParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
+  cout << setw(valueOffset) << left << "Tuning Strategy"
+       << ":  " << autopas::utils::StringUtils::to_string(tuningStrategyOption) << endl;
   cout << setw(valueOffset) << left << "Tuning Interval"
        << ":  " << tuningInterval << endl;
   cout << setw(valueOffset) << left << "Tuning Samples"
        << ":  " << tuningSamples << endl;
+  cout << setw(valueOffset) << left << "Tuning Max evidence"
+       << ":  " << tuningMaxEvidence << endl;
 }
 
 std::set<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
@@ -472,6 +490,8 @@ bool MDFlexParser::getMeasureFlops() const { return measureFlops; }
 unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
 
 unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
+
+unsigned int MDFlexParser::getTuningMaxEvidence() const { return tuningMaxEvidence; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 

@@ -24,9 +24,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C01TraversalVerlet
-    : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
-      public VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3> {
+class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
+                           public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -36,26 +35,27 @@ class C01TraversalVerlet
    */
   explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
-        VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
+        _functor(pairwiseFunctor) {}
 
-  /**
-   * @copydoc VerletListsCellsTraversal::traverseCellVerlet
-   */
-  void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
-                                                             useNewton3>::verlet_storage_type &verlet) override;
+  void traverseParticlePairs() override;
 
   TraversalOption getTraversalType() const override { return TraversalOption::c01Verlet; }
 
   bool isApplicable() const override { return (not useNewton3) && (DataLayout == DataLayoutOption::aos); }
+
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
+
+ private:
+  PairwiseFunctor *_functor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellVerlet(
-    typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
-                                       useNewton3>::verlet_storage_type &verlet) {
+inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->iterateVerletListsCell(verlet, baseIndex);
+    this->template iterateVerletListsCell<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
   });
 }
 
