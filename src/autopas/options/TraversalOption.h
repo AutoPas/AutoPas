@@ -27,7 +27,6 @@ enum TraversalOption {
   c01CombinedSoA = 10,
   verletClusters = 11,
   c04 = 12,
-  dummyTraversal = 666,
 };
 
 /**
