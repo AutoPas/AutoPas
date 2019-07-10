@@ -16,14 +16,14 @@ class GridGenerator {
   /**
    * Fills a cell vector with a cuboid mesh of particles.
    *
-   * @tparam Particle Type of particle to be generated
-   * @tparam ParticleCell
-   * @param cells
-   * @param cellsPerDimension Number of cells per dimension
-   * @param particlesPerDim Number of particles per dimension
+   * @tparam Particle Type of particle to be generated.
+   * @tparam ParticleCell Type of ParticleCells in cell vector.
+   * @param cells Cell vector.
+   * @param cellsPerDimension Number of cells per dimension.
+   * @param particlesPerDim Number of particles per dimension.
    * @param defaultParticle
-   * @param spacing Factor for distance between two particles along one dimension (default is 1)
-   * @param offset Offset to move all particles
+   * @param spacing Factor for distance between two particles along one dimension (default is 1).
+   * @param offset Offset to move all particles.
    */
   template <class Particle, class ParticleCell>
   static void fillWithParticles(std::vector<ParticleCell> &cells, const std::array<size_t, 3> &cellsPerDimension,
