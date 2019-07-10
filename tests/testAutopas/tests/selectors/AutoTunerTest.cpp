@@ -55,7 +55,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const size_t expectedNumberOfIterations = 40 * maxSamples + 1;
 #else
   const size_t expectedNumberOfIterations = 53 * maxSamples + 1;
->>>>>>> master
 #endif
 
       int collectedSamples = 0;
