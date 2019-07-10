@@ -614,13 +614,15 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * works as easy as possible with newton 3. The newton 3 neighbor list just has to only save neighbors with a higher
    * index, and there will be no data races.
    *
-   * The domain in the xy-plane is divided in color cells that have at least the size of the cutoff, and the grids (that
-   * have variable sizes depending on the number of particles) are sorted into these color cells. Now, for every color
-   * cell, the indices of all clusters in it are assigned in a way so that all clusters in the three neighbor cells
-   * below and the neighbor cell to the right have a higher index, and the clusters in the three neighbor cells above
-   * and the neighbor cell to the left have a lower index. Inside of each color cell, the clusters of each grid have a
-   * similar relationship with the neighbor grids. In each grid, the clusters that are higher in z-direction have a
-   * higher index.
+   * For each cluster now holds (with x-axis as left <=> right, y-axis <=> as top <=> bottom):
+   *    - The indices of all clusters of the three color cells above and the color cell to the left are lower.
+   *    - The indices of all clusters of the three color cells below and the color cell to the right are higher.
+   *    - For all grids of the same color cell holds:
+   *        - The indices of all clusters of the three grids above and the grids to the left are lower.
+   *        - The indices of all clusters of the three grids below and the grids to the right are higher.
+   *    - For all clusters in the same grid holds:
+   *        - The indices of all clusters with a lower z-coordinate than the current cluster are lower.
+   *        - The indices of all clusters with a higher z-coordinate than the current cluster are higher.
    *
    * @return The number of clusters in the container.
    */

@@ -31,7 +31,12 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
   using Particle = typename ParticleCell::ParticleType;
   typedef typename VerletClusterMaths::index_t index_t;
   /**
-   * This stride is determined by the way the neighbor list with newton 3 of the VerletClusterLists container is build.
+   * Each base step looks like this:
+   *    X C N  Colors:  1 2 3
+   *    N N N           4 5 6
+   * Where C is the current cell, N are the neighbor cells that is worked on, and X is not worked on. The neighbor list
+   * with newton 3 of the VerletClusterLists container is build in a way that the neighbor lists already contain only
+   * the neighbor clusters of these cells.
    * @see VerletClusterLists::updateVerletLists(bool)
    */
   static constexpr std::array<unsigned long, 3> stride{3ul, 2ul, 1ul};
