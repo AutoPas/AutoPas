@@ -17,7 +17,7 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength, unsigned long 
 
   GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
 
-  NumThreadGuard(4);
+  NumThreadGuard numThreadGuard(4);
 
   autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal(edgeLength, &functor,
                                                                                                    overlap);
@@ -26,7 +26,8 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength, unsigned long 
   // by previous interactions
   EXPECT_CALL(functor, AoSFunctor(_, _, true))
       .Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1) * 13);
-  slicedTraversal.traverseCellPairs(cells);
+  slicedTraversal.setCellsToTraverse(cells);
+  slicedTraversal.traverseParticlePairs();
 }
 
 /**
@@ -39,7 +40,7 @@ TEST_F(SlicedTraversalTest, testTraversalCubeShrink) {
 }
 
 TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
-  NumThreadGuard(4);
+  NumThreadGuard numThreadGuard(4);
 
   autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({1, 1, 1}, nullptr);
 
@@ -47,7 +48,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
 }
 
 TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
-  NumThreadGuard(4);
+  NumThreadGuard numThreadGuard(4);
 
   autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({5, 5, 5}, nullptr);
 
@@ -55,7 +56,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
 }
 
 TEST_F(SlicedTraversalTest, testIsApplicableOk) {
-  NumThreadGuard(4);
+  NumThreadGuard numThreadGuard(4);
 
   autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({11, 11, 11},
                                                                                                    nullptr);
@@ -64,7 +65,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableOk) {
 }
 
 TEST_F(SlicedTraversalTest, testIsApplicableOkOnlyOneDim) {
-  NumThreadGuard(4);
+  NumThreadGuard numThreadGuard(4);
 
   autopas::SlicedTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal({1, 1, 11}, nullptr);
 

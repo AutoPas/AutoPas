@@ -26,8 +26,9 @@ enum TraversalOption {
   verletTraversal = 9,
   c01CombinedSoA = 10,
   verletClusters = 11,
-  verletClustersColoring = 12,
-  dummyTraversal = 666,
+  c04 = 12,
+  varVerletTraversalAsBuild = 13,
+  verletClustersColoring = 14,
 };
 
 /**
@@ -46,6 +47,8 @@ static const std::set<TraversalOption> allTraversalOptions = {
     TraversalOption::verletTraversal,
     TraversalOption::c01CombinedSoA,
     TraversalOption::verletClusters,
+    TraversalOption::c04,
+    TraversalOption::varVerletTraversalAsBuild,
     TraversalOption::verletClustersColoring,
 };
 

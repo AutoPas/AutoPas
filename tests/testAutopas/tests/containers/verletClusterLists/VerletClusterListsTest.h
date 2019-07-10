@@ -27,8 +27,11 @@ class CollectParticlesPerThreadFunctor
   static int _currentColor;
 #pragma omp threadprivate(_currentColor)
 
- public:
   std::array<std::vector<std::set<Particle *>>, 8> _particlesPerThreadPerColor;
+
+ public:
+  CollectParticlesPerThreadFunctor() : Functor(0) {}
+
   void initTraversal() override {
     for (int i = 0; i < 8; i++) {
       _particlesPerThreadPerColor[i].resize(autopas::autopas_get_max_threads());
@@ -42,6 +45,9 @@ class CollectParticlesPerThreadFunctor
   }
 
   bool isRelevantForTuning() override { return false; }
+
+  bool allowsNewton3() override { return true; }
+  bool allowsNonNewton3() override { return true; }
 
   static void nextColor(int newColor) { _currentColor = newColor; }
 };

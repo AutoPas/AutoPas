@@ -19,12 +19,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/NumberSet.h"
 
-namespace autopas {
-namespace utils {
-/**
- * Some functions to parse enums from (input-) strings.
- */
-namespace StringUtils {
+namespace autopas::utils::StringUtils {
 
 /**
  * Converts a Newton3Option to its respective string representation.
@@ -108,6 +103,9 @@ inline std::string to_string(const ContainerOption &option) {
     case autopas::ContainerOption::verletClusterLists: {
       return "VerletClusterLists";
     }
+    case autopas::ContainerOption::varVerletListsAsBuild: {
+      return "VarVerletListsAsBuild";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown ContainerOption (" + std::to_string(option) + ")";
@@ -120,11 +118,11 @@ inline std::string to_string(const ContainerOption &option) {
  */
 inline std::string to_string(const TraversalOption &option) {
   switch (option) {
-    case autopas::TraversalOption::dummyTraversal: {
-      return "dummyTraversal";
-    }
     case autopas::TraversalOption::c01: {
       return "c01";
+    }
+    case autopas::TraversalOption::c04: {
+      return "c04";
     }
     case autopas::TraversalOption::c08: {
       return "c08";
@@ -159,6 +157,9 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::verletClusters: {
       return "verlet-clusters";
     }
+    case autopas::TraversalOption::varVerletTraversalAsBuild: {
+      return "var-verlet-lists-as-build";
+    }
     case autopas::TraversalOption::verletClustersColoring: {
       return "verlet-clusters-coloring";
     }
@@ -176,6 +177,9 @@ inline std::string to_string(const TuningStrategyOption &option) {
   switch (option) {
     case autopas::TuningStrategyOption::fullSearch: {
       return "full-Search";
+    }
+    case autopas::TuningStrategyOption::bayesianSearch: {
+      return "bayesian-Search";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -271,7 +275,9 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
   auto words = tokenize(traversalOptionsString, delimiters);
 
   for (auto &word : words) {
-    if (word.find("verlet-clusters") != std::string::npos) {
+    if (word.find("var") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::varVerletTraversalAsBuild);
+    } else if (word.find("verlet-clusters") != std::string::npos) {
       if (word.find("coloring") != std::string::npos) {
         traversalOptions.insert(autopas::TraversalOption::verletClustersColoring);
       } else {
@@ -289,6 +295,8 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
       } else {
         traversalOptions.insert(autopas::TraversalOption::c01);
       }
+    } else if (word.find("c04") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::c04);
     } else if (word.find("c08") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::c08);
     } else if (word.find("18") != std::string::npos) {
@@ -338,6 +346,8 @@ inline std::set<autopas::ContainerOption> parseContainerOptions(const std::strin
         containerOptions.insert(autopas::ContainerOption::verletClusterLists);
       } else if (word.find("cel") != std::string::npos) {
         containerOptions.insert(autopas::ContainerOption::verletListsCells);
+      } else if (word.find("uild") != std::string::npos) {
+        containerOptions.insert(autopas::ContainerOption::varVerletListsAsBuild);
       } else {
         containerOptions.insert(autopas::ContainerOption::verletLists);
       }
@@ -418,6 +428,8 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
   auto tuningStrategy(autopas::TuningStrategyOption(-1));
   if (tuningStrategyString.find("full") != std::string::npos or tuningStrategyString.find("ex") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
+  } else if (tuningStrategyString.find("bayes") != std::string::npos) {
+    tuningStrategy = autopas::TuningStrategyOption::bayesianSearch;
   }
   return tuningStrategy;
 }
@@ -480,6 +492,4 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::str
   std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString, ignoreUnknownOptions);
   return std::make_unique<autopas::NumberSetFinite<double>>(values);
 }
-}  // namespace StringUtils
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils::StringUtils

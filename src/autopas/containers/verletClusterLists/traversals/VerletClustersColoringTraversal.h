@@ -29,7 +29,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout
 class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                                         public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
-  using index_t = typename VerletClusterMaths::index_t;
+  typedef typename VerletClusterMaths::index_t index_t;
   /**
    * This stride is determined by the way the neighbor list with newton 3 of the VerletClusterLists container is build.
    * @see VerletClusterLists::updateVerletLists(bool)
@@ -70,16 +70,10 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
   bool getUseNewton3() const override { return useNewton3; }
   bool isApplicable() const override { return (dataLayout == DataLayoutOption::aos); }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {}
-  void endTraversal(std::vector<ParticleCell> &cells) override {}
+  void initTraversal() override {}
 
-  void initClusterTraversal() override {}
+  void endTraversal() override {}
 
-  void endClusterTraversal() override {}
-
-  /**
-   * @copydoc VerletClustersTraversalInterface::traverseParticlePairs
-   */
   void traverseParticlePairs() override {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 

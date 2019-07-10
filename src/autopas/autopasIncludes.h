@@ -13,9 +13,9 @@
 
 // utils
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/Logger.h"
 #include "autopas/utils/SoA.h"
-#include "autopas/utils/StaticSelectors.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 

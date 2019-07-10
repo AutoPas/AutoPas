@@ -103,6 +103,21 @@ do
 
                     filename="${filename}.csv"
 
+<<<<<<< HEAD
+=======
+                    # workaround because there is no traversal for Verlet clusters with newton 3 yet.
+                    if [[ ${container} =~ 'VerletCluster' && ${newton3Opt} =~ 'on' ]];
+                    then
+                        continue
+                    fi
+
+                    # workaround because there is no traversal for Verlet cells with soa yet.
+                    if [[ ${container} =~ 'VerletCells' && ${dataLayout} =~ 'SoA' ]];
+                    then
+                        continue
+                    fi
+
+>>>>>>> master
                     # iterate over molecules with the correct repetition
                     for i in `seq 0 $(( ${#Mols[@]} - 1 ))` ;
                     do

@@ -8,13 +8,10 @@
 #pragma once
 
 #include <array>
+#include <cmath>
+#include <numeric>
 
-namespace autopas {
-
-/**
- * Namespace to handle mathematical operations of floating point std::array's.
- */
-namespace ArrayMath {
+namespace autopas::ArrayMath {
 
 /**
  * Adds two arrays, returns the result.
@@ -153,6 +150,17 @@ constexpr std::array<output_t, SIZE> static_cast_array(const std::array<input_t,
   return result;
 }
 
-}  // namespace ArrayMath
+/**
+ * Generates a normalized array (|a| = 1).
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return normalized array of a
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
+  const T length = std::sqrt(dot(a, a));
+  return mulScalar(a, static_cast<T>(1) / length);
+}
 
-}  // namespace autopas
+}  // namespace autopas::ArrayMath

@@ -8,14 +8,12 @@
 #include <autopas/selectors/TraversalSelector.h>
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 
-LinkedCellsVersusVerletClusterListsTest::LinkedCellsVersusVerletClusterListsTest() {}
-
 template <autopas::DataLayoutOption dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance,
                                                    autopas::TraversalOption traversalOption,
                                                    std::array<double, 3> boxMax) {
   Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 2};
-  Linked _linkedCells{getBoxMin(), boxMax, getCutoff()};
+  Linked _linkedCells{getBoxMin(), boxMax, getCutoff(), 1. /*cell size factor*/};
 
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
   // now fill second container with the molecules from the first one, because
@@ -37,9 +35,9 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-
-  _verletLists.iteratePairwise(&func, &*verletTraversal);
-  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
+  _verletLists.rebuildNeighborLists(&*verletTraversal);
+  _verletLists.iteratePairwise(&*verletTraversal);
+  _linkedCells.iteratePairwise(&traversalLinkedLJ);
 
   std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, skip id=0 to avoid dummy particles
@@ -72,8 +70,8 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
       traversalOption, flopsVerlet, _verletLists.getTraversalSelectorInfo(), dataLayout,
       useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
 
-  _verletLists.iteratePairwise(&flopsVerlet, &*traversalFLOPSVerlet);
-  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS);
+  _verletLists.iteratePairwise(&*traversalFLOPSVerlet);
+  _linkedCells.iteratePairwise(&traversalFLOPS);
 
   // LinkedCells always uses newton 3 for particles inside the same cell when using soa, so the kernel calls cannot be
   // the same.

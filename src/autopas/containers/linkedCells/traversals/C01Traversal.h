@@ -40,14 +40,15 @@ class C01Traversal
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction (incl. halo).
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff cutoff radius
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length in CellBlock3D
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
       : C01BasedTraversal < ParticleCell,
-      PairwiseFunctor, DataLayout, useNewton3, (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, cutoff, cellLength),
-      _cellFunctor(pairwiseFunctor), _pairwiseFunctor(pairwiseFunctor),
+      PairwiseFunctor, DataLayout, useNewton3,
+      (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, interactionLength, cellLength),
+      _cellFunctor(pairwiseFunctor, interactionLength), _pairwiseFunctor(pairwiseFunctor),
       _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
     computeOffsets();
   }
@@ -57,10 +58,11 @@ class C01Traversal
    */
   void computeOffsets();
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
+
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C01 traversals are only usable if useNewton3 is disabled and combined SoA buffers are only applicable if SoA is set
@@ -99,9 +101,28 @@ class C01Traversal
   inline void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
   /**
-   * Pairs for processBaseCell().
+   * Appends all needed Attributes to the SoA buffer in cell.
+   * @tparam I
+   * @param cell
+   * @param appendCell
    */
-  std::vector<std::vector<long>> _cellOffsets;
+  template <std::size_t... I>
+  inline constexpr void appendNeeded(ParticleCell &cell, ParticleCell &appendCell, std::index_sequence<I...>) {
+    cell._particleSoABuffer.template append<std::get<I>(PairwiseFunctor::getNeededAttr(std::false_type()))...>(
+        appendCell._particleSoABuffer);
+  }
+
+  /**
+   * Resizes all buffers needed for combined SoA buffers (_combinationSlices, _currentSlices) to fit the current number
+   * of threads and cell offsets (= _cellOffsets.size()).
+   */
+  void resizeBuffers();
+
+  /**
+   * Pairs for processBaseCell().
+   * @note std::map not applicable since ordering arising from insertion is important for later processing!
+   */
+  std::vector<std::vector<std::pair<long, std::array<double, 3>>>> _cellOffsets;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -131,7 +152,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout
 inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
 
-  const auto cutoffSquare(this->_cutoff * this->_cutoff);
+  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
 
   for (long x = -this->_overlap[0]; x <= 0l; ++x) {
     for (long y = -this->_overlap[1]; y <= static_cast<long>(this->_overlap[1]); ++y) {
@@ -141,19 +162,25 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
         pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
         pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
         const double distSquare = ArrayMath::dot(pos, pos);
-        if (distSquare <= cutoffSquare) {
-          const long currentOffset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
-          const auto searchResult = std::find(_cellOffsets[x + this->_overlap[0]].begin(),
-                                              _cellOffsets[x + this->_overlap[0]].end(), currentOffset);
-          if (searchResult == _cellOffsets[x + this->_overlap[0]].end()) {
-            for (long ix = x; ix <= std::abs(x); ++ix) {
-              const long offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + ix;
-              if (y == 0l and z == 0l) {
-                // make sure center of slice is always at the beginning
-                _cellOffsets[ix + this->_overlap[0]].insert(_cellOffsets[ix + this->_overlap[0]].begin(), offset);
-              } else {
-                _cellOffsets[ix + this->_overlap[0]].push_back(offset);
-              }
+        if (distSquare <= interactionLengthSquare) {
+          const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
+              x, y, z, ArrayMath::static_cast_array<long>(this->_cellsPerDimension));
+          const bool containCurrentOffset =
+              std::any_of(_cellOffsets[x + this->_overlap[0]].cbegin(), _cellOffsets[x + this->_overlap[0]].cend(),
+                          [currentOffset](const auto &e) { return e.first == currentOffset; });
+          if (containCurrentOffset) {
+            continue;
+          }
+          for (long ix = x; ix <= std::abs(x); ++ix) {
+            const long offset = utils::ThreeDimensionalMapping::threeToOneD(
+                ix, y, z, ArrayMath::static_cast_array<long>(this->_cellsPerDimension));
+            const size_t index = ix + this->_overlap[0];
+            if (y == 0l and z == 0l) {
+              // make sure center of slice is always at the beginning
+              _cellOffsets[index].insert(_cellOffsets[index].cbegin(),
+                                         std::make_pair(offset, ArrayMath::normalize(pos)));
+            } else {
+              _cellOffsets[index].push_back(std::make_pair(offset, ArrayMath::normalize(pos)));
             }
           }
         }
@@ -169,10 +196,10 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
   ParticleCell &baseCell = cells[baseIndex];
   const size_t cOffSize = _cellOffsets.size();
 
-  if (combineSoA) {
+  if constexpr (combineSoA) {
     // Iteration along x
 
-    const auto threadID = static_cast<unsigned int>(autopas_get_thread_num());
+    const auto threadID = static_cast<size_t>(autopas_get_thread_num());
     auto &currentSlice = _currentSlices[threadID * _cacheOffset];
     auto &combinationSlice = _combinationSlices[threadID];
 
@@ -181,42 +208,44 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
       currentSlice = 0;
       for (unsigned int offsetSlice = 0; offsetSlice < cOffSize; offsetSlice++) {
         combinationSlice[offsetSlice]._particleSoABuffer.clear();
-        for (const auto offset : _cellOffsets[offsetSlice]) {
-          const unsigned long otherIndex = baseIndex + offset;
+        for (const auto &offset : _cellOffsets[offsetSlice]) {
+          const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
-          combinationSlice[offsetSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+          appendNeeded(combinationSlice[offsetSlice], otherCell,
+                       std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
         }
       }
     } else {
       // reduce size
       size_t i = 0;
-      for (size_t slice = (currentSlice + 1) % cOffSize; slice != (currentSlice + this->_overlap[0] + 1) % cOffSize;
-           ++slice %= cOffSize, ++i) {
+      const size_t midSlice = (currentSlice + this->_overlap[0] + 1) % cOffSize;
+      for (size_t slice = (currentSlice + 1) % cOffSize; slice != midSlice; ++slice %= cOffSize, ++i) {
         size_t newSize = 0;
-        for (const auto offset : _cellOffsets[i]) {
-          const unsigned long otherIndex = baseIndex + offset;
+        for (const auto &offset : _cellOffsets[i]) {
+          const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
           newSize += otherCell.numParticles();
         }
         combinationSlice[slice]._particleSoABuffer.resizeArrays(newSize);
       }
       // append buffers
-      for (size_t slice = (currentSlice + this->_overlap[0] + 1) % cOffSize; slice != currentSlice;
-           ++slice %= cOffSize, ++i) {
+      for (size_t slice = midSlice; slice != currentSlice; ++slice %= cOffSize, ++i) {
         for (auto offsetIndex = _cellOffsets[(i + 1) % cOffSize].size(); offsetIndex < _cellOffsets[i].size();
              ++offsetIndex) {
-          const unsigned long otherIndex = baseIndex + _cellOffsets[i][offsetIndex];
+          const unsigned long otherIndex = baseIndex + _cellOffsets[i][offsetIndex].first;
           ParticleCell &otherCell = cells[otherIndex];
-          combinationSlice[slice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+          appendNeeded(combinationSlice[slice], otherCell,
+                       std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
         }
       }
 
       combinationSlice[currentSlice]._particleSoABuffer.clear();
 
-      for (const auto offset : _cellOffsets.back()) {
-        const unsigned long otherIndex = baseIndex + offset;
+      for (const auto &offset : _cellOffsets.back()) {
+        const unsigned long otherIndex = baseIndex + offset.first;
         ParticleCell &otherCell = cells[otherIndex];
-        combinationSlice[currentSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
+        appendNeeded(combinationSlice[currentSlice], otherCell,
+                     std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
       }
 
       ++currentSlice %= cOffSize;
@@ -237,14 +266,14 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
     }
   } else {
     for (const auto &slice : _cellOffsets) {
-      for (const auto offset : slice) {
+      for (auto const &[offset, r] : slice) {
         const unsigned long otherIndex = baseIndex + offset;
         ParticleCell &otherCell = cells[otherIndex];
 
         if (baseIndex == otherIndex) {
           this->_cellFunctor.processCell(baseCell);
         } else {
-          this->_cellFunctor.processCellPair(baseCell, otherCell);
+          this->_cellFunctor.processCellPair(baseCell, otherCell, r);
         }
       }
     }
@@ -252,28 +281,32 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
-inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::resizeBuffers() {
+  const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
+  if (_combinationSlices.size() != numThreads) {
+    _combinationSlices.resize(numThreads);
+    const auto cellOffsetsSize = _cellOffsets.size();
+    std::for_each(_combinationSlices.begin(), _combinationSlices.end(),
+                  [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
+    _currentSlices.resize(numThreads * _cacheOffset);
+  }
+}
+
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool combineSoA>
+inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, combineSoA>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
   if (not this->isApplicable()) {
-    if (combineSoA) {
+    if constexpr (combineSoA) {
       utils::ExceptionHandler::exception(
-          "The C01 traversal with combined SoA buffers cannot work with enabled newton3 (unless only one thread is "
-          "used) and data layout AoS!");
+          "The C01 traversal with combined SoA buffers cannot work with data layout AoS and enabled newton3 (unless "
+          "only one thread is used)!");
     } else {
       utils::ExceptionHandler::exception(
           "The C01 traversal cannot work with enabled newton3 (unless only one thread is used)!");
     }
   }
-  // resize buffers
-  if (DataLayout == DataLayoutOption::soa) {
-    const auto numThreads = static_cast<unsigned int>(autopas_get_max_threads());
-    if (_combinationSlices.size() != numThreads) {
-      _combinationSlices.resize(numThreads);
-      const auto cellOffsetsSize = _cellOffsets.size();
-      std::for_each(_combinationSlices.begin(), _combinationSlices.end(),
-                    [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
-      _currentSlices.resize(numThreads * _cacheOffset);
-    }
+  if constexpr (combineSoA) {
+    resizeBuffers();
   }
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }
