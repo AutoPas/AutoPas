@@ -195,36 +195,39 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
   // compute interactions
   for (unsigned long slice = 0; slice < numSlices; slice++) {
     for (auto const &[offset1, interval] : _offsets[(slice + currentSlice) % numSlices]) {
-      ParticleCell *cell1;
+      ParticleCell *cell1 = nullptr;
 
       // special cases (cell1 one is also stored in a combination slice)
       // base cell
       if (offset1 == 0ul) {
+        const auto numParticlesBaseCell = cells[baseIndex].numParticles();
+        if (numParticlesBaseCell == 0) {
+          continue;
+        }
         // two cases intervall in current  stripe
         cell1 = &combinationSlice[currentSlice];
         cell1->_particleSoABuffer.setViewStart(0);
         if (slice == currentSlice) {
           // process stripe with itself
-          const auto numParticlesBaseCell = cells[baseIndex].numParticles();
-
           cell1->_particleSoABuffer.setViewLength(numParticlesBaseCell);
 
           this->_cellFunctor.processCell(*cell1);
-          /// @todo fix interactions of base cell slices
-          cell1->_particleSoABuffer.setViewStart(numParticlesBaseCell);
 
-          cells[baseIndex]._particleSoABuffer.clear();
-          cells[baseIndex]._particleSoABuffer.append(cell1->_particleSoABuffer);
+          cell1->_particleSoABuffer.setViewStart(numParticlesBaseCell);
+          cell1->_particleSoABuffer.setViewLength(-1);
+
+          ParticleCell temp;
+          temp._particleSoABuffer.append(cell1->_particleSoABuffer);
 
           cell1->_particleSoABuffer.setViewStart(0);
           cell1->_particleSoABuffer.resizeArrays(numParticlesBaseCell);
-          this->_cellFunctor.processCellPair(*cell1, cells[baseIndex]);
+          this->_cellFunctor.processCellPair(*cell1, temp);
 
-          cell1->_particleSoABuffer.append(cells[baseIndex]._particleSoABuffer);
+          cell1->_particleSoABuffer.append(temp._particleSoABuffer);
           continue;
         } else {
           // interval in other stripe
-          cell1->_particleSoABuffer.setViewLength(cells[baseIndex].numParticles());
+          cell1->_particleSoABuffer.setViewLength(numParticlesBaseCell);
         }
       } else if (offset1 == _baseOffsets.front().back()) {
         cell1 = &combinationSlice[currentSlice];
