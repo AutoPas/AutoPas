@@ -10,6 +10,7 @@
 #include <array>
 #include <cmath>
 #include <numeric>
+#include <sstream>
 
 namespace autopas::ArrayMath {
 
@@ -161,6 +162,29 @@ template <class T, std::size_t SIZE>
 constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
   const T length = std::sqrt(dot(a, a));
   return mulScalar(a, static_cast<T>(1) / length);
+}
+
+/**
+ * Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend).
+ * @tparam T Type of Container.
+ * @param a Container.
+ * @param delimiter String delimiter.
+ * @return String representation of a.
+ */
+template <class T>
+std::string to_string(const T &a, const std::string &delimiter = ", ") {
+  auto it = std::cbegin(a);
+  const auto end = std::cend(a);
+  if (it == end) {
+    return "";
+  }
+  std::ostringstream strStream;
+  strStream << *it;
+  for (++it; it != end; ++it) {
+    strStream << delimiter << *it;
+  }
+
+  return strStream.str();
 }
 
 }  // namespace autopas::ArrayMath

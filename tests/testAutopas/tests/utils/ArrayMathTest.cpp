@@ -104,3 +104,20 @@ TEST(ArrayMathTest, teststatic_cast_array) {
     static_assert(std::is_same<decltype(out), std::array<double, 3>>::value, "Type mismatch");
   }
 }
+
+TEST(ArrayMathTest, testto_string) {
+  std::array<size_t, 0> emptyContainer;
+  EXPECT_EQ("", ArrayMath::to_string(emptyContainer));
+
+  std::array<size_t, 3> arrayContainer{1, 2, 3};
+  EXPECT_EQ("1, 2, 3", ArrayMath::to_string(arrayContainer));
+  EXPECT_EQ("1x2x3", ArrayMath::to_string(arrayContainer, "x"));
+
+  std::vector<size_t> vectorContainer{1, 2, 3};
+  EXPECT_EQ("1, 2, 3", ArrayMath::to_string(vectorContainer));
+  EXPECT_EQ("1x2x3", ArrayMath::to_string(vectorContainer, "x"));
+
+  std::basic_string bStringContainer("123");
+  EXPECT_EQ("1, 2, 3", ArrayMath::to_string(bStringContainer));
+  EXPECT_EQ("1x2x3", ArrayMath::to_string(bStringContainer, "x"));
+}
