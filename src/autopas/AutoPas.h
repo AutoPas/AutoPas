@@ -16,6 +16,7 @@
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/BayesianSearch.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/selectors/tuningStrategy/RandomSearch.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas {
@@ -444,6 +445,11 @@ class AutoPas {
    */
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
+      case TuningStrategyOption::randomSearch: {
+        return std::make_unique<RandomSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+                                              _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
+      }
+
       case TuningStrategyOption::fullSearch: {
         if (not _allowedCellSizeFactors->isFinite()) {
           autopas::utils::ExceptionHandler::exception(

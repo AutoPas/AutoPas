@@ -46,8 +46,6 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param predAcqFunction acquisition function used for prediction while tuning.
    * @param predNumSamples number of samples used for prediction while tuning.
    * @param maxEvidence stop tuning after given number of evidence provided.
-   * @param lastAcqFunction acquisition function used for prediction of last tuning step.
-   * @param lastNumSamples number of samples used for prediction of last tuning step.
    * @param seed seed of random number generator (should only be used for tests)
    */
   BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = allContainerOptions,
@@ -70,8 +68,6 @@ class BayesianSearch : public TuningStrategyInterface {
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples) {
-    /// @todo setting hyperparameters
-
     if (predNumSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
@@ -159,7 +155,7 @@ bool BayesianSearch::tune(bool currentInvalid) {
   }
 
   if (_gp.numEvidence() >= _maxEvidence) {
-    // select predicted best config
+    // select best config
     _currentConfig = _gp.getEvidenceMin();
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;

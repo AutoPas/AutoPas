@@ -169,6 +169,9 @@ inline std::string to_string(const TraversalOption &option) {
  */
 inline std::string to_string(const TuningStrategyOption &option) {
   switch (option) {
+    case autopas::TuningStrategyOption::randomSearch: {
+      return "random-Search";
+    }
     case autopas::TuningStrategyOption::fullSearch: {
       return "full-Search";
     }
@@ -412,7 +415,10 @@ inline std::set<autopas::DataLayoutOption> parseDataLayout(const std::string &da
 inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string &tuningStrategyString) {
   // hack to initialize the enum out of range as an error value.
   auto tuningStrategy(autopas::TuningStrategyOption(-1));
-  if (tuningStrategyString.find("full") != std::string::npos or tuningStrategyString.find("ex") != std::string::npos) {
+  if (tuningStrategyString.find("rand") != std::string::npos) {
+    tuningStrategy = autopas::TuningStrategyOption::randomSearch;
+  } else if (tuningStrategyString.find("full") != std::string::npos or
+             tuningStrategyString.find("ex") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
   } else if (tuningStrategyString.find("bayes") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::bayesianSearch;

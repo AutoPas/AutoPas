@@ -20,14 +20,9 @@ class Random : public std::mt19937 {
  public:
   /**
    * Constructor
-   */
-  Random() : std::mt19937(std::random_device()()) {}
-
-  /**
-   * Construct with seed.
    * @param seed
    */
-  explicit Random(unsigned long seed) : std::mt19937(seed) {}
+  explicit Random(unsigned long seed = std::random_device()()) : std::mt19937(seed) {}
 
   /**
    * Class should not be copied constructed
@@ -74,6 +69,21 @@ class Random : public std::mt19937 {
     std::shuffle(std::begin(result), std::end(result), *this);
 
     return result;
+  }
+
+  /**
+   * Get a random object from given set
+   * @param pool set
+   */
+  template <class T>
+  T pickRandom(std::set<T> pool) {
+    std::uniform_int_distribution<size_t> distr(0ul, pool.size() - 1ul);
+    size_t pos = distr(*this);
+
+    auto it = pool.begin();
+    for (size_t i = 0; i < pos; ++i) ++it;
+
+    return *it;
   }
 };
 

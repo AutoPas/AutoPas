@@ -72,6 +72,12 @@ class NumberSet {
   virtual std::set<Number> getAll() const = 0;
 
   /**
+   * Get a random number in the set
+   * @param rng random number generator
+   * @return
+   */
+  virtual Number getRandom(Random &rng) const = 0;
+  /**
    * Sample n points from the set. These points are
    * spaced evenly across the space.
    * @param n max samples
@@ -128,6 +134,7 @@ class NumberSetFinite : public NumberSet<Number> {
 
   inline std::set<Number> getAll() const override { return _set; }
 
+  inline Number getRandom(Random &rng) const override { return rng.pickRandom(_set); }
   std::vector<Number> uniformSample(size_t n, Random &rng) const override { return rng.uniformSample(_set, n); }
 };
 
@@ -188,6 +195,10 @@ class NumberInterval : public NumberSet<Number> {
     return {};
   }
 
+  inline Number getRandom(Random &rng) const override {
+    std::uniform_real_distribution<Number> distr(_min, _max);
+    return distr(rng);
+  }
   std::vector<Number> uniformSample(size_t n, Random &rng) const override {
     std::vector<Number> result;
     if (n == 0) {
