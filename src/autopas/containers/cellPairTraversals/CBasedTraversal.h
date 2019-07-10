@@ -99,6 +99,13 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
                          const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
 
   /**
+   * This method is called when the color during the traversal has changed.
+   *
+   * @param newColor The new current color.
+   */
+  virtual void notifyColorChange(unsigned long newColor){};
+
+  /**
    * Interaction length (cutoff + skin).
    */
   const double _interactionLength;
@@ -131,6 +138,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
   {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
+      notifyColorChange(col);
       std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
       std::array<unsigned long, 3> start(ArrayMath::add(startWithoutOffset, offset));
 
