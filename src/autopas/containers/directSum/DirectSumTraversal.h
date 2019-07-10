@@ -8,6 +8,7 @@
 
 #include <vector>
 #include "DirectSumTraversalInterface.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
