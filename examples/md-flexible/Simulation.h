@@ -132,6 +132,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   // std::array<double, 3> lowCorner = {0., 0., 0.};
   // std::array<double, 3> highCorner = {5., 5., 5.};
   // double epsilon,sigma  = 1.0;
+  //@todo schöner machen:
   _parser = parser;
   auto logFileName(parser->getLogFileName());
   auto particlesTotal(parser->getParticlesTotal());
@@ -183,6 +184,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   _autopas->setAllowedNewton3Options(newton3Options);
   // so that a test in jenkins passes:
   _autopas->setBoxMax({5., 5., 5.});
+
   //@todo übernommen vom merge: -> prüfen
   _autopas->setTuningStrategyOption(tuningStrategy);
   _autopas->setAllowedCellSizeFactors(cellSizeFactors);
@@ -212,7 +214,7 @@ void Simulation<Particle, ParticleCell>::initContainerGrid(autopas::AutoPas<Part
                                                            size_t particlesPerDim, double particelSpacing) {
   double ppDxpS = (particlesPerDim)*particelSpacing;
   std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({ppDxpS, ppDxpS, ppDxpS});
+  std::array<double, 3> boxMax{ppDxpS, ppDxpS, ppDxpS};
 
   autopas.setBoxMin(boxMin);
   autopas.setBoxMax(boxMax);
