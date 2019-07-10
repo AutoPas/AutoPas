@@ -84,7 +84,7 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
-    void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+    void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict__ idptr = reinterpret_cast<Particle **const>(soa.begin<AttributeNames::id>());
@@ -124,7 +124,7 @@ class VerletListHelpers {
      * @param soa2 soa of second cell
      * @note: newton3 is ignored here, as for newton3=false SoAFunctor(soa2, soa1) will also be called.
      */
-    void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
+    void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict__ id1ptr = reinterpret_cast<Particle **const>(soa1.begin<AttributeNames::id>());

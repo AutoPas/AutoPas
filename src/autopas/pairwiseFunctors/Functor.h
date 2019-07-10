@@ -10,7 +10,7 @@
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SoA.h"
+#include "autopas/utils/SoAView.h"
 #if defined(AUTOPAS_CUDA)
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 #endif
@@ -80,7 +80,7 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) {
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(one soa): not yet implemented");
   }
 
@@ -103,7 +103,7 @@ class Functor {
    * least iFrom and less than soa.size())
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa,
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa,
                           const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                           size_t iFrom, size_t iTo, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
@@ -120,7 +120,7 @@ class Functor {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) {
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 
