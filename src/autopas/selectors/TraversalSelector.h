@@ -12,7 +12,6 @@
 #include <vector>
 #include "TraversalSelectorInfo.h"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
@@ -137,9 +136,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     case TraversalOption::verletClusters: {
       return std::make_unique<VerletClustersTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor);
-    }
-    case TraversalOption::dummyTraversal: {
-      return std::make_unique<DummyTraversal<ParticleCell, dataLayout, useNewton3>>(info.dims);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
