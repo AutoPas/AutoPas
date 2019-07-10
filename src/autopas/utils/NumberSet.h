@@ -9,6 +9,7 @@
 #include <set>
 #include <sstream>
 #include <vector>
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Random.h"
 
@@ -107,17 +108,7 @@ class NumberSetFinite : public NumberSet<Number> {
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberSetFinite>(*this); }
 
-  operator std::string() const override {
-    auto it = _set.begin();
-    std::stringstream ss;
-    ss << "{" << *it;
-    for (++it; it != _set.end(); ++it) {
-      ss << ", " << *it;
-    }
-    ss << "}";
-
-    return ss.str();
-  }
+  operator std::string() const override { return "{" + ArrayMath::to_string(_set) + "}"; }
 
   inline bool isEmpty() const override { return _set.empty(); }
   inline bool isFinite() const override { return true; }
@@ -164,7 +155,7 @@ class NumberInterval : public NumberSet<Number> {
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberInterval>(*this); }
 
   operator std::string() const override {
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "[" << _min << ", " << _max << "]";
     return ss.str();
   }
