@@ -28,7 +28,6 @@ enum TraversalOption {
   verletClusters = 11,
   c04 = 12,
   varVerletTraversalAsBuild = 13,
-  dummyTraversal = 666,
 };
 
 /**

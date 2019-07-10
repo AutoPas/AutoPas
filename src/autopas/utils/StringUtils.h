@@ -118,9 +118,6 @@ inline std::string to_string(const ContainerOption &option) {
  */
 inline std::string to_string(const TraversalOption &option) {
   switch (option) {
-    case autopas::TraversalOption::dummyTraversal: {
-      return "dummyTraversal";
-    }
     case autopas::TraversalOption::c01: {
       return "c01";
     }
