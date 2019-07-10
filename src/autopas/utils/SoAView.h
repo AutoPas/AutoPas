@@ -43,7 +43,13 @@ class SoAView {
    * Constructs a SoAView on the whole content of \p soa.
    * @param soa The SoA to view.
    */
-  explicit SoAView(SoA<SoAArraysType> *soa) : _soa(&soa), _startIndex(0), _endIndex(soa->getNumParticles()) {}
+  explicit SoAView(SoA<SoAArraysType> *soa) : _soa(soa), _startIndex(0), _endIndex(soa->getNumParticles()) {}
+
+  /**
+   * Implicit constructor that converts a SoA to SoAView.
+   * @param soa The SoA to view.
+   */
+  SoAView(SoA<SoAArraysType> &soa) : _soa(&soa), _startIndex(0), _endIndex(soa.getNumParticles()) {}
 
   /**
    * Returns a pointer to the given attribute vector.
@@ -54,7 +60,7 @@ class SoAView {
   [[nodiscard]] auto begin() {
     assert(_soa->getNumParticles() >= _startIndex);
     assert(_soa->getNumParticles() >= _endIndex);
-    _soa->begin() + _startIndex;
+    return _soa->template begin<attribute>() + _startIndex;
   }
 
   /**
