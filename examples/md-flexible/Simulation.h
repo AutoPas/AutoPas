@@ -216,8 +216,8 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   PrintableMolecule::setEpsilon(parser->getEpsilon());
   PrintableMolecule::setSigma(parser->getSigma());
   PrintableMolecule::setMass(parser->getMass());
-
-  _autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+    //outputStream wird eig als parameter übergeben aber verursacht SEGFAULT
+  _autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>();
   _autopas->setCutoff(cutoff);
   _autopas->setVerletSkin(verletSkinRadius);
   _autopas->setVerletRebuildFrequency(verletRebuildFrequency);
