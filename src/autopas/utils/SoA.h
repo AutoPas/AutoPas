@@ -72,9 +72,19 @@ class SoA {
    * Appends the other SoA buffer to this.
    * @param other Other buffer.
    */
-  void append(SoA<SoAArraysType> &other) {
+  void append(const SoA<SoAArraysType> &other) {
     if (other.getNumParticles() > 0) {
       append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+    }
+  }
+
+  /**
+   * Appends the other SoA buffer to this.
+   * @param other Other buffer.
+   */
+  void append(const SoAView<SoAArraysType> &other) {
+    if (other.getNumParticles() > 0) {
+      append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
   }
 
@@ -84,7 +94,7 @@ class SoA {
    * @param other Other buffer.
    */
   template <int... attributes>
-  void append(SoA<SoAArraysType> &other) {
+  void append(const SoA<SoAArraysType> &other) {
     if (other.getNumParticles() > 0) {
       const auto newSize = getNumParticles() + other.getNumParticles();
       append_impl(other.soaStorage, std::index_sequence<attributes...>{});
@@ -234,15 +244,30 @@ class SoA {
 
   // helper function to append a single array
   template <std::size_t attribute>
-  void appendSingleArray(utils::SoAStorage<SoAArraysType> &valArrays) {
+  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     auto &otherVector = valArrays.template get<attribute>();
     currentVector.insert(currentVector.end(), otherVector.begin(), otherVector.end());
   }
 
+  // helper function to append a single array
+  template <std::size_t attribute>
+  void appendSingleArray(const SoAView<SoAArraysType> &valArrays) {
+    auto &currentVector = soaStorage.template get<attribute>();
+    auto otherVectorIterator = valArrays.template begin<attribute>();
+    currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + valArrays.getNumParticles());
+  }
+
   // actual implementation of append
   template <std::size_t... Is>
-  void append_impl(utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+  void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+    // fold expression
+    (appendSingleArray<Is>(valArrays), ...);
+  }
+
+  // actual implementation of append
+  template <std::size_t... Is>
+  void append_impl(const SoAView<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
     // fold expression
     (appendSingleArray<Is>(valArrays), ...);
   }

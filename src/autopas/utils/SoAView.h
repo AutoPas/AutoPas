@@ -64,6 +64,18 @@ class SoAView {
   }
 
   /**
+   * Returns a pointer to the given attribute vector const.
+   * @tparam attribute ID of the desired attribute.
+   * @return Pointer to the beginning of the attribute vector const
+   */
+  template <size_t attribute>
+  [[nodiscard]] auto begin() const {
+    assert(_soa->getNumParticles() >= _startIndex);
+    assert(_soa->getNumParticles() >= _endIndex);
+    return _soa->template begin<attribute>() + _startIndex;
+  }
+
+  /**
    * Returns the number of particles in the view.
    *
    * @return Number of particles.

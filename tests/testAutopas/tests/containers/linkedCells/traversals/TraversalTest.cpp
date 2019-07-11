@@ -151,6 +151,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
                                    auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
                                    allTraversals.erase(autopas::TraversalOption::c01Cuda);
                                    allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
+                                   allTraversals.erase(autopas::TraversalOption::c04SoA);
                                    return allTraversals;
                                  }()),
                                  Bool()),

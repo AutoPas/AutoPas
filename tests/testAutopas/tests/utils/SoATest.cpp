@@ -143,22 +143,6 @@ TEST_F(SoATest, SoATestAppend) {
   EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
 }
 
-TEST_F(SoATest, SoATestClear) {
-  // default soa using autopas::Particle
-  using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
-
-  EXPECT_EQ(soa.getNumParticles(), 0);
-
-  soa.resizeArrays(2);
-
-  EXPECT_EQ(soa.getNumParticles(), 2);
-
-  soa.clear();
-
-  EXPECT_EQ(soa.getNumParticles(), 0);
-}
-
 TEST_F(SoATest, SoATestSwap) {
   // default soa using autopas::Particle
   using autopas::Particle;

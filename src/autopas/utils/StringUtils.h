@@ -121,6 +121,9 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::c01: {
       return "c01";
     }
+    case autopas::TraversalOption::c04SoA: {
+      return "c04SoA";
+    }
     case autopas::TraversalOption::c04: {
       return "c04";
     }
@@ -288,10 +291,12 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
       } else {
         traversalOptions.insert(autopas::TraversalOption::c01);
       }
-    } else if (word.find("c04") != std::string::npos) {
-      traversalOptions.insert(autopas::TraversalOption::c04);
     } else if (word.find("c08") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::c08);
+    } else if (word.find("c04s") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::c04SoA);
+    } else if (word.find("c04") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::c04);
     } else if (word.find("18") != std::string::npos) {
       if (word.find('v') != std::string::npos)
         traversalOptions.insert(autopas::TraversalOption::c18Verlet);
