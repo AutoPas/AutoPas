@@ -23,7 +23,7 @@ namespace autopas::ArrayMath {
  * @return a + b
  */
 template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]] constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] + b[d];
@@ -40,7 +40,7 @@ constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array
  * @return a - b
  */
 template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]] constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] - b[d];
@@ -57,7 +57,7 @@ constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a, const std::array
  * @return element-wise multiplication of a and b
  */
 template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> mul(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]] constexpr std::array<T, SIZE> mul(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] * b[d];
@@ -74,7 +74,7 @@ constexpr std::array<T, SIZE> mul(const std::array<T, SIZE> &a, const std::array
  * @return array who's elements are a[i]+s
  */
 template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> addScalar(const std::array<T, SIZE> &a, T s) {
+[[nodiscard]] constexpr std::array<T, SIZE> addScalar(const std::array<T, SIZE> &a, T s) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] + s;
@@ -91,7 +91,7 @@ constexpr std::array<T, SIZE> addScalar(const std::array<T, SIZE> &a, T s) {
  * @return array who's elements are a[i]-s
  */
 template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> subScalar(const std::array<T, SIZE> &a, T s) {
+[[nodiscard]] constexpr std::array<T, SIZE> subScalar(const std::array<T, SIZE> &a, T s) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] - s;
@@ -108,7 +108,7 @@ constexpr std::array<T, SIZE> subScalar(const std::array<T, SIZE> &a, T s) {
  * @return array who's elements are a[i]*s
  */
 template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> mulScalar(const std::array<T, SIZE> &a, T s) {
+[[nodiscard]] constexpr std::array<T, SIZE> mulScalar(const std::array<T, SIZE> &a, T s) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] * s;
@@ -126,7 +126,7 @@ constexpr std::array<T, SIZE> mulScalar(const std::array<T, SIZE> &a, T s) {
  * @return dot product of a and b
  */
 template <class T, std::size_t SIZE>
-constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   auto result = static_cast<T>(0.0);
   for (std::size_t d = 0; d < SIZE; ++d) {
     result += a[d] * b[d];
@@ -142,7 +142,7 @@ constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
  * @return normalized array of a
  */
 template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
+[[nodiscard]] constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
   const T length = std::sqrt(dot(a, a));
   return mulScalar(a, static_cast<T>(1) / length);
 }

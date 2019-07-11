@@ -21,7 +21,7 @@ namespace autopas::ArrayUtils {
  * @return Array of type std::array<output_t, SIZE>.
  */
 template <class output_t, class input_t, std::size_t SIZE>
-constexpr std::array<output_t, SIZE> static_cast_array(const std::array<input_t, SIZE> &a) {
+[[nodiscard]] constexpr std::array<output_t, SIZE> static_cast_array(const std::array<input_t, SIZE> &a) {
   std::array<output_t, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = static_cast<output_t>(a[d]);
@@ -37,7 +37,7 @@ constexpr std::array<output_t, SIZE> static_cast_array(const std::array<input_t,
  * @return String representation of a.
  */
 template <class T>
-std::string to_string(T &&a, const std::string &delimiter = ", ") {
+[[nodiscard]] std::string to_string(T &&a, const std::string &delimiter = ", ") {
   auto it = std::cbegin(a);
   const auto end = std::cend(a);
   if (it == end) {
