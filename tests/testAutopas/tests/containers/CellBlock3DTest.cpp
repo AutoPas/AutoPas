@@ -6,6 +6,7 @@
 
 #include "CellBlock3DTest.h"
 #include "testingHelpers/GridGenerator.h"
+#include "autopas/utils/ArrayUtils.h"
 
 void testIndex(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
                std::array<double, 3> &start, std::array<double, 3> &dr, std::array<int, 3> &numParts) {
@@ -14,7 +15,7 @@ void testIndex(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas:
   unsigned long counter = 0ul;
   for (auto &m : mesh) {
     unsigned long index = cellBlock.get1DIndexOfPosition(m);
-    ASSERT_EQ(index, counter) << "Pos: [" << m[0] << ", " << m[1] << ", " << m[2] << "]";
+    ASSERT_EQ(index, counter) << "Pos: [" << autopas::ArrayUtils::to_string(m) << "]";
     ++counter;
   }
 }

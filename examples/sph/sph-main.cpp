@@ -9,6 +9,7 @@
 #include <iostream>
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
+#include "autopas/utils/ArrayUtils.h"
 
 typedef autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
     AutoPasContainer;
@@ -64,8 +65,8 @@ double getTimeStepGlobal(AutoPasContainer &sphSystem) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->calcDt();
     if (part->getDt() < 0.002) {
-      std::cout << "small time step for particle " << part->getID() << " at [" << part->getR()[0] << ", "
-                << part->getR()[1] << ", " << part->getR()[2] << "]" << std::endl;
+      std::cout << "small time step for particle " << part->getID() << " at ["
+                << autopas::ArrayUtils::to_string(part->getR()) << "]" << std::endl;
     }
     dt = std::min(dt, part->getDt());
   }
@@ -178,7 +179,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
         if (not diff[0] and not diff[1] and not diff[2]) {
           // at least one dimension has to be non-zero
-          std::cout << "skipping diff: " << diff[0] << ", " << diff[1] << ", " << diff[2] << std::endl;
+          std::cout << "skipping diff: " << autopas::ArrayUtils::to_string(diff) << std::endl;
           continue;
         }
         // figure out from where we get our halo particles
