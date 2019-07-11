@@ -90,34 +90,3 @@ TEST(ArrayMathTest, testNormalize) {
     ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
   }
 }
-
-TEST(ArrayMathTest, teststatic_cast_array) {
-  {
-    std::array<long, 3> in({1l, 2l, 3l});
-    auto out = ArrayMath::static_cast_array<unsigned long>(in);
-    static_assert(std::is_same<decltype(out), std::array<unsigned long, 3>>::value, "Type mismatch");
-  }
-
-  {
-    std::array<long, 3> in({1l, 2l, 3l});
-    auto out = ArrayMath::static_cast_array<double>(in);
-    static_assert(std::is_same<decltype(out), std::array<double, 3>>::value, "Type mismatch");
-  }
-}
-
-TEST(ArrayMathTest, testto_string) {
-  std::array<size_t, 0> emptyContainer;
-  EXPECT_EQ("", ArrayMath::to_string(emptyContainer));
-
-  std::array<size_t, 3> arrayContainer{1, 2, 3};
-  EXPECT_EQ("1, 2, 3", ArrayMath::to_string(arrayContainer));
-  EXPECT_EQ("1x2x3", ArrayMath::to_string(arrayContainer, "x"));
-
-  std::vector<size_t> vectorContainer{1, 2, 3};
-  EXPECT_EQ("1, 2, 3", ArrayMath::to_string(vectorContainer));
-  EXPECT_EQ("1x2x3", ArrayMath::to_string(vectorContainer, "x"));
-
-  std::basic_string bStringContainer("123");
-  EXPECT_EQ("1, 2, 3", ArrayMath::to_string(bStringContainer));
-  EXPECT_EQ("1x2x3", ArrayMath::to_string(bStringContainer, "x"));
-}
