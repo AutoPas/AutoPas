@@ -160,6 +160,26 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   // double epsilon,sigma  = 1.0;
   //@todo schöner machen:
   _parser = parser;
+  double numP;
+    if (_parser->getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
+        numP = _parser->getParticlesPerDim() * _parser->getParticlesPerDim() * _parser->getParticlesPerDim();
+    } else {
+        numP = _parser->getParticlesTotal();
+    }
+  map<unsigned long, double> PC_Epsilon;
+  map<unsigned long, double> PC_Sigma;
+  map<unsigned long, double> PC_Mass;
+  // temporäre implemetierung mit nur einer particle Class
+  double epsilon = _parser->getEpsilon();
+  double sigma = _parser->getSigma();
+  double mass = _parser->getMass();
+  for (unsigned long i = 0; i < numP; i++) {
+    PC_Epsilon.emplace(i, epsilon);
+    PC_Sigma.emplace(i, sigma);
+    PC_Mass.emplace(i, mass);
+  }
+  //initialisierung of PCL
+  _PCL= new  ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
   auto logFileName(parser->getLogFileName());
   auto particlesTotal(parser->getParticlesTotal());
   auto particlesPerDim(parser->getParticlesPerDim());
@@ -292,8 +312,7 @@ void Simulation<Particle, ParticleCell>::CalcF() {
 
   // auto* functor = new autopas::LJFunctor<Particle,ParticleCell, autopas::FunctorN3Modes::Both,
   // true>(_autopas->getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true);
-  auto *functor = new LJFunctor<Particle, ParticleCell>(_autopas->getCutoff(), *_PCL, 0.0, _autopas->getBoxMin(),
-                                                        _autopas->getBoxMax());
+  auto *functor = new LJFunctor<Particle, ParticleCell>(_autopas->getCutoff(), *_PCL, 0.0);
   _autopas->iteratePairwise(functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
