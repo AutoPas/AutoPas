@@ -60,7 +60,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _gp(FeatureVector::featureSpaceDims, 0.001, _rng),
+        _gp(FeatureVector::featureSpaceDims, 0.01, _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples) {

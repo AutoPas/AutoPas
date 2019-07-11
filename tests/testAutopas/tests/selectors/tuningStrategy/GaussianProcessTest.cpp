@@ -135,7 +135,7 @@ TEST(GaussianProcessTest, sine) {
 
   // gp should try to approximate the sine as blackbox function
   auto functor = [](double input) { return std::sin(input); };
-  double epsilon = 0.02;           // allowed error
+  double epsilon = 0.1;            // allowed error
   unsigned numEvidence = 9;        // number of evidence to provide
   unsigned numPredictions = 1000;  // number of predictions to make
   double domainStart = 0.;         // start of tested domain
@@ -178,10 +178,9 @@ TEST(GaussianProcessTest, 2dMax) {
   // max of function
   Eigen::VectorXd max(2);
   max << -1, 1;
-  unsigned numEvidence = 40;      // number of samples allowed to make
+  unsigned numEvidence = 20;      // number of samples allowed to make
   unsigned lhsNumSamples = 1000;  // number of sample to find max of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::ucb;      // use upper confidence bound as af
-  AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::lcb;  // use lower confidence bound for final prediction
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::ucb;  // use upper confidence bound as af
 
   GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
@@ -221,10 +220,10 @@ TEST(GaussianProcessTest, 2dMax) {
     lhsSamples.push_back(sample);
   }
 
-  // final sample
-  Eigen::VectorXd am = gp.sampleAquisitionMax(lastAf, lhsSamples);
+  // get max
+  Eigen::VectorXd am = gp.getEvidenceMax();
 
-  // check if predicted max is near real max
+  // check if max is near real max
   double predMax = functor(am[0], am[1]);
   double realMax = functor(max[0], max[1]);
   EXPECT_NEAR(predMax, realMax, epsilon);
@@ -242,10 +241,9 @@ TEST(GaussianProcessTest, 2dMin) {
   // min of function
   Eigen::VectorXd min(2);
   min << 1, 1;
-  unsigned numEvidence = 40;      // number of samples allowed to make
+  unsigned numEvidence = 20;      // number of samples allowed to make
   unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::lcb;      // use lower confidence bound as af
-  AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::ucb;  // use upper confidence bound for final prediction
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::lcb;  // use lower confidence bound as af
 
   GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
@@ -285,10 +283,10 @@ TEST(GaussianProcessTest, 2dMin) {
     lhsSamples.push_back(sample);
   }
 
-  // final sample
-  Eigen::VectorXd am = gp.sampleAquisitionMin(lastAf, lhsSamples);
+  // get min
+  Eigen::VectorXd am = gp.getEvidenceMin();
 
-  // check if predicted min is near real min
+  // check if min is near real min
   double predMin = functor(am[0], am[1]);
   double realMin = functor(min[0], min[1]);
   EXPECT_NEAR(predMin, realMin, epsilon);

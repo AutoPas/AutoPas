@@ -83,7 +83,7 @@ class GaussianProcess {
     }
 
     double min = _outputs[0];
-    Vector minVec = _inputs[1];
+    Vector minVec = _inputs[0];
 
     for (size_t i = 1; i < _inputs.size(); ++i) {
       if (_outputs[i] < min) {
@@ -105,7 +105,7 @@ class GaussianProcess {
     }
 
     double max = _outputs[0];
-    Vector maxVec = _inputs[1];
+    Vector maxVec = _inputs[0];
 
     for (size_t i = 1; i < _inputs.size(); ++i) {
       if (_outputs[i] > max) {
@@ -236,7 +236,7 @@ class GaussianProcess {
    */
   inline void updateHyperparameters() {
     // size of monte carlo simulation
-    const size_t mt_size = 1000;
+    const size_t mt_size = 10000;
 
     // number of evidence
     size_t newSize = _inputs.size();
@@ -263,12 +263,12 @@ class GaussianProcess {
       _dimScale = Eigen::VectorXd::Ones(_dims);
     } else {
       // sample variance
-      double var = outputCentered.squaredNorm() / newSize;
+      double var = outputCentered.squaredNorm() / (newSize - 1);
 
-      // distribution of theta: gamma distribution with expectation equal to sample variance.
-      std::gamma_distribution<double> thetaDistribution(2., var / 2.);
+      // distribution of theta
+      std::uniform_real_distribution<double> thetaDistribution(0., var * 4.);
       // distribution of dimScale
-      std::gamma_distribution<double> dimScaleDistribution(2., 1.);
+      std::uniform_real_distribution<double> dimScaleDistribution(0., 5.);
 
       // initialize sums to 0
       double scoreSum = 0;
@@ -295,9 +295,13 @@ class GaussianProcess {
           }
         }
 
+        // cholesky decomposition
+        Eigen::LLT<Eigen::MatrixXd> llt = _covMat.llt();
+        Eigen::MatrixXd l = llt.matrixL();
+
         // weight tested hyperparameter by probability to fit evidence
-        double score = std::exp(
-            -0.5 * (outputCentered.dot(_covMat.llt().solve(outputCentered)) + std::log(_covMat.determinant())));
+        double score = std::exp(-0.5 * (outputCentered.dot(llt.solve(outputCentered)))) / l.diagonal().norm();
+
         thetaSum += theta * score;
         dimScaleSum += dimScale * score;
         scoreSum += score;
