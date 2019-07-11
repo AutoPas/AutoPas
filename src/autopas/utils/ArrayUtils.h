@@ -1,7 +1,7 @@
 /**
  * @file ArrayUtils.h
  *
- . @date 11.07.2019.
+ * @date 11.07.2019.
  * @author C.Menges
  */
 
