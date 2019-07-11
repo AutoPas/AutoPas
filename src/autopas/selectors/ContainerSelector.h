@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h>
+#include <autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h>
 #include <array>
 #include <vector>
 #include "autopas/containers/ParticleContainer.h"
@@ -102,8 +104,13 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
+    case varVerletListsAsBuild: {
+      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      break;
+    }
     default: {
-      utils::ExceptionHandler::exception("Container type {} is not a known type!",
+      utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
                                          utils::StringUtils::to_string(containerChoice));
     }
   }

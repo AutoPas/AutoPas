@@ -35,7 +35,8 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   /// @todo: test all containers similar to Newton3OnOffTest
   for (auto &container : {autopas::ContainerOption::linkedCells}) {
     for (auto &traversal : autopas::compatibleTraversals::allCompatibleTraversals(container)) {
-      if (traversal == autopas::TraversalOption::c01 || traversal == autopas::TraversalOption::c01CombinedSoA) {
+      if (traversal == autopas::TraversalOption::c01 or traversal == autopas::TraversalOption::c01CombinedSoA or
+          traversal == autopas::TraversalOption::c04SoA) {
         // c01 traversal does not work with newton3.
         // Here only one traversal is tested.
         continue;

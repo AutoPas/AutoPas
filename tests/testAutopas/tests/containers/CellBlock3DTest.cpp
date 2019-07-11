@@ -142,7 +142,8 @@ size_t getNumberOfParticlesInBox(
     autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
     std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>> &vec) {
   const autopas::MoleculeLJ defaultParticle;
-  GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
+  GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(),
+                                   cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
   cellBlock.clearHaloCells();
   return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.numParticles(); });
 }
