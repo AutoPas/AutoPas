@@ -29,6 +29,7 @@ enum TraversalOption {
   c04 = 12,
   varVerletTraversalAsBuild = 13,
   verletClustersColoring = 14,
+  c04SoA = 15,
 };
 
 /**
@@ -50,6 +51,7 @@ static const std::set<TraversalOption> allTraversalOptions = {
     TraversalOption::c04,
     TraversalOption::varVerletTraversalAsBuild,
     TraversalOption::verletClustersColoring,
+    TraversalOption::c04SoA,
 };
 
 }  // namespace autopas
