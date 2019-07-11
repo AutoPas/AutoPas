@@ -18,16 +18,6 @@ class ParticleClassLibrary {
   ParticleClassLibrary(const ParticleClassLibrary &pcl);
 
   ~ParticleClassLibrary() {}
-  /**Getter for Particle Epsilon
-   * @param Particle
-   * @return Epsilon
-   */
-  double getEpsilon(Particle i);
-  /**Getter for Particle Sigma
-   * @param Particle
-   * @return Sigma
-   */
-  double getSigma(Particle i);
   /**Getter for Particle Epsilon*24
    * @param Particle
    * @return Epsilon*24
@@ -44,16 +34,6 @@ class ParticleClassLibrary {
    * @return Sigma
    */
   double getMass(Particle i);
-  /**Returns the Epsilon of the MixingRule of 2 Particles
-   * @param Particles; i and j
-   * @return Epsilon of both
-   * */
-  double mixingE(unsigned long i, unsigned long j);
-  /**Returns the Sigma of the MixingRule of 2 Particles
-   * @param Particles; i and j
-   * @return Sigma of both
-   * */
-  double mixingS(Particle i, Particle j);
 
   /**Returns (Epsilon*24) of the MixingRule of 2 Particles
    * @param Particles; i and j
