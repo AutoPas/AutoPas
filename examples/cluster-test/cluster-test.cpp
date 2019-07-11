@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
   int numParticles = 16;
   double skin = 0.;
-  int rebuildFrequency = 1;
+  /*int rebuildFrequency = 1;*/
   if (argc == 4) {
     numParticles = atoi(argv[1]);
     boxMax[0] = boxMax[1] = boxMax[2] = atof(argv[2]);
@@ -90,21 +90,22 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  autopas::VerletClusterLists<autopas::MoleculeLJ> cont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency,
-                                                        CLUSTER_SIZE);
+  autopas::VerletClusterLists<autopas::MoleculeLJ> cont(boxMin, boxMax, cutoff, skin * cutoff, CLUSTER_SIZE);
 
   autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func(
       cutoff, autopas::MoleculeLJ::getEpsilon(), autopas::MoleculeLJ::getSigma(), 0.0);
 
   addParticles(cont, numParticles);
 
-  autopas::C01Traversal<autopas::FullParticleCell<autopas::MoleculeLJ>,
-                        autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
-                        autopas::DataLayoutOption::aos, false>
-      dummyTraversal({0, 0, 0}, &func);
+  autopas::VerletClustersTraversal<
+      autopas::FullParticleCell<autopas::MoleculeLJ>,
+      autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>,
+      autopas::DataLayoutOption::aos, false>
+      verletTraversal(&func);
 
   // iterate to rebuild
-  cont.iteratePairwise(&func, &dummyTraversal);
+  cont.rebuildNeighborLists(&verletTraversal);
+  cont.iteratePairwise(&func, &verletTraversal);
 
   int newNumParticles = 0;
   for (auto iter = cont.begin(); iter.isValid(); ++iter) {

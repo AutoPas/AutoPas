@@ -195,15 +195,9 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
   bool duplicatedCalculation = true;
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
-  {
-    // throw if lowcorner == highcorner, but calculateglobals and duplicatedCalculation are true
-    typedef autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functortype;
-    EXPECT_THROW(functortype functor(cutoff, PCL, shift, lowCorner, {0., 0., 0.}, duplicatedCalculation),
-                 exception_type);
-  }
 
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift, lowCorner,
-                                                                                    highCorner, duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
+                                                                                    duplicatedCalculation);
 
   // getupot without postprocessing is not allowed
   EXPECT_THROW(functor.getUpot(), exception_type);
@@ -227,16 +221,18 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
     universalMap.emplace(i, 1.0);
   }
   ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift, lowCorner,
-                                                                                    highCorner, duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
+                                                                                    duplicatedCalculation);
   double xOffset;
   double whereFactor;
   std::string where_str;
+  bool owned1, owned2;
   switch (where) {
     case inside:
       xOffset = 0.;
       whereFactor = 1.;
       where_str = "inside";
+      owned1 = owned2 = true;
       break;
     case boundary:
       xOffset = 4.9;
@@ -245,6 +241,8 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
       // if one particle is inside and one outside
       whereFactor = duplicatedCalculation ? 0.5 : 1;
       where_str = "boundary";
+      owned1 = true;
+      owned2 = false;
       break;
     case outside:
       xOffset = 5.0;
@@ -253,13 +251,15 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
       // outside
       whereFactor = duplicatedCalculation ? 0. : 1;
       where_str = "outside";
+      owned1 = owned2 = false;
       break;
     default:
-      throw "not in enum where_type";
+      FAIL() << "not in enum where_type";
   }
   Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
+  p1.setOwned(owned1);
   Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
-
+  p2.setOwned(owned2);
   functor.initTraversal();
 
   functor.AoSFunctor(p1, p2, newton3);
@@ -295,16 +295,18 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
     universalMap.emplace(i, 1.0);
   }
   ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift, lowCorner,
-                                                                                    highCorner, duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
+                                                                                    duplicatedCalculation);
   double xOffset;
   double whereFactor;
   std::string where_str;
+  bool owned1, owned2;
   switch (where) {
     case inside:
       xOffset = 0.;
       whereFactor = 1.;
       where_str = "inside";
+      owned1 = owned2 = true;
       break;
     case boundary:
       xOffset = 4.9;
@@ -313,6 +315,8 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
       // if one particle is inside and one outside
       whereFactor = duplicatedCalculation ? 0.5 : 1;
       where_str = "boundary";
+      owned1 = true;
+      owned2 = false;
       break;
     case outside:
       xOffset = 5.0;
@@ -321,22 +325,25 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
       // outside
       whereFactor = duplicatedCalculation ? 0. : 1;
       where_str = "outside";
+      owned1 = owned2 = false;
       break;
     default:
-      throw "not in enum where_type";
+      FAIL() << "not in enum where_type";
   }
   FMCell cell1, cell2;
   {
     Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
+    p1.setOwned(owned1);
     cell1.addParticle(p1);
     Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
-
+    p2.setOwned(owned2);
     Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, 2);
+    pAdditional.setOwned(owned2);
     switch (interactionType) {
       case InteractionType::verlet:
         cell1.addParticle(p2);
         // add dummy particles outside of the cutoff. this will only change the number of particles in the verlet lists,
-        // but will leave the desired result unchanged. the higher number of particles is usefull to test the soa
+        // but will leave the desired result unchanged. the higher number of particles is useful to test the soa
         // functor version of verlet lists.
         for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
           cell1.addParticle(pAdditional);
@@ -458,8 +465,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
     universalMap.emplace(i, 1.0);
   }
   ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift, lowCorner,
-                                                                                    highCorner, duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
+                                                                                    duplicatedCalculation);
 
   functor.initTraversal();
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in

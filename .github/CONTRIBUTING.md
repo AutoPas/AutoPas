@@ -6,7 +6,7 @@ Please keep in mind the following notes while working.
 
 ## C++
 ### General Notes
-* Cpp standard: C++14. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++17` including the alternative version of the code. For now, we are stuck with C++14 due to the CUDA dependency.
+* Cpp standard: C++17. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++20` including the alternative version of the code.
 * Pointers: Always use smart pointers when you are managing memory. Don't use `new` or `delete`.
 * OpenMP: Use AutoPas wrapper functions for OpenMP (`src/autopas/utils/WrapOpenMP.h`) instead of OpenMP functions to allow building without enabled OpenMP.
 * `#pragma once` instead of header guards.
@@ -50,6 +50,20 @@ Please keep in mind the following notes while working.
 * Use meaningful commit messages.
 * Please avoid using commits to save your unfinished work before switching branches, this pollutes the commit history. Please use `git stash` instead.
 
+## Docker
+You want to compile AutoPas with CUDA or any sanitizers but do not have the appropriate compiler? Don't fret! There are docker containers for that. The containers are built from the [AutoPas-Dockerfiles repository](https://github.com/AutoPas/AutoPas-Dockerfiles) and prebuilds are hosted at [dockerhub](https://hub.docker.com/search?q=autopas%2F&type=image). To use a compiler from a container either mount your AutoPas folder and start bash in the container:
+```bash
+docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda bash
+```
+or directly start the compilation process:
+```bash
+docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda \
+  bash -c "cd /autopas/build \
+  && cmake -G Ninja .. \
+  && ninja"
+```
+You will not be able to completely compile the unit tests with CUDA without a GPU in your system since CMake will try to run tests during the build process.
+
 ## AutoPas
 ### Namespaces
 * Code in folder `src` should belong to namespace `autopas`.
@@ -75,7 +89,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new traversal in `src/autopas/selectors/TraversalSelector.h::generateTraversal()`.
 * Check that the new option is added to the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseTraversalOptionsTest`).
 * Add new unit tests for your traversal.
 
 ### Adding a new Container
@@ -87,7 +101,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new container in `src/autopas/selectors/ContainerSelector.h::generateContainer()`.
 * Check that the new option is added to the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseContainerOptionsTest`).
 * Add new unit tests for your container.
 
 ### Adding a new Tuning Strategy

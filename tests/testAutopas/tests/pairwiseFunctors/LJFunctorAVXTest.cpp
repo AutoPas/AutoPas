@@ -98,10 +98,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
     universalMap.emplace(i, 1.0);
   }
   ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0,
-                                                                                           _lowCorner, _highCorner);
-  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(
-      _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL,
+                                                                                           0.0);
+  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
+                                                                                            0.0);
 
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
@@ -158,10 +158,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
     universalMap.emplace(i, 1.0);
   }
   ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0,
-                                                                                           _lowCorner, _highCorner);
-  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(
-      _cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL,
+                                                                                           0.0);
+  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
+                                                                                            0.0);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
 

@@ -27,7 +27,7 @@ class MoleculeLJ : public Particle {
    */
   explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
 
-  virtual ~MoleculeLJ() = default;
+  ~MoleculeLJ() override = default;
 
   /**
    * get epsilon (characteristic energy of the lj potential)
@@ -66,7 +66,7 @@ class MoleculeLJ : public Particle {
   /**
    * the type for the soa storage
    */
-  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
+  //  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
   /**get OldForce
    * @return OldForce

@@ -8,7 +8,7 @@
 
 LinkedCellsVersusVerletListsCellsTest::LinkedCellsVersusVerletListsCellsTest()
     : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(), 2),
-      _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
+      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*factor*/) {}
 
 void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   RandomGenerator::fillWithParticles(_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
@@ -35,6 +35,7 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
       traversalVerletLJ(_verletListsCells.getCellsPerDimension(), &func);
   autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
       traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  _verletListsCells.rebuildNeighborLists(&traversalVerletLJ);
   _verletListsCells.iteratePairwise(&func, &traversalVerletLJ);
   _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
 
