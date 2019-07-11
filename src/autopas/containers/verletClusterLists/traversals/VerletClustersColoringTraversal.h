@@ -97,7 +97,9 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
 
     const auto end = ArrayMath::sub(coloringCellsPerDim, {0ul, 0ul, 0ul});
     // We are only doing a 2D coloring.
-    assert(end[2] == 1);
+    if (end[2] != 1) {
+      autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");
+    }
 
     // localStride is necessary because stride is constexpr and cTraversal() wants a const &
     auto localStride = stride;
@@ -112,7 +114,9 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processColorCell(
     unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell, int gridsPerColoringCell) {
   // We are only doing a 2D coloring.
-  assert(zColorCell == 0);
+  if (zColorCell != 0) {
+    autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");
+  }
 
   auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
   const auto cellsPerDim = clusterList.getCellsPerDimension();
