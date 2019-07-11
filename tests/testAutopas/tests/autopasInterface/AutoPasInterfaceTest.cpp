@@ -284,9 +284,13 @@ void testSimulationLoop(testingTuple options) {
     autoPas.addParticle(particle1);
     autoPas.addParticle(particle2);
   }
-
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(cutoff, eps,
-                                                                                                          sigma, shift);
+  unsigned long numMolecules= autoPas.getNumberOfParticles();
+    map<unsigned long, double> universalMap;
+    for (unsigned long i = 0; i < numMolecules; i++) {
+        universalMap.emplace(i, 1.0);
+    }
+    ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(cutoff,PCL,shift);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
@@ -508,11 +512,15 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
       }
     }
   }
-
+    map<unsigned long, double> universalMap;
+    for (unsigned long i = 0; i < 2; i++) {
+        universalMap.emplace(i, 1.0);
+    }
+    ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor1(
-      cutoff, eps, sigma, shift);
+      cutoff,PCL, shift);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor2(
-      cutoff, eps, sigma, shift);
+      cutoff,PCL, shift);
 
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);

@@ -173,7 +173,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
     auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
     // the local redeclaration of the following values helps the auto-generation of various compilers.
-    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
+    const floatPrecision cutoffsquare = _cutoffsquare,
                          shift6 = _shift6;
 
     if (calculateGlobals) {
@@ -305,8 +305,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     floatPrecision virialSumY = 0.;
     floatPrecision virialSumZ = 0.;
 
-    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
-                         shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare,shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       floatPrecision fxacc = 0;
       floatPrecision fyacc = 0;

@@ -128,7 +128,7 @@ TEST_F(TimeDiscretizationTest, CalcX) {
   while (iterations < 10) {
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+    for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
       auto v = iter->getV();
       auto m = iter->getMass();
       auto f = iter->getF();
@@ -168,7 +168,7 @@ TEST_F(TimeDiscretizationTest, CalcV) {
   autoPas->addParticle(p1);
   PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
   autoPas->addParticle(p2);
-  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     cout << iter->toString() << endl;
     cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
   }
@@ -183,7 +183,7 @@ TEST_F(TimeDiscretizationTest, CalcV) {
     cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
     cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
 
-    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+    for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
       auto force = iter->getF();
       auto old_force = iter->getOldf();
       cout << "Particle ID: " << iter->getID() << endl;

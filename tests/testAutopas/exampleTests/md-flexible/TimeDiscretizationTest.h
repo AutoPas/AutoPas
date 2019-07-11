@@ -25,7 +25,7 @@ class TimeDiscretizationTest : public AutoPasTestBase {
     }
     PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
     functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
-                                     autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0, boxmin, boxmax, true);
+                                     autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0);
   }
   ~TimeDiscretizationTest() { delete functor; }
 

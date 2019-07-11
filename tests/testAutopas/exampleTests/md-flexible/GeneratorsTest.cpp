@@ -165,7 +165,7 @@ TEST_F(GeneratorsTest, MolSimTask) {
   PrintableMolecule::setMass(1.0);
   MolSimTaskGeneration(*autoPas);
   cout << "Number of particles generated " << autoPas->getNumberOfParticles() << endl;
-  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // cout << iter->toString() << endl;
   }
   double particleD = 0.01;
