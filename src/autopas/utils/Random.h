@@ -84,7 +84,7 @@ class Random {
    */
   template <class RandomIt>
   inline void shuffle(RandomIt first, RandomIt last) {
-    return std::shuffle(first, last, _rng);
+    std::shuffle(first, last, _rng);
   }
 
  private:
