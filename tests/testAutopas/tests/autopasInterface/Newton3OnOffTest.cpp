@@ -187,11 +187,12 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
     case autopas::DataLayoutOption::cuda: {
       // supresses Warning
       // TODO implement suitable test
-      iterate(container,
-              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                             autopas::DataLayoutOption::aos, true>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
-              dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
+      iterate(
+          container,
+          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                         autopas::DataLayoutOption::cuda, useNewton3>(
+              traversalOption, mockFunctor, traversalSelectorInfo),
+          dataLayout, n3option, &mockFunctor);
       break;
     }
     default:
