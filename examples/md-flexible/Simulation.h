@@ -32,7 +32,7 @@ class Simulation {
   } _timers;
 
  public:
-  explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now();};
+  explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now(); };
 
   ~Simulation() {
     if (not _parser->getLogFileName().empty()) {
@@ -161,11 +161,11 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   //@todo schöner machen:
   _parser = parser;
   double numP;
-    if (_parser->getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
-        numP = _parser->getParticlesPerDim() * _parser->getParticlesPerDim() * _parser->getParticlesPerDim();
-    } else {
-        numP = _parser->getParticlesTotal();
-    }
+  if (_parser->getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
+    numP = _parser->getParticlesPerDim() * _parser->getParticlesPerDim() * _parser->getParticlesPerDim();
+  } else {
+    numP = _parser->getParticlesTotal();
+  }
   map<unsigned long, double> PC_Epsilon;
   map<unsigned long, double> PC_Sigma;
   map<unsigned long, double> PC_Mass;
@@ -178,8 +178,8 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
     PC_Sigma.emplace(i, sigma);
     PC_Mass.emplace(i, mass);
   }
-  //initialisierung of PCL
-  _PCL= new  ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
+  // initialisierung of PCL
+  _PCL = new ParticleClassLibrary(PC_Epsilon, PC_Sigma, PC_Mass);
   auto logFileName(parser->getLogFileName());
   auto particlesTotal(parser->getParticlesTotal());
   auto particlesPerDim(parser->getParticlesPerDim());

@@ -61,9 +61,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(floatPrecision cutoff, ParticleClassLibrary &PCLibrary,floatPrecision shift,
+  explicit LJFunctor(floatPrecision cutoff, ParticleClassLibrary &PCLibrary, floatPrecision shift,
                      bool duplicatedCalculation = true)
-      : Functor<Particle,ParticleCell>(cutoff),
+      : Functor<Particle, ParticleCell>(cutoff),
         _cutoffsquare{cutoff * cutoff},
         _PCLibrary(&PCLibrary),
         _shift6{shift * (floatPrecision)6.0},
@@ -173,8 +173,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
     auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
     // the local redeclaration of the following values helps the auto-generation of various compilers.
-    const floatPrecision cutoffsquare = _cutoffsquare,
-                         shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
 
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
@@ -281,9 +280,9 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
     auto epsilon24 = (floatPrecision)_PCLibrary->mixing24E(*soa1.template begin<Particle::AttributeNames::id>(),
-                                             *soa2.template begin<Particle::AttributeNames::id>());
+                                                           *soa2.template begin<Particle::AttributeNames::id>());
     auto sigmasquare = (floatPrecision)_PCLibrary->mixingSS(*soa1.template begin<Particle::AttributeNames::id>(),
-                                              *soa2.template begin<Particle::AttributeNames::id>());
+                                                            *soa2.template begin<Particle::AttributeNames::id>());
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -305,7 +304,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     floatPrecision virialSumY = 0.;
     floatPrecision virialSumZ = 0.;
 
-    const floatPrecision cutoffsquare = _cutoffsquare,shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       floatPrecision fxacc = 0;
       floatPrecision fyacc = 0;
