@@ -171,7 +171,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   PrintableMolecule::setSigma(parser->getSigma());
   PrintableMolecule::setMass(parser->getMass());
 
-  _autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(outputStream);
+  _autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>();
   _autopas->setCutoff(cutoff);
   _autopas->setVerletSkin(verletSkinRadius);
   _autopas->setVerletRebuildFrequency(verletRebuildFrequency);
