@@ -137,7 +137,7 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
 
       auto &currentGrid = grids[gridIndex1D];
       auto numClusters = currentGrid.numParticles() / clusterSize;
-      for (unsigned int currentCluster = 0; currentCluster < numClusters; currentCluster++) {
+      for (unsigned long currentCluster = 0; currentCluster < numClusters; currentCluster++) {
         const auto &clusterNeighborList = neighborLists.at(gridIndex1D).at(currentCluster);
         Particle *clusterStart = &currentGrid[currentCluster * clusterSize];
         for (auto neighborClusterStart : clusterNeighborList) {

@@ -675,7 +675,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         int rest = currentGrid.numParticles() % _clusterSize;
         if (rest > 0) numClusters++;
 
-        for (unsigned int currentCluster = 0; currentCluster < numClusters; currentCluster++) {
+        for (unsigned long currentCluster = 0; currentCluster < numClusters; currentCluster++) {
           Particle *clusterStart = &currentGrid[currentCluster * _clusterSize];
           _clusterIndexMap[clusterStart] = currentMapIndex++;
         }
