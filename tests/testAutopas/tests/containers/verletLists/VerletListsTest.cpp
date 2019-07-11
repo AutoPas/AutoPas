@@ -495,6 +495,9 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
   verletLists.iteratePairwise(&verletTraversal);
 }
 
+/**
+ * This test is only here to assure stuff compiles with the actual functor and does not crash during execution.
+ */
 TEST_P(VerletListsTest, LoadExtractSoALJ) {
   const double cutoff = 2.;
   const double cellSizeFactor = GetParam();
