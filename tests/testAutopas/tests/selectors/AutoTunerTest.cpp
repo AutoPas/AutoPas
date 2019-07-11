@@ -57,7 +57,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const size_t expectedNumberOfIterations = 53 * maxSamples + 1;
 #endif
 
-      int collectedSamples = 0;
+  int collectedSamples = 0;
   int iterations = 0;
   bool doRebuild = true;  // defines whether the verlet lists should be rebuild.
   while (stillTuning) {
