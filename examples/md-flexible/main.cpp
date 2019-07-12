@@ -33,7 +33,7 @@ void printMolecules(AutoPasTemplate &autopas) {
   }
 }
 
- * Writes a VTK file for the current state of the AutoPas object
+/** Writes a VTK file for the current state of the AutoPas object
  * @tparam AutoPasTemplate Template for the templetized autopas type.
  * @param filename
  * @param numParticles
@@ -41,48 +41,48 @@ void printMolecules(AutoPasTemplate &autopas) {
  */
 template <class AutoPasTemplate>
 void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
-   std::ofstream vtkFile;
-   vtkFile.open(filename);
+  std::ofstream vtkFile;
+  vtkFile.open(filename);
 
-   vtkFile << "# vtk DataFile Version 2.0" << endl;
-   vtkFile << "Timestep" << endl;
-   vtkFile << "ASCII" << endl;
-   vtkFile << "DATASET STRUCTURED_GRID" << endl;
-   vtkFile << "DIMENSIONS 1 1 1" << endl;
-   vtkFile << "POINTS " << autopas.getNumberOfParticles() << " double" << endl;
+  vtkFile << "# vtk DataFile Version 2.0" << endl;
+  vtkFile << "Timestep" << endl;
+  vtkFile << "ASCII" << endl;
+  vtkFile << "DATASET STRUCTURED_GRID" << endl;
+  vtkFile << "DIMENSIONS 1 1 1" << endl;
+  vtkFile << "POINTS " << autopas.getNumberOfParticles() << " double" << endl;
 
-   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-     auto pos = iter->getR();
-     vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
-   }
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    auto pos = iter->getR();
+    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+  }
 
-   vtkFile.close();
- }
+  vtkFile.close();
+}
 
- int main(int argc, char **argv) {
-   // starts
-   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
+int main(int argc, char **argv) {
+  // starts
+  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
 
-   // Parsing
-   MDFlexParser parser;
-   if (not parser.parseInput(argc, argv)) {
-     exit(-1);
-   }
-   auto vtkFilename(parser.getWriteVTK());
-   parser.printConfig();
+  // Parsing
+  MDFlexParser parser;
+  if (not parser.parseInput(argc, argv)) {
+    exit(-1);
+  }
+  auto vtkFilename(parser.getWriteVTK());
+  parser.printConfig();
 
-   cout << endl;
+  cout << endl;
 
-   // Initialization
-   simulation.initialize(&parser);
-   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
+  // Initialization
+  simulation.initialize(&parser);
+  cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
-   // Simulation
-   cout << "Starting simulation... " << endl;
-   simulation.simulate();
-   cout << "Simulation done!" << endl;
+  // Simulation
+  cout << "Starting simulation... " << endl;
+  simulation.simulate();
+  cout << "Simulation done!" << endl;
 
-   simulation.printStatistics();
+  simulation.printStatistics();
 
-   return EXIT_SUCCESS;
- }
+  return EXIT_SUCCESS;
+}
