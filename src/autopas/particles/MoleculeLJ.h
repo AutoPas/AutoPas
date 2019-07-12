@@ -54,12 +54,12 @@ class MoleculeLJ : public Particle {
   static void setSigma(double sigma) { SIGMA = sigma; }
 
   /**get mass
-   * @return Mass
+   * @return MASS
    */
   static double getMass() { return MASS; }
 
   /**set mass
-   * @param Mass
+   * @param mass
    */
   static void setMass(double mass) { MASS = mass; }
 
@@ -69,12 +69,12 @@ class MoleculeLJ : public Particle {
   //  typedef autopas::utils::SoAType<size_t, double, double, double, double, double, double>::Type SoAArraysType;
 
   /**get OldForce
-   * @return OldForce
+   * @return OLDF
    */
   std::array<double, 3> getOldf() const { return OLDF; }
 
   /**set OldForce
-   * @param OldForce
+   * @param oldf
    */
   void setOldf(const std::array<double, 3> &oldf) { OLDF = oldf; }
 

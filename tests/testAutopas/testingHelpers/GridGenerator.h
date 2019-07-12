@@ -48,8 +48,8 @@ class GridGenerator {
                                 const Particle &defaultParticle = autopas::Particle(),
                                 const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
                                 const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
-  /**Fills Autopas Object with a Grid of Particles starting at @param startingPositions
-   * @pararm Autopas Object
+  /**Fills Autopas Object with a Grid of Particles starting at
+   * @param autopas
    * @param startingPositions
    * @param particlesPerDim
    * @param defaultParticle
@@ -63,9 +63,8 @@ class GridGenerator {
                                    const Particle &defaultParticle, std::array<double, 3> spacing,
                                    std::array<double, 3> offset);
 
-  /**Fills Autopas Object with a Grid of Particles starting at @param startingPositions with initial Velocity @param
-   * initialvelocity
-   * @pararm Autopas Object
+  /**Fills Autopas Object with a Grid of Particles
+   * @param autopas
    * @param startingPositions
    * @param initialVelocity
    * @param particlesPerDim
