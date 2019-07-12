@@ -381,7 +381,9 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
         // we found a valid config!
         break;
       } else {
-        stillTuning = _tuningStrategy->tune();
+        AutoPasLog(debug, "Skip not applicable configuration {}",
+                   _tuningStrategy->getCurrentConfiguration().toString());
+        stillTuning = _tuningStrategy->tune(true);
       }
     }
   }
@@ -393,6 +395,12 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
+  auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
+  if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
+    // container and traversal mismatch
+    return false;
+  }
+
   _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
