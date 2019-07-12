@@ -1,6 +1,6 @@
 # check whether gtest is installed
 
-message(STATUS "Using bundled gtest")
+message(STATUS "gtest - using bundled version")
 find_package(Threads REQUIRED)
 
 # Enable ExternalProject CMake module
@@ -64,5 +64,7 @@ set_target_properties(
         "${CMAKE_THREAD_LIBS_INIT}"
 )
 
-# I couldn't make it work with INTERFACE_INCLUDE_DIRECTORIES
-include_directories(SYSTEM "${source_dir}/googletest/include" "${source_dir}/googlemock/include")
+target_include_directories(
+    autopas SYSTEM
+    INTERFACE "${source_dir}/googletest/include" "${source_dir}/googlemock/include"
+)

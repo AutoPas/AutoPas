@@ -12,7 +12,7 @@
 namespace autopas::VerletClusterMaths {
 
 /**
- * the index type to access the particle cells
+ * The index type to access the particle cells.
  */
 using index_t = std::size_t;
 

@@ -33,7 +33,6 @@ void printMolecules(AutoPasTemplate &autopas) {
   }
 }
 
-/**
  * Writes a VTK file for the current state of the AutoPas object
  * @tparam AutoPasTemplate Template for the templetized autopas type.
  * @param filename
@@ -71,6 +70,7 @@ int main(int argc, char **argv) {
   }
   auto vtkFilename(parser.getWriteVTK());
   parser.printConfig();
+
   cout << endl;
 
   // Initialization

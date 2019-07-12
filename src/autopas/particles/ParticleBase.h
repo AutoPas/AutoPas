@@ -183,6 +183,73 @@ class ParticleBase {
   typedef typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType, floatType,
                                            floatType>::Type SoAArraysType;
 
+  /**
+   * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
+   * @tparam attribute Attribute name.
+   * @return Value of the requested attribute.
+   * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
+   */
+  template <AttributeNames attribute>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    switch (attribute) {
+      case AttributeNames::id:
+        return getID();
+      case AttributeNames::posX:
+        return getR()[0];
+      case AttributeNames::posY:
+        return getR()[1];
+      case AttributeNames::posZ:
+        return getR()[2];
+      case AttributeNames::forceX:
+        return getF()[0];
+      case AttributeNames::forceY:
+        return getF()[1];
+      case AttributeNames::forceZ:
+        return getF()[2];
+      case AttributeNames::owned:
+        return isOwned() ? 1. : 0.;
+      default:
+        utils::ExceptionHandler::exception("ParticleBase::get: unknown attribute");
+        return 0;
+    }
+  }
+
+  /**
+   * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
+   * @tparam attribute Attribute name.
+   * @param value New value of the requested attribute.
+   * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
+   */
+  template <AttributeNames attribute>
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+    switch (attribute) {
+      case AttributeNames::id:
+        setID(value);
+        break;
+      case AttributeNames::posX:
+        _r[0] = value;
+        break;
+      case AttributeNames::posY:
+        _r[1] = value;
+        break;
+      case AttributeNames::posZ:
+        _r[2] = value;
+        break;
+      case AttributeNames::forceX:
+        _f[0] = value;
+        break;
+      case AttributeNames::forceY:
+        _f[1] = value;
+        break;
+      case AttributeNames::forceZ:
+        _f[2] = value;
+        break;
+      case AttributeNames::owned:
+        setOwned(value == 1.);
+        break;
+    }
+  }
+
 #if defined(AUTOPAS_CUDA)
   /**
    * The type for storage arrays for Cuda

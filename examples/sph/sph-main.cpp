@@ -265,6 +265,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   }
 
   std::cout << "calculation of hydroforces... started" << std::endl;
+
   sphSystem.iteratePairwise(&hydroForceFunctor);
   std::cout << "calculation of hydroforces... completed" << std::endl;
 }
@@ -339,11 +340,12 @@ int main() {
     leapfrogFullDrift(sphSystem, dt);
 
     // 1.2.1 positions have changed, so the container needs to be updated!
-    auto invalidParticles = sphSystem.updateContainer();
+    auto [invalidParticles, updated] = sphSystem.updateContainer();
 
-    // 1.2.2 adjust positions based on boundary conditions (here: periodic)
-    addEnteringParticles(sphSystem, invalidParticles);
-
+    if (updated) {
+      // 1.2.2 adjust positions based on boundary conditions (here: periodic)
+      addEnteringParticles(sphSystem, invalidParticles);
+    }
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
     // 1.4 Calculate density, pressure and hydrodynamic forces

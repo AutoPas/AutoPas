@@ -46,10 +46,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
     computeOffsets();
   }
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
 
   /**
    * Computes all interactions between the base
@@ -77,6 +74,10 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
     else
       return true;
   }
+
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
  private:
   /**
@@ -176,21 +177,21 @@ void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
 
   ParticleCell &baseCell = cells[baseIndex];
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
-  for (const auto &offset : offsets) {
-    unsigned long otherIndex = baseIndex + offset.first;
+  for (auto const &[offset, r] : offsets) {
+    unsigned long otherIndex = baseIndex + offset;
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
       this->_cellFunctor.processCell(baseCell);
     } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell, offset.second);
+      this->_cellFunctor.processCellPair(baseCell, otherCell, r);
     }
   }
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
   this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }
 

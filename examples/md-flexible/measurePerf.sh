@@ -109,12 +109,6 @@ do
                         continue
                     fi
 
-                    # workaround because there is no traversal for Verlet clusters with SoA yet.
-                    if [[ ${container} =~ 'VerletCluster' && ${dataLayout} =~ 'SoA' ]];
-                    then
-                        continue
-                    fi
-
                     # workaround because there is no traversal for Verlet cells with soa yet.
                     if [[ ${container} =~ 'VerletCells' && ${dataLayout} =~ 'SoA' ]];
                     then

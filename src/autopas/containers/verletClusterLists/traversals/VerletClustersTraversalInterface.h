@@ -23,9 +23,17 @@ class VerletClustersTraversalInterface {
   virtual ~VerletClustersTraversalInterface() = default;
 
   /**
-   * Iterates over all particle pairs.
-   * @param verletClusterLists The container to traverse.
+   * Sets the cluster list for the traversal to iterate over.
+   * @param verletClusterLists the cluster list to iterate over.
    */
-  virtual void traverseParticlePairs(VerletClusterLists<Particle> &verletClusterLists) = 0;
+  virtual void setClusterLists(VerletClusterLists<Particle> &verletClusterLists) {
+    _verletClusterLists = &verletClusterLists;
+  }
+
+ protected:
+  /**
+   * The cluster list to iterate over.
+   */
+  VerletClusterLists<Particle> *_verletClusterLists;
 };
 }  // namespace autopas

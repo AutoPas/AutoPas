@@ -15,7 +15,7 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength, unsigned long 
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
+  GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength, edgeLength);
 
   NumThreadGuard numThreadGuard(4);
 
@@ -26,7 +26,8 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength, unsigned long 
   // by previous interactions
   EXPECT_CALL(functor, AoSFunctor(_, _, true))
       .Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1) * 13);
-  slicedTraversal.traverseCellPairs(cells);
+  slicedTraversal.setCellsToTraverse(cells);
+  slicedTraversal.traverseParticlePairs();
 }
 
 /**

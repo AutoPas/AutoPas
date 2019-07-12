@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
 
   // iterate to rebuild
   cont.rebuildNeighborLists(&verletTraversal);
-  cont.iteratePairwise(&func, &verletTraversal);
+  cont.iteratePairwise(&verletTraversal);
 
   int newNumParticles = 0;
   for (auto iter = cont.begin(); iter.isValid(); ++iter) {

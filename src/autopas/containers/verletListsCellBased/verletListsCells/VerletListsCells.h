@@ -55,31 +55,21 @@ class VerletListsCells
 
   ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
 
-  /**
-   * Function to iterate over all pairs of particles. (Only AoS)
-   * This function only handles short-range interactions.
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal the traversal that will be used
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
-    if (traversal->getUseNewton3()) {
-      if (auto vTraversal =
-              dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, true> *>(traversal))
-        vTraversal->traverseCellVerlet(_neighborLists);
-      else
-        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
-                                                    traversal->getTraversalType());
+  void iteratePairwise(TraversalInterface *traversal) override {
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto vTraversal = dynamic_cast<autopas::VerletListsCellsTraversal<Particle> *>(traversal);
+    if (vTraversal) {
+      vTraversal->setVerletList(_neighborLists);
     } else {
-      if (auto vTraversal =
-              dynamic_cast<autopas::VerletListsCellsTraversal<Particle, ParticleFunctor, false> *>(traversal))
-        vTraversal->traverseCellVerlet(_neighborLists);
-      else
-        autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
-                                                    traversal->getTraversalType());
+      autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
+                                                  traversal->getTraversalType());
     }
+
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   /**
@@ -119,12 +109,13 @@ class VerletListsCells
           auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                              DataLayoutOption::aos, true>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
+
+          this->_linkedCells.iteratePairwise(&buildTraversal);
         } else {
           auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                              DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
+          this->_linkedCells.iteratePairwise(&buildTraversal);
         }
         break;
       }
@@ -133,12 +124,12 @@ class VerletListsCells
           auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                              DataLayoutOption::aos, true>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
+          this->_linkedCells.iteratePairwise(&buildTraversal);
         } else {
           auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                              DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
+          this->_linkedCells.iteratePairwise(&buildTraversal);
         }
         break;
       }
@@ -147,7 +138,7 @@ class VerletListsCells
           auto buildTraversal = C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                              DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &buildTraversal);
+          this->_linkedCells.iteratePairwise(&buildTraversal);
         } else {
           utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");
         }
