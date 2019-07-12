@@ -29,11 +29,11 @@ class TimeDiscretization {
   }
   /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    */
-  long VSCalculateX(AutoPasTemplate autopas);
+  long VSCalculateX(AutoPasTemplate &autopas);
 
   /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    */
-  long VSCalculateV(AutoPasTemplate autopas);
+  long VSCalculateV(AutoPasTemplate &autopas);
 
   double getParticleDeltaT() const;
 
@@ -44,11 +44,11 @@ class TimeDiscretization {
 };
 
 template <class AutoPasTemplate>
-long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate autopas) {
+long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
-  for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto v = iter->getV();
     auto m = iter->getMass();
     auto f = iter->getF();
@@ -64,11 +64,11 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate autopas) 
 }
 
 template <class AutoPasTemplate>
-long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate autopas) {
+long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
-  for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto m = iter->getMass();
     auto force = iter->getF();
     auto old_force = iter->getOldf();

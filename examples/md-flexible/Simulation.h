@@ -21,7 +21,7 @@ using namespace std;
 template <class Particle, class ParticleCell>
 class Simulation {
  private:
-  shared_ptr<AutoPas<Particle, ParticleCell>> _autopas;
+  AutoPas<Particle, ParticleCell> _autopas;
   MDFlexParser *_parser;
   std::ofstream _logFile;
 
@@ -62,7 +62,7 @@ class Simulation {
     vtkFile << "DIMENSIONS 1 1 1" << endl;
     vtkFile << "POINTS " << numParticles << " double" << endl;
 
-    for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       auto pos = iter->getR();
       vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
     }
@@ -116,7 +116,7 @@ class Simulation {
    */
   AutoPas<Particle, ParticleCell> *getAutopas() const;
 
-  size_t getNumParticles() { return _autopas->getNumberOfParticles(); }
+  size_t getNumParticles() { return _autopas.getNumberOfParticles(); }
 
   void printStatistics();
 };
@@ -171,37 +171,36 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   PrintableMolecule::setSigma(parser->getSigma());
   PrintableMolecule::setMass(parser->getMass());
 
-  _autopas = make_shared<autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>>>();
-  _autopas->setCutoff(cutoff);
-  _autopas->setVerletSkin(verletSkinRadius);
-  _autopas->setVerletRebuildFrequency(verletRebuildFrequency);
-  _autopas->setTuningInterval(tuningInterval);
-  _autopas->setNumSamples(tuningSamples);
-  _autopas->setSelectorStrategy(selectorStrategy);
-  _autopas->setAllowedContainers(containerChoice);
-  _autopas->setAllowedTraversals(traversalOptions);
-  _autopas->setAllowedDataLayouts(dataLayoutOptions);
-  _autopas->setAllowedNewton3Options(newton3Options);
+  _autopas.setCutoff(cutoff);
+  _autopas.setVerletSkin(verletSkinRadius);
+  _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
+  _autopas.setTuningInterval(tuningInterval);
+  _autopas.setNumSamples(tuningSamples);
+  _autopas.setSelectorStrategy(selectorStrategy);
+  _autopas.setAllowedContainers(containerChoice);
+  _autopas.setAllowedTraversals(traversalOptions);
+  _autopas.setAllowedDataLayouts(dataLayoutOptions);
+  _autopas.setAllowedNewton3Options(newton3Options);
   // so that a test in jenkins passes:
-  _autopas->setBoxMax({5., 5., 5.});
+  _autopas.setBoxMax({5., 5., 5.});
 
   //@todo übernommen vom merge: -> prüfen
-  _autopas->setTuningStrategyOption(tuningStrategy);
-  _autopas->setAllowedCellSizeFactors(cellSizeFactors);
+  _autopas.setTuningStrategyOption(tuningStrategy);
+  _autopas.setAllowedCellSizeFactors(cellSizeFactors);
   autopas::Logger::get()->set_level(logLevel);
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
-      this->initContainerGrid(*_autopas, particlesPerDim,
+      this->initContainerGrid(_autopas, particlesPerDim,
                               particleSpacing);  // particlesTotal wird in diesem fall in der main geupdated
       break;
     }
     case MDFlexParser::GeneratorOption::uniform: {
-      this->initContainerUniform(*_autopas, boxLength, particlesTotal);
+      this->initContainerUniform(_autopas, boxLength, particlesTotal);
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
-      this->initContainerGauss(*_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
+      this->initContainerGauss(_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
       break;
     }
     default:
@@ -263,18 +262,17 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
   //@ TODO: switch for other functors --> mit boolean object?
-  //_autopas->iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
-  //_autopas->iteratePairwise(this->_Functor);
+  //_autopas.iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
+  //_autopas.iteratePairwise(this->_Functor);
 
-  auto *functor = new autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
+  auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
                                          true /* relevant for tuning */>(
-      _autopas->getCutoff(), 1., 1.0, 0.0);  // cutoff, espi, sigma, shift, box min, box max
+      _autopas.getCutoff(), 1., 1.0, 0.0);  // cutoff, espi, sigma, shift, box min, box max
 
-  _autopas->iteratePairwise(functor);
+  _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
   _timers.durationForceUpdate += durationCalcF;
-  delete functor;
 }
 
 template <class Particle, class ParticleCell>
@@ -297,7 +295,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
     this->CalcF();
     _timers.durationVelocityUpdate += timeDiscretization.VSCalculateV(_autopas);
     simTimeNow += deltaT;
-    this->writeVTKFile(simTimeNow / deltaT, _autopas->getNumberOfParticles(), _autopas);
+    this->writeVTKFile(simTimeNow / deltaT, _autopas.getNumberOfParticles(), _autopas);
   }
 
   stopSim = std::chrono::high_resolution_clock::now();
@@ -351,17 +349,17 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
     cout << "One iteration: " << _timers.durationSimulate / numIterations << " \u03bcs ("
          << durationSimulateSec / numIterations << "s)" << endl;
   }
-  auto mfups = _autopas->getNumberOfParticles() * numIterations / durationSimulateSec;
+  auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec;
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_parser->getMeasureFlops()) {
     FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-        _autopas->getCutoff());
-    _autopas->iteratePairwise(&flopCounterFunctor);
+        _autopas.getCutoff());
+    _autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
     // approximation for flops of verlet list generation
-    if (_autopas->getContainerType() == autopas::ContainerOption::verletLists)
+    if (_autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
