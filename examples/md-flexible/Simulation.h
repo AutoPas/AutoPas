@@ -89,30 +89,6 @@ class Simulation {
                           double distributionMean, double distributionStdDev);
 
   void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, double boxLength, size_t numParticles);
-  /**Getter for Duration of Position Calculation
-   * @return durationX
-   */
-  long getDurationX() const;
-  /**Adder for durationX
-   * @param durationX
-   */
-  void addDurationX(long durationX);
-  /**Getter for Duration of Force Calculation
-   * @return durationF
-   */
-  long getDurationF() const;
-  /**Adder for durationF
-   * @param durationF
-   */
-  void addDurationF(long durationF);
-  /**Getter for Duration of Velocity Calculation
-   * @return durationV
-   */
-  long getDurationV() const;
-  /**Adder for durationV
-   * @param durationV
-   */
-  void addDurationV(long durationV);
 
   /** @brief This function
    * -initializes the autopas Object
@@ -278,7 +254,7 @@ void Simulation<Particle, ParticleCell>::initContainerGauss(autopas::AutoPas<Par
                                                             double boxLength, size_t numParticles,
                                                             double distributionMean, double distributionStdDev) {
   std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
+  std::array<double, 3> boxMax{boxLength, boxLength, boxLength};
 
   autopas.setBoxMin(boxMin);
   autopas.setBoxMax(boxMax);

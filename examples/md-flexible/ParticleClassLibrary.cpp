@@ -10,10 +10,6 @@ ParticleClassLibrary::ParticleClassLibrary() {}
 ParticleClassLibrary::ParticleClassLibrary(const ParticleClassLibrary &pcl)
     : Epsilon(pcl.Epsilon), Sigma(pcl.Sigma), Mass(pcl.Mass) {}
 
-double ParticleClassLibrary::getEpsilon(Particle i) { return Epsilon.at(i.getID()); }
-
-double ParticleClassLibrary::getSigma(Particle i) { return Sigma.at(i.getID()); }
-
 double ParticleClassLibrary::get24Epsilon(unsigned long i) { return 24 * Epsilon.at(i); }
 
 double ParticleClassLibrary::getSSigma(unsigned long i) {
@@ -22,10 +18,6 @@ double ParticleClassLibrary::getSSigma(unsigned long i) {
 }
 
 double ParticleClassLibrary::getMass(Particle i) { return Mass.at(i.getID()); }
-
-double ParticleClassLibrary::mixingE(unsigned long i, unsigned long j) { return sqrt(Epsilon.at(i) + Epsilon.at(j)); }
-
-double ParticleClassLibrary::mixingS(Particle i, Particle j) { return (Sigma.at(i.getID()) + Sigma.at(j.getID())) / 2; }
 
 double ParticleClassLibrary::mixing24E(unsigned long i, unsigned long j) {
   return 24 * sqrt(Epsilon.at(i) * Epsilon.at(j));
