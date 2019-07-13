@@ -39,7 +39,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
                         allowedDataLayoutOptions, allowedNewton3Options);
   }
 
-  inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
+  inline const Configuration &getCurrentConfiguration() override { return *_currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
@@ -58,7 +58,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 
   }
 
-  inline bool tune() override;
+  inline bool tune(bool = false) override;
 
   inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; };
 
@@ -217,29 +217,27 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
     const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options) {
-  //@TODO dummyTraversal needed until all containers support propper traversals
-  auto dummySet = {TraversalOption::dummyTraversal};
-  std::set<TraversalOption> allowedTraversalOptionsPlusDummy;
-  std::set_union(allowedTraversalOptions.begin(), allowedTraversalOptions.end(), dummySet.begin(), dummySet.end(),
-                 std::inserter(allowedTraversalOptionsPlusDummy, allowedTraversalOptionsPlusDummy.begin()));
+    // generate all potential configs
+    for (auto &containerOption : allowedContainerOptions) {
+        // get all traversals of the container and restrict them to the allowed ones
+        const std::set<TraversalOption> &allContainerTraversals =
+                compatibleTraversals::allCompatibleTraversals(containerOption);
+        std::set<TraversalOption> allowedAndApplicable;
+        std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
+                              allContainerTraversals.begin(), allContainerTraversals.end(),
+                              std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-  // generate all potential configs
-  for (auto &containerOption : allowedContainerOptions) {
-    // get all traversals of the container and restrict them to the allowed ones
-    std::set<TraversalOption> allContainerTraversals = compatibleTraversals::allCompatibleTraversals(containerOption);
-    std::set<TraversalOption> allowedAndApplicable;
-    std::set_intersection(allowedTraversalOptionsPlusDummy.begin(), allowedTraversalOptionsPlusDummy.end(),
-                          allContainerTraversals.begin(), allContainerTraversals.end(),
-                          std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
-
-    for (auto &traversalOption : allowedAndApplicable) {
-      for (auto &dataLayoutOption : allowedDataLayoutOptions) {
-        for (auto &newton3Option : allowedNewton3Options) {
-          _searchSpace.emplace(containerOption, 1., traversalOption, dataLayoutOption, newton3Option);
-        }
-      }
+        for (auto &cellSizeFactor : allowedCellSizeFactors)
+            for (auto &traversalOption : allowedAndApplicable) {
+                for (auto &dataLayoutOption : allowedDataLayoutOptions) {
+                    for (auto &newton3Option : allowedNewton3Options) {
+                        _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
+                    }
+                }
+            }
     }
-  }
+
+    AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
 
   if (_searchSpace.empty()) {
     autopas::utils::ExceptionHandler::exception("MachineSearch: No valid configurations could be created.");
@@ -252,7 +250,7 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
 }
 
 template <class Particle, class ParticleCell>
-bool MachineSearch<Particle, ParticleCell>::tune() {
+bool MachineSearch<Particle, ParticleCell>::tune(bool) {
   AutoPasLog(debug, "You are in MachineSearch::tune()");
   // repeat as long as traversals are not applicable or we run out of configs
   //findNextSuggestion();

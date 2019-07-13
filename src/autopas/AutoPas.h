@@ -477,7 +477,7 @@ class AutoPas {
       }
 
       case TuningStrategyOption::bayesianSearch: {
-        return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+        return std::make_unique<BayesianSearch<Particle, ParticleCell>>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
                                                 _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
       }
     }

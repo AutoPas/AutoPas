@@ -22,7 +22,7 @@ enum TuningStrategyOption {
    * Predict the configuration which will yield the most
    * information if tested next.
    */
-  bayesianSearch = 1
+  bayesianSearch = 1,
 
   /**
    * Sends parameters to local ML model and chooses the best option from them.

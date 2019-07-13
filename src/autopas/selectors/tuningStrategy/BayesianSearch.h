@@ -25,7 +25,8 @@ namespace autopas {
  * to a Gaussian Process. This allows to estimate the 'gain' of testing a given
  * feature next.
  */
-class BayesianSearch : public TuningStrategyInterface {
+template <typename Particle, typename ParticleCell>
+class BayesianSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   /**
    * max limit of long as double
    */
@@ -121,6 +122,10 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline bool searchSpaceIsEmpty() override;
 
+  void addContainerSelector(/*const*/ ContainerSelector<Particle, ParticleCell> & /*containerSelector*/) override {
+    AutoPasLog(trace, "ignoring containerSelector in BayesianSearch");
+  }
+
  private:
   /**
    * Generate n samples and predict their corresponding
@@ -151,7 +156,8 @@ class BayesianSearch : public TuningStrategyInterface {
   Random _rng;
 };
 
-bool BayesianSearch::tune(bool currentInvalid) {
+template <typename Particle, typename ParticleCell>
+bool BayesianSearch<Particle, ParticleCell>::tune(bool currentInvalid) {
   if (currentInvalid) {
     _invalidConfigs.insert(_currentConfig);
   }
@@ -174,7 +180,8 @@ bool BayesianSearch::tune(bool currentInvalid) {
   return true;
 }
 
-FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af) {
+template <typename Particle, typename ParticleCell>
+FeatureVector BayesianSearch<Particle, ParticleCell>::sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af) {
   for (size_t i = 0; i < maxAttempts; ++i) {
     // create n lhs samples
     std::vector<FeatureVector> samples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _traversalOptions,
@@ -210,7 +217,8 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
   return FeatureVector();
 }
 
-bool BayesianSearch::searchSpaceIsTrivial() {
+template <typename Particle, typename ParticleCell>
+bool BayesianSearch<Particle, ParticleCell>::searchSpaceIsTrivial() {
   if (searchSpaceIsEmpty()) {
     return false;
   }
@@ -219,13 +227,15 @@ bool BayesianSearch::searchSpaceIsTrivial() {
          _traversalOptions.size() == 1 and _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
 }
 
-bool BayesianSearch::searchSpaceIsEmpty() {
+template <typename Particle, typename ParticleCell>
+bool BayesianSearch<Particle, ParticleCell>::searchSpaceIsEmpty() {
   // if one enum is empty return true
   return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
          _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
 }
 
-void BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {
+template <typename Particle, typename ParticleCell>
+void BayesianSearch<Particle, ParticleCell>::removeN3Option(Newton3Option badNewton3Option) {
   _newton3Options.erase(badNewton3Option);
 
   if (this->searchSpaceIsEmpty()) {
