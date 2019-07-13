@@ -42,6 +42,7 @@ class MDFlexParser {
   size_t getParticlesPerDim() const;
   unsigned int getTuningInterval() const;
   unsigned int getTuningSamples() const;
+  unsigned int getTuningMaxEvidence() const;
   autopas::TuningStrategyOption getTuningStrategyOption() const;
   std::string getModelLink() const;
   std::string getWriteVTK() const;
@@ -80,6 +81,7 @@ class MDFlexParser {
   double particleSpacing = .4;
   unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
+  unsigned int tuningMaxEvidence = 10;
   std::string writeVTK = "";
   std::string logFileName = "";
   std::string modelLink = "fdeep_model.json";

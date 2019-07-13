@@ -29,7 +29,7 @@ class TuningStrategyInterface {
    * Returns the currently selected configuration object.
    * @return
    */
-  virtual Configuration getCurrentConfiguration() = 0;
+  virtual const Configuration &getCurrentConfiguration() = 0;
 
   /**
    * Selects the next configuration to test or the optimum.
@@ -38,9 +38,11 @@ class TuningStrategyInterface {
    * The new configuration can be obtained by getCurrentConfiguration. It is the configuration which is either the next
    * configuration to test (=true) or the optimum (=false).
    *
+   * @param currentInvalid Tells the tune() function that the currently selected configuration is invalid. This can be
+   * used to avoid getting stuck in an invalid optimum.
    * @return false iff new configuration is the selected optimum.
    */
-  virtual bool tune() = 0;
+  virtual bool tune(bool currentInvalid = false) = 0;
 
   /**
    * Reset all internal parameters to the beginning of a new tuning cycle.

@@ -40,13 +40,13 @@ void printMolecules(AutoPasTemplate &autopas) {
  *
  * @param autopas AutoPas object that should be initialized
  * @param particlesPerDim Number of desired particles per dimension.
- * @param particelSpacing Space between two particles along each axis of space.
+ * @param particleSpacing Space between two particles along each axis of space.
  */
 void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                       size_t particlesPerDim, double particelSpacing) {
+                       size_t particlesPerDim, double particleSpacing) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
-      {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
+      {(particlesPerDim)*particleSpacing, (particlesPerDim)*particleSpacing, (particlesPerDim)*particleSpacing});
 
   autopas.setBoxMin(boxMin);
   autopas.setBoxMax(boxMax);
@@ -55,8 +55,8 @@ void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<Prin
 
   PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
-                                   {particelSpacing, particelSpacing, particelSpacing},
-                                   {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
+                                   {particleSpacing, particleSpacing, particleSpacing},
+                                   {particleSpacing / 2, particleSpacing / 2, particleSpacing / 2});
 }
 
 void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
@@ -175,6 +175,7 @@ int main(int argc, char **argv) {
   auto tuningInterval(parser.getTuningInterval());
   auto tuningSamples(parser.getTuningSamples());
   auto tuningStrategy(parser.getTuningStrategyOption());
+  auto tuningMaxEvidence(parser.getTuningMaxEvidence());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
   auto verletSkinRadius(parser.getVerletSkinRadius());
   auto vtkFilename(parser.getWriteVTK());
@@ -207,6 +208,7 @@ int main(int argc, char **argv) {
   autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
   autopas.setModelLink(modelLink);
+  autopas.setMaxEvidence(tuningMaxEvidence);
   autopas.setSelectorStrategy(selectorStrategy);
   autopas.setAllowedContainers(containerChoice);
   autopas.setAllowedTraversals(traversalOptions);

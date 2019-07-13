@@ -70,11 +70,6 @@ class TraversalTest : public AutoPasTestBase,
     // countFunc isn't a real function. It's just a declaration which is used to count the number of interactions.
     MOCK_METHOD1(countFunc, void(unsigned long id));
 
-    // The following definitions are needed to fullfill requirements of autopas::functor
-    AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , );
-
-    AUTOPAS_FUNCTOR_SOALOADER(, , , );
-
    private:
     floatType _cutoffSquare;
   };

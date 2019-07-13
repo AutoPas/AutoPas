@@ -7,11 +7,11 @@
 #include "LinkedCellsVersusVerletClusterListsTest.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 
-LinkedCellsVersusVerletClusterListsTest::LinkedCellsVersusVerletClusterListsTest()
-    : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),
-      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*cell size factor*/) {}
-
+template <autopas::DataLayoutOption dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
+  Verlet _verletLists{getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff()};
+  Linked _linkedCells{getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*cell size factor*/};
+
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
@@ -26,13 +26,13 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
-  autopas::VerletClustersTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
+  autopas::VerletClustersTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3>
       verletTraversal(&func);
-  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
-      traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   _verletLists.rebuildNeighborLists(&verletTraversal);
-  _verletLists.iteratePairwise(&func, &verletTraversal);
-  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
+  _verletLists.iteratePairwise(&verletTraversal);
+  _linkedCells.iteratePairwise(&traversalLinkedLJ);
 
   std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, skip id=0 to avoid dummy particles
@@ -59,15 +59,16 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   }
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
-  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
-      traversalFLOPS(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
-  autopas::VerletClustersTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>,
-                                   autopas::DataLayoutOption::aos, false>
+  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalFLOPS(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+  autopas::VerletClustersTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, dataLayout, useNewton3>
       traversalFLOPSVerlet(&flopsVerlet);
-  _verletLists.iteratePairwise(&flopsVerlet, &traversalFLOPSVerlet);
-  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS);
+  _verletLists.iteratePairwise(&traversalFLOPSVerlet);
+  _linkedCells.iteratePairwise(&traversalFLOPS);
 
-  ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
+  if (not(dataLayout == autopas::DataLayoutOption::soa && not useNewton3)) {
+    ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
+  }
 }
 
 TEST_F(LinkedCellsVersusVerletClusterListsTest, test100) {
@@ -76,9 +77,10 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, test100) {
   // empirically determined and set near the minimal possible value
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1e-14;
+  double rel_err_tolerance = 1.5e-14;
 
-  test(numMolecules, rel_err_tolerance);
+  test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance);
+  test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance);
 }
 
 TEST_F(LinkedCellsVersusVerletClusterListsTest, test1000) {
@@ -88,7 +90,8 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, test1000) {
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 2e-12;
-  test(numMolecules, rel_err_tolerance);
+  test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance);
+  test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance);
 }
 
 TEST_F(LinkedCellsVersusVerletClusterListsTest, test2000) {
@@ -98,5 +101,6 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, test2000) {
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 1e-10;
-  test(numMolecules, rel_err_tolerance);
+  test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance);
+  test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance);
 }

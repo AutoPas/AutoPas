@@ -69,19 +69,22 @@ class VerletLists
 
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
-  /**
-   * @copydoc LinkedCells::iteratePairwise
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
-    if (auto *traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal)) {
-      traversalInterface->initTraversal(this->_linkedCells.getCells());
-      traversalInterface->iterateVerletLists(_aosNeighborLists, _soaNeighborLists);
-      traversalInterface->endTraversal(this->_linkedCells.getCells());
+  void iteratePairwise(TraversalInterface *traversal) override {
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *verletTraversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal);
+    if (verletTraversalInterface) {
+      verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
+                                                         _soaNeighborLists);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletLists::iteratePairwise");
     }
+
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   /**
@@ -119,7 +122,7 @@ class VerletLists
                      typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>,
                      DataLayoutOption::aos, true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                   &validityCheckerFunctor);
-    this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal);
+    this->_linkedCells.iteratePairwise(&traversal);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
@@ -157,7 +160,7 @@ class VerletLists
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, c_useNewton3>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&traversal);
         })
         break;
       }
@@ -166,7 +169,7 @@ class VerletLists
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::soa, c_useNewton3>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&traversal);
         })
         break;
       }

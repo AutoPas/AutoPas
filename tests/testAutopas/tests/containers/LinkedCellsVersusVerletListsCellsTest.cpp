@@ -7,16 +7,20 @@
 #include "LinkedCellsVersusVerletListsCellsTest.h"
 
 LinkedCellsVersusVerletListsCellsTest::LinkedCellsVersusVerletListsCellsTest()
-    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(), 2),
-      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*factor*/) {}
+    : _verletListsCells(nullptr), _linkedCells(nullptr) {}
 
 void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
-  RandomGenerator::fillWithParticles(_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
+  // generate containers
+  _linkedCells = std::make_unique<lctype>(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*factor*/);
+  _verletListsCells = std::make_unique<vltype>(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18,
+                                               0.1 * getCutoff(), 2);
+
+  RandomGenerator::fillWithParticles(*_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
                                      numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
-  for (auto it = _verletListsCells.begin(); it.isValid(); ++it) {
-    _linkedCells.addParticle(*it);
+  for (auto it = _verletListsCells->begin(); it.isValid(); ++it) {
+    _linkedCells->addParticle(*it);
   }
 
   double eps = 1.0;
@@ -27,21 +31,22 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
   autopas::C18TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalVerletLJ(_verletListsCells.getCellsPerDimension(), &func);
+      traversalVerletLJ(_verletListsCells->getCellsPerDimension(), &func);
   autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  _verletListsCells.rebuildNeighborLists(&traversalVerletLJ);
-  _verletListsCells.iteratePairwise(&func, &traversalVerletLJ);
-  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
+      traversalLinkedLJ(_linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
+
+  _verletListsCells->rebuildNeighborLists(&traversalVerletLJ);
+  _verletListsCells->iteratePairwise(&traversalVerletLJ);
+  _linkedCells->iteratePairwise(&traversalLinkedLJ);
 
   std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id
-  for (auto it = _verletListsCells.begin(); it.isValid(); ++it) {
+  for (auto it = _verletListsCells->begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
     forcesDirect.at(m.getID()) = m.getF();
   }
 
-  for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
+  for (auto it = _linkedCells->begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
     forcesLinked.at(m.getID()) = m.getF();
   }
@@ -59,11 +64,11 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
   autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
                               true>
-      traversalVerletFLOPS(_verletListsCells.getCellsPerDimension(), &flopsVerlet);
+      traversalVerletFLOPS(_verletListsCells->getCellsPerDimension(), &flopsVerlet);
   autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalLinkedFLOPS(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
-  _verletListsCells.iteratePairwise(&flopsVerlet, &traversalVerletFLOPS);
-  _linkedCells.iteratePairwise(&flopsLinked, &traversalLinkedFLOPS);
+      traversalLinkedFLOPS(_linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+  _verletListsCells->iteratePairwise(&traversalVerletFLOPS);
+  _linkedCells->iteratePairwise(&traversalLinkedFLOPS);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
   ASSERT_GE(flopsLinked.getDistanceCalculations(), flopsVerlet.getDistanceCalculations());

@@ -9,7 +9,7 @@
 
 #include <array>
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 
 #ifdef AUTOPAS_OPENMP
 #include <omp.h>

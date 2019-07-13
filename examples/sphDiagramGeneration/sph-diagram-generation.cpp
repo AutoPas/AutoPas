@@ -9,7 +9,6 @@
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
-#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
 
@@ -201,7 +200,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   auto traversalInfo = cont->getTraversalSelectorInfo();
   std::cout << "Cells: " << traversalInfo.dims[0] << " x " << traversalInfo.dims[1] << " x " << traversalInfo.dims[2]
             << std::endl;
-  auto traversalType = autopas::TraversalOption::dummyTraversal;
+  auto traversalType = autopas::TraversalOption(-1);
   switch (cont->getContainerType()) {
     case autopas::ContainerOption::linkedCells: {
       traversalType = autopas::TraversalOption::c08;
@@ -225,17 +224,8 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   auto traversal = autopas::TraversalSelector<CellType>::template generateTraversal<Functor>(
       traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos,
       useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
-  if (useNewton3) {
-    measureContainerTraversal(
-        cont, func,
-        dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, true> *>(traversal.get()),
-        numParticles, numIterations);
-  } else {
-    measureContainerTraversal(
-        cont, func,
-        dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, false> *>(traversal.get()),
-        numParticles, numIterations);
-  }
+  measureContainerTraversal(cont, func, dynamic_cast<autopas::CellPairTraversal<CellType> *>(traversal.get()),
+                            numParticles, numIterations);
 }
 
 template <class Container, class Functor, class Traversal>
@@ -250,7 +240,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(traversal);
 
   double elapsedTime = t.stop();
 
@@ -259,7 +249,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(traversal);
 
   elapsedTime = t.stop();
 
