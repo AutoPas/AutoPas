@@ -47,9 +47,15 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 
   inline void reset() override {
     _traversalTimes.clear();
-    _currentConfig = _searchSpace.end();
-    _configCounter = 0;
+    //_currentConfig = _searchSpace.end();
+    //_configCounter = 0;
     generateMLPredictions();
+    _currentConfig = _searchSpace.begin();
+    for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
+        std::cout << ssIter->toString() << std::endl;
+        ++ssIter;
+    }
+
   }
 
   inline bool tune() override;
@@ -73,7 +79,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   /*
    * Finds the next applicable ML suggestion (including current config)
    */
-  void findNextSuggestion();
+  //void findNextSuggestion();
 
   /**
    * Fills the search space with the cartesian product of the given options (minus invalid combinations).
@@ -101,6 +107,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   ContainerSelector<Particle, ParticleCell> *_containerSelector;
 };
 
+/*
 template <class Particle, class ParticleCell>
 void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
   if (_currentConfig == _searchSpace.end()) {
@@ -115,7 +122,7 @@ void MachineSearch<Particle, ParticleCell>::findNextSuggestion() {
     ++_currentConfig;
     ++_configCounter;
   }
-}
+}*/
 
 template <class Particle, class ParticleCell>
 void MachineSearch<Particle, ParticleCell>::generateMLPredictions() {
@@ -144,16 +151,17 @@ void MachineSearch<Particle, ParticleCell>::generateMLPredictions() {
     auto index = std::max_element(probabilityVector.begin(), probabilityVector.end()) - probabilityVector.begin();
     _mlSuggestions[i] = index;
     probabilityVector[index] = 0;  // set to 0, so we don't find this again.
-    std::cout << _mlSuggestions[i] << std::endl;
+    std::cout << _mlSuggestions[i] << ", ";
   }
+  std::cout << std::endl;
   _searchSpace.clear();  // empty the set
 
   std::tuple<ContainerOption, TraversalOption, DataLayoutOption, Newton3Option> mloption[] = {
-      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c01, DataLayoutOption::aos,
+      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c01Verlet, DataLayoutOption::aos,
                       Newton3Option::disabled),
-      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c18, DataLayoutOption::aos,
+      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c18Verlet, DataLayoutOption::aos,
                       Newton3Option::disabled),
-      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c18, DataLayoutOption::aos,
+      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c18Verlet, DataLayoutOption::aos,
                       Newton3Option::enabled),
       std::make_tuple(ContainerOption::verletListsCells, TraversalOption::slicedVerlet, DataLayoutOption::aos,
                       Newton3Option::disabled),
@@ -238,7 +246,7 @@ void MachineSearch<Particle, ParticleCell>::populateSearchSpace(
   }
 
   _currentConfig = _searchSpace.begin();  // this has to be valid, to add particles to the container
-  _configCounter = 0;
+  //_configCounter = 0;
   // generateMLPredictions(_modelLink);
   // findNextSuggestion();
 }
@@ -247,7 +255,8 @@ template <class Particle, class ParticleCell>
 bool MachineSearch<Particle, ParticleCell>::tune() {
   AutoPasLog(debug, "You are in MachineSearch::tune()");
   // repeat as long as traversals are not applicable or we run out of configs
-  findNextSuggestion();
+  //findNextSuggestion();
+  ++_currentConfig;
   if (_currentConfig == _searchSpace.end()) {
     selectOptimalConfiguration();
     return false;
