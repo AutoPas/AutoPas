@@ -101,7 +101,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   std::set<Configuration>::iterator _currentConfig;
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
   int _mlSuggestions[5];
-  int _configCounter;
+  //int _configCounter;
   double _particleCount, _boxLength, _cutoff, _verletSkin;
   fdeep::model _mlmodel;
   ContainerSelector<Particle, ParticleCell> *_containerSelector;

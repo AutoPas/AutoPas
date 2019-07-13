@@ -354,6 +354,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
   // need more samples; keep current config
+  // This block is executed exactly when _iterationsSinceTuning == _tuningInterval and we never call reset again
   if (_samples.size() < _maxSamples) {
     return stillTuning;
   }
