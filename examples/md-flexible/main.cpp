@@ -68,13 +68,12 @@ int main(int argc, char **argv) {
   if (not parser.parseInput(argc, argv)) {
     exit(-1);
   }
-  auto vtkFilename(parser.getWriteVTK());
   parser.printConfig();
 
   cout << endl;
 
   // Initialization
-  simulation.initialize(&parser);
+  simulation.initialize(parser);
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
   // Simulation
@@ -83,6 +82,8 @@ int main(int argc, char **argv) {
   cout << "Simulation done!" << endl;
 
   simulation.printStatistics();
+  // frage FABIO, wenn ich hier manuel den destructor von simlation aufrufe; wieso kriege ich 4 invalid reads(autopas
+  // container-traversals usw) und 18 invalid free
 
   return EXIT_SUCCESS;
 }
