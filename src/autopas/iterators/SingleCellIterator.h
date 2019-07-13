@@ -42,10 +42,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @return current particle
    */
   inline Particle &operator*() const override {
-    Particle *ptr = nullptr;
-    //_cell->particleAt(_index, ptr);
-    ptr = &(_cell->_particles.at(_index));
-    return *ptr;
+    return _cell->_particles.at(_index);
   }
 
   /**
