@@ -41,9 +41,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * this is the indirection operator
    * @return current particle
    */
-  inline Particle &operator*() const override {
-    return _cell->_particles.at(_index);
-  }
+  inline Particle &operator*() const override { return _cell->_particles.at(_index); }
 
   /**
    * increment operator to get the next particle
