@@ -40,6 +40,7 @@ class MDFlexParser {
 
   unsigned int getTuningInterval() const;
   unsigned int getTuningSamples() const;
+  unsigned int getTuningMaxEvidence() const;
   autopas::TuningStrategyOption getTuningStrategyOption() const;
   std::string getWriteVTK() const;
   const std::set<autopas::TraversalOption> &getTraversalOptions() const;
@@ -61,9 +62,8 @@ class MDFlexParser {
   std::set<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
-  std::unique_ptr<autopas::NumberSet<double>> cellSizeFactors =
-      std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{1.});
-
+  std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
+      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
   // Simulation Options:
   double boxLength = -1;
   double cutoff = 1.;
@@ -79,6 +79,7 @@ class MDFlexParser {
   double particleSpacing = .4;
   unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
+  unsigned int tuningMaxEvidence = 10;
   std::string writeVTK = "";
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
