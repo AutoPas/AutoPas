@@ -15,8 +15,12 @@ using ::testing::_;
  */
 TEST_F(C04SoATraversalTest, testTraversal) {
   std::array<size_t, 3> edgeLength = {3, 3, 3};
-
-  autopas::LJFunctor<autopas::Particle, FPCell> functor(1., 1., 1., 1.);
+  map<unsigned long, double> universalMap;
+  for (unsigned long i = 0; i < 4; i++) {
+    universalMap.emplace(i, 1.0);
+  }
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  autopas::LJFunctor<autopas::Particle, FPCell> functor(1., PCL, 1.);
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 

@@ -286,7 +286,7 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   //@ TODO: switch for other functors --> mit boolean object?
 
   // auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both,
-                                   // true>(_autopas.getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true);
+  // true>(_autopas.getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true);
   auto functor = LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();

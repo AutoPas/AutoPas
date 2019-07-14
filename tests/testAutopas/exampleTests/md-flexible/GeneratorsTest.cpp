@@ -171,14 +171,14 @@ TEST_F(GeneratorsTest, MolSimTask) {
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
-  TimeDiscretization<decltype(autoPas)> td(particleD);
+  TimeDiscretization<decltype(*autoPas)> td(particleD);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
   while (iterations < 10) {
-    td.VSCalculateX(autoPas);
+    td.VSCalculateX(*autoPas);
     autoPas->iteratePairwise(functor);
-    td.VSCalculateV(autoPas);
+    td.VSCalculateV(*autoPas);
     iterations++;
     writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
   }
