@@ -11,6 +11,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -164,7 +165,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
         const double distSquare = ArrayMath::dot(pos, pos);
         if (distSquare <= interactionLengthSquare) {
           const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
-              x, y, z, ArrayMath::static_cast_array<long>(this->_cellsPerDimension));
+              x, y, z, ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
           const bool containCurrentOffset =
               std::any_of(_cellOffsets[x + this->_overlap[0]].cbegin(), _cellOffsets[x + this->_overlap[0]].cend(),
                           [currentOffset](const auto &e) { return e.first == currentOffset; });
@@ -173,7 +174,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
           }
           for (long ix = x; ix <= std::abs(x); ++ix) {
             const long offset = utils::ThreeDimensionalMapping::threeToOneD(
-                ix, y, z, ArrayMath::static_cast_array<long>(this->_cellsPerDimension));
+                ix, y, z, ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
             const size_t index = ix + this->_overlap[0];
             if (y == 0l and z == 0l) {
               // make sure center of slice is always at the beginning
