@@ -6,44 +6,40 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 
 namespace autopas {
 
 /**
- * Traversal for VerletClusterLists.
+ * Traversal for VerletClusterLists. Does not support newton 3.
  * @tparam ParticleCell
  * @tparam PairwiseFunctor The type of the functor.
  * @tparam dataLayout The data layout to use. Currently, only AoS is supported.
  * @tparam useNewton3 If newton 3 should be used. Currently, only false is supported.
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
+class VerletClustersTraversal : public TraversalInterface,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
-  using index_t = typename VerletClusterMaths::index_t;
 
  public:
   /**
    * Constructor of the VerletClustersTraversal.
    * @param pairwiseFunctor The functor to use for the traveral.
    */
-  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({0, 0, 0}), _functor(pairwiseFunctor) {}
+  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::verletClusters; }
 
   DataLayoutOption getDataLayout() const override { return dataLayout; }
   bool getUseNewton3() const override { return useNewton3; }
+
   bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa) && not useNewton3;
+    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa) and not useNewton3;
   }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {}
-  void endTraversal(std::vector<ParticleCell> &cells) override {}
-
-  void initClusterTraversal() override {
+  void initTraversal() override {
     if (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
@@ -55,7 +51,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
 
     const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
                                                               std::vector<Particle *> &clusterNeighborList) {
-      index_t currentClusterIndex = aosToSoaMap.at(clusterStart);
+      auto currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
       for (int i = 0; i < clusterSize; i++) {
@@ -69,7 +65,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
     clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
   }
 
-  void endClusterTraversal() override {
+  void endTraversal() override {
     if (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
@@ -78,7 +74,7 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
 
     const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
                                                               std::vector<Particle *> &clusterNeighborList) {
-      index_t currentClusterIndex = aosToSoaMap.at(clusterStart);
+      auto currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
       for (int i = 0; i < clusterSize; i++) {
@@ -94,9 +90,6 @@ class VerletClustersTraversal : public CellPairTraversal<ParticleCell, dataLayou
     clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
   }
 
-  /**
-   * @copydoc VerletClustersTraversalInterface::traverseParticlePairs
-   */
   void traverseParticlePairs() override {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 

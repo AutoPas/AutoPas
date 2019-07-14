@@ -17,16 +17,14 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
-  const unsigned int verletRebuildFrequency = 1;
   const unsigned int maxSamples = 2;
 
   autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::allContainerOptions, std::set<double>({cellSizeFactor}), autopas::allTraversalOptions,
       autopas::allDataLayoutOptions, autopas::allNewton3Options);
-  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletRebuildFrequency,
-                                                 std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs,
-                                                 100, maxSamples);
+  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, std::move(tuningStrategy),
+                                                 autopas::SelectorStrategyOption::fastestAbs, 100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
@@ -37,34 +35,40 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // total number of possible configurations * number of samples + last iteration after tuning
   // number of configs manually counted:
   //
-  // Direct Sum:          directSum traversal      (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  // LinkedCells:         c08 traversal            (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  //                      sliced                   (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  //                      c18                      (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  //                      c01                      (AoS <=> SoA, noNewton3)             = 2
-  //                      c01-combined-SoA         (SoA, noNewton3)                     = 1
-  // VerletLists:         verlet-lists             (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  // VerletListsCells:    verlet-sliced            (AoS, newton3 <=> noNewton3)         = 2
-  //                      verlet-c18               (AoS, newton3 <=> noNewton3)         = 2
-  //                      verlet-c01               (AoS, noNewton3)                     = 1
-  // VerletClusterLists:  verlet-clusters          (AoS <=> SoA, noNewton3)             = 2
-  //                      verlet-clusters-coloring (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  //                                                                               --------
-  //                                                                                     34
+  // Direct Sum:            directSum traversal         (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  // LinkedCells:           c08 traversal               (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        sliced                      (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        c18                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        c01                         (AoS <=> SoA, noNewton3)             = 2
+  //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        c04SoA                      (SoA, newton3 <=> noNewton3)         = 2
+  //                        c01-combined-SoA            (SoA, noNewton3)                     = 1
+  //                        c04-combined-SoA    with (SoA, newton3 <=> noNewton3)            = 2
+  // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  // VerletListsCells:      verlet-sliced               (AoS, newton3 <=> noNewton3)         = 2
+  //                        verlet-c18                  (AoS, newton3 <=> noNewton3)         = 2
+  //                        verlet-c01                  (AoS, noNewton3)                     = 1
+  // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
+  //                        verlet-clusters-coloring    (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                                                                                    --------
+  //                                                                                          44
 #ifndef AUTOPAS_CUDA
-  size_t expectedNumberOfIterations = 34 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 44 * maxSamples + 1;
 #else
-  size_t expectedNumberOfIterations = 45 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 57 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;
   int iterations = 0;
+  bool doRebuild = true;  // defines whether the verlet lists should be rebuild.
   while (stillTuning) {
     if (collectedSamples == maxSamples) {
       collectedSamples = 0;
+      doRebuild = true;
     }
-
-    stillTuning = autoTuner.iteratePairwise(&functor);
+    stillTuning = autoTuner.iteratePairwise(&functor, doRebuild);
+    doRebuild = false;
     ++iterations;
     ++collectedSamples;
     auto currentConfig = autoTuner.getCurrentConfig();
@@ -96,7 +100,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
+  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -108,20 +112,27 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
-  autoTuner.iteratePairwise(&functor);  // DS NoN3
+  bool doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // DS NoN3
+  doRebuild = false;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS NoN3
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
-  autoTuner.iteratePairwise(&functor);  // DS N3
+  doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // DS N3
+  doRebuild = false;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
-  autoTuner.iteratePairwise(&functor);  // LC NoN3
+  doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // LC NoN3
+  doRebuild = false;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
-  autoTuner.iteratePairwise(&functor);  // optimum
+  doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -141,7 +152,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
                   autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
+  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -153,15 +164,20 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
-  autoTuner.iteratePairwise(&functor);  // DS N3
+  bool doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // DS N3
+  doRebuild = false;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
-  autoTuner.iteratePairwise(&functor);  // LC N3
+  doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // LC N3
+  doRebuild = false;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
-  autoTuner.iteratePairwise(&functor);  // optimum
+  doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -176,7 +192,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
+  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -188,15 +204,20 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
-  autoTuner.iteratePairwise(&functor);  // DS NoN3
+  bool doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // DS NoN3
+  doRebuild = false;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
-  autoTuner.iteratePairwise(&functor);  // LC NoN3
+  doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
-  autoTuner.iteratePairwise(&functor);  // LC NoN3
+  doRebuild = false;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
-  autoTuner.iteratePairwise(&functor);  // optimum
+  doRebuild = true;
+  autoTuner.iteratePairwise(&functor, doRebuild);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -208,7 +229,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
   auto exp1 = []() {
     std::set<autopas::Configuration> configsList = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
+    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, std::move(tuningStrategy),
                                                    autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
 
@@ -222,7 +243,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::DataLayoutOption> dl = {};
     std::set<autopas::Newton3Option> n3 = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, dl, n3);
-    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
+    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, std::move(tuningStrategy),
                                                    autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
 
@@ -238,8 +259,9 @@ TEST_F(AutoTunerTest, testOneConfig) {
 
   auto configsList = {conf};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
-                                             autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
+  size_t maxSamples = 3;
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, std::move(tuningStrategy),
+                                             autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples);
 
   EXPECT_EQ(conf, tuner.getCurrentConfig());
 
@@ -247,8 +269,16 @@ TEST_F(AutoTunerTest, testOneConfig) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
 
+  bool doRebuild = true;
+  size_t numSamples = 0;
   for (int i = 0; i < 5; ++i) {
-    tuner.iteratePairwise(&functor);
+    if (numSamples == maxSamples) {
+      numSamples = 0;
+      doRebuild = true;
+    }
+    tuner.iteratePairwise(&functor, doRebuild);
+    doRebuild = false;
+    ++numSamples;
     EXPECT_EQ(conf, tuner.getCurrentConfig());
   }
 }
@@ -265,7 +295,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 
   auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, std::move(tuningStrategy),
                                              autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
@@ -274,14 +304,14 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-
-  tuner.iteratePairwise(&functor);
+  bool doRebuild = true;
+  tuner.iteratePairwise(&functor, doRebuild);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
-
-  tuner.iteratePairwise(&functor);
+  doRebuild = false;
+  tuner.iteratePairwise(&functor, doRebuild);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
-
-  tuner.iteratePairwise(&functor);
+  doRebuild = false;
+  tuner.iteratePairwise(&functor, doRebuild);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 }
 
@@ -297,7 +327,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 
   auto configsList = {confN3, confNoN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 100, std::move(tuningStrategy),
+  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, std::move(tuningStrategy),
                                              autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
@@ -306,6 +336,6 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-
-  EXPECT_THROW(tuner.iteratePairwise(&functor), autopas::utils::ExceptionHandler::AutoPasException);
+  bool doRebuild = true;
+  EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild), autopas::utils::ExceptionHandler::AutoPasException);
 }

@@ -15,8 +15,6 @@
 
 class LinkedCellsVersusVerletClusterListsTest : public AutoPasTestBase {
  public:
-  LinkedCellsVersusVerletClusterListsTest();
-
   ~LinkedCellsVersusVerletClusterListsTest() override = default;
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }

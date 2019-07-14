@@ -39,12 +39,13 @@ INSTANTIATE_TEST_SUITE_P(
                 // @TODO: let verlet lists support Newton 3
                 if (containerOption == autopas::ContainerOption::verletLists ||
                     containerOption == autopas::ContainerOption::verletListsCells ||
-                    containerOption == autopas::ContainerOption::verletClusterLists) {
+                    containerOption == autopas::ContainerOption::verletClusterLists ||
+                    containerOption == autopas::ContainerOption::varVerletListsAsBuild) {
                   continue;
                 }
 
                 autopas::ContainerSelector<Particle, FPCell> containerSelector({0, 0, 0}, {10, 10, 10}, 1);
-                autopas::ContainerSelectorInfo containerInfo(1, 0, 10);
+                autopas::ContainerSelectorInfo containerInfo(1, 0);
 
                 containerSelector.selectContainer(containerOption, containerInfo);
 
@@ -86,8 +87,12 @@ INSTANTIATE_TEST_SUITE_P(
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
+  if (traversalOption == autopas::TraversalOption::c04SoA and dataLayout == autopas::DataLayoutOption::aos) {
+    return;
+  }
+
   autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
-  autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), getVerletRebuildFrequency());
+  autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin());
 
   containerSelector.selectContainer(containerOption, containerInfo);
 
@@ -234,5 +239,5 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 template <class ParticleFunctor, class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
                                autopas::Newton3Option newton3, ParticleFunctor *f) {
-  withStaticContainerType(container, [&](auto container) { container->iteratePairwise(f, traversal.get()); });
+  container->iteratePairwise(traversal.get());
 }

@@ -33,78 +33,57 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * the index type to access the particle cells
    */
-  using index_t = typename VerletClusterMaths::index_t;
+  typedef VerletClusterMaths::index_t index_t;
 
  public:
   /**
    * Constructor of the VerletClusterLists class.
    * The neighbor lists are build using a estimated density.
    * The box is divided into cuboids with roughly the
-   * same side length. The rebuildFrequency should be chosen, s.t. the particles do
-   * not move more than a distance of skin/2 between two rebuilds of the lists.
+   * same side length.
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
-   * @param rebuildFrequency specifies after how many pair-wise traversals the
-   * neighbor lists are to be rebuild. A frequency of 1 means that they are
-   * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param clusterSize size of clusters
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
-                     double skin = 0, unsigned int rebuildFrequency = 1, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff + skin),
+                     double skin = 0, int clusterSize = 4)
+      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _clusterSize(clusterSize),
         _numClusters(0),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _skin(skin),
         _cutoff(cutoff),
-        _cutoffSqr(cutoff * cutoff),
-        _traversalsSinceLastRebuild(UINT_MAX),
-        _rebuildFrequency(rebuildFrequency),
-        _neighborListIsValid(false),
-        _neighborListIsNewton3(false) {
+        _neighborListIsNewton3(false),
+        _interactionLengthSqr((cutoff + skin) * (cutoff + skin)) {
     rebuild(false);
   }
 
   ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
 
-  /**
-   * Function to iterate over all pairs of particles. (Only AoS)
-   * This function only handles short-range interactions.
-   * @tparam The type of the ParticleFunctor.
-   * @tparam Traversal The type of the traversal.
-   * @param f not used
-   * @param traversal The traversal to use for the iteration
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
-    if (needsRebuild(traversal->getUseNewton3())) {
-      this->rebuild(traversal->getUseNewton3());
-    }
+  void iteratePairwise(TraversalInterface *traversal) override {
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
-      traversalInterface->setTraversalInfo(this);
-      traversalInterface->initClusterTraversal();
-      traversalInterface->traverseParticlePairs();
-      traversalInterface->endClusterTraversal();
+      traversalInterface->setClusterLists(*this);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
     }
 
-    // we iterated, so increase traversal counter
-    _traversalsSinceLastRebuild++;
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   /**
    * @copydoc VerletLists::addParticle()
    */
   void addParticle(Particle &p) override {
-    _neighborListIsValid = false;
     // add particle somewhere, because lists will be rebuild anyways
     _clusters[0].addParticle(p);
   }
@@ -116,19 +95,41 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
+  bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
+
   /**
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.deleteHaloParticles not yet implemented.");
+    // quick and dirty: iterate over all particles and delete halo particles
+    // @todo: make this proper
+    for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+      if (not iter->isOwned()) {
+        iter.deleteCurrentParticle();
+      }
+    }
   }
 
   /**
    * @copydoc VerletLists::updateContainer()
    */
-  void updateContainer() override {
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::vector<Particle> updateContainer() override {
     AutoPasLog(debug, "updating container");
-    _neighborListIsValid = false;
+    // first delete all particles
+    this->deleteHaloParticles();
+
+    // next find invalid particles
+    std::vector<Particle> invalidParticles;
+    /// @todo: parallelize
+    for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      if (not utils::inBox(iter->getR(), _boxMin, _boxMax)) {
+        invalidParticles.push_back(*iter);
+        iter.deleteCurrentParticle();
+      }
+    }
+
+    return invalidParticles;
   }
 
   bool isContainerUpdateNeeded() override {
@@ -136,21 +137,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return false;
   }
 
-  TraversalSelectorInfo<FullParticleCell<Particle>> getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo<FullParticleCell<Particle>>(_cellsPerDim);
-  }
-
-  /**
-   * Specifies whether the neighbor lists need to be rebuild.
-   * @param useNewton3 If the neighbor lists should be build with newton 3.
-   * @return true if the neighbor lists need to be rebuild, false otherwise
-   */
-  bool needsRebuild(bool useNewton3) {
-    AutoPasLog(debug, "VerletLists: neighborlist is valid: {}", _neighborListIsValid);
-    // if the neighbor list is NOT valid or we have not rebuild for _rebuildFrequency steps
-    return (not _neighborListIsValid) or (_traversalsSinceLastRebuild >= _rebuildFrequency) or
-           (_neighborListIsNewton3 != useNewton3);
-  }
+  TraversalSelectorInfo getTraversalSelectorInfo() override { return TraversalSelectorInfo(_cellsPerDim); }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
@@ -166,10 +153,16 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return ParticleIteratorWrapper<Particle>();
   }
 
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    rebuild(traversal->getUseNewton3());
+    std::cout << getNumParticles() << std::endl;
+  }
+
   /**
    * Helper method to iterate over all clusters.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
-   * @tparam inParallel If the iteration should be executed in parallel or sequential.
+   * @tparam inParallel If the iteration should be executed in parallel or sequential.  See traverseClustersParallel()
+   * for thread safety.
    * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, int
    * clusterSize, std::vector<Particle*> clusterNeighborList.
    */
@@ -184,10 +177,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   unsigned long getNumParticles() override {
     unsigned long sum = 0;
-    for (const auto &cluster : _clusters) {
-      sum += cluster.numParticles();
+    for (size_t index = 0; index < _clusters.size(); index++) {
+      sum += _clusters[index].numParticles();
     }
-
     return sum;
   }
 
@@ -222,7 +214,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   auto getCellsPerDimension() const { return _cellsPerDim; }
 
   /**
-   * Returns the grids of this container for usage in traversals.
+   * Returns the 2D grid for the XY-plane of this container that defines the cluster towers.
    * @return the grids of this container for usage in traversals.
    */
   auto &getGrids() { return _clusters; }
@@ -260,6 +252,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   /**
    * Helper method to iterate over all clusters in parallel.
+   *
+   * It is alwys safe to modify the particles in the cluster that is passed to the given loop body. However, when
+   * modifying particles from other clusters, the caller has to make sure that no data races occur. Particles must not
+   * be added or removed during the traversal.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
    * @param loopBody The lambda to execute for all clusters. Parameters given are Particle* clusterStart, index_t
    * clusterSize, std::vector<Particle*> clusterNeighborList.
@@ -289,9 +285,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Recalculate grids and clusters,
-   * build verlet lists and
-   * pad clusters.
+   * Recalculate grids and clusters, build verlet lists and pad clusters.
    * @param useNewton3 If the everything should be build using newton 3 or not.
    */
   void rebuild(bool useNewton3) {
@@ -299,7 +293,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     auto boxSize = ArrayMath::sub(_boxMax, _boxMin);
 
-    _gridSideLength = guessOptimalGridSideLength(invalidParticles.size(), boxSize);
+    _gridSideLength = estimateOptimalGridSideLength(invalidParticles.size(), boxSize);
     _gridSideLengthReciprocal = 1 / _gridSideLength;
 
     _cellsPerDim = calculateCellsPerDim(boxSize);
@@ -346,12 +340,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Guesses the optimal grid side length.
+   * Estimates the optimal grid side length.
    * @param numParticles The number of particles in the container.
    * @param boxSize The size of the domain.
    * @return an estimated optimal grid side length.
    */
-  virtual double guessOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize) const {
+  virtual double estimateOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize) const {
     double volume = boxSize[0] * boxSize[1] * boxSize[2];
     if (numParticles > 0) {
       // estimate particle density
@@ -436,10 +430,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         addClustersOfNeighborGridsAsNeighborsIfInRange(iGrid, iSize, iRest, iNeighbors, minX, maxX, minY, maxY, xi, yi);
       }
     }
-
-    // the neighbor list is now valid
-    _neighborListIsValid = true;
-    _traversalsSinceLastRebuild = 0;
   }
 
   /**
@@ -469,7 +459,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
         // calculate distance in xy-plane and skip if already longer than cutoff
         double distXYsqr = distX * distX + distY * distY;
-        if (distXYsqr <= _cutoffSqr) {
+        if (distXYsqr <= _interactionLengthSqr) {
           auto &jGrid = _clusters[VerletClusterMaths::index1D(xj, yj, _cellsPerDim)];
           // calculate number of  full clusters and rest
           const index_t jSize = jGrid.numParticles() / _clusterSize;
@@ -506,8 +496,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                                           FullParticleCell<Particle> &jGrid, index_t jSize, int jRest,
                                           double distXYsqr) {
     // bbox in z of iGrid
-    float iBBoxBot = iGrid[iClusterIndex * _clusterSize].getR()[2];
-    float iBBoxTop = iGrid[iClusterIndex * _clusterSize + iClusterSize - 1].getR()[2];
+    double iBBoxBot = iGrid[iClusterIndex * _clusterSize].getR()[2];
+    double iBBoxTop = iGrid[iClusterIndex * _clusterSize + iClusterSize - 1].getR()[2];
     auto &iClusterNeighborList = iNeighbors[iClusterIndex];
     Particle *iClusterStart = &iGrid[iClusterIndex * _clusterSize];
 
@@ -515,7 +505,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     for (index_t jClusterIndex = 0; jClusterIndex < jSize; jClusterIndex++) {
       Particle *jClusterStart = &jGrid[jClusterIndex * _clusterSize];
       // If newton 3 is used, only add clusters as neighbors that have a equal or higher index. Skip otherwise.
-      if (_neighborListIsNewton3 && _clusterIndexMap.at(iClusterStart) > _clusterIndexMap.at(jClusterStart)) continue;
+      if (_neighborListIsNewton3 and _clusterIndexMap.at(iClusterStart) > _clusterIndexMap.at(jClusterStart)) continue;
 
       addJClusterAsNeighborIfInRange(jGrid, jClusterStart, _clusterSize, iClusterNeighborList, distXYsqr, iBBoxBot,
                                      iBBoxTop);
@@ -524,7 +514,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     if (jRest > 0) {
       Particle *jClusterStart = &jGrid[jSize * _clusterSize];
       // If newton 3 is used, only add clusters as neighbors that have a equal or higher index. Skip otherwise.
-      if (not(_neighborListIsNewton3 && _clusterIndexMap.at(iClusterStart) > _clusterIndexMap.at(jClusterStart))) {
+      if (not(_neighborListIsNewton3 and _clusterIndexMap.at(iClusterStart) > _clusterIndexMap.at(jClusterStart))) {
         addJClusterAsNeighborIfInRange(jGrid, jClusterStart, jRest, iClusterNeighborList, distXYsqr, iBBoxBot,
                                        iBBoxTop);
       }
@@ -543,14 +533,14 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param iBBoxTop The top z-coordinate of the cluster in the i-th grid.
    */
   void addJClusterAsNeighborIfInRange(FullParticleCell<Particle> &jGrid, Particle *jClusterStart, int jClusterSize,
-                                      std::vector<Particle *> &iClusterNeighborList, double distXYsqr, float iBBoxBot,
-                                      float iBBoxTop) {
+                                      std::vector<Particle *> &iClusterNeighborList, double distXYsqr, double iBBoxBot,
+                                      double iBBoxTop) {
     // bbox in z of jGrid
-    float jBBoxBot = jClusterStart->getR()[2];
-    float jBBoxTop = (jClusterStart + (jClusterSize - 1))->getR()[2];
+    double jBBoxBot = jClusterStart->getR()[2];
+    double jBBoxTop = (jClusterStart + (jClusterSize - 1))->getR()[2];
 
     double distZ = bboxDistance(iBBoxBot, iBBoxTop, jBBoxBot, jBBoxTop);
-    if (distXYsqr + distZ * distZ <= _cutoffSqr) {
+    if (distXYsqr + distZ * distZ <= _interactionLengthSqr) {
       iClusterNeighborList.push_back(jClusterStart);
     }
   }
@@ -584,7 +574,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param max2 maximum coordinate of second bbox in tested dimension
    * @return distance
    */
-  inline float bboxDistance(const float min1, const float max1, const float min2, const float max2) const {
+  inline double bboxDistance(const double min1, const double max1, const double min2, const double max2) const {
     if (max1 < min2) {
       return min2 - max1;
     } else if (min1 > max2) {
@@ -626,13 +616,15 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * works as easy as possible with newton 3. The newton 3 neighbor list just has to only save neighbors with a higher
    * index, and there will be no data races.
    *
-   * The domain in the xy-plane is divided in color cells that have at least the size of the cutoff, and the grids (that
-   * have variable sizes depending on the number of particles) are sorted into these color cells. Now, for every color
-   * cell, the indices of all clusters in it are assigned in a way so that all clusters in the three neighbor cells
-   * below and the neighbor cell to the right have a higher index, and the clusters in the three neighbor cells above
-   * and the neighbor cell to the left have a lower index. Inside of each color cell, the clusters of each grid have a
-   * similar relationship with the neighbor grids. In each grid, the clusters that are higher in z-direction have a
-   * higher index.
+   * For each cluster now holds (with x-axis as left <=> right, y-axis <=> as top <=> bottom):
+   *    - The indices of all clusters of the three color cells above and the color cell to the left are lower.
+   *    - The indices of all clusters of the three color cells below and the color cell to the right are higher.
+   *    - For all grids of the same color cell holds:
+   *        - The indices of all clusters of the three grids above and the grids to the left are lower.
+   *        - The indices of all clusters of the three grids below and the grids to the right are higher.
+   *    - For all clusters in the same grid holds:
+   *        - The indices of all clusters with a lower z-coordinate than the current cluster are lower.
+   *        - The indices of all clusters with a higher z-coordinate than the current cluster are higher.
    *
    * @return The number of clusters in the container.
    */
@@ -674,7 +666,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         unsigned long x = xColorCell * gridsPerColoringCell + xInner;
 
         // Not every coloring cell has to have gridsPerColoringCell grids in every direction.
-        if (x >= _cellsPerDim[0] || y >= _cellsPerDim[1]) {
+        if (x >= _cellsPerDim[0] or y >= _cellsPerDim[1]) {
           continue;
         }
 
@@ -685,7 +677,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         int rest = currentGrid.numParticles() % _clusterSize;
         if (rest > 0) numClusters++;
 
-        for (unsigned int currentCluster = 0; currentCluster < numClusters; currentCluster++) {
+        for (unsigned long currentCluster = 0; currentCluster < numClusters; currentCluster++) {
           Particle *clusterStart = &currentGrid[currentCluster * _clusterSize];
           _clusterIndexMap[clusterStart] = currentMapIndex++;
         }
@@ -701,41 +693,59 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   std::vector<std::vector<std::vector<Particle *>>> _neighborLists;
 
-  /// internal storage, particles are split into a grid in xy-dimension
+  /**
+   * internal storage, particles are split into a grid in xy-dimension
+   */
   std::vector<FullParticleCell<Particle>> _clusters;
+
+  /**
+   * The number of particles in a full cluster.
+   */
   int _clusterSize;
 
-  /// The number of clusters. This is not equal to _clusters.size(), as every grid might contain multiple clusters.
+  /**
+   * The number of clusters. This is not equal to _clusters.size(), as every grid might contain multiple clusters.
+   */
   index_t _numClusters;
 
+  /**
+   * Box min of the domain.
+   */
   std::array<double, 3> _boxMin;
+
+  /**
+   * Box max of the domain.
+   */
   std::array<double, 3> _boxMax;
 
-  /// side length of xy-grid and reciprocal
-  double _gridSideLength;
-  double _gridSideLengthReciprocal;
+  /**
+   * Side length of xy-grid.
+   */
+  double _gridSideLength{0.};
 
-  /// dimensions of grid
-  std::array<index_t, 3> _cellsPerDim;
+  /**
+   *  Reciprocal of _gridSideLength.
+   */
+  double _gridSideLengthReciprocal{0.};
 
-  /// skin radius
+  /**
+   * Dimensions of the 2D xy-grid.
+   */
+  std::array<index_t, 3> _cellsPerDim{};
+
+  /**
+   * The skin radius.
+   */
   double _skin;
 
-  /// cutoff
+  /**
+   * The cutoff.
+   */
   double _cutoff;
-  double _cutoffSqr;
 
-  /// how many pairwise traversals have been done since the last traversal
-  unsigned int _traversalsSinceLastRebuild;
-
-  /// specifies after how many pairwise traversals the neighbor list is to be
-  /// rebuild
-  unsigned int _rebuildFrequency;
-
-  /// specifies if the neighbor list is currently valid
-  bool _neighborListIsValid;
-
-  /// Specifies if the neighbor list uses newton 3 or not.
+  /**
+   * Specifies if the neighbor list uses newton 3 or not.
+   */
   bool _neighborListIsNewton3;
 
   /**
@@ -743,6 +753,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * buildClusterIndexMap().
    */
   std::unordered_map<Particle *, index_t> _clusterIndexMap;
+
+  /**
+   * (_cutoff + _skin)^2.
+   */
+  double _interactionLengthSqr;
 };
 
 }  // namespace autopas

@@ -26,15 +26,21 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                                         public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
+ private:
   using Particle = typename ParticleCell::ParticleType;
-  using index_t = typename VerletClusterMaths::index_t;
+  typedef typename VerletClusterMaths::index_t index_t;
+
   /**
-   * This stride is determined by the way the neighbor list with newton 3 of the VerletClusterLists container is build.
+   * Each base step looks like this:
+   *    X C N  Colors:  1 2 3
+   *    N N N           4 5 6
+   * Where C is the current cell, N are the neighbor cells that is worked on, and X is not worked on. The neighbor list
+   * with newton 3 of the VerletClusterLists container is build in a way that the neighbor lists already contain only
+   * the neighbor clusters of these cells.
    * @see VerletClusterLists::updateVerletLists(bool)
    */
-  static constexpr std::array<unsigned long, 3> stride{3ul, 2ul, 1ul};
+  static constexpr std::array<unsigned long, 3> _stride{3ul, 2ul, 1ul};
 
- private:
   /**
    * Helper method to iterate over one color cell.
    * @param xColorCell The x coordinate of the cell.
@@ -73,10 +79,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
     return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa);
   }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {}
-  void endTraversal(std::vector<ParticleCell> &cells) override {}
-
-  void initClusterTraversal() override {
+  void initTraversal() override {
     if constexpr (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
@@ -96,7 +99,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
     }
   }
 
-  void endClusterTraversal() override {
+  void endTraversal() override {
     if constexpr (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
@@ -106,15 +109,12 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
     }
   }
 
-  /**
-   * @copydoc VerletClustersTraversalInterface::traverseParticlePairs
-   */
   void traverseParticlePairs() override {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
-    double gridSideLength = clusterList.getGridSideLength();
-    double cutoff = clusterList.getCutoff();
-    double gridsPerColoringCell = std::ceil(cutoff / gridSideLength);
+    const auto gridSideLength = clusterList.getGridSideLength();
+    const auto cutoff = clusterList.getCutoff();
+    const auto gridsPerColoringCell = std::ceil(cutoff / gridSideLength);
     std::array<unsigned long, 3> coloringCellsPerDim{};
     for (int i = 0; i < 3; i++) {
       coloringCellsPerDim[i] =
@@ -125,13 +125,15 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
       processColorCell(x, y, z, gridsPerColoringCell);
     };
 
-    const auto end = ArrayMath::sub(coloringCellsPerDim, {0ul, 0ul, 0ul});
     // We are only doing a 2D coloring.
-    assert(end[2] == 1);
+    if (coloringCellsPerDim[2] != 1) {
+      autopas::utils::ExceptionHandler::exception(
+          "VerletClusterColoringTraversal: Coloring should only be 2D, not in z-direction!");
+    }
 
     // localStride is necessary because stride is constexpr and cTraversal() wants a const &
-    auto localStride = stride;
-    this->cTraversal(std::forward<decltype(loopBody)>(loopBody), end, localStride);
+    auto localStride = _stride;
+    this->cTraversal(std::forward<decltype(loopBody)>(loopBody), coloringCellsPerDim, localStride);
   }
 
  private:
@@ -151,7 +153,9 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processColorCell(
     unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell, int gridsPerColoringCell) {
   // We are only doing a 2D coloring.
-  assert(zColorCell == 0);
+  if (zColorCell != 0) {
+    autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");
+  }
 
   auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
   const auto cellsPerDim = clusterList.getCellsPerDimension();
@@ -161,18 +165,18 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
 
   for (int yInner = 0; yInner < gridsPerColoringCell; yInner++) {
     for (int xInner = 0; xInner < gridsPerColoringCell; xInner++) {
-      unsigned long y = yColorCell * gridsPerColoringCell + yInner;
-      unsigned long x = xColorCell * gridsPerColoringCell + xInner;
+      const auto y = yColorCell * gridsPerColoringCell + yInner;
+      const auto x = xColorCell * gridsPerColoringCell + xInner;
 
       // Not every coloring cell has to have gridsPerColoringCell grids in every direction.
-      if (x >= cellsPerDim[0] || y >= cellsPerDim[1]) {
+      if (x >= cellsPerDim[0] or y >= cellsPerDim[1]) {
         continue;
       }
-      unsigned long gridIndex1D = VerletClusterMaths::index1D(x, y, cellsPerDim);
+      auto gridIndex1D = VerletClusterMaths::index1D(x, y, cellsPerDim);
 
       auto &currentGrid = grids[gridIndex1D];
       auto numClusters = currentGrid.numParticles() / clusterSize;
-      for (unsigned int currentCluster = 0; currentCluster < numClusters; currentCluster++) {
+      for (unsigned long currentCluster = 0; currentCluster < numClusters; currentCluster++) {
         const auto &clusterNeighborList = neighborLists.at(gridIndex1D).at(currentCluster);
         [[maybe_unused]] Particle *clusterStart = &currentGrid[currentCluster * clusterSize];
         for (auto neighborClusterStart : clusterNeighborList) {
@@ -191,14 +195,15 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseClusterPairAoS(
     Particle *clusterStart, Particle *neighborClusterStart, int clusterSize) {
-  if (neighborClusterStart == clusterStart) {
-    for (int i = 0; i < clusterSize; i++) {
+  const bool isClusterInteractionWithItself = neighborClusterStart == clusterStart;
+  for (int i = 0; i < clusterSize; i++) {
+    if (isClusterInteractionWithItself) {
+      // Always use newton 3 for interactions within one cluster.
       for (int j = i + 1; j < clusterSize; j++) {
         _functor->AoSFunctor(*(clusterStart + i), *(neighborClusterStart + j), true);
       }
-    }
-  } else {
-    for (int i = 0; i < clusterSize; i++) {
+    } else {
+      // Calculate interactions between two different clusters.
       for (int j = 0; j < clusterSize; j++) {
         _functor->AoSFunctor(*(clusterStart + i), *(neighborClusterStart + j), useNewton3);
       }
@@ -210,10 +215,10 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseClusterPairSoA(
     index_t gridIndex, index_t neighborGridIndex, index_t clusterNum, index_t neighborClusterNum, int clusterSize) {
   if (gridIndex == neighborGridIndex and clusterNum == neighborClusterNum) {
-    _functor->SoAFunctor(_gridSoAs[gridIndex], clusterNum * clusterSize, clusterSize, useNewton3);
+    //_functor->SoAFunctor(_gridSoAs[gridIndex], clusterNum * clusterSize, clusterSize, useNewton3);
   } else {
-    _functor->SoAFunctor(_gridSoAs[gridIndex], clusterNum * clusterSize, clusterSize, _gridSoAs[neighborGridIndex],
-                         neighborClusterNum * clusterSize, clusterSize, useNewton3);
+    //_functor->SoAFunctor(_gridSoAs[gridIndex], clusterNum * clusterSize, clusterSize, _gridSoAs[neighborGridIndex],
+    //                     neighborClusterNum * clusterSize, clusterSize, useNewton3);
   }
 }
 

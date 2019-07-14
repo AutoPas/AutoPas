@@ -68,11 +68,12 @@ int main(int argc, char **argv) {
 
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax({33., 33., 33.});
   double cutoff = 3.0;
+  double skin = 0.;
   double epsilon = 2.0;
   double sigma = 0.4;
 
-  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff);
-  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff);
+  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff, skin);
+  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff, skin);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.8, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
@@ -95,8 +96,8 @@ int main(int argc, char **argv) {
   C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalLCcudaN3(
       lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
 
-  dir.iteratePairwise(&func, &traversalAoS);
-  lc.iteratePairwise(&func, &traversalc08N3);
+  dir.iteratePairwise(&traversalAoS);
+  lc.iteratePairwise(&traversalc08N3);
 
   auto start = std::chrono::high_resolution_clock::now();
   auto stop = std::chrono::high_resolution_clock::now();
@@ -104,7 +105,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwise(&func, &traversalAoS);
+    dir.iteratePairwise(&traversalAoS);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
@@ -113,7 +114,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwise(&func, &traversalSoA);
+    dir.iteratePairwise(&traversalSoA);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
@@ -122,7 +123,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwise(&func, &traversalCuda);
+    dir.iteratePairwise(&traversalCuda);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
@@ -131,7 +132,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    dir.iteratePairwise(&func, &traversalCudaN3);
+    dir.iteratePairwise(&traversalCudaN3);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
@@ -140,7 +141,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &traversalc08N3);
+    lc.iteratePairwise(&traversalc08N3);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
@@ -149,7 +150,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &C01Cuda);
+    lc.iteratePairwise(&C01Cuda);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
@@ -158,7 +159,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &traversalLCcuda);
+    lc.iteratePairwise(&traversalLCcuda);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
@@ -167,7 +168,7 @@ int main(int argc, char **argv) {
 
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < maxIterations; ++i) {
-    lc.iteratePairwise(&func, &traversalLCcudaN3);
+    lc.iteratePairwise(&traversalLCcudaN3);
   }
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();

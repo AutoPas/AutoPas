@@ -38,10 +38,12 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &verletTraversal);
+  verletLists.rebuildNeighborLists(&verletTraversal);
+  verletLists.iteratePairwise(&verletTraversal);
 }
 
-int sumNumClusterNeighbors(const std::vector<std::vector<std::vector<autopas::ParticleBase<double> *>>> &neighborList) {
+int sumNumClusterNeighbors(
+    const std::vector<std::vector<std::vector<autopas::ParticleBase<double, unsigned long> *>>> &neighborList) {
   int sum = 0;
   for (const auto &elem : neighborList) {
     for (const auto &inner : elem) {
@@ -71,7 +73,8 @@ TEST_F(VerletClusterListsTest, testVerletListNewton3Build) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
   autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> noNewton3Traversal(
       &emptyFunctor);
-  verletListsNoNewton3.iteratePairwise(&emptyFunctor, &noNewton3Traversal);
+  verletListsNoNewton3.rebuildNeighborLists(&noNewton3Traversal);
+  verletListsNoNewton3.iteratePairwise(&noNewton3Traversal);
   const auto &noNewton3NeighborLists = verletListsNoNewton3.getNeighborLists();
   const auto &noNewton3ClusterIndices = verletListsNoNewton3.getClusterIndexMap();
   int noNewton3NumNeighorClusters = sumNumClusterNeighbors(noNewton3NeighborLists);
@@ -79,7 +82,8 @@ TEST_F(VerletClusterListsTest, testVerletListNewton3Build) {
   // Generate neighbor list with newton 3.
   autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> newton3Traversal(
       &emptyFunctor);
-  verletListsNewton3.iteratePairwise(&emptyFunctor, &newton3Traversal);
+  verletListsNewton3.rebuildNeighborLists(&newton3Traversal);
+  verletListsNewton3.iteratePairwise(&newton3Traversal);
   const auto &newton3NeighborLists = verletListsNewton3.getNeighborLists();
   const auto &newton3ClusterIndices = verletListsNewton3.getClusterIndexMap();
   int newton3NumNeighorClusters = sumNumClusterNeighbors(newton3NeighborLists);
@@ -133,7 +137,8 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   ColoringTraversalWithColorChangeNotify traversal(
       &functor, [](int currentColor) { CollectParticlesPerThreadFunctor::nextColor(currentColor); });
   functor.initTraversal();
-  verletLists.iteratePairwise(&functor, &traversal);
+  verletLists.rebuildNeighborLists(&traversal);
+  verletLists.iteratePairwise(&traversal);
   functor.endTraversal(true);
 
   // Check that particles in the same color are only accessed by one thread.
@@ -150,4 +155,4 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
     }
   }
 }
-#endif
+#endif  // AUTOPAS_OPENMP

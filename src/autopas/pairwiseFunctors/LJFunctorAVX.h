@@ -27,7 +27,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
-class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
+class LJFunctorAVX
+    : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctorAVX<Particle, ParticleCell>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -42,16 +43,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @param epsilon
    * @param sigma
    * @param shift
-   * @param lowCorner Lower corner of the local simulation domain.
-   * @param highCorner Upper corner of the local simulation domain.
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift,
-                        std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.},
-                        bool duplicatedCalculation = false)
+  explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift, bool duplicatedCalculation = false)
 #ifdef __AVX__
-      : _one{_mm256_set1_pd(1.)},
+      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
+        _one{_mm256_set1_pd(1.)},
         _masks{
             _mm256_set_epi64x(0, 0, 0, -1),
             _mm256_set_epi64x(0, 0, -1, -1),
@@ -65,23 +63,19 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _duplicatedCalculations{duplicatedCalculation},
-        _lowCorner(lowCorner),
-        _highCorner(highCorner),
         _postProcessed{false} {
 
-    if (calculateGlobals and duplicatedCalculation) {
-      if (lowCorner == highCorner) {
-        throw utils::ExceptionHandler::AutoPasException(
-            "Please specify the lowCorner and highCorner properly if calculateGlobals and duplicatedCalculation are "
-            "set to true.");
-      }
-    }
     if (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
   }
 #else
-      : _one{0}, _masks{0, 0, 0}, _cutoffsquare{0}, _epsilon24{0}, _sigmasquare{0} {
+      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
+        _one{0},
+        _masks{0, 0, 0},
+        _cutoffsquare{0},
+        _epsilon24{0},
+        _sigmasquare{0} {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -111,6 +105,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
 
     double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
@@ -123,12 +118,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
-      // We cannot do this in normal cases (where we do not calculate globals), as _lowCorner and _highCorner are not
-      // set. (as of 23.11.2018)
-      bool isHaloCell = false;
-      isHaloCell |= xptr[0] < _lowCorner[0] || xptr[0] >= _highCorner[0];
-      isHaloCell |= yptr[0] < _lowCorner[1] || yptr[0] >= _highCorner[1];
-      isHaloCell |= zptr[0] < _lowCorner[2] || zptr[0] >= _highCorner[2];
+      bool isHaloCell = not ownedPtr[0];
       if (isHaloCell) {
         return;
       }
@@ -314,6 +304,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
+    const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
+
     double *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
     double *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
     double *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
@@ -333,12 +326,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
     // defined. (as of 23.11.2018)
     if (calculateGlobals) {
-      isHaloCell1 |= x1ptr[0] < _lowCorner[0] || x1ptr[0] >= _highCorner[0];
-      isHaloCell1 |= y1ptr[0] < _lowCorner[1] || y1ptr[0] >= _highCorner[1];
-      isHaloCell1 |= z1ptr[0] < _lowCorner[2] || z1ptr[0] >= _highCorner[2];
-      isHaloCell2 |= x2ptr[0] < _lowCorner[0] || x2ptr[0] >= _highCorner[0];
-      isHaloCell2 |= y2ptr[0] < _lowCorner[1] || y2ptr[0] >= _highCorner[1];
-      isHaloCell2 |= z2ptr[0] < _lowCorner[2] || z2ptr[0] >= _highCorner[2];
+      isHaloCell1 = not ownedPtr1[0];
+      isHaloCell2 = not ownedPtr2[0];
 
       // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
       // correct!
@@ -457,63 +446,31 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
   /**
-   * SoALoader
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr()
    */
-  AUTOPAS_FUNCTOR_SOALOADER(
-      cell, soa, offset,
-      // @todo it is probably better to resize the soa only once, before calling
-      // SoALoader (verlet-list only)
-      soa.resizeArrays(offset + cell.numParticles());
+  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 8>{
+        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+  }
 
-      if (cell.numParticles() == 0) return;
-
-      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-      auto cellIter = cell.begin();
-      // load particles in SoAs
-      for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-        idptr[i] = cellIter->getID();
-        xptr[i] = cellIter->getR()[0];
-        yptr[i] = cellIter->getR()[1];
-        zptr[i] = cellIter->getR()[2];
-        fxptr[i] = cellIter->getF()[0];
-        fyptr[i] = cellIter->getF()[1];
-        fzptr[i] = cellIter->getF()[2];
-      })
   /**
-   * soaextractor
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(
-      cell, soa, offset,
-      // body start
-      if (soa.getNumParticles() == 0) return;
+  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 5>{
+        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+  }
 
-      auto cellIter = cell.begin();
-
-#ifndef NDEBUG
-      unsigned long *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-#endif
-
-      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-      for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
-        assert(idptr[i] == cellIter->getID());
-        cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
-      })
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 3> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 3>{
+        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+  }
 
   /**
    * Get the number of flops used per kernel call. This should count the
@@ -637,8 +594,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   // bool that defines whether duplicate calculations are happening
   bool _duplicatedCalculations;
-  // lower and upper corner of the domain of the current process
-  std::array<double, 3> _lowCorner, _highCorner;
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
