@@ -88,14 +88,14 @@ class LogicHandler {
           if (dangerous) {
             // throw exception, rebuild frequency not high enough / skin too small!
             utils::ExceptionHandler::exception(
-                "VerletListsLinkedBase::addHaloParticle: wasn't able to update halo particle that is too close to "
+                "LogicHandler::addHaloParticle: wasn't able to update halo particle that is too close to "
                 "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!");
           }
         }
       } else {
         // throw exception, rebuild frequency not high enough / skin too small!
         utils::ExceptionHandler::exception(
-            "VerletListsLinkedBase::addHaloParticle: trying to update halo particle that is too far inside domain "
+            "LogicHandler::addHaloParticle: trying to update halo particle that is too far inside domain "
             "(more than skin/2). Rebuild frequency not high enough / skin too small!");
       }
     }
