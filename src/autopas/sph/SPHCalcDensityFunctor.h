@@ -61,31 +61,21 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     return flops;
   }
 
-  // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
-   */
-  // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
-    Functor<SPHParticle, FullParticleCell<SPHParticle>>::SoAFunctor(soa, newton3);
-  }
-
-  // clang-format off
-  /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const size_t beginIndex, const size_t numParticles, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa, const size_t beginIndex, const size_t numParticles, bool newton3) override {
-    if (numParticles == 0) return;
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+    if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>() + beginIndex;
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>() + beginIndex;
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>() + beginIndex;
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>() + beginIndex;
-    double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>() + beginIndex;
-    double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>() + beginIndex;
+    double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
+    size_t numParticles = soa.getNumParticles();
     for (unsigned int i = 0; i < numParticles; ++i) {
       double densacc = 0.;
 // icpc vectorizes this.
@@ -115,47 +105,36 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
     }
   }
 
-  // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, SoA<SoAArraysType>&, bool)
    */
-  // clang-format on
   void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
-    Functor<SPHParticle, FullParticleCell<SPHParticle>>::SoAFunctor(soa1, soa2, newton3);
-  }
+    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-  // clang-format off
-  /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, const size_t beginIndex1, const size_t numParticles1, SoA<SoAArraysType> &soa2, const size_t beginIndex2, const size_t numParticles2, bool newton3)
-   */
-  // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa1, const size_t beginIndex1, const size_t numParticles1,
-                  SoA<SoAArraysType> &soa2, const size_t beginIndex2, const size_t numParticles2,
-                  bool newton3) override {
-    if (numParticles1 == 0 || numParticles2 == 0) return;
+    double *const __restrict__ xptr1 = soa1.begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr1 = soa1.begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr1 = soa1.begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ xptr1 = soa1.begin<Particle::AttributeNames::posX>() + beginIndex1;
-    double *const __restrict__ yptr1 = soa1.begin<Particle::AttributeNames::posY>() + beginIndex1;
-    double *const __restrict__ zptr1 = soa1.begin<Particle::AttributeNames::posZ>() + beginIndex1;
+    double *const __restrict__ densityptr1 = soa1.begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr1 = soa1.begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr1 = soa1.begin<Particle::AttributeNames::mass>();
 
-    double *const __restrict__ densityptr1 = soa1.begin<Particle::AttributeNames::density>() + beginIndex1;
-    double *const __restrict__ smthptr1 = soa1.begin<Particle::AttributeNames::smth>() + beginIndex1;
-    double *const __restrict__ massptr1 = soa1.begin<Particle::AttributeNames::mass>() + beginIndex1;
+    double *const __restrict__ xptr2 = soa2.begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr2 = soa2.begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr2 = soa2.begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ xptr2 = soa2.begin<Particle::AttributeNames::posX>() + beginIndex2;
-    double *const __restrict__ yptr2 = soa2.begin<Particle::AttributeNames::posY>() + beginIndex2;
-    double *const __restrict__ zptr2 = soa2.begin<Particle::AttributeNames::posZ>() + beginIndex2;
+    double *const __restrict__ densityptr2 = soa2.begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr2 = soa2.begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr2 = soa2.begin<Particle::AttributeNames::mass>();
 
-    double *const __restrict__ densityptr2 = soa2.begin<Particle::AttributeNames::density>() + beginIndex2;
-    double *const __restrict__ smthptr2 = soa2.begin<Particle::AttributeNames::smth>() + beginIndex2;
-    double *const __restrict__ massptr2 = soa2.begin<Particle::AttributeNames::mass>() + beginIndex2;
-
-    for (unsigned int i = 0; i < numParticles1; ++i) {
+    size_t numParticlesi = soa1.getNumParticles();
+    for (unsigned int i = 0; i < numParticlesi; ++i) {
       double densacc = 0.;
+      size_t numParticlesj = soa2.getNumParticles();
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : densacc)
-      for (unsigned int j = 0; j < numParticles2; ++j) {
+      for (unsigned int j = 0; j < numParticlesj; ++j) {
         const double drx = xptr1[i] - xptr2[j];
         const double dry = yptr1[i] - yptr2[j];
         const double drz = zptr1[i] - zptr2[j];

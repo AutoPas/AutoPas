@@ -33,18 +33,6 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell> {
   MOCK_METHOD3_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa,
                                   autopas::SoA<typename Particle::SoAArraysType> &soa2, bool newton3));
 
-  // virtual void SoAFunctor(autopas::SoA<typename Particle::SoAArraysType> &soa, const size_t beginIndex, const size_t
-  // numParticles, bool newton3)
-  MOCK_METHOD4_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa, const size_t beginIndex,
-                                  const size_t numParticles, bool newton3));
-
-  // virtual void SoAFunctor(autopas::SoA<typename Particle::SoAArraysType> &soa1, const size_t beginIndex1,
-  //                                  const size_t numParticles1, autopas::SoA<typename Particle::SoAArraysType> &soa2,
-  //                                  const size_t beginIndex2, const size_t numParticles2, bool newton3)
-  MOCK_METHOD7_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa1, const size_t beginIndex1,
-                                  const size_t numParticles1, autopas::SoA<typename Particle::SoAArraysType> &soa2,
-                                  const size_t beginIndex2, const size_t numParticles2, bool newton3));
-
   // virtual void SoAFunctor(SoA &soa, const std::vector<std::vector<size_t,
   // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
   MOCK_METHOD5_T(SoAFunctor, void(autopas::SoA<typename Particle::SoAArraysType> &soa,

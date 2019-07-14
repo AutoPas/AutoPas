@@ -154,31 +154,20 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
   }
 
-  // clang-format off
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
-   */
-  // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
-    Functor<Particle, ParticleCell>::SoAFunctor(soa, newton3);
-  }
-
-  // clang-format off
-  /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const size_t beginIndex, const size_t numParticles, bool newton3)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa, const size_t beginIndex, const size_t numParticles, bool newton3) override {
-    if (numParticles == 0) return;
+  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+    if (soa.getNumParticles() == 0) return;
 
-    auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>() + beginIndex;
-    auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>() + beginIndex;
-    auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>() + beginIndex;
+    auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>() + beginIndex;
-    auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>() + beginIndex;
-    auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>() + beginIndex;
+    auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
                          shift6 = _shift6;
@@ -208,7 +197,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
-      for (unsigned int j = i + 1; j < numParticles; ++j) {
+      for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
         const floatPrecision drz = zptr[i] - zptr[j];
@@ -270,38 +259,25 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
     }
   }
 
-  // clang-format off
   /**
    * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
    */
-  // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
-    Functor<Particle, ParticleCell>::SoAFunctor(soa1, soa2, newton3);
-  }
+  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
+    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-  // clang-format off
-  /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, const size_t beginIndex1, const size_t numParticles1, SoA<SoAArraysType> &soa2, const size_t beginIndex2, const size_t numParticles2, bool newton3)
-   */
-  // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa1, const size_t beginIndex1, const size_t numParticles1,
-                  SoA<SoAArraysType> &soa2, const size_t beginIndex2, const size_t numParticles2,
-                  bool newton3) override {
-    if (numParticles1 == 0 || numParticles2 == 0) return;
+    auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    auto *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    auto *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>() + beginIndex1;
-    auto *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>() + beginIndex1;
-    auto *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>() + beginIndex1;
-    auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>() + beginIndex2;
-    auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>() + beginIndex2;
-    auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>() + beginIndex2;
-
-    auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>() + beginIndex1;
-    auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>() + beginIndex1;
-    auto *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>() + beginIndex1;
-    auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>() + beginIndex2;
-    auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>() + beginIndex2;
-    auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>() + beginIndex2;
+    auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -329,7 +305,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 
     const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
                          shift6 = _shift6;
-    for (unsigned int i = 0; i < numParticles1; ++i) {
+    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       floatPrecision fxacc = 0;
       floatPrecision fyacc = 0;
       floatPrecision fzacc = 0;
@@ -337,7 +313,7 @@ class LJFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAA
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
-      for (unsigned int j = 0; j < numParticles2; ++j) {
+      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         const floatPrecision drx = x1ptr[i] - x2ptr[j];
         const floatPrecision dry = y1ptr[i] - y2ptr[j];
         const floatPrecision drz = z1ptr[i] - z2ptr[j];

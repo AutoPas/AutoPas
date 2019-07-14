@@ -53,15 +53,11 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
-    Functor<Particle, ParticleCell>::SoAFunctor(soa, newton3);
-  }
+    if (soa.getNumParticles() == 0) return;
 
-  void SoAFunctor(SoA<SoAArraysType> &soa, const size_t beginIndex, const size_t numParticles, bool newton3) override {
-    if (numParticles == 0) return;
-
-    double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>() + beginIndex;
-    double *const __restrict__ y1ptr = soa.template begin<Particle::AttributeNames::posY>() + beginIndex;
-    double *const __restrict__ z1ptr = soa.template begin<Particle::AttributeNames::posZ>() + beginIndex;
+    double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y1ptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -70,7 +66,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (unsigned int j = i + 1; j < numParticles; ++j) {
+      for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x1ptr[j];
@@ -96,27 +92,21 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
   }
 
   void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
-    Functor<Particle, ParticleCell>::SoAFunctor(soa1, soa2, newton3);
-  }
+    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-  void SoAFunctor(SoA<SoAArraysType> &soa1, const size_t beginIndex1, const size_t numParticles1,
-                  SoA<SoAArraysType> &soa2, const size_t beginIndex2, const size_t numParticles2,
-                  bool newton3) override {
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>() + beginIndex1;
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>() + beginIndex1;
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>() + beginIndex1;
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>() + beginIndex2;
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>() + beginIndex2;
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>() + beginIndex2;
-
-    for (unsigned int i = 0; i < numParticles1; ++i) {
+    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
       unsigned long kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (unsigned int j = 0; j < numParticles2; ++j) {
+      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x2ptr[j];
