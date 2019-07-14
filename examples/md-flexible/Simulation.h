@@ -24,6 +24,7 @@ class Simulation {
   AutoPas<Particle, ParticleCell> _autopas;
   MDFlexParser _parser;
   std::ofstream _logFile;
+  shared_ptr<ParticleClassLibrary> _PCL;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -31,10 +32,7 @@ class Simulation {
   } _timers;
 
  public:
-  explicit Simulation() {
-    _timers.startTotal = std::chrono::high_resolution_clock::now();
-    _logFile = std::ofstream();
-  };
+  explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now(); };
 
   ~Simulation() {
     if (not _parser.getLogFileName().empty()) {
@@ -137,6 +135,26 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
   // double epsilon,sigma  = 1.0;
   //@todo schöner machen:
   _parser = parser;
+  double numP;
+  if (_parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
+    numP = _parser.getParticlesPerDim() * _parser.getParticlesPerDim() * _parser.getParticlesPerDim();
+  } else {
+    numP = _parser.getParticlesTotal();
+  }
+  map<unsigned long, double> PC_Epsilon;
+  map<unsigned long, double> PC_Sigma;
+  map<unsigned long, double> PC_Mass;
+  // temporäre implemetierung mit nur einer particle Class
+  double epsilon = _parser.getEpsilon();
+  double sigma = _parser.getSigma();
+  double mass = _parser.getMass();
+  for (unsigned long i = 0; i < numP; i++) {
+    PC_Epsilon.emplace(i, epsilon);
+    PC_Sigma.emplace(i, sigma);
+    PC_Mass.emplace(i, mass);
+  }
+  // initialisierung of PCL
+  _PCL = make_shared<ParticleClassLibrary>(PC_Epsilon, PC_Sigma, PC_Mass);
   auto logFileName(_parser.getLogFileName());
   auto particlesTotal(_parser.getParticlesTotal());
   auto particlesPerDim(_parser.getParticlesPerDim());
@@ -266,13 +284,10 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
   //@ TODO: switch for other functors --> mit boolean object?
-  //_autopas.iteratePairwise(dynamic_cast<LJFunctor<Particle, ParticleCell>*>(this->_Functor));
-  //_autopas.iteratePairwise(this->_Functor);
 
-  auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both, true /* globals */,
-                                    true /* relevant for tuning */>(
-      _autopas.getCutoff(), 1., 1.0, 0.0);  // cutoff, espi, sigma, shift, box min, box max
-
+  // auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both,
+                                   // true>(_autopas.getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true);
+  auto functor = LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();

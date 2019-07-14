@@ -1,18 +1,7 @@
 //
 // Created by nicola on 22.05.19.
 //
-
-#include <gtest/gtest.h>
-#include <math.h>
-#include "../../../../examples/md-flexible/MDFlexParser.h"
-#include "../../../../examples/md-flexible/PrintableMolecule.h"
-#include "../../../../examples/md-flexible/TimeDiscretization.h"
-#include "../../../../src/autopas/utils/ArrayMath.h"
-#include "../../testingHelpers/GridGenerator.h"
-#include "../../testingHelpers/RandomGenerator.h"
-#include "autopas/AutoPas.h"
-#include "testingHelpers/commonTypedefs.h"
-
+#include "TimeDiscretizationTest.h"
 using namespace std;
 using namespace autopas;
 
@@ -43,7 +32,7 @@ std::array<double, 3> lennardForceCalculation(std::array<double, 3> x1, std::arr
                                               (std::pow(sigma / distance, 6) - 2 * std::pow(sigma / distance, 12)));
 }
 
-TEST(TimeDTest, LennardJonesCalculation) {
+TEST_F(TimeDiscretizationTest, LennardJonesCalculation) {
   // dient zum vergleich zu den Forces die im Functor ausgerechnet werden
   std::array<double, 3> x1 = {1, 1, 1};
   std::array<double, 3> x2 = {1.5, 1.5, 1.5};
@@ -51,18 +40,12 @@ TEST(TimeDTest, LennardJonesCalculation) {
   ASSERT_TRUE(true);
 }
 
-// Testet und visualisiert die Kräfte berechnungen und TimeDiscreatization Classe
-TEST(TimeDTest, GeneralForceTest) {
-  // auto container = autopas::LinkedCells<PrintableMolecule,ParticleCell<PrintableMolecule>>({0., 0., 0.},{10.,
-  // 10., 10.},1);
-  PrintableMolecule::setEpsilon(5.0);
-  PrintableMolecule::setSigma(1.0);
+// Testet und visualisiert die Kräfte berechnungen und TimeDiscreatization Klasse
+TEST_F(TimeDiscretizationTest, GeneralForceTest) {
+  PrintableMolecule::setEpsilon(epsilon);
+  PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  double epsilon = 5.0;
-  double sigma = 1.0;
-  double cutoff = 2;
-  array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
@@ -83,8 +66,6 @@ TEST(TimeDTest, GeneralForceTest) {
   int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
-                                         autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   // Dokumentation prints
@@ -112,20 +93,15 @@ TEST(TimeDTest, GeneralForceTest) {
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
   }
-  delete functor;
-  delete autoPas;
   ASSERT_TRUE(true);
+  delete autoPas;
 }
 
-TEST(TimeDTest, CalcX) {
-  PrintableMolecule::setEpsilon(5.0);
-  PrintableMolecule::setSigma(1.0);
+TEST_F(TimeDiscretizationTest, CalcX) {
+  PrintableMolecule::setEpsilon(epsilon);
+  PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  double epsilon = 5.0;
-  double sigma = 1.0;
-  double cutoff = 2;
-  array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
@@ -143,51 +119,43 @@ TEST(TimeDTest, CalcX) {
   //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
   //  }
   double particleD = 0.01;
-  //  int iterations = 0;
+  int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
-                                         autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
   cout << "delta_t value =  " << particleD << endl;
-  //  while (iterations < 10) {
-  //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  //    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-  //      auto v = iter->getV();
-  //      auto m = iter->getMass();
-  //      auto f = iter->getF();
-  //      iter->setOldf(f);
-  //      cout << "Particle ID: " << iter->getID() << endl;
-  //      cout << "initial Velocity: " << arrayString(v) << endl;
-  //      v = autopas::ArrayMath::mulScalar(v, particleD);
-  //      cout << "Velocity * delta_T= " << arrayString(v) << endl;
-  //      cout << "initial F = " << arrayString(f) << endl;
-  //      f = autopas::ArrayMath::mulScalar(f, (particleD * particleD / (2 * m)));
-  //      cout << "F * delta² / 2*m = " << arrayString(f) << endl;
-  //      cout << "Print old Positions:" << arrayString(iter->getR()) << endl;
-  //      auto newR = autopas::ArrayMath::add(v, f);
-  //      iter->addR(newR);
-  //      cout << "Print new Positions: " << arrayString(iter->getR()) << endl;
-  //      cout << endl;
-  //    }
-  //    iterations++;
-  //  }
-  delete functor;
-  delete autoPas;
+  while (iterations < 10) {
+    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+    for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+      auto v = iter->getV();
+      auto m = iter->getMass();
+      auto f = iter->getF();
+      iter->setOldf(f);
+      cout << "Particle ID: " << iter->getID() << endl;
+      cout << "initial Velocity: " << arrayString(v) << endl;
+      v = autopas::ArrayMath::mulScalar(v, particleD);
+      cout << "Velocity * delta_T= " << arrayString(v) << endl;
+      cout << "initial F = " << arrayString(f) << endl;
+      f = autopas::ArrayMath::mulScalar(f, (particleD * particleD / (2 * m)));
+      cout << "F * delta² / 2*m = " << arrayString(f) << endl;
+      cout << "Print old Positions:" << arrayString(iter->getR()) << endl;
+      auto newR = autopas::ArrayMath::add(v, f);
+      iter->addR(newR);
+      cout << "Print new Positions: " << arrayString(iter->getR()) << endl;
+      cout << endl;
+    }
+    iterations++;
+  }
   ASSERT_TRUE(true);
 }
 
-TEST(TimeDTEst, CalcV) {
-  PrintableMolecule::setEpsilon(5.0);
-  PrintableMolecule::setSigma(1.0);
+TEST_F(TimeDiscretizationTest, CalcV) {
+  PrintableMolecule::setEpsilon(epsilon);
+  PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   auto *autoPas = new autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  double epsilon = 5.0;
-  double sigma = 1.0;
-  double cutoff = 2;
-  array<double, 3> boxmax = {5., 5., 5.};
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
@@ -200,42 +168,37 @@ TEST(TimeDTEst, CalcV) {
   autoPas->addParticle(p1);
   PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
   autoPas->addParticle(p2);
-  //  for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-  //    cout << iter->toString() << endl;
-  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-  //  }
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+    cout << iter->toString() << endl;
+    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+  }
   double particleD = 0.01;
-  //  int iterations = 0;
+  int iterations = 0;
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
-  auto *functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
-                                         autopas::FunctorN3Modes::Both, true>(cutoff, epsilon, sigma, 0.0);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
-  //  cout << "delta_t value =  " << particleD << endl;
-  //  while (iterations < 10) {
-  //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  //
-  //    for (auto iter = autoPas->getContainer()->begin(); iter.isValid(); ++iter) {
-  //      auto m = iter->getMass();
-  //      auto force = iter->getF();
-  //      auto old_force = iter->getOldf();
-  //      cout << "Particle ID: " << iter->getID() << endl;
-  //      cout << "Old forces: " << arrayString(old_force) << endl;
-  //      cout << "Current forces: " << arrayString(force) << endl;
-  //      auto addedF = autopas::ArrayMath::add(force, old_force);
-  //      cout << "OldF + Force =  " << arrayString(addedF) << endl;
-  //      auto newV = autopas::ArrayMath::mulScalar(addedF, particleD / (2 * 1));
-  //      cout << "Multiplied by delta_t and 2*m:" << endl << arrayString(newV) << endl;
-  //      cout << "old Velocity= " << arrayString(iter->getV()) << endl;
-  //      iter->addV(newV);
-  //      cout << "new Velocity " << arrayString(iter->getV()) << endl;
-  //      cout << endl;
-  //    }
-  //    iterations++;
-  //
-  delete functor;
-  delete autoPas;
+  cout << "delta_t value =  " << particleD << endl;
+  while (iterations < 10) {
+    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+
+    for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+      auto force = iter->getF();
+      auto old_force = iter->getOldf();
+      cout << "Particle ID: " << iter->getID() << endl;
+      cout << "Old forces: " << arrayString(old_force) << endl;
+      cout << "Current forces: " << arrayString(force) << endl;
+      auto addedF = autopas::ArrayMath::add(force, old_force);
+      cout << "OldF + Force =  " << arrayString(addedF) << endl;
+      auto newV = autopas::ArrayMath::mulScalar(addedF, particleD / (2 * 1));
+      cout << "Multiplied by delta_t and 2*m:" << endl << arrayString(newV) << endl;
+      cout << "old Velocity= " << arrayString(iter->getV()) << endl;
+      iter->addV(newV);
+      cout << "new Velocity " << arrayString(iter->getV()) << endl;
+      cout << endl;
+    }
+    iterations++;
+  }
   ASSERT_TRUE(true);
 }

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include "../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -31,7 +32,6 @@ enum class FunctorN3Modes {
   Newton3Off,
   Both,
 };
-
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * @tparam Particle The type of particle.
@@ -61,12 +61,11 @@ class LJFunctor
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(floatPrecision cutoff, floatPrecision epsilon, floatPrecision sigma, floatPrecision shift,
+  explicit LJFunctor(floatPrecision cutoff, ParticleClassLibrary &PCLibrary, floatPrecision shift,
                      bool duplicatedCalculation = true)
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
-        _epsilon24{epsilon * (floatPrecision)24.0},
-        _sigmasquare{sigma * sigma},
+        _PCLibrary(&PCLibrary),
         _shift6{shift * (floatPrecision)6.0},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
@@ -99,6 +98,8 @@ class LJFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    double _sigmasquare = _PCLibrary->mixingSS(i.getID(), j.getID());
+    double _epsilon24 = _PCLibrary->mixing24E(i.getID(), j.getID());
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     floatPrecision dr2 = ArrayMath::dot(dr, dr);
 
@@ -160,9 +161,12 @@ class LJFunctor
     auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    //@TODO FAbio FRAGEN ob das richtig ist, oder was genau restrict ist(es gibt nicht mehrere pointer zu dem object~)
+    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
+    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
     // the local redeclaration of the following values helps the auto-generation of various compilers.
-    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
-                         shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
 
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
@@ -268,6 +272,10 @@ class LJFunctor
     auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    auto epsilon24 = (floatPrecision)_PCLibrary->mixing24E(*soa1.template begin<Particle::AttributeNames::id>(),
+                                                           *soa2.template begin<Particle::AttributeNames::id>());
+    auto sigmasquare = (floatPrecision)_PCLibrary->mixingSS(*soa1.template begin<Particle::AttributeNames::id>(),
+                                                            *soa2.template begin<Particle::AttributeNames::id>());
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -289,8 +297,7 @@ class LJFunctor
     floatPrecision virialSumY = 0.;
     floatPrecision virialSumZ = 0.;
 
-    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
-                         shift6 = _shift6;
+    const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       floatPrecision fxacc = 0;
       floatPrecision fyacc = 0;
@@ -359,7 +366,6 @@ class LJFunctor
           energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
         }
       }
-
       const int threadnum = autopas_get_thread_num();
 
       _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
@@ -640,11 +646,10 @@ class LJFunctor
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
+    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
+    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
-
-    const floatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
-                         shift6 = _shift6;
-
+    const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
     floatPrecision upotSum = 0.;
     floatPrecision virialSumX = 0.;
     floatPrecision virialSumY = 0.;
@@ -890,8 +895,9 @@ class LJFunctor
   // make sure of the size of AoSThreadData
   // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  const floatPrecision _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
-
+  floatPrecision _cutoffsquare;
+  ParticleClassLibrary *_PCLibrary;
+  floatPrecision _shift6;
   // sum of the potential energy, only calculated if calculateGlobals is true
   floatPrecision _upotSum;
   // sum of the virial, only calculated if calculateGlobals is true
