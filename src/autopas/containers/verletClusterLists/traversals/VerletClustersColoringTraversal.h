@@ -150,14 +150,15 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseClusterPair(
     Particle *clusterStart, Particle *neighborClusterStart, int clusterSize) {
-  if (neighborClusterStart == clusterStart) {
-    for (int i = 0; i < clusterSize; i++) {
+  const bool isClusterInteractionWithItself = neighborClusterStart == clusterStart;
+  for (int i = 0; i < clusterSize; i++) {
+    if (isClusterInteractionWithItself) {
+      // Always use newton 3 for interactions within one cluster.
       for (int j = i + 1; j < clusterSize; j++) {
         _functor->AoSFunctor(*(clusterStart + i), *(neighborClusterStart + j), true);
       }
-    }
-  } else {
-    for (int i = 0; i < clusterSize; i++) {
+    } else {
+      // Calculate interactions between two different clusters.
       for (int j = 0; j < clusterSize; j++) {
         _functor->AoSFunctor(*(clusterStart + i), *(neighborClusterStart + j), useNewton3);
       }
