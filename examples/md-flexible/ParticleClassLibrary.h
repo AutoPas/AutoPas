@@ -10,8 +10,8 @@ using namespace autopas;
 
 class ParticleClassLibrary {
  public:
-  ParticleClassLibrary(map<unsigned long, double> sigma, map<unsigned long, double> epsilon,
-                       map<unsigned long, double> mass);
+  ParticleClassLibrary(map<unsigned long, double> &sigma, map<unsigned long, double> &epsilon,
+                       map<unsigned long, double> &mass);
 
   ParticleClassLibrary();
 

@@ -1,8 +1,8 @@
 #include "ParticleClassLibrary.h"
 
 //@todo entferne unused functions
-ParticleClassLibrary::ParticleClassLibrary(map<unsigned long, double> sigma, map<unsigned long, double> epsilon,
-                                           map<unsigned long, double> mass)
+ParticleClassLibrary::ParticleClassLibrary(map<unsigned long, double> &sigma, map<unsigned long, double> &epsilon,
+                                           map<unsigned long, double> &mass)
     : Epsilon(epsilon), Sigma(sigma), Mass(mass) {}
 
 ParticleClassLibrary::ParticleClassLibrary() {}
