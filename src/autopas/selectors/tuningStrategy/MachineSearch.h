@@ -35,8 +35,8 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
                 const std::set<double> &allowedCellSizeFactors,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options, std::string modelLink)
-      : _containerOptions(allowedContainerOptions), _mlmodel(fdeep::load_model("fake")) {
+                const std::set<Newton3Option> &allowedNewton3Options, const std::string& modelLink)
+      : _containerOptions(allowedContainerOptions){
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                         allowedDataLayoutOptions, allowedNewton3Options);
@@ -51,9 +51,9 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
     std::string line;
     int lineNum = 0;
     while (std::getline(confFile, line)) {
-      if (line.size() == 0 || line.at(0) == '#') { continue; }
+      if (line.empty() || line.at(0) == '#') { continue; }
       lineNum++;
-      if (lineNum == 1) {_mlmodel = fdeep::load_model(line);}
+      if (lineNum == 1) {_mlmodel = std::make_unique<fdeep::model>(fdeep::load_model(path));}
       else if (lineNum == 2) {_inputConfig = std::stoi(line);}
       else if (lineNum == 3 && line.substr(0, 5) == "Norm:") {
         _normalize = true;
@@ -103,10 +103,10 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
         exit(1);
     }
 
-    _mlmodel = fdeep::load_model("fake");
+    //_mlmodel = fdeep::load_model("fake");
 
     // Generate an output vector to make sure configuration makes sense
-    const auto result = _mlmodel.predict({fdeep::tensor5(fdeep::shape5(1, 1, 1, 1, 4), {0, 0, 0, 0})});
+    const auto result = _mlmodel->predict({fdeep::tensor5(fdeep::shape5(1, 1, 1, 1, 4), {0, 0, 0, 0})});
     std::vector<float> probabilityVector = *result[0].as_vector();
 
     if (_outputConfig.size() != probabilityVector.size()) {
@@ -180,11 +180,11 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   ContainerSelector<Particle, ParticleCell> *_containerSelector;
 
   //int _configCounter;
-  int _mlSuggestions[5];
+  std::array<int, 5> _mlSuggestions;
   // the following doubles and _picture are maximum values to normalize with
   double _particleCount, _boxLength, _cutoff, _verletSkin; // assume that they are initialized with 0.0
   int _picture = 0;
-  fdeep::model _mlmodel;
+  std::unique_ptr<fdeep::model> _mlmodel{nullptr};
   int _inputConfig = 0;
   std::vector<std::tuple<ContainerOption, double, TraversalOption, DataLayoutOption, Newton3Option>> _outputConfig;
   bool _normalize = false;
@@ -223,7 +223,7 @@ void MachineSearch<Particle, ParticleCell>::generateMLPredictions() {
   float in_ver = (_verletSkin > max_v_skin_rad) ? 1 : _verletSkin / max_v_skin_rad;
 
   const auto result =
-      _mlmodel.predict({fdeep::tensor5(fdeep::shape5(1, 1, 1, 1, 4), {in_par, in_box, in_cut, in_ver})});
+      _mlmodel->predict({fdeep::tensor5(fdeep::shape5(1, 1, 1, 1, 4), {in_par, in_box, in_cut, in_ver})});
   std::cout << fdeep::show_tensor5s(result) << std::endl;
   std::vector<float> probabilityVector = *result[0].as_vector();
 
