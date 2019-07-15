@@ -53,7 +53,17 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
     while (std::getline(confFile, line)) {
       if (line.empty() || line.at(0) == '#') { continue; }
       lineNum++;
-      if (lineNum == 1) {_mlmodel = std::make_unique<fdeep::model>(fdeep::load_model(path));}
+
+      if (lineNum == 1) {
+        auto path = line;
+        // if relative path is given in the config file, use it relative to config file position.
+        if(line.find('/') != 0 and modelLink.find('/') != std::string::npos) {
+          auto posOfLastSlash = modelLink.find_last_of('/');
+          auto directory = modelLink.substr(0, posOfLastSlash + 1);
+          path = directory + path;
+        }
+        _mlmodel = std::make_unique<fdeep::model>(fdeep::load_model(path));
+      }
       else if (lineNum == 2) {_inputConfig = std::stoi(line);}
       else if (lineNum == 3 && line.substr(0, 5) == "Norm:") {
         _normalize = true;
