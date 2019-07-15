@@ -196,7 +196,8 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
       break;
     }
     default:
-      std::cerr << "This test does not support data layout : " << autopas::utils::StringUtils::to_string(dataLayout);
+      ADD_FAILURE() << "This test does not support data layout : "
+                    << autopas::utils::StringUtils::to_string(dataLayout);
   }
 
   return std::make_pair(callsSC.load(), callsPair.load());
