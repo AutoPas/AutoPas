@@ -80,7 +80,8 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
         }
       }
       else {
-        auto outputs = autopas::utils::StringUtils::tokenize(line, ",;|/"); // don't tokenize with whitespace
+        transform(line.begin(), line.end(), line.begin(), ::tolower);
+        auto outputs = autopas::utils::StringUtils::tokenize(line, ",;:|/"); // don't tokenize with whitespace
         ContainerOption container = *autopas::utils::StringUtils::parseContainerOptions(outputs[1]).begin();
         TraversalOption traversal = *autopas::utils::StringUtils::parseTraversalOptions(outputs[3]).begin();
         DataLayoutOption dataLayout = *autopas::utils::StringUtils::parseDataLayout(outputs[5]).begin();
