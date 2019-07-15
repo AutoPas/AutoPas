@@ -157,6 +157,8 @@ inline std::string to_string(const TraversalOption &option) {
       return "c01-combined-SoA";
     }case autopas::TraversalOption::kokkosDirectSumTraversal:{
       return "kokkos-directSum";
+    }case autopas::TraversalOption::kokkosc08:{
+      return "kokkos-c08";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -268,7 +270,11 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
 
   for (auto &word : words) {
     if(word.find("kokkos") != std::string::npos){
-      traversalOptions.insert(autopas::TraversalOption::kokkosDirectSumTraversal);
+      if(word.find("08") != std::string::npos){
+        traversalOptions.insert(autopas::TraversalOption::kokkosc08);
+      }else{
+        traversalOptions.insert(autopas::TraversalOption::kokkosDirectSumTraversal);
+      }
     }else if (word.find("verlet-lists") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::verletTraversal);
     } else if (word.find("01") != std::string::npos) {

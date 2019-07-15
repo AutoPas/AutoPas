@@ -132,6 +132,9 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
     case TraversalOption::kokkosDirectSumTraversal: {
       return std::make_unique<DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor);
+    }case TraversalOption::kokkosc08:{
+      return std::make_unique<C08KokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+              info.dims, &pairwiseFunctor, info.cutoff, info.cellLength);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",

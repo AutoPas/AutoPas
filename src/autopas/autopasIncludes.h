@@ -41,6 +41,7 @@
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C08KokkosTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
@@ -59,6 +60,7 @@
 
 // pairwise functors
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/pairwiseFunctors/KokkosCellFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/pairwiseFunctors/KokkosLJFunctor.h"

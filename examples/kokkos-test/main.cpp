@@ -86,6 +86,9 @@ int main(){
   autopas.iteratePairwise(&functor);//iterate
   for (int i = 0; i < 5; ++i) {
     std::cout <<arrParticles[i].toString() << "\n";
+
   }
+
+
   return EXIT_SUCCESS;
 }
