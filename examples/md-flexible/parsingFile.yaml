@@ -1,0 +1,4 @@
+#YAML parsing FILE
+particles_per_dimension: 10;
+generator : "grid"
+log_level : "debug"
