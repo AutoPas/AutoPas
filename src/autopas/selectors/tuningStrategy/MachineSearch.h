@@ -127,7 +127,12 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 
   }
 
-  inline const Configuration &getCurrentConfiguration() override { return *_currentConfig; }
+  inline const Configuration &getCurrentConfiguration() override {
+    if(_currentConfig == _searchSpace.end()){
+      return _invalidOption;
+    }
+    return *_currentConfig;
+  }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
@@ -184,6 +189,7 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
 
   inline void selectOptimalConfiguration();
 
+  Configuration _invalidOption{};
   std::set<ContainerOption> _containerOptions;
   std::set<Configuration> _searchSpace;
   std::set<Configuration>::iterator _currentConfig;
