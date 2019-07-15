@@ -225,7 +225,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
   // - functor is relevant
   if ((not _tuningStrategy->searchSpaceIsTrivial()) and _iterationsSinceTuning >= _tuningInterval and
       f->isRelevantForTuning()) {
-    isTuning = tune<PairwiseFunctor>(*f);
+    isTuning = tune(*f);
     if (not isTuning) {
       _iterationsSinceTuning = 0;
     }
