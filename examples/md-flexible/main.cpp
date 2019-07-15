@@ -17,6 +17,8 @@
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
+#include <config4cpp/Configuration.h>
+#include <locale.h>
 
 using namespace std;
 using namespace autopas;
@@ -60,27 +62,40 @@ void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
 }
 
 int main(int argc, char **argv) {
-  // starts
-  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
+    //testing Parser
+//    setlocale(LC_ALL, "");
+//    config4cpp::Configuration *   cfg =config4cpp::Configuration::create();
+//    const char *                  scope="";
+//    const char *                  configfile="parsing_input.cfg";
+//    int                           particles_total;
+//    int                           particles_per_dimension;
+//
+//    try {
+//        cfg->parse(config4cpp::Configuration::INPUT_FILE, configfile);
+//        particles_total=    cfg->lookupInt(scope,"particle_total");
+//        particles_per_dimension=    cfg->lookupInt(scope,"particle_per_dimension");
+//
+//    }catch(const ConfigurationException & ex) {
+//        cerr << ex.c_str() << endl;
+//        cfg->destroy();
+//        return 1;
+//    }
+//    cfg->destroy();
+//    std::cout << "TESTING PARSER:" << endl;
+//    std::cout << "particles_per_dimension: " << particles_per_dimension << std::endl;
+//    std::cout << "particle_total= " << particles_total << std::endl;
+//    cout << "PARSER TESTING DONE" << std::endl << endl;
+//
 
-  // Parsing
+
+
+  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
   MDFlexParser parser;
   if (not parser.parseInput(argc, argv)) {
     exit(-1);
   }
-  auto vtkFilename(parser.getWriteVTK());
   parser.printConfig();
-  cout << endl;
-
-  // Initialization
   simulation.initialize(parser);
-  cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
-
-  // Simulation
-  cout << "Starting simulation... " << endl;
-  simulation.simulate();
-  cout << "Simulation done!" << endl;
-
   simulation.printStatistics();
   // frage FABIO, wenn ich hier manuel den destructor von simlation aufrufe; wieso kriege ich 4 invalid reads(autopas
   // container-traversals usw) und 18 invalid free
