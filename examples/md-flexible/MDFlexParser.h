@@ -84,7 +84,7 @@ class MDFlexParser {
   unsigned int tuningMaxEvidence = 10;
   std::string writeVTK = "";
   std::string logFileName = "";
-  std::string modelLink = "fdeep_model.json";
+  std::string modelLink = "ml.config";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
 };

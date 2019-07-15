@@ -1,5 +1,6 @@
 /**
  * @file MachineSearch.h
+ * @author candas
  * @date 6/16/19
  */
 
@@ -12,6 +13,8 @@
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
+#include <fstream>
+#include "autopas/utils/StringUtils.h"
 
 namespace autopas {
 
@@ -33,10 +36,84 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options, std::string modelLink)
-      : _containerOptions(allowedContainerOptions), _mlmodel(fdeep::load_model(modelLink)) {
+      : _containerOptions(allowedContainerOptions), _mlmodel(fdeep::load_model("fake")) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                         allowedDataLayoutOptions, allowedNewton3Options);
+
+    // Here we read our configurations for our model
+    std::ifstream confFile;
+    confFile.open(modelLink);
+    if (!confFile) {
+        std::cout << "Unable to open file " << modelLink << std::endl;
+        exit(1);
+    }
+    std::string line;
+    int lineNum = 0;
+    while (std::getline(confFile, line)) {
+      if (line.size() == 0 || line.at(0) == '#') { continue; }
+      lineNum++;
+      if (lineNum == 1) {_mlmodel = fdeep::load_model(line);}
+      else if (lineNum == 2) {_inputConfig = std::stoi(line);}
+      else if (lineNum == 3 && line.substr(0, 5) == "Norm:") {
+        _normalize = true;
+        auto inputs = autopas::utils::StringUtils::tokenize(line.substr(5, line.size() - 5), " ,;|/");
+        switch(_inputConfig) {
+          case 2 : _picture = std::stoi(inputs[0]);
+                   break;
+          case 3 :
+          case 1 : _particleCount = std::stod(inputs[0]);
+                   _boxLength = std::stod(inputs[1]);
+                   _cutoff = std::stod(inputs[2]);
+                   _verletSkin = std::stod(inputs[3]);
+                   if (_inputConfig == 3) { _picture = std::stoi(inputs[4]); }
+        }
+      }
+      else {
+        auto outputs = autopas::utils::StringUtils::tokenize(line, ",;|/"); // don't tokenize with whitespace
+        ContainerOption container = *autopas::utils::StringUtils::parseContainerOptions(outputs[1]).begin();
+        TraversalOption traversal = *autopas::utils::StringUtils::parseTraversalOptions(outputs[3]).begin();
+        DataLayoutOption dataLayout = *autopas::utils::StringUtils::parseDataLayout(outputs[5]).begin();
+        Newton3Option newton3 = *autopas::utils::StringUtils::parseNewton3Options(outputs[7]).begin();
+        _outputConfig.push_back(std::make_tuple(container, 1., traversal, dataLayout, newton3));
+      }
+    }
+
+    // TODO: Maybe also check if all option sets really have only one element
+    /* Iterating through the configurations would be nice to check if everything went smoothly
+    for (auto ocIter = _outputConfig.begin(); ocIter != _outputConfig.end();) {
+      std::cout << ocIter->toString() << std::endl;
+      ++ocIter;
+    } */
+
+    // Error checking
+    if (1 > _inputConfig || _inputConfig > 3) {
+        std::cout << "Input configuration must be between 1 and 3" << std::endl;
+        exit(1);
+    }
+
+    if (_normalize && (_inputConfig == 1 || _inputConfig == 3) &&
+    (_particleCount <= 0 || _boxLength <= 0 || _cutoff <= 0 || _verletSkin <= 0)) {
+        std::cout << "Normalization was requested with faulty values" << std::endl;
+        exit(1);
+    }
+
+    if (_normalize && (_inputConfig == 2 || _inputConfig == 3) && (_picture <= 0)) {
+        std::cout << "Normalization was requested with faulty values" << std::endl;
+        exit(1);
+    }
+
+    _mlmodel = fdeep::load_model("fake");
+
+    // Generate an output vector to make sure configuration makes sense
+    const auto result = _mlmodel.predict({fdeep::tensor5(fdeep::shape5(1, 1, 1, 1, 4), {0, 0, 0, 0})});
+    std::vector<float> probabilityVector = *result[0].as_vector();
+
+    if (_outputConfig.size() != probabilityVector.size()) {
+        std::cout << "Output configuration must have the same size as the model's output" << std::endl;
+        exit(1);
+    }
+
   }
 
   inline const Configuration &getCurrentConfiguration() override { return *_currentConfig; }
@@ -100,11 +177,17 @@ class MachineSearch : public TuningStrategyInterface<Particle, ParticleCell> {
   std::set<Configuration> _searchSpace;
   std::set<Configuration>::iterator _currentConfig;
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
-  int _mlSuggestions[5];
-  //int _configCounter;
-  double _particleCount, _boxLength, _cutoff, _verletSkin;
-  fdeep::model _mlmodel;
   ContainerSelector<Particle, ParticleCell> *_containerSelector;
+
+  //int _configCounter;
+  int _mlSuggestions[5];
+  // the following doubles and _picture are maximum values to normalize with
+  double _particleCount, _boxLength, _cutoff, _verletSkin; // assume that they are initialized with 0.0
+  int _picture = 0;
+  fdeep::model _mlmodel;
+  int _inputConfig = 0;
+  std::vector<std::tuple<ContainerOption, double, TraversalOption, DataLayoutOption, Newton3Option>> _outputConfig;
+  bool _normalize = false;
 };
 
 /*
@@ -156,59 +239,10 @@ void MachineSearch<Particle, ParticleCell>::generateMLPredictions() {
   std::cout << std::endl;
   _searchSpace.clear();  // empty the set
 
-  std::tuple<ContainerOption, TraversalOption, DataLayoutOption, Newton3Option> mloption[] = {
-      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c01Verlet, DataLayoutOption::aos,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c18Verlet, DataLayoutOption::aos,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::c18Verlet, DataLayoutOption::aos,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::slicedVerlet, DataLayoutOption::aos,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::verletListsCells, TraversalOption::slicedVerlet, DataLayoutOption::aos,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::verletLists, TraversalOption::verletTraversal, DataLayoutOption::soa,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::verletLists, TraversalOption::verletTraversal, DataLayoutOption::soa,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08, DataLayoutOption::soa,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::sliced, DataLayoutOption::aos,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08, DataLayoutOption::soa,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08, DataLayoutOption::aos,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::sliced, DataLayoutOption::soa,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c08, DataLayoutOption::aos,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::sliced, DataLayoutOption::soa,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::aos,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::soa,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::sliced, DataLayoutOption::aos,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::soa,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c01, DataLayoutOption::aos,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c18, DataLayoutOption::aos,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::linkedCells, TraversalOption::c01, DataLayoutOption::soa,
-                      Newton3Option::disabled),
-      std::make_tuple(ContainerOption::verletLists, TraversalOption::verletTraversal, DataLayoutOption::aos,
-                      Newton3Option::enabled),
-      std::make_tuple(ContainerOption::verletLists, TraversalOption::verletTraversal, DataLayoutOption::aos,
-                      Newton3Option::disabled),
-  };
-
   for (int i = 0; i < 5; ++i) {
-    // std::apply(_searchSpace.emplace, mloption[_mlSuggestions[i]]);
-    auto tuple = mloption[_mlSuggestions[i]];
-    _searchSpace.emplace(std::get<0>(tuple), 1., std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple));
+    auto tuple = _outputConfig[_mlSuggestions[i]];
+    _searchSpace.emplace(std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple));
+    // std::apply(_searchSpace.emplace, tuple); // is much more readable, but error
   }
 }
 
