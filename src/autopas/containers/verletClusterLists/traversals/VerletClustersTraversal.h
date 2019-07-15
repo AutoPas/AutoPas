@@ -45,7 +45,7 @@ class VerletClustersTraversal : public TraversalInterface,
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
     auto numClusters = clusterList.getNumClusters();
-    const auto &aosToSoaMap = clusterList.getAosToSoaMap();
+    const auto &aosToSoaMap = clusterList.getClusterIndexMap();
 
     _clusterSoAs.resize(numClusters);
 
@@ -70,7 +70,7 @@ class VerletClustersTraversal : public TraversalInterface,
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
-    const auto &aosToSoaMap = clusterList.getAosToSoaMap();
+    const auto &aosToSoaMap = clusterList.getClusterIndexMap();
 
     const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
                                                               std::vector<Particle *> &clusterNeighborList) {
@@ -93,7 +93,7 @@ class VerletClustersTraversal : public TraversalInterface,
   void traverseParticlePairs() override {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
-    const auto &aosToSoaMap = clusterList.getAosToSoaMap();
+    const auto &aosToSoaMap = clusterList.getClusterIndexMap();
 
     const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
                                                               std::vector<Particle *> &clusterNeighborList) {

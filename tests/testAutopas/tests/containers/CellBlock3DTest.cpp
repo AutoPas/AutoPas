@@ -5,6 +5,7 @@
  */
 
 #include "CellBlock3DTest.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/GridGenerator.h"
 
 void testIndex(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
@@ -14,7 +15,7 @@ void testIndex(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas:
   unsigned long counter = 0ul;
   for (auto &m : mesh) {
     unsigned long index = cellBlock.get1DIndexOfPosition(m);
-    ASSERT_EQ(index, counter) << "Pos: [" << m[0] << ", " << m[1] << ", " << m[2] << "]";
+    ASSERT_EQ(index, counter) << "Pos: [" << autopas::ArrayUtils::to_string(m) << "]";
     ++counter;
   }
 }

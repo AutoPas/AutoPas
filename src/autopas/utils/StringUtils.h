@@ -163,6 +163,9 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::varVerletTraversalAsBuild: {
       return "var-verlet-lists-as-build";
     }
+    case autopas::TraversalOption::verletClustersColoring: {
+      return "verlet-clusters-coloring";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TraversalOption (" + std::to_string(option) + ")";
@@ -278,7 +281,11 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
     if (word.find("var") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::varVerletTraversalAsBuild);
     } else if (word.find("verlet-clusters") != std::string::npos) {
-      traversalOptions.insert(autopas::TraversalOption::verletClusters);
+      if (word.find("coloring") != std::string::npos) {
+        traversalOptions.insert(autopas::TraversalOption::verletClustersColoring);
+      } else {
+        traversalOptions.insert(autopas::TraversalOption::verletClusters);
+      }
     } else if (word.find("verlet-lists") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::verletTraversal);
     } else if (word.find("01") != std::string::npos) {
