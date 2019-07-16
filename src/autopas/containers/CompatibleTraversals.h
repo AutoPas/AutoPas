@@ -31,7 +31,7 @@ static const std::set<TraversalOption> &allDSCompatibleTraversals() {
 static const std::set<TraversalOption> &allLCCompatibleTraversals() {
   static const std::set<TraversalOption> s {
     TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced,
-        TraversalOption::c01CombinedSoA
+        TraversalOption::c01CombinedSoA, TraversalOption::kokkosc08
 #if defined(AUTOPAS_CUDA)
         ,
         TraversalOption::c01Cuda

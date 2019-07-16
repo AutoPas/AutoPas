@@ -51,10 +51,8 @@ int main(){
   autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
   autopas.setSelectorStrategy(selectorStrategy);*/
-  std::set<autopas::ContainerOption> containerOptions{};
-  containerOptions.insert(autopas::ContainerOption::directSum);
-  std::set<autopas::TraversalOption> traversalOptions{};
-  traversalOptions.insert(autopas::TraversalOption::kokkosDirectSumTraversal);
+  std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::directSum, autopas::ContainerOption::linkedCells};
+  std::set<autopas::TraversalOption> traversalOptions{autopas::TraversalOption::kokkosDirectSumTraversal, autopas::TraversalOption::kokkosc08};
   std::set<autopas::DataLayoutOption > dataLayoutOptions{};
   dataLayoutOptions.insert(autopas::DataLayoutOption::aos);
   std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
