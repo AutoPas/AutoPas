@@ -47,7 +47,9 @@ template <class AutoPasTemplate>
 long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
+#ifdef AUTOPAS_OPENMP
 #pragma omp parallel
+#endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto v = iter->getV();
     auto m = iter->getMass();
@@ -67,7 +69,9 @@ template <class AutoPasTemplate>
 long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
+#ifdef AUTOPAS_OPENMP
 #pragma omp parallel
+#endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto m = iter->getMass();
     auto force = iter->getF();
