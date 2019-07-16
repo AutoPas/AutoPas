@@ -82,6 +82,11 @@ class MoleculeLJ : public Particle {
   static double EPSILON, SIGMA, MASS;
 
   /**
+   * Particle type id.
+   */
+  size_t _typeId;
+
+  /**
    * Old Force of the particle experiences as 3D vector.
    */
   std::array<double, 3> OLDF = {0., 0., 0.};
