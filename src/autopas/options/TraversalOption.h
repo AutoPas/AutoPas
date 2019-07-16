@@ -25,10 +25,11 @@ enum TraversalOption {
   c01Cuda = 8,
   verletTraversal = 9,
   c01CombinedSoA = 10,
-  c04SoA = 11,
-  verletClusters = 12,
-  c04 = 13,
-  varVerletTraversalAsBuild = 14,
+  verletClusters = 11,
+  c04 = 12,
+  varVerletTraversalAsBuild = 13,
+  verletClustersColoring = 14,
+  c04SoA = 15,
 };
 
 /**
@@ -46,10 +47,11 @@ static const std::set<TraversalOption> allTraversalOptions = {
     TraversalOption::c01Cuda,
     TraversalOption::verletTraversal,
     TraversalOption::c01CombinedSoA,
-    TraversalOption::c04SoA,
     TraversalOption::verletClusters,
     TraversalOption::c04,
     TraversalOption::varVerletTraversalAsBuild,
+    TraversalOption::verletClustersColoring,
+    TraversalOption::c04SoA,
 };
 
 }  // namespace autopas

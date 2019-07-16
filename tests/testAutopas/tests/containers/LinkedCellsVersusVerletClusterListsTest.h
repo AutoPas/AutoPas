@@ -20,13 +20,15 @@ class LinkedCellsVersusVerletClusterListsTest : public AutoPasTestBase {
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 
-  std::array<double, 3> getBoxMax() const { return {3.0, 3.0, 3.0}; }
+  std::array<double, 3> getBoxMaxSmall() const { return {3.0, 3.0, 3.0}; }
+  std::array<double, 3> getBoxMaxBig() const { return {10.0, 10.0, 10.0}; }
 
   double getCutoff() const { return 1.0; }
 
  protected:
   template <autopas::DataLayoutOption dataLayout, bool useNewton3>
-  void test(unsigned long numMolecules, double rel_err_tolerance);
+  void test(unsigned long numMolecules, double rel_err_tolerance, autopas::TraversalOption traversalOption,
+            std::array<double, 3> boxMax);
 
   using Verlet = autopas::VerletClusterLists<autopas::MoleculeLJ>;
   using Linked = autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>;
