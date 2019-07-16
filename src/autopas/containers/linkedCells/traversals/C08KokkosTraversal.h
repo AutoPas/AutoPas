@@ -9,7 +9,7 @@
 
 #pragma once
 #include "C08KokkosCellHandler.h"
-#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/C08BasedKokkosTraversal.h"
 
 namespace autopas {
 
@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam useNewton3
  */
     template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-    class C08KokkosTraversal :  public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+    class C08KokkosTraversal :  public C08BasedKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                                 public LinkedCellTraversalInterface<ParticleCell>{
     public:
         /**
@@ -38,7 +38,7 @@ namespace autopas {
          */
         C08KokkosTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                    const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-                : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, cutoff, cellLength),
+                : C08BasedKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, cutoff, cellLength),
                      _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap),
                      _functor(pairwiseFunctor) {}
 
