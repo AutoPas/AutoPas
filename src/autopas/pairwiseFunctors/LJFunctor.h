@@ -81,7 +81,8 @@ class LJFunctor
       _aosThreadData.resize(autopas_get_max_threads());
     }
 #if defined(AUTOPAS_CUDA)
-    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _epsilon24, _sigmasquare, _shift6);
+    // @TODO: FIXME: pass particle class lib instead of constant eps and sig
+    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, 1 /* epsilon24 */, 1 /* sigmasquare */, _shift6);
     _cudawrapper.loadConstants(&constants);
 #endif
   }
