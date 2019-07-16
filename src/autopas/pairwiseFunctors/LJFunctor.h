@@ -55,8 +55,7 @@ class LJFunctor
   /**
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
    * @param cutoff
-   * @param epsilon
-   * @param sigma
+   * @param PCLibrary
    * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
