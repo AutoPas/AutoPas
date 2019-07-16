@@ -7,6 +7,7 @@
 #include "Simulation.h"
 
 #include <autopas/utils/MemoryProfiler.h>
+#include <yaml-cpp/yaml.h>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -17,8 +18,6 @@
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
-#include <fstream>
-#include <yaml-cpp/yaml.h>
 
 using namespace std;
 using namespace autopas;
@@ -62,25 +61,23 @@ void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
 }
 
 int main(int argc, char **argv) {
+  YAML::Node config = YAML::LoadFile("parsingFile.yaml");
+  const int particles_per_dimension = config["particles-per-dimension"].as<int>();
+  const auto generator = config["generator"].as<std::string>();
+  const auto log_level = config["log_level"].as<std::string>();
 
-    YAML::Node config = YAML::LoadFile("parsingFile.yaml");
-    const int particles_per_dimension = config["particles_per_dimension"].as<int>();
-    const auto generator = config["generator"].as<std::string>();
-    const auto log_level= config["log_level"].as<std::string>();
+  std::cout << "particles-per-dimension=  " << particles_per_dimension << endl;
+  cout << "generator coice: " << generator << endl;
+  cout << "log_level: " << log_level << endl;
 
-    std::cout << "particles-per-dimension=  " << particles_per_dimension << endl;
-    cout << "generator coice: " << generator << endl;
-    cout << "log_level: " << log_level << endl;
-
-
-    //  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
-//  MDFlexParser parser;
-//  if (not parser.parseInput(argc, argv)) {
-//    exit(-1);
-//  }
-//  parser.printConfig();
-//  simulation.initialize(parser);
-//  simulation.printStatistics();
+  //  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
+  //  MDFlexParser parser;
+  //  if (not parser.parseInput(argc, argv)) {
+  //    exit(-1);
+  //  }
+  //  parser.printConfig();
+  //  simulation.initialize(parser);
+  //  simulation.printStatistics();
   // frage FABIO, wenn ich hier manuel den destructor von simlation aufrufe; wieso kriege ich 4 invalid reads(autopas
   // container-traversals usw) und 18 invalid free
 

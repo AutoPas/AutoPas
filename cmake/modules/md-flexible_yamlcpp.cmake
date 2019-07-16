@@ -26,8 +26,15 @@ add_dependencies(md-flexible yamlcpp)
 #add_library(libyaml ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp/src/yamlcpp-build/libyaml-cpp.a)
 #add_library(libyaml ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp/include)
 
+if(NOT "${CMAKE_CURRENT_BINARY_DIR}/yamlcpp/src/yamlcpp-build/libyaml-cpp.a")
+    message(STATUS "libyaml-cpp.a FOUND")
+        else()
+    message(STAUS "libyaml-cpp.a NOTFOUND")
+        endif()
+
+
 target_include_directories(md-flexible SYSTEM PUBLIC ${source_dir})
-target_link_libraries(md-flexible ${source_dir})
+#target_link_libraries(md-flexible ${source_dir})
 #target_link_libraries(md-flexible libyaml)
 
 

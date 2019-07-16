@@ -8,12 +8,11 @@ file(
 
 add_executable(md-flexible ${MY_SRC})
 
-#include_directories(${PROJECT_SOURCE_DIR}/libs/config4cpp/include)
-#LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/libs/config4cpp/lib)
+include_directories(${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
 
-target_link_libraries(md-flexible autopas)
+target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a)
 # --- copy script files to build dir ---
-file(GLOB_RECURSE SCRIPTS RELATIVE ${CMAKE_SOURCE_DIR} "*.sh" "*.gp" "*.py")
+file(GLOB_RECURSE SCRIPTS RELATIVE ${CMAKE_SOURCE_DIR} "*.sh" "*.gp" "*.py" "*.yaml")
 
 foreach (script ${SCRIPTS})
     configure_file(${CMAKE_SOURCE_DIR}/${script} ${CMAKE_BINARY_DIR}/${script} COPYONLY)
@@ -48,5 +47,6 @@ add_test(
     COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/measurePerf.sh md-flexible -silent
     CONFIGURATIONS checkExamples
 )
+#add_library(libyaml ../../libs/yaml-cpp)
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)
