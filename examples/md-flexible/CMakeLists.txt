@@ -8,9 +8,7 @@ file(
 
 add_executable(md-flexible ${MY_SRC})
 
-include_directories(${PROJECT_SOURCE_DIR}/libs/config4cpp/include)
-link_directories(${PROJECT_SOURCE_DIR}/libs/config4cpp/lib)
-target_link_libraries(md-flexible autopas config4cpp)
+target_link_libraries(md-flexible autopas)
 
 # --- copy script files to build dir ---
 file(GLOB_RECURSE SCRIPTS RELATIVE ${CMAKE_SOURCE_DIR} "*.sh" "*.gp" "*.py")
