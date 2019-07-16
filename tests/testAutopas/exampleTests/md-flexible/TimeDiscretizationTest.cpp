@@ -115,7 +115,7 @@ TEST_F(TimeDiscretizationTest, CalcX) {
   // iterationen beginnend
   // domain vorbeireiten: -Force initialisieren
   autoPas.iteratePairwise(functor);
-//  cout << "delta_t value =  " << particleD << endl;
+  //  cout << "delta_t value =  " << particleD << endl;
   while (iterations < 10) {
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
@@ -124,18 +124,18 @@ TEST_F(TimeDiscretizationTest, CalcX) {
       auto m = iter->getMass();
       auto f = iter->getF();
       iter->setOldf(f);
-//      cout << "Particle ID: " << iter->getID() << endl;
-//      cout << "initial Velocity: " << arrayString(v) << endl;
+      //      cout << "Particle ID: " << iter->getID() << endl;
+      //      cout << "initial Velocity: " << arrayString(v) << endl;
       v = autopas::ArrayMath::mulScalar(v, particleD);
-//      cout << "Velocity * delta_T= " << arrayString(v) << endl;
-//      cout << "initial F = " << arrayString(f) << endl;
+      //      cout << "Velocity * delta_T= " << arrayString(v) << endl;
+      //      cout << "initial F = " << arrayString(f) << endl;
       f = autopas::ArrayMath::mulScalar(f, (particleD * particleD / (2 * m)));
-//      cout << "F * delta² / 2*m = " << arrayString(f) << endl;
-//      cout << "Print old Positions:" << arrayString(iter->getR()) << endl;
+      //      cout << "F * delta² / 2*m = " << arrayString(f) << endl;
+      //      cout << "Print old Positions:" << arrayString(iter->getR()) << endl;
       auto newR = autopas::ArrayMath::add(v, f);
       iter->addR(newR);
-//      cout << "Print new Positions: " << arrayString(iter->getR()) << endl;
-//      cout << endl;
+      //      cout << "Print new Positions: " << arrayString(iter->getR()) << endl;
+      //      cout << endl;
     }
     iterations++;
   }
@@ -159,34 +159,34 @@ TEST_F(TimeDiscretizationTest, CalcV) {
   autoPas.addParticle(p1);
   PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
   autoPas.addParticle(p2);
-//  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-//    cout << iter->toString() << endl;
-//    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-//  }
+  //  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+  //    cout << iter->toString() << endl;
+  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
+  //  }
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
   // domain vorbeireiten: -Force initialisieren
   autoPas.iteratePairwise(functor);
-//  cout << "delta_t value =  " << particleD << endl;
+  //  cout << "delta_t value =  " << particleD << endl;
   while (iterations < 10) {
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-//    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
 
     for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
       auto force = iter->getF();
       auto old_force = iter->getOldf();
-//      cout << "Particle ID: " << iter->getID() << endl;
-//      cout << "Old forces: " << arrayString(old_force) << endl;
-//      cout << "Current forces: " << arrayString(force) << endl;
+      //      cout << "Particle ID: " << iter->getID() << endl;
+      //      cout << "Old forces: " << arrayString(old_force) << endl;
+      //      cout << "Current forces: " << arrayString(force) << endl;
       auto addedF = autopas::ArrayMath::add(force, old_force);
-//      cout << "OldF + Force =  " << arrayString(addedF) << endl;
+      //      cout << "OldF + Force =  " << arrayString(addedF) << endl;
       auto newV = autopas::ArrayMath::mulScalar(addedF, particleD / (2 * 1));
-//      cout << "Multiplied by delta_t and 2*m:" << endl << arrayString(newV) << endl;
-//      cout << "old Velocity= " << arrayString(iter->getV()) << endl;
+      //      cout << "Multiplied by delta_t and 2*m:" << endl << arrayString(newV) << endl;
+      //      cout << "old Velocity= " << arrayString(iter->getV()) << endl;
       iter->addV(newV);
-//      cout << "new Velocity " << arrayString(iter->getV()) << endl;
-//      cout << endl;
+      //      cout << "new Velocity " << arrayString(iter->getV()) << endl;
+      //      cout << endl;
     }
     iterations++;
   }
