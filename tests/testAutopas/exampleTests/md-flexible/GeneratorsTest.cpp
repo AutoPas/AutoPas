@@ -7,77 +7,6 @@
 using namespace std;
 using namespace autopas;
 
-template <class AutoPasTemplate>
-void writeVTKFile(int iteration, size_t numParticles, AutoPasTemplate &autopas) {
-  string filename = "VtkOutput";
-  stringstream strstr;
-  strstr << filename << "_" << setfill('0') << setw(4) << iteration << ".vtu";
-  // string path = "./vtk";
-  std::ofstream vtkFile;
-  vtkFile.open(strstr.str());
-
-  vtkFile << "# vtk DataFile Version 2.0" << endl;
-  vtkFile << "Timestep" << endl;
-  vtkFile << "ASCII" << endl;
-  vtkFile << "DATASET STRUCTURED_GRID" << endl;
-  vtkFile << "DIMENSIONS 1 1 1" << endl;
-  vtkFile << "POINTS " << numParticles << " double" << endl;
-
-  for (auto iter = autopas->begin(); iter.isValid(); ++iter) {
-    auto pos = iter->getR();
-    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
-  }
-
-  vtkFile.close();
-}
-
-void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                       size_t particlesPerDim, double particelSpacing) {
-  std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax(
-      {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  PrintableMolecule dummyParticle;
-  GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
-                                   {particelSpacing, particelSpacing, particelSpacing},
-                                   {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
-}
-
-void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                        double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
-  std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  PrintableMolecule dummyParticle;
-  GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
-}
-
-void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
-                          double boxLength, size_t numParticles) {
-  std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  PrintableMolecule dummyParticle;
-  RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
-}
-
-// FRAGE-FABIO
-// wieso kann ich nicht Particle und ParticleCell im konstruktor behalten-> wenn ichs behalte-> no matching constructor
 // fehler Erstellt Umgebung von Blatt 2 Task 3 des MolSim Praktikums
 void GeneratorsTest::MolSimTaskGeneration(
     autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas) {
@@ -174,13 +103,11 @@ TEST_F(GeneratorsTest, MolSimTask) {
   TimeDiscretization<decltype(*autoPas)> td(particleD);
   // domain vorbeireiten: -Force initialisieren
   autoPas->iteratePairwise(functor);
-  writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
   while (iterations < 10) {
     td.VSCalculateX(*autoPas);
     autoPas->iteratePairwise(functor);
     td.VSCalculateV(*autoPas);
     iterations++;
-    writeVTKFile<decltype(autoPas)>(iterations, autoPas->getNumberOfParticles(), autoPas);
   }
   delete autoPas;
   ASSERT_TRUE(true);

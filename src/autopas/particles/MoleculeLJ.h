@@ -84,7 +84,7 @@ class MoleculeLJ : public Particle {
   /**
    * Particle type id.
    */
-  size_t _typeId;
+  size_t _typeId = 0;
 
   /**
    * Old Force of the particle experiences as 3D vector.
