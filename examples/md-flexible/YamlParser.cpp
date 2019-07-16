@@ -5,6 +5,7 @@
 #include "YamlParser.h"
 
 YamlParser::YamlParser(string filename) {
+YAML::Node config=YAML::LoadFile(filename);
 
 
 

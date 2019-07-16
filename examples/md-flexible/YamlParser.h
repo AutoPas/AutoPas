@@ -1,6 +1,6 @@
 #pragma once
 
-#include <yaml/yaml.h>
+#include <yaml-cpp/yaml.h>
 #include "autopas/autopasIncludes.h"
 using namespace std;
 class YamlParser {
@@ -17,7 +17,6 @@ public:
     YamlParser(std::string filename);
     /**Destructor für YAML Parser
      * */
-    YAMLParser() = default;
 
 private:
     static constexpr size_t valueOffset = 32;
