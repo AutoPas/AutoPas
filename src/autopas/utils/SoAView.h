@@ -33,10 +33,9 @@ class SoAView {
    */
   SoAView(SoA<SoAArraysType> *soa, size_t startIndex, size_t endIndex)
       : _soa(soa), _startIndex(startIndex), _endIndex(endIndex) {
-    assert(soa);
-    assert(endIndex >= startIndex);
-    assert(soa->getNumParticles() >= startIndex);
-    assert(soa->getNumParticles() >= endIndex);
+    if (not(soa->getNumParticles() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
+      utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
+    }
   }
 
   /**
@@ -58,8 +57,6 @@ class SoAView {
    */
   template <size_t attribute>
   [[nodiscard]] auto begin() {
-    assert(_soa->getNumParticles() >= _startIndex);
-    assert(_soa->getNumParticles() >= _endIndex);
     return _soa->template begin<attribute>() + _startIndex;
   }
 
@@ -70,8 +67,6 @@ class SoAView {
    */
   template <size_t attribute>
   [[nodiscard]] auto begin() const {
-    assert(_soa->getNumParticles() >= _startIndex);
-    assert(_soa->getNumParticles() >= _endIndex);
     return _soa->template begin<attribute>() + _startIndex;
   }
 
@@ -80,21 +75,19 @@ class SoAView {
    *
    * @return Number of particles.
    */
-  [[nodiscard]] size_t getNumParticles() const {
-    assert(_soa->getNumParticles() >= _startIndex);
-    assert(_soa->getNumParticles() >= _endIndex);
-    return _endIndex - _startIndex;
-  }
+  [[nodiscard]] size_t getNumParticles() const { return _endIndex - _startIndex; }
 
   private :
       /**
        * The underlying SoA.
        */
       SoA<SoAArraysType> *_soa;
+
   /**
    * The start index of the view in the SoA. (Inclusive)
    */
   size_t _startIndex;
+
   /**
    * The end index of the view in the SoA. (Exclusive)
    */
