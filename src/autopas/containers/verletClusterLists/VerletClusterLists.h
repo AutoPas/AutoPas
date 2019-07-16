@@ -153,10 +153,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return ParticleIteratorWrapper<Particle>();
   }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {
-    rebuild(traversal->getUseNewton3());
-    std::cout << getNumParticles() << std::endl;
-  }
+  void rebuildNeighborLists(TraversalInterface *traversal) override { rebuild(traversal->getUseNewton3()); }
 
   /**
    * Helper method to iterate over all clusters.

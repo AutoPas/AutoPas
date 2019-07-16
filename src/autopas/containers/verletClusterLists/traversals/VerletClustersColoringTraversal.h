@@ -59,8 +59,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
    */
   void traverseClusterPairAoS(Particle *clusterStart, Particle *neighborClusterStart, int clusterSize);
 
-  void traverseClusterPairSoA(index_t gridIndex, index_t neighborGridIndex, index_t clusterNum,
-                              index_t neighborClusterNum, int clusterSize);
+  void traverseClusterPairSoA(Particle *clusterStart, Particle *neighborClusterStart);
 
  public:
   /**
@@ -84,6 +83,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
     auto &grids = clusterList.getGrids();
+    const auto clusterSize = clusterList.getClusterSize();
     _gridSoAs.resize(grids.size());
     for (index_t gridIndex = 0; gridIndex < grids.size(); gridIndex++) {
       // Load particles into SoA
@@ -91,10 +91,15 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
       _functor->SoALoader(grid, _gridSoAs[gridIndex]);
 
       // Build _clusterToGridIndexMap
-      const index_t numClustersInGrid = grid.numParticles() / clusterList.getClusterSize();
+      const index_t numClustersInGrid = grid.numParticles() / clusterSize;
       for (index_t clusterIndex = 0; clusterIndex < numClustersInGrid; clusterIndex++) {
-        Particle *clusterStart = &grid[clusterIndex * clusterList.getClusterSize()];
-        _clusterToGridIndexMap[clusterStart] = {gridIndex, clusterIndex};
+        Particle *clusterStart = &grid[clusterIndex * clusterSize];
+        auto clusterStartIndex = clusterIndex * clusterSize;
+        auto clusterEndIndex = clusterStartIndex + clusterSize;
+        // Emplace SoAView on cluster at key clusterStart
+        _clusterToSoAViewMap.emplace(
+            std::piecewise_construct, std::forward_as_tuple(clusterStart),
+            std::forward_as_tuple(&_gridSoAs[gridIndex], clusterStartIndex, clusterEndIndex));
       }
     }
   }
@@ -141,12 +146,11 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
   /**
    * The SoAs for each grid.
    */
-  std::vector<SoA<typename Particle::SoAArraysType>> _gridSoAs;
+  std::vector<SoA<typename Particle::SoAArraysType>, AlignedAllocator<SoA<typename Particle::SoAArraysType>>> _gridSoAs;
   /**
-   * A map from the pointer to the start of a cluster to a pair consisting of the grid index and the cluster index of
-   * the cluster in the SoA. The n-th cluster in a grid has cluster index n.
+   * A map from the pointer to the start of a cluster to a SoAView on the cluster.
    */
-  std::unordered_map<Particle *, std::pair<index_t, index_t>> _clusterToGridIndexMap;
+  std::unordered_map<Particle *, SoAView<typename Particle::SoAArraysType>> _clusterToSoAViewMap;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
@@ -178,13 +182,12 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
       auto numClusters = currentGrid.numParticles() / clusterSize;
       for (unsigned long currentCluster = 0; currentCluster < numClusters; currentCluster++) {
         const auto &clusterNeighborList = neighborLists.at(gridIndex1D).at(currentCluster);
-        [[maybe_unused]] Particle *clusterStart = &currentGrid[currentCluster * clusterSize];
+        Particle *clusterStart = &currentGrid[currentCluster * clusterSize];
         for (auto neighborClusterStart : clusterNeighborList) {
           if constexpr (dataLayout == DataLayoutOption::aos) {
             traverseClusterPairAoS(clusterStart, neighborClusterStart, clusterSize);
           } else {
-            auto [neighborGridIndex, neighborClusterIndex] = _clusterToGridIndexMap[neighborClusterStart];
-            traverseClusterPairSoA(gridIndex1D, neighborGridIndex, currentCluster, neighborClusterIndex, clusterSize);
+            traverseClusterPairSoA(clusterStart, neighborClusterStart);
           }
         }
       }
@@ -213,12 +216,16 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseClusterPairSoA(
-    index_t gridIndex, index_t neighborGridIndex, index_t clusterNum, index_t neighborClusterNum, int clusterSize) {
-  if (gridIndex == neighborGridIndex and clusterNum == neighborClusterNum) {
-    //_functor->SoAFunctor(_gridSoAs[gridIndex], clusterNum * clusterSize, clusterSize, useNewton3);
+    Particle *clusterStart, Particle *neighborClusterStart) {
+  auto clusterView = _clusterToSoAViewMap[clusterStart];
+
+  //std::cout << autopas_get_thread_num() << " " << clusterStart << " " << neighborClusterStart << std::endl;
+  const bool isClusterInteractionWithItself = clusterStart == neighborClusterStart;
+  if (isClusterInteractionWithItself) {
+    _functor->SoAFunctor(clusterView, useNewton3);
   } else {
-    //_functor->SoAFunctor(_gridSoAs[gridIndex], clusterNum * clusterSize, clusterSize, _gridSoAs[neighborGridIndex],
-    //                     neighborClusterNum * clusterSize, clusterSize, useNewton3);
+    auto neighborClusterView = _clusterToSoAViewMap[neighborClusterStart];
+    _functor->SoAFunctor(clusterView, neighborClusterView, useNewton3);
   }
 }
 
