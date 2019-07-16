@@ -155,7 +155,7 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTestNotWor
 
   for (auto boxMax : {getBoxMaxBig()}) {
     test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
-                                              autopas::TraversalOption::verletClustersColoring, boxMax);
+                                               autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
 

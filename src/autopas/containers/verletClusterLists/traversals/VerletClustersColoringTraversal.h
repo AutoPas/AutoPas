@@ -97,9 +97,8 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
         auto clusterStartIndex = clusterIndex * clusterSize;
         auto clusterEndIndex = clusterStartIndex + clusterSize;
         // Emplace SoAView on cluster at key clusterStart
-        _clusterToSoAViewMap.emplace(
-            std::piecewise_construct, std::forward_as_tuple(clusterStart),
-            std::forward_as_tuple(&_gridSoAs[gridIndex], clusterStartIndex, clusterEndIndex));
+        _clusterToSoAViewMap.emplace(std::piecewise_construct, std::forward_as_tuple(clusterStart),
+                                     std::forward_as_tuple(&_gridSoAs[gridIndex], clusterStartIndex, clusterEndIndex));
       }
     }
   }
@@ -219,7 +218,7 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
     Particle *clusterStart, Particle *neighborClusterStart) {
   auto clusterView = _clusterToSoAViewMap[clusterStart];
 
-  //std::cout << autopas_get_thread_num() << " " << clusterStart << " " << neighborClusterStart << std::endl;
+  // std::cout << autopas_get_thread_num() << " " << clusterStart << " " << neighborClusterStart << std::endl;
   const bool isClusterInteractionWithItself = clusterStart == neighborClusterStart;
   if (isClusterInteractionWithItself) {
     _functor->SoAFunctor(clusterView, useNewton3);
