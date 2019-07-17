@@ -207,7 +207,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     size_t startIndex;
     // this is needed when used through verlet lists since particles can move over cell borders.
     // only lower corner needed since we increase the upper corner anyways.
-    if (incSearchRegion) {
+    if (true) {
       startIndex = this->_cellBlock.get1DIndexOfPosition(ArrayMath::subScalar(lowerCorner, 1.0));
     } else {
       startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
