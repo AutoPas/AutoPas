@@ -204,7 +204,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
   _autopas.setAllowedNewton3Options(newton3Options);
   // so that a test in jenkins passes:
 
-  //@todo übernommen vom merge: -> prüfen
   _autopas.setTuningStrategyOption(tuningStrategy);
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
   autopas::Logger::get()->set_level(logLevel);
