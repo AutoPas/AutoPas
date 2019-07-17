@@ -12,7 +12,7 @@ elseif (AUTOPAS_OPENMP)
         AND
             NOT
             (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-             AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6)
+             AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6)
              )
     )
         message(
