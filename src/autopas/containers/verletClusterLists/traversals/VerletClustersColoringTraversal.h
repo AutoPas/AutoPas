@@ -57,7 +57,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
    * @param neighborClusterStart The second cluster.
    * @param clusterSize The size of the cluster.
    */
-  void traverseClusterPair(Particle *clusterStart, Particle *neighborClusterStart, int clusterSize);
+  void traverseClusterPair(Particle *clusterStart, Particle *neighborClusterStart);
 
  public:
   /**
@@ -121,7 +121,7 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
   const auto cellsPerDim = clusterList.getCellsPerDimension();
   auto &grids = clusterList.getGrids();
   const auto &neighborLists = clusterList.getNeighborLists();
-  auto clusterSize = clusterList.getClusterSize();
+  constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
 
   for (int yInner = 0; yInner < gridsPerColoringCell; yInner++) {
     for (int xInner = 0; xInner < gridsPerColoringCell; xInner++) {
@@ -140,7 +140,7 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
         const auto &clusterNeighborList = neighborLists.at(gridIndex1D).at(currentCluster);
         Particle *clusterStart = &currentGrid[currentCluster * clusterSize];
         for (auto neighborClusterStart : clusterNeighborList) {
-          traverseClusterPair(clusterStart, neighborClusterStart, clusterSize);
+          traverseClusterPair(clusterStart, neighborClusterStart);
         }
       }
     }
@@ -149,7 +149,8 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseClusterPair(
-    Particle *clusterStart, Particle *neighborClusterStart, int clusterSize) {
+    Particle *clusterStart, Particle *neighborClusterStart) {
+  constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
   const bool isClusterInteractionWithItself = neighborClusterStart == clusterStart;
   for (int i = 0; i < clusterSize; i++) {
     if (isClusterInteractionWithItself) {

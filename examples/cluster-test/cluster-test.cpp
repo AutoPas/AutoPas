@@ -13,7 +13,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/Timer.h"
 
-#define CLUSTER_SIZE 4
+static constexpr auto clusterSize = autopas::VerletClusterLists<autopas::Particle>::clusterSize;
 
 void addParticles(autopas::VerletClusterLists<autopas::MoleculeLJ> &lj_system, int numParticles) {
   srand(10032);  // fixed seedpoint
@@ -30,7 +30,7 @@ void addParticles(autopas::VerletClusterLists<autopas::MoleculeLJ> &lj_system, i
 void writeVTKFile(std::string filename, size_t numParticles, autopas::VerletClusterLists<autopas::MoleculeLJ> &cont) {
   std::ofstream vtkFile;
 
-  size_t numClusters = numParticles / CLUSTER_SIZE;
+  size_t numClusters = numParticles / clusterSize;
 
   vtkFile.open(filename);
 
@@ -45,12 +45,12 @@ void writeVTKFile(std::string filename, size_t numParticles, autopas::VerletClus
     vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
   }
 
-  vtkFile << std::endl << "CELLS " << numClusters << " " << numClusters * (CLUSTER_SIZE + 1) << std::endl;
+  vtkFile << std::endl << "CELLS " << numClusters << " " << numClusters * (clusterSize + 1) << std::endl;
 
   // set every four points as cell
   for (size_t i = 0; i < numClusters; i++) {
     vtkFile << "4";
-    for (size_t j = 0; j < CLUSTER_SIZE; j++) {
+    for (size_t j = 0; j < clusterSize; j++) {
       vtkFile << " " << i * 4 + j;
     }
     vtkFile << std::endl;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  autopas::VerletClusterLists<autopas::MoleculeLJ> cont(boxMin, boxMax, cutoff, skin * cutoff, CLUSTER_SIZE);
+  autopas::VerletClusterLists<autopas::MoleculeLJ> cont(boxMin, boxMax, cutoff, skin * cutoff);
 
   autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> func(
       cutoff, autopas::MoleculeLJ::getEpsilon(), autopas::MoleculeLJ::getSigma(), 0.0);

@@ -63,7 +63,6 @@ int main(int argc, char *argv[]) {
 
   bool useNewton3 = true;
   double skin = 0.;
-  int rebuildFrequency = 10;
   if (argc == 9) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
@@ -72,7 +71,6 @@ int main(int argc, char *argv[]) {
     traversalInt = atoi(argv[5]);
     useNewton3 = atoi(argv[6]);
     skin = atof(argv[7]);
-    rebuildFrequency = atof(argv[8]);
   } else if (argc == 7) {
     numParticles = atoi(argv[1]);
     numIterations = atoi(argv[2]);
@@ -112,11 +110,10 @@ int main(int argc, char *argv[]) {
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
       boxMin, boxMax, cutoff, skin * cutoff);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc08(
-      boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff, rebuildFrequency);
+      boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc18(
-      boxMin, boxMax, cutoff, autopas::TraversalOption::c18, skin * cutoff, rebuildFrequency);
-  autopas::VerletClusterLists<autopas::sph::SPHParticle> verletClusterCont(boxMin, boxMax, cutoff, skin * cutoff,
-                                                                           rebuildFrequency);
+      boxMin, boxMax, cutoff, autopas::TraversalOption::c18, skin * cutoff);
+  autopas::VerletClusterLists<autopas::sph::SPHParticle> verletClusterCont(boxMin, boxMax, cutoff, skin * cutoff);
 
   addParticles(lcCont, numParticles);
 

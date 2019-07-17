@@ -49,8 +49,9 @@ class VerletClustersTraversal : public TraversalInterface,
 
     _clusterSoAs.resize(numClusters);
 
-    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
+    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart,
                                                               std::vector<Particle *> &clusterNeighborList) {
+      constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
       auto currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
@@ -72,8 +73,9 @@ class VerletClustersTraversal : public TraversalInterface,
 
     const auto &aosToSoaMap = clusterList.getClusterIndexMap();
 
-    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
+    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart,
                                                               std::vector<Particle *> &clusterNeighborList) {
+      constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
       auto currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
@@ -95,14 +97,14 @@ class VerletClustersTraversal : public TraversalInterface,
 
     const auto &aosToSoaMap = clusterList.getClusterIndexMap();
 
-    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart, int clusterSize,
+    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart,
                                                               std::vector<Particle *> &clusterNeighborList) {
       for (auto neighborClusterStart : clusterNeighborList) {
         // self pair
         if (clusterStart == neighborClusterStart) {
-          traverseSingleCluster(clusterStart, clusterSize, aosToSoaMap);
+          traverseSingleCluster(clusterStart, aosToSoaMap);
         } else {
-          traverseNeighborClusters(clusterStart, neighborClusterStart, clusterSize, aosToSoaMap);
+          traverseNeighborClusters(clusterStart, neighborClusterStart, aosToSoaMap);
         }
       }
     };
@@ -111,11 +113,11 @@ class VerletClustersTraversal : public TraversalInterface,
   }
 
  private:
-  void traverseSingleCluster(Particle *clusterStart, int clusterSize,
+  void traverseSingleCluster(Particle *clusterStart,
                              const std::unordered_map<Particle *, VerletClusterMaths::index_t> &aosToSoaMap) {
     switch (dataLayout) {
       case DataLayoutOption::aos:
-        traverseSingleClusterAoS(clusterStart, clusterSize);
+        traverseSingleClusterAoS(clusterStart);
         break;
       case DataLayoutOption::soa:
         traverseSingleClusterSoA(clusterStart, aosToSoaMap);
@@ -126,7 +128,8 @@ class VerletClustersTraversal : public TraversalInterface,
     }
   }
 
-  void traverseSingleClusterAoS(Particle *clusterStart, int clusterSize) {
+  void traverseSingleClusterAoS(Particle *clusterStart) {
+    constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
     for (int i = 0; i < clusterSize; i++) {
       for (int j = i + 1; j < clusterSize; j++) {
         Particle *iParticle = clusterStart + i;
@@ -142,11 +145,11 @@ class VerletClustersTraversal : public TraversalInterface,
     _functor->SoAFunctor(_clusterSoAs[aosToSoaMap.at(clusterStart)], useNewton3);
   }
 
-  void traverseNeighborClusters(Particle *firstClusterStart, Particle *secondClusterStart, int clusterSize,
+  void traverseNeighborClusters(Particle *firstClusterStart, Particle *secondClusterStart,
                                 const std::unordered_map<Particle *, VerletClusterMaths::index_t> &aosToSoaMap) {
     switch (dataLayout) {
       case DataLayoutOption::aos:
-        traverseNeighborClustersAoS(firstClusterStart, secondClusterStart, clusterSize);
+        traverseNeighborClustersAoS(firstClusterStart, secondClusterStart);
         break;
       case DataLayoutOption::soa:
         traverseNeighborClustersSoA(firstClusterStart, secondClusterStart, aosToSoaMap);
@@ -157,7 +160,8 @@ class VerletClustersTraversal : public TraversalInterface,
     }
   }
 
-  void traverseNeighborClustersAoS(Particle *firstClusterStart, Particle *secondClusterStart, int clusterSize) {
+  void traverseNeighborClustersAoS(Particle *firstClusterStart, Particle *secondClusterStart) {
+    constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
     for (int i = 0; i < clusterSize; i++) {
       for (int j = 0; j < clusterSize; j++) {
         Particle *iParticle = firstClusterStart + i;

@@ -30,12 +30,18 @@ class VerletClustersTraversalInterface;
  */
 template <class Particle>
 class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<Particle>> {
+ private:
   /**
    * the index type to access the particle cells
    */
   typedef VerletClusterMaths::index_t index_t;
 
  public:
+  /**
+   * The number of particles in a full cluster.
+   */
+  static constexpr int clusterSize = 4;
+
   /**
    * Constructor of the VerletClusterLists class.
    * The neighbor lists are build using a estimated density.
@@ -48,9 +54,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param clusterSize size of clusters
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
-                     double skin = 0, int clusterSize = 4)
+                     double skin = 0)
       : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
-        _clusterSize(clusterSize),
         _numClusters(0),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -220,7 +225,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * Returns the number of particles in each cluster.
    * @return the number of particles in each cluster.
    */
-  auto getClusterSize() const { return _clusterSize; }
+  auto getClusterSize() const { return clusterSize; }
 
  protected:
   /**
@@ -237,11 +242,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         auto &grid = _clusters[index];
         auto &gridNeighborList = _neighborLists[index];
 
-        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        const index_t numClustersInGrid = grid.numParticles() / clusterSize;
         for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
-          Particle *iClusterStart = &grid[clusterInGrid * _clusterSize];
+          Particle *iClusterStart = &grid[clusterInGrid * clusterSize];
           auto &clusterNeighborList = gridNeighborList[clusterInGrid];
-          loopBody(iClusterStart, _clusterSize, clusterNeighborList);
+          loopBody(iClusterStart, clusterNeighborList);
         }
       }
     }
@@ -271,11 +276,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         auto &grid = _clusters[index];
         auto &gridNeighborList = _neighborLists[index];
 
-        const index_t numClustersInGrid = grid.numParticles() / _clusterSize;
+        const index_t numClustersInGrid = grid.numParticles() / clusterSize;
         for (index_t clusterInGrid = 0; clusterInGrid < numClustersInGrid; clusterInGrid++) {
-          Particle *iClusterStart = &grid[clusterInGrid * _clusterSize];
+          Particle *iClusterStart = &grid[clusterInGrid * clusterSize];
           auto &clusterNeighborList = gridNeighborList[clusterInGrid];
-          loopBody(iClusterStart, _clusterSize, clusterNeighborList);
+          loopBody(iClusterStart, clusterNeighborList);
         }
       }
     }
@@ -308,8 +313,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       cluster.sortByDim(2);
 
       size_t size = cluster.numParticles();
-      size_t rest = size % _clusterSize;
-      if (rest > 0) cluster.reserve(size + (_clusterSize - rest));
+      size_t rest = size % clusterSize;
+      if (rest > 0) cluster.reserve(size + (clusterSize - rest));
     }
 
     clearNeighborLists();
@@ -317,7 +322,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     _numClusters = buildClusterIndexMap();
 
     updateVerletLists(useNewton3);
-    // fill last cluster with dummy particles, such that each cluster is a multiple of _clusterSize
+    // fill last cluster with dummy particles, such that each cluster is a multiple of clusterSize
     padClusters();
   }
 
@@ -348,7 +353,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       // estimate particle density
       double density = numParticles / volume;
 
-      return std::cbrt(_clusterSize / density);
+      return std::cbrt(clusterSize / density);
     } else {
       return std::max(boxSize[0], boxSize[1]);
     }
@@ -410,8 +415,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
       for (int xi = 0; xi <= gridMaxX; xi++) {
         auto &iGrid = _clusters[VerletClusterMaths::index1D(xi, yi, _cellsPerDim)];
         // calculate number of full clusters and rest
-        index_t iSize = iGrid.numParticles() / _clusterSize;
-        int iRest = iGrid.numParticles() % _clusterSize;
+        index_t iSize = iGrid.numParticles() / clusterSize;
+        int iRest = iGrid.numParticles() % clusterSize;
 
         const int minX = std::max(xi - boxRange, 0);
         const int minY = std::max(yi - boxRange, 0);
@@ -459,12 +464,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         if (distXYsqr <= _interactionLengthSqr) {
           auto &jGrid = _clusters[VerletClusterMaths::index1D(xj, yj, _cellsPerDim)];
           // calculate number of  full clusters and rest
-          const index_t jSize = jGrid.numParticles() / _clusterSize;
-          const int jRest = jGrid.numParticles() % _clusterSize;
+          const index_t jSize = jGrid.numParticles() / clusterSize;
+          const int jRest = jGrid.numParticles() % clusterSize;
 
           // for all clusters in the i-th grid
           for (index_t zi = 0; zi < iSize; zi++) {
-            addAllJClustersAsNeighborIfInRange(iGrid, zi, _clusterSize, iNeighbors, jGrid, jSize, jRest, distXYsqr);
+            addAllJClustersAsNeighborIfInRange(iGrid, zi, clusterSize, iNeighbors, jGrid, jSize, jRest, distXYsqr);
           }
 
           // special case: last cluster of iGrid not full
@@ -493,23 +498,23 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
                                           FullParticleCell<Particle> &jGrid, index_t jSize, int jRest,
                                           double distXYsqr) {
     // bbox in z of iGrid
-    double iBBoxBot = iGrid[iClusterIndex * _clusterSize].getR()[2];
-    double iBBoxTop = iGrid[iClusterIndex * _clusterSize + iClusterSize - 1].getR()[2];
+    double iBBoxBot = iGrid[iClusterIndex * clusterSize].getR()[2];
+    double iBBoxTop = iGrid[iClusterIndex * clusterSize + iClusterSize - 1].getR()[2];
     auto &iClusterNeighborList = iNeighbors[iClusterIndex];
-    Particle *iClusterStart = &iGrid[iClusterIndex * _clusterSize];
+    Particle *iClusterStart = &iGrid[iClusterIndex * clusterSize];
 
     // iterate over full clusters of j-th grid.
     for (index_t jClusterIndex = 0; jClusterIndex < jSize; jClusterIndex++) {
-      Particle *jClusterStart = &jGrid[jClusterIndex * _clusterSize];
+      Particle *jClusterStart = &jGrid[jClusterIndex * clusterSize];
       // If newton 3 is used, only add clusters as neighbors that have a equal or higher index. Skip otherwise.
       if (_neighborListIsNewton3 and _clusterIndexMap.at(iClusterStart) > _clusterIndexMap.at(jClusterStart)) continue;
 
-      addJClusterAsNeighborIfInRange(jGrid, jClusterStart, _clusterSize, iClusterNeighborList, distXYsqr, iBBoxBot,
+      addJClusterAsNeighborIfInRange(jGrid, jClusterStart, clusterSize, iClusterNeighborList, distXYsqr, iBBoxBot,
                                      iBBoxTop);
     }
     // special case: last cluster not full
     if (jRest > 0) {
-      Particle *jClusterStart = &jGrid[jSize * _clusterSize];
+      Particle *jClusterStart = &jGrid[jSize * clusterSize];
       // If newton 3 is used, only add clusters as neighbors that have a equal or higher index. Skip otherwise.
       if (not(_neighborListIsNewton3 and _clusterIndexMap.at(iClusterStart) > _clusterIndexMap.at(jClusterStart))) {
         addJClusterAsNeighborIfInRange(jGrid, jClusterStart, jRest, iClusterNeighborList, distXYsqr, iBBoxBot,
@@ -544,16 +549,16 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   /**
    * Pad clusters with dummy particles
-   * until each cluster is a multiple of _clusterSize.
+   * until each cluster is a multiple of clusterSize.
    * Useful for SIMD vectorization.
    */
   void padClusters() {
     for (index_t x = 0; x < _cellsPerDim[0]; x++) {
       for (index_t y = 0; y < _cellsPerDim[1]; y++) {
         auto &grid = _clusters[VerletClusterMaths::index1D(x, y, _cellsPerDim)];
-        index_t rest = grid.numParticles() % _clusterSize;
+        index_t rest = grid.numParticles() % clusterSize;
         if (rest > 0) {
-          for (int i = rest; i < _clusterSize; i++) {
+          for (int i = rest; i < clusterSize; i++) {
             Particle p = Particle();
             p.setR({2 * x * _cutoff, 2 * y * _cutoff, 2 * _boxMax[2] + 2 * i * _cutoff});
             grid.addParticle(p);
@@ -670,12 +675,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         unsigned long gridIndex1D = VerletClusterMaths::index1D(x, y, _cellsPerDim);
         auto &currentGrid = _clusters[gridIndex1D];
 
-        auto numClusters = currentGrid.numParticles() / _clusterSize;
-        int rest = currentGrid.numParticles() % _clusterSize;
+        auto numClusters = currentGrid.numParticles() / clusterSize;
+        int rest = currentGrid.numParticles() % clusterSize;
         if (rest > 0) numClusters++;
 
         for (unsigned long currentCluster = 0; currentCluster < numClusters; currentCluster++) {
-          Particle *clusterStart = &currentGrid[currentCluster * _clusterSize];
+          Particle *clusterStart = &currentGrid[currentCluster * clusterSize];
           _clusterIndexMap[clusterStart] = currentMapIndex++;
         }
       }
@@ -694,11 +699,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * internal storage, particles are split into a grid in xy-dimension
    */
   std::vector<FullParticleCell<Particle>> _clusters;
-
-  /**
-   * The number of particles in a full cluster.
-   */
-  int _clusterSize;
 
   /**
    * The number of clusters. This is not equal to _clusters.size(), as every grid might contain multiple clusters.
