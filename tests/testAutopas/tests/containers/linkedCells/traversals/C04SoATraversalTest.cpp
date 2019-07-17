@@ -14,34 +14,47 @@ using ::testing::_;
  * Tests whether the interaction between two cells is correct
  */
 TEST_F(C04SoATraversalTest, testTraversal) {
-  std::array<size_t, 3> edgeLength = {3, 3, 3};
+  std::array<size_t, 3> edgeLength = {6, 6, 6};
 
   autopas::LJFunctor<autopas::Particle, FPCell> functor(1., 1., 1., 1.);
-  std::vector<FPCell> cells;
-  cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
+  std::vector<FPCell> cells1;
+  std::vector<FPCell> cells2;
+  cells1.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
+  cells2.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
   autopas::Particle defaultParticle;
-  defaultParticle.setR({1.75, 2.1, 1.75});
-  cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 2ul, 1ul, edgeLength)].addParticle(defaultParticle);
-  defaultParticle.setR({1.75, 1.6, 1.75});
-  cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, edgeLength)].addParticle(defaultParticle);
+  GridGenerator::fillWithParticles(cells1, edgeLength, {3ul, 3ul, 3ul}, defaultParticle, {0.5, 0.5, 0.5},
+                                   {0.75, 0.75, 0.75});
+  GridGenerator::fillWithParticles(cells2, edgeLength, {3ul, 3ul, 3ul}, defaultParticle, {0.5, 0.5, 0.5},
+                                   {0.75, 0.75, 0.75});
 
   NumThreadGuard numThreadGuard(1);
 
   autopas::C04SoATraversal<FPCell, autopas::LJFunctor<autopas::Particle, FPCell>, autopas::DataLayoutOption::soa, true>
-      c04SoATraversal(edgeLength, &functor, 1);
-  c04SoATraversal.setCellsToTraverse(cells);
+      c04SoATraversal(edgeLength, &functor, 2);
+  c04SoATraversal.setCellsToTraverse(cells1);
   c04SoATraversal.initTraversal();
   c04SoATraversal.traverseParticlePairs();
   c04SoATraversal.endTraversal();
 
-  size_t num = 0;
-  for (auto cell : cells) {
-    num += cell.numParticles();
+  autopas::C08Traversal<FPCell, autopas::LJFunctor<autopas::Particle, FPCell>, autopas::DataLayoutOption::soa, true>
+      c08Traversal(edgeLength, &functor, 2);
+  c08Traversal.setCellsToTraverse(cells2);
+  c08Traversal.initTraversal();
+  c08Traversal.traverseParticlePairs();
+  c08Traversal.endTraversal();
+
+  auto iter1 = cells1.begin();
+  auto iter2 = cells2.begin();
+  for (; iter1 != cells1.end(); ++iter1, ++iter2) {
+    if (iter1->numParticles() == 0) {
+      continue;
+    }
+    for (auto d = 0ul; d < 3; ++d) {
+      auto pos = iter1->begin()->getR();
+      EXPECT_DOUBLE_EQ(iter1->begin()->getF()[d], iter2->begin()->getF()[d])
+          << "Dim: " << d << " Pos: " << pos[0] << ", " << pos[1] << ", " << pos[2]
+          << " ID: " << iter1->begin()->getID();
+    }
   }
-  EXPECT_EQ(num, 2);
-  auto iter = cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, edgeLength)].begin();
-  auto iter2 = cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 2ul, 1ul, edgeLength)].begin();
-  EXPECT_DOUBLE_EQ(iter->getF()[1], -390144.0);
-  EXPECT_EQ(-iter->getF()[1], iter2->getF()[1]);
 }
