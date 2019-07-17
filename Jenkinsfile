@@ -164,18 +164,6 @@ pipeline{
                         }
                     }
                 }
-                stage("thread sanitizer") {
-                    steps{
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-threadsanitizer"){
-                                // this is for simple testing of our threading libraries.
-                                sh "cmake -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON .."
-                                sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    }
-                }
                 stage("clang openmp") {
                     steps{
                         container('autopas-clang6-cmake-ninja-make'){
