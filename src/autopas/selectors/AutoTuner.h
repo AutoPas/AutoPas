@@ -362,8 +362,6 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }
-  // samples are no longer needed. Delete them here so willRebuild() works as expected.
-  _samples.clear();
 
   // repeat as long as traversals are not applicable or we run out of configs
   while (true) {
@@ -386,6 +384,11 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
         stillTuning = _tuningStrategy->tune(true);
       }
     }
+  }
+  // samples should only be cleared if we are still tuning, see `if (_samples.size() < _maxSamples)` from before.
+  if (stillTuning) {
+    // samples are no longer needed. Delete them here so willRebuild() works as expected.
+    _samples.clear();
   }
 
   selectCurrentContainer();

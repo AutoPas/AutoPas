@@ -103,7 +103,7 @@ do
 
                     filename="${filename}.csv"
 
-                    # workaround because there is no traversal for Verlet clusters with newton 3 yet.
+                    # workaround because the specified traversal for Verlet clusters does not support newton 3.
                     if [[ ${container} =~ 'VerletCluster' && ${newton3Opt} =~ 'on' ]];
                     then
                         continue

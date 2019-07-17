@@ -133,3 +133,15 @@ TEST(NumberSetTest, testClone) {
   ASSERT_EQ(clone->getMin(), set.getMin());
   ASSERT_EQ(clone->getMax(), set.getMax());
 }
+
+TEST(NumberSetTest, testStringRepresentation) {
+  // Empty set
+  NumberSetFinite<double> emptyfSet;
+  NumberSet<double> &emptySet = emptyfSet;
+  EXPECT_EQ("{}", static_cast<std::string>(emptySet));
+
+  // Filled set
+  NumberSetFinite<double> fSet({1., 2., 3.});
+  NumberSet<double> &Set = fSet;
+  EXPECT_EQ("{1, 2, 3}", static_cast<std::string>(Set));
+}
