@@ -31,7 +31,7 @@ class GeneratorsTest : public AutoPasTestBase {
                                      autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0);
   }
   ~GeneratorsTest() { delete functor; }
-  void MolSimTaskGeneration(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas);
+  void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
 
  protected:
   double epsilon;
