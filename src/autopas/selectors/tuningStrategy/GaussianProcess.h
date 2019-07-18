@@ -266,8 +266,13 @@ class GaussianProcess {
       double var = outputCentered.squaredNorm() / (newSize - 1);
 
       // distribution of theta
+      // Expected to be in vicinity of the sample variance.
       std::uniform_real_distribution<double> thetaDistribution(0., var * 4.);
       // distribution of dimScale
+      // Assuming most distances are greater equal 1.
+      // For a dimScale d > 5: exp(-d r) < 1%. So choosing
+      // a greater dimScale may lead to many kernels close to zero.
+      // But if needed the upper bound can be increased.
       std::uniform_real_distribution<double> dimScaleDistribution(0., 5.);
 
       // initialize sums to 0
