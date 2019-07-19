@@ -5,8 +5,7 @@
 #include "GeneratorsTest.h"
 
 // fehler Erstellt Umgebung von Blatt 2 Task 3 des MolSim Praktikums
-void GeneratorsTest::MolSimTaskGeneration(
-    autopas::AutoPas<Particle,FPCell> &autopas) {
+void GeneratorsTest::MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas) {
   std::array<double, 3> boxMax({50., 30., 50.});
 
   std::array<double, 3> smallGridBoxMin({15., 15., 0});
@@ -58,7 +57,7 @@ TEST_F(GeneratorsTest, Behavior) {
   // initContainerUniform(*autoPas,5.,125);
   // Gauß generator
   // initContainerGauss(*autoPas,5.,125,5,2);
-//  std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
+  //  std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
   //    for (auto iter = autoPas->getContainer()->begin() ; iter.isValid(); ++iter) {
   //        cout << iter->toString() << endl;
   //    }
