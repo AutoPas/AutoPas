@@ -7,6 +7,9 @@
 #include "MDFlexParser.h"
 #include "autopas/utils/StringUtils.h"
 
+#include <getopt.h>
+#include <iomanip>
+
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
   int option, option_index;

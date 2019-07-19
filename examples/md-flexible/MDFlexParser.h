@@ -5,16 +5,35 @@
  */
 
 #pragma once
-#include "MDFlexParserInclude.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/SelectorStrategyOption.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningStrategyOption.h"
+#include "autopas/utils/Logger.h"
+#include "autopas/utils/NumberSet.h"
+
+#include <set>
 
 using namespace std;
 
 class MDFlexParser {
  public:
+  // options specific for the md-flex example
+
+  /**
+   * Choice of the functor
+   */
   enum FunctorOption { lj12_6, lj12_6_AVX };
+
+  /**
+   * Choice of the particle generator
+   */
   enum GeneratorOption { grid, uniform, gaussian };
 
   MDFlexParser() = default;
+
   double getBoxLength();
   std::set<autopas::ContainerOption> getContainerOptions() const;
   autopas::SelectorStrategyOption getSelectorStrategy() const;
@@ -29,7 +48,7 @@ class MDFlexParser {
   bool getMeasureFlops() const;
   std::set<autopas::Newton3Option> getNewton3Options() const;
   const std::string &getLogFileName() const;
-  spdlog::level::level_enum getLogLevel() const;
+  autopas::Logger::LogLevel getLogLevel() const;
   double getParticleSpacing() const;
   size_t getParticlesTotal() const;
   size_t getParticlesPerDim() const;
@@ -63,6 +82,7 @@ class MDFlexParser {
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
   std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
+
   // Simulation Options:
   double boxLength = -1;
   double cutoff = 1.;
