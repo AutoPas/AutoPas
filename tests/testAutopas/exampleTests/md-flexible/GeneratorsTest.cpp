@@ -93,14 +93,6 @@ TEST_F(GeneratorsTest, MolSimTask) {
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
-  TimeDiscretization<decltype(autoPas)> td(particleD);
-  // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(&functor);
-  while (iterations < 10) {
-    td.VSCalculateX(autoPas);
-    autoPas.iteratePairwise(&functor);
-    td.VSCalculateV(autoPas);
-    iterations++;
-  }
+  //@todo schauen was man hier machen kann zum testen: VTK File ausgabe wäre eine idee
   ASSERT_TRUE(true);
 }
