@@ -14,7 +14,7 @@
 #include "YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
-
+#include "Generator.h"
 using namespace autopas;
 using namespace std;
 
@@ -129,10 +129,6 @@ AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas(
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
-  // werte die man später für die initialisierung der Funktoren braucht, temporäre implementierung
-  // std::array<double, 3> lowCorner = {0., 0., 0.};
-  // std::array<double, 3> highCorner = {5., 5., 5.};
-  // double epsilon,sigma  = 1.0;
   //@todo schöner machen:
   _parser = parser;
   double numP;
@@ -187,6 +183,7 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
     _logFile.open(logFileName);
     streamBuf = _logFile.rdbuf();
   }
+  //@todo autopas mit logfilename richtig initialisieren
   std::ostream outputStream(streamBuf);
   PrintableMolecule::setEpsilon(_parser.getEpsilon());
   PrintableMolecule::setSigma(_parser.getSigma());
@@ -202,12 +199,11 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   _autopas.setAllowedTraversals(traversalOptions);
   _autopas.setAllowedDataLayouts(dataLayoutOptions);
   _autopas.setAllowedNewton3Options(newton3Options);
-  // so that a test in jenkins passes:
-
-  //@todo übernommen vom merge: -> prüfen
   _autopas.setTuningStrategyOption(tuningStrategy);
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
   autopas::Logger::get()->set_level(logLevel);
+
+  //aufruf von Generator Class
 
   switch (generatorChoice) {
     case YamlParser::GeneratorOption::grid: {

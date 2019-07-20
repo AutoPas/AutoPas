@@ -63,10 +63,13 @@ void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
 int main(int argc, char **argv) {
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
   YamlParser parser;
-  //@todo catch exception and errors
-  parser.parseInput("parsingFile.yaml");
+  //@todo catch exception and errors for parser
+  //@todo parsing file über die command line übergeben
+  std::string filename= "parsingFile.yaml";
+  parser.parseInput(filename);
   parser.printConfig();
   simulation.initialize(parser);
+  simulation.simulate();
   simulation.printStatistics();
   // frage FABIO, wenn ich hier manuel den destructor von simlation aufrufe; wieso kriege ich 4 invalid reads(autopas
   // container-traversals usw) und 18 invalid free
