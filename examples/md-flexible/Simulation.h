@@ -9,9 +9,9 @@
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
-#include "MDFlexParser.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "TimeDiscretization.h"
+#include "YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 
@@ -22,7 +22,7 @@ template <class Particle, class ParticleCell>
 class Simulation {
  private:
   AutoPas<Particle, ParticleCell> _autopas;
-  MDFlexParser _parser;
+  YamlParser _parser;
   std::ofstream _logFile;
   shared_ptr<ParticleClassLibrary> _PCL;
 
@@ -95,7 +95,7 @@ class Simulation {
    * -sets/initializes the simulation domain with the particles generators
    * @todo -initialized Velocities and Positions (and forces?)
    */
-  void initialize(MDFlexParser &parser);
+  void initialize(YamlParser &parser);
 
   /**
    * Does the ForceCalculation
@@ -128,7 +128,7 @@ AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas(
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
+void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   // werte die man später für die initialisierung der Funktoren braucht, temporäre implementierung
   // std::array<double, 3> lowCorner = {0., 0., 0.};
   // std::array<double, 3> highCorner = {5., 5., 5.};
@@ -136,7 +136,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
   //@todo schöner machen:
   _parser = parser;
   double numP;
-  if (_parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
+  if (_parser.getGeneratorOption() == YamlParser::GeneratorOption::grid) {
     numP = _parser.getParticlesPerDim() * _parser.getParticlesPerDim() * _parser.getParticlesPerDim();
   } else {
     numP = _parser.getParticlesTotal();
@@ -210,16 +210,16 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
   autopas::Logger::get()->set_level(logLevel);
 
   switch (generatorChoice) {
-    case MDFlexParser::GeneratorOption::grid: {
+    case YamlParser::GeneratorOption::grid: {
       this->initContainerGrid(_autopas, particlesPerDim,
                               particleSpacing);  // particlesTotal wird in diesem fall in der main geupdated
       break;
     }
-    case MDFlexParser::GeneratorOption::uniform: {
+    case YamlParser::GeneratorOption::uniform: {
       this->initContainerUniform(_autopas, boxLength, particlesTotal);
       break;
     }
-    case MDFlexParser::GeneratorOption::gaussian: {
+    case YamlParser::GeneratorOption::gaussian: {
       this->initContainerGauss(_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
       break;
     }
@@ -284,9 +284,6 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
   //@ TODO: switch for other functors --> mit boolean object?
-
-  // auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both,
-  // true>(_autopas.getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true);
   auto functor = LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
@@ -327,12 +324,12 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
 
   // FlopsPerKernelCall ließt vom Functor
   switch (_parser.getFunctorOption()) {
-    case MDFlexParser::FunctorOption ::lj12_6: {
+    case YamlParser::FunctorOption ::lj12_6: {
       flopsPerKernelCall =
           LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
-    case MDFlexParser::FunctorOption ::lj12_6_AVX: {
+    case YamlParser::FunctorOption ::lj12_6_AVX: {
       flopsPerKernelCall =
           LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;

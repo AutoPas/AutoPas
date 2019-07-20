@@ -1,7 +1,11 @@
 #pragma once
 
 #include <yaml-cpp/yaml.h>
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
 #include "autopas/autopasIncludes.h"
+#include "autopas/utils/NumberSet.h"
 using namespace std;
 class YamlParser {
   /**
@@ -14,13 +18,78 @@ class YamlParser {
   enum GeneratorOption { grid, uniform, gaussian };
   /**Constructor für YAMl Parser:
    * */
-  YamlParser(std::string filename);
-  /**Destructor für YAML Parser
+  YamlParser() = default;
+  /**Parses the Input for the simulation
+   * @param filename
    * */
+  void parseInput(std::string &filename);
+
+  /**Prints Configuration of Simulation:
+   * */
+  void printConfig();
+
+  const set<ContainerOption> &getContainerOptions() const;
+
+  const set<DataLayoutOption> &getDataLayoutOptions() const;
+
+  SelectorStrategyOption getSelectorStrategy() const;
+
+  const set<TraversalOption> &getTraversalOptions() const;
+
+  TuningStrategyOption getTuningStrategyOption() const;
+
+  const set<Newton3Option> &getNewton3Options() const;
+
+  const NumberSet<double> &getCellSizeFactors() const;
+
+  double getBoxLength() const;
+
+  double getCutoff() const;
+
+  double getDistributionMean() const;
+
+  double getDistributionStdDev() const;
+
+  FunctorOption getFunctorOption() const;
+
+  GeneratorOption getGeneratorOption() const;
+
+  size_t getIterations() const;
+
+  spdlog::level::level_enum getLogLevel() const;
+
+  bool getMeasureFlops() const;
+
+  size_t getParticlesPerDim() const;
+
+  size_t getParticlesTotal() const;
+
+  double getParticleSpacing() const;
+
+  unsigned int getTuningInterval() const;
+
+  unsigned int getTuningSamples() const;
+
+  unsigned int getTuningMaxEvidence() const;
+
+  const string &getWriteVtk() const;
+
+  const string &getLogFileName() const;
+
+  unsigned int getVerletRebuildFrequency() const;
+
+  double getVerletSkinRadius() const;
+
+  double getEpsilon() const;
+
+  double getSigma() const;
+
+  double getDeltaT() const;
+
+  double getMass() const;
 
  private:
   static constexpr size_t valueOffset = 32;
-
   // defaults:
   // AutoPas options:
   std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;

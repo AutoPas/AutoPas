@@ -14,8 +14,8 @@
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
-#include "MDFlexParser.h"
 #include "PrintableMolecule.h"  // includes autopas.h
+#include "YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 
@@ -61,23 +61,13 @@ void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
 }
 
 int main(int argc, char **argv) {
-  YAML::Node config = YAML::LoadFile("parsingFile.yaml");
-  const int particles_per_dimension = config["particles-per-dimension"].as<int>();
-  const auto generator = config["generator"].as<std::string>();
-  const auto log_level = config["log_level"].as<std::string>();
-
-  std::cout << "particles-per-dimension=  " << particles_per_dimension << endl;
-  cout << "generator coice: " << generator << endl;
-  cout << "log_level: " << log_level << endl;
-
-  //  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
-  //  MDFlexParser parser;
-  //  if (not parser.parseInput(argc, argv)) {
-  //    exit(-1);
-  //  }
-  //  parser.printConfig();
-  //  simulation.initialize(parser);
-  //  simulation.printStatistics();
+  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
+  YamlParser parser;
+  //@todo catch exception and errors
+  parser.parseInput("parsingFile.yaml");
+  parser.printConfig();
+  simulation.initialize(parser);
+  simulation.printStatistics();
   // frage FABIO, wenn ich hier manuel den destructor von simlation aufrufe; wieso kriege ich 4 invalid reads(autopas
   // container-traversals usw) und 18 invalid free
 
