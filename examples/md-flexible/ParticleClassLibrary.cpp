@@ -4,6 +4,19 @@
 ParticleClassLibrary::ParticleClassLibrary(map<unsigned long, double> &sigma, map<unsigned long, double> &epsilon,
                                            map<unsigned long, double> &mass)
     : Epsilon(epsilon), Sigma(sigma), Mass(mass) {}
+ParticleClassLibrary::ParticleClassLibrary(double &epsilon, double &sigma, double &mass, int numberOfParticles) {
+  std::map<unsigned long, double> EMap;
+  std::map<unsigned long, double> SMap;
+  std::map<unsigned long, double> MMap;
+  for (int i = 0; i < numberOfParticles; i++) {
+    EMap.emplace(i, epsilon);
+    SMap.emplace(i, sigma);
+    MMap.emplace(i, mass);
+  }
+  this->Epsilon = EMap;
+  this->Sigma = SMap;
+  this->Mass = MMap;
+}
 
 ParticleClassLibrary::ParticleClassLibrary() {}
 
