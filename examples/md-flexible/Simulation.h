@@ -237,7 +237,7 @@ void Simulation<Particle, ParticleCell>::initContainerGrid(autopas::AutoPas<Part
 
   autopas.init();
 
-  PrintableMolecule dummyParticle;
+  Particle dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
                                    {particelSpacing, particelSpacing, particelSpacing},
                                    {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
@@ -256,7 +256,7 @@ void Simulation<Particle, ParticleCell>::initContainerGauss(autopas::AutoPas<Par
 
   autopas.init();
 
-  PrintableMolecule dummyParticle;
+  Particle dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
 
@@ -271,7 +271,7 @@ void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<P
 
   autopas.init();
 
-  PrintableMolecule dummyParticle;
+  Particle dummyParticle;
   RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
 }
 
