@@ -16,22 +16,18 @@
 
 class GeneratorsTest : public AutoPasTestBase {
  public:
-  GeneratorsTest() : AutoPasTestBase() {
-    epsilon = 5.0;
-    sigma = 1.0;
-    cutoff = 1;
-    boxmin = {0., 0., 0.};
-    boxmax = {5., 5., 5.};
-    map<unsigned long, double> universalMap;
-    for (unsigned long i = 0; i < 1000; i++) {
-      universalMap.emplace(i, 1.0);
-    }
-    PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-    functor = new autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
-                                     autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0);
-  }
-  ~GeneratorsTest() { delete functor; }
-  void MolSimTaskGeneration(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas);
+  GeneratorsTest()
+      : AutoPasTestBase(),
+        epsilon{1.0},
+        sigma{1.0},
+        cutoff{1.},
+        boxmin{{0., 0., 0.}},
+        boxmax{{5., 5., 5.}},
+        PCL{ParticleClassLibrary(epsilon, sigma, 1.0, 800)},
+        functor{autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
+                                   autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)} {}
+
+  void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
 
  protected:
   double epsilon;
@@ -41,5 +37,5 @@ class GeneratorsTest : public AutoPasTestBase {
   array<double, 3> boxmax;
   ParticleClassLibrary PCL;
   autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both, true>
-      *functor;
+      functor;
 };

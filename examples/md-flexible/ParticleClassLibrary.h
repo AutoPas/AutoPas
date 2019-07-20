@@ -12,7 +12,7 @@ class ParticleClassLibrary {
  public:
   ParticleClassLibrary(map<unsigned long, double> &sigma, map<unsigned long, double> &epsilon,
                        map<unsigned long, double> &mass);
-
+  ParticleClassLibrary(double &epsilon, double &sigma, double mass, int numberOfParticles);
   ParticleClassLibrary();
 
   ParticleClassLibrary(const ParticleClassLibrary &pcl);
