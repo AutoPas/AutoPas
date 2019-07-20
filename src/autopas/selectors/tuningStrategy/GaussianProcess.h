@@ -25,6 +25,9 @@ namespace autopas {
  */
 template <class Vector>
 class GaussianProcess {
+  // number of samples to find optimal hyperparameters
+  static constexpr size_t hp_sample_size = 10000;
+
  public:
   /**
    * Constructor
@@ -236,9 +239,6 @@ class GaussianProcess {
    * generates given output.
    */
   inline void updateHyperparameters() {
-    // size of monte carlo simulation
-    const size_t mt_size = 10000;
-
     // number of evidence
     size_t newSize = _inputs.size();
     _covMat.resize(newSize, newSize);
@@ -258,20 +258,18 @@ class GaussianProcess {
       _theta = _mean * _mean;
       _dimScale = Eigen::VectorXd::Ones(_dims);
     } else {
-      // sample mean
-      double sampleMean = _outputs.sum() / newSize;
-      // sample variance
-      double sampleVar = (_outputs - sampleMean * Eigen::VectorXd::Ones(newSize)).squaredNorm() / (newSize - 1);
+      // output bounds
+      double sampleMin = _outputs.minCoeff();
+      double sampleMax = _outputs.maxCoeff();
 
       // range of mean
-      // Expected to be in vicinity of the sample mean.
-      double meanMin = -sampleMean;
-      double meanMax = sampleMean * 3.;
-      if (meanMin > meanMax) std::swap(meanMin, meanMax);
-      NumberInterval<double> meanRange(meanMin, meanMax);
+      // inside bounds of evidence outputs
+      NumberInterval<double> meanRange(sampleMin, sampleMax);
       // range of theta
-      // Expected to be in vicinity of the sample variance.
-      NumberInterval<double> thetaRange(0., sampleVar * 4.);
+      // max sample stddev: (max - min)
+      // max stddev from zero: abs(min) & abs(max)
+      double thetaMax = std::pow(std::max({sampleMax - sampleMin, std::abs(sampleMin), std::abs(sampleMax)}), 2);
+      NumberInterval<double> thetaRange(_sigma, thetaMax);
       // range of dimScale
       // Assuming most distances are greater equal 1.
       // For a dimScale d > 5: exp(-d r) < 1%. So choosing
@@ -279,42 +277,35 @@ class GaussianProcess {
       // But if needed the upper bound can be increased.
       NumberInterval<double> dimScaleRange(0., 5.);
 
-      // generate lhs samples
-      std::vector<std::tuple<double, double, Eigen::VectorXd>> mt_samples;
-      mt_samples.reserve(mt_size);
       // generate mean
-      auto mt_means = meanRange.uniformSample(mt_size, _rng);
+      auto sample_means = meanRange.uniformSample(hp_sample_size, _rng);
 
       // generate theta
-      auto mt_thetas = thetaRange.uniformSample(mt_size, _rng);
+      auto sample_thetas = thetaRange.uniformSample(hp_sample_size, _rng);
 
       // generate dimScale
-      std::vector<std::vector<double>> mt_dimScaleData;
+      std::vector<std::vector<double>> sample_dimScaleData;
       for (size_t d = 0; d < _dims; ++d) {
-        mt_dimScaleData.push_back(dimScaleRange.uniformSample(mt_size, _rng));
+        sample_dimScaleData.push_back(dimScaleRange.uniformSample(hp_sample_size, _rng));
       }
       // convert dimScales to Vectors
-      std::vector<Eigen::VectorXd> mt_dimScales;
-      for (size_t t = 0; t < mt_size; ++t) {
+      std::vector<Eigen::VectorXd> sample_dimScales;
+      for (size_t t = 0; t < hp_sample_size; ++t) {
         std::vector<double> dimScaleData;
         for (size_t d = 0; d < _dims; ++d) {
-          dimScaleData.push_back(mt_dimScaleData[d][t]);
+          dimScaleData.push_back(sample_dimScaleData[d][t]);
         }
         Eigen::VectorXd dimScale = Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size());
-        mt_dimScales.push_back(std::move(dimScale));
+        sample_dimScales.push_back(std::move(dimScale));
       }
 
-      // initialize sums to 0
-      double scoreSum = 0;
-      double meanSum = 0;
-      double thetaSum = 0;
-      Eigen::VectorXd dimScaleSum = Eigen::VectorXd::Zero(_dims);
-
+      double scoreMax = std::numeric_limits<double>::lowest();
       // @TODO parallelize?
-      for (size_t t = 0; t < mt_size; ++t) {
-        double mean = mt_means[t];
-        double theta = mt_thetas[t];
-        Eigen::VectorXd dimScale = mt_dimScales[t];
+      // find max likelyhood in samples
+      for (size_t t = 0; t < hp_sample_size; ++t) {
+        double mean = sample_means[t];
+        double theta = sample_thetas[t];
+        Eigen::VectorXd dimScale = sample_dimScales[t];
 
         // mean of output shifted to zero
         Eigen::VectorXd outputCentered = _outputs - mean * Eigen::VectorXd::Ones(newSize);
@@ -331,24 +322,21 @@ class GaussianProcess {
         Eigen::LLT<Eigen::MatrixXd> llt = _covMat.llt();
         Eigen::MatrixXd l = llt.matrixL();
 
-        // weight tested hyperparameter by probability to fit evidence
-        double score = std::exp(-0.5 * (outputCentered.dot(llt.solve(outputCentered)))) / l.diagonal().norm();
+        // log likelihood of evidence given parameters
+        double score = -0.5 * outputCentered.dot(llt.solve(outputCentered)) - std::log(l.diagonal().prod());
 
-        meanSum += mean * score;
-        thetaSum += theta * score;
-        dimScaleSum += dimScale * score;
-        scoreSum += score;
+        if (std::isnan(score)) {
+          // error score calculation failed
+          utils::ExceptionHandler::exception("GaussianProcess: invalid score ", score);
+        }
 
-        if (std::isnan(score) or std::isinf(score)) {
-          // error in calculation or scoreSum became too big
-          utils::ExceptionHandler::exception("GaussianProcess: scoreSum became invalid: ", scoreSum);
+        if (score > scoreMax) {
+          scoreMax = score;
+          _mean = mean;
+          _theta = theta;
+          _dimScale = dimScale;
         }
       }
-
-      // get weighted average;
-      _mean = meanSum / scoreSum;
-      _theta = thetaSum / scoreSum;
-      _dimScale = dimScaleSum / scoreSum;
     }
 
     // calculate needed matrix and vector for predictions

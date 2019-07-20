@@ -132,7 +132,7 @@ TEST(GaussianProcessTest, sine) {
 
   // gp should try to approximate the sine as blackbox function
   auto functor = [](double input) { return std::sin(input); };
-  double epsilon = 0.1;            // allowed error
+  double epsilon = 0.05;           // allowed error
   unsigned numEvidence = 9;        // number of evidence to provide
   unsigned numPredictions = 1000;  // number of predictions to make
   double domainStart = 0.;         // start of tested domain
@@ -168,7 +168,7 @@ TEST(GaussianProcessTest, 2dMax) {
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.1;  // allowed error
+  double epsilon = 0.05;  // allowed error
   std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
                                              NumberInterval<double>(-2, 2)};  // domain of function
 
@@ -203,18 +203,27 @@ TEST(GaussianProcessTest, 2dMax) {
     Eigen::VectorXd am = gp.sampleAquisitionMax(af, lhsSamples);
     double amOut = functor(am[0], am[1]);
 
-    gp.addEvidence(am, amOut);
-  }
+    // print acquisition map
+    int xChunks = 20;
+    int yChunks = 20;
+    double xSpace = 4. / (xChunks - 1);
+    double ySpace = 4. / (yChunks - 1);
+    for (int y = yChunks - 1; y >= 0; --y) {
+      for (int x = 0; x < xChunks; ++x) {
+        Eigen::VectorXd sample(2);
+        sample << (x * xSpace - 2), (y * ySpace - 2);
+        double val = gp.calcAcquisition(af, sample);
+        int color = static_cast<int>(val * 2 + 251);
+        color = std::clamp(color, 232, 255);
 
-  // last lhs sample for predicted max
-  auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-  auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
-  std::vector<Eigen::VectorXd> lhsSamples;
-  lhsSamples.reserve(lhsNumSamples);
-  for (size_t i = 0; i < lhsNumSamples; ++i) {
-    Eigen::VectorXd sample(2);
-    sample << xSamples[i], ySamples[i];
-    lhsSamples.push_back(sample);
+        std::cout << "\033[48;5;" << color << "m  ";
+      }
+      std::cout << "\033[0m" << std::endl;
+    }
+    std::cout << "Acq max: " << std::endl << am << std::endl;
+    std::cout << "Got: " << amOut << std::endl;
+
+    gp.addEvidence(am, amOut);
   }
 
   // get max
@@ -231,7 +240,7 @@ TEST(GaussianProcessTest, 2dMin) {
 
   // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
   auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  double epsilon = 0.2;  // allowed error
+  double epsilon = 0.05;  // allowed error
   std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
                                              NumberInterval<double>(-2, 2)};  // domain of function
 
@@ -254,24 +263,6 @@ TEST(GaussianProcessTest, 2dMin) {
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);
 
-    // print acquisition map
-    int xChunks = 20;
-    int yChunks = 20;
-    double xSpace = 4. / (xChunks - 1);
-    double ySpace = 4. / (yChunks - 1);
-    for (int y = yChunks - 1; y >= 0; --y) {
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val * 2 + 238);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m" << std::endl;
-    }
-
     auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
     auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
     for (size_t i = 0; i < lhsNumSamples; ++i) {
@@ -284,18 +275,27 @@ TEST(GaussianProcessTest, 2dMin) {
     Eigen::VectorXd am = gp.sampleAquisitionMin(af, lhsSamples);
     double amOut = functor(am[0], am[1]);
 
-    gp.addEvidence(am, amOut);
-  }
+    // print acquisition map
+    int xChunks = 20;
+    int yChunks = 20;
+    double xSpace = 4. / (xChunks - 1);
+    double ySpace = 4. / (yChunks - 1);
+    for (int y = yChunks - 1; y >= 0; --y) {
+      for (int x = 0; x < xChunks; ++x) {
+        Eigen::VectorXd sample(2);
+        sample << (x * xSpace - 2), (y * ySpace - 2);
+        double val = gp.calcAcquisition(af, sample);
+        int color = static_cast<int>(val * 2 + 233);
+        color = std::clamp(color, 232, 255);
 
-  // last lhs sample for predicted min
-  auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-  auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
-  std::vector<Eigen::VectorXd> lhsSamples;
-  lhsSamples.reserve(lhsNumSamples);
-  for (size_t i = 0; i < lhsNumSamples; ++i) {
-    Eigen::VectorXd sample(2);
-    sample << xSamples[i], ySamples[i];
-    lhsSamples.push_back(sample);
+        std::cout << "\033[48;5;" << color << "m  ";
+      }
+      std::cout << "\033[0m" << std::endl;
+    }
+    std::cout << "Acq min: " << std::endl << am << std::endl;
+    std::cout << "Got: " << amOut << std::endl;
+
+    gp.addEvidence(am, amOut);
   }
 
   // get min
