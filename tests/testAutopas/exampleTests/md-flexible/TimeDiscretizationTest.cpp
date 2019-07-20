@@ -50,7 +50,7 @@ TEST_F(TimeDiscretizationTest, GeneralForceTest) {
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
   // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(functor);
+  autoPas.iteratePairwise(&functor);
   // Dokumentation prints
   //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
   //  cout << "-----AFTER INITIALIZATION----" << endl;
@@ -65,7 +65,7 @@ TEST_F(TimeDiscretizationTest, GeneralForceTest) {
 
   while (iterations < 10) {
     td.VSCalculateX(autoPas);
-    autoPas.iteratePairwise(functor);
+    autoPas.iteratePairwise(&functor);
     td.VSCalculateV(autoPas);
     iterations++;
     //    for (auto iter = autoPas.getContainer()->begin(); iter.isValid(); ++iter) {
@@ -104,7 +104,7 @@ TEST_F(TimeDiscretizationTest, CalcX) {
   int iterations = 0;
   // iterationen beginnend
   // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(functor);
+  autoPas.iteratePairwise(&functor);
   //  cout << "delta_t value =  " << particleD << endl;
   while (iterations < 10) {
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
@@ -157,7 +157,7 @@ TEST_F(TimeDiscretizationTest, CalcV) {
   int iterations = 0;
   // iterationen beginnend
   // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(functor);
+  autoPas.iteratePairwise(&functor);
   //  cout << "delta_t value =  " << particleD << endl;
   while (iterations < 10) {
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;

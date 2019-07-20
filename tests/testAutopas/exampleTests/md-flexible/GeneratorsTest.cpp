@@ -95,10 +95,10 @@ TEST_F(GeneratorsTest, MolSimTask) {
   // iterationen beginnend
   TimeDiscretization<decltype(autoPas)> td(particleD);
   // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(functor);
+  autoPas.iteratePairwise(&functor);
   while (iterations < 10) {
     td.VSCalculateX(autoPas);
-    autoPas.iteratePairwise(functor);
+    autoPas.iteratePairwise(&functor);
     td.VSCalculateV(autoPas);
     iterations++;
   }
