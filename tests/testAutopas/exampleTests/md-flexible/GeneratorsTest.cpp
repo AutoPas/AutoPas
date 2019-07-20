@@ -4,12 +4,15 @@
 
 #include "GeneratorsTest.h"
 
+
+
 // fehler Erstellt Umgebung von Blatt 2 Task 3 des MolSim Praktikums
+template <class Particle>
 void GeneratorsTest::MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas) {
   std::array<double, 3> boxMax({50., 30., 50.});
 
   std::array<double, 3> smallGridBoxMin({15., 15., 0});
-  std::array<double, 3> bigGridBoxMin({0., 0., 0.});
+//  std::array<double, 3> bigGridBoxMin({0., 0., 0.});
 
   std::array<double, 3> initialVelocitySmall({0., -10., 0.});
 
@@ -22,8 +25,9 @@ void GeneratorsTest::MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &au
   GridGenerator::fillWithParticlesOnRInitialV(autopas, smallGridBoxMin, initialVelocitySmall, {8, 8, 1}, dummyParticle,
                                               {.5, .5, .5}, {0.3, 0.3, 0.3});
   // Big grid
-  GridGenerator::fillWithParticlesOnR(autopas, bigGridBoxMin, {40, 10, 1}, dummyParticle, {.5, .5, .5},
-                                      {0.3, 0.3, 0.3});
+  //@todo delete or exchange following:
+//  GridGenerator::fillWithParticlesOnR(autopas, bigGridBoxMin, {40, 10, 1}, dummyParticle, {.5, .5, .5},
+//                                      {0.3, 0.3, 0.3});
 }
 
 TEST_F(GeneratorsTest, fillWithParticlesOnPosition) {
@@ -32,23 +36,23 @@ TEST_F(GeneratorsTest, fillWithParticlesOnPosition) {
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   Particle dummyParticle;
-  std::array<double, 3> BoxPos = {2., 2., 1.};
+//  std::array<double, 3> BoxPos = {2., 2., 1.};
   autoPas.setBoxMin(boxmin);
   autoPas.setBoxMax(boxmax);
   autoPas.setCutoff(cutoff);
   autoPas.init();
-  GridGenerator::fillWithParticlesOnR(autoPas, BoxPos, {3, 3, 1}, dummyParticle, {1., 1., 1.}, {0.3, 0.3, 0.3});
+//  GridGenerator::fillWithParticlesOnR(autoPas, BoxPos, {3, 3, 1}, dummyParticle, {1., 1., 1.}, {0.3, 0.3, 0.3});
   // GridGenerator::fillWithParticles(*autoPas,{3,3,3},dummyParticle,{0.5,0.5,.5},{0.3,0.3,0.3});
   std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
   ASSERT_TRUE(true);
 }
 
 TEST_F(GeneratorsTest, Behavior) {
-  auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
+  auto autoPas = autopas::AutoPas<PrintableMolecule, FPCell>(std::cout);
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
-  MolSimTaskGeneration(autoPas);
+  MolSimTaskGeneration<PrintableMolecule>(autoPas);
   // for GRID generator:
   //  int particlePerDim = 5;
   //  double particleSpacing = 0.5;
@@ -58,7 +62,7 @@ TEST_F(GeneratorsTest, Behavior) {
   // Gauß generator
   // initContainerGauss(*autoPas,5.,125,5,2);
   //  std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
-  //    for (auto iter = autoPas->getContainer()->begin() ; iter.isValid(); ++iter) {
+  //    for (auto iter = autoPas.getContainer()->begin() ; iter.isValid(); ++iter) {
   //        cout << iter->toString() << endl;
   //    }
 
@@ -81,11 +85,11 @@ TEST_F(GeneratorsTest, Behavior) {
   ASSERT_TRUE(true);
 }
 TEST_F(GeneratorsTest, MolSimTask) {
-  auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
+  auto autoPas = autopas::AutoPas<PrintableMolecule, FPCell>(std::cout);
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
-  MolSimTaskGeneration(autoPas);
+  MolSimTaskGeneration<PrintableMolecule>(autoPas);
   std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // std::cout << iter->toString() << std::endl;
@@ -103,4 +107,20 @@ TEST_F(GeneratorsTest, MolSimTask) {
     iterations++;
   }
   ASSERT_TRUE(true);
+}
+
+TEST_F(GeneratorsTest,Sphere){
+    auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
+    PrintableMolecule::setEpsilon(epsilon);
+    PrintableMolecule::setSigma(sigma);
+    PrintableMolecule::setMass(1.0);
+    Generator::Sphere(autoPas,{5.,5.,5.},10,.5,1);
+    cout << "Number of particles generated " << autoPas.getNumberOfParticles() << endl;
+    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+        // cout << iter->toString() << endl;
+    }
+    // iterationen beginnend
+    // domain vorbeireiten: -Force initialisieren
+    writeVTKFile<decltype(autoPas)>(0, autoPas.getNumberOfParticles(), autoPas);
+    ASSERT_TRUE(true);
 }

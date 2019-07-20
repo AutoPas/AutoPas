@@ -57,11 +57,11 @@ class GridGenerator {
    * @param offset
    *
    * */
-  template <class Particle, class ParticleCell>
-  static void fillWithParticlesOnR(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                   std::array<double, 3> startingPositions, std::array<size_t, 3> particlesPerDim,
-                                   const Particle &defaultParticle, std::array<double, 3> spacing,
-                                   std::array<double, 3> offset);
+//  template <class Particle, class ParticleCell>
+//  static void fillWithParticlesOnR(autopas::AutoPas<Particle, ParticleCell> &autopas,
+//                                   std::array<double, 3> startingPositions, std::array<size_t, 3> particlesPerDim,
+//                                   const Particle &defaultParticle, std::array<double, 3> spacing,
+//                                   std::array<double, 3> offset);
 
   /**Fills Autopas Object with a Grid of Particles
    * @param autopas

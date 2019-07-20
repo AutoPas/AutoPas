@@ -16,6 +16,10 @@
  */
 typedef autopas::Particle Particle;
 /**
+ * Short for Printable Particle
+ */
+typedef autopas::MoleculeLJ PP;
+/**
  * Short for a FullParticle Cell with the AutoPas Particle
  */
 typedef autopas::FullParticleCell<autopas::Particle> FPCell;
