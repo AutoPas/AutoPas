@@ -87,10 +87,10 @@ template <typename Particle>
 void run(int numParticles) {
   autopas::Logger::create();
   map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numParticles; i++) {
-    universalMap.emplace(i, 1.0);
+  for (int i = 0; i < numParticles; i++) {
+    universalMap.emplace((unsigned long)i, 1.0);
   }
-  PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
   typename Particle::ParticleFloatingPointType cutoff = 100.0;
 
