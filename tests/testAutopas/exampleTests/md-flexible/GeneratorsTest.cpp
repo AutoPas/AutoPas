@@ -33,7 +33,7 @@ TEST_F(GeneratorsTest,Gauss) {
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   Particle dummyParticle;
-  Generator::Gauss(autoPas,{5.,5.,5.},100,5,2);
+    Generator::CubeGauss(autoPas, {5., 5., 5.}, 100, 5, 2);
   ASSERT_EQ(autoPas.getNumberOfParticles(),100);
 }
 

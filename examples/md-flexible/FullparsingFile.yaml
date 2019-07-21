@@ -31,5 +31,14 @@
 #verlet-skin-radius                 #double option
 #vtk:                               #string option
 
+object generation:
+  list: cube, sphere, grid, gauss
 
-
+#
+#object: "CubeGrid"
+#position  #und wenn nicht specified-> wird nur cube generiert
+#numberofparticles
+#veloctity
+#numberofparticles
+#
+#object: "sphere"
