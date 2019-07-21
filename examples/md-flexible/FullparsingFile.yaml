@@ -1,0 +1,35 @@
+#YAML parsing FILE:
+
+#box-length:                        #double option
+#container:                         #string option
+#selector-strategy:                 #string option
+#cutoff:                            #double option
+#cell-size-factor:                  #string option
+#distribution-mean:                 #double option
+#distribution-stddeviation:         #double option
+#data-layout:                       #string option
+#functor:                           #string option
+#iterations:                        #double option
+#no-flops:                          #boolean option
+#newton3:                           #string option
+#delta_t:                           #double option
+#epsilon:                           #double option
+#sigma:                             #double option
+#particle-mass:                     #double option
+#particles-generator:               #string option
+#particles-per-dimension:           #int option
+#particles-total:                   #int option
+#particle-spacing:                  #double option
+#traversal:                         #string option
+#tuning-interval:                   #int option
+#tuning-samples:                    #int option
+#tuning-max-evidence:               #int option
+#tuning-strategy:                   #string option
+#log-level:                         #string option
+#log-file:                          #string option
+#verlet-rebuild-frequency:          #int option
+#verlet-skin-radius                 #double option
+#vtk:                               #string option
+
+
+

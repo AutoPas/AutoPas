@@ -7,7 +7,6 @@
 
 
 // fehler Erstellt Umgebung von Blatt 2 Task 3 des MolSim Praktikums
-template <class Particle>
 void GeneratorsTest::MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas) {
   std::array<double, 3> boxMax({50., 30., 50.});
 
@@ -47,65 +46,34 @@ TEST_F(GeneratorsTest, fillWithParticlesOnPosition) {
   ASSERT_TRUE(true);
 }
 
-TEST_F(GeneratorsTest, Behavior) {
-  auto autoPas = autopas::AutoPas<PrintableMolecule, FPCell>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
-  MolSimTaskGeneration<PrintableMolecule>(autoPas);
-  // for GRID generator:
-  //  int particlePerDim = 5;
-  //  double particleSpacing = 0.5;
-  // initContainerGrid(*autoPas,particlePerDim,particleSpacing);
-  // Uniform generator
-  // initContainerUniform(*autoPas,5.,125);
-  // Gauß generator
-  // initContainerGauss(*autoPas,5.,125,5,2);
-  //  std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
-  //    for (auto iter = autoPas.getContainer()->begin() ; iter.isValid(); ++iter) {
-  //        cout << iter->toString() << endl;
-  //    }
-
-  // print State -- ugly code , I know
-  size_t numParticles = autoPas.getNumberOfParticles();
-  string filename = "VtkTestOutput.vtu";
-  std::ofstream vtkFile;
-  vtkFile.open(filename);
-  vtkFile << "# vtk DataFile Version 2.0" << std::endl;
-  vtkFile << "Timestep" << std::endl;
-  vtkFile << "ASCII" << std::endl;
-  vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
-  vtkFile << "DIMENSIONS 1 1 1" << std::endl;
-  vtkFile << "POINTS " << numParticles << " double" << std::endl;
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-    auto pos = iter->getR();
-    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
-  }
-  vtkFile.close();
-  ASSERT_TRUE(true);
+TEST_F(GeneratorsTest, CubeGenerator) {
+    //@tood check: Fabio wieso zeigt paraview ein extra Particle an?
+    auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
+    PrintableMolecule::setEpsilon(epsilon);
+    PrintableMolecule::setSigma(sigma);
+    PrintableMolecule::setMass(1.0);
+    unsigned long particlesPerDim = 5;
+    std::array<size_t,3> cube={particlesPerDim,particlesPerDim,particlesPerDim};
+    Generator::CubeGrid(autoPas, cube, .5);
+    string CubeGeneration = "CubeGeneration.vtu";
+    writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
+    EXPECT_EQ(autoPas.getNumberOfParticles(), (5 * 5 * 5));
 }
+
 TEST_F(GeneratorsTest, MolSimTask) {
-  auto autoPas = autopas::AutoPas<PrintableMolecule, FPCell>(std::cout);
+  auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
-  MolSimTaskGeneration<PrintableMolecule>(autoPas);
-  std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
+  MolSimTaskGeneration(autoPas);
+  std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl; //64
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // std::cout << iter->toString() << std::endl;
   }
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
-  TimeDiscretization<decltype(autoPas)> td(particleD);
-  // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(&functor);
-  while (iterations < 10) {
-    td.VSCalculateX(autoPas);
-    autoPas.iteratePairwise(&functor);
-    td.VSCalculateV(autoPas);
-    iterations++;
-  }
+  //@todo schauen was man hier machen kann zum testen: VTK File ausgabe wäre eine idee
   ASSERT_TRUE(true);
 }
 
@@ -114,13 +82,10 @@ TEST_F(GeneratorsTest,Sphere){
     PrintableMolecule::setEpsilon(epsilon);
     PrintableMolecule::setSigma(sigma);
     PrintableMolecule::setMass(1.0);
-    Generator::Sphere(autoPas,{5.,5.,5.},10,.5,1);
+    Generator::Sphere(autoPas,{0.,0.,0.},10,.3,0);
     cout << "Number of particles generated " << autoPas.getNumberOfParticles() << endl;
-    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-        // cout << iter->toString() << endl;
-    }
-    // iterationen beginnend
-    // domain vorbeireiten: -Force initialisieren
-    writeVTKFile<decltype(autoPas)>(0, autoPas.getNumberOfParticles(), autoPas);
-    ASSERT_TRUE(true);
+    string SphereGeneration="SphereGeneration.vtu";
+    writeVTKFile<decltype(autoPas)>(SphereGeneration,autoPas.getNumberOfParticles(), autoPas);
+    cout << "Vtk output in Autopas/tests/testAutopas" << endl;
+    //check if no Particle is outside of radius range:
 }

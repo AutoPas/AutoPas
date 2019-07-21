@@ -25,18 +25,15 @@ class GeneratorsTest : public AutoPasTestBase {
         functor{autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
                                    autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)} {}
 
-  template<class Particle>
   void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
 
     template <class AutoPasTemplate>
-    void writeVTKFile(int iteration, size_t numParticles, AutoPasTemplate &autopas) {
-        string filename = "VtkOutput";
+    void writeVTKFile(string filename,size_t numParticles, AutoPasTemplate &autopas) {
         stringstream strstr;
-        strstr << filename << "_" << setfill('0') << setw(4) << iteration << ".vtu";
+        strstr << filename;
         // string path = "./vtk";
         std::ofstream vtkFile;
         vtkFile.open(strstr.str());
-
         vtkFile << "# vtk DataFile Version 2.0" << endl;
         vtkFile << "Timestep" << endl;
         vtkFile << "ASCII" << endl;
@@ -48,8 +45,15 @@ class GeneratorsTest : public AutoPasTestBase {
             auto pos = iter->getR();
             vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
         }
-
         vtkFile.close();
+    }
+
+    double L2Norm(std::array<double, 3> array) {
+        double square_sum = 0;
+        for (unsigned int i = 0; i < array.size(); i++) {
+            square_sum += (array[i] * array[i]);
+        }
+        return sqrt(square_sum);
     }
  protected:
   double epsilon;

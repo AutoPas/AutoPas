@@ -90,6 +90,7 @@ class Simulation {
 
   void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, double boxLength, size_t numParticles);
 
+
   /** @brief This function
    * -initializes the autopas Object
    * -sets/initializes the simulation domain with the particles generators
