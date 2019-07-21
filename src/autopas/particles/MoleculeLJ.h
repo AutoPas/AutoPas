@@ -25,7 +25,7 @@ class MoleculeLJ : public Particle {
    * @param v velocity of the molecule
    * @param id id of the molecule
    */
-  explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : ParticleBase(r, v, id) {}
+  explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
 
   ~MoleculeLJ() override = default;
 
