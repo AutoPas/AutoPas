@@ -522,33 +522,33 @@ class LJFunctor
     utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
 #endif
   }
-  //
-  //  /**
-  //   * @copydoc Functor::getNeededAttr()
-  //   */
-  //  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
-  //    return std::array<typename Particle::AttributeNames, 8>{
-  //        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-  //        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-  //        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
-  //  }
-  //
-  //  /**
-  //   * @copydoc Functor::getNeededAttr(std::false_type)
-  //   */
-  //  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
-  //    return std::array<typename Particle::AttributeNames, 5>{
-  //        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-  //        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
-  //  }
-  //
-  //  /**
-  //   * @copydoc Functor::getComputedAttr()
-  //   */
-  //  constexpr static const std::array<typename Particle::AttributeNames, 3> getComputedAttr() {
-  //    return std::array<typename Particle::AttributeNames, 3>{
-  //        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
-  //  }
+
+  /**
+   * @copydoc Functor::getNeededAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 8>{
+        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 5>{
+        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+  }
+
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 3> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 3>{
+        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+  }
 
   /**
    * Get the number of flops used per kernel call. This should count the

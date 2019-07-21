@@ -25,7 +25,7 @@ class MoleculeLJ : public Particle {
    * @param v velocity of the molecule
    * @param id id of the molecule
    */
-  explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
+  explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : ParticleBase(r, v, id) {}
 
   ~MoleculeLJ() override = default;
 
@@ -81,15 +81,11 @@ class MoleculeLJ : public Particle {
   /**get TypeId
    * @return _typeId
    * */
-    size_t getTypeId() const {
-        return _typeId;
-    }
-    /**set _TypeId of Particle
-     * @param typeId
-     * */
-    void setTypeId(size_t typeId) {
-        _typeId = typeId;
-    }
+  size_t getTypeId() const { return _typeId; }
+  /**set _TypeId of Particle
+   * @param typeId
+   * */
+  void setTypeId(size_t typeId) { _typeId = typeId; }
 
  private:
   static double EPSILON, SIGMA, MASS;
@@ -99,12 +95,10 @@ class MoleculeLJ : public Particle {
    */
   size_t _typeId = 0;
 
-
-private:
-
-    /**
-     * Old Force of the particle experiences as 3D vector.
-     */
+ private:
+  /**
+   * Old Force of the particle experiences as 3D vector.
+   */
   std::array<double, 3> OLDF = {0., 0., 0.};
 };
 
