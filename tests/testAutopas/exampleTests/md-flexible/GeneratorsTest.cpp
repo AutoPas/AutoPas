@@ -90,8 +90,6 @@ TEST_F(GeneratorsTest, MolSimTask) {
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // std::cout << iter->toString() << std::endl;
   }
-  double particleD = 0.01;
-  int iterations = 0;
   // iterationen beginnend
   //@todo schauen was man hier machen kann zum testen: VTK File ausgabe wäre eine idee
   ASSERT_TRUE(true);

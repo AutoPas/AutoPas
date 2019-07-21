@@ -78,6 +78,19 @@ class MoleculeLJ : public Particle {
    */
   void setOldf(const std::array<double, 3> &oldf) { OLDF = oldf; }
 
+  /**get TypeId
+   * @return _typeId
+   * */
+    size_t getTypeId() const {
+        return _typeId;
+    }
+    /**set _TypeId of Particle
+     * @param typeId
+     * */
+    void setTypeId(size_t typeId) {
+        _typeId = typeId;
+    }
+
  private:
   static double EPSILON, SIGMA, MASS;
 
@@ -86,9 +99,12 @@ class MoleculeLJ : public Particle {
    */
   size_t _typeId = 0;
 
-  /**
-   * Old Force of the particle experiences as 3D vector.
-   */
+
+private:
+
+    /**
+     * Old Force of the particle experiences as 3D vector.
+     */
   std::array<double, 3> OLDF = {0., 0., 0.};
 };
 
