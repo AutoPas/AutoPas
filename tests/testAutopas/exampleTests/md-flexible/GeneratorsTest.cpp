@@ -21,29 +21,20 @@ void GeneratorsTest::MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &au
   autopas.init();
   Particle dummyParticle;
   // small Grid
-  GridGenerator::fillWithParticlesOnRInitialV(autopas, smallGridBoxMin, initialVelocitySmall, {8, 8, 1}, dummyParticle,
-                                              {.5, .5, .5}, {0.3, 0.3, 0.3});
+  GridGenerator::fillWithParticlesOnR(autopas, smallGridBoxMin, {8, 8, 1}, dummyParticle,
+                                              {.5, .5, .5}, {0.3, 0.3, 0.3}, initialVelocitySmall);
   // Big grid
-  //@todo delete or exchange following:
-//  GridGenerator::fillWithParticlesOnR(autopas, bigGridBoxMin, {40, 10, 1}, dummyParticle, {.5, .5, .5},
-//                                      {0.3, 0.3, 0.3});
+  // initialize
 }
 
-TEST_F(GeneratorsTest, fillWithParticlesOnPosition) {
+TEST_F(GeneratorsTest,Gauss) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
   PrintableMolecule::setEpsilon(epsilon);
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   Particle dummyParticle;
-//  std::array<double, 3> BoxPos = {2., 2., 1.};
-  autoPas.setBoxMin(boxmin);
-  autoPas.setBoxMax(boxmax);
-  autoPas.setCutoff(cutoff);
-  autoPas.init();
-//  GridGenerator::fillWithParticlesOnR(autoPas, BoxPos, {3, 3, 1}, dummyParticle, {1., 1., 1.}, {0.3, 0.3, 0.3});
-  // GridGenerator::fillWithParticles(*autoPas,{3,3,3},dummyParticle,{0.5,0.5,.5},{0.3,0.3,0.3});
-  std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
-  ASSERT_TRUE(true);
+  Generator::Gauss(autoPas,{5.,5.,5.},100,5,2);
+  ASSERT_EQ(autoPas.getNumberOfParticles(),100);
 }
 
 TEST_F(GeneratorsTest, CubeGenerator) {
@@ -70,8 +61,6 @@ TEST_F(GeneratorsTest, MolSimTask) {
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // std::cout << iter->toString() << std::endl;
   }
-  double particleD = 0.01;
-  int iterations = 0;
   // iterationen beginnend
   //@todo schauen was man hier machen kann zum testen: VTK File ausgabe wäre eine idee
   ASSERT_TRUE(true);
