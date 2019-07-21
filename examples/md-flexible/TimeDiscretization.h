@@ -18,15 +18,7 @@ class TimeDiscretization {
   TimeDiscretization(double particleDeltaT);
 
   virtual ~TimeDiscretization() {}
-  string arrayString(array<double, 3> input) {
-    std::ostringstream os;
-    for (double i : input) {
-      os << i;
-      os << " _ ";
-    }
-    std::string str(os.str());
-    return str;
-  }
+
   /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    */
   long VSCalculateX(AutoPasTemplate &autopas);
