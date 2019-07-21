@@ -11,7 +11,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"
 #include "autopas/utils/CudaDeviceVector.h"
-#inculde "../md-flexible/ParticleClassLibrary.h"
+#include "../md-flexible/ParticleClassLibrary.h"
 
 using namespace std;
 using namespace autopas;
