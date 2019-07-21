@@ -272,10 +272,10 @@ class GaussianProcess {
       NumberInterval<double> thetaRange(_sigma, thetaMax);
       // range of dimScale
       // Assuming most distances are greater equal 1.
-      // For a dimScale d > 5: exp(-d r) < 1%. So choosing
+      // For a dimScale d > 5 + ln(thetaMax): theta * exp(-d r) < 1%. So choosing
       // a greater dimScale may lead to many kernels close to zero.
       // But if needed the upper bound can be increased.
-      NumberInterval<double> dimScaleRange(0., 5.);
+      NumberInterval<double> dimScaleRange(0., 5. + std::max(0., std::log(thetaMax)));
 
       // generate mean
       auto sample_means = meanRange.uniformSample(hp_sample_size, _rng);

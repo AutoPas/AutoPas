@@ -20,6 +20,37 @@ TEST(GaussianProcessTest, wrongDimension) {
   EXPECT_THROW(gp.addEvidence(f2, 1), utils::ExceptionHandler::AutoPasException);
 }
 
+TEST(GaussianProcessTest, distanceTest) {
+  autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::c01, DataLayoutOption::aos,
+                            Newton3Option::enabled);
+  autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::c08, DataLayoutOption::aos,
+                            Newton3Option::enabled);
+  autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::c08, DataLayoutOption::soa,
+                            Newton3Option::enabled);
+  autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::c08, DataLayoutOption::soa,
+                            Newton3Option::disabled);
+
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f1).squaredNorm(), 0);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f2).squaredNorm(), 0);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f3 - f3).squaredNorm(), 0);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f4 - f4).squaredNorm(), 0);
+
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f2).squaredNorm(), 1);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f3).squaredNorm(), 1);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f3 - f4).squaredNorm(), 1);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f4 - f3).squaredNorm(), 1);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f3 - f2).squaredNorm(), 1);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f1).squaredNorm(), 1);
+
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f3).squaredNorm(), 2);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f4).squaredNorm(), 2);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f4 - f2).squaredNorm(), 2);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f3 - f1).squaredNorm(), 2);
+
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f4).squaredNorm(), 3);
+  EXPECT_EQ(static_cast<Eigen::VectorXd>(f4 - f1).squaredNorm(), 3);
+}
+
 TEST(GaussianProcessTest, noEvidence) {
   Random rng(32);
 
@@ -185,6 +216,7 @@ TEST(GaussianProcessTest, 2dMax) {
   Eigen::VectorXd first(2);
   first << 0, 0;
   gp.addEvidence(first, functor(0, 0));
+  std::cout << "Origin: " << functor(0, 0) << std::endl;
 
   for (unsigned i = 1; i < numEvidence; ++i) {
     // create lhs samples
@@ -203,17 +235,30 @@ TEST(GaussianProcessTest, 2dMax) {
     Eigen::VectorXd am = gp.sampleAquisitionMax(af, lhsSamples);
     double amOut = functor(am[0], am[1]);
 
-    // print acquisition map
+    // print acquisition and mean map
     int xChunks = 20;
     int yChunks = 20;
     double xSpace = 4. / (xChunks - 1);
     double ySpace = 4. / (yChunks - 1);
     for (int y = yChunks - 1; y >= 0; --y) {
+      // acquisition row
       for (int x = 0; x < xChunks; ++x) {
         Eigen::VectorXd sample(2);
         sample << (x * xSpace - 2), (y * ySpace - 2);
         double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val * 2 + 251);
+        int color = static_cast<int>(val * 5 + 250);
+        color = std::clamp(color, 232, 255);
+
+        std::cout << "\033[48;5;" << color << "m  ";
+      }
+      std::cout << "\033[0m ";
+
+      // mean row
+      for (int x = 0; x < xChunks; ++x) {
+        Eigen::VectorXd sample(2);
+        sample << (x * xSpace - 2), (y * ySpace - 2);
+        double val = gp.predictMean(sample);
+        int color = static_cast<int>(val * 5 + 250);
         color = std::clamp(color, 232, 255);
 
         std::cout << "\033[48;5;" << color << "m  ";
@@ -257,6 +302,7 @@ TEST(GaussianProcessTest, 2dMin) {
   Eigen::VectorXd first(2);
   first << 0, 0;
   gp.addEvidence(first, functor(0, 0));
+  std::cout << "Origin: " << functor(0, 0) << std::endl;
 
   for (unsigned i = 1; i < numEvidence; ++i) {
     // create lhs samples
@@ -285,7 +331,205 @@ TEST(GaussianProcessTest, 2dMin) {
         Eigen::VectorXd sample(2);
         sample << (x * xSpace - 2), (y * ySpace - 2);
         double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val * 2 + 233);
+        int color = static_cast<int>(val * 2 + 232);
+        color = std::clamp(color, 232, 255);
+
+        std::cout << "\033[48;5;" << color << "m  ";
+      }
+      std::cout << "\033[0m ";
+
+      // mean row
+      for (int x = 0; x < xChunks; ++x) {
+        Eigen::VectorXd sample(2);
+        sample << (x * xSpace - 2), (y * ySpace - 2);
+        double val = gp.predictMean(sample);
+        int color = static_cast<int>(val * 2 + 232);
+        color = std::clamp(color, 232, 255);
+
+        std::cout << "\033[48;5;" << color << "m  ";
+      }
+      std::cout << "\033[0m" << std::endl;
+    }
+    std::cout << "Acq min: " << std::endl << am << std::endl;
+    std::cout << "Got: " << amOut << std::endl;
+
+    gp.addEvidence(am, amOut);
+  }
+
+  // get min
+  Eigen::VectorXd am = gp.getEvidenceMin();
+
+  // check if min is near real min
+  double predMin = functor(am[0], am[1]);
+  double realMin = functor(min[0], min[1]);
+  EXPECT_NEAR(predMin, realMin, epsilon);
+}
+
+TEST(GaussianProcessTest, 2dMinGrid) {
+  Random rng(73);  // random generator
+
+  // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
+  auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
+  double epsilon = 0.05;  // allowed error
+
+  // domain of function
+  int domHalf = 10;
+  std::set<double> domSet;
+  for (int i = -domHalf; i <= domHalf; ++i) {
+    domSet.insert(i * 2. / domHalf);
+  }
+  std::vector<NumberSetFinite<double>> domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
+
+  // min of function
+  Eigen::VectorXd min(2);
+  min << 1, 1;
+  unsigned numEvidence = 10;      // number of samples allowed to make
+  unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::lcb;  // use lower confidence bound as af
+
+  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
+
+  // add first evidence
+  Eigen::VectorXd first(2);
+  first << 0, 0;
+  gp.addEvidence(first, functor(0, 0));
+  std::cout << "Origin: " << functor(0, 0) << std::endl;
+
+  for (unsigned i = 1; i < numEvidence; ++i) {
+    // create lhs samples
+    std::vector<Eigen::VectorXd> lhsSamples;
+    lhsSamples.reserve(lhsNumSamples);
+
+    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
+    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
+    for (size_t i = 0; i < lhsNumSamples; ++i) {
+      Eigen::VectorXd sample(2);
+      sample << xSamples[i], ySamples[i];
+      lhsSamples.push_back(sample);
+    }
+
+    // sample min of acquisition function
+    Eigen::VectorXd am = gp.sampleAquisitionMin(af, lhsSamples);
+    double amOut = functor(am[0], am[1]);
+
+    // print acquisition and mean map
+    int xChunks = 20;
+    int yChunks = 20;
+    double xSpace = 4. / (xChunks - 1);
+    double ySpace = 4. / (yChunks - 1);
+    for (int y = yChunks - 1; y >= 0; --y) {
+      // acquisition row
+      for (int x = 0; x < xChunks; ++x) {
+        Eigen::VectorXd sample(2);
+        sample << (x * xSpace - 2), (y * ySpace - 2);
+        double val = gp.calcAcquisition(af, sample);
+        int color = static_cast<int>(val * 2 + 232);
+        color = std::clamp(color, 232, 255);
+
+        std::cout << "\033[48;5;" << color << "m  ";
+      }
+      std::cout << "\033[0m ";
+
+      // mean row
+      for (int x = 0; x < xChunks; ++x) {
+        Eigen::VectorXd sample(2);
+        sample << (x * xSpace - 2), (y * ySpace - 2);
+        double val = gp.predictMean(sample);
+        int color = static_cast<int>(val * 2 + 232);
+        color = std::clamp(color, 232, 255);
+
+        std::cout << "\033[48;5;" << color << "m  ";
+      }
+      std::cout << "\033[0m" << std::endl;
+    }
+    std::cout << "Acq min: " << std::endl << am << std::endl;
+    std::cout << "Got: " << amOut << std::endl;
+
+    gp.addEvidence(am, amOut);
+  }
+
+  // get min
+  Eigen::VectorXd am = gp.getEvidenceMin();
+
+  // check if min is near real min
+  double predMin = functor(am[0], am[1]);
+  double realMin = functor(min[0], min[1]);
+  EXPECT_NEAR(predMin, realMin, epsilon);
+}
+
+TEST(GaussianProcessTest, 2dMinGridBig) {
+  Random rng(73);  // random generator
+
+  // functor to find min of
+  auto functor = [](double i1, double i2) {
+    return std::pow((std::abs(i1 - 1) + 1), 5) + std::pow((std::abs(i2 - 1) + 1), 5);
+  };
+  double epsilon = 10;  // allowed error
+
+  // domain of function
+  int domHalf = 10;
+  std::set<double> domSet;
+  for (int i = -domHalf; i <= domHalf; ++i) {
+    domSet.insert(i * 2. / domHalf);
+  }
+  std::vector<NumberSetFinite<double>> domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
+
+  // min of function
+  Eigen::VectorXd min(2);
+  min << 1, 1;
+  unsigned numEvidence = 10;      // number of samples allowed to make
+  unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::lcb;  // use lower confidence bound as af
+
+  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
+
+  // add first evidence
+  Eigen::VectorXd first(2);
+  first << 0, 0;
+  gp.addEvidence(first, functor(0, 0));
+  std::cout << "Origin: " << functor(0, 0) << std::endl;
+
+  for (unsigned i = 1; i < numEvidence; ++i) {
+    // create lhs samples
+    std::vector<Eigen::VectorXd> lhsSamples;
+    lhsSamples.reserve(lhsNumSamples);
+
+    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
+    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
+    for (size_t i = 0; i < lhsNumSamples; ++i) {
+      Eigen::VectorXd sample(2);
+      sample << xSamples[i], ySamples[i];
+      lhsSamples.push_back(sample);
+    }
+
+    // sample min of acquisition function
+    Eigen::VectorXd am = gp.sampleAquisitionMin(af, lhsSamples);
+    double amOut = functor(am[0], am[1]);
+
+    // print acquisition map and mean map
+    int xChunks = 20;
+    int yChunks = 20;
+    double xSpace = 4. / (xChunks - 1);
+    double ySpace = 4. / (yChunks - 1);
+    for (int y = yChunks - 1; y >= 0; --y) {
+      // acqusition row
+      for (int x = 0; x < xChunks; ++x) {
+        Eigen::VectorXd sample(2);
+        sample << (x * xSpace - 2), (y * ySpace - 2);
+        double val = gp.calcAcquisition(af, sample);
+        int color = static_cast<int>(val / 50 + 232);
+        color = std::clamp(color, 232, 255);
+
+        std::cout << "\033[48;5;" << color << "m  ";
+      }
+      std::cout << "\033[0m ";
+
+      // mean row
+      for (int x = 0; x < xChunks; ++x) {
+        Eigen::VectorXd sample(2);
+        sample << (x * xSpace - 2), (y * ySpace - 2);
+        double val = gp.predictMean(sample);
+        int color = static_cast<int>(val / 50 + 232);
         color = std::clamp(color, 232, 255);
 
         std::cout << "\033[48;5;" << color << "m  ";

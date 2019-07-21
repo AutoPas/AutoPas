@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
 #include "Eigen/Dense"
+#include "autopas/selectors/FeatureVector.h"
 #include "autopas/selectors/tuningStrategy/GaussianProcess.h"
 #include "autopas/utils/NumberSet.h"
 
