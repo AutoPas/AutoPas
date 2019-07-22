@@ -11,7 +11,6 @@
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
-
 class GeneratorsTest : public AutoPasTestBase {
  public:
   GeneratorsTest()
@@ -28,7 +27,7 @@ class GeneratorsTest : public AutoPasTestBase {
   void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
 
     template <class AutoPasTemplate>
-    void writeVTKFile(string filename,size_t numParticles, AutoPasTemplate &autopas) {
+    void writeVTKFile(string &filename,size_t numParticles, AutoPasTemplate &autopas) {
         stringstream strstr;
         strstr << filename;
         // string path = "./vtk";
@@ -50,8 +49,8 @@ class GeneratorsTest : public AutoPasTestBase {
 
     double L2Norm(std::array<double, 3> array) {
         double square_sum = 0;
-        for (unsigned int i = 0; i < array.size(); i++) {
-            square_sum += (array[i] * array[i]);
+        for (auto e : array) {
+            square_sum += (e * e);
         }
         return sqrt(square_sum);
     }

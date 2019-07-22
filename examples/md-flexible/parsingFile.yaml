@@ -1,7 +1,29 @@
 #YAML parsing FILE
-particles-per-dimension: 10
-particles-generator : "grid"
-log-level : "debug"
-iterations: 30
-container: linkedcell
-newton3: enabled
+
+#particles-per-dimension: 10
+#particles-generator : "grid"
+#log-level : "debug"
+#iterations: 30
+#container: linkedcell
+#newton3: enabled
+
+#tested die Object Generierung
+
+value: 10
+
+
+Objects:
+  CubeGrid:
+    particles-per-Dim: [10,10,10]
+    particleSpacing: 0.5
+    velocity: [10.,10.,10.]
+  Sphere:
+    center: [0.,0.,0.]
+    radius: 10
+    particleSpacing: 0.5
+    firstId: 0
+    velocity: [5.,5.,5.]
+  CubeUniform:
+    box-length: [10.,10.,10.]
+    numberOfParticles: 100
+    velocity: [0.,0.,0.]

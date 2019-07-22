@@ -17,8 +17,8 @@ public:
      * */
     static double L2Norm(std::array<double, 3> array) {
         double square_sum = 0;
-        for (unsigned int i = 0; i < array.size(); i++) {
-            square_sum += (array[i] * array[i]);
+        for (auto e : array) {
+            square_sum += (e*e);
         }
         return sqrt(square_sum);
     }
@@ -52,7 +52,8 @@ public:
      * @param numParticles
      * */
     template <class Particle,class ParticleCell>
-    static void CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, double boxLength, size_t numParticles,
+    static void CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas,
+                           std::array<double, 3> boxLength, size_t numParticles,
                            const std::array<double, 3> &velocity = {
                                    0., 0., 0.});
 
@@ -103,12 +104,11 @@ void Generator::CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,
 
 template <class Particle, class ParticleCell>
 void Generator::CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                           double boxLength, size_t numParticles, const std::array<double, 3> &velocity) {
+        std::array<double, 3> boxLength, size_t numParticles, const std::array<double, 3> &velocity) {
     std::array<double, 3> boxMin({0., 0., 0.});
-    std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
     autopas.setBoxMin(boxMin);
-    autopas.setBoxMax(boxMax);
+    autopas.setBoxMax(boxLength);
 
     autopas.init();
 

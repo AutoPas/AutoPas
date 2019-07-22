@@ -16,6 +16,45 @@ class YamlParser {
  public:
   enum FunctorOption { lj12_6, lj12_6_AVX };
   enum GeneratorOption { grid, uniform, gaussian };
+
+    struct Object {
+        std::array<double, 3> velocity;
+        std::array<size_t, 3> particlesPerDim;
+        double particleSpacing;
+        std::array<double, 3> boxLength;
+        size_t numParticles;
+        double distributionMean;
+        double distributionStdDev;
+        std::array<double, 3> center;
+        unsigned long id;
+        int radius;
+    };
+
+    struct CubeGrid : Object {
+//      CubeGrid(): particlesPerDim({20,20,20}), particleSpacing(.4),velocity({0.,0.,0.}){}
+        std::array<size_t, 3> particlesPerDim;
+        double particleSpacing;
+        std::array<double, 3> velocity;
+    };
+    struct CubeGauss : Object {
+        std::array<double, 3> boxLength;
+        size_t numParticles;
+        double distributionMean;
+        double distributionStdDev;
+        std::array<double, 3> velocity;
+    };
+    struct CubeUniform : Object {
+        std::array<double, 3> boxLength;
+        size_t numParticles;
+        std::array<double, 3> velocity;
+    };
+    struct Sphere : Object {
+        std::array<double, 3> center;
+        int radius;
+        double particleSpacing;
+        unsigned long id;
+        std::array<double, 3> velocity;
+    };
   /**Constructor für YAMl Parser:
    * */
   YamlParser() = default;
@@ -102,19 +141,27 @@ class YamlParser {
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
 
   // Simulation Options:
-  double boxLength = -1;
   double cutoff = 1.;
-  double distributionMean = 5.;
-  double distributionStdDev = 2.;
+
   FunctorOption functorOption = FunctorOption::lj12_6;
   GeneratorOption generatorOption = GeneratorOption::grid;
+
+  std::vector<Object> ObjectGenerator= {};
+
   size_t iterations = 10;
   spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
+
+
   size_t particlesPerDim = 20;
   size_t particlesTotal = 1000;
   double particleSpacing = .4;
-  unsigned int tuningInterval = 100;
+    double distributionMean = 5.;
+    double distributionStdDev = 2.;
+    double boxLength = -1;
+
+
+    unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
   std::string writeVTK = "";
