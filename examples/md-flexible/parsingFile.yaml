@@ -27,3 +27,9 @@ Objects:
     box-length: [10.,10.,10.]
     numberOfParticles: 100
     velocity: [0.,0.,0.]
+  CubeGauss:
+    box-length: [8.,8.,8.]
+    numberOfParticles: 100
+    distribution-mean: 2.0
+    distribution-stddev: 5.0
+    velocity: [0.,0.,0.]

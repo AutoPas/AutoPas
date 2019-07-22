@@ -62,16 +62,6 @@ void YamlParser::parseInput(string &filename) {
   if (config["particle-mass"]) {
     this->mass = config["mass"].as<double>();
   }
-  if (config["particles-generator"]) {
-    auto strArg = config["particles-generator"].as<std::string>();
-    if (strArg.find("grid") != string::npos) {
-      generatorOption = GeneratorOption::grid;
-    } else if (strArg.find("uni") != string::npos) {
-      generatorOption = GeneratorOption::uniform;
-    } else if (strArg.find("gaus") != string::npos) {
-      generatorOption = GeneratorOption::gaussian;
-    }
-  }
   if (config["particles-per-dimension"]) {
     this->particlesPerDim = config["particles-per-dimension"].as<unsigned long>();
   }
@@ -146,39 +136,35 @@ void YamlParser::parseInput(string &filename) {
     if (config["Objects"]) {
         for (YAML::const_iterator it = config["Objects"].begin(); it != config["Objects"].end(); ++it) {
             if (it->first.as<std::string>() == "CubeGrid") {
-                CubeGrid C;
-                C.particlesPerDim={it->second["particles-per-Dim"][0].as<unsigned long>(),it->second["particles-per-Dim"][1].as<unsigned long>(),it->second["particles-per-Dim"][2].as<unsigned long>()};
-                C.particleSpacing= it->second["particleSpacing"].as<double>();
-                C.velocity= {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()};
-                ObjectGenerator.emplace_back(C);
+                CubeGrid C({it->second["particles-per-Dim"][0].as<unsigned long>(),it->second["particles-per-Dim"][1].as<unsigned long>(),it->second["particles-per-Dim"][2].as<unsigned long>()},
+                           it->second["particleSpacing"].as<double>(),
+                           {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()});
+                CubeGridObjects.emplace_back(C);
                 continue;
             }
             if(it->first.as<std::string>() == "CubeGauss"){
-                CubeGauss C;
-                C.boxLength={it->second["box-length"][0].as<double>(),it->second["box-length"][1].as<double>(),it->second["box-length"][2].as<double>()};
-                C.numParticles = it->second["numberOfParticles"].as<size_t>();
-                C.distributionMean =it->second["distribution-mean"].as<double>();
-                C.distributionStdDev = it->second["distribution-stddeviation"].as<double>();
-                C.velocity= {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()};
-                ObjectGenerator.emplace_back(C);
+                CubeGauss C({it->second["box-length"][0].as<double>(),it->second["box-length"][1].as<double>(),it->second["box-length"][2].as<double>()},
+                            it->second["numberOfParticles"].as<size_t>(),
+                            it->second["distribution-mean"].as<double>(),
+                            it->second["distribution-stddeviation"].as<double>(),
+                            {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()} );
+                CubeGaussObjects.emplace_back(C);
                 continue;
             }
             if(it->first.as<std::string>() == "CubeUniform"){
-                CubeUniform C;
-                C.boxLength= {it->second["box-length"][0].as<double>(),it->second["box-length"][1].as<double>(),it->second["box-length"][2].as<double>()};
-                C.numParticles = it->second["numberOfParticles"].as<size_t>();
-                C.velocity= {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()};
-                ObjectGenerator.emplace_back(C);                    continue;
-
+                CubeUniform C({it->second["box-length"][0].as<double>(),it->second["box-length"][1].as<double>(),it->second["box-length"][2].as<double>()},
+                              it->second["numberOfParticles"].as<size_t>(),
+                              {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()}  );
+                CubeUniformObjects.emplace_back(C);
+                continue;
             }
             if(it->first.as<std::string>() =="Sphere"){
-                Sphere S;
-                S.center= {it->second["center"][0].as<double>(),it->second["center"][1].as<double>(),it->second["center"][2].as<double>()};
-                S.radius =it->second["radius"].as<int>();
-                S.particleSpacing = it->second["particleSpacing"].as<double>();
-                S.id=it->second["firstId"].as<unsigned long>();
-                S.velocity= {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()};
-                ObjectGenerator.emplace_back(S);
+                Sphere S({it->second["center"][0].as<double>(),it->second["center"][1].as<double>(),it->second["center"][2].as<double>()},
+                         it->second["radius"].as<int>(),
+                         it->second["particleSpacing"].as<double>(),
+                         it->second["firstId"].as<unsigned long>(),
+                         {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()});
+                SphereObjects.emplace_back(S);
                 continue;
             }
 
@@ -243,45 +229,45 @@ void YamlParser::printConfig() {
   cout << setw(valueOffset) << left << "Cell size factor"
        << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
 
-  cout << setw(valueOffset) << left << "Particle Generator"
-       << ":  ";
-  switch (generatorOption) {
-    case GeneratorOption::grid: {
-      cout << "Grid generator" << endl;
-      cout << setw(valueOffset) << left << "Particle spacing"
-           << ":  " << particleSpacing << endl;
-
-      cout << "Particles" << endl;
-      cout << setw(valueOffset) << left << "  per dimension"
-           << ":  " << particlesPerDim << endl;
-      cout << setw(valueOffset) << left << "  total"
-           << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
-      break;
-    }
-    case GeneratorOption::gaussian: {
-      cout << "Gaussian generator" << endl;
-      cout << setw(valueOffset) << left << "Box length"
-           << ":  " << boxLength << endl;
-      cout << setw(valueOffset) << left << "Distribution mean"
-           << ":  " << distributionMean << endl;
-      cout << setw(valueOffset) << left << "Distribution standard deviation"
-           << ":  " << distributionStdDev << endl;
-
-      cout << "Particles" << endl;
-      cout << setw(valueOffset) << left << "  total"
-           << ":  " << particlesTotal << endl;
-      break;
-    }
-    case GeneratorOption::uniform: {
-      cout << "Uniform generator" << endl;
-      cout << setw(valueOffset) << left << "Box length"
-           << ":  " << boxLength << endl;
-      cout << "Particles" << endl;
-      cout << setw(valueOffset) << left << "  total"
-           << ":  " << particlesTotal << endl;
-      break;
-    }
-  }
+//  cout << setw(valueOffset) << left << "Particle Generator"
+//       << ":  ";
+//  switch (generatorOption) {
+//    case GeneratorOption::grid: {
+//      cout << "Grid generator" << endl;
+//      cout << setw(valueOffset) << left << "Particle spacing"
+//           << ":  " << particleSpacing << endl;
+//
+//      cout << "Particles" << endl;
+//      cout << setw(valueOffset) << left << "  per dimension"
+//           << ":  " << particlesPerDim << endl;
+//      cout << setw(valueOffset) << left << "  total"
+//           << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
+//      break;
+//    }
+//    case GeneratorOption::gaussian: {
+//      cout << "Gaussian generator" << endl;
+//      cout << setw(valueOffset) << left << "Box length"
+//           << ":  " << boxLength << endl;
+//      cout << setw(valueOffset) << left << "Distribution mean"
+//           << ":  " << distributionMean << endl;
+//      cout << setw(valueOffset) << left << "Distribution standard deviation"
+//           << ":  " << distributionStdDev << endl;
+//
+//      cout << "Particles" << endl;
+//      cout << setw(valueOffset) << left << "  total"
+//           << ":  " << particlesTotal << endl;
+//      break;
+//    }
+//    case GeneratorOption::uniform: {
+//      cout << "Uniform generator" << endl;
+//      cout << setw(valueOffset) << left << "Box length"
+//           << ":  " << boxLength << endl;
+//      cout << "Particles" << endl;
+//      cout << setw(valueOffset) << left << "  total"
+//           << ":  " << particlesTotal << endl;
+//      break;
+//    }
+//  }
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  " << iterableToString(traversalOptions) << endl;
   cout << setw(valueOffset) << left << "Particles Mass"
@@ -365,3 +351,19 @@ double YamlParser::getSigma() const { return sigma; }
 double YamlParser::getDeltaT() const { return delta_t; }
 
 double YamlParser::getMass() const { return mass; }
+
+const vector<CubeGrid> &YamlParser::getCubeGrid() const {
+    return CubeGridObjects;
+}
+
+const vector<CubeGauss> &YamlParser::getCubeGauss() const {
+    return CubeGaussObjects;
+}
+
+const vector<CubeUniform> &YamlParser::getCubeUniform() const {
+    return CubeUniformObjects;
+}
+
+const vector<Sphere> &YamlParser::getSphere() const {
+    return SphereObjects;
+}

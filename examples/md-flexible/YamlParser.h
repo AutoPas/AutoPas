@@ -6,6 +6,7 @@
 #include <iostream>
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
+#include "Objects.h"
 using namespace std;
 class YamlParser {
   /**
@@ -17,44 +18,6 @@ class YamlParser {
   enum FunctorOption { lj12_6, lj12_6_AVX };
   enum GeneratorOption { grid, uniform, gaussian };
 
-    struct Object {
-        std::array<double, 3> velocity;
-        std::array<size_t, 3> particlesPerDim;
-        double particleSpacing;
-        std::array<double, 3> boxLength;
-        size_t numParticles;
-        double distributionMean;
-        double distributionStdDev;
-        std::array<double, 3> center;
-        unsigned long id;
-        int radius;
-    };
-
-    struct CubeGrid : Object {
-//      CubeGrid(): particlesPerDim({20,20,20}), particleSpacing(.4),velocity({0.,0.,0.}){}
-        std::array<size_t, 3> particlesPerDim;
-        double particleSpacing;
-        std::array<double, 3> velocity;
-    };
-    struct CubeGauss : Object {
-        std::array<double, 3> boxLength;
-        size_t numParticles;
-        double distributionMean;
-        double distributionStdDev;
-        std::array<double, 3> velocity;
-    };
-    struct CubeUniform : Object {
-        std::array<double, 3> boxLength;
-        size_t numParticles;
-        std::array<double, 3> velocity;
-    };
-    struct Sphere : Object {
-        std::array<double, 3> center;
-        int radius;
-        double particleSpacing;
-        unsigned long id;
-        std::array<double, 3> velocity;
-    };
   /**Constructor für YAMl Parser:
    * */
   YamlParser() = default;
@@ -127,6 +90,14 @@ class YamlParser {
 
   double getMass() const;
 
+    const vector<CubeGrid> &getCubeGrid() const;
+
+    const vector<CubeGauss> &getCubeGauss() const;
+
+    const vector<CubeUniform> &getCubeUniform() const;
+
+    const vector<Sphere> &getSphere() const;
+
  private:
   static constexpr size_t valueOffset = 32;
   // defaults:
@@ -138,7 +109,7 @@ class YamlParser {
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
   std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
-      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
+  std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
 
   // Simulation Options:
   double cutoff = 1.;
@@ -146,20 +117,30 @@ class YamlParser {
   FunctorOption functorOption = FunctorOption::lj12_6;
   GeneratorOption generatorOption = GeneratorOption::grid;
 
-  std::vector<Object> ObjectGenerator= {};
 
   size_t iterations = 10;
   spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
 
+    size_t particlesTotal = 1000;
 
-  size_t particlesPerDim = 20;
-  size_t particlesTotal = 1000;
-  double particleSpacing = .4;
-    double distributionMean = 5.;
-    double distributionStdDev = 2.;
-    double boxLength = -1;
 
+////@todo löschen
+//  size_t particlesPerDim = 20;
+
+//  double particleSpacing = .4;
+//    double distributionMean = 5.;
+//    double distributionStdDev = 2.;
+//    double boxLength = -1;
+
+    //Object Generation:
+    std::vector<CubeGrid> CubeGridObjects={};
+    std::vector<CubeGauss> CubeGaussObjects={};
+    std::vector<CubeUniform> CubeUniformObjects={};
+    std::vector<Sphere> SphereObjects={};
+
+
+private:
 
     unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;

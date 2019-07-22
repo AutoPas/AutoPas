@@ -133,11 +133,12 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   //@todo schöner machen:
   _parser = parser;
   double numP;
-  if (_parser.getGeneratorOption() == YamlParser::GeneratorOption::grid) {
-    numP = _parser.getParticlesPerDim() * _parser.getParticlesPerDim() * _parser.getParticlesPerDim();
-  } else {
-    numP = _parser.getParticlesTotal();
-  }
+  //@todo lösen:
+//  if (_parser.getGeneratorOption() == YamlParser::GeneratorOption::grid) {
+//    numP = _parser.getParticlesPerDim() * _parser.getParticlesPerDim() * _parser.getParticlesPerDim();
+//  } else {
+//    numP = _parser.getParticlesTotal();
+//  }
   map<unsigned long, double> PC_Epsilon;
   map<unsigned long, double> PC_Sigma;
   map<unsigned long, double> PC_Mass;
@@ -174,7 +175,23 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   auto tuningInterval(_parser.getTuningInterval());
   auto tuningSamples(_parser.getTuningSamples());
   auto verletSkinRadius(_parser.getVerletSkinRadius());
+  auto CubeGrid(_parser.getCubeGrid());
+  auto CubeGauss(_parser.getCubeGauss());
+  auto CubeUniform(_parser.getCubeUniform());
+  auto Sphere(_parser.getSphere());
 
+    for(auto C : CubeGrid) {
+        Generator::CubeGrid(_autopas,C.getParticlesPerDim(),C.getParticleSpacing(),C.getVelocity());
+    }
+    for(auto C: CubeGauss){
+        Generator::CubeGrid(_autopas,C.getParticlesPerDim(),C.getParticleSpacing(),C.getVelocity());
+    }
+    for(auto C:CubeGauss){
+        Generator::CubeRandom(_autopas,C.getBoxLength(),C.getNumParticles(),C.getVelocity());
+    }
+    for(auto S:Sphere){
+        Generator::Sphere(_autopas,S.getCenter(),S.getRadius(),S.getParticleSpacing(),S.getId(),S.getVelocity());
+    }
   // select either std::out or a logfile for autopas log output.
   // This does not affect md-flex output.
   std::streambuf *streamBuf;
@@ -205,6 +222,10 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   autopas::Logger::get()->set_level(logLevel);
 
   //aufruf von Generator Class
+
+
+
+
 
   switch (generatorChoice) {
     case YamlParser::GeneratorOption::grid: {

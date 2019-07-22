@@ -19,6 +19,9 @@
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 #include <vector>
+#include "Objects.h"
+
+
 using namespace std;
 using namespace autopas;
 
@@ -61,96 +64,6 @@ void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
 }
 
 int main(int argc, char **argv) {
-
-
-    struct Object {
-        std::array<double, 3> velocity;
-        std::array<size_t, 3> particlesPerDim;
-        double particleSpacing;
-        std::array<double, 3> boxLength;
-        size_t numParticles;
-        double distributionMean;
-        double distributionStdDev;
-        std::array<double, 3> center;
-        unsigned long id;
-        int radius;
-    };
-
-    struct CubeGrid : Object {
-//      CubeGrid(): particlesPerDim({20,20,20}), particleSpacing(.4),velocity({0.,0.,0.}){}
-        std::array<size_t, 3> particlesPerDim;
-        double particleSpacing;
-        std::array<double, 3> velocity;
-    };
-    struct CubeGauss : Object {
-        std::array<double, 3> boxLength;
-        size_t numParticles;
-        double distributionMean;
-        double distributionStdDev;
-        std::array<double, 3> velocity;
-    };
-    struct CubeUniform : Object {
-        std::array<double, 3> boxLength;
-        size_t numParticles;
-        std::array<double, 3> velocity;
-    };
-    struct Sphere : Object {
-        std::array<double, 3> center;
-        int radius;
-        double particleSpacing;
-        unsigned long id;
-        std::array<double, 3> velocity;
-    };
-
-    std::vector<Object> ObjectGenerator = {};
-
-    std::string input = "parsingFile.yaml";
-    YAML::Node config = YAML::LoadFile(input);
-    //parsed Objecte die Generiert werden sollen
-
-    if (config["Objects"]) {
-            for (YAML::const_iterator it = config["Objects"].begin(); it != config["Objects"].end(); ++it) {
-                if (it->first.as<std::string>() == "CubeGrid") {
-                    CubeGrid C;
-                    C.particlesPerDim={it->second["particles-per-Dim"][0].as<unsigned long>(),it->second["particles-per-Dim"][1].as<unsigned long>(),it->second["particles-per-Dim"][2].as<unsigned long>()};
-                    C.particleSpacing= it->second["particleSpacing"].as<double>();
-                    C.velocity= {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()};
-                    ObjectGenerator.emplace_back(C);
-                    continue;
-                }
-                if(it->first.as<std::string>() == "CubeGauss"){
-                    CubeGauss C;
-                    C.boxLength={it->second["box-length"][0].as<double>(),it->second["box-length"][1].as<double>(),it->second["box-length"][2].as<double>()};
-                    C.numParticles = it->second["numberOfParticles"].as<size_t>();
-                    C.distributionMean =it->second["distribution-mean"].as<double>();
-                    C.distributionStdDev = it->second["distribution-stddeviation"].as<double>();
-                    C.velocity= {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()};
-                    ObjectGenerator.emplace_back(C);
-                    continue;
-                }
-                if(it->first.as<std::string>() == "CubeUniform"){
-                    CubeUniform C;
-                    C.boxLength= {it->second["box-length"][0].as<double>(),it->second["box-length"][1].as<double>(),it->second["box-length"][2].as<double>()};
-                    C.numParticles = it->second["numberOfParticles"].as<size_t>();
-                    C.velocity= {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()};
-                    ObjectGenerator.emplace_back(C);                    continue;
-
-                }
-                if(it->first.as<std::string>() =="Sphere"){
-                    Sphere S;
-                    S.center= {it->second["center"][0].as<double>(),it->second["center"][1].as<double>(),it->second["center"][2].as<double>()};
-                    S.radius =it->second["radius"].as<int>();
-                    S.particleSpacing = it->second["particleSpacing"].as<double>();
-                    S.id=it->second["firstId"].as<unsigned long>();
-                    S.velocity= {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()};
-                    ObjectGenerator.emplace_back(S);
-                    continue;
-                }
-
-            }
-    }
-    //@todo komische werte werden hier eingelesen!!!
-    cout << ObjectGenerator.front().velocity[0] << endl;
 
 
 //  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;

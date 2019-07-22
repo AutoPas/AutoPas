@@ -30,7 +30,7 @@ public:
      * */
     template <class Particle,class ParticleCell>
     static void CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, std::array<size_t, 3> particlesPerDim,
-                         double particelSpacing, const std::array<double, 3> &velocity = {0., 0., 0.});
+                         double particleSpacing, const std::array<double, 3> &velocity = {0., 0., 0.});
 
     /**Fills Autopas Object with Particles with Gauss distribution
     * @param autopas
@@ -71,10 +71,10 @@ public:
 
 template <class Particle, class ParticleCell>
 void Generator::CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                         std::array<size_t, 3> particlesPerDim, double particelSpacing,
+                         std::array<size_t, 3> particlesPerDim, double particleSpacing,
                          const std::array<double, 3> &velocity) {
     std::array<double, 3> boxMin({0., 0., 0.});
-    std::array<double, 3> boxMax{(particlesPerDim[0])*particelSpacing, (particlesPerDim[1])*particelSpacing, (particlesPerDim[2])*particelSpacing};
+    std::array<double, 3> boxMax{(particlesPerDim[0])*particleSpacing, (particlesPerDim[1])*particleSpacing, (particlesPerDim[2])*particleSpacing};
 
     autopas.setBoxMin(boxMin);
     autopas.setBoxMax(boxMax);
@@ -83,8 +83,8 @@ void Generator::CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,
 
     Particle dummyParticle;
     GridGenerator::fillWithParticles(autopas,particlesPerDim, dummyParticle,
-                                     {particelSpacing, particelSpacing, particelSpacing},
-                                     {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2},velocity);
+                                     {particleSpacing, particleSpacing, particleSpacing},
+                                     {particleSpacing / 2, particleSpacing / 2, particleSpacing / 2},velocity);
 }
 
 template <class Particle, class ParticleCell>
