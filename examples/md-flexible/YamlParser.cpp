@@ -7,9 +7,6 @@
 void YamlParser::parseInput(string &filename) {
   YAML::Node config = YAML::LoadFile(filename);
 
-  if (config["box-length"]) {
-    this->boxLength = config["box-length"].as<int>();
-  }
   if (config["container"]) {
     this->containerOptions =
         autopas::utils::StringUtils::parseContainerOptions(config["container"].as<std::string>(), false);
@@ -23,12 +20,6 @@ void YamlParser::parseInput(string &filename) {
   }
   if (config["cell-Size-Factor"]) {
     this->cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(config["cell-Size-Factor"].as<std::string>());
-  }
-  if (config["distribution-mean"]) {
-    this->distributionMean = config["distribution-mean"].as<double>();
-  }
-  if (config["distriubtion-stddeviation"]) {
-    this->distributionStdDev = config["distribution-stddeviataion"].as<double>();
   }
   if (config["data-layout"]) {
     this->dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(config["data-layout"].as<std::string>());
@@ -61,15 +52,6 @@ void YamlParser::parseInput(string &filename) {
   }
   if (config["particle-mass"]) {
     this->mass = config["mass"].as<double>();
-  }
-  if (config["particles-per-dimension"]) {
-    this->particlesPerDim = config["particles-per-dimension"].as<unsigned long>();
-  }
-  if (config["particles-total"]) {
-    this->particlesTotal = config["particles-total"].as<unsigned long>();
-  }
-  if (config["particle-spacing"]) {
-    this->particleSpacing = config["particle-spacing"].as<double>();
   }
   if (config["traversal"]) {
     this->traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(config["traversal"].as<std::string>());
@@ -229,45 +211,32 @@ void YamlParser::printConfig() {
   cout << setw(valueOffset) << left << "Cell size factor"
        << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
 
-//  cout << setw(valueOffset) << left << "Particle Generator"
-//       << ":  ";
-//  switch (generatorOption) {
-//    case GeneratorOption::grid: {
-//      cout << "Grid generator" << endl;
-//      cout << setw(valueOffset) << left << "Particle spacing"
-//           << ":  " << particleSpacing << endl;
-//
-//      cout << "Particles" << endl;
-//      cout << setw(valueOffset) << left << "  per dimension"
-//           << ":  " << particlesPerDim << endl;
-//      cout << setw(valueOffset) << left << "  total"
-//           << ":  " << (particlesPerDim * particlesPerDim * particlesPerDim) << endl;
-//      break;
-//    }
-//    case GeneratorOption::gaussian: {
-//      cout << "Gaussian generator" << endl;
-//      cout << setw(valueOffset) << left << "Box length"
-//           << ":  " << boxLength << endl;
-//      cout << setw(valueOffset) << left << "Distribution mean"
-//           << ":  " << distributionMean << endl;
-//      cout << setw(valueOffset) << left << "Distribution standard deviation"
-//           << ":  " << distributionStdDev << endl;
-//
-//      cout << "Particles" << endl;
-//      cout << setw(valueOffset) << left << "  total"
-//           << ":  " << particlesTotal << endl;
-//      break;
-//    }
-//    case GeneratorOption::uniform: {
-//      cout << "Uniform generator" << endl;
-//      cout << setw(valueOffset) << left << "Box length"
-//           << ":  " << boxLength << endl;
-//      cout << "Particles" << endl;
-//      cout << setw(valueOffset) << left << "  total"
-//           << ":  " << particlesTotal << endl;
-//      break;
-//    }
-//  }
+  cout << setw(valueOffset) << left << "Object Generation:"
+       << endl;
+
+  for(auto c : CubeGridObjects){
+      int i=1;
+      cout << setw(valueOffset) << left << "Cube-Grid Nr: " << i
+      << ":  " << endl;
+      c.printConfig();
+  }
+    for(auto c : CubeGaussObjects){
+        int i=1;
+        cout << setw(valueOffset) << left << "Cube-Gauss Nr: " << i<< ":  " << endl;
+        c.printConfig();
+    }
+    for(auto c : CubeUniformObjects){
+        int i=1;
+        cout << setw(valueOffset) << left << "Cube-Uniform Nr: " << i << ":  " << endl;
+        c.printConfig();
+    }
+    for(auto c : SphereObjects){
+        int i=1;
+        cout << setw(valueOffset) << left << "Sphere Nr: " << i << ":  " << endl;
+        c.printConfig();
+    }
+
+
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  " << iterableToString(traversalOptions) << endl;
   cout << setw(valueOffset) << left << "Particles Mass"
@@ -292,6 +261,23 @@ void YamlParser::printConfig() {
        << ":  " << tuningMaxEvidence << endl;
 }
 
+size_t YamlParser::particlesTotal(){
+    size_t particlesTotal=0;
+    for(auto e:CubeGridObjects){
+        particlesTotal+=e.getParticlesTotal();
+    }
+    for(auto e:CubeGaussObjects){
+        particlesTotal+=e.getNumParticles();
+    }
+    for(auto e:CubeUniformObjects){
+        particlesTotal+=e.getNumParticles();
+    }
+    for(auto e:SphereObjects){
+        particlesTotal+=e.particlesTotal();
+    }
+    return particlesTotal;
+}
+
 const set<ContainerOption> &YamlParser::getContainerOptions() const { return containerOptions; }
 
 const set<DataLayoutOption> &YamlParser::getDataLayoutOptions() const { return dataLayoutOptions; }
@@ -306,17 +292,9 @@ const set<Newton3Option> &YamlParser::getNewton3Options() const { return newton3
 
 const autopas::NumberSet<double> &YamlParser::getCellSizeFactors() const { return *cellSizeFactors; }
 
-double YamlParser::getBoxLength() const { return boxLength; }
-
 double YamlParser::getCutoff() const { return cutoff; }
 
-double YamlParser::getDistributionMean() const { return distributionMean; }
-
-double YamlParser::getDistributionStdDev() const { return distributionStdDev; }
-
 YamlParser::FunctorOption YamlParser::getFunctorOption() const { return functorOption; }
-
-YamlParser::GeneratorOption YamlParser::getGeneratorOption() const { return generatorOption; }
 
 size_t YamlParser::getIterations() const { return iterations; }
 
@@ -324,11 +302,7 @@ spdlog::level::level_enum YamlParser::getLogLevel() const { return logLevel; }
 
 bool YamlParser::getMeasureFlops() const { return measureFlops; }
 
-size_t YamlParser::getParticlesPerDim() const { return particlesPerDim; }
-
 size_t YamlParser::getParticlesTotal() const { return particlesTotal; }
-
-double YamlParser::getParticleSpacing() const { return particleSpacing; }
 
 unsigned int YamlParser::getTuningInterval() const { return tuningInterval; }
 

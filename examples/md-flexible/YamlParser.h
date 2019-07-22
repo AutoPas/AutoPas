@@ -16,7 +16,6 @@ class YamlParser {
    */
  public:
   enum FunctorOption { lj12_6, lj12_6_AVX };
-  enum GeneratorOption { grid, uniform, gaussian };
 
   /**Constructor für YAMl Parser:
    * */
@@ -29,6 +28,10 @@ class YamlParser {
   /**Prints Configuration of Simulation:
    * */
   void printConfig();
+  /**Calculates the total number of Particles generated
+   * @return particlestotal
+   * */
+  size_t particlesTotal();
 
   const set<ContainerOption> &getContainerOptions() const;
 
@@ -44,17 +47,12 @@ class YamlParser {
 
   const NumberSet<double> &getCellSizeFactors() const;
 
-  double getBoxLength() const;
 
   double getCutoff() const;
 
-  double getDistributionMean() const;
-
-  double getDistributionStdDev() const;
 
   FunctorOption getFunctorOption() const;
 
-  GeneratorOption getGeneratorOption() const;
 
   size_t getIterations() const;
 
@@ -62,11 +60,9 @@ class YamlParser {
 
   bool getMeasureFlops() const;
 
-  size_t getParticlesPerDim() const;
 
   size_t getParticlesTotal() const;
 
-  double getParticleSpacing() const;
 
   unsigned int getTuningInterval() const;
 
@@ -110,37 +106,19 @@ class YamlParser {
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
   std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
   std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
+  spdlog::level::level_enum logLevel = spdlog::level::info;
 
   // Simulation Options:
   double cutoff = 1.;
-
   FunctorOption functorOption = FunctorOption::lj12_6;
-  GeneratorOption generatorOption = GeneratorOption::grid;
-
-
   size_t iterations = 10;
-  spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
-
-    size_t particlesTotal = 1000;
-
-
-////@todo löschen
-//  size_t particlesPerDim = 20;
-
-//  double particleSpacing = .4;
-//    double distributionMean = 5.;
-//    double distributionStdDev = 2.;
-//    double boxLength = -1;
 
     //Object Generation:
     std::vector<CubeGrid> CubeGridObjects={};
     std::vector<CubeGauss> CubeGaussObjects={};
     std::vector<CubeUniform> CubeUniformObjects={};
     std::vector<Sphere> SphereObjects={};
-
-
-private:
 
     unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;

@@ -71,26 +71,6 @@ class Simulation {
     vtkFile.close();
   }
 
-  /**
-   * @brief Constructs a container and fills it with particles.
-   *
-   * According to the options passed, a %DirectSum or %'LinkedCells' container is
-   * built. It consists of %`FullParticleCells` and is filled with
-   * `PrintableMolecules`. The particles are aligned on a cuboid grid.
-   *
-   * @param autopas AutoPas object that should be initialized
-   * @param particlesPerDim Number of desired particles per dimension.
-   * @param particelSpacing Space between two particles along each axis of space.
-   */
-  void initContainerGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t particlesPerDim,
-                         double particelSpacing);
-
-  void initContainerGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, double boxLength, size_t numParticles,
-                          double distributionMean, double distributionStdDev);
-
-  void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, double boxLength, size_t numParticles);
-
-
   /** @brief This function
    * -initializes the autopas Object
    * -sets/initializes the simulation domain with the particles generators
@@ -132,45 +112,32 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   //@todo schöner machen:
   _parser = parser;
-  double numP;
   //@todo lösen:
-//  if (_parser.getGeneratorOption() == YamlParser::GeneratorOption::grid) {
-//    numP = _parser.getParticlesPerDim() * _parser.getParticlesPerDim() * _parser.getParticlesPerDim();
-//  } else {
-//    numP = _parser.getParticlesTotal();
-//  }
-  map<unsigned long, double> PC_Epsilon;
-  map<unsigned long, double> PC_Sigma;
-  map<unsigned long, double> PC_Mass;
   // temporäre implemetierung mit nur einer particle Class
   double epsilon = _parser.getEpsilon();
   double sigma = _parser.getSigma();
   double mass = _parser.getMass();
-  for (unsigned long i = 0; i < numP; i++) {
-    PC_Epsilon.emplace(i, epsilon);
-    PC_Sigma.emplace(i, sigma);
-    PC_Mass.emplace(i, mass);
-  }
-  // initialisierung of PCL
-  _PCL = make_shared<ParticleClassLibrary>(PC_Epsilon, PC_Sigma, PC_Mass);
+  //@todo PCL richtig initialisieren
+  _PCL=make_shared<ParticleClassLibrary>(epsilon,sigma,1.0,_parser.particlesTotal());
+  // initialisierung of
   auto logFileName(_parser.getLogFileName());
   auto particlesTotal(_parser.getParticlesTotal());
-  auto particlesPerDim(_parser.getParticlesPerDim());
+//  auto particlesPerDim(_parser.getParticlesPerDim());
   auto verletRebuildFrequency(_parser.getVerletRebuildFrequency());
   auto logLevel(_parser.getLogLevel());
   auto &cellSizeFactors(_parser.getCellSizeFactors());
   auto tuningStrategy(_parser.getTuningStrategyOption());
-  auto boxLength(_parser.getBoxLength());
+//  auto boxLength(_parser.getBoxLength());
   auto containerChoice(_parser.getContainerOptions());
   auto selectorStrategy(_parser.getSelectorStrategy());
   auto cutoff(_parser.getCutoff());
   auto dataLayoutOptions(_parser.getDataLayoutOptions());
-  auto distributionMean(_parser.getDistributionMean());
-  auto distributionStdDev(_parser.getDistributionStdDev());
+//  auto distributionMean(_parser.getDistributionMean());
+//  auto distributionStdDev(_parser.getDistributionStdDev());
   // auto functorChoice(_parser.getFunctorOption());
-  auto generatorChoice(_parser.getGeneratorOption());
+//  auto generatorChoice(_parser.getGeneratorOption());
   auto newton3Options(_parser.getNewton3Options());
-  auto particleSpacing(_parser.getParticleSpacing());
+//  auto particleSpacing(_parser.getParticleSpacing());
   auto traversalOptions(_parser.getTraversalOptions());
   auto tuningInterval(_parser.getTuningInterval());
   auto tuningSamples(_parser.getTuningSamples());
@@ -180,18 +147,6 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   auto CubeUniform(_parser.getCubeUniform());
   auto Sphere(_parser.getSphere());
 
-    for(auto C : CubeGrid) {
-        Generator::CubeGrid(_autopas,C.getParticlesPerDim(),C.getParticleSpacing(),C.getVelocity());
-    }
-    for(auto C: CubeGauss){
-        Generator::CubeGrid(_autopas,C.getParticlesPerDim(),C.getParticleSpacing(),C.getVelocity());
-    }
-    for(auto C:CubeGauss){
-        Generator::CubeRandom(_autopas,C.getBoxLength(),C.getNumParticles(),C.getVelocity());
-    }
-    for(auto S:Sphere){
-        Generator::Sphere(_autopas,S.getCenter(),S.getRadius(),S.getParticleSpacing(),S.getId(),S.getVelocity());
-    }
   // select either std::out or a logfile for autopas log output.
   // This does not affect md-flex output.
   std::streambuf *streamBuf;
@@ -221,80 +176,22 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
   autopas::Logger::get()->set_level(logLevel);
 
+    for(auto C : CubeGrid) {
+        Generator::CubeGrid(_autopas,C.getParticlesPerDim(),C.getParticleSpacing(),C.getVelocity());
+    }
+    for(auto C: CubeGauss){
+        Generator::CubeGauss(_autopas,C.getBoxLength(),C.getNumParticles(),C.getDistributionMean(),C.getDistributionStdDev(),C.getVelocity());
+    }
+    for(auto C:CubeUniform){
+        Generator::CubeRandom(_autopas,C.getBoxLength(),C.getNumParticles(),C.getVelocity());
+    }
+    for(auto S:Sphere){
+        Generator::Sphere(_autopas,S.getCenter(),S.getRadius(),S.getParticleSpacing(),S.getId(),S.getVelocity());
+    }
   //aufruf von Generator Class
 
 
 
-
-
-  switch (generatorChoice) {
-    case YamlParser::GeneratorOption::grid: {
-      this->initContainerGrid(_autopas, particlesPerDim,
-                              particleSpacing);  // particlesTotal wird in diesem fall in der main geupdated
-      break;
-    }
-    case YamlParser::GeneratorOption::uniform: {
-      this->initContainerUniform(_autopas, boxLength, particlesTotal);
-      break;
-    }
-    case YamlParser::GeneratorOption::gaussian: {
-      this->initContainerGauss(_autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
-      break;
-    }
-    default:
-      throw std::runtime_error("Unknown generator choice");
-  }
-}
-
-template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initContainerGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                                           size_t particlesPerDim, double particelSpacing) {
-  double ppDxpS = (particlesPerDim)*particelSpacing;
-  std::array<double, 3> boxMin({0., 0., 0.});
-
-  std::array<double, 3> boxMax{ppDxpS, ppDxpS, ppDxpS};
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  Particle dummyParticle;
-  GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
-                                   {particelSpacing, particelSpacing, particelSpacing},
-                                   {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
-}
-
-template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initContainerGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                                            double boxLength, size_t numParticles,
-                                                            double distributionMean, double distributionStdDev) {
-  std::array<double, 3> boxMin({0., 0., 0.});
-
-  std::array<double, 3> boxMax{boxLength, boxLength, boxLength};
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  Particle dummyParticle;
-  GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
-}
-
-template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                                              double boxLength, size_t numParticles) {
-  std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();
-
-  Particle dummyParticle;
-  RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
 }
 
 template <class Particle, class ParticleCell>

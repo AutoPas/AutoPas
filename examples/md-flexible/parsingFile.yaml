@@ -17,19 +17,24 @@ Objects:
     particles-per-Dim: [10,10,10]
     particleSpacing: 0.5
     velocity: [10.,10.,10.]
-  Sphere:
-    center: [0.,0.,0.]
-    radius: 10
-    particleSpacing: 0.5
-    firstId: 0
-    velocity: [5.,5.,5.]
-  CubeUniform:
-    box-length: [10.,10.,10.]
-    numberOfParticles: 100
-    velocity: [0.,0.,0.]
-  CubeGauss:
-    box-length: [8.,8.,8.]
-    numberOfParticles: 100
-    distribution-mean: 2.0
-    distribution-stddev: 5.0
-    velocity: [0.,0.,0.]
+log-level: debug
+iteration: 10
+container: linkedcell
+newton3: enabled
+
+#  Sphere:
+#    center: [0.,0.,0.]
+#    radius: 10
+#    particleSpacing: 0.5
+#    firstId: 0
+#    velocity: [5.,5.,5.]
+#  CubeUniform:
+#    box-length: [10.,10.,10.]
+#    numberOfParticles: 100
+#    velocity: [0.,0.,0.]
+#  CubeGauss:
+#    box-length: [8.,8.,8.]
+#    numberOfParticles: 100
+#    distribution-mean: 2.0
+#    distribution-stddev: 5.0
+#    velocity: [0.,0.,0.]

@@ -5,8 +5,6 @@
 #selector-strategy:                 #string option
 #cutoff:                            #double option
 #cell-size-factor:                  #string option
-#distribution-mean:                 #double option
-#distribution-stddeviation:         #double option
 #data-layout:                       #string option
 #functor:                           #string option
 #iterations:                        #double option
@@ -17,9 +15,6 @@
 #sigma:                             #double option
 #particle-mass:                     #double option
 #particles-generator:               #string option
-#particles-per-dimension:           #int option
-#particles-total:                   #int option
-#particle-spacing:                  #double option
 #traversal:                         #string option
 #tuning-interval:                   #int option
 #tuning-samples:                    #int option
@@ -31,14 +26,27 @@
 #verlet-skin-radius                 #double option
 #vtk:                               #string option
 
-object generation:
-  list: cube, sphere, grid, gauss
+#Objects generation=
 
-#
-#object: "CubeGrid"
-#position  #und wenn nicht specified-> wird nur cube generiert
-#numberofparticles
-#veloctity
-#numberofparticles
-#
-#object: "sphere"
+#Objects:
+#  CubeGrid:
+#    particles-per-Dim: [10,10,10]
+#    particleSpacing: 0.5
+#    velocity: [10.,10.,10.]
+#  Sphere:
+#    center: [0.,0.,0.]
+#    radius: 10
+#    particleSpacing: 0.5
+#    firstId: 0
+#    velocity: [5.,5.,5.]
+#  CubeUniform:
+#    box-length: [10.,10.,10.]
+#    numberOfParticles: 100
+#    velocity: [0.,0.,0.]
+#  CubeGauss:
+#    box-length: [8.,8.,8.]
+#    numberOfParticles: 100
+#    distribution-mean: 2.0
+#    distribution-stddev: 5.0
+#    velocity: [0.,0.,0.]
+
