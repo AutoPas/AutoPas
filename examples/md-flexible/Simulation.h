@@ -88,7 +88,8 @@ class Simulation {
   void initContainerGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, double boxLength, size_t numParticles,
                           double distributionMean, double distributionStdDev);
 
-  void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, double boxLength, size_t numParticles);
+  void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, array<double, 3> boxLength,
+                            size_t numParticles);
 
   /** @brief This function
    * -initializes the autopas Object
@@ -215,7 +216,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
       break;
     }
     case MDFlexParser::GeneratorOption::uniform: {
-      this->initContainerUniform(_autopas, boxLength, particlesTotal);
+      this->initContainerUniform(_autopas, {boxLength, boxLength, boxLength}, particlesTotal);
       break;
     }
     case MDFlexParser::GeneratorOption::gaussian: {
@@ -265,12 +266,11 @@ void Simulation<Particle, ParticleCell>::initContainerGauss(autopas::AutoPas<Par
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                                              double boxLength, size_t numParticles) {
+                                                              array<double, 3> boxLength, size_t numParticles) {
   std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
   autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
+  autopas.setBoxMax(boxLength);
 
   autopas.init();
 
