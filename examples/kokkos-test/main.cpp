@@ -292,19 +292,21 @@ int main(int argc, char **argv){
   autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
   autopas.setSelectorStrategy(selectorStrategy);
-  //autopas.setAllowedContainers(containerChoice);//directsum, linkedcells
-  //autopas.setAllowedTraversals(traversalOptions);//c08 kokkos, directsum
+  autopas.setAllowedContainers(containerChoice);//directsum, linkedcells
+  autopas.setAllowedTraversals(traversalOptions);//c08 kokkos, directsum
+
+
   //std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::directSum};// autopas::ContainerOption::linkedCells
   //std::set<autopas::TraversalOption> traversalOptions2{autopas::TraversalOption::kokkosDirectSumTraversal};// autopas::TraversalOption::kokkosc08
-  std::set<autopas::Newton3Option> newton3Options2{autopas::Newton3Option::disabled};
-  std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells};// autopas::ContainerOption::linkedCells
-  std::set<autopas::TraversalOption> traversalOptions2{autopas::TraversalOption::kokkosc08};// autopas::TraversalOption::kokkosc08
+  //std::set<autopas::Newton3Option> newton3Options2{autopas::Newton3Option::disabled};
+  //std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells};// autopas::ContainerOption::linkedCells
+  //std::set<autopas::TraversalOption> traversalOptions2{autopas::TraversalOption::kokkosc08};// autopas::TraversalOption::kokkosc08
 
-  autopas.setAllowedContainers(containerOptions);
-  autopas.setAllowedTraversals(traversalOptions2);
-  autopas.setAllowedNewton3Options(newton3Options2);
+  //autopas.setAllowedContainers(containerOptions);
+  //autopas.setAllowedTraversals(traversalOptions2);
+  //autopas.setAllowedNewton3Options(newton3Options2);
   autopas.setAllowedDataLayouts(dataLayoutOptions);
-  //autopas.setAllowedNewton3Options(newton3Options);
+  autopas.setAllowedNewton3Options(newton3Options);
   autopas.setAllowedCellSizeFactors(cellSizeFactors);
 
   switch (generatorChoice) {
