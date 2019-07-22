@@ -101,6 +101,18 @@ class KokkosLJFunctor : public Functor<Particle, ParticleCell, typename Particle
 
     }
 
+    /**
+   * Get the number of flops used per kernel call. This should count the
+   * floating point operations needed for two particles that lie within a cutoff
+   * radius.
+   * @return the number of floating point operations
+   */
+    static unsigned long getNumFlopsPerKernelCall() {
+      // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply
+      // scale) sum Forces: 6 (forces) kernel total = 12 + 6 = 18
+      return 18ul;
+    }
+
     AUTOPAS_FUNCTOR_SOALOADER(
             cell, soa, offset,
     )

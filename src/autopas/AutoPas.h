@@ -78,8 +78,9 @@ class AutoPas {
       autopas::Logger::unregister();
     }
 #ifdef AUTOPAS_KOKKOS
-    Kokkos::finalize();
+    //Kokkos::finalize();
 #endif
+
   }
 
   /**
@@ -105,9 +106,9 @@ class AutoPas {
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletRebuildFrequency, std::move(generateTuningStrategy()),
         _selectorStrategy, _tuningInterval, _numSamples);
 #ifdef AUTOPAS_KOKKOS
-    int argc = 0;
-    char **argx = new char *[1];
-    Kokkos::initialize(argc, argx);
+    //int argc = 0;
+    //char **argx = new char *[1];
+    //Kokkos::initialize(argc, argx);
 #endif
   }
 

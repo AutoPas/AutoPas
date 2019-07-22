@@ -52,6 +52,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     };
   }
 
+
   void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 

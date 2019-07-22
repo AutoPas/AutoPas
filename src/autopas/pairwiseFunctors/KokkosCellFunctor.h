@@ -33,6 +33,8 @@ namespace autopas{
            * calculated
            */
             void processCell(ParticleCell &cell);
+            KOKKOS_INLINE_FUNCTION
+            void processCellInline(ParticleCell &cell);
 
             /**
              * process the interactions between the particles of cell1 with particles of
@@ -41,6 +43,8 @@ namespace autopas{
              * @param cell2
              */
             void processCellPair(ParticleCell &cell1, ParticleCell &cell2);
+            KOKKOS_INLINE_FUNCTION
+            void processCellPairInline(ParticleCell &cell1, ParticleCell &cell2);
         };
 
 
@@ -72,5 +76,33 @@ namespace autopas{
           });
 #endif
         }
+
+        template<class Particle, class ParticleCell, class ParticleFunctor>
+        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor>::processCellInline(ParticleCell &cell) {
+#ifdef AUTOPAS_KOKKOS
+          auto particles = cell._particles;
+          for(unsigned int i = 0; i < particles.size(); i++){
+              for (unsigned int l = i + 1; l < particles.size(); l++) {
+                _functor->AoSFunctorInline(particles[i], particles[l]);
+                _functor->AoSFunctorInline(particles[l], particles[i]);
+              }
+          }
+#endif
+        }
+
+        template<class Particle, class ParticleCell, class ParticleFunctor>
+        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor>::processCellPairInline(ParticleCell &cell1,
+                                                                                               ParticleCell &cell2) {
+#ifdef AUTOPAS_KOKKOS
+          for(unsigned int i = 0; i < cell1._particles.size(); i++) {
+              for (unsigned int l = 0; l < cell2._particles.size(); l++) {
+                _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l]);
+                _functor->AoSFunctorInline(cell2._particles[l], cell1._particles[i]);
+              }
+          }
+#endif
+        }
+
+
     }
 }

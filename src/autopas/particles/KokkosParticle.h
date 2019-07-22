@@ -39,9 +39,9 @@ class KokkosParticle : public Particle {
 
   /**
    * Constructor that accepts array values and store them in the data structure FloatVectorType ( a view) from kokkos
-   * @param r
-   * @param v
-   * @param id
+   * @param r   position of the particle
+   * @param v   velocity of the particle
+   * @param id  id of the particle
    */
   KokkosParticle(std::array<double, KOKKOS_DIM> r, std::array<double, KOKKOS_DIM> v, unsigned long id) : Particle() {
 #ifdef AUTOPAS_KOKKOS
@@ -49,25 +49,23 @@ class KokkosParticle : public Particle {
     _r = FloatVectorType("_r", 3);
     _v = FloatVectorType("_v", 3);
     _f = FloatVectorType("_f", 3);
-
-    // printf("def particle 1\n");
     // copy values from constructor
     FloatVectorType::HostMirror h_r = Kokkos::create_mirror_view(_r);
     FloatVectorType::HostMirror h_v = Kokkos::create_mirror_view(_v);
-    // LongVectorType::HostMirror h_id = Kokkos::create_mirror_view(_id);
-    // printf("def particle 2\n");
     for (int i = 0; i < 3; i++) {
       h_r(i) = r[i];
       h_v(i) = v[i];
     }
-    // FP_float fx = h_r(0);
-
     _id = id;
     // target, source
     Kokkos::deep_copy(_r, h_r);
     Kokkos::deep_copy(_v, h_v);
 #endif
     _id = id;
+  }
+
+  ~KokkosParticle(){
+     //std::cout << "detroy object\n";
   }
 
 #ifdef AUTOPAS_KOKKOS
@@ -88,7 +86,6 @@ class KokkosParticle : public Particle {
 
   void addF(FloatVectorType &f) {
     KokkosHelper::addDir(_f, f);
-    //_f = ArrayMath::add(_f, f);
   }
 
   /**
@@ -133,9 +130,11 @@ class KokkosParticle : public Particle {
 
   void addV(FloatVectorType &v) { KokkosHelper::addDir(_v, v); }
 
-  std::string toString() override {
 
+
+  std::string toString() override {
     std::ostringstream text;
+    //copy values to host space and generate output
     FloatVectorType::HostMirror h_r = Kokkos::create_mirror_view(_r);
     Kokkos::deep_copy(h_r, _r);
     FloatVectorType::HostMirror h_v = Kokkos::create_mirror_view(_v);
@@ -143,7 +142,6 @@ class KokkosParticle : public Particle {
     Kokkos::deep_copy(h_v, _v);
     Kokkos::deep_copy(h_f, _f);
     // printf("reach toString\n");
-    // FP_float fx = h_r(0);
 
     text << "Particle"
          << "\nID      : " << _id << "\nPosition: " << h_r(0) << " | " << h_r(1) << " | " << h_r(2)
@@ -160,8 +158,16 @@ class KokkosParticle : public Particle {
   KOKKOS_INLINE_FUNCTION
   FloatVectorType get_f_inline() const { return _f; }
 
+  /**
+   *
+   * @param r set new position of particle
+   */
   void setR(const std::array<floatType, 3> &r) override{
-    //@TODO  _r = r;
+    FloatVectorType::HostMirror h_r = Kokkos::create_mirror_view(_r);
+    for(unsigned int i = 0; i < 3; i++){
+      h_r(i) = r[i];
+    }
+    Kokkos::deep_copy(_r, h_r);
   }
 
 

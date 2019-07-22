@@ -132,10 +132,9 @@ namespace autopas {
     inline void CBasedKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::cTraversal(
             LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
             const std::array<unsigned long, 3> &offset) {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
+
       {
+        //std::cout << "startc08BasedKokkos\n";
         const unsigned long numColors = stride[0] * stride[1] * stride[2];
         for (unsigned long col = 0; col < numColors; ++col) {
           std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
@@ -146,11 +145,28 @@ namespace autopas {
           const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
           const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 #ifdef AUTOPAS_KOKKOS
-          int iterationsZ = 1 + (end_z - start_z)/stride_z;
-          if(end_z < start_z) iterationsZ = 0;
-            Kokkos::parallel_for(iterationsZ, KOKKOS_LAMBDA(const int i){
 
+          typedef Kokkos::TeamPolicy<> team_policy;
+          typedef Kokkos::TeamPolicy<>::member_type member_type;
 
+          unsigned int iterationsZ = 1 + (end_z - 1 - start_z)/stride_z;
+          if(end_z < start_z || iterationsZ < 0) iterationsZ = 0;
+
+          unsigned int iterationsY = 1 + (end_y - 1 - start_y)/stride_y;
+          if(end_y < start_y || iterationsY < 0) iterationsY = 0;
+
+          Kokkos::parallel_for(team_policy( iterationsZ, Kokkos::AUTO), KOKKOS_LAMBDA ( const member_type &teamMember){
+              const int i = teamMember.league_rank();
+              Kokkos::parallel_for(iterationsY, [&] (const int l) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, start_y + l * stride_y, start_z + i * stride_z);
+                }
+              });
+          });
+
+          //std::cout << start_z <<" | " << end_z << " | " << stride_z << " | " << iterationsZ << "\n";
+            /*Kokkos::parallel_for(iterationsZ, KOKKOS_LAMBDA(const int i){
               for (unsigned long y = start_y; y < end_y; y += stride_y) {
                 for (unsigned long x = start_x; x < end_x; x += stride_x) {
                   // Don't exchange order of execution (x must be last!), it would break other code
@@ -158,7 +174,8 @@ namespace autopas {
                 }
               }
             }
-          );
+          );*/
+          //std::cout << "loop end\n";
 #else
           //if kokkos is diabled
           for (unsigned long z = start_z; z < end_z; z += stride_z) {
