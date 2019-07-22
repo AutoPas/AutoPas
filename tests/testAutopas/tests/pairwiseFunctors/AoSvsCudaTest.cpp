@@ -37,8 +37,10 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
   auto particlesAoS = std::vector<autopas::Particle>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
-
-  LJFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> ljFunctor(PARTICLES_PER_DIM * 10, 1, 1, 0);
+  double epsilon = 1.0;
+  double sigma = 1.0;
+  ParticleClassLibrary PCL = ParticleClassLibrary(epsilon, sigma, 1.0, 256);
+  LJFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> ljFunctor(PARTICLES_PER_DIM * 10, PCL, 0);
 
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;

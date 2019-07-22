@@ -89,11 +89,12 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   // copy cells
   autopas::FullParticleCell<ParticleType> cell1NoCuda(cell1Cuda);
   autopas::FullParticleCell<ParticleType> cell2NoCuda(cell2Cuda);
-
+  ParticleClassLibrary PCL = ParticleClassLibrary(_epsilon, _sigma, 1.0, numParticles);
+  ParticleClassLibrary PCL2 = ParticleClassLibrary(_epsilon, _sigma, 1.0, numParticles2);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, false>
-      ljFunctorNoCuda(_cutoff, _epsilon, _sigma, 0.0);
+      ljFunctorNoCuda(_cutoff, PCL, 0.0);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, false>
-      ljFunctorCuda(_cutoff, _epsilon, _sigma, 0.0);
+      ljFunctorCuda(_cutoff, PCL2, 0.0);
 
   ASSERT_TRUE(AoSParticlesEqual(cell1Cuda, cell1NoCuda)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2Cuda, cell2NoCuda)) << "Cells 2 not equal after copy initialization.";
@@ -136,11 +137,11 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 
   // copy cells
   autopas::FullParticleCell<ParticleType> cellNoCuda(cellCuda);
-
+  ParticleClassLibrary PCL = ParticleClassLibrary(_epsilon, _sigma, 1.0, numParticles);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, false>
-      ljFunctorNoCuda(_cutoff, _epsilon, _sigma, 0.0);
+      ljFunctorNoCuda(_cutoff, PCL, 0.0);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, false>
-      ljFunctorCuda(_cutoff, _epsilon, _sigma, 0.0);
+      ljFunctorCuda(_cutoff, PCL, 0.0);
 
   ASSERT_TRUE(AoSParticlesEqual(cellCuda, cellNoCuda)) << "Cells not equal after copy initialization.";
 

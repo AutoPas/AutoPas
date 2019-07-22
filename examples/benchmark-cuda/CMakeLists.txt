@@ -5,6 +5,8 @@ file(
     "*.h"
     "*.cuh"
     "*.cu"
+        "../md-flexible/ParticleClassLibrary.h"
+        "../md-flexible/ParticleClassLibrary.cpp"
 )
 
 if (NOT ${AUTOPAS_ENABLE_CUDA})
