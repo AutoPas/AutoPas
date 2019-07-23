@@ -42,7 +42,7 @@ class RandomGenerator {
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
                                 unsigned long numParticles = 100ul,
-    const std::array<double,3> &velocity={0.,0.,0.});
+                                const std::array<double, 3> &velocity = {0., 0., 0.});
 
   /**
    * Fills the given container with randomly distributed particles between boxMin and boxMax.
@@ -58,7 +58,7 @@ class RandomGenerator {
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                 unsigned long numParticles = 100ul,
-    const std::array<double,3> &velocity={0.,0.,0.});
+                                const std::array<double, 3> &velocity = {0., 0., 0.});
 
   /**
    * Fills only a given part of a container (also AutoPas object) with randomly uniformly distributed particles.
@@ -76,7 +76,7 @@ class RandomGenerator {
 
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
-                                        unsigned long numParticles,const std::array<double,3> &velocity) {
+                                        unsigned long numParticles, const std::array<double, 3> &velocity) {
   RandomGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(), container.getBoxMax(),
                                      numParticles);
 }
@@ -84,8 +84,7 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                        unsigned long numParticles,
-                                        const std::array<double,3> &velocity) {
+                                        unsigned long numParticles, const std::array<double, 3> &velocity) {
   srand(42);  // fixed seedpoint
 
   for (unsigned long i = 0; i < numParticles; ++i) {

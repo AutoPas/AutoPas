@@ -1,52 +1,56 @@
 #YAML parsing FILE:
 
-#box-length:                        #double option
+###AutoPas Options=
+
 #container:                         #string option
-#selector-strategy:                 #string option
-#cutoff:                            #double option
-#cell-size-factor:                  #string option
+#box-length:                        #double option
 #data-layout:                       #string option
-#functor:                           #string option
-#iterations:                        #double option
-#no-flops:                          #boolean option
+#selector-strategy:                 #string option
+#traversal:                         #string option
+#tuning-strategy:                   #string option
 #newton3:                           #string option
+#cell-size-factor:                  #string option
+#log-level:                         #string option
+#tuning-interval:                   #int option
+#tuning-samples:                    #int option
+#tuning-max-evidence:               #int option
+#verlet-rebuild-frequency:          #int option
+#verlet-skin-radius                 #double option
+#no-flops:                          #boolean option
+#log-file:                          #string option
+#vtk:                               #string option
+
+###Simulation Options=
+
+#functor:                           #string option
 #delta_t:                           #double option
 #epsilon:                           #double option
 #sigma:                             #double option
 #particle-mass:                     #double option
-#particles-generator:               #string option
-#traversal:                         #string option
-#tuning-interval:                   #int option
-#tuning-samples:                    #int option
-#tuning-max-evidence:               #int option
-#tuning-strategy:                   #string option
-#log-level:                         #string option
-#log-file:                          #string option
-#verlet-rebuild-frequency:          #int option
-#verlet-skin-radius                 #double option
-#vtk:                               #string option
+#cutoff:                            #double option
 
-#Objects generation=
+
+###Objects generation Options
 
 #Objects:
 #  CubeGrid:
-#    particles-per-Dim: [10,10,10]
-#    particleSpacing: 0.5
-#    velocity: [10.,10.,10.]
+#    particles-per-Dim: [10,10,10]      #parameter: list of ints
+#    particleSpacing: 0.5               #parameter: double
+#    velocity: [10.,10.,10.]            #parameter: list of double
 #  Sphere:
-#    center: [0.,0.,0.]
-#    radius: 10
-#    particleSpacing: 0.5
-#    firstId: 0
-#    velocity: [5.,5.,5.]
+#    center: [0.,0.,0.]                 #parameter: list of double
+#    radius: 10                         #parameter: int
+#    particleSpacing: 0.5               #parameter: double
+#    firstId: 0                         #parameter: int
+#    velocity: [5.,5.,5.]               #paramter: list of double
 #  CubeUniform:
-#    box-length: [10.,10.,10.]
-#    numberOfParticles: 100
-#    velocity: [0.,0.,0.]
+#    box-length: [10.,10.,10.]          #parameter: list of double
+#    numberOfParticles: 100             #parameter: int
+#    velocity: [0.,0.,0.]               #parameter: list of double
 #  CubeGauss:
-#    box-length: [8.,8.,8.]
-#    numberOfParticles: 100
-#    distribution-mean: 2.0
-#    distribution-stddev: 5.0
-#    velocity: [0.,0.,0.]
+#    box-length: [8.,8.,8.]             #parameter: list of double
+#    numberOfParticles: 100             #parameter: int
+#    distribution-mean: 2.0             #paramter: double
+#    distribution-stddev: 5.0           #parameter: double
+#    velocity: [0.,0.,0.]               #paramter: list of double
 

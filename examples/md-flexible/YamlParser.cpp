@@ -115,45 +115,49 @@ void YamlParser::parseInput(string &filename) {
     this->writeVTK = config["vtk"].as<std::string>();
   }
 
-    if (config["Objects"]) {
-        for (YAML::const_iterator it = config["Objects"].begin(); it != config["Objects"].end(); ++it) {
-            if (it->first.as<std::string>() == "CubeGrid") {
-                CubeGrid C({it->second["particles-per-Dim"][0].as<unsigned long>(),it->second["particles-per-Dim"][1].as<unsigned long>(),it->second["particles-per-Dim"][2].as<unsigned long>()},
-                           it->second["particleSpacing"].as<double>(),
-                           {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()});
-                CubeGridObjects.emplace_back(C);
-                continue;
-            }
-            if(it->first.as<std::string>() == "CubeGauss"){
-                CubeGauss C({it->second["box-length"][0].as<double>(),it->second["box-length"][1].as<double>(),it->second["box-length"][2].as<double>()},
-                            it->second["numberOfParticles"].as<size_t>(),
-                            it->second["distribution-mean"].as<double>(),
-                            it->second["distribution-stddeviation"].as<double>(),
-                            {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()} );
-                CubeGaussObjects.emplace_back(C);
-                continue;
-            }
-            if(it->first.as<std::string>() == "CubeUniform"){
-                CubeUniform C({it->second["box-length"][0].as<double>(),it->second["box-length"][1].as<double>(),it->second["box-length"][2].as<double>()},
-                              it->second["numberOfParticles"].as<size_t>(),
-                              {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()}  );
-                CubeUniformObjects.emplace_back(C);
-                continue;
-            }
-            if(it->first.as<std::string>() =="Sphere"){
-                Sphere S({it->second["center"][0].as<double>(),it->second["center"][1].as<double>(),it->second["center"][2].as<double>()},
-                         it->second["radius"].as<int>(),
-                         it->second["particleSpacing"].as<double>(),
-                         it->second["firstId"].as<unsigned long>(),
-                         {it->second["velocity"][0].as<double>(),it->second["velocity"][1].as<double>(),it->second["velocity"][2].as<double>()});
-                SphereObjects.emplace_back(S);
-                continue;
-            }
-
-        }
+  if (config["Objects"]) {
+    for (YAML::const_iterator it = config["Objects"].begin(); it != config["Objects"].end(); ++it) {
+      if (it->first.as<std::string>() == "CubeGrid") {
+        CubeGrid C({it->second["particles-per-Dim"][0].as<unsigned long>(),
+                    it->second["particles-per-Dim"][1].as<unsigned long>(),
+                    it->second["particles-per-Dim"][2].as<unsigned long>()},
+                   it->second["particleSpacing"].as<double>(),
+                   {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                    it->second["velocity"][2].as<double>()});
+        CubeGridObjects.emplace_back(C);
+        continue;
+      }
+      if (it->first.as<std::string>() == "CubeGauss") {
+        CubeGauss C({it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
+                     it->second["box-length"][2].as<double>()},
+                    it->second["numberOfParticles"].as<size_t>(), it->second["distribution-mean"].as<double>(),
+                    it->second["distribution-stddeviation"].as<double>(),
+                    {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                     it->second["velocity"][2].as<double>()});
+        CubeGaussObjects.emplace_back(C);
+        continue;
+      }
+      if (it->first.as<std::string>() == "CubeUniform") {
+        CubeUniform C({it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
+                       it->second["box-length"][2].as<double>()},
+                      it->second["numberOfParticles"].as<size_t>(),
+                      {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                       it->second["velocity"][2].as<double>()});
+        CubeUniformObjects.emplace_back(C);
+        continue;
+      }
+      if (it->first.as<std::string>() == "Sphere") {
+        Sphere S({it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
+                  it->second["center"][2].as<double>()},
+                 it->second["radius"].as<int>(), it->second["particleSpacing"].as<double>(),
+                 it->second["firstId"].as<unsigned long>(),
+                 {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                  it->second["velocity"][2].as<double>()});
+        SphereObjects.emplace_back(S);
+        continue;
+      }
     }
-
-
+  }
 }
 
 template <class T>
@@ -211,31 +215,28 @@ void YamlParser::printConfig() {
   cout << setw(valueOffset) << left << "Cell size factor"
        << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
 
-  cout << setw(valueOffset) << left << "Object Generation:"
-       << endl;
+  cout << setw(valueOffset) << left << "Object Generation:" << endl;
 
-  for(auto c : CubeGridObjects){
-      int i=1;
-      cout << setw(valueOffset) << left << "Cube-Grid Nr: " << i
-      << ":  " << endl;
-      c.printConfig();
+  for (auto c : CubeGridObjects) {
+    int i = 1;
+    cout << setw(valueOffset) << left << "Cube-Grid Nr: " << i << ":  " << endl;
+    c.printConfig();
   }
-    for(auto c : CubeGaussObjects){
-        int i=1;
-        cout << setw(valueOffset) << left << "Cube-Gauss Nr: " << i<< ":  " << endl;
-        c.printConfig();
-    }
-    for(auto c : CubeUniformObjects){
-        int i=1;
-        cout << setw(valueOffset) << left << "Cube-Uniform Nr: " << i << ":  " << endl;
-        c.printConfig();
-    }
-    for(auto c : SphereObjects){
-        int i=1;
-        cout << setw(valueOffset) << left << "Sphere Nr: " << i << ":  " << endl;
-        c.printConfig();
-    }
-
+  for (auto c : CubeGaussObjects) {
+    int i = 1;
+    cout << setw(valueOffset) << left << "Cube-Gauss Nr: " << i << ":  " << endl;
+    c.printConfig();
+  }
+  for (auto c : CubeUniformObjects) {
+    int i = 1;
+    cout << setw(valueOffset) << left << "Cube-Uniform Nr: " << i << ":  " << endl;
+    c.printConfig();
+  }
+  for (auto c : SphereObjects) {
+    int i = 1;
+    cout << setw(valueOffset) << left << "Sphere Nr: " << i << ":  " << endl;
+    c.printConfig();
+  }
 
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  " << iterableToString(traversalOptions) << endl;
@@ -261,21 +262,21 @@ void YamlParser::printConfig() {
        << ":  " << tuningMaxEvidence << endl;
 }
 
-size_t YamlParser::particlesTotal(){
-    size_t particlesTotal=0;
-    for(auto e:CubeGridObjects){
-        particlesTotal+=e.getParticlesTotal();
-    }
-    for(auto e:CubeGaussObjects){
-        particlesTotal+=e.getNumParticles();
-    }
-    for(auto e:CubeUniformObjects){
-        particlesTotal+=e.getNumParticles();
-    }
-    for(auto e:SphereObjects){
-        particlesTotal+=e.particlesTotal();
-    }
-    return particlesTotal;
+size_t YamlParser::particlesTotal() {
+  size_t particlesTotal = 0;
+  for (auto e : CubeGridObjects) {
+    particlesTotal += e.getParticlesTotal();
+  }
+  for (auto e : CubeGaussObjects) {
+    particlesTotal += e.getNumParticles();
+  }
+  for (auto e : CubeUniformObjects) {
+    particlesTotal += e.getNumParticles();
+  }
+  for (auto e : SphereObjects) {
+    particlesTotal += e.particlesTotal();
+  }
+  return particlesTotal;
 }
 
 const set<ContainerOption> &YamlParser::getContainerOptions() const { return containerOptions; }
@@ -302,8 +303,6 @@ spdlog::level::level_enum YamlParser::getLogLevel() const { return logLevel; }
 
 bool YamlParser::getMeasureFlops() const { return measureFlops; }
 
-size_t YamlParser::getParticlesTotal() const { return particlesTotal; }
-
 unsigned int YamlParser::getTuningInterval() const { return tuningInterval; }
 
 unsigned int YamlParser::getTuningSamples() const { return tuningSamples; }
@@ -326,18 +325,10 @@ double YamlParser::getDeltaT() const { return delta_t; }
 
 double YamlParser::getMass() const { return mass; }
 
-const vector<CubeGrid> &YamlParser::getCubeGrid() const {
-    return CubeGridObjects;
-}
+const vector<CubeGrid> &YamlParser::getCubeGrid() const { return CubeGridObjects; }
 
-const vector<CubeGauss> &YamlParser::getCubeGauss() const {
-    return CubeGaussObjects;
-}
+const vector<CubeGauss> &YamlParser::getCubeGauss() const { return CubeGaussObjects; }
 
-const vector<CubeUniform> &YamlParser::getCubeUniform() const {
-    return CubeUniformObjects;
-}
+const vector<CubeUniform> &YamlParser::getCubeUniform() const { return CubeUniformObjects; }
 
-const vector<Sphere> &YamlParser::getSphere() const {
-    return SphereObjects;
-}
+const vector<Sphere> &YamlParser::getSphere() const { return SphereObjects; }

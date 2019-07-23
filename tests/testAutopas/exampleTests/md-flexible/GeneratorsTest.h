@@ -3,11 +3,11 @@
 #include <gtest/gtest.h>
 #include <math.h>
 #include <vector>
+#include "../../../../examples/md-flexible/Generator.h"
 #include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
-    #include "../../../../examples/md-flexible/Generator.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -26,34 +26,35 @@ class GeneratorsTest : public AutoPasTestBase {
 
   void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
 
-    template <class AutoPasTemplate>
-    void writeVTKFile(string &filename,size_t numParticles, AutoPasTemplate &autopas) {
-        stringstream strstr;
-        strstr << filename;
-        // string path = "./vtk";
-        std::ofstream vtkFile;
-        vtkFile.open(strstr.str());
-        vtkFile << "# vtk DataFile Version 2.0" << endl;
-        vtkFile << "Timestep" << endl;
-        vtkFile << "ASCII" << endl;
-        vtkFile << "DATASET STRUCTURED_GRID" << endl;
-        vtkFile << "DIMENSIONS 1 1 1" << endl;
-        vtkFile << "POINTS " << numParticles << " double" << endl;
+  template <class AutoPasTemplate>
+  void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopas) {
+    stringstream strstr;
+    strstr << filename;
+    // string path = "./vtk";
+    std::ofstream vtkFile;
+    vtkFile.open(strstr.str());
+    vtkFile << "# vtk DataFile Version 2.0" << endl;
+    vtkFile << "Timestep" << endl;
+    vtkFile << "ASCII" << endl;
+    vtkFile << "DATASET STRUCTURED_GRID" << endl;
+    vtkFile << "DIMENSIONS 1 1 1" << endl;
+    vtkFile << "POINTS " << numParticles << " double" << endl;
 
-        for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-            auto pos = iter->getR();
-            vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
-        }
-        vtkFile.close();
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+      auto pos = iter->getR();
+      vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
     }
+    vtkFile.close();
+  }
 
-    double L2Norm(std::array<double, 3> array) {
-        double square_sum = 0;
-        for (auto e : array) {
-            square_sum += (e * e);
-        }
-        return sqrt(square_sum);
+  double L2Norm(std::array<double, 3> array) {
+    double square_sum = 0;
+    for (auto e : array) {
+      square_sum += (e * e);
     }
+    return sqrt(square_sum);
+  }
+
  protected:
   double epsilon;
   double sigma;

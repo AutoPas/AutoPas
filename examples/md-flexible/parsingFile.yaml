@@ -1,16 +1,5 @@
 #YAML parsing FILE
 
-#particles-per-dimension: 10
-#particles-generator : "grid"
-#log-level : "debug"
-#iterations: 30
-#container: linkedcell
-#newton3: enabled
-
-#tested die Object Generierung
-
-value: 10
-
 
 Objects:
   CubeGrid:

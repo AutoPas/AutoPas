@@ -1,22 +1,17 @@
-#just for faster building:
-file(   GLOB
-        MY_SRC
-        "*.cpp"
-        "*.h"
-        "exampleTests/md-flexible/*.cpp"
-        "exampleTests/md-flexible/*.h"
-        "../../examples/md-flexible/ParticleClassLibrary.cpp"
-        "../../examples/md-flexible/ParticleClassLibrary.h"
+# just for faster building:
+file(
+    GLOB
+    MY_SRC
+    "*.cpp"
+    "*.h"
+    "exampleTests/md-flexible/*.cpp"
+    "exampleTests/md-flexible/*.h"
+    "../../examples/md-flexible/ParticleClassLibrary.cpp"
+    "../../examples/md-flexible/ParticleClassLibrary.h"
 )
 
-#file(
-#    GLOB_RECURSE
-#    MY_SRC
-#    "*.cpp"
-#    "*.h"
-#    "../../examples/md-flexible/ParticleClassLibrary.cpp"
-#    "../../examples/md-flexible/ParticleClassLibrary.h"
-#)
+# file( GLOB_RECURSE MY_SRC "*.cpp" "*.h" "../../examples/md-flexible/ParticleClassLibrary.cpp"
+# "../../examples/md-flexible/ParticleClassLibrary.h" )
 if (AUTOPAS_ENABLE_CUDA)
     file(
         GLOB_RECURSE

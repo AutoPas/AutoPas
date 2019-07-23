@@ -4,9 +4,9 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include "Objects.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
-#include "Objects.h"
 using namespace std;
 class YamlParser {
   /**
@@ -47,22 +47,15 @@ class YamlParser {
 
   const NumberSet<double> &getCellSizeFactors() const;
 
-
   double getCutoff() const;
 
-
   FunctorOption getFunctorOption() const;
-
 
   size_t getIterations() const;
 
   spdlog::level::level_enum getLogLevel() const;
 
   bool getMeasureFlops() const;
-
-
-  size_t getParticlesTotal() const;
-
 
   unsigned int getTuningInterval() const;
 
@@ -86,17 +79,18 @@ class YamlParser {
 
   double getMass() const;
 
-    const vector<CubeGrid> &getCubeGrid() const;
+  const vector<CubeGrid> &getCubeGrid() const;
 
-    const vector<CubeGauss> &getCubeGauss() const;
+  const vector<CubeGauss> &getCubeGauss() const;
 
-    const vector<CubeUniform> &getCubeUniform() const;
+  const vector<CubeUniform> &getCubeUniform() const;
 
-    const vector<Sphere> &getSphere() const;
+  const vector<Sphere> &getSphere() const;
 
  private:
   static constexpr size_t valueOffset = 32;
   // defaults:
+
   // AutoPas options:
   std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
   std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
@@ -105,31 +99,28 @@ class YamlParser {
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
   std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
-  std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
+      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
   spdlog::level::level_enum logLevel = spdlog::level::info;
-
-  // Simulation Options:
-  double cutoff = 1.;
-  FunctorOption functorOption = FunctorOption::lj12_6;
-  size_t iterations = 10;
-  bool measureFlops = true;
-
-    //Object Generation:
-    std::vector<CubeGrid> CubeGridObjects={};
-    std::vector<CubeGauss> CubeGaussObjects={};
-    std::vector<CubeUniform> CubeUniformObjects={};
-    std::vector<Sphere> SphereObjects={};
-
-    unsigned int tuningInterval = 100;
+  unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
   std::string writeVTK = "";
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
+
+  // Simulation Options:
+  double cutoff = 1.;
+  FunctorOption functorOption = FunctorOption::lj12_6;
+  size_t iterations = 10;
+  bool measureFlops = true;
   double epsilon = 5.0;
   double sigma = 1.0;
   double delta_t = 0.001;
   double mass = 1.0;
-  // Object Generation Options:
+  // Object Generation:
+  std::vector<CubeGrid> CubeGridObjects = {};
+  std::vector<CubeGauss> CubeGaussObjects = {};
+  std::vector<CubeUniform> CubeUniformObjects = {};
+  std::vector<Sphere> SphereObjects = {};
 };
