@@ -123,26 +123,28 @@ void YamlParser::parseInput(string &filename) {
                     it->second["particles-per-Dim"][2].as<unsigned long>()},
                    it->second["particleSpacing"].as<double>(),
                    {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                    it->second["velocity"][2].as<double>()});
+                    it->second["velocity"][2].as<double>()},{it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
+                                                             it->second["center"][2].as<double>()});
         CubeGridObjects.emplace_back(C);
         continue;
       }
       if (it->first.as<std::string>() == "CubeGauss") {
-        CubeGauss C({it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
-                     it->second["box-length"][2].as<double>()},
-                    it->second["numberOfParticles"].as<size_t>(), it->second["distribution-mean"].as<double>(),
+        CubeGauss C(it->second["numberOfParticles"].as<size_t>(),{it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
+                                                                  it->second["box-length"][2].as<double>()}, it->second["distribution-mean"].as<double>(),
                     it->second["distribution-stddeviation"].as<double>(),
                     {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                     it->second["velocity"][2].as<double>()});
+                     it->second["velocity"][2].as<double>()},{it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
+                                                              it->second["center"][2].as<double>()});
         CubeGaussObjects.emplace_back(C);
         continue;
       }
       if (it->first.as<std::string>() == "CubeUniform") {
-        CubeUniform C({it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
+        CubeUniform C(it->second["numberOfParticles"].as<size_t>(),
+                {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
                        it->second["box-length"][2].as<double>()},
-                      it->second["numberOfParticles"].as<size_t>(),
                       {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                       it->second["velocity"][2].as<double>()});
+                       it->second["velocity"][2].as<double>()},{it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
+                                                                it->second["center"][2].as<double>()});
         CubeUniformObjects.emplace_back(C);
         continue;
       }
@@ -158,6 +160,7 @@ void YamlParser::parseInput(string &filename) {
       }
     }
   }
+  this->calcAutopasBox();
 }
 
 template <class T>
@@ -283,21 +286,46 @@ size_t YamlParser::particlesTotal() {
 }
 
 void YamlParser::calcAutopasBox() {
-    std::vector<double> XCoordinates;
-    std::vector<double> YCoordinates;
-    std::vector<double> ZCoordinates;
-
-    for (auto e : CubeGridObjects) {
-//get array of (vector of x), (vector of y), (vector of z)
-
+    std::vector<double> XcoordMin;
+    std::vector<double> YcoordMin;
+    std::vector<double> ZcoordMin;
+    std::vector<double> XcoordMax;
+    std::vector<double> YcoordMax;
+    std::vector<double> ZcoordMax;
+    for (auto c : CubeGridObjects) {
+        XcoordMin.emplace_back(c.getBoxMin()[0]);
+        YcoordMin.emplace_back(c.getBoxMin()[1]);
+        ZcoordMin.emplace_back(c.getBoxMin()[2]);
+        XcoordMax.emplace_back(c.getBoxMax()[0]);
+        YcoordMax.emplace_back(c.getBoxMax()[1]);
+        ZcoordMax.emplace_back(c.getBoxMax()[2]);
     }
-    for (auto e : CubeGaussObjects) {
+    for (auto c : CubeGaussObjects) {
+        XcoordMin.emplace_back(c.getBoxMin()[0]);
+        YcoordMin.emplace_back(c.getBoxMin()[1]);
+        ZcoordMin.emplace_back(c.getBoxMin()[2]);
+        XcoordMax.emplace_back(c.getBoxMax()[0]);
+        YcoordMax.emplace_back(c.getBoxMax()[1]);
+        ZcoordMax.emplace_back(c.getBoxMax()[2]);
     }
-    for (auto e : CubeUniformObjects) {
+    for (auto c : CubeUniformObjects) {
+        XcoordMin.emplace_back(c.getBoxMin()[0]);
+        YcoordMin.emplace_back(c.getBoxMin()[1]);
+        ZcoordMin.emplace_back(c.getBoxMin()[2]);
+        XcoordMax.emplace_back(c.getBoxMax()[0]);
+        YcoordMax.emplace_back(c.getBoxMax()[1]);
+        ZcoordMax.emplace_back(c.getBoxMax()[2]);
     }
-    for (auto e : SphereObjects) {
+    for (auto c : SphereObjects) {
+        XcoordMin.emplace_back(c.getBoxMin()[0]);
+        YcoordMin.emplace_back(c.getBoxMin()[1]);
+        ZcoordMin.emplace_back(c.getBoxMin()[2]);
+        XcoordMax.emplace_back(c.getBoxMax()[0]);
+        YcoordMax.emplace_back(c.getBoxMax()[1]);
+        ZcoordMax.emplace_back(c.getBoxMax()[2]);
     }
-    //search for smallest and biggest X,Y,Z coordinates and set BoxMin and BoxMax
+    BoxMin = {*std::min_element(XcoordMin.begin(),XcoordMin.end()),*std::min_element(YcoordMin.begin(),YcoordMin.end()),*std::min_element(ZcoordMin.begin(),ZcoordMin.end())};
+    BoxMax = {*std::max_element(XcoordMax.begin(),XcoordMax.end()),*std::max_element(YcoordMax.begin(),YcoordMax.end()),*std::max_element(ZcoordMax.begin(),ZcoordMax.end())};
 }
 
 const set<ContainerOption> &YamlParser::getContainerOptions() const { return containerOptions; }
@@ -353,3 +381,11 @@ const vector<CubeGauss> &YamlParser::getCubeGauss() const { return CubeGaussObje
 const vector<CubeUniform> &YamlParser::getCubeUniform() const { return CubeUniformObjects; }
 
 const vector<Sphere> &YamlParser::getSphere() const { return SphereObjects; }
+
+const array<double, 3> &YamlParser::getBoxMin() const {
+    return BoxMin;
+}
+
+const array<double, 3> &YamlParser::getBoxMax() const {
+    return BoxMax;
+}

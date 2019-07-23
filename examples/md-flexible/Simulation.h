@@ -165,16 +165,21 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   _autopas.setTuningStrategyOption(tuningStrategy);
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
   autopas::Logger::get()->set_level(logLevel);
+  _autopas.setBoxMax(_parser.getBoxMax());
+    _autopas.setBoxMin(_parser.getBoxMin());
+    _autopas.init();
 
-  for (auto C : CubeGrid) {
-    Generator::CubeGrid<Particle,ParticleCell>(_autopas, C.getParticlesPerDim(), C.getParticleSpacing(), C.getVelocity());
+
+
+    for (auto C : CubeGrid) {
+    Generator::CubeGrid<Particle,ParticleCell>(_autopas,C.getBoxMin(), C.getParticlesPerDim(), C.getParticleSpacing(), C.getVelocity());
   }
   for (auto C : CubeGauss) {
-    Generator::CubeGauss<Particle,ParticleCell>(_autopas, C.getBoxLength(), C.getNumParticles(), C.getDistributionMean(),
+    Generator::CubeGauss<Particle,ParticleCell>(_autopas,C.getBoxMin(),C.getBoxMax(), C.getNumParticles(), C.getDistributionMean(),
                          C.getDistributionStdDev(), C.getVelocity());
   }
   for (auto C : CubeUniform) {
-    Generator::CubeRandom<Particle,ParticleCell>(_autopas, C.getBoxLength(), C.getNumParticles(), C.getVelocity());
+    Generator::CubeRandom<Particle,ParticleCell>(_autopas,C.getBoxMin(),C.getBoxMax(), C.getNumParticles(), C.getVelocity());
   }
   for (auto S : Sphere) {
     Generator::Sphere<Particle,ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), S.getId(), S.getVelocity());

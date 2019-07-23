@@ -6,11 +6,11 @@
 #include "autopas/utils/ArrayUtils.h"
 class CubeGrid {
  public:
-  CubeGrid(const std::array<size_t, 3> &particlesPerDim, double particleSpacing, const std::array<double, 3> &velocity)
+  CubeGrid(const std::array<size_t, 3> &particlesPerDim, double particleSpacing, const std::array<double, 3> &velocity,const std::array<double,3> &center)
       : particlesPerDim(particlesPerDim),
         particleSpacing(particleSpacing),
         velocity(velocity),
-        particlesTotal(particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]) {}
+        particlesTotal(particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]),center(center) {}
 
   const array<size_t, 3> &getParticlesPerDim() const { return particlesPerDim; }
 
@@ -20,12 +20,13 @@ class CubeGrid {
 
   int getParticlesTotal() const { return particlesTotal; }
 
-//  std::array<std::vector<double>,3> getExtremities(){
-//      std::vector<double> XExtremities;
-//      std::vector<double> YExtremities;
-//      std::vector<double> ZExtremities;
-//
-//  }
+  std::array<double,3> getBoxMin(){
+    return {center[0]-0.5*particlesPerDim[0]*particleSpacing,center[1]-0.5*particlesPerDim[1]*particleSpacing,center[1]-0.5*particlesPerDim[1]*particleSpacing};
+  }
+    std::array<double,3> getBoxMax(){
+        return {center[0]+0.5*particlesPerDim[0]*particleSpacing,center[1]-0.5*particlesPerDim[1]*particleSpacing,center[1]+0.5*particlesPerDim[1]*particleSpacing};
+    }
+
 
   void printConfig() {
     cout << setw(valueOffset) << left << "Particles per dimension"
@@ -44,19 +45,21 @@ class CubeGrid {
   double particleSpacing;
   std::array<double, 3> velocity;
   int particlesTotal;
+    std::array<double,3> center;
+
 };
 
 class CubeGauss {
  public:
-  CubeGauss(const std::array<double, 3> &boxLength, size_t numParticles, double distributionMean,
-            double distributionStdDev, const std::array<double, 3> &velocity)
-      : boxLength(boxLength),
+  CubeGauss(size_t numParticles,const std::array<double, 3> &boxLength, double distributionMean,
+            double distributionStdDev, const std::array<double, 3> &velocity,const std::array<double,3> &center)
+      :
         numParticles(numParticles),
+        boxLength(boxLength),
         distributionMean(distributionMean),
         distributionStdDev(distributionStdDev),
-        velocity(velocity) {}
+        velocity(velocity),center(center) {}
 
-  const array<double, 3> &getBoxLength() const { return boxLength; }
 
   size_t getNumParticles() const { return numParticles; }
 
@@ -64,12 +67,17 @@ class CubeGauss {
 
   double getDistributionStdDev() const { return distributionStdDev; }
 
-
-
   const array<double, 3> &getVelocity() const { return velocity; }
+
+  std::array<double,3> getBoxMin(){
+    return {center[0]-0.5*boxLength[0],center[1]-0.5*boxLength[1],center[2]-0.5*boxLength[2]};
+  }
+    std::array<double,3> getBoxMax(){
+        return {center[0]+0.5*boxLength[0],center[1]+0.5*boxLength[1],center[2]+0.5*boxLength[2]};
+    }
+
+
   void printConfig() {
-    cout << setw(valueOffset) << left << "Box Length"
-         << ":  " << ArrayUtils::to_string(boxLength) << endl;
     cout << setw(valueOffset) << left << "Distribution-Mean"
          << ":  " << distributionMean << endl;
     cout << setw(valueOffset) << left << "Distribution-StdDev"
@@ -82,26 +90,35 @@ class CubeGauss {
 
  private:
   static constexpr size_t valueOffset = 32;
-  std::array<double, 3> boxLength;
   size_t numParticles;
+    std::array<double, 3> boxLength;
   double distributionMean;
   double distributionStdDev;
   std::array<double, 3> velocity;
+  std::array<double,3> center;
 };
 
 class CubeUniform {
  public:
-  CubeUniform(const std::array<double, 3> &boxLength, size_t numParticles, const std::array<double, 3> &velocity)
-      : boxLength(boxLength), numParticles(numParticles), velocity(velocity) {}
+  CubeUniform(size_t numParticles, const std::array<double, 3> &boxLength,const std::array<double, 3> &velocity,const std::array<double,3> &center)
+      : numParticles(numParticles),boxLength(boxLength), velocity(velocity),center(center) {}
 
-  const array<double, 3> &getBoxLength() const { return boxLength; }
 
   size_t getNumParticles() const { return numParticles; }
 
   const array<double, 3> &getVelocity() const { return velocity; }
+
+    std::array<double,3> getBoxMin(){
+        return {center[0]-0.5*boxLength[0],center[1]-0.5*boxLength[1],center[2]-0.5*boxLength[2]};
+    }
+
+    std::array<double,3> getBoxMax(){
+        return {center[0]+0.5*boxLength[0],center[1]+0.5*boxLength[1],center[2]+0.5*boxLength[2]};
+    }
+
   void printConfig() {
-    cout << setw(valueOffset) << left << "Box Length"
-         << ":  " << ArrayUtils::to_string(boxLength) << endl;
+    cout << setw(valueOffset) << left << "Center"
+         << ":  " << ArrayUtils::to_string(center) << endl;
     cout << setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << numParticles << endl;
     cout << setw(valueOffset) << left << "Initial velocities"
@@ -110,9 +127,11 @@ class CubeUniform {
 
  private:
   static constexpr size_t valueOffset = 32;
-  std::array<double, 3> boxLength;
   size_t numParticles;
+    std::array<double, 3> boxLength;
   std::array<double, 3> velocity;
+    std::array<double,3> center;
+
 };
 class Sphere {
  public:
@@ -129,6 +148,7 @@ class Sphere {
   unsigned long getId() const { return id; }
 
   const std::array<double, 3> &getVelocity() const { return velocity; }
+
   //@todo besser implementieren: (anderen Sphere Generator?)
   int particlesTotal() {
     int counter = 0;
@@ -157,6 +177,13 @@ class Sphere {
     }
     return counter;
   }
+
+  std::array<double,3> getBoxMin(){
+      return {center[0]-((double)radius+1)*particleSpacing,center[1]-((double)radius+1)*particleSpacing,center[2]-((double)radius+1)*particleSpacing};
+  }
+    std::array<double,3> getBoxMax(){
+        return {center[0]+((double)radius+1)*particleSpacing,center[1]+((double)radius+1)*particleSpacing,center[2]+((double)radius+1)*particleSpacing};
+    }
 
   void printConfig() {
     cout << setw(valueOffset) << left << "Center of Sphere"

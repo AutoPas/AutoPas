@@ -3,6 +3,7 @@
 //
 
 #include "GeneratorsTest.h"
+#include "autopas/utils/inBox.h"
 
 // fehler Erstellt Umgebung von Blatt 2 Task 3 des MolSim Praktikums
 void GeneratorsTest::MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas) {
@@ -31,23 +32,36 @@ TEST_F(GeneratorsTest, Gauss) {
   PrintableMolecule::setSigma(sigma);
   PrintableMolecule::setMass(1.0);
   Particle dummyParticle;
-  Generator::CubeGauss(autoPas, {5., 5., 5.}, 100, 5, 2);
+  Generator::CubeGauss(autoPas, {0., 0., 0.},{5.,5.,5.}, 100, 5, 2,{0.,0.,0.});
   ASSERT_EQ(autoPas.getNumberOfParticles(), 100);
 }
 
 TEST_F(GeneratorsTest, CubeGenerator) {
   //@tood check: Fabio wieso zeigt paraview ein extra Particle an?
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   unsigned long particlesPerDim = 5;
   std::array<size_t, 3> cube = {particlesPerDim, particlesPerDim, particlesPerDim};
-  Generator::CubeGrid(autoPas, cube, .5);
+  Generator::CubeGrid(autoPas,{0.,0.,0.}, cube, .5,{0.,0.,0.});
   string CubeGeneration = "CubeGeneration.vtu";
   writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
   EXPECT_EQ(autoPas.getNumberOfParticles(), (5 * 5 * 5));
 }
+
+TEST_F(GeneratorsTest,GridFillwithBoxMin){
+    auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
+    std::array<double,3> boxmin = {5.,5.,5.};
+    std::array<double,3> boxmax = {10.,10.,10.};
+    autoPas.setBoxMax(boxmax);autoPas.setBoxMin(boxmin);
+    Particle dummy;
+    string CubeGeneration = "FillGrid-BoxMin.vtu";
+    autoPas.init();
+    GridGenerator::fillWithParticles(autoPas,{5,5,5},dummy,{1,1,1},boxmin,{0.,0.,0.});
+    for(auto iter=autoPas.begin();iter.isValid();++iter){
+        EXPECT_TRUE(autopas::utils::inBox(iter->getR(),boxmin,boxmax));
+    }
+}
+
+
 
 TEST_F(GeneratorsTest, MolSimTask) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);

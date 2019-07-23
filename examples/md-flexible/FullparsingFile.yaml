@@ -34,23 +34,26 @@
 
 #Objects:
 #  CubeGrid:
-#    particles-per-Dim: [10,10,10]      #parameter: list of ints
-#    particleSpacing: 0.5               #parameter: double
-#    velocity: [10.,10.,10.]            #parameter: list of double
-#  Sphere:
-#    center: [0.,0.,0.]                 #parameter: list of double
-#    radius: 10                         #parameter: int
-#    particleSpacing: 0.5               #parameter: double
-#    firstId: 0                         #parameter: int
-#    velocity: [5.,5.,5.]               #paramter: list of double
-#  CubeUniform:
-#    box-length: [10.,10.,10.]          #parameter: list of double
-#    numberOfParticles: 100             #parameter: int
-#    velocity: [0.,0.,0.]               #parameter: list of double
+#    particles-per-Dim: [10,10,10]
+#    particleSpacing: 0.5
+#    velocity: [10.,10.,10.]
+#    center: [5.,5.,5.]
 #  CubeGauss:
-#    box-length: [8.,8.,8.]             #parameter: list of double
-#    numberOfParticles: 100             #parameter: int
-#    distribution-mean: 2.0             #paramter: double
-#    distribution-stddev: 5.0           #parameter: double
-#    velocity: [0.,0.,0.]               #paramter: list of double
+#    numberOfParticles: 100
+#    box-length: [8.,8.,8.]
+#    distribution-mean: 2.0
+#    distribution-stddev: 5.0
+#    velocity: [0.,0.,0.]
+#    center: [5.,5.,5.]
+#  CubeUniform:
+#    numberOfParticles: 100
+#    box-length: [10.,10.,10.]
+#    velocity: [0.,0.,0.]
+#    center: [5.,5.,5.]
+#  Sphere:
+#    center: [0.,0.,0.]
+#    radius: 10
+#    particleSpacing: 0.5
+#    firstId: 0
+#    velocity: [5.,5.,5.]
 

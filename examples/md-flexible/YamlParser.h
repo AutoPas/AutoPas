@@ -7,6 +7,9 @@
 #include "Objects.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
+#include <limits>
+#include <array>
+#include <algorithm>
 using namespace std;
 class YamlParser {
   /**
@@ -20,9 +23,14 @@ class YamlParser {
   /**Constructor für YAMl Parser:
    * */
   YamlParser() = default;
-  /**Parses the Input for the simulation
-   * @param filename
-   * */
+
+    const array<double, 3> &getBoxMin() const;
+
+    const array<double, 3> &getBoxMax() const;
+
+    /**Parses the Input for the simulation
+     * @param filename
+     * */
   void parseInput(std::string &filename);
 
   /**Prints Configuration of Simulation:
