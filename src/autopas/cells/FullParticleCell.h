@@ -22,13 +22,29 @@ namespace autopas {
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-  void addParticle(Particle& m) override {
+  /**
+   * Constructs a new FullParticleCell.
+   */
+  FullParticleCell()
+      : _cellLength({std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                     std::numeric_limits<double>::max()}) {}
+
+  /**
+   * Constructs a new FullParticleCell with the given cell side length.
+   * @param cellLength cell side length
+   */
+  FullParticleCell(std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+
+  /**
+   * @copydoc ParticleCell::addParticle()
+   */
+  void addParticle(const Particle &p) override {
     particlesLock.lock();
-    _particles.push_back(m);
+    _particles.push_back(p);
     particlesLock.unlock();
   }
 
-  virtual SingleCellIteratorWrapper<Particle> begin() override {
+  SingleCellIteratorWrapper<Particle> begin() override {
     return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
   }
 
@@ -39,7 +55,14 @@ class FullParticleCell : public ParticleCell<Particle> {
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  Particle& operator[](size_t n) { return _particles[n]; }
+  Particle &operator[](size_t n) { return _particles[n]; }
+
+  /**
+   * Returns a const reference to the element at position n in the cell.
+   * @param n Position of an element in the container
+   * @return Reference to the element
+   */
+  const Particle &operator[](size_t n) const { return _particles[n]; }
 
   bool isNotEmpty() const override { return numParticles() > 0; }
 
@@ -56,6 +79,10 @@ class FullParticleCell : public ParticleCell<Particle> {
     particlesLock.unlock();
   }
 
+  void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }
+
+  std::array<double, 3> getCellLength() const override { return _cellLength; }
+
   /**
    * Resizes the container so that it contains n elements.
    * @param n New container size
@@ -68,7 +95,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   void sortByDim(const size_t dim) {
     std::sort(_particles.begin(), _particles.end(),
-              [dim](const Particle& a, const Particle& b) -> bool { return a.getR()[dim] < b.getR()[dim]; });
+              [dim](const Particle &a, const Particle &b) -> bool { return a.getR()[dim] < b.getR()[dim]; });
   }
 
   /**
@@ -78,26 +105,27 @@ class FullParticleCell : public ParticleCell<Particle> {
   void reserve(size_t n) { _particles.reserve(n); }
 
   /**
-   * storage of the molecules of the cell
+   * Storage of the molecules of the cell.
    */
   std::vector<Particle> _particles;
 
   /**
-   * the soa buffer of this cell
+   * SoA buffer of this cell.
    */
   SoA<SoAArraysType> _particleSoABuffer;
 
   /**
-   * device particle SoABuffer
+   * Device particle SoABuffer.
    */
   CudaSoA<typename Particle::CudaDeviceArraysType> _particleSoABufferDevice;
 
   /**
-   * type of the internal iterator
+   * Type of the internal iterator.
    */
   typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
 
  private:
   AutoPasLock particlesLock;
+  std::array<double, 3> _cellLength;
 };
 }  // namespace autopas

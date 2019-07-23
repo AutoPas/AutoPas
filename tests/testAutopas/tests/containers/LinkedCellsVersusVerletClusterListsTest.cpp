@@ -8,7 +8,7 @@
 
 LinkedCellsVersusVerletClusterListsTest::LinkedCellsVersusVerletClusterListsTest()
     : _verletLists(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 2),
-      _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
+      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0.1 * getCutoff(), 1. /*cell size factor*/) {}
 
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
@@ -29,8 +29,9 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
       dummyTraversal({0, 0, 0}, &func);
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
       traversalLinkedLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-  _verletLists.iteratePairwise(&func, &dummyTraversal, false);
-  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ, false);
+  _verletLists.rebuildNeighborLists(&dummyTraversal);
+  _verletLists.iteratePairwise(&func, &dummyTraversal);
+  _linkedCells.iteratePairwise(&func, &traversalLinkedLJ);
 
   std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, skip id=0 to avoid dummy particles
@@ -59,8 +60,8 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
   autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
       traversalFLOPS(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
-  _verletLists.iteratePairwise(&flopsVerlet, &traversalFLOPS, false);
-  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS, false);
+  _verletLists.iteratePairwise(&flopsVerlet, &traversalFLOPS);
+  _linkedCells.iteratePairwise(&flopsLinked, &traversalFLOPS);
 
   ASSERT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls());
 }

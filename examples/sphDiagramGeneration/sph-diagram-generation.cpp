@@ -4,10 +4,12 @@
  * @author seckler
  */
 
+#include <autopas/selectors/TraversalSelector.h>
 #include <array>
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/containers/cellPairTraversals/DummyTraversal.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/Timer.h"
 
@@ -16,7 +18,7 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
 template <class Container, class Functor, class Traversal>
 void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
-                               int numIterations, bool useNewton3);
+                               int numIterations);
 
 void addParticles(
     autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
@@ -58,8 +60,8 @@ int main(int argc, char *argv[]) {
   autopas::sph::SPHCalcDensityFunctor densfunc;
   autopas::sph::SPHCalcHydroForceFunctor hydrofunc;
 
-  int numParticles = 16;
-  int numIterations = 100000;
+  int numParticles;
+  int numIterations;
   int containerTypeInt = 0;
   enum ContainerType { linkedCells, directSum, verletLists, verletListsCells } containerType = linkedCells;
   int functorTypeInt = 0;
@@ -69,38 +71,38 @@ int main(int argc, char *argv[]) {
   int rebuildFrequency = 10;
   bool useNewton3 = true;
   if (argc == 9) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
-    functorTypeInt = atoi(argv[4]);
-    skin = atof(argv[5]);
-    rebuildFrequency = atof(argv[6]);
-    useNewton3 = atoi(argv[7]);
-    boxMax[0] = boxMax[1] = boxMax[2] = atof(argv[8]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
+    functorTypeInt = std::stoi(argv[4]);
+    skin = std::stod(argv[5]);
+    rebuildFrequency = std::stoi(argv[6]);
+    useNewton3 = std::stoi(argv[7]);
+    boxMax[0] = boxMax[1] = boxMax[2] = std::stod(argv[8]);
   } else if (argc == 8) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
-    functorTypeInt = atoi(argv[4]);
-    skin = atof(argv[5]);
-    rebuildFrequency = atof(argv[6]);
-    useNewton3 = atoi(argv[7]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
+    functorTypeInt = std::stoi(argv[4]);
+    skin = std::stod(argv[5]);
+    rebuildFrequency = std::stoi(argv[6]);
+    useNewton3 = std::stoi(argv[7]);
   } else if (argc == 7) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
-    functorTypeInt = atoi(argv[4]);
-    skin = atof(argv[5]);
-    rebuildFrequency = atof(argv[6]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
+    functorTypeInt = std::stoi(argv[4]);
+    skin = std::stod(argv[5]);
+    rebuildFrequency = std::stoi(argv[6]);
   } else if (argc == 5) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
-    functorTypeInt = atoi(argv[4]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
+    functorTypeInt = std::stoi(argv[4]);
   } else if (argc == 4) {
-    numParticles = atoi(argv[1]);
-    numIterations = atoi(argv[2]);
-    containerTypeInt = atoi(argv[3]);
+    numParticles = std::stoi(argv[1]);
+    numIterations = std::stoi(argv[2]);
+    containerTypeInt = std::stoi(argv[3]);
   } else {
     std::cerr
         << "ERROR: wrong number of arguments given. " << std::endl
@@ -132,13 +134,15 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
+  std::cout << "rebuildFrequency " << rebuildFrequency << " currently unused!" << std::endl;
+
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff);
+      boxMin, boxMax, cutoff, skin * cutoff);
   autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
-      boxMin, boxMax, cutoff);
-  autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff, rebuildFrequency);
-  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(
-      boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff, rebuildFrequency);
+      boxMin, boxMax, cutoff, skin * cutoff);
+  autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff);
+  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(boxMin, boxMax, cutoff,
+                                                                      autopas::TraversalOption::c08, skin * cutoff);
 
   addParticles(lcCont, numParticles);
 
@@ -192,57 +196,51 @@ int main(int argc, char *argv[]) {
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
-  autopas::CellPairTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>> *traversal;
-
+  using CellType = autopas::FullParticleCell<autopas::sph::SPHParticle>;
+  // initialize to dummy values
+  auto traversalInfo = cont->getTraversalSelectorInfo();
+  std::cout << "Cells: " << traversalInfo.dims[0] << " x " << traversalInfo.dims[1] << " x " << traversalInfo.dims[2]
+            << std::endl;
+  auto traversalType = autopas::TraversalOption::dummyTraversal;
   switch (cont->getContainerType()) {
     case autopas::ContainerOption::linkedCells: {
-      auto dims =
-          dynamic_cast<
-              autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> *>(
-              cont)
-              ->getCellBlock()
-              .getCellsPerDimensionWithHalo();
-      std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
-
-      if (useNewton3) {
-        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, true>(dims, func);
-      } else {
-        traversal = new autopas::C08Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, false>(dims, func);
-      }
-
+      traversalType = autopas::TraversalOption::c08;
       break;
     }
-
     case autopas::ContainerOption::directSum: {
-      traversal = new autopas::DirectSumTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                                  autopas::DataLayoutOption::aos, false>(func);
+      traversalType = autopas::TraversalOption::directSumTraversal;
+      //@todo @reviewer ds traversal was previously always with N3 off, ignoring the function arg. Is this intended?
       break;
     }
     case autopas::ContainerOption::verletListsCells: {
-      auto dims = dynamic_cast<autopas::VerletListsCells<autopas::sph::SPHParticle> *>(cont)->getCellsPerDimension();
-      std::cout << "Cells: " << dims[0] << " x " << dims[1] << " x " << dims[2] << std::endl;
-
       if (useNewton3) {
-        traversal = new autopas::C18Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, true>(dims, func);
+        traversalType = autopas::TraversalOption::c18;
       } else {
-        traversal = new autopas::C01Traversal<autopas::FullParticleCell<autopas::sph::SPHParticle>, Functor,
-                                              autopas::DataLayoutOption::aos, false>(dims, func);
+        traversalType = autopas::TraversalOption::c01;
       }
       break;
     }
-    default:
-      traversal = new autopas::DummyTraversal<autopas::FullParticleCell<autopas::sph::SPHParticle>>({0, 0, 0});
+    default: {}
   }
-
-  measureContainerTraversal(cont, func, traversal, numParticles, numIterations, useNewton3);
+  auto traversal = autopas::TraversalSelector<CellType>::template generateTraversal<Functor>(
+      traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos,
+      useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
+  if (useNewton3) {
+    measureContainerTraversal(
+        cont, func,
+        dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, true> *>(traversal.get()),
+        numParticles, numIterations);
+  } else {
+    measureContainerTraversal(
+        cont, func,
+        dynamic_cast<autopas::CellPairTraversal<CellType, autopas::DataLayoutOption::aos, false> *>(traversal.get()),
+        numParticles, numIterations);
+  }
 }
 
 template <class Container, class Functor, class Traversal>
 void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
-                               int numIterations, bool useNewton3) {
+                               int numIterations) {
   // autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
   //    flopFunctor(cont->getCutoff());
 
@@ -252,7 +250,7 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal);
 
   double elapsedTime = t.stop();
 
@@ -261,11 +259,9 @@ void measureContainerTraversal(Container *cont, Functor *func, Traversal *traver
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal, useNewton3);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func, traversal);
 
   elapsedTime = t.stop();
-
-  delete traversal;
 
   // double flops = flopsPerIteration * numIterations;
 

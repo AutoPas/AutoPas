@@ -110,6 +110,12 @@ do
                         continue
                     fi
 
+                    # workaround because there is no traversal for Verlet cells with soa yet.
+                    if [[ ${container} =~ 'VerletCells' && ${dataLayout} =~ 'SoA' ]];
+                    then
+                        continue
+                    fi
+
                     # iterate over molecules with the correct repetition
                     for i in `seq 0 $(( ${#Mols[@]} - 1 ))` ;
                     do

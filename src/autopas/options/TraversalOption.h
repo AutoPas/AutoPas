@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <vector>
+#include <set>
 
 namespace autopas {
 
@@ -24,14 +24,16 @@ enum TraversalOption {
   c01Verlet = 7,
   c01Cuda = 8,
   verletTraversal = 9,
-  verletClusterCellsTraversal = 10,
+  c01CombinedSoA = 10,
+  verletClusterCellsTraversal = 11,
+  c04 = 12,
   dummyTraversal = 666,
 };
 
 /**
  * Provides a way to iterate over the possible choices of TraversalOption.
  */
-static const std::vector<TraversalOption> allTraversalOptions = {
+static const std::set<TraversalOption> allTraversalOptions = {
     TraversalOption::c08,
     TraversalOption::sliced,
     TraversalOption::c18,
@@ -43,6 +45,8 @@ static const std::vector<TraversalOption> allTraversalOptions = {
     TraversalOption::c01Cuda,
     TraversalOption::verletTraversal,
     TraversalOption::verletClusterCellsTraversal,
+    TraversalOption::c01CombinedSoA,
+    TraversalOption::c04,
 };
 
 }  // namespace autopas

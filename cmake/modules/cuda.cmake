@@ -1,5 +1,4 @@
-
-if(ENABLE_CUDA)
+if (AUTOPAS_ENABLE_CUDA)
 set(CUDA_SEPARABLE_COMPILATION ON)
 
 # set auto-detect as the default CUDA_COMPUTE_CAPABILITY if it is not yet set.
@@ -28,7 +27,7 @@ endif()
 
 target_compile_options(autopas
         PUBLIC
-        #architecture flags and -Xcompiler to prepend to -fopenmp
+            # architecture flags and -Xcompiler to prepend to -fopenmp
         $<$<COMPILE_LANGUAGE:CUDA>:$<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-lineinfo -pg> -gencode arch=compute_${CUDA_COMPUTE_CAPABILITY},code=sm_${CUDA_COMPUTE_CAPABILITY} $<$<BOOL:${OPENMP}>:-Xcompiler>>
-        )
-endif()
+    )
+endif ()

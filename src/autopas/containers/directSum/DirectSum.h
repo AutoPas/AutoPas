@@ -8,12 +8,16 @@
 #pragma once
 
 #include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/directSum/DirectSumTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
 
@@ -35,23 +39,12 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @param boxMin
    * @param boxMax
    * @param cutoff
+   * @param skin
    */
-  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff)
-      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, allDSApplicableTraversals()),
-        _cellBorderFlagManager() {
+  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
+      : ParticleContainer<Particle, ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
-
-  /**
-   * Lists all traversal options applicable for the Direct Sum container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allDSApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::directSumTraversal};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allDSApplicableTraversals(); }
 
   ContainerOption getContainerType() override { return ContainerOption::directSum; }
 
@@ -65,17 +58,22 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
   void addHaloParticle(Particle &p) override {
-    if (utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-      getHaloCell()->addParticle(p);
-    } else {  // particle is not outside of own box
-      utils::ExceptionHandler::exception(
-          "DirectSum: trying to add a halo particle that is not OUTSIDE of the "
-          "bounding box.\n" +
-          p.toString());
-    }
+    Particle p_copy = p;
+    p_copy.setOwned(false);
+    getHaloCell()->addParticle(p_copy);
+  }
+
+  bool updateHaloParticle(Particle &haloParticle) override {
+    Particle pCopy = haloParticle;
+    pCopy.setOwned(false);
+    return internal::checkParticleInCellAndUpdateByIDAndPosition(*getHaloCell(), pCopy, this->getSkin());
   }
 
   void deleteHaloParticles() override { getHaloCell()->clear(); }
+
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    // nothing to do.
+  }
 
   /**
    * Function to iterate over all pairs of particles
@@ -83,10 +81,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
    * @tparam Traversal
    * @param f functor that describes the pair-potential
    * @param traversal the traversal that will be used
-   * @param useNewton3 whether newton 3 optimization should be used
    */
   template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
+  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
     traversal->initTraversal(this->_cells);
@@ -100,18 +97,18 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     traversal->endTraversal(this->_cells);
   }
 
-  void updateContainer() override {
-    if (getHaloCell()->isNotEmpty()) {
-      utils::ExceptionHandler::exception(
-          "DirectSum: Halo particles still present when updateContainer was called. Found {} particles",
-          getHaloCell()->numParticles());
-    }
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::vector<Particle> updateContainer() override {
+    // first we delete halo particles, as we don't want them here.
+    deleteHaloParticles();
+    std::vector<Particle> invalidParticles{};
     for (auto iter = getCell()->begin(); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-        addHaloParticle(*iter);
+        invalidParticles.push_back(*iter);
         iter.deleteCurrentParticle();
       }
     }
+    return invalidParticles;
   }
 
   bool isContainerUpdateNeeded() override {
@@ -128,9 +125,9 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
+  TraversalSelectorInfo getTraversalSelectorInfo() override {
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelector<ParticleCell>({2, 0, 0});
+    return TraversalSelectorInfo({2, 0, 0});
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -138,19 +135,18 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                      std::array<double, 3> higherCorner,
+  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                      const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
     std::vector<size_t> cellsOfInterest;
 
     switch (behavior) {
-      case IteratorBehavior::haloOnly:
-        cellsOfInterest.push_back(1);
-        break;
       case IteratorBehavior::ownedOnly:
         cellsOfInterest.push_back(0);
         break;
+      case IteratorBehavior::haloOnly:
+        // for haloOnly all cells can contain halo particles!
       case IteratorBehavior::haloAndOwned:
         cellsOfInterest.push_back(0);
         cellsOfInterest.push_back(1);
@@ -162,16 +158,17 @@ class DirectSum : public ParticleContainer<Particle, ParticleCell> {
   }
 
  private:
-  class DirectSumCellBorderAndFlagManager : public CellBorderAndFlagManager {
+  class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
     /**
      * the index type to access the particle cells
      */
     typedef std::size_t index_t;
 
    public:
-    bool isHaloCell(index_t index1d) const override { return index1d == 1; }
+    bool cellCanContainHaloParticles(index_t index1d) const override { return index1d == 1; }
 
-    bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
+    bool cellCanContainOwnedParticles(index_t index1d) const override { return index1d == 0; }
+
   } _cellBorderFlagManager;
 
   ParticleCell *getCell() { return &(this->_cells.at(0)); };

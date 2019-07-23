@@ -9,7 +9,8 @@
 //#include "autopas/pairwiseFunctors/LJFunctor.h"
 
 CudaTraversalVersusDirectSumTest::CudaTraversalVersusDirectSumTest()
-    : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _linkedCells(getBoxMin(), getBoxMax(), getCutoff()) {}
+    : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.),
+      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0., 1. /*cell size factor*/) {}
 
 double CudaTraversalVersusDirectSumTest::fRand(double fMin, double fMax) const {
   double f = static_cast<double>(rand()) / RAND_MAX;
@@ -53,10 +54,10 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
   double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(
-      getCutoff(), eps, sig, shift, getBoxMin(), getBoxMax());
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcLC(
-      getCutoff(), eps, sig, shift, getBoxMin(), getBoxMax());
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(getCutoff(), eps, sig,
+                                                                                               shift);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcLC(getCutoff(), eps, sig,
+                                                                                               shift);
 
   autopas::C01CudaTraversal<FMCell,
                             autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals>,

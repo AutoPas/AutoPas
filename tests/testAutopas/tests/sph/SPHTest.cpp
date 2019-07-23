@@ -619,9 +619,9 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
     double cutoff = 1.;                                                                                                \
     using autopas::sph::SPHParticle;                                                                                   \
                                                                                                                        \
-    autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 3);                        \
+    autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5);                           \
     autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.}, \
-                                                                                           cutoff);                    \
+                                                                                           cutoff, 0.5, 1.);           \
                                                                                                                        \
     autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,                                  \
                                                  cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);    \
@@ -645,7 +645,8 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
                                autopas::DataLayoutOption::aos, true>                                                   \
           traversalLJVerlet(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                       \
                                                                                                                        \
-      _verletLists.iteratePairwise(&fnctr, &traversalLJVerlet, true);                                                  \
+      _verletLists.rebuildNeighborLists(&traversalLJVerlet);                                                           \
+      _verletLists.iteratePairwise(&fnctr, &traversalLJVerlet);                                                        \
       _linkedCells.iteratePairwise(&fnctr, &traversalLJ);                                                              \
     } else {                                                                                                           \
       autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, autopas::sph::functor,                             \
@@ -655,8 +656,9 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
                                autopas::DataLayoutOption::soa, true>                                                   \
           traversalLJVerlet(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);                       \
                                                                                                                        \
+      _verletLists.rebuildNeighborLists(&traversalLJVerlet);                                                           \
       _verletLists.iteratePairwise(&fnctr, &traversalLJVerlet);                                                        \
-      _linkedCells.iteratePairwise(&fnctr, &traversalLJ, true);                                                        \
+      _linkedCells.iteratePairwise(&fnctr, &traversalLJ);                                                              \
     }                                                                                                                  \
     check;                                                                                                             \
   }

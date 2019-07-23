@@ -30,15 +30,15 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
    * @tparam InterfacePtrType type of the interface ptr
    */
   template <class InterfacePtrType>
-  explicit SingleCellIteratorWrapper(InterfacePtrType* particleIteratorInterface)
+  explicit SingleCellIteratorWrapper(InterfacePtrType *particleIteratorInterface)
       : _particleIterator(
-            static_cast<internal::SingleCellIteratorInterfaceImpl<Particle>*>(particleIteratorInterface)) {}
+            static_cast<internal::SingleCellIteratorInterfaceImpl<Particle> *>(particleIteratorInterface)) {}
 
   /**
    * copy constructor
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
-  SingleCellIteratorWrapper(const SingleCellIteratorWrapper& otherParticleIteratorWrapper) {
+  SingleCellIteratorWrapper(const SingleCellIteratorWrapper &otherParticleIteratorWrapper) {
     _particleIterator = std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>>(
         otherParticleIteratorWrapper._particleIterator->clone());
   }
@@ -48,28 +48,28 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    * @return the modified SingleCellIteratorWrapper
    */
-  SingleCellIteratorWrapper& operator=(const SingleCellIteratorWrapper& otherParticleIteratorWrapper) {
+  SingleCellIteratorWrapper &operator=(const SingleCellIteratorWrapper &otherParticleIteratorWrapper) {
     _particleIterator = std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>>(
         otherParticleIteratorWrapper._particleIterator->clone());
     return *this;
   }
 
-  inline SingleCellIteratorWrapper<Particle>& operator++() override final {
+  inline SingleCellIteratorWrapper<Particle> &operator++() override final {
     _particleIterator->operator++();
     return *this;
   }
 
-  inline Particle& operator*() const override final { return _particleIterator->operator*(); }
+  inline Particle &operator*() const override final { return _particleIterator->operator*(); }
 
   inline void deleteCurrentParticle() override final { _particleIterator->deleteCurrentParticle(); }
 
   inline bool isValid() const override final { return _particleIterator->isValid(); }
 
-  inline bool operator==(const SingleCellIteratorInterface<Particle>& rhs) const override final {
+  inline bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const override final {
     return _particleIterator->operator==(rhs);
   }
 
-  inline bool operator!=(const SingleCellIteratorInterface<Particle>& rhs) const override final {
+  inline bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const override final {
     return _particleIterator->operator!=(rhs);
   }
 
@@ -79,7 +79,7 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle> {
    * Returns the stored single cell iterator.
    * @return
    */
-  inline SingleCellIteratorInterface<Particle>* get() const { return _particleIterator.get(); }
+  inline SingleCellIteratorInterface<Particle> *get() const { return _particleIterator.get(); }
 
  private:
   std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle>> _particleIterator;

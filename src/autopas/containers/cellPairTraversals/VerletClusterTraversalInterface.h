@@ -29,10 +29,12 @@ class VerletClusterTraversalInterface {
    * @param dims dimension of the container
    * @param cells in the container
    * @param boundingBoxes of the cells
+   * @param interactionCellRadius radius of cells which can be in the interaction length
    * @param distance Maximum distance between interacting cells
    */
   virtual void rebuildVerlet(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
-                             std::vector<std::array<double, 6>> &boundingBoxes, double distance) = 0;
+                             std::vector<std::vector<std::array<double, 6>>> &boundingBoxes, int interactionCellRadius,
+                             double distance) = 0;
 
   /**
    * Sets pointer to the verlet lists stored in the container
@@ -41,7 +43,8 @@ class VerletClusterTraversalInterface {
    * @param neighborMatrixDim pointer to cuda neighbor matrix dimension
    * @param neighborMatrix pointer to cuda neighbor matrix dimension
    */
-  virtual void setVerletListPointer(unsigned int *clusterSize, std::vector<std::vector<size_t>> *neighborCellIds,
+  virtual void setVerletListPointer(unsigned int *clusterSize,
+                                    std::vector<std::vector<std::vector<std::pair<size_t, size_t>>>> *neighborCellIds,
                                     size_t *neighborMatrixDim,
                                     utils::CudaDeviceVector<unsigned int> *neighborMatrix) = 0;
 

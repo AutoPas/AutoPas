@@ -1,19 +1,24 @@
 # make exapmles optional. Useful when only the library is needed.
-option(BUILD_EXAMPLES "Build examples." ON)
+option(AUTOPAS_BUILD_EXAMPLES "Build examples." ON)
 
 # do nothing if nothing should be done
-if (NOT BUILD_EXAMPLES)
+if (NOT AUTOPAS_BUILD_EXAMPLES)
     return()
 endif ()
 
-ADD_CUSTOM_TARGET(checkExamples
-        COMMAND ctest -C checkExamples -j 4)
+add_custom_target(
+    checkExamples
+    COMMAND
+        ctest
+        -C
+        checkExamples
+        -j
+        4
+)
 
-ADD_SUBDIRECTORY(basic)
-ADD_SUBDIRECTORY(md-flexible)
-ADD_SUBDIRECTORY(sph)
-ADD_SUBDIRECTORY(sph-mpi)
-ADD_SUBDIRECTORY(sph-verlet)
-ADD_SUBDIRECTORY(sphDiagramGeneration)
-ADD_SUBDIRECTORY(sph-traversals)
-ADD_SUBDIRECTORY(cluster-test)
+add_subdirectory(md-flexible)
+add_subdirectory(sph)
+add_subdirectory(sph-mpi)
+add_subdirectory(sphDiagramGeneration)
+add_subdirectory(sph-traversals)
+add_subdirectory(cluster-test)

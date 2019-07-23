@@ -5,6 +5,7 @@
  */
 
 #include "TraversalTest.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/Logger.h"
 #include "testingHelpers/NumThreadGuard.h"
 
@@ -13,7 +14,7 @@ using ::testing::Bool;
 using ::testing::Combine;
 using ::testing::ValuesIn;
 
-void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3>& edgeLength,
+void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3> &edgeLength,
                    int interactions, double cutoff = 1.0) {
   TraversalTest::CountFunctor functor;
   functor.setCutoff(cutoff);
@@ -21,16 +22,18 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
 
   GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength);
 
-  NumThreadGuard(4);
+  NumThreadGuard numThreadGuard(4);
 
-  autopas::TraversalSelector<FPCell> ts(edgeLength, cutoff);
-  std::unique_ptr<autopas::CellPairTraversal<FPCell>> Traversal;
+  autopas::TraversalSelectorInfo tsi(edgeLength, cutoff);
+  std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
-    Traversal = ts.generateTraversal<TraversalTest::CountFunctor, autopas::DataLayoutOption::aos, true>(traversalOption,
-                                                                                                        functor);
+    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
+                                                                               autopas::DataLayoutOption::aos, true>(
+        traversalOption, functor, tsi);
   } else {
-    Traversal = ts.generateTraversal<TraversalTest::CountFunctor, autopas::DataLayoutOption::aos, false>(
-        traversalOption, functor);
+    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
+                                                                               autopas::DataLayoutOption::aos, false>(
+        traversalOption, functor, tsi);
   }
 
   unsigned long cellId = 0;
@@ -55,7 +58,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     }
   }
 
-  auto* traversalInterface = dynamic_cast<LinkedCellTraversalInterface<FPCell>*>(Traversal.get());
+  auto *traversalInterface = dynamic_cast<autopas::LinkedCellTraversalInterface<FPCell> *>(traversal.get());
   traversalInterface->traverseCellPairs(cells);
 }
 
@@ -101,6 +104,10 @@ TEST_P(TraversalTest, testTraversal_8x8x8_overlap2) {
   std::array<size_t, 3> domain = {8ul, 8ul, 8ul};
   const auto cutoff = 2.0;
 
+  // C04 doesn't support cellSizeFactors < 1.0
+  if (traversalOption == autopas::TraversalOption::c04) {
+    return;
+  }
   testTraversal(traversalOption, newton3, domain, 32, cutoff);
 }
 
@@ -119,6 +126,10 @@ TEST_P(TraversalTest, testTraversal_6x7x8_overlap2) {
   std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
   const auto cutoff = 2.0;
 
+  // C04 doesn't support cellSizeFactors < 1.0
+  if (traversalOption == autopas::TraversalOption::c04) {
+    return;
+  }
   testTraversal(traversalOption, newton3, domain, 32, cutoff);
 }
 
@@ -128,14 +139,19 @@ TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
   std::array<size_t, 3> domain = {7ul, 8ul, 9ul};
   const auto cutoff = 3.0;
 
+  // C04 doesn't support cellSizeFactors < 1.0
+  if (traversalOption == autopas::TraversalOption::c04) {
+    return;
+  }
   testTraversal(traversalOption, newton3, domain, 122, cutoff);
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
-                         Combine(ValuesIn([]() -> std::vector<autopas::TraversalOption> {
-                                   auto t = autopas::LinkedCells<Particle, FPCell>::allLCApplicableTraversals();
-                                   auto t_end = std::remove(t.begin(), t.end(), autopas::TraversalOption::c01Cuda);
-                                   return std::vector<autopas::TraversalOption>(t.begin(), t_end);
+                         Combine(ValuesIn([]() -> std::set<autopas::TraversalOption> {
+                                   auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
+                                   allTraversals.erase(autopas::TraversalOption::c01Cuda);
+                                   allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
+                                   return allTraversals;
                                  }()),
                                  Bool()),
                          TraversalTest::PrintToStringParamName());

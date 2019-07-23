@@ -26,7 +26,7 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
    * @posY y positions of the particles
    * @posZ z positions of the particles
    */
-  LJFunctorCudaSoA(unsigned int size, floatType* posX, floatType* posY, floatType* posZ)
+  LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ)
       : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(NULL), _forceY(NULL), _forceZ(NULL) {}
 
   /**
@@ -39,15 +39,15 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
    * @forceY y forces of the particles
    * @forceZ z forces of the particles
    */
-  LJFunctorCudaSoA(unsigned int size, floatType* posX, floatType* posY, floatType* posZ, floatType* forceX,
-                   floatType* forceY, floatType* forceZ)
+  LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, floatType *forceX,
+                   floatType *forceY, floatType *forceZ)
       : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(forceX), _forceY(forceY), _forceZ(forceZ) {}
 
   /**
    * CopyConstructor
    * @param obj other object
    */
-  LJFunctorCudaSoA(const LJFunctorCudaSoA& obj)
+  LJFunctorCudaSoA(const LJFunctorCudaSoA &obj)
       : _size(obj._size),
         _posX(obj._posX),
         _posY(obj._posY),
@@ -57,12 +57,12 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
         _forceZ(obj._forceZ) {}
 
   unsigned int _size;
-  floatType* _posX;
-  floatType* _posY;
-  floatType* _posZ;
-  floatType* _forceX;
-  floatType* _forceY;
-  floatType* _forceZ;
+  floatType *_posX;
+  floatType *_posY;
+  floatType *_posZ;
+  floatType *_forceX;
+  floatType *_forceY;
+  floatType *_forceZ;
 };
 
 /**
@@ -89,32 +89,32 @@ class LJFunctorCudaWrapper : public CudaWrapperInterface<floatType> {
 
   void setNumThreads(int num_threads) override { _num_threads = num_threads; }
 
-  void loadConstants(FunctorCudaConstants<floatType>* constants) override;
+  void loadConstants(FunctorCudaConstants<floatType> *constants) override;
 
-  void SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, cudaStream_t stream = 0) override;
-  void SoAFunctorNoN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base, FunctorCudaSoA<floatType>* cell2Base,
+  void SoAFunctorNoN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, cudaStream_t stream = 0) override;
+  void SoAFunctorNoN3PairWrapper(FunctorCudaSoA<floatType> *cell1Base, FunctorCudaSoA<floatType> *cell2Base,
                                  cudaStream_t stream) override;
 
-  void SoAFunctorN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, cudaStream_t stream = 0) override;
-  void SoAFunctorN3PairWrapper(FunctorCudaSoA<floatType>* cell1Base, FunctorCudaSoA<floatType>* cell2Base,
+  void SoAFunctorN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, cudaStream_t stream = 0) override;
+  void SoAFunctorN3PairWrapper(FunctorCudaSoA<floatType> *cell1Base, FunctorCudaSoA<floatType> *cell2Base,
                                cudaStream_t stream) override;
 
-  void LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int reqThreads,
-                                       unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
-                                       size_t* cellSizes, cudaStream_t stream) override;
+  void LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, unsigned int reqThreads,
+                                       unsigned int cids_size, unsigned int *cids, unsigned int cellSizes_size,
+                                       size_t *cellSizes, cudaStream_t stream) override;
 
-  void LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int reqThreads,
-                                     unsigned int cids_size, unsigned int* cids, unsigned int cellSizes_size,
-                                     size_t* cellSizes, cudaStream_t stream) override;
+  void LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, unsigned int reqThreads,
+                                     unsigned int cids_size, unsigned int *cids, unsigned int cellSizes_size,
+                                     size_t *cellSizes, cudaStream_t stream) override;
 
-  void CellVerletTraversalNoN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int ncells,
-                                      unsigned int clusterSize, unsigned int others_size, unsigned int* other_ids,
+  void CellVerletTraversalNoN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, unsigned int ncells,
+                                      unsigned int clusterSize, unsigned int others_size, unsigned int *other_ids,
                                       cudaStream_t stream) override;
 
-  void CellVerletTraversalN3Wrapper(FunctorCudaSoA<floatType>* cell1Base, unsigned int ncells, unsigned int clusterSize,
-                                    unsigned int others_size, unsigned int* other_ids, cudaStream_t stream) override;
+  void CellVerletTraversalN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, unsigned int ncells, unsigned int clusterSize,
+                                    unsigned int others_size, unsigned int *other_ids, cudaStream_t stream) override;
 
-  void loadLinkedCellsOffsets(unsigned int offsets_size, int* offsets) override;
+  void loadLinkedCellsOffsets(unsigned int offsets_size, int *offsets) override;
 
  private:
   int numRequiredBlocks(int n) { return ((n - 1) / _num_threads) + 1; }

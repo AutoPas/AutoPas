@@ -8,7 +8,8 @@
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
 
 VerletClusterCellsTraversalVersusDirectSumTest::VerletClusterCellsTraversalVersusDirectSumTest()
-    : _directSum(getBoxMin(), getBoxMax(), getCutoff()), _verletCluster(getBoxMin(), getBoxMax(), getCutoff()) {}
+    : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.2),
+      _verletCluster(getBoxMin(), getBoxMax(), getCutoff(), 0.2, 64) {}
 
 double VerletClusterCellsTraversalVersusDirectSumTest::fRand(double fMin, double fMax) const {
   double f = static_cast<double>(rand()) / RAND_MAX;
@@ -52,10 +53,10 @@ void VerletClusterCellsTraversalVersusDirectSumTest::test(unsigned long numMolec
   double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(
-      getCutoff(), eps, sig, shift, getBoxMin(), getBoxMax());
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcVC(
-      getCutoff(), eps, sig, shift, getBoxMin(), getBoxMax());
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(getCutoff(), eps, sig,
+                                                                                               shift);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcVC(getCutoff(), eps, sig,
+                                                                                               shift);
 
   autopas::VerletClusterCellsTraversal<
       FMCell, autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals>, dataLayout,
@@ -67,11 +68,11 @@ void VerletClusterCellsTraversalVersusDirectSumTest::test(unsigned long numMolec
       traversalDS(&funcDS);
 
   funcDS.initTraversal();
-  _directSum.iteratePairwise(&funcDS, &traversalDS, useNewton3);
+  _directSum.iteratePairwise(&funcDS, &traversalDS);
   funcDS.endTraversal(useNewton3);
 
   funcVC.initTraversal();
-  _verletCluster.iteratePairwise(&funcVC, &traversalVerletCluster, useNewton3);
+  _verletCluster.iteratePairwise(&funcVC, &traversalVerletCluster);
   funcVC.endTraversal(useNewton3);
 
   _verletCluster.deleteDummyParticles();
@@ -114,7 +115,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_100) {
   // empirically determined and set near the minimal possible value
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1e-13;
+  double rel_err_tolerance = 1e-12;
 
   test<false, autopas::DataLayoutOption::aos>(numMolecules, rel_err_tolerance);
 }
@@ -264,7 +265,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testAoS_100Globals) {
   // empirically determined and set near the minimal possible value
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1e-13;
+  double rel_err_tolerance = 1e-11;
 
   test<false, autopas::DataLayoutOption::aos, true>(numMolecules, rel_err_tolerance);
 }
@@ -296,7 +297,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testN3AoS_100Globals) {
   // empirically determined and set near the minimal possible value
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1e-13;
+  double rel_err_tolerance = 1e-11;
 
   test<true, autopas::DataLayoutOption::aos, true>(numMolecules, rel_err_tolerance);
 }
@@ -349,7 +350,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCuda_100Globals) {
   // empirically determined and set near the minimal possible value
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1e-13;
+  double rel_err_tolerance = 1e-11;
 
   test<false, autopas::DataLayoutOption::cuda, true>(numMolecules, rel_err_tolerance);
 }
@@ -381,7 +382,7 @@ TEST_F(VerletClusterCellsTraversalVersusDirectSumTest, testCudaN3_100Globals) {
   // empirically determined and set near the minimal possible value
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1e-13;
+  double rel_err_tolerance = 1e-11;
 
   test<true, autopas::DataLayoutOption::cuda, true>(numMolecules, rel_err_tolerance);
 }
