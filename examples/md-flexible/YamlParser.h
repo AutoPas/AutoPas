@@ -27,11 +27,16 @@ class YamlParser {
 
   /**Prints Configuration of Simulation:
    * */
+   //@todo output besser strukturieren(object generation am ende, ...)
   void printConfig();
   /**Calculates the total number of Particles generated
    * @return particlestotal
    * */
   size_t particlesTotal();
+
+  /**Calculate the required Box for the AutoPas Object
+   * */
+  void calcAutopasBox();
 
   const set<ContainerOption> &getContainerOptions() const;
 
@@ -108,7 +113,8 @@ class YamlParser {
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
-
+  std::array<double,3> BoxMin={0.,0.,0.};
+  std::array<double,3> BoxMax={0.,0.,0.};
   // Simulation Options:
   double cutoff = 1.;
   FunctorOption functorOption = FunctorOption::lj12_6;

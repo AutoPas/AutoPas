@@ -50,7 +50,9 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas)
 #pragma omp parallel
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto v = iter->getV();
-    auto m = iter->getMass();
+    //@todo anpassen zur PCL
+    auto m= 1.0;
+//    auto m = iter->getMass();
     auto f = iter->getF();
     iter->setOldf(f);
     v = autopas::ArrayMath::mulScalar(v, particle_delta_t);
@@ -69,7 +71,9 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas)
   startCalc = std::chrono::high_resolution_clock::now();
 #pragma omp parallel
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    auto m = iter->getMass();
+      //@todo anpassen zur PCL
+//    auto m = iter->getMass();
+auto m= 1.0;
     auto force = iter->getF();
     auto old_force = iter->getOldf();
     auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force, old_force)), particle_delta_t / (2 * m));

@@ -216,26 +216,29 @@ void YamlParser::printConfig() {
        << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
 
   cout << setw(valueOffset) << left << "Object Generation:" << endl;
-
+  int i=1;
   for (auto c : CubeGridObjects) {
-    int i = 1;
-    cout << setw(valueOffset) << left << "Cube-Grid Nr: " << i << ":  " << endl;
+      cout << "-Cube Grid Nr " << i <<  ":  " << endl;
     c.printConfig();
+    i++;
   }
+  i=1;
   for (auto c : CubeGaussObjects) {
-    int i = 1;
-    cout << setw(valueOffset) << left << "Cube-Gauss Nr: " << i << ":  " << endl;
+      cout << "-Cube Gauss Nr" << i <<  ":  " << endl;
     c.printConfig();
+    i++;
   }
+  i=1;
   for (auto c : CubeUniformObjects) {
-    int i = 1;
-    cout << setw(valueOffset) << left << "Cube-Uniform Nr: " << i << ":  " << endl;
+      cout << "-Cube Uniform Nr " << i <<  ":  " << endl;
     c.printConfig();
+    i++;
   }
+  i=1;
   for (auto c : SphereObjects) {
-    int i = 1;
-    cout << setw(valueOffset) << left << "Sphere Nr: " << i << ":  " << endl;
+    cout << "-Sphere Nr " << i <<  ":  " << endl;
     c.printConfig();
+    i++;
   }
 
   cout << setw(valueOffset) << left << "Allowed traversals"
@@ -277,6 +280,24 @@ size_t YamlParser::particlesTotal() {
     particlesTotal += e.particlesTotal();
   }
   return particlesTotal;
+}
+
+void YamlParser::calcAutopasBox() {
+    std::vector<double> XCoordinates;
+    std::vector<double> YCoordinates;
+    std::vector<double> ZCoordinates;
+
+    for (auto e : CubeGridObjects) {
+//get array of (vector of x), (vector of y), (vector of z)
+
+    }
+    for (auto e : CubeGaussObjects) {
+    }
+    for (auto e : CubeUniformObjects) {
+    }
+    for (auto e : SphereObjects) {
+    }
+    //search for smallest and biggest X,Y,Z coordinates and set BoxMin and BoxMax
 }
 
 const set<ContainerOption> &YamlParser::getContainerOptions() const { return containerOptions; }
