@@ -1,7 +1,8 @@
 #include "ParticleClassLibrary.h"
 
 //@todo entferne unused functions
-ParticleClassLibrary::ParticleClassLibrary(std::map<unsigned long, double> &sigma, std::map<unsigned long, double> &epsilon,
+ParticleClassLibrary::ParticleClassLibrary(std::map<unsigned long, double> &sigma,
+                                           std::map<unsigned long, double> &epsilon,
                                            std::map<unsigned long, double> &mass)
     : Epsilon(epsilon), Sigma(sigma), Mass(mass) {}
 ParticleClassLibrary::ParticleClassLibrary(double &epsilon, double &sigma, double mass, int numberOfParticles) {
@@ -20,8 +21,7 @@ ParticleClassLibrary::ParticleClassLibrary(double &epsilon, double &sigma, doubl
 
 ParticleClassLibrary::ParticleClassLibrary() = default;
 
-ParticleClassLibrary::ParticleClassLibrary(const ParticleClassLibrary &pcl)
-    = default;
+ParticleClassLibrary::ParticleClassLibrary(const ParticleClassLibrary &pcl) = default;
 
 double ParticleClassLibrary::get24Epsilon(unsigned long i) { return 24 * Epsilon.at(i); }
 
