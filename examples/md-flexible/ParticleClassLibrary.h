@@ -5,19 +5,16 @@
 #include <vector>
 #include "autopas/particles/Particle.h"
 
-using namespace std;
-using namespace autopas;
-
 class ParticleClassLibrary {
  public:
-  ParticleClassLibrary(map<unsigned long, double> &sigma, map<unsigned long, double> &epsilon,
-                       map<unsigned long, double> &mass);
+  ParticleClassLibrary(std::map<unsigned long, double> &sigma, std::map<unsigned long, double> &epsilon,
+                       std::map<unsigned long, double> &mass);
   ParticleClassLibrary(double &epsilon, double &sigma, double mass, int numberOfParticles);
   ParticleClassLibrary();
 
   ParticleClassLibrary(const ParticleClassLibrary &pcl);
 
-  ~ParticleClassLibrary() {}
+  ~ParticleClassLibrary() = default;
   /**Getter for Particle Epsilon*24
    * @param Particle
    * @return Epsilon*24
@@ -33,7 +30,10 @@ class ParticleClassLibrary {
    * @param Particle
    * @return Sigma
    */
-  double getMass(Particle i);
+  template <class Particle>
+  double getMass(const Particle &i) {
+    return Mass.at(i.getID());
+  }
 
   /**Returns (Epsilon*24) of the MixingRule of 2 Particles
    * @param Particles; i and j
@@ -47,7 +47,7 @@ class ParticleClassLibrary {
   double mixingSS(unsigned long i, unsigned long j);
 
  private:
-  map<unsigned long, double> Epsilon;
-  map<unsigned long, double> Sigma;
-  map<unsigned long, double> Mass;
+  std::map<unsigned long, double> Epsilon;
+  std::map<unsigned long, double> Sigma;
+  std::map<unsigned long, double> Mass;
 };

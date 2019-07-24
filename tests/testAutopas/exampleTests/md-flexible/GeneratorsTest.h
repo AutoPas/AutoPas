@@ -23,9 +23,10 @@ class GeneratorsTest : public AutoPasTestBase {
         cutoff{1.},
         boxmin{{0., 0., 0.}},
         boxmax{{5., 5., 5.}},
-        PCL{ParticleClassLibrary(epsilon, sigma, 1.0, 800)},
-        functor{autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
-                                   autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)} {}
+        PCL{ParticleClassLibrary(epsilon, sigma, 1.0, 800)}
+  // functor{autopas::LJFunctor<Particle, FPCell,
+  //                           autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)}
+  {}
 
   void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
 
@@ -36,6 +37,5 @@ class GeneratorsTest : public AutoPasTestBase {
   array<double, 3> boxmin;
   array<double, 3> boxmax;
   ParticleClassLibrary PCL;
-  autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both, true>
-      functor;
+  // autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> functor;
 };
