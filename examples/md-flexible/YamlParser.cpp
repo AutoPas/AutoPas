@@ -4,7 +4,8 @@
 
 #include "YamlParser.h"
 
-void YamlParser::parseInput(string &filename) {
+void YamlParser::parseInput(string &filename){
+    using namespace autopas;
   YAML::Node config = YAML::LoadFile(filename);
 
   if (config["container"]) {
@@ -175,6 +176,7 @@ std::string iterableToString(T arr) {
 }
 
 void YamlParser::printConfig() {
+    using namespace std;
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
        << ":  " << iterableToString(containerOptions) << endl;
@@ -198,6 +200,16 @@ void YamlParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Functor"
        << ":  ";
+    cout << setw(valueOffset) << left << "Allowed traversals"
+         << ":  " << iterableToString(traversalOptions) << endl;
+    cout << setw(valueOffset) << left << "Tuning Strategy"
+         << ":  " << autopas::utils::StringUtils::to_string(tuningStrategyOption) << endl;
+    cout << setw(valueOffset) << left << "Tuning Interval"
+         << ":  " << tuningInterval << endl;
+    cout << setw(valueOffset) << left << "Tuning Samples"
+         << ":  " << tuningSamples << endl;
+    cout << setw(valueOffset) << left << "Tuning Max evidence"
+         << ":  " << tuningMaxEvidence << endl;
   switch (functorOption) {
     case FunctorOption::lj12_6: {
       cout << "Lennard-Jones (12-6)" << endl;
@@ -208,7 +220,6 @@ void YamlParser::printConfig() {
       break;
     }
   }
-
   cout << setw(valueOffset) << left << "Newton3"
        << ":  " << iterableToString(newton3Options) << endl;
 
@@ -217,11 +228,24 @@ void YamlParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Cell size factor"
        << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
+    cout << setw(valueOffset) << left << "Particles Mass"
+         << ":  " << mass << endl;
+    cout << setw(valueOffset) << left
+         << "Particles Epsilon"  //@todo verändern wenn verschieden ParticleType in der Simulation sind
+         << ":  " << epsilon << endl;
+    cout << setw(valueOffset) << left
+         << "Particles Sigma"  //@todo verändern wenn verschieden ParticleType in der Simulation sind
+         << ":  " << sigma << endl;
+    cout << setw(valueOffset) << left << "delta_t"
+         << ":  " << delta_t << endl;
+    cout << setw(valueOffset) << left << "Iterations"  // iterations * delta_t = time_end;
+         << ":  " << iterations << endl << endl;
+
 
   cout << setw(valueOffset) << left << "Object Generation:" << endl;
   int i=1;
   for (auto c : CubeGridObjects) {
-      cout << "-Cube Grid Nr " << i <<  ":  " << endl;
+      cout << "-Cube Grid Nr " << i <<  ":  " <<endl;
     c.printConfig();
     i++;
   }
@@ -233,7 +257,7 @@ void YamlParser::printConfig() {
   }
   i=1;
   for (auto c : CubeUniformObjects) {
-      cout << "-Cube Uniform Nr " << i <<  ":  " << endl;
+      cout << "-Cube Uniform Nr " << i <<  ":  "  << endl;
     c.printConfig();
     i++;
   }
@@ -244,28 +268,7 @@ void YamlParser::printConfig() {
     i++;
   }
 
-  cout << setw(valueOffset) << left << "Allowed traversals"
-       << ":  " << iterableToString(traversalOptions) << endl;
-  cout << setw(valueOffset) << left << "Particles Mass"
-       << ":  " << mass << endl;
-  cout << setw(valueOffset) << left
-       << "Particles Epsilon"  //@todo verändern wenn verschieden ParticleType in der Simulation sind
-       << ":  " << epsilon << endl;
-  cout << setw(valueOffset) << left
-       << "Particles Sigma"  //@todo verändern wenn verschieden ParticleType in der Simulation sind
-       << ":  " << sigma << endl;
-  cout << setw(valueOffset) << left << "delta_t"
-       << ":  " << delta_t << endl;
-  cout << setw(valueOffset) << left << "Iterations"  // iterations * delta_t = time_end;
-       << ":  " << iterations << endl;
-  cout << setw(valueOffset) << left << "Tuning Strategy"
-       << ":  " << autopas::utils::StringUtils::to_string(tuningStrategyOption) << endl;
-  cout << setw(valueOffset) << left << "Tuning Interval"
-       << ":  " << tuningInterval << endl;
-  cout << setw(valueOffset) << left << "Tuning Samples"
-       << ":  " << tuningSamples << endl;
-  cout << setw(valueOffset) << left << "Tuning Max evidence"
-       << ":  " << tuningMaxEvidence << endl;
+
 }
 
 size_t YamlParser::particlesTotal() {

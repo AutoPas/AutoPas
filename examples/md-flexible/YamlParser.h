@@ -10,8 +10,6 @@
 #include <limits>
 #include <array>
 #include <algorithm>
-using namespace std;
-using namespace autopas;
 class YamlParser {
   /**
    * @file MDFlexParser.h
@@ -124,6 +122,7 @@ class YamlParser {
   double verletSkinRadius = .2;
   std::array<double,3> BoxMin={0.,0.,0.};
   std::array<double,3> BoxMax={0.,0.,0.};
+
   // Simulation Options:
   double cutoff = 1.;
   FunctorOption functorOption = FunctorOption::lj12_6;
@@ -133,6 +132,7 @@ class YamlParser {
   double sigma = 1.0;
   double delta_t = 0.001;
   double mass = 1.0;
+
   // Object Generation:
   std::vector<CubeGrid> CubeGridObjects = {};
   std::vector<CubeGauss> CubeGaussObjects = {};

@@ -36,7 +36,7 @@ class CubeGrid {
       cout << setw(valueOffset) << left << "Number of Particles"
            << ":  " << (particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]) << endl;
     cout << setw(valueOffset) << left << "Initial velocities"
-         << ":  " << ArrayUtils::to_string(velocity) << endl;
+         << ":  " << ArrayUtils::to_string(velocity) << endl << endl;
   }
 
  private:
@@ -84,7 +84,7 @@ class CubeGauss {
     cout << setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << numParticles << endl;
     cout << setw(valueOffset) << left << "Initial velocities"
-         << ":  " << ArrayUtils::to_string(velocity) << endl;
+         << ":  " << ArrayUtils::to_string(velocity) << endl << endl;
   }
 
  private:
@@ -121,7 +121,7 @@ class CubeUniform {
     cout << setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << numParticles << endl;
     cout << setw(valueOffset) << left << "Initial velocities"
-         << ":  " << ArrayUtils::to_string(velocity) << endl;
+         << ":  " << ArrayUtils::to_string(velocity) << endl << endl;
   }
 
  private:
@@ -196,7 +196,7 @@ class Sphere {
     cout << setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << this->particlesTotal() << endl;
     cout << setw(valueOffset) << left << "Initial velocities"
-         << ":  " << ArrayUtils::to_string(velocity) << endl;
+         << ":  " << ArrayUtils::to_string(velocity) << endl << endl;
   }
 
  private:
