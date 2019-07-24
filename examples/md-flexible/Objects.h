@@ -24,7 +24,7 @@ class CubeGrid {
     return {center[0]-0.5*particlesPerDim[0]*particleSpacing,center[1]-0.5*particlesPerDim[1]*particleSpacing,center[1]-0.5*particlesPerDim[1]*particleSpacing};
   }
     std::array<double,3> getBoxMax(){
-        return {center[0]+0.5*particlesPerDim[0]*particleSpacing,center[1]-0.5*particlesPerDim[1]*particleSpacing,center[1]+0.5*particlesPerDim[1]*particleSpacing};
+        return {center[0]+0.5*particlesPerDim[0]*particleSpacing,center[1]+0.5*particlesPerDim[1]*particleSpacing,center[1]+0.5*particlesPerDim[1]*particleSpacing};
     }
 
 
@@ -75,7 +75,6 @@ class CubeGauss {
     std::array<double,3> getBoxMax(){
         return {center[0]+0.5*boxLength[0],center[1]+0.5*boxLength[1],center[2]+0.5*boxLength[2]};
     }
-
 
   void printConfig() {
     cout << setw(valueOffset) << left << "Distribution-Mean"
@@ -179,10 +178,10 @@ class Sphere {
   }
 
   std::array<double,3> getBoxMin(){
-      return {center[0]-((double)radius+1)*particleSpacing,center[1]-((double)radius+1)*particleSpacing,center[2]-((double)radius+1)*particleSpacing};
+      return {center[0]-((double)radius)*particleSpacing,center[1]-((double)radius)*particleSpacing,center[2]-((double)radius)*particleSpacing};
   }
     std::array<double,3> getBoxMax(){
-        return {center[0]+((double)radius+1)*particleSpacing,center[1]+((double)radius+1)*particleSpacing,center[2]+((double)radius+1)*particleSpacing};
+        return {center[0]+((double)radius)*particleSpacing,center[1]+((double)radius)*particleSpacing,center[2]+((double)radius)*particleSpacing};
     }
 
   void printConfig() {

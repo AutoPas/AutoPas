@@ -11,6 +11,7 @@
 #include <array>
 #include <algorithm>
 using namespace std;
+using namespace autopas;
 class YamlParser {
   /**
    * @file MDFlexParser.h

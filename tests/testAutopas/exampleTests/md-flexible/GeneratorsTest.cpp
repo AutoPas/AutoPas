@@ -28,11 +28,11 @@ void GeneratorsTest::MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &au
 
 TEST_F(GeneratorsTest, Gauss) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   Particle dummyParticle;
-  Generator::CubeGauss(autoPas, {0., 0., 0.},{5.,5.,5.}, 100, 5, 2,{0.,0.,0.});
+  autoPas.setBoxMax({20.,20.,20.});
+  autoPas.setBoxMin({0.,0.,0.});
+  autoPas.init();
+  Generator::CubeGauss(autoPas, {0., 0., 0.},{20.,20.,20.}, 100, 5, 2,{0.,0.,0.});
   ASSERT_EQ(autoPas.getNumberOfParticles(), 100);
 }
 
@@ -40,6 +40,9 @@ TEST_F(GeneratorsTest, CubeGenerator) {
   //@tood check: Fabio wieso zeigt paraview ein extra Particle an?
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
   unsigned long particlesPerDim = 5;
+    autoPas.setBoxMax({5.,5.,5.});
+    autoPas.setBoxMin({0.,0.,0.});
+    autoPas.init();
   std::array<size_t, 3> cube = {particlesPerDim, particlesPerDim, particlesPerDim};
   Generator::CubeGrid(autoPas,{0.,0.,0.}, cube, .5,{0.,0.,0.});
   string CubeGeneration = "CubeGeneration.vtu";
@@ -80,9 +83,9 @@ TEST_F(GeneratorsTest, MolSimTask) {
 
 TEST_F(GeneratorsTest, Sphere) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
+    autoPas.setBoxMax({11.,11.,11.});
+    autoPas.setBoxMin({-11.,-11.,-11.});
+    autoPas.init();
   Generator::Sphere(autoPas, {0., 0., 0.}, 10, .3, 0);
   cout << "Number of particles generated " << autoPas.getNumberOfParticles() << endl;
   string SphereGeneration = "SphereGeneration.vtu";
@@ -90,3 +93,33 @@ TEST_F(GeneratorsTest, Sphere) {
   cout << "Vtk output in Autopas/tests/testAutopas" << endl;
   // check if no Particle is outside of radius range:
 }
+
+TEST_F(GeneratorsTest,MultipleObjectGeneration){
+    auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
+    autoPas.setBoxMax(parser.getBoxMax());
+    autoPas.setBoxMin(parser.getBoxMin());
+    autoPas.init();
+    auto CubeGrid(parser.getCubeGrid());
+    auto CubeGauss(parser.getCubeGauss());
+    auto CubeUniform(parser.getCubeUniform());
+    auto Sphere(parser.getSphere());
+    for (auto C : CubeGrid) {
+        Generator::CubeGrid(autoPas,C.getBoxMin(), C.getParticlesPerDim(), C.getParticleSpacing(), C.getVelocity());
+    }
+    for (auto C : CubeGauss) {
+        Generator::CubeGauss(autoPas,C.getBoxMin(),C.getBoxMax(), C.getNumParticles(), C.getDistributionMean(),
+                                                    C.getDistributionStdDev(), C.getVelocity());
+    }
+    for (auto C : CubeUniform) {
+        Generator::CubeRandom(autoPas,C.getBoxMin(),C.getBoxMax(), C.getNumParticles(), C.getVelocity());
+    }
+    for (auto S : Sphere) {
+        Generator::Sphere(autoPas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), S.getId(), S.getVelocity());
+    }
+    string SphereGeneration = "MultipleGeneration.vtu";
+    writeVTKFile<decltype(autoPas)>(SphereGeneration, autoPas.getNumberOfParticles(), autoPas);
+    //check VTK FILE
+    ASSERT_TRUE(true);
+}
+
+

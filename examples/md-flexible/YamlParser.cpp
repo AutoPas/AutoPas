@@ -131,7 +131,7 @@ void YamlParser::parseInput(string &filename) {
       if (it->first.as<std::string>() == "CubeGauss") {
         CubeGauss C(it->second["numberOfParticles"].as<size_t>(),{it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
                                                                   it->second["box-length"][2].as<double>()}, it->second["distribution-mean"].as<double>(),
-                    it->second["distribution-stddeviation"].as<double>(),
+                    it->second["distribution-stddev"].as<double>(),
                     {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
                      it->second["velocity"][2].as<double>()},{it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                                                               it->second["center"][2].as<double>()});
@@ -324,8 +324,14 @@ void YamlParser::calcAutopasBox() {
         YcoordMax.emplace_back(c.getBoxMax()[1]);
         ZcoordMax.emplace_back(c.getBoxMax()[2]);
     }
-    BoxMin = {*std::min_element(XcoordMin.begin(),XcoordMin.end()),*std::min_element(YcoordMin.begin(),YcoordMin.end()),*std::min_element(ZcoordMin.begin(),ZcoordMin.end())};
-    BoxMax = {*std::max_element(XcoordMax.begin(),XcoordMax.end()),*std::max_element(YcoordMax.begin(),YcoordMax.end()),*std::max_element(ZcoordMax.begin(),ZcoordMax.end())};
+    if(not XcoordMin.empty()) {
+        BoxMin = {*std::min_element(XcoordMin.begin(), XcoordMin.end()),
+                  *std::min_element(YcoordMin.begin(), YcoordMin.end()),
+                  *std::min_element(ZcoordMin.begin(), ZcoordMin.end())};
+        BoxMax = {*std::max_element(XcoordMax.begin(), XcoordMax.end()),
+                  *std::max_element(YcoordMax.begin(), YcoordMax.end()),
+                  *std::max_element(ZcoordMax.begin(), ZcoordMax.end())};
+    }
 }
 
 const set<ContainerOption> &YamlParser::getContainerOptions() const { return containerOptions; }

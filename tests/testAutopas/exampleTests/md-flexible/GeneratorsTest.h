@@ -8,9 +8,14 @@
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
+#include "../../../../examples/md-flexible/Objects.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "../../../../examples/md-flexible/YamlParser.h"
+#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
+#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
+#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 class GeneratorsTest : public AutoPasTestBase {
  public:
   GeneratorsTest()
@@ -22,7 +27,10 @@ class GeneratorsTest : public AutoPasTestBase {
         boxmax{{5., 5., 5.}},
         PCL{ParticleClassLibrary(epsilon, sigma, 1.0, 800)},
         functor{autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
-                                   autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)} {}
+                                   autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)},
+        parser{YamlParser()},
+        filename{"testParsing.yaml"}
+        {parser.parseInput(filename);}
 
   void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
 
@@ -64,4 +72,6 @@ class GeneratorsTest : public AutoPasTestBase {
   ParticleClassLibrary PCL;
   autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both, true>
       functor;
+    YamlParser parser;
+    std::string filename;
 };
