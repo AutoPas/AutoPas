@@ -80,7 +80,7 @@ void Generator::CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, con
                           size_t numParticles, double distributionMean, double distributionStdDev,
                           const std::array<double, 3> &velocity) {
     Particle dummyParticle;
-  GaussianGenerator::fillWithParticles(autopas,BoxMax,BoxMin, numParticles, dummyParticle, distributionMean, distributionStdDev,
+  GaussianGenerator::fillWithParticles(autopas,BoxMin,BoxMax, numParticles, dummyParticle, distributionMean, distributionStdDev,
                                        velocity);
 }
 
@@ -107,7 +107,7 @@ void Generator::Sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const 
                   ArrayMath::add(center, ArrayMath::mulScalar(ArrayMath::mul(posDelta, multipliers),
                                                               particleSpacing));  // actual coordinates of new particle
               double disCheck = L2Norm(ArrayMath::sub(posVector, center));
-              if (disCheck <= (double)(radius + 1) * particleSpacing) {
+              if (disCheck <= (double)(radius+1) * particleSpacing) {
                 Particle p(posVector, velocity, id);
                 autopas.addParticle(p);
                 id++;

@@ -47,7 +47,6 @@ class ParticleClassLibrary {
   double mixingSS(unsigned long i, unsigned long j);
 
  private:
-  //@TODO static wäre vllt besser ???
   map<unsigned long, double> Epsilon;
   map<unsigned long, double> Sigma;
   map<unsigned long, double> Mass;

@@ -169,8 +169,6 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
     _autopas.setBoxMin(_parser.getBoxMin());
     _autopas.init();
 
-
-
     for (auto C : CubeGrid) {
     Generator::CubeGrid<Particle,ParticleCell>(_autopas,C.getBoxMin(), C.getParticlesPerDim(), C.getParticleSpacing(), C.getVelocity());
   }

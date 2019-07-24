@@ -13,8 +13,6 @@ constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> haloBoxMin{0. - skin - cutoff, 0. - skin - cutoff, 0. - skin - cutoff};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
 constexpr std::array<double, 3> haloBoxMax{10. + skin + cutoff, 10. + skin + cutoff, 10. + skin + cutoff};
-constexpr double eps = 1.;
-constexpr double sigma = 1.;
 constexpr double shift = 0.1;
 constexpr std::array<double, 3> zeroArr = {0., 0., 0.};
 
