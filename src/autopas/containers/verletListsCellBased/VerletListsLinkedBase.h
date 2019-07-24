@@ -169,11 +169,10 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                      const std::array<double, 3> &higherCorner,
-                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
-                                                      bool incSearchRegion = false) override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, true);
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**
