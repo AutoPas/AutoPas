@@ -23,6 +23,8 @@ ParticleClassLibrary::ParticleClassLibrary() = default;
 
 ParticleClassLibrary::ParticleClassLibrary(const ParticleClassLibrary &pcl) = default;
 
+ParticleClassLibrary& ParticleClassLibrary::operator=(const ParticleClassLibrary &pcl) = default;
+
 double ParticleClassLibrary::get24Epsilon(unsigned long i) { return 24 * Epsilon.at(i); }
 
 double ParticleClassLibrary::getSSigma(unsigned long i) {

@@ -14,6 +14,8 @@ class ParticleClassLibrary {
 
   ParticleClassLibrary(const ParticleClassLibrary &pcl);
 
+  ParticleClassLibrary& operator=(const ParticleClassLibrary &plc);
+
   ~ParticleClassLibrary() = default;
   /**Getter for Particle Epsilon*24
    * @param Particle
