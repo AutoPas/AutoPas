@@ -27,7 +27,7 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   double shift = 0.0;
   autopas::MoleculeLJ::setEpsilon(eps);
   autopas::MoleculeLJ::setSigma(sig);
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numMolecules; i++) {
     universalMap.emplace(i, 1.0);
   }

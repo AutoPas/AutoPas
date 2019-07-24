@@ -288,7 +288,7 @@ void testSimulationLoop(testingTuple options) {
     autoPas.addParticle(particle2);
   }
   unsigned long numMolecules = autoPas.getNumberOfParticles();
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numMolecules; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -516,7 +516,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
       }
     }
   }
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 2; i++) {
     universalMap.emplace(i, 1.0);
   }

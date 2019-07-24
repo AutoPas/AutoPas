@@ -93,7 +93,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   // copy cells
   FPCell cell1NoAVX(cell1AVX);
   FPCell cell2NoAVX(cell2AVX);
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numParticles; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -152,7 +152,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
 
   // copy cells
   FPCell cellNoAVX(cellAVX);
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numParticles; i++) {
     universalMap.emplace(i, 1.0);
   }

@@ -32,7 +32,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autopas::MoleculeLJ::setEpsilon(epsilon);
   autopas::MoleculeLJ::setSigma(sigma);
   unsigned long numParticles = autoPas.getNumberOfParticles();
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numParticles; i++) {
     universalMap.emplace(i, 1.0);
   }
