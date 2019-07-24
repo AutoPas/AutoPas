@@ -4,7 +4,299 @@
 
 #include "YamlParser.h"
 
-void YamlParser::parseInput(string &filename){
+bool YamlParser::parseInput(int argc, char **argv) {
+    bool displayHelp = false;
+    int option, option_index;
+    static struct option long_options[] = {{"filename",required_argument,nullptr, 'Y'},
+                                           {"container", required_argument, nullptr, 'c'},
+                                           {"selector-strategy", required_argument, nullptr, 'y'},
+                                           {"cutoff", required_argument, nullptr, 'C'},
+                                           {"cell-size-factor", required_argument, nullptr, 'a'},
+                                           {"data-layout", required_argument, nullptr, 'd'},
+                                           {"functor", required_argument, nullptr, 'f'},
+                                           {"help", no_argument, nullptr, 'h'},
+                                           {"iterations", required_argument, nullptr, 'i'},
+                                           {"no-flops", no_argument, nullptr, 'F'},
+                                           {"newton3", required_argument, nullptr, '3'},
+                                           {"delta_t", required_argument, nullptr, 'D'},
+                                           {"traversal", required_argument, nullptr, 't'},
+                                           {"tuning-interval", required_argument, nullptr, 'I'},
+                                           {"tuning-samples", required_argument, nullptr, 'S'},
+                                           {"tuning-max-evidence", required_argument, nullptr, 'E'},
+                                           {"tuning-strategy", required_argument, nullptr, 'T'},
+                                           {"log-level", required_argument, nullptr, 'l'},
+                                           {"log-file", required_argument, nullptr, 'L'},
+                                           {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
+                                           {"verlet-skin-radius", required_argument, nullptr, 'r'},
+                                           {"vtk", required_argument, nullptr, 'w'},
+                                           {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
+    string strArg;
+    //Yaml Parsing file parameter muss als erstes übergeben werden
+    bool yamlparsed=false;
+    option = getopt_long(argc, argv, "", long_options, &option_index);
+    if(option== 'Y'){
+        filename = optarg;
+        try {
+            YAML::LoadFile(filename);
+            yamlparsed=true;
+        } catch (const exception &) {
+            cerr << "Error parsing Yaml File: " << filename << ", check filename or yaml Syntax" << endl;
+        }
+    } else {
+        cout << "[INFO] No Yaml Parsing File specified" << endl << endl;
+    }
+    if(yamlparsed){
+    parseYamlFile();
+    }
+    optind=1;
+    while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
+
+        if (optarg != nullptr) strArg = optarg;
+        transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+        switch (option) {
+            case 'Y':{
+                break;
+            }
+            case 'D': {
+                try {
+                    delta_t = stod(strArg);
+                } catch (const exception &) {
+                    cerr << "Error parsing epsilon value: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case '3': {
+                newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
+                if (newton3Options.empty()) {
+                    cerr << "Unknown Newton3 option: " << strArg << endl;
+                    cerr << "Please use 'enabled' or 'disabled'!" << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'c': {
+                // overwrite default argument
+                containerOptions = autopas::utils::StringUtils::parseContainerOptions(strArg, false);
+                if (containerOptions.empty()) {
+                    cerr << "Unknown container option: " << strArg << endl;
+                    cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'VCells' or 'VCluster'!" << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'C': {
+                try {
+                    cutoff = stod(strArg);
+                } catch (const exception &) {
+                    cerr << "Error parsing cutoff Radius: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'a': {
+                cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
+                if (cellSizeFactors->isEmpty()) {
+                    cerr << "Error parsing cell size factors: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'd': {
+                dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(strArg);
+                if (dataLayoutOptions.empty()) {
+                    cerr << "Unknown data layouts: " << strArg << endl;
+                    cerr << "Please use 'AoS' or 'SoA'!" << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'f': {
+                if (strArg.find("avx") != string::npos) {
+                    functorOption = lj12_6_AVX;
+                } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+                    functorOption = lj12_6;
+                } else {
+                    cerr << "Unknown functor: " << strArg << endl;
+                    cerr << "Please use 'Lennard-Jones' or 'Lennard-Jones-AVX'" << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'F': {
+                measureFlops = false;
+                break;
+            }
+            case 'h': {
+                displayHelp = true;
+                break;
+            }
+            case 'i': {
+                try {
+                    iterations = stoul(strArg);
+                    if (iterations < 1) {
+                        cerr << "IterationNumber of iterations has to be a positive integer!" << endl;
+                        displayHelp = true;
+                    }
+                } catch (const exception &) {
+                    cerr << "Error parsing number of iterations: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'I': {
+                try {
+                    tuningInterval = (unsigned int)stoul(strArg);
+                    if (tuningInterval < 1) {
+                        cerr << "Tuning interval has to be a positive integer!" << endl;
+                        displayHelp = true;
+                    }
+                } catch (const exception &) {
+                    cerr << "Error parsing tuning interval: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'y': {
+                selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
+                if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
+                    cerr << "Unknown Selector Strategy: " << strArg << endl;
+                    cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'l': {
+                switch (strArg[0]) {
+                    case 't': {
+                        logLevel = spdlog::level::trace;
+                        break;
+                    }
+                    case 'd': {
+                        logLevel = spdlog::level::debug;
+                        break;
+                    }
+                    case 'i': {
+                        logLevel = spdlog::level::info;
+                        break;
+                    }
+                    case 'w': {
+                        logLevel = spdlog::level::warn;
+                        break;
+                    }
+                    case 'e': {
+                        logLevel = spdlog::level::err;
+                        break;
+                    }
+                    case 'c': {
+                        logLevel = spdlog::level::critical;
+                        break;
+                    }
+                    case 'o': {
+                        logLevel = spdlog::level::off;
+                        break;
+                    }
+                    default: {
+                        cerr << "Unknown Log Level: " << strArg << endl;
+                        cerr << "Please use 'trace', 'debug', 'info', 'warning', 'error', 'critical' or 'off'." << endl;
+                        displayHelp = true;
+                    }
+                }
+                break;
+            }
+            case 'L': {
+                logFileName = strArg;
+                break;
+            }
+            case 'S': {
+                try {
+                    tuningSamples = (unsigned int)stoul(strArg);
+                    if (tuningSamples < 1) {
+                        cerr << "Tuning samples has to be a positive integer!" << endl;
+                        displayHelp = true;
+                    }
+                } catch (const exception &) {
+                    cerr << "Error parsing number of tuning samples: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'E': {
+                try {
+                    tuningMaxEvidence = (unsigned int)stoul(strArg);
+                    if (tuningMaxEvidence < 1) {
+                        cerr << "Tuning max evidence has to be a positive integer!" << endl;
+                        displayHelp = true;
+                    }
+                } catch (const exception &) {
+                    cerr << "Error parsing number of tuning max evidence: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 't': {
+                traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
+                if (traversalOptions.empty()) {
+                    cerr << "Unknown Traversal: " << strArg << endl;
+                    cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'T': {
+                tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(strArg);
+                if (tuningStrategyOption == autopas::TuningStrategyOption(-1)) {
+                    cerr << "Unknown Tuning Strategy: " << strArg << endl;
+                    cerr << "Please use 'full-search' or 'bayesian-search'!" << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'v': {
+                try {
+                    verletRebuildFrequency = (unsigned int)stoul(strArg);
+                } catch (const exception &) {
+                    cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            case 'w': {
+                writeVTK = strArg;
+                break;
+            }
+            case 'r': {
+                try {
+                    verletSkinRadius = stod(strArg);
+                } catch (const exception &) {
+                    cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+                    displayHelp = true;
+                }
+                break;
+            }
+            default: {
+                // error message handled by getopt
+                displayHelp = true;
+            }
+        }
+    }
+    if (displayHelp) {
+        cout << "Usage: " << argv[0] << endl;
+        for (auto o : long_options) {
+            if (o.name == nullptr) continue;
+            cout << "    --" << setw(valueOffset + 2) << left << o.name;
+            if (o.has_arg) cout << "option";
+            cout << endl;
+        }
+        return false;
+    }
+//    parseYamlFile();
+    return true;
+}
+
+
+
+void YamlParser::parseYamlFile() {
     using namespace autopas;
   YAML::Node config = YAML::LoadFile(filename);
 
@@ -117,6 +409,7 @@ void YamlParser::parseInput(string &filename){
   }
 
   if (config["Objects"]) {
+      CubeGridObjects={};
     for (YAML::const_iterator it = config["Objects"].begin(); it != config["Objects"].end(); ++it) {
       if (it->first.as<std::string>() == "CubeGrid") {
         CubeGrid C({it->second["particles-per-Dim"][0].as<unsigned long>(),
@@ -197,9 +490,6 @@ void YamlParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Data Layout"
        << ":  " << iterableToString(dataLayoutOptions) << endl;
-
-  cout << setw(valueOffset) << left << "Functor"
-       << ":  ";
     cout << setw(valueOffset) << left << "Allowed traversals"
          << ":  " << iterableToString(traversalOptions) << endl;
     cout << setw(valueOffset) << left << "Tuning Strategy"
@@ -210,6 +500,8 @@ void YamlParser::printConfig() {
          << ":  " << tuningSamples << endl;
     cout << setw(valueOffset) << left << "Tuning Max evidence"
          << ":  " << tuningMaxEvidence << endl;
+    cout << setw(valueOffset) << left << "Functor"
+         << ":  ";
   switch (functorOption) {
     case FunctorOption::lj12_6: {
       cout << "Lennard-Jones (12-6)" << endl;

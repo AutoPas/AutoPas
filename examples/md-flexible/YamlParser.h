@@ -10,6 +10,8 @@
 #include <limits>
 #include <array>
 #include <algorithm>
+#include <getopt.h>
+
 class YamlParser {
   /**
    * @file MDFlexParser.h
@@ -27,14 +29,16 @@ class YamlParser {
 
     const array<double, 3> &getBoxMax() const;
 
+    bool parseInput(int argc, char **argv);
+
+
     /**Parses the Input for the simulation
      * @param filename
      * */
-  void parseInput(std::string &filename);
+    void parseYamlFile();
 
   /**Prints Configuration of Simulation:
    * */
-   //@todo output besser strukturieren(object generation am ende, ...)
   void printConfig();
   /**Calculates the total number of Particles generated
    * @return particlestotal
@@ -102,7 +106,7 @@ class YamlParser {
  private:
   static constexpr size_t valueOffset = 32;
   // defaults:
-
+  std::string filename = "DefaultConfig.yaml";
   // AutoPas options:
   std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
   std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
@@ -121,7 +125,7 @@ class YamlParser {
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
   std::array<double,3> BoxMin={0.,0.,0.};
-  std::array<double,3> BoxMax={0.,0.,0.};
+  std::array<double,3> BoxMax={10.,10.,10.};
 
   // Simulation Options:
   double cutoff = 1.;
@@ -134,7 +138,7 @@ class YamlParser {
   double mass = 1.0;
 
   // Object Generation:
-  std::vector<CubeGrid> CubeGridObjects = {};
+  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10,10,10},1.,{0.,0.,0.},{5.,5.,5.})};
   std::vector<CubeGauss> CubeGaussObjects = {};
   std::vector<CubeUniform> CubeUniformObjects = {};
   std::vector<Sphere> SphereObjects = {};

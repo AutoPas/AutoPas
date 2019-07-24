@@ -30,7 +30,7 @@ class GeneratorsTest : public AutoPasTestBase {
                                    autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)},
         parser{YamlParser()},
         filename{"testParsing.yaml"}
-        {parser.parseInput(filename);}
+        { parser.parseYamlFile();}
 
   void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
 

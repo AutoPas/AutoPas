@@ -24,10 +24,9 @@
 int main(int argc, char **argv) {
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
   YamlParser parser;
-  //@todo parsing file über die command line übergeben? und default parsingFile definieren
-  //@todo catch exception and errors for parser
-  std::string filename = "parsingFile.yaml";
-  parser.parseInput(filename);
+    if (not parser.parseInput(argc, argv)) {
+        exit(-1);
+    }
   parser.printConfig();
   simulation.initialize(parser);
   simulation.simulate();

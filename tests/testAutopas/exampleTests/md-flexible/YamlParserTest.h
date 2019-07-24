@@ -12,7 +12,7 @@
 
 class YamlParserTest  :public AutoPasTestBase {
 public:
-    YamlParserTest() :AutoPasTestBase() ,parser{YamlParser()} {parser.parseInput(filename);}
+    YamlParserTest() :AutoPasTestBase() ,parser{YamlParser()} { parser.parseYamlFile();}
 
 protected:
     YamlParser parser;

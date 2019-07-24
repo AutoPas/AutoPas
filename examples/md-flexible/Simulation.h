@@ -182,7 +182,6 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   for (auto S : Sphere) {
     Generator::Sphere<Particle,ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), S.getId(), S.getVelocity());
   }
-
 }
 
 template <class Particle, class ParticleCell>
