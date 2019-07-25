@@ -89,8 +89,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   // copy cells
   autopas::FullParticleCell<ParticleType> cell1NoCuda(cell1Cuda);
   autopas::FullParticleCell<ParticleType> cell2NoCuda(cell2Cuda);
-  ParticleClassLibrary PCL = ParticleClassLibrary(_epsilon, _sigma, 1.0, numParticles);
-  ParticleClassLibrary PCL2 = ParticleClassLibrary(_epsilon, _sigma, 1.0, numParticles2);
+  ParticleClassLibrary PCL = ParticleClassLibrary(_epsilon, _sigma, 1.0, 1);
+  ParticleClassLibrary PCL2 = ParticleClassLibrary(_epsilon, _sigma, 1.0, 1);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, false>
       ljFunctorNoCuda(_cutoff, PCL, 0.0);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, false>
@@ -137,7 +137,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 
   // copy cells
   autopas::FullParticleCell<ParticleType> cellNoCuda(cellCuda);
-  ParticleClassLibrary PCL = ParticleClassLibrary(_epsilon, _sigma, 1.0, numParticles);
+  ParticleClassLibrary PCL = ParticleClassLibrary(_epsilon, _sigma, 1.0, 1);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, false>
       ljFunctorNoCuda(_cutoff, PCL, 0.0);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, false>
