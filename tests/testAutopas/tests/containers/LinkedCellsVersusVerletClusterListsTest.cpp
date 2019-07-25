@@ -12,7 +12,7 @@ template <autopas::DataLayoutOption dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance,
                                                    autopas::TraversalOption traversalOption,
                                                    std::array<double, 3> boxMax) {
-  Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 2};
+  Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 4};
   Linked _linkedCells{getBoxMin(), boxMax, getCutoff(), 1. /*cell size factor*/};
 
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
@@ -35,6 +35,7 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+
   _verletLists.rebuildNeighborLists(verletTraversal.get());
   _verletLists.iteratePairwise(verletTraversal.get());
   _linkedCells.iteratePairwise(&traversalLinkedLJ);
@@ -142,34 +143,6 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersTest2000) {
                                                 autopas::TraversalOption::verletClusters, boxMax);
     test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
                                                 autopas::TraversalOption::verletClusters, boxMax);
-  }
-}
-
-TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTestNotWorking) {
-  unsigned long numMolecules = 1503;
-
-  // empirically determined and set near the minimal possible value
-  // i.e. if something changes, it may be needed to increase value
-  // (and OK to do so)
-  double rel_err_tolerance = 1.5e-10;
-
-  for (auto boxMax : {getBoxMaxBig()}) {
-    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
-                                               autopas::TraversalOption::verletClustersColoring, boxMax);
-  }
-}
-
-TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTestWorking) {
-  unsigned long numMolecules = 1502;
-
-  // empirically determined and set near the minimal possible value
-  // i.e. if something changes, it may be needed to increase value
-  // (and OK to do so)
-  double rel_err_tolerance = 1.5e-10;
-
-  for (auto boxMax : {getBoxMaxBig()}) {
-    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
-                                               autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
 

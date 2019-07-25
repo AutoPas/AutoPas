@@ -118,7 +118,8 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
 
     const auto gridSideLength = clusterList.getGridSideLength();
     const auto cutoff = clusterList.getCutoff();
-    const auto gridsPerColoringCell = std::ceil(cutoff / gridSideLength);
+    const auto skin = clusterList.getSkin();
+    const auto gridsPerColoringCell = std::ceil((cutoff + skin) / gridSideLength);
     std::array<unsigned long, 3> coloringCellsPerDim{};
     for (int i = 0; i < 3; i++) {
       coloringCellsPerDim[i] =
