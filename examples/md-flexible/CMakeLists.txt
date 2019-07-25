@@ -54,5 +54,6 @@ add_test(
     COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/measurePerf.sh md-flexible -silent
     CONFIGURATIONS checkExamples
 )
-# add_library(libyaml ../../libs/yaml-cpp) add the executable to checkExamples as dependency
+
+# add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)

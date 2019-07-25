@@ -15,7 +15,7 @@ using ::testing::_;
  */
 TEST_F(C04SoATraversalTest, testTraversal) {
   std::array<size_t, 3> edgeLength = {3, 3, 3};
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 4; i++) {
     universalMap.emplace(i, 1.0);
   }

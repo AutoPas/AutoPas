@@ -116,12 +116,11 @@ class ParticleContainerInterface {
    * @param lowerCorner Lower corner of the region
    * @param higherCorner Higher corner of the region
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
-   * @param incSearchRegion Whether to increase the search space (e.g. include more cells)
    * @return Iterator to iterate over all particles in a specific region.
    */
   virtual ParticleIteratorWrapper<Particle> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool incSearchRegion = false) = 0;
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
   /**
    * Iterates over all particle pairs in the container.

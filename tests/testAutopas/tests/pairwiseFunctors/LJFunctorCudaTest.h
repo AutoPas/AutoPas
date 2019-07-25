@@ -72,8 +72,8 @@ class LJFunctorCudaTest : public AutoPasTestBase {
   bool particleEqual(Particle &p1, Particle &p2);
 
   const double _cutoff;
-  const double _epsilon;
-  const double _sigma;
+  double _epsilon;
+  double _sigma;
   const std::array<double, 3> _lowCorner;
   const std::array<double, 3> _highCorner;
 };

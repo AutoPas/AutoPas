@@ -11,7 +11,6 @@
 #include <array>
 #include <algorithm>
 #include <getopt.h>
-
 class YamlParser {
   /**
    * @file MDFlexParser.h
@@ -25,9 +24,9 @@ class YamlParser {
    * */
   YamlParser() = default;
 
-    const array<double, 3> &getBoxMin() const;
+    const std::array<double, 3> &getBoxMin() const;
 
-    const array<double, 3> &getBoxMax() const;
+    const std::array<double, 3> &getBoxMax() const;
 
     bool parseInput(int argc, char **argv);
 
@@ -49,19 +48,19 @@ class YamlParser {
    * */
   void calcAutopasBox();
 
-  const set<ContainerOption> &getContainerOptions() const;
+  const std::set<autopas::ContainerOption> &getContainerOptions() const;
 
-  const set<DataLayoutOption> &getDataLayoutOptions() const;
+  const std::set<autopas::DataLayoutOption> &getDataLayoutOptions() const;
 
-  SelectorStrategyOption getSelectorStrategy() const;
+    autopas::SelectorStrategyOption getSelectorStrategy() const;
 
-  const set<TraversalOption> &getTraversalOptions() const;
+  const std::set<autopas::TraversalOption> &getTraversalOptions() const;
 
-  TuningStrategyOption getTuningStrategyOption() const;
+    autopas::TuningStrategyOption getTuningStrategyOption() const;
 
-  const set<Newton3Option> &getNewton3Options() const;
+  const std::set<autopas::Newton3Option> &getNewton3Options() const;
 
-  const NumberSet<double> &getCellSizeFactors() const;
+  const autopas::NumberSet<double> &getCellSizeFactors() const;
 
   double getCutoff() const;
 
@@ -79,9 +78,9 @@ class YamlParser {
 
   unsigned int getTuningMaxEvidence() const;
 
-  const string &getWriteVtk() const;
+  const std::string &getWriteVtk() const;
 
-  const string &getLogFileName() const;
+  const std::string &getLogFileName() const;
 
   unsigned int getVerletRebuildFrequency() const;
 
@@ -95,13 +94,13 @@ class YamlParser {
 
   double getMass() const;
 
-  const vector<CubeGrid> &getCubeGrid() const;
+  const std::vector<CubeGrid> &getCubeGrid() const;
 
-  const vector<CubeGauss> &getCubeGauss() const;
+  const std::vector<CubeGauss> &getCubeGauss() const;
 
-  const vector<CubeUniform> &getCubeUniform() const;
+  const std::vector<CubeUniform> &getCubeUniform() const;
 
-  const vector<Sphere> &getSphere() const;
+  const std::vector<Sphere> &getSphere() const;
 
  private:
   static constexpr size_t valueOffset = 32;

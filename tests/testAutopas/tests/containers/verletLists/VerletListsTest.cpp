@@ -508,7 +508,7 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
   unsigned long numParticles = verletLists.getNumParticles();
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numParticles + 1; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -535,7 +535,7 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
   RandomGenerator::fillWithParticles(verletLists1, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
   RandomGenerator::fillWithParticles(verletLists2, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
   unsigned long numParticles = verletLists1.getNumParticles();
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numParticles; i++) {
     universalMap.emplace(i, 1.0);
   }

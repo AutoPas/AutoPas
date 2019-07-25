@@ -21,7 +21,6 @@ add_subdirectory(sph)
 add_subdirectory(sph-mpi)
 add_subdirectory(sphDiagramGeneration)
 add_subdirectory(sph-traversals)
-add_subdirectory(cluster-test)
 
 add_subdirectory(basic-cuda)
 add_subdirectory(benchmark-cuda)

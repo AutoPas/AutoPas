@@ -10,9 +10,8 @@
 constexpr double cutoff = 1.;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
-constexpr std::array<double, 3> haloBoxMin{0. - skin - cutoff, 0. - skin - cutoff, 0. - skin - cutoff};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
-constexpr std::array<double, 3> haloBoxMax{10. + skin + cutoff, 10. + skin + cutoff, 10. + skin + cutoff};
+
 constexpr double shift = 0.1;
 constexpr std::array<double, 3> zeroArr = {0., 0., 0.};
 
@@ -286,7 +285,7 @@ void testSimulationLoop(testingTuple options) {
     autoPas.addParticle(particle2);
   }
   unsigned long numMolecules = autoPas.getNumberOfParticles();
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numMolecules; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -338,117 +337,6 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
       throw;
     }
   }
-}
-
-/**
- * Tests the addition and iteration over particles.
- * @param containerOption
- */
-void testAdditionAndIteration(testingTuple options) {
-  // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas;
-
-  auto containerOption = std::get<0>(std::get<0>(options));
-  auto traversalOption = std::get<1>(std::get<0>(options));
-  auto dataLayoutOption = std::get<1>(options);
-  auto newton3Option = std::get<2>(options);
-  auto cellSizeOption = std::get<3>(options);
-
-  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(std::set<autopas::TraversalOption>{traversalOption});
-  autoPas.setAllowedDataLayouts(std::set<autopas::DataLayoutOption>{dataLayoutOption});
-  autoPas.setAllowedNewton3Options(std::set<autopas::Newton3Option>{newton3Option});
-  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
-
-  defaultInit(autoPas);
-
-  auto getPossible1DPositions = [&](double min, double max) -> auto {
-    // ensure that all particles are at most skin away from halo!
-    return std::array<double, 6>{min - cutoff, min, min + skin, max - skin, max, max + cutoff - 1e-3};
-  };
-  size_t id = 0;
-  for (auto x : getPossible1DPositions(boxMin[0], boxMax[0])) {
-    for (auto y : getPossible1DPositions(boxMin[1], boxMax[1])) {
-      for (auto z : getPossible1DPositions(boxMin[2], boxMax[2])) {
-        std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id);
-        ++id;
-        // add the two particles!
-        if (autopas::utils::inBox(pos, boxMin, boxMax)) {
-          autoPas.addParticle(p);
-        } else {
-          autoPas.addOrUpdateHaloParticle(p);
-        }
-      }
-    }
-  }
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      ++count;
-      EXPECT_TRUE(iter->isOwned());
-    }
-
-    EXPECT_EQ(count, 3 * 3 * 3);
-  }
-
-  // check number of halo particles
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-      ++count;
-      EXPECT_FALSE(iter->isOwned());
-    }
-
-    EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
-  }
-
-  // check number of particles
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
-      ++count;
-    }
-    EXPECT_EQ(count, 6 * 6 * 6);
-  }
-
-  // check number of halo particles for region iterator
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly);
-         iter.isValid(); ++iter) {
-      ++count;
-      EXPECT_FALSE(iter->isOwned());
-    }
-
-    EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
-  }
-
-  // check number of particles for region iterator
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned);
-         iter.isValid(); ++iter) {
-      ++count;
-    }
-    EXPECT_EQ(count, 6 * 6 * 6);
-  }
-
-  // check number of owned particles for region iterator
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::ownedOnly);
-         iter.isValid(); ++iter) {
-      ++count;
-    }
-
-    EXPECT_EQ(count, 3 * 3 * 3);
-  }
-}
-
-TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIteratorTestNormal) {
-  auto options = GetParam();
-  testAdditionAndIteration(options);
 }
 
 using ::testing::Combine;
@@ -514,7 +402,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
       }
     }
   }
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 2; i++) {
     universalMap.emplace(i, 1.0);
   }

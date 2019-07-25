@@ -200,24 +200,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                      const std::array<double, 3> &higherCorner,
-                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
-                                                      bool incSearchRegion = false) override {
-    size_t startIndex;
-    // this is needed when used through verlet lists since particles can move over cell borders.
-    // only lower corner needed since we increase the upper corner anyways.
-    if (incSearchRegion) {
-      startIndex = this->_cellBlock.get1DIndexOfPosition(ArrayMath::subScalar(lowerCorner, 1.0));
-    } else {
-      startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
-    }
-    auto stopIndex = this->_cellBlock.get1DIndexOfPosition(higherCorner);
-
-    auto startIndex3D =
-        utils::ThreeDimensionalMapping::oneToThreeD(startIndex, this->_cellBlock.getCellsPerDimensionWithHalo());
-    auto stopIndex3D =
-        utils::ThreeDimensionalMapping::oneToThreeD(stopIndex, this->_cellBlock.getCellsPerDimensionWithHalo());
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    // We increase the search region by skin, as particles can move over cell borders.
+    auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(ArrayMath::addScalar(higherCorner, this->getSkin()));
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);

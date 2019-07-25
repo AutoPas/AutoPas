@@ -10,7 +10,6 @@
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 
-using namespace std;
 
 template <class AutoPasTemplate>
 class TimeDiscretization {
@@ -39,11 +38,13 @@ template <class AutoPasTemplate>
 long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
+#ifdef AUTOPAS_OPENMP
 #pragma omp parallel
+#endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto v = iter->getV();
-    //@todo anpassen zur PCL
-    auto m= 1.0;
+      //@todo anpassen zur PCL
+      auto m = iter->getMass();
     auto f = iter->getF();
     iter->setOldf(f);
     v = autopas::ArrayMath::mulScalar(v, particle_delta_t);
@@ -60,7 +61,9 @@ template <class AutoPasTemplate>
 long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
+#ifdef AUTOPAS_OPENMP
 #pragma omp parallel
+#endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       //@todo anpassen zur PCL
     auto m = iter->getMass();

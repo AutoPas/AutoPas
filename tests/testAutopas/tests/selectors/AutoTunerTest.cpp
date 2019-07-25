@@ -18,7 +18,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int maxSamples = 2;
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 100; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -45,6 +45,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        c18                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c01                         (AoS <=> SoA, noNewton3)             = 2
   //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        c04SoA                      (SoA, newton3 <=> noNewton3)         = 2
   //                        c01-combined-SoA            (SoA, noNewton3)                     = 1
   //                        c04-combined-SoA    with (SoA, newton3 <=> noNewton3)            = 2
   // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3) = 4
@@ -52,13 +53,14 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        verlet-c18                  (AoS, newton3 <=> noNewton3)         = 2
   //                        verlet-c01                  (AoS, noNewton3)                     = 1
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
+  //                        verlet-clusters-coloring    (AoS, newton3 <=> noNewton3)         = 2
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                                                                                    --------
-  //                                                                                          40
+  //                                                                                          42
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 40 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 42 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 53 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 55 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

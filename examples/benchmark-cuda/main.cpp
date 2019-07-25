@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <iostream>
+#include "../md-flexible/ParticleClassLibrary.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
@@ -79,8 +80,8 @@ int main(int argc, char **argv) {
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
-
-  Func func(cutoff, epsilon, sigma, 0.0);
+  ParticleClassLibrary PCL = ParticleClassLibrary(epsilon, sigma, 1.0, 10000);
+  Func func(cutoff, PCL, 0.0);
 
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::aos, false> traversalAoS(&func);
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, false> traversalSoA(&func);

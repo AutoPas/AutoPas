@@ -36,7 +36,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
   unsigned long numParticles = PARTICLES_PER_DIM * PARTICLES_PER_DIM;
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numParticles; i++) {
     universalMap.emplace(i, 1.0);
   }

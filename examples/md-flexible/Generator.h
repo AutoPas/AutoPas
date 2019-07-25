@@ -6,7 +6,7 @@
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "PrintableMolecule.h"
 #include "autopas/AutoPas.h"
-
+#include "autopas/utils/ArrayMath.h"
 /**Class for contructing a container and generating Objects and Shapes filled with Particles
  * */
 class Generator {
@@ -104,9 +104,9 @@ void Generator::Sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const 
             for (int l = -1; l <= 1; l += 2) {                                        // mirror z-coordinate
               std::array<double, 3> multipliers = {(double)i, (double)k, (double)l};  // multipliers for mirroring
               std::array<double, 3> posVector =
-                  ArrayMath::add(center, ArrayMath::mulScalar(ArrayMath::mul(posDelta, multipliers),
+                      autopas::ArrayMath::add(center, autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(posDelta, multipliers),
                                                               particleSpacing));  // actual coordinates of new particle
-              double disCheck = L2Norm(ArrayMath::sub(posVector, center));
+              double disCheck = L2Norm(autopas::ArrayMath::sub(posVector, center));
               if (disCheck <= (double)(radius+1) * particleSpacing) {
                 Particle p(posVector, velocity, id);
                 autopas.addParticle(p);

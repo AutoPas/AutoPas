@@ -9,7 +9,7 @@
 #include "testingHelpers/commonTypedefs.h"
 
 void LJFunctorTest::testAoSNoGlobals(bool newton3) {
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 2; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -65,7 +65,7 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
 
 void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
   // test is for the soa functors the forces are calculated correctly
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 2; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -188,7 +188,7 @@ TEST_F(LJFunctorTest, testSoAFunctorNoGlobals) {
 }
 
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 2; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -216,7 +216,7 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
 }
 
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 2; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -290,7 +290,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
   unsigned long numP = additionalParticlesToVerletNumber + 2;
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < numP; i++) {
     universalMap.emplace(i, 1.0);
   }
@@ -460,7 +460,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
 
   Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
   Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
-  map<unsigned long, double> universalMap;
+  std::map<unsigned long, double> universalMap;
   for (unsigned long i = 0; i < 4; i++) {
     universalMap.emplace(i, 1.0);
   }

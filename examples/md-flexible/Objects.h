@@ -12,11 +12,11 @@ class CubeGrid {
         velocity(velocity),
         particlesTotal(particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]),center(center) {}
 
-  const array<size_t, 3> &getParticlesPerDim() const { return particlesPerDim; }
+  const std::array<size_t, 3> &getParticlesPerDim() const { return particlesPerDim; }
 
   double getParticleSpacing() const { return particleSpacing; }
 
-  const array<double, 3> &getVelocity() const { return velocity; }
+  const std::array<double, 3> &getVelocity() const { return velocity; }
 
   int getParticlesTotal() const { return particlesTotal; }
 
@@ -28,15 +28,16 @@ class CubeGrid {
     }
 
 
-  void printConfig() {
-    cout << setw(valueOffset) << left << "Particles per dimension"
-         << ":  " << ArrayUtils::to_string(particlesPerDim) << endl;
-    cout << setw(valueOffset) << left << "Particle spacing"
+  void printConfig() {      using namespace std;
+
+      cout << std::setw(valueOffset) << left << "Particles per dimension"
+         << ":  " << autopas::ArrayUtils::to_string(particlesPerDim) << endl;
+    cout << std::setw(valueOffset) << left << "Particle spacing"
          << ":  " << particleSpacing << endl;
-      cout << setw(valueOffset) << left << "Number of Particles"
+      cout << std::setw(valueOffset) << left << "Number of Particles"
            << ":  " << (particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]) << endl;
-    cout << setw(valueOffset) << left << "Initial velocities"
-         << ":  " << ArrayUtils::to_string(velocity) << endl << endl;
+    cout << std::setw(valueOffset) << left << "Initial velocities"
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl << endl;
   }
 
  private:
@@ -67,7 +68,7 @@ class CubeGauss {
 
   double getDistributionStdDev() const { return distributionStdDev; }
 
-  const array<double, 3> &getVelocity() const { return velocity; }
+  const std::array<double, 3> &getVelocity() const { return velocity; }
 
   std::array<double,3> getBoxMin(){
     return {center[0]-0.5*boxLength[0],center[1]-0.5*boxLength[1],center[2]-0.5*boxLength[2]};
@@ -76,15 +77,18 @@ class CubeGauss {
         return {center[0]+0.5*boxLength[0],center[1]+0.5*boxLength[1],center[2]+0.5*boxLength[2]};
     }
 
-  void printConfig() {
-    cout << setw(valueOffset) << left << "Distribution-Mean"
+  void printConfig() {      using namespace std;
+
+      cout << std::setw(valueOffset) << left << "Distribution-Mean"
          << ":  " << distributionMean << endl;
-    cout << setw(valueOffset) << left << "Distribution-StdDev"
+    cout << std::setw(valueOffset) << left << "Distribution-StdDev"
          << ":  " << distributionStdDev << endl;
-    cout << setw(valueOffset) << left << "NumberOfParticles"
+    cout << std::setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << numParticles << endl;
-    cout << setw(valueOffset) << left << "Initial velocities"
-         << ":  " << ArrayUtils::to_string(velocity) << endl << endl;
+      cout << std::setw(valueOffset) << left << "BoxLength"
+           << ":  " << autopas::ArrayUtils::to_string(boxLength) << endl << endl;
+    cout << std::setw(valueOffset) << left << "Initial velocities"
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl << endl;
   }
 
  private:
@@ -105,7 +109,7 @@ class CubeUniform {
 
   size_t getNumParticles() const { return numParticles; }
 
-  const array<double, 3> &getVelocity() const { return velocity; }
+  const std::array<double, 3> &getVelocity() const { return velocity; }
 
     std::array<double,3> getBoxMin(){
         return {center[0]-0.5*boxLength[0],center[1]-0.5*boxLength[1],center[2]-0.5*boxLength[2]};
@@ -116,12 +120,17 @@ class CubeUniform {
     }
 
   void printConfig() {
-    cout << setw(valueOffset) << left << "Center"
-         << ":  " << ArrayUtils::to_string(center) << endl;
-    cout << setw(valueOffset) << left << "NumberOfParticles"
+      using namespace std;
+
+      cout << std::setw(valueOffset) << left << "Center"
+         << ":  " << autopas::ArrayUtils::to_string(center) << endl;
+    cout << std::setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << numParticles << endl;
-    cout << setw(valueOffset) << left << "Initial velocities"
-         << ":  " << ArrayUtils::to_string(velocity) << endl << endl;
+    cout << std::setw(valueOffset) << left << "BoxLength"
+    << ":  " << autopas::ArrayUtils::to_string(boxLength) << endl << endl;
+    cout << std::setw(valueOffset) << left << "Initial velocities"
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl << endl;
+
   }
 
  private:
@@ -159,9 +168,9 @@ class Sphere {
             for (int k = -1; k <= 1; k += 2) {
               for (int l = -1; l <= 1; l += 2) {
                 std::array<double, 3> multipliers = {(double)i, (double)k, (double)l};
-                std::array<double, 3> posVector = ArrayMath::add(
-                    center, ArrayMath::mulScalar(ArrayMath::mul(posDelta, multipliers), particleSpacing));
-                double disCheck = Generator::L2Norm(ArrayMath::sub(posVector, center));
+                std::array<double, 3> posVector = autopas::ArrayMath::add(
+                    center, autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(posDelta, multipliers), particleSpacing));
+                double disCheck = Generator::L2Norm(autopas::ArrayMath::sub(posVector, center));
                 if (disCheck <= (double)(radius + 1) * particleSpacing) {
                   counter++;
                 }
@@ -185,18 +194,19 @@ class Sphere {
     }
 
   void printConfig() {
-    cout << setw(valueOffset) << left << "Center of Sphere"
-         << ":  " << ArrayUtils::to_string(center) << endl;
-    cout << setw(valueOffset) << left << "radius in Particles"
+      using namespace std;
+    cout << std::setw(valueOffset) << left << "Center of Sphere"
+         << ":  " << autopas::ArrayUtils::to_string(center) << endl;
+    cout << std::setw(valueOffset) << left << "radius in Particles"
          << ":  " << radius << endl;
-    cout << setw(valueOffset) << left << "particleSpacing"
+    cout << std::setw(valueOffset) << left << "particleSpacing"
          << ":  " << particleSpacing << endl;
     //        cout << setw(valueOffset) << left << "first Particle in Sphere"
     //             << ":  " << id << endl;
-    cout << setw(valueOffset) << left << "NumberOfParticles"
+    cout << std::setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << this->particlesTotal() << endl;
-    cout << setw(valueOffset) << left << "Initial velocities"
-         << ":  " << ArrayUtils::to_string(velocity) << endl << endl;
+    cout << std::setw(valueOffset) << left << "Initial velocities"
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl << endl;
   }
 
  private:

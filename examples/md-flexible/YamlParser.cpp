@@ -5,6 +5,7 @@
 #include "YamlParser.h"
 
 bool YamlParser::parseInput(int argc, char **argv) {
+    using namespace std;
     bool displayHelp = false;
     int option, option_index;
     static struct option long_options[] = {{"filename",required_argument,nullptr, 'Y'},
@@ -319,9 +320,9 @@ void YamlParser::parseYamlFile() {
   }
   if (config["functor"]) {
     auto strArg = config["functor"].as<std::string>();
-    if (strArg.find("avx") != string::npos) {
+    if (strArg.find("avx") != std::string::npos) {
       this->functorOption = lj12_6_AVX;
-    } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+    } else if (strArg.find("lj") != std::string::npos || strArg.find("lennard-jones") != std::string::npos) {
       this->functorOption = lj12_6;
     }
   }
@@ -629,17 +630,17 @@ void YamlParser::calcAutopasBox() {
     }
 }
 
-const set<ContainerOption> &YamlParser::getContainerOptions() const { return containerOptions; }
+const std::set<autopas::ContainerOption> &YamlParser::getContainerOptions() const { return containerOptions; }
 
-const set<DataLayoutOption> &YamlParser::getDataLayoutOptions() const { return dataLayoutOptions; }
+const std::set<autopas::DataLayoutOption> &YamlParser::getDataLayoutOptions() const { return dataLayoutOptions; }
 
-SelectorStrategyOption YamlParser::getSelectorStrategy() const { return selectorStrategy; }
+autopas::SelectorStrategyOption YamlParser::getSelectorStrategy() const { return selectorStrategy; }
 
-const set<TraversalOption> &YamlParser::getTraversalOptions() const { return traversalOptions; }
+const std::set<autopas::TraversalOption> &YamlParser::getTraversalOptions() const { return traversalOptions; }
 
-TuningStrategyOption YamlParser::getTuningStrategyOption() const { return tuningStrategyOption; }
+autopas::TuningStrategyOption YamlParser::getTuningStrategyOption() const { return tuningStrategyOption; }
 
-const set<Newton3Option> &YamlParser::getNewton3Options() const { return newton3Options; }
+const std::set<autopas::Newton3Option> &YamlParser::getNewton3Options() const { return newton3Options; }
 
 const autopas::NumberSet<double> &YamlParser::getCellSizeFactors() const { return *cellSizeFactors; }
 
@@ -659,9 +660,9 @@ unsigned int YamlParser::getTuningSamples() const { return tuningSamples; }
 
 unsigned int YamlParser::getTuningMaxEvidence() const { return tuningMaxEvidence; }
 
-const string &YamlParser::getWriteVtk() const { return writeVTK; }
+const std::string &YamlParser::getWriteVtk() const { return writeVTK; }
 
-const string &YamlParser::getLogFileName() const { return logFileName; }
+const std::string &YamlParser::getLogFileName() const { return logFileName; }
 
 unsigned int YamlParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
@@ -675,18 +676,18 @@ double YamlParser::getDeltaT() const { return delta_t; }
 
 double YamlParser::getMass() const { return mass; }
 
-const vector<CubeGrid> &YamlParser::getCubeGrid() const { return CubeGridObjects; }
+const std::vector<CubeGrid> &YamlParser::getCubeGrid() const { return CubeGridObjects; }
 
-const vector<CubeGauss> &YamlParser::getCubeGauss() const { return CubeGaussObjects; }
+const std::vector<CubeGauss> &YamlParser::getCubeGauss() const { return CubeGaussObjects; }
 
-const vector<CubeUniform> &YamlParser::getCubeUniform() const { return CubeUniformObjects; }
+const std::vector<CubeUniform> &YamlParser::getCubeUniform() const { return CubeUniformObjects; }
 
-const vector<Sphere> &YamlParser::getSphere() const { return SphereObjects; }
+const std::vector<Sphere> &YamlParser::getSphere() const { return SphereObjects; }
 
-const array<double, 3> &YamlParser::getBoxMin() const {
+const std::array<double, 3> &YamlParser::getBoxMin() const {
     return BoxMin;
 }
 
-const array<double, 3> &YamlParser::getBoxMax() const {
+const std::array<double, 3> &YamlParser::getBoxMax() const {
     return BoxMax;
 }
