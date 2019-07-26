@@ -82,8 +82,8 @@ class LJFunctor
     }
 #if defined(AUTOPAS_CUDA)
     // @TODO: FIXME: pass particle class lib instead of constant eps and sig
-    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _PCL.get24Epsilon(0) /* epsilon24 */,
-                                                 _PCL.getSSigma(0) /* sigmasquare */, _shift6);
+    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _PCLibrary->get24Epsilon(0) /* epsilon24 */,
+                                                 _PCLibrary->getSSigma(0) /* sigmasquare */, _shift6);
     _cudawrapper.loadConstants(&constants);
 #endif
   }
