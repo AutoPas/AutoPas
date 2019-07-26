@@ -143,67 +143,6 @@ TEST_F(SoATest, SoATestAppend) {
   EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
 }
 
-TEST_F(SoATest, SoATestAppendViewStart) {
-  // default soa using autopas::Particle
-  using autopas::Particle;
-  std::array<autopas::SoA<Particle::SoAArraysType>, 2> soaBuffer;
-
-  soaBuffer[0].push<Particle::AttributeNames::id>(2);
-  soaBuffer[0].push<Particle::AttributeNames::posX>(0.3);
-  soaBuffer[0].push<Particle::AttributeNames::posY>(0.1);
-  soaBuffer[0].push<Particle::AttributeNames::posZ>(0.5);
-  soaBuffer[0].push<Particle::AttributeNames::forceX>(-0.2);
-  soaBuffer[0].push<Particle::AttributeNames::forceY>(0.7);
-  soaBuffer[0].push<Particle::AttributeNames::forceZ>(0.07);
-
-  EXPECT_EQ(soaBuffer[0].getNumParticles(), 1);
-  EXPECT_EQ(soaBuffer[1].getNumParticles(), 0);
-
-  // Set viewStart to one => buffer looks empty
-  soaBuffer[0].setViewStart(1);
-
-  // Append to empty buffer
-  soaBuffer[1].append(soaBuffer[0]);
-  EXPECT_EQ(soaBuffer[0].getNumParticles(), 0);
-  // number of particles shouldn't change
-  EXPECT_EQ(soaBuffer[1].getNumParticles(), 0);
-
-  // reset viewStart
-  soaBuffer[0].setViewStart(0);
-
-  // Append
-  soaBuffer[1].append(soaBuffer[0]);
-  // Check, whether append still works if viewStart is set for the destination buffer.
-  soaBuffer[1].setViewStart(1);
-  soaBuffer[1].append(soaBuffer[0]);
-  soaBuffer[1].setViewStart(0);
-  EXPECT_EQ(soaBuffer[0].getNumParticles(), 1);
-  EXPECT_EQ(soaBuffer[1].getNumParticles(), 2);
-
-  soaBuffer[1].setViewStart(1);
-
-  // Append to filled buffer
-  soaBuffer[0].append(soaBuffer[1]);
-  EXPECT_EQ(soaBuffer[0].getNumParticles(), 2);
-  EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
-}
-
-TEST_F(SoATest, SoATestClear) {
-  // default soa using autopas::Particle
-  using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
-
-  EXPECT_EQ(soa.getNumParticles(), 0);
-
-  soa.resizeArrays(2);
-
-  EXPECT_EQ(soa.getNumParticles(), 2);
-
-  soa.clear();
-
-  EXPECT_EQ(soa.getNumParticles(), 0);
-}
-
 TEST_F(SoATest, SoATestSwap) {
   // default soa using autopas::Particle
   using autopas::Particle;
