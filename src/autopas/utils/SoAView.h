@@ -33,9 +33,10 @@ class SoAView {
    */
   SoAView(SoA<SoAArraysType> *soa, size_t startIndex, size_t endIndex)
       : _soa(soa), _startIndex(startIndex), _endIndex(endIndex) {
-    if (not(soa->getNumParticles() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
-      utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
-    }
+    // TODO: #318
+    //   if (not(soa->getNumParticles() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
+    //      utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
+    //   }
   }
 
   /**
