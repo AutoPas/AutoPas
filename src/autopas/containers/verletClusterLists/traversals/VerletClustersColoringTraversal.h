@@ -152,15 +152,15 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
     Particle *clusterStart, Particle *neighborClusterStart) {
   constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
   const bool isClusterInteractionWithItself = neighborClusterStart == clusterStart;
-  for (int i = 0; i < clusterSize; i++) {
+  for (size_t i = 0; i < clusterSize; i++) {
     if (isClusterInteractionWithItself) {
       // Always use newton 3 for interactions within one cluster.
-      for (int j = i + 1; j < clusterSize; j++) {
+      for (size_t j = i + 1; j < clusterSize; j++) {
         _functor->AoSFunctor(*(clusterStart + i), *(neighborClusterStart + j), true);
       }
     } else {
       // Calculate interactions between two different clusters.
-      for (int j = 0; j < clusterSize; j++) {
+      for (size_t j = 0; j < clusterSize; j++) {
         _functor->AoSFunctor(*(clusterStart + i), *(neighborClusterStart + j), useNewton3);
       }
     }

@@ -55,7 +55,7 @@ class VerletClustersTraversal : public TraversalInterface,
       auto currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
-      for (int i = 0; i < clusterSize; i++) {
+      for (size_t i = 0; i < clusterSize; i++) {
         cell.addParticle(*(clusterStart + i));
       }
       SoA<typename Particle::SoAArraysType> &soa = _clusterSoAs[currentClusterIndex];
@@ -79,12 +79,12 @@ class VerletClustersTraversal : public TraversalInterface,
       auto currentClusterIndex = aosToSoaMap.at(clusterStart);
       FullParticleCell<Particle> cell{};
       cell.reserve(clusterSize);
-      for (int i = 0; i < clusterSize; i++) {
+      for (size_t i = 0; i < clusterSize; i++) {
         cell.addParticle(*(clusterStart + i));
       }
       SoA<typename Particle::SoAArraysType> &soa = _clusterSoAs[currentClusterIndex];
       _functor->SoAExtractor(cell, soa);
-      for (int i = 0; i < clusterSize; i++) {
+      for (size_t i = 0; i < clusterSize; i++) {
         *(clusterStart + i) = cell[i];
       }
     };
@@ -130,8 +130,8 @@ class VerletClustersTraversal : public TraversalInterface,
 
   void traverseSingleClusterAoS(Particle *clusterStart) {
     constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
-    for (int i = 0; i < clusterSize; i++) {
-      for (int j = i + 1; j < clusterSize; j++) {
+    for (size_t i = 0; i < clusterSize; i++) {
+      for (size_t j = i + 1; j < clusterSize; j++) {
         Particle *iParticle = clusterStart + i;
         Particle *jParticle = clusterStart + j;
         _functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
@@ -162,8 +162,8 @@ class VerletClustersTraversal : public TraversalInterface,
 
   void traverseNeighborClustersAoS(Particle *firstClusterStart, Particle *secondClusterStart) {
     constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
-    for (int i = 0; i < clusterSize; i++) {
-      for (int j = 0; j < clusterSize; j++) {
+    for (size_t i = 0; i < clusterSize; i++) {
+      for (size_t j = 0; j < clusterSize; j++) {
         Particle *iParticle = firstClusterStart + i;
         Particle *jParticle = secondClusterStart + j;
         _functor->AoSFunctor(*iParticle, *jParticle, useNewton3);

@@ -40,7 +40,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * The number of particles in a full cluster.
    */
-  static constexpr int clusterSize = 4;
+  static constexpr size_t clusterSize = 4;
 
   /**
    * Constructor of the VerletClusterLists class.
@@ -493,7 +493,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param jRest If the last cluster is not full: The number of particles in the last cluster. 0 otherwise.
    * @param distXYsqr The distance between the i-th grid and the j-th grid in the xy-plane.
    */
-  void addAllJClustersAsNeighborIfInRange(FullParticleCell<Particle> &iGrid, index_t iClusterIndex, int iClusterSize,
+  void addAllJClustersAsNeighborIfInRange(FullParticleCell<Particle> &iGrid, index_t iClusterIndex, size_t iClusterSize,
                                           std::vector<std::vector<Particle *>> &iNeighbors,
                                           FullParticleCell<Particle> &jGrid, index_t jSize, int jRest,
                                           double distXYsqr) {
@@ -558,7 +558,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         auto &grid = _clusters[VerletClusterMaths::index1D(x, y, _cellsPerDim)];
         index_t rest = grid.numParticles() % clusterSize;
         if (rest > 0) {
-          for (int i = rest; i < clusterSize; i++) {
+          for (size_t i = rest; i < clusterSize; i++) {
             Particle p = Particle();
             p.setR({2 * x * _cutoff, 2 * y * _cutoff, 2 * _boxMax[2] + 2 * i * _cutoff});
             grid.addParticle(p);
