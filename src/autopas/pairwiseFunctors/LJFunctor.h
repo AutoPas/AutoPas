@@ -82,7 +82,7 @@ class LJFunctor
     }
 #if defined(AUTOPAS_CUDA)
     // @TODO: FIXME: pass particle class lib instead of constant eps and sig
-    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, 1 /* epsilon24 */, 1 /* sigmasquare */, _shift6);
+    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _PCLibrary->get24Epsilon(0) /* epsilon24 */, _PCLibrary->getSSigma(0) /* sigmasquare */, _shift6);
     _cudawrapper.loadConstants(&constants);
 #endif
   }
@@ -98,8 +98,8 @@ class LJFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    double _sigmasquare = _PCLibrary->mixingSS(i.getID(), j.getID());
-    double _epsilon24 = _PCLibrary->mixing24E(i.getID(), j.getID());
+    double _sigmasquare = _PCLibrary->mixingSS(i.getTypeId(), j.getTypeId());
+    double _epsilon24 = _PCLibrary->mixing24E(i.getTypeId(), j.getTypeId());
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     floatPrecision dr2 = ArrayMath::dot(dr, dr);
 
@@ -163,12 +163,11 @@ class LJFunctor
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
     //@TODO FAbio FRAGEN ob das richtig ist, oder was genau restrict ist(es gibt nicht mehrere pointer zu dem object~)
-    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
+    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::typeId>());
+    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::typeId>());
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
-
-    if (calculateGlobals) {
+      if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
       bool isHaloCell = ownedPtr[0] ? false : true;
       if (isHaloCell) {
@@ -272,10 +271,10 @@ class LJFunctor
     auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    auto epsilon24 = (floatPrecision)_PCLibrary->mixing24E(*soa1.template begin<Particle::AttributeNames::id>(),
-                                                           *soa2.template begin<Particle::AttributeNames::id>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->mixingSS(*soa1.template begin<Particle::AttributeNames::id>(),
-                                                            *soa2.template begin<Particle::AttributeNames::id>());
+    auto epsilon24 = (floatPrecision)_PCLibrary->mixing24E(*soa1.template begin<Particle::AttributeNames::typeId>(),
+                                                           *soa2.template begin<Particle::AttributeNames::typeId>());
+    auto sigmasquare = (floatPrecision)_PCLibrary->mixingSS(*soa1.template begin<Particle::AttributeNames::typeId>(),
+                                                            *soa2.template begin<Particle::AttributeNames::typeId>());
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -526,6 +525,7 @@ class LJFunctor
   /**
    * @copydoc Functor::getNeededAttr()
    */
+   //@todo FIXME-> ADD TYPE ID --ask Fabio for real function
   constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 8>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
@@ -646,8 +646,8 @@ class LJFunctor
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
+    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::typeId>());
+    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::typeId>());
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
     floatPrecision upotSum = 0.;
