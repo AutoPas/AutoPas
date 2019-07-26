@@ -14,7 +14,7 @@
 /**
  * Example for a custom particle type derived from a autopas molecule type.
  */
-class PrintableMolecule : public autopas::MoleculeLJ {
+class PrintableMolecule : public autopas::MoleculeLJ<> /*apparently c++17 doesnt need <> but doesnt compile without it*/ {
  public:
   PrintableMolecule() : MoleculeLJ() {}
 

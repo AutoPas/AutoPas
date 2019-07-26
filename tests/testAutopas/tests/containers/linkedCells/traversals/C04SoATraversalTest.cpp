@@ -15,16 +15,13 @@ using ::testing::_;
  */
 TEST_F(C04SoATraversalTest, testTraversal) {
   std::array<size_t, 3> edgeLength = {3, 3, 3};
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 4; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<autopas::Particle, FPCell> functor(1., PCL, 1.);
+double universalValue=1; //epsilon=sigma=mass=1.0
+ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  autopas::LJFunctor<Molecule, FMCell> functor(1., PCL, 1.);
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  autopas::Particle defaultParticle;
+  autopas::MoleculeLJ<> defaultParticle;
   defaultParticle.setR({1.75, 2.1, 1.75});
   cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 2ul, 1ul, edgeLength)].addParticle(defaultParticle);
   defaultParticle.setR({1.75, 1.6, 1.75});
@@ -32,7 +29,7 @@ TEST_F(C04SoATraversalTest, testTraversal) {
 
   NumThreadGuard numThreadGuard(1);
 
-  autopas::C04SoATraversal<FPCell, autopas::LJFunctor<autopas::Particle, FPCell>, autopas::DataLayoutOption::soa, true>
+  autopas::C04SoATraversal<FPCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, true>
       c04SoATraversal(edgeLength, &functor, 1);
   c04SoATraversal.setCellsToTraverse(cells);
   c04SoATraversal.initTraversal();

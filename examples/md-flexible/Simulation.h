@@ -142,6 +142,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
   } else {
     numP = _parser.getParticlesTotal();
   }
+  //@TODO MIT AKTUELLER TYPE_ID AKTUALISIEREN -> PARSER
   map<unsigned long, double> PC_Epsilon;
   map<unsigned long, double> PC_Sigma;
   map<unsigned long, double> PC_Mass;
@@ -189,9 +190,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
     streamBuf = _logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
-  PrintableMolecule::setEpsilon(_parser.getEpsilon());
-  PrintableMolecule::setSigma(_parser.getSigma());
-  PrintableMolecule::setMass(_parser.getMass());
 
   _autopas.setCutoff(cutoff);
   _autopas.setVerletSkin(verletSkinRadius);
@@ -300,7 +298,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   double deltaT = _parser.getDeltaT();
   double simTimeNow = 0;
   double simTimeEnd = _parser.getDeltaT() * _parser.getIterations();
-  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT);
+  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT,*_PCL);
 
   // main simulation loop
   while (simTimeNow < simTimeEnd) {

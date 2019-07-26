@@ -23,11 +23,11 @@ typedef autopas::FullParticleCell<autopas::Particle> FPCell;
 /**
  * Short for the AutoPas single center Lennard-Jones molecule
  */
-typedef autopas::MoleculeLJ Molecule;
+typedef autopas::MoleculeLJ<> Molecule;
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */
-typedef autopas::FullParticleCell<autopas::MoleculeLJ> FMCell;
+typedef autopas::FullParticleCell<autopas::MoleculeLJ<>> FMCell;
 
 // M prefix for mocks
 /**

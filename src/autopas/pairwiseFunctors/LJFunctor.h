@@ -162,13 +162,13 @@ class LJFunctor
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    //@TODO FAbio FRAGEN ob das richtig ist, oder was genau restrict ist(es gibt nicht mehrere pointer zu dem object~)
     auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::typeId>());
     auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::typeId>());
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
       if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
+      //_____man kann sich den Boolean hier noch sparen oder?___
       bool isHaloCell = ownedPtr[0] ? false : true;
       if (isHaloCell) {
         return;
@@ -202,6 +202,7 @@ class LJFunctor
         const floatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
         const floatPrecision invdr2 = 1. / dr2;
+        //@todo sigma und epsilon pointer weiterlaufen lasse
         const floatPrecision lj2 = sigmasquare * invdr2;
         const floatPrecision lj6 = lj2 * lj2 * lj2;
         const floatPrecision lj12 = lj6 * lj6;
@@ -319,7 +320,8 @@ class LJFunctor
         const floatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
         const floatPrecision invdr2 = 1. / dr2;
-        const floatPrecision lj2 = sigmasquare * invdr2;
+          //@todo sigma epsilon pointer weiterlaufen lassen
+          const floatPrecision lj2 = sigmasquare * invdr2;
         const floatPrecision lj6 = lj2 * lj2 * lj2;
         const floatPrecision lj12 = lj6 * lj6;
         const floatPrecision lj12m6 = lj12 - lj6;
@@ -525,12 +527,11 @@ class LJFunctor
   /**
    * @copydoc Functor::getNeededAttr()
    */
-   //@todo FIXME-> ADD TYPE ID --ask Fabio for real function
-  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 8>{
+  constexpr static const std::array<typename Particle::AttributeNames, 9> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 9>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+        Particle::AttributeNames::forceZ,Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
   }
 
   /**

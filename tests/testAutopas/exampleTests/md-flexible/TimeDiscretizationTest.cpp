@@ -25,13 +25,7 @@ double L2Norm(std::array<double, 3> array) {
 
 // Testet und visualisiert die Kräfte berechnungen und TimeDiscreatization Klasse
 TEST_F(TimeDiscretizationTest, GeneralForceTest) {
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   auto autoPas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   autoPas.setBoxMax(boxmax);
   autoPas.setCutoff(cutoff);
   // erstmal auf linked cells testen
@@ -48,7 +42,7 @@ TEST_F(TimeDiscretizationTest, GeneralForceTest) {
   double particleD = 0.01;
   int iterations = 0;
   // iterationen beginnend
-  TimeDiscretization<decltype(autoPas)> td(particleD);
+  TimeDiscretization<decltype(autoPas)> td(particleD,PCL);
   // domain vorbeireiten: -Force initialisieren
   autoPas.iteratePairwise(&functor);
   // Dokumentation prints
@@ -80,13 +74,7 @@ TEST_F(TimeDiscretizationTest, GeneralForceTest) {
 }
 
 TEST_F(TimeDiscretizationTest, CalcX) {
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   auto autoPas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   autoPas.setBoxMax(boxmax);
   autoPas.setCutoff(cutoff);
   // erstmal auf linked cells testen
@@ -111,7 +99,7 @@ TEST_F(TimeDiscretizationTest, CalcX) {
     //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
     for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
       auto v = iter->getV();
-      auto m = iter->getMass();
+//      auto m = iter->getMass();
       auto f = iter->getF();
       iter->setOldf(f);
       //      cout << "Particle ID: " << iter->getID() << endl;
@@ -119,7 +107,7 @@ TEST_F(TimeDiscretizationTest, CalcX) {
       v = autopas::ArrayMath::mulScalar(v, particleD);
       //      cout << "Velocity * delta_T= " << arrayString(v) << endl;
       //      cout << "initial F = " << arrayString(f) << endl;
-      f = autopas::ArrayMath::mulScalar(f, (particleD * particleD / (2 * m)));
+      f = autopas::ArrayMath::mulScalar(f, (particleD * particleD / (2 * 1)));
       //      cout << "F * delta² / 2*m = " << arrayString(f) << endl;
       //      cout << "Print old Positions:" << arrayString(iter->getR()) << endl;
       auto newR = autopas::ArrayMath::add(v, f);
@@ -133,13 +121,7 @@ TEST_F(TimeDiscretizationTest, CalcX) {
 }
 
 TEST_F(TimeDiscretizationTest, CalcV) {
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   auto autoPas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   autoPas.setBoxMax(boxmax);
   autoPas.setCutoff(cutoff);
   // erstmal auf linked cells testen

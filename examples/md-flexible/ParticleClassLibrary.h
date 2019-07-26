@@ -9,7 +9,7 @@ class ParticleClassLibrary {
  public:
   ParticleClassLibrary(std::map<unsigned long, double> &sigma, std::map<unsigned long, double> &epsilon,
                        std::map<unsigned long, double> &mass);
-  ParticleClassLibrary(double &epsilon, double &sigma, double mass, int numberOfParticles);
+  ParticleClassLibrary(double &epsilon, double &sigma, double mass);
   ParticleClassLibrary();
 
   ParticleClassLibrary(const ParticleClassLibrary &pcl);
@@ -32,10 +32,7 @@ class ParticleClassLibrary {
    * @param Particle
    * @return Sigma
    */
-  template <class Particle>
-  double getMass(const Particle &i) {
-    return Mass.at(i.getID());
-  }
+  double getMass(unsigned long i);
 
   /**Returns (Epsilon*24) of the MixingRule of 2 Particles
    * @param Particles; i and j

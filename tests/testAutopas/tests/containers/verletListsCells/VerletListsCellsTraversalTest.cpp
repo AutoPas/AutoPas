@@ -13,8 +13,6 @@ VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
                             2.0) {
   double eps = 1.0;
   double sig = 1.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
 }
 
 std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells<Molecule> &verletListsCells,

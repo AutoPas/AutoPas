@@ -28,9 +28,6 @@ void GeneratorsTest::MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &au
 
 TEST_F(GeneratorsTest, fillWithParticlesOnPosition) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   Particle dummyParticle;
   std::array<double, 3> BoxPos = {2., 2., 1.};
   autoPas.setBoxMin(boxmin);
@@ -45,9 +42,6 @@ TEST_F(GeneratorsTest, fillWithParticlesOnPosition) {
 
 TEST_F(GeneratorsTest, Behavior) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   MolSimTaskGeneration(autoPas);
   // for GRID generator:
   //  int particlePerDim = 5;
@@ -82,9 +76,6 @@ TEST_F(GeneratorsTest, Behavior) {
 }
 TEST_F(GeneratorsTest, MolSimTask) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
   MolSimTaskGeneration(autoPas);
   std::cout << "Number of particles generated " << autoPas.getNumberOfParticles() << std::endl;
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {

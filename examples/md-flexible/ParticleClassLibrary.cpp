@@ -5,15 +5,16 @@ ParticleClassLibrary::ParticleClassLibrary(std::map<unsigned long, double> &sigm
                                            std::map<unsigned long, double> &epsilon,
                                            std::map<unsigned long, double> &mass)
     : Epsilon(epsilon), Sigma(sigma), Mass(mass) {}
-ParticleClassLibrary::ParticleClassLibrary(double &epsilon, double &sigma, double mass, int numberOfParticles) {
+
+    /** Default constuktor wenn es nur ein Particle Type gibt
+    **/
+ParticleClassLibrary::ParticleClassLibrary(double &epsilon, double &sigma, double mass) {
   std::map<unsigned long, double> EMap;
   std::map<unsigned long, double> SMap;
   std::map<unsigned long, double> MMap;
-  for (int i = 0; i < numberOfParticles; i++) {
-    EMap.emplace(i, epsilon);
-    SMap.emplace(i, sigma);
-    MMap.emplace(i, mass);
-  }
+    EMap.emplace(0, epsilon);
+    SMap.emplace(0, sigma);
+    MMap.emplace(0, mass);
   this->Epsilon = EMap;
   this->Sigma = SMap;
   this->Mass = MMap;
@@ -24,6 +25,11 @@ ParticleClassLibrary::ParticleClassLibrary() = default;
 ParticleClassLibrary::ParticleClassLibrary(const ParticleClassLibrary &pcl) = default;
 
 ParticleClassLibrary &ParticleClassLibrary::operator=(const ParticleClassLibrary &pcl) = default;
+
+double ParticleClassLibrary::getMass(unsigned long i) {
+return Mass.at(i);
+}
+
 
 double ParticleClassLibrary::get24Epsilon(unsigned long i) { return 24 * Epsilon.at(i); }
 

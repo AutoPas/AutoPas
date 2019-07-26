@@ -507,12 +507,8 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
 
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
-  unsigned long numParticles = verletLists.getNumParticles();
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numParticles + 1; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+double universalValue=1; //epsilon=sigma=mass=1.0
+ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
   autopas::LJFunctor<Particle, FPCell> ljFunctor(cutoff, PCL, 0 /*shift*/);
   autopas::TraversalVerlet<FPCell, autopas::LJFunctor<Particle, FPCell>, autopas::DataLayoutOption::soa, false>
       verletTraversal(&ljFunctor);
@@ -534,12 +530,8 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
 
   RandomGenerator::fillWithParticles(verletLists1, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
   RandomGenerator::fillWithParticles(verletLists2, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
-  unsigned long numParticles = verletLists1.getNumParticles();
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numParticles; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+double universalValue=1; //epsilon=sigma=mass=1.0
+ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
   autopas::LJFunctor<Particle, FPCell> ljFunctor(cutoff, PCL, 0);
   autopas::TraversalVerlet<FPCell, autopas::LJFunctor<Particle, FPCell>, autopas::DataLayoutOption::aos, false>
       verletTraversal1(&ljFunctor);

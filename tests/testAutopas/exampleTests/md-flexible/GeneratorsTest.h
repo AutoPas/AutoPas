@@ -23,7 +23,7 @@ class GeneratorsTest : public AutoPasTestBase {
         cutoff{1.},
         boxmin{{0., 0., 0.}},
         boxmax{{5., 5., 5.}},
-        PCL{ParticleClassLibrary(epsilon, sigma, 1.0, 800)}
+        PCL{ParticleClassLibrary(epsilon, sigma, 1.0)}
   // functor{autopas::LJFunctor<Particle, FPCell,
   //                           autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)}
   {}

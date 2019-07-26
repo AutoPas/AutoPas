@@ -15,6 +15,7 @@ namespace autopas {
 /**
  * lennard jones molecule class
  */
+ template <typename floatType =double>
 class MoleculeLJ : public Particle {
  public:
   MoleculeLJ() = default;
@@ -25,54 +26,19 @@ class MoleculeLJ : public Particle {
    * @param v velocity of the molecule
    * @param id id of the molecule
    */
-  explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
+  explicit MoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id) : Particle(r, v, id) {}
 
   ~MoleculeLJ() override = default;
-
-  /**
-   * get epsilon (characteristic energy of the lj potential)
-   * @return epsilon
-   */
-  static double getEpsilon() { return EPSILON; }
-
-  /**
-   * set epsilon (characteristic energy of the lj potential)
-   * @param epsilon
-   */
-  static void setEpsilon(double epsilon) { EPSILON = epsilon; }
-
-  /**
-   * get sigma (characteristic length of the lj potential)
-   * @return sigma
-   */
-  static double getSigma() { return SIGMA; }
-
-  /**
-   * set sigma (characteristic length of the lj potential)
-   * @param sigma
-   */
-  static void setSigma(double sigma) { SIGMA = sigma; }
-
-  /**get mass
-   * @return MASS
-   */
-  static double getMass() { return MASS; }
-
-  /**set mass
-   * @param mass
-   */
-  static void setMass(double mass) { MASS = mass; }
-
 
     /**
      * Enums used as ids for accessing and creating a dynamically sized SoA.
      */
-    enum AttributeNames : int { id, typeId, posX, posY, posZ, forceX, forceY, forceZ, owned };
+    enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ,typeId, owned };
 
   /**
    * the type for the soa storage
    */
-    typedef autopas::utils::SoAType<size_t,size_t, double, double, double, double, double, double, double>::Type SoAArraysType;
+    typedef typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType,size_t, floatType>::Type SoAArraysType;
 
 
     /**
@@ -151,7 +117,7 @@ class MoleculeLJ : public Particle {
   /**get OldForce
    * @return OLDF
    */
-  std::array<double, 3> getOldf() const { return OLDF; }
+  [[nodiscard]] std::array<double, 3> getOldf() const { return OLDF; }
 
   /**set OldForce
    * @param oldf
@@ -161,15 +127,13 @@ class MoleculeLJ : public Particle {
   /**get TypeId
    * @return _typeId
    * */
-  size_t getTypeId() const { return _typeId; }
+  [[nodiscard]] size_t getTypeId() const { return _typeId; }
   /**set _TypeId of Particle
    * @param typeId
    * */
   void setTypeId(size_t typeId) { _typeId = typeId; }
 
  private:
-  static double EPSILON, SIGMA, MASS;
-
   /**
    * Particle type id.
    */

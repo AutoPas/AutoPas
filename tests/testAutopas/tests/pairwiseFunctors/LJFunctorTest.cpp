@@ -9,11 +9,8 @@
 #include "testingHelpers/commonTypedefs.h"
 
 void LJFunctorTest::testAoSNoGlobals(bool newton3) {
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 2; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+    double universalValue=1; //epsilon=sigma=mass=1.0
+    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
@@ -65,11 +62,8 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
 
 void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
   // test is for the soa functors the forces are calculated correctly
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 2; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+    double universalValue=1; //epsilon=sigma=mass=1.0
+    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
 
   FMCell cell1, cell2;
@@ -216,11 +210,8 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
 }
 
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 2; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+    double universalValue=1; //epsilon=sigma=mass=1.0
+    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
                                                                                     duplicatedCalculation);
   double xOffset;
@@ -290,11 +281,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
   unsigned long numP = additionalParticlesToVerletNumber + 2;
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numP; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+    double universalValue=1; //epsilon=sigma=mass=1.0
+    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
                                                                                     duplicatedCalculation);
   double xOffset;
