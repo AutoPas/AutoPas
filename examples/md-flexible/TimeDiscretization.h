@@ -24,7 +24,9 @@ class TimeDiscretization {
   /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    */
   long VSCalculateV(AutoPasTemplate &autopas);
-
+    /**Getter for particleDeltaT
+     * @return particle_delta_t
+     * */
   double getParticleDeltaT() const;
 
  private:

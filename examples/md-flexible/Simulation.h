@@ -70,23 +70,19 @@ class Simulation {
   }
 
   /** @brief This function
-   * -initializes the autopas Object
-   * -sets/initializes the simulation domain with the particles generators
-   * @todo -initialized Velocities and Positions (and forces?)
-   */
+   * -initializes the autopas Object with all member speizified in the YamlParser
+   * -initializes the simulation domain with the Object Generators
+      */
   void initialize(YamlParser &parser);
 
-  /**
-   * Does the ForceCalculation
-   * @param Force Calculation Functor
-   * @return Duration of Calculation
+  /**Does the ForceCalculation with the LJFunctor
    * */
   void CalcF();
 
   /**
    * This function processes the main simulation loop
-   * -calls the time discretization class(calculate fores, etc ...)
-   * -do the output each timestep
+   * -Calls the TimeDiscretization class and Force Calculations(CalcF) to proceed the discretization
+   * -Creates an VTK Output for each TimeStep
    * -collects the duration of every Calculation(Position,Force,Velocity)
    */
   void simulate();
@@ -95,9 +91,11 @@ class Simulation {
    * @return Autopas Object
    */
   autopas::AutoPas<Particle, ParticleCell> *getAutopas() const;
-
+    /**Return current number of Particles in AutoPas Object
+     * */
   size_t getNumParticles() { return _autopas.getNumberOfParticles(); }
-
+  /**Prints Statistics(duration of calculation, etc ..) of the Simulation
+   * */
   void printStatistics();
 };
 

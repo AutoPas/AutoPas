@@ -22,9 +22,13 @@ class YamlParser {
   /**Constructor für YAMl Parser:
    * */
   YamlParser() = default;
-
+    /**Getter for BoxMin for Autopas Object, needed in autopas initialization
+ * @return BoxMin
+ * */
   [[nodiscard]] const std::array<double, 3> &getBoxMin() const;
-
+    /**Getter for BoxMax for Autopas Object, needed in autopas initialization
+     * @return BoxMax
+     * */
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const;
 
   /** Parse the Input from the command line

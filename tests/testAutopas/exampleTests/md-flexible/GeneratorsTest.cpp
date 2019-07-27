@@ -4,7 +4,6 @@
 
 #include "GeneratorsTest.h"
 #include "autopas/utils/inBox.h"
-
 TEST_F(GeneratorsTest, Gauss) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
   Particle dummyParticle;
@@ -14,6 +13,8 @@ TEST_F(GeneratorsTest, Gauss) {
   autoPas.init();
   Generator::CubeGauss(autoPas, {0., 0., 0.}, {20., 20., 20.}, 100, 5, 2, {0., 0., 0.});
   ASSERT_EQ(autoPas.getNumberOfParticles(), 100);
+//    std::string CubeGeneration = "GaussTestGeneration.vtu";
+//    writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -32,8 +33,8 @@ TEST_F(GeneratorsTest, CubeGenerator) {
   std::array<double, 3> velocity = {0., 0., 0.};
   std::array<size_t, 3> cube = {particlesPerDim, particlesPerDim, particlesPerDim};
   Generator::CubeGrid(autoPas, {0., 0., 0.}, cube, .5, {0., 0., 0.});
-  std::string CubeGeneration = "CubeGeneration.vtu";
-  writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
+//  std::string CubeGeneration = "CubeGeneration.vtu";
+//  writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
   EXPECT_EQ(autoPas.getNumberOfParticles(), (5 * 5 * 5));
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     EXPECT_EQ(velocity, iter->getV());
@@ -47,9 +48,11 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   autoPas.setBoxMax(boxmax);
   autoPas.setBoxMin(boxmin);
   Particle dummy;
-  std::string CubeGeneration = "FillGrid-BoxMin.vtu";
-  autoPas.init();
+
+    autoPas.init();
   GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin, {0., 0., 0.});
+//    std::string CubeGeneration = "FillGrid-BoxMin.vtu";
+//      writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -81,6 +84,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   autoPas.setBoxMax(parser.getBoxMax());
   autoPas.setBoxMin(parser.getBoxMin());
   autoPas.init();
+  std::array<double,3> velocity = {0.,0.,0.};
   // parses the multiple Objects input of "testParsing.yaml" and generates a VTK File from the Input
   auto CubeGrid(parser.getCubeGrid());
   auto CubeGauss(parser.getCubeGauss());
@@ -99,8 +103,15 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   for (auto S : Sphere) {
     Generator::Sphere(autoPas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), S.getId(), S.getVelocity());
   }
-  std::string SphereGeneration = "MultipleGeneration.vtu";
-  writeVTKFile<decltype(autoPas)>(SphereGeneration, autoPas.getNumberOfParticles(), autoPas);
+  //to see output:
+//  std::string SphereGeneration = "MultipleGeneration.vtu";
+//  writeVTKFile<decltype(autoPas)>(SphereGeneration, autoPas.getNumberOfParticles(), autoPas);
   // checked VTK File
   EXPECT_EQ(parser.particlesTotal(), autoPas.getNumberOfParticles());
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+        EXPECT_EQ(velocity, iter->getV());
+    }
 }
