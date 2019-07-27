@@ -109,10 +109,10 @@ int main(int argc, char *argv[]) {
 
   autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
       boxMin, boxMax, cutoff, skin * cutoff);
-  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc08(
-      boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff);
-  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc18(
-      boxMin, boxMax, cutoff, autopas::TraversalOption::c18, skin * cutoff);
+  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc08(boxMin, boxMax, cutoff,
+                                                                         autopas::TraversalOption::c08, skin * cutoff);
+  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc18(boxMin, boxMax, cutoff,
+                                                                         autopas::TraversalOption::c18, skin * cutoff);
   autopas::VerletClusterLists<autopas::sph::SPHParticle> verletClusterCont(boxMin, boxMax, cutoff, skin * cutoff);
 
   addParticles(lcCont, numParticles);
