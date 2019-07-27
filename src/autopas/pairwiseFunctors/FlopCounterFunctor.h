@@ -58,7 +58,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     };
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -97,7 +97,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -139,7 +139,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa,
+  void SoAFunctor(SoAView<SoAArraysType> soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
     auto numParts = soa.getNumParticles();
