@@ -8,11 +8,12 @@
 
 #include <algorithm>
 #include <cmath>
-#include <unordered_map>
+#include <vector>
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
+#include "autopas/containers/verletClusterLists/VerletClusterCellsParticleIterator.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -207,7 +208,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     _isValid = false;
 
     for (size_t i = 0; i < this->_cells.size(); ++i) {
-    	std::remove_if(this->_cells[i]._particles.begin(), this->_cells[i]._particles.end(), [](Particle& p){return not p.isOwned();});
+      std::remove_if(this->_cells[i]._particles.begin(), this->_cells[i]._particles.end(),
+                     [](Particle &p) { return not p.isOwned(); });
     }
   }
 
@@ -252,25 +254,39 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<Particle>(new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(
-        &this->_cells, 0, &_cellBorderFlagManager, behavior));
+    return ParticleIteratorWrapper<Particle>(
+        new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>>(
+            &this->_cells, &_dummyStarts, behavior));
   }
 
   ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                       const std::array<double, 3> &higherCorner,
                                                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                                       bool incSearchRegion = false) override {
-    std::vector<size_t> cellsOfInterest(this->_cells.size());
-    std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
+    int xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal);
+    int ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal);
 
-    return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, FullParticleCell<Particle>>(
-        &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
+    int xlength = (int)((higherCorner[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal) - xmin + 1;
+    int ylength = (int)((higherCorner[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal) - ymin + 1;
+
+    std::vector<size_t> cellsOfInterest(xlength * ylength);
+
+    auto cellsOfInterestIterator = cellsOfInterest.begin();
+
+    for (int i = 0; i < ylength; ++i) {
+      std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength + 1, xmin + i * _cellsPerDim[0]);
+      cellsOfInterestIterator += xlength;
+    }
+
+    return ParticleIteratorWrapper<Particle>(
+        new internal::VerletClusterCellsRegionParticleIterator<Particle, FullParticleCell<Particle>>(
+            &this->_cells, &_dummyStarts, lowerCorner, higherCorner, cellsOfInterest, behavior));
   }
 
   /**
    * Deletes all Dummy Particles in the container
    */
-  void deleteDummyParticles() override {
+  void deleteDummyParticles() {
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       this->_cells[i].resize(_dummyStarts[i]);
     }
@@ -438,25 +454,5 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
   /// Signature of the last Traversal to trigger rebuild when a new one is used
   std::tuple<TraversalOption, DataLayoutOption, bool> _lastTraversalSig;
-
-  class VerletClusterCellsCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
-   public:
-    bool cellCanContainHaloParticles(size_t index1d) const override { return true; }
-
-    bool cellCanContainOwnedParticles(size_t index1d) const override { return true; }
-
-  } _cellBorderFlagManager;
 };
-
-namespace internal {
-/**
- * ParticleIterator class to access particles inside a VerletClusterCells container efficently.
- * The particles can be accessed using "iterator->" or "*iterator". The next
- * particle using the ++operator, e.g. "++iterator".
- * @tparam Particle Type of the particle that is accessed.
- */
-template <class Particle>
-class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
-};
-} // namespace internal
 }  // namespace autopas

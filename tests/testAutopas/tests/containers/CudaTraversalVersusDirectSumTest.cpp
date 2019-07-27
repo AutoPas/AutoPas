@@ -97,7 +97,7 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
       double f2 = forcesLinked[i][d];
       double abs_err = std::abs(f1 - f2);
       double rel_err = std::abs(abs_err / f1);
-      EXPECT_LT(rel_err, rel_err_tolerance);
+      EXPECT_LT(rel_err, rel_err_tolerance) << " for ParticleID: " << i << " dim:" << d << " " << f1 << " vs " << f2;
     }
   }
 

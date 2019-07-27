@@ -258,34 +258,36 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
 
  private:
   void traverseCellPairsAoS(std::vector<ParticleCell> &cells) {
+    const auto clusterSize = *_clusterSize;
+
     // grid
     for (size_t i = 0; i < cells.size(); ++i) {
       // clusters
       for (size_t clusterId = 0; clusterId < (*_neighborCellIds)[i].size(); ++clusterId) {
         for (auto &neighbor : (*_neighborCellIds)[i][clusterId]) {
           // loop in cluster
-          for (size_t ownPid = 0; ownPid < *_clusterSize; ++ownPid) {
-            for (size_t otherPid = 0; otherPid < *_clusterSize; ++otherPid) {
-              _functor->AoSFunctor(cells[i]._particles[*_clusterSize * clusterId + ownPid],
-                                   cells[neighbor.first]._particles[*_clusterSize * neighbor.second + otherPid],
+          for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
+            for (size_t otherPid = 0; otherPid < clusterSize; ++otherPid) {
+              _functor->AoSFunctor(cells[i]._particles[clusterSize * clusterId + ownPid],
+                                   cells[neighbor.first]._particles[clusterSize * neighbor.second + otherPid],
                                    useNewton3);
             }
           }
         }
-        //same cluster
+        // same cluster
         if (useNewton3) {
-          for (size_t ownPid = 0; ownPid < *_clusterSize; ++ownPid) {
-            for (size_t otherPid = ownPid + 1; otherPid < *_clusterSize; ++otherPid) {
-              _functor->AoSFunctor(cells[i]._particles[*_clusterSize * clusterId + ownPid],
-                                   cells[i]._particles[*_clusterSize * clusterId + otherPid], useNewton3);
+          for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
+            for (size_t otherPid = ownPid + 1; otherPid < clusterSize; ++otherPid) {
+              _functor->AoSFunctor(cells[i]._particles[clusterSize * clusterId + ownPid],
+                                   cells[i]._particles[clusterSize * clusterId + otherPid], useNewton3);
             }
           }
         } else {
-          for (size_t ownPid = 0; ownPid < *_clusterSize; ++ownPid) {
-            for (size_t otherPid = 0; otherPid < *_clusterSize; ++otherPid) {
+          for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
+            for (size_t otherPid = 0; otherPid < clusterSize; ++otherPid) {
               if (ownPid != otherPid) {
-                _functor->AoSFunctor(cells[i]._particles[*_clusterSize * clusterId + ownPid],
-                                     cells[i]._particles[*_clusterSize * clusterId + otherPid], useNewton3);
+                _functor->AoSFunctor(cells[i]._particles[clusterSize * clusterId + ownPid],
+                                     cells[i]._particles[clusterSize * clusterId + otherPid], useNewton3);
               }
             }
           }
@@ -295,7 +297,22 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
   }
 
   void traverseCellPairsSoA(std::vector<ParticleCell> &cells) {
-    utils::ExceptionHandler::exception("VerletClusterCellsTraversal has no SoA version");
+    auto clusterSize = *_clusterSize;
+    // grid
+    for (size_t i = 0; i < cells.size(); ++i) {
+      // clusters
+      for (size_t clusterId = 0; clusterId < (*_neighborCellIds)[i].size(); ++clusterId) {
+        for (auto &neighbor : (*_neighborCellIds)[i][clusterId]) {
+          // loop in cluster
+
+          cells[i]._particleSoABuffer.setViewStart(clusterSize * clusterId);
+          cells[neighbor.first]._particleSoABuffer.setViewStart(clusterSize * neighbor.second);
+
+          _functor->SoAFunctor(cells[i]._particleSoABuffer, cells[neighbor.first]._particleSoABuffer, useNewton3);
+        }
+        // same cluster
+      }
+    }
   }
 
   void traverseCellPairsGPU(std::vector<ParticleCell> &cells) {
