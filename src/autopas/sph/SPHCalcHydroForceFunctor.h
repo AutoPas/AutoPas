@@ -103,10 +103,10 @@ class SPHCalcHydroForceFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, bool)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
@@ -213,9 +213,9 @@ class SPHCalcHydroForceFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, SoA<SoAArraysType>&, bool)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ massptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
@@ -343,10 +343,10 @@ class SPHCalcHydroForceFunctor
   }
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t, size_t, bool)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t, size_t, bool)
    */
   // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa,
+  void SoAFunctor(SoAView<SoAArraysType> soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
     if (soa.getNumParticles() == 0) return;

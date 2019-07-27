@@ -255,10 +255,12 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
     // calculate all interactions
     for (unsigned int slice = 0; slice < cOffSize; slice++) {
       if (slice == (currentSlice + this->_overlap[0]) % cOffSize) {
-        // slice contains base cell -> skip particles of base cell
-        combinationSlice[slice]._particleSoABuffer.setViewStart(baseCell.numParticles());
-        this->_cellFunctor.processCellPair(baseCell, combinationSlice[slice]);
-        combinationSlice[slice]._particleSoABuffer.setViewStart(0);
+        // slice contains base cell -> skip particles of base cell. This is not supported by CellFunctor, so call
+        // pairwise functor directly.
+        auto startIndex = baseCell.numParticles();
+        auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumParticles();
+        _pairwiseFunctor->SoAFunctor(baseCell._particleSoABuffer,
+                                     {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell
         this->_cellFunctor.processCell(baseCell);
       } else {
