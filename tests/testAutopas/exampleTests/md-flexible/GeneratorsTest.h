@@ -4,18 +4,18 @@
 #include <math.h>
 #include <vector>
 #include "../../../../examples/md-flexible/Generator.h"
+#include "../../../../examples/md-flexible/Objects.h"
 #include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
-#include "../../../../src/autopas/utils/ArrayMath.h"
-#include "../../../../examples/md-flexible/Objects.h"
-#include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
-#include "testingHelpers/commonTypedefs.h"
 #include "../../../../examples/md-flexible/YamlParser.h"
+#include "../../../../src/autopas/utils/ArrayMath.h"
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
+#include "AutoPasTestBase.h"
+#include "autopas/AutoPas.h"
+#include "testingHelpers/commonTypedefs.h"
 class GeneratorsTest : public AutoPasTestBase {
  public:
   GeneratorsTest()
@@ -29,13 +29,14 @@ class GeneratorsTest : public AutoPasTestBase {
         functor{autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
                                    autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)},
         parser{YamlParser()},
-        filename{"testParsing.yaml"}
-        { parser.parseYamlFile();}
-
-  void MolSimTaskGeneration(autopas::AutoPas<Particle, FPCell> &autopas);
+        filename{"testParsing.yaml"} {
+    parser.setFilename(filename);
+    parser.parseYamlFile();
+  }
 
   template <class AutoPasTemplate>
-  void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopas) {
+  void writeVTKFile(std::string &filename, size_t numParticles, AutoPasTemplate &autopas) {
+    using namespace std;
     stringstream strstr;
     strstr << filename;
     // string path = "./vtk";
@@ -55,23 +56,15 @@ class GeneratorsTest : public AutoPasTestBase {
     vtkFile.close();
   }
 
-  double L2Norm(std::array<double, 3> array) {
-    double square_sum = 0;
-    for (auto e : array) {
-      square_sum += (e * e);
-    }
-    return sqrt(square_sum);
-  }
-
  protected:
   double epsilon;
   double sigma;
   double cutoff;
-  array<double, 3> boxmin;
-  array<double, 3> boxmax;
+  std::array<double, 3> boxmin;
+  std::array<double, 3> boxmax;
   ParticleClassLibrary PCL;
   autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both, true>
       functor;
-    YamlParser parser;
-    std::string filename;
+  YamlParser parser;
+  std::string filename;
 };

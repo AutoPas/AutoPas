@@ -24,9 +24,9 @@
 int main(int argc, char **argv) {
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
   YamlParser parser;
-    if (not parser.parseInput(argc, argv)) {
-        exit(-1);
-    }
+  if (not parser.parseInput(argc, argv)) {
+    exit(-1);
+  }
   parser.printConfig();
   simulation.initialize(parser);
   simulation.simulate();

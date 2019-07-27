@@ -1,16 +1,15 @@
 #pragma once
 
+#include <getopt.h>
 #include <yaml-cpp/yaml.h>
 #include <algorithm>
+#include <array>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include "Objects.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
-#include <limits>
-#include <array>
-#include <algorithm>
-#include <getopt.h>
 class YamlParser {
   /**
    * @file MDFlexParser.h
@@ -24,17 +23,20 @@ class YamlParser {
    * */
   YamlParser() = default;
 
-    const std::array<double, 3> &getBoxMin() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const;
 
-    const std::array<double, 3> &getBoxMax() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const;
 
-    bool parseInput(int argc, char **argv);
+  /** Parse the Input from the command line
+   *  If a Yaml File is specified, it will be parsed first
+   *  If additional Simulation Options come after the .yaml Argument, these Options override the .yaml ones
+   * */
+  bool parseInput(int argc, char **argv);
 
-
-    /**Parses the Input for the simulation
-     * @param filename
-     * */
-    void parseYamlFile();
+  /**Parses the Input for the simulation from the Yaml File
+   * @param filename
+   * */
+  void parseYamlFile();
 
   /**Prints Configuration of Simulation:
    * */
@@ -48,64 +50,68 @@ class YamlParser {
    * */
   void calcAutopasBox();
 
-  const std::set<autopas::ContainerOption> &getContainerOptions() const;
+  [[nodiscard]] const std::set<autopas::ContainerOption> &getContainerOptions() const;
 
-  const std::set<autopas::DataLayoutOption> &getDataLayoutOptions() const;
+  [[nodiscard]] const std::set<autopas::DataLayoutOption> &getDataLayoutOptions() const;
 
-    autopas::SelectorStrategyOption getSelectorStrategy() const;
+  [[nodiscard]] autopas::SelectorStrategyOption getSelectorStrategy() const;
 
-  const std::set<autopas::TraversalOption> &getTraversalOptions() const;
+  [[nodiscard]] const std::set<autopas::TraversalOption> &getTraversalOptions() const;
 
-    autopas::TuningStrategyOption getTuningStrategyOption() const;
+  [[nodiscard]] autopas::TuningStrategyOption getTuningStrategyOption() const;
 
-  const std::set<autopas::Newton3Option> &getNewton3Options() const;
+  [[nodiscard]] const std::set<autopas::Newton3Option> &getNewton3Options() const;
 
-  const autopas::NumberSet<double> &getCellSizeFactors() const;
+  [[nodiscard]] const autopas::NumberSet<double> &getCellSizeFactors() const;
 
-  double getCutoff() const;
+  [[nodiscard]] double getCutoff() const;
 
-  FunctorOption getFunctorOption() const;
+  [[nodiscard]] FunctorOption getFunctorOption() const;
 
-  size_t getIterations() const;
+  [[nodiscard]] size_t getIterations() const;
 
-  spdlog::level::level_enum getLogLevel() const;
+  [[nodiscard]] spdlog::level::level_enum getLogLevel() const;
 
-  bool getMeasureFlops() const;
+  [[nodiscard]] bool getMeasureFlops() const;
 
-  unsigned int getTuningInterval() const;
+  [[nodiscard]] unsigned int getTuningInterval() const;
 
-  unsigned int getTuningSamples() const;
+  [[nodiscard]] unsigned int getTuningSamples() const;
 
-  unsigned int getTuningMaxEvidence() const;
+  [[nodiscard]] unsigned int getTuningMaxEvidence() const;
 
-  const std::string &getWriteVtk() const;
+  [[nodiscard]] const std::string &getWriteVtk() const;
 
-  const std::string &getLogFileName() const;
+  [[nodiscard]] const std::string &getLogFileName() const;
 
-  unsigned int getVerletRebuildFrequency() const;
+  [[nodiscard]] unsigned int getVerletRebuildFrequency() const;
 
-  double getVerletSkinRadius() const;
+  [[nodiscard]] double getVerletSkinRadius() const;
 
-  double getEpsilon() const;
+  [[nodiscard]] double getEpsilon() const;
 
-  double getSigma() const;
+  [[nodiscard]] double getSigma() const;
 
-  double getDeltaT() const;
+  [[nodiscard]] double getDeltaT() const;
 
-  double getMass() const;
+  [[nodiscard]] double getMass() const;
 
-  const std::vector<CubeGrid> &getCubeGrid() const;
+  [[nodiscard]] const std::vector<CubeGrid> &getCubeGrid() const;
 
-  const std::vector<CubeGauss> &getCubeGauss() const;
+  [[nodiscard]] const std::vector<CubeGauss> &getCubeGauss() const;
 
-  const std::vector<CubeUniform> &getCubeUniform() const;
+  [[nodiscard]] const std::vector<CubeUniform> &getCubeUniform() const;
 
-  const std::vector<Sphere> &getSphere() const;
+  [[nodiscard]] const std::vector<Sphere> &getSphere() const;
+
+ private:
+ public:
+  void setFilename(const std::string &filename);
 
  private:
   static constexpr size_t valueOffset = 32;
   // defaults:
-  std::string filename = "DefaultConfig.yaml";
+  std::string filename;  // not needed: "DefaultConfig.yaml";default configuration if CubeGrid
   // AutoPas options:
   std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
   std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
@@ -123,8 +129,8 @@ class YamlParser {
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
-  std::array<double,3> BoxMin={0.,0.,0.};
-  std::array<double,3> BoxMax={10.,10.,10.};
+  std::array<double, 3> BoxMin = {0., 0., 0.};
+  std::array<double, 3> BoxMax = {10., 10., 10.};
 
   // Simulation Options:
   double cutoff = 1.;
@@ -137,7 +143,7 @@ class YamlParser {
   double mass = 1.0;
 
   // Object Generation:
-  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10,10,10},1.,{0.,0.,0.},{5.,5.,5.})};
+  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10, 10, 10}, 1., {0., 0., 0.}, {5., 5., 5.})};
   std::vector<CubeGauss> CubeGaussObjects = {};
   std::vector<CubeUniform> CubeUniformObjects = {};
   std::vector<Sphere> SphereObjects = {};

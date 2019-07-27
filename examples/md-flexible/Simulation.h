@@ -45,9 +45,9 @@ class Simulation {
    * @param numParticles
    * @param autopas
    */
-  void writeVTKFile(int iteration, size_t numParticles, autopas::AutoPas<Particle,ParticleCell>  &autopas) {
-      std::string filename = "VtkOutput";
-      std::stringstream strstr;
+  void writeVTKFile(int iteration, size_t numParticles, autopas::AutoPas<Particle, ParticleCell> &autopas) {
+    std::string filename = "VtkOutput";
+    std::stringstream strstr;
     strstr << filename << "_" << std::setfill('0') << std::setw(4) << iteration << ".vtu";
     // string path = "./vtk";
     std::ofstream vtkFile;
@@ -119,7 +119,7 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   _PCL = std::make_shared<ParticleClassLibrary>(epsilon, sigma, mass, _parser.particlesTotal());
   // initialisierung of
   auto logFileName(_parser.getLogFileName());
-  auto particlesTotal(_parser.particlesTotal()) ;
+  auto particlesTotal(_parser.particlesTotal());
   auto verletRebuildFrequency(_parser.getVerletRebuildFrequency());
   auto logLevel(_parser.getLogLevel());
   auto &cellSizeFactors(_parser.getCellSizeFactors());
@@ -164,21 +164,24 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
   autopas::Logger::get()->set_level(logLevel);
   _autopas.setBoxMax(_parser.getBoxMax());
-    _autopas.setBoxMin(_parser.getBoxMin());
-    _autopas.init();
+  _autopas.setBoxMin(_parser.getBoxMin());
+  _autopas.init();
 
-    for (auto C : CubeGrid) {
-    Generator::CubeGrid<Particle,ParticleCell>(_autopas,C.getBoxMin(), C.getParticlesPerDim(), C.getParticleSpacing(), C.getVelocity());
+  for (auto C : CubeGrid) {
+    Generator::CubeGrid<Particle, ParticleCell>(_autopas, C.getBoxMin(), C.getParticlesPerDim(), C.getParticleSpacing(),
+                                                C.getVelocity());
   }
   for (auto C : CubeGauss) {
-    Generator::CubeGauss<Particle,ParticleCell>(_autopas,C.getBoxMin(),C.getBoxMax(), C.getNumParticles(), C.getDistributionMean(),
-                         C.getDistributionStdDev(), C.getVelocity());
+    Generator::CubeGauss<Particle, ParticleCell>(_autopas, C.getBoxMin(), C.getBoxMax(), C.getNumParticles(),
+                                                 C.getDistributionMean(), C.getDistributionStdDev(), C.getVelocity());
   }
   for (auto C : CubeUniform) {
-    Generator::CubeRandom<Particle,ParticleCell>(_autopas,C.getBoxMin(),C.getBoxMax(), C.getNumParticles(), C.getVelocity());
+    Generator::CubeRandom<Particle, ParticleCell>(_autopas, C.getBoxMin(), C.getBoxMax(), C.getNumParticles(),
+                                                  C.getVelocity());
   }
   for (auto S : Sphere) {
-    Generator::Sphere<Particle,ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), S.getId(), S.getVelocity());
+    Generator::Sphere<Particle, ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), S.getId(),
+                                              S.getVelocity());
   }
 }
 
@@ -208,8 +211,8 @@ void Simulation<Particle, ParticleCell>::simulate() {
     _timers.durationPositionUpdate += timeDiscretization.VSCalculateX(_autopas);
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-        std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
-        std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
+      std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
+      std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
     this->CalcF();
     _timers.durationVelocityUpdate += timeDiscretization.VSCalculateV(_autopas);
@@ -223,19 +226,20 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::printStatistics() {
-    using namespace std;
+  using namespace std;
   size_t flopsPerKernelCall;
 
   // FlopsPerKernelCall ließt vom Functor
   switch (_parser.getFunctorOption()) {
     case YamlParser::FunctorOption ::lj12_6: {
-      flopsPerKernelCall =
-              autopas::LJFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctor<PrintableMolecule,
+                                              autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
     case YamlParser::FunctorOption ::lj12_6_AVX: {
       flopsPerKernelCall =
-              autopas::LJFunctorAVX<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+          autopas::LJFunctorAVX<PrintableMolecule,
+                                autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -272,7 +276,8 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_parser.getMeasureFlops()) {
-      autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(_autopas.getCutoff());
+    autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
+        _autopas.getCutoff());
     _autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
@@ -280,7 +285,8 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
     if (_autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
-                  autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
+          autopas::FlopCounterFunctor<PrintableMolecule,
+                                      autopas::FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
           floor(numIterations / _parser.getVerletRebuildFrequency());
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;

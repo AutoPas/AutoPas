@@ -6,11 +6,13 @@
 #include "autopas/utils/ArrayUtils.h"
 class CubeGrid {
  public:
-  CubeGrid(const std::array<size_t, 3> &particlesPerDim, double particleSpacing, const std::array<double, 3> &velocity,const std::array<double,3> &center)
+  CubeGrid(const std::array<size_t, 3> &particlesPerDim, double particleSpacing, const std::array<double, 3> &velocity,
+           const std::array<double, 3> &center)
       : particlesPerDim(particlesPerDim),
         particleSpacing(particleSpacing),
         velocity(velocity),
-        particlesTotal(particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]),center(center) {}
+        particlesTotal(particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]),
+        center(center) {}
 
   const std::array<size_t, 3> &getParticlesPerDim() const { return particlesPerDim; }
 
@@ -20,24 +22,29 @@ class CubeGrid {
 
   int getParticlesTotal() const { return particlesTotal; }
 
-  std::array<double,3> getBoxMin(){
-    return {center[0]-0.5*particlesPerDim[0]*particleSpacing,center[1]-0.5*particlesPerDim[1]*particleSpacing,center[1]-0.5*particlesPerDim[1]*particleSpacing};
+  std::array<double, 3> getBoxMin() {
+    return {center[0] - 0.5 * particlesPerDim[0] * particleSpacing,
+            center[1] - 0.5 * particlesPerDim[1] * particleSpacing,
+            center[1] - 0.5 * particlesPerDim[1] * particleSpacing};
   }
-    std::array<double,3> getBoxMax(){
-        return {center[0]+0.5*particlesPerDim[0]*particleSpacing,center[1]+0.5*particlesPerDim[1]*particleSpacing,center[1]+0.5*particlesPerDim[1]*particleSpacing};
-    }
+  std::array<double, 3> getBoxMax() {
+    return {center[0] + 0.5 * particlesPerDim[0] * particleSpacing,
+            center[1] + 0.5 * particlesPerDim[1] * particleSpacing,
+            center[1] + 0.5 * particlesPerDim[1] * particleSpacing};
+  }
 
+  void printConfig() {
+    using namespace std;
 
-  void printConfig() {      using namespace std;
-
-      cout << std::setw(valueOffset) << left << "Particles per dimension"
+    cout << std::setw(valueOffset) << left << "Particles per dimension"
          << ":  " << autopas::ArrayUtils::to_string(particlesPerDim) << endl;
     cout << std::setw(valueOffset) << left << "Particle spacing"
          << ":  " << particleSpacing << endl;
-      cout << std::setw(valueOffset) << left << "Number of Particles"
-           << ":  " << (particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]) << endl;
+    cout << std::setw(valueOffset) << left << "Number of Particles"
+         << ":  " << (particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]) << endl;
     cout << std::setw(valueOffset) << left << "Initial velocities"
-         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl << endl;
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl
+         << endl;
   }
 
  private:
@@ -46,21 +53,19 @@ class CubeGrid {
   double particleSpacing;
   std::array<double, 3> velocity;
   int particlesTotal;
-    std::array<double,3> center;
-
+  std::array<double, 3> center;
 };
 
 class CubeGauss {
  public:
-  CubeGauss(size_t numParticles,const std::array<double, 3> &boxLength, double distributionMean,
-            double distributionStdDev, const std::array<double, 3> &velocity,const std::array<double,3> &center)
-      :
-        numParticles(numParticles),
+  CubeGauss(size_t numParticles, const std::array<double, 3> &boxLength, double distributionMean,
+            double distributionStdDev, const std::array<double, 3> &velocity, const std::array<double, 3> &center)
+      : numParticles(numParticles),
         boxLength(boxLength),
         distributionMean(distributionMean),
         distributionStdDev(distributionStdDev),
-        velocity(velocity),center(center) {}
-
+        velocity(velocity),
+        center(center) {}
 
   size_t getNumParticles() const { return numParticles; }
 
@@ -70,76 +75,79 @@ class CubeGauss {
 
   const std::array<double, 3> &getVelocity() const { return velocity; }
 
-  std::array<double,3> getBoxMin(){
-    return {center[0]-0.5*boxLength[0],center[1]-0.5*boxLength[1],center[2]-0.5*boxLength[2]};
+  std::array<double, 3> getBoxMin() {
+    return {center[0] - 0.5 * boxLength[0], center[1] - 0.5 * boxLength[1], center[2] - 0.5 * boxLength[2]};
   }
-    std::array<double,3> getBoxMax(){
-        return {center[0]+0.5*boxLength[0],center[1]+0.5*boxLength[1],center[2]+0.5*boxLength[2]};
-    }
+  std::array<double, 3> getBoxMax() {
+    return {center[0] + 0.5 * boxLength[0], center[1] + 0.5 * boxLength[1], center[2] + 0.5 * boxLength[2]};
+  }
 
-  void printConfig() {      using namespace std;
+  void printConfig() {
+    using namespace std;
 
-      cout << std::setw(valueOffset) << left << "Distribution-Mean"
+    cout << std::setw(valueOffset) << left << "Distribution-Mean"
          << ":  " << distributionMean << endl;
     cout << std::setw(valueOffset) << left << "Distribution-StdDev"
          << ":  " << distributionStdDev << endl;
     cout << std::setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << numParticles << endl;
-      cout << std::setw(valueOffset) << left << "BoxLength"
-           << ":  " << autopas::ArrayUtils::to_string(boxLength) << endl << endl;
+    cout << std::setw(valueOffset) << left << "BoxLength"
+         << ":  " << autopas::ArrayUtils::to_string(boxLength) << endl
+         << endl;
     cout << std::setw(valueOffset) << left << "Initial velocities"
-         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl << endl;
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl
+         << endl;
   }
 
  private:
   static constexpr size_t valueOffset = 32;
   size_t numParticles;
-    std::array<double, 3> boxLength;
+  std::array<double, 3> boxLength;
   double distributionMean;
   double distributionStdDev;
   std::array<double, 3> velocity;
-  std::array<double,3> center;
+  std::array<double, 3> center;
 };
 
 class CubeUniform {
  public:
-  CubeUniform(size_t numParticles, const std::array<double, 3> &boxLength,const std::array<double, 3> &velocity,const std::array<double,3> &center)
-      : numParticles(numParticles),boxLength(boxLength), velocity(velocity),center(center) {}
-
+  CubeUniform(size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &velocity,
+              const std::array<double, 3> &center)
+      : numParticles(numParticles), boxLength(boxLength), velocity(velocity), center(center) {}
 
   size_t getNumParticles() const { return numParticles; }
 
   const std::array<double, 3> &getVelocity() const { return velocity; }
 
-    std::array<double,3> getBoxMin(){
-        return {center[0]-0.5*boxLength[0],center[1]-0.5*boxLength[1],center[2]-0.5*boxLength[2]};
-    }
+  std::array<double, 3> getBoxMin() {
+    return {center[0] - 0.5 * boxLength[0], center[1] - 0.5 * boxLength[1], center[2] - 0.5 * boxLength[2]};
+  }
 
-    std::array<double,3> getBoxMax(){
-        return {center[0]+0.5*boxLength[0],center[1]+0.5*boxLength[1],center[2]+0.5*boxLength[2]};
-    }
+  std::array<double, 3> getBoxMax() {
+    return {center[0] + 0.5 * boxLength[0], center[1] + 0.5 * boxLength[1], center[2] + 0.5 * boxLength[2]};
+  }
 
   void printConfig() {
-      using namespace std;
+    using namespace std;
 
-      cout << std::setw(valueOffset) << left << "Center"
+    cout << std::setw(valueOffset) << left << "Center"
          << ":  " << autopas::ArrayUtils::to_string(center) << endl;
     cout << std::setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << numParticles << endl;
     cout << std::setw(valueOffset) << left << "BoxLength"
-    << ":  " << autopas::ArrayUtils::to_string(boxLength) << endl << endl;
+         << ":  " << autopas::ArrayUtils::to_string(boxLength) << endl
+         << endl;
     cout << std::setw(valueOffset) << left << "Initial velocities"
-         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl << endl;
-
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl
+         << endl;
   }
 
  private:
   static constexpr size_t valueOffset = 32;
   size_t numParticles;
-    std::array<double, 3> boxLength;
+  std::array<double, 3> boxLength;
   std::array<double, 3> velocity;
-    std::array<double,3> center;
-
+  std::array<double, 3> center;
 };
 class Sphere {
  public:
@@ -169,7 +177,8 @@ class Sphere {
               for (int l = -1; l <= 1; l += 2) {
                 std::array<double, 3> multipliers = {(double)i, (double)k, (double)l};
                 std::array<double, 3> posVector = autopas::ArrayMath::add(
-                    center, autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(posDelta, multipliers), particleSpacing));
+                    center,
+                    autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(posDelta, multipliers), particleSpacing));
                 double disCheck = Generator::L2Norm(autopas::ArrayMath::sub(posVector, center));
                 if (disCheck <= (double)(radius + 1) * particleSpacing) {
                   counter++;
@@ -186,15 +195,17 @@ class Sphere {
     return counter;
   }
 
-  std::array<double,3> getBoxMin(){
-      return {center[0]-((double)radius)*particleSpacing,center[1]-((double)radius)*particleSpacing,center[2]-((double)radius)*particleSpacing};
+  std::array<double, 3> getBoxMin() {
+    return {center[0] - ((double)radius) * particleSpacing, center[1] - ((double)radius) * particleSpacing,
+            center[2] - ((double)radius) * particleSpacing};
   }
-    std::array<double,3> getBoxMax(){
-        return {center[0]+((double)radius)*particleSpacing,center[1]+((double)radius)*particleSpacing,center[2]+((double)radius)*particleSpacing};
-    }
+  std::array<double, 3> getBoxMax() {
+    return {center[0] + ((double)radius) * particleSpacing, center[1] + ((double)radius) * particleSpacing,
+            center[2] + ((double)radius) * particleSpacing};
+  }
 
   void printConfig() {
-      using namespace std;
+    using namespace std;
     cout << std::setw(valueOffset) << left << "Center of Sphere"
          << ":  " << autopas::ArrayUtils::to_string(center) << endl;
     cout << std::setw(valueOffset) << left << "radius in Particles"
@@ -206,7 +217,8 @@ class Sphere {
     cout << std::setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << this->particlesTotal() << endl;
     cout << std::setw(valueOffset) << left << "Initial velocities"
-         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl << endl;
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl
+         << endl;
   }
 
  private:
