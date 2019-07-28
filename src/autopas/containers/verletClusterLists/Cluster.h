@@ -17,9 +17,15 @@ class Cluster {
 
   auto &getParticle(size_t index) { return *(_firstParticle + index); }
 
+  const auto &getParticle(size_t index) const { return *(_firstParticle + index); }
+
   auto &getSoAView() { return _soaView; }
 
-  auto &getNeighbors() { return _neighborClusters; }
+  const auto &getNeighbors() const { return _neighborClusters; }
+
+  void addNeighbor(Cluster<Particle, clusterSize> &neighbor) {
+    _neighborClusters.push_back(&neighbor);
+  }
 
  private:
   Particle *_firstParticle;

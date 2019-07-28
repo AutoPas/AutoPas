@@ -21,7 +21,10 @@ class ClusterTower {
   size_t generateClusters() {
     if (getNumParticles() > 0) {
       _particles.sortByDim(2);
-      _numDummyParticles = clusterSize - getNumParticles() % clusterSize;
+
+      auto sizeLastCluster = (getNumParticles() % clusterSize);
+      _numDummyParticles = sizeLastCluster != 0 ? clusterSize - sizeLastCluster : 0;
+
       const auto &lastParticle = _particles[getNumParticles() - 1];
       for (size_t i = 0; i < _numDummyParticles; i++) {
         _particles.addParticle(lastParticle);
@@ -80,6 +83,8 @@ class ClusterTower {
   [[nodiscard]] auto &getClusters() { return _clusters; }
 
   [[nodiscard]] auto &getCluster(size_t index) { return _clusters[index]; }
+
+  [[nodiscard]] auto &getCluster(size_t index) const { return _clusters[index]; }
 
   [[nodiscard]] bool isNotEmpty() const { return getNumParticles() > 0; }
 

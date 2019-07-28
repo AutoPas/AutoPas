@@ -280,15 +280,15 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     auto boxSize = ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
 
     _towerSideLength = estimateOptimalGridSideLength(invalidParticles.size(), boxSize);
-    _interactionLengthInTowers = static_cast<int>(std::ceil((this->getInteractionLength()) / _towerSideLength));
+    _interactionLengthInTowers = static_cast<int>(std::ceil(this->getInteractionLength() / _towerSideLength));
     _towerSideLengthReciprocal = 1 / _towerSideLength;
 
     _towersPerDim = calculateTowersPerDim(boxSize);
     // _towersPerDim[2] is always 1
-    size_t numCells = _towersPerDim[0] * _towersPerDim[1];
+    size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
 
     // resize to number of towers
-    _towers.resize(numCells);
+    _towers.resize(numTowers);
 
     sortParticlesIntoTowers(invalidParticles);
 
@@ -343,19 +343,19 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Calculates the cells per dimension in the container using the _gridSideLengthReciprocal.
+   * Calculates the cells per dimension in the container using the _towerSideLengthReciprocal.
    * @param boxSize the size of the domain.
    * @return the cells per dimension in the container.
    */
   [[nodiscard]] std::array<size_t, 3> calculateTowersPerDim(std::array<double, 3> boxSize) const {
-    std::array<size_t, 3> cellsPerDim{};
+    std::array<size_t, 3> towersPerDim{};
     for (int d = 0; d < 2; d++) {
-      cellsPerDim[d] = static_cast<size_t>(std::ceil(boxSize[d] * _towerSideLengthReciprocal));
+      towersPerDim[d] = static_cast<size_t>(std::ceil(boxSize[d] * _towerSideLengthReciprocal));
       // at least one cell
-      cellsPerDim[d] = std::max(cellsPerDim[d], 1ul);
+      towersPerDim[d] = std::max(towersPerDim[d], 1ul);
     }
-    cellsPerDim[2] = 1ul;
-    return cellsPerDim;
+    towersPerDim[2] = 1ul;
+    return towersPerDim;
   }
 
   /**
@@ -445,23 +445,26 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     auto interactionCellTowerIndex1D = get1DInteractionCellIndexForTower(towerIndexX, towerIndexY);
     auto interactionCellNeighborIndex1D = get1DInteractionCellIndexForTower(neighborIndexX, neighborIndexY);
 
+    auto towerIndex1D = VerletClusterMaths::index1D(towerIndexX, towerIndexY, _towersPerDim);
+    auto neighborIndex1D = VerletClusterMaths::index1D(neighborIndexX, neighborIndexY, _towersPerDim);
+
     return interactionCellNeighborIndex1D > interactionCellTowerIndex1D or
-           (interactionCellNeighborIndex1D == interactionCellTowerIndex1D and
-            VerletClusterMaths::index1D(neighborIndexX, neighborIndexY, _towersPerDim) >=
-                VerletClusterMaths::index1D(towerIndexX, towerIndexY, _towersPerDim));
+           (interactionCellNeighborIndex1D == interactionCellTowerIndex1D and neighborIndex1D >= towerIndex1D);
   }
 
   void calculateNeighborsForTowerPair(internal::ClusterTower<Particle, clusterSize> &tower,
                                       internal::ClusterTower<Particle, clusterSize> &neighborTower,
                                       double distBetweenTowersXYsqr) {
+    const bool isSameTower = &tower == &neighborTower;
     for (size_t towerIndex = 0; towerIndex < tower.getNumClusters(); towerIndex++) {
-      auto startIndexNeighbor = _neighborListIsNewton3 and &tower == &neighborTower ? towerIndex + 1 : 0;
+      auto startIndexNeighbor = _neighborListIsNewton3 and isSameTower ? towerIndex + 1 : 0;
       auto &towerCluster = tower.getCluster(towerIndex);
       double towerClusterBoxBottom = towerCluster.getParticle(0).getR()[2];
       double towerClusterBoxTop = towerCluster.getParticle(clusterSize - 1).getR()[2];
 
       for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters(); neighborIndex++) {
-        if (not _neighborListIsNewton3 and towerIndex == neighborIndex) {
+        const bool isSameCluster = towerIndex == neighborIndex;
+        if (not _neighborListIsNewton3 and isSameTower and isSameCluster) {
           continue;
         }
         auto &neighborCluster = neighborTower.getCluster(neighborIndex);
@@ -471,7 +474,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         double distZ =
             bboxDistance(towerClusterBoxBottom, towerClusterBoxTop, neighborClusterBoxBottom, neighborClusterBoxTop);
         if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
-          towerCluster.getNeighbors().push_back(&neighborCluster);
+          towerCluster.addNeighbor(neighborCluster);
         }
       }
     }
@@ -495,12 +498,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
-      /**
-       * Gets the 1d tower index containing a particle in given position.
-       * @param pos the position of the particle
-       * @return the index of the tower containing the given position
-       */
-      [[nodiscard]] size_t get1DIndexOfPosition(const std::array<double, 3> &pos) const {
+  /**
+   * Gets the 1d tower index containing a particle in given position.
+   * @param pos the position of the particle
+   * @return the index of the tower containing the given position
+   */
+  [[nodiscard]] size_t get1DIndexOfPosition(const std::array<double, 3> &pos) const {
     std::array<size_t, 2> cellIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
