@@ -70,7 +70,7 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
     universalMap.emplace(i, 1.0);
   }
   ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, 0.1);
 
   FMCell cell1, cell2;
   {

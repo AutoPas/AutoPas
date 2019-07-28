@@ -33,9 +33,9 @@ class TimeDiscretizationTest : public AutoPasTestBase {
                              std::array<unsigned long, 3> particlesPerDim);
 
   static std::array<double, 3> nextPosition(std::array<double, 3> position, std::array<double, 3> force,
-                                     std::array<double, 3> velocity, double particle_delta_t);
+                                            std::array<double, 3> velocity, double particle_delta_t);
   static std::array<double, 3> nextVelocity(std::array<double, 3> velocity, std::array<double, 3> force,
-                                     std::array<double, 3> oldf, double particle_delta_t);
+                                            std::array<double, 3> oldf, double particle_delta_t);
 
   void Pos_and_Velo_Test(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
                          size_t numberOfParticles, int iterations);

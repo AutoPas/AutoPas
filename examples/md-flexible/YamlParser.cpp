@@ -10,16 +10,16 @@ bool YamlParser::parseInput(int argc, char **argv) {
   int option, option_index;
   static struct option long_options[] = {{"filename", required_argument, nullptr, 'Y'},
                                          {"container", required_argument, nullptr, 'c'},
-                                         {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"cutoff", required_argument, nullptr, 'C'},
                                          {"cell-size-factor", required_argument, nullptr, 'a'},
                                          {"data-layout", required_argument, nullptr, 'd'},
+                                         {"delta_t", required_argument, nullptr, 'D'},
                                          {"functor", required_argument, nullptr, 'f'},
                                          {"help", no_argument, nullptr, 'h'},
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
                                          {"newton3", required_argument, nullptr, '3'},
-                                         {"delta_t", required_argument, nullptr, 'D'},
+                                         {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
@@ -54,23 +54,19 @@ bool YamlParser::parseInput(int argc, char **argv) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
-      case 'Y': {
-        break;
-      }
-      case 'D': {
-        try {
-          delta_t = stod(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing epsilon value: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
       case '3': {
         newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
         if (newton3Options.empty()) {
           cerr << "Unknown Newton3 option: " << strArg << endl;
           cerr << "Please use 'enabled' or 'disabled'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'a': {
+        cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
+        if (cellSizeFactors->isEmpty()) {
+          cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -94,10 +90,11 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-      case 'a': {
-        cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
-        if (cellSizeFactors->isEmpty()) {
-          cerr << "Error parsing cell size factors: " << optarg << endl;
+      case 'D': {
+        try {
+          delta_t = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing epsilon value: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -107,6 +104,19 @@ bool YamlParser::parseInput(int argc, char **argv) {
         if (dataLayoutOptions.empty()) {
           cerr << "Unknown data layouts: " << strArg << endl;
           cerr << "Please use 'AoS' or 'SoA'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'E': {
+        try {
+          tuningMaxEvidence = (unsigned int)stoul(strArg);
+          if (tuningMaxEvidence < 1) {
+            cerr << "Tuning max evidence has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing number of tuning max evidence: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -153,15 +163,6 @@ bool YamlParser::parseInput(int argc, char **argv) {
           }
         } catch (const exception &) {
           cerr << "Error parsing tuning interval: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
-      case 'y': {
-        selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
-          cerr << "Unknown Selector Strategy: " << strArg << endl;
-          cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
         }
         break;
@@ -221,19 +222,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-      case 'E': {
-        try {
-          tuningMaxEvidence = (unsigned int)stoul(strArg);
-          if (tuningMaxEvidence < 1) {
-            cerr << "Tuning max evidence has to be a positive integer!" << endl;
-            displayHelp = true;
-          }
-        } catch (const exception &) {
-          cerr << "Error parsing number of tuning max evidence: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
+
       case 't': {
         traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
@@ -252,6 +241,15 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'r': {
+        try {
+          verletSkinRadius = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 'v': {
         try {
           verletRebuildFrequency = (unsigned int)stoul(strArg);
@@ -265,13 +263,16 @@ bool YamlParser::parseInput(int argc, char **argv) {
         writeVTK = strArg;
         break;
       }
-      case 'r': {
-        try {
-          verletSkinRadius = stod(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+      case 'y': {
+        selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
+        if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
+          cerr << "Unknown Selector Strategy: " << strArg << endl;
+          cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case 'Y': {
         break;
       }
       default: {

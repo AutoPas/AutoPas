@@ -7,18 +7,18 @@ iteration: 10
 #newton3: enabled
 #
 Objects:
-  CubeGrid:
-    particles-per-Dim: [10,10,10]
-    particleSpacing: 0.5
-    velocity: [10.,10.,10.]
-    center: [5.,5.,5.]
-#  CubeGauss:
-#    numberOfParticles: 100
-#    box-length: [8.,8.,8.]
-#    distribution-mean: 2.0
-#    distribution-stddev: 5.0
-#    velocity: [0.,0.,0.]
+#  CubeGrid:
+#    particles-per-Dim: [10,10,10]
+#    particleSpacing: 0.5
+#    velocity: [10.,10.,10.]
 #    center: [5.,5.,5.]
+  CubeGauss:
+    numberOfParticles: 100
+    box-length: [8.,8.,8.]
+    distribution-mean: 2.0
+    distribution-stddev: 5.0
+    velocity: [0.,0.,0.]
+    center: [5.,5.,5.]
 #  CubeUniform:
 #    numberOfParticles: 100
 #    box-length: [10.,10.,10.]

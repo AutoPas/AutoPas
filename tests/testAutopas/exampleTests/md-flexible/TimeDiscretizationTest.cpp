@@ -85,7 +85,7 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
     oldPositionValues.clear();
     forces.clear();
     oldforces.clear();
-    i = 0; //index to particleID to compare values in Vectors
+    i = 0;  // index to particleID to compare values in Vectors
     ASSERT_EQ(oldVelocityValues.size(), 0);
     ASSERT_EQ(oldPositionValues.size(), 0);
     ASSERT_EQ(forces.size(), 0);

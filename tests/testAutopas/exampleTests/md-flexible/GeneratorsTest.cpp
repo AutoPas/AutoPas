@@ -33,8 +33,8 @@ TEST_F(GeneratorsTest, CubeGenerator) {
   std::array<double, 3> velocity = {0., 0., 0.};
   std::array<size_t, 3> cube = {particlesPerDim, particlesPerDim, particlesPerDim};
   Generator::CubeGrid(autoPas, {0., 0., 0.}, cube, .5, {0., 0., 0.});
-//  std::string CubeGeneration = "CubeGeneration.vtu";
-//  writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
+  //  std::string CubeGeneration = "CubeGeneration.vtu";
+  //  writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
   EXPECT_EQ(autoPas.getNumberOfParticles(), (5 * 5 * 5));
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     EXPECT_EQ(velocity, iter->getV());
@@ -49,7 +49,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   autoPas.setBoxMin(boxmin);
   Particle dummy;
 
-    autoPas.init();
+  autoPas.init();
   GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin, {0., 0., 0.});
 //    std::string CubeGeneration = "FillGrid-BoxMin.vtu";
 //      writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
@@ -84,7 +84,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   autoPas.setBoxMax(parser.getBoxMax());
   autoPas.setBoxMin(parser.getBoxMin());
   autoPas.init();
-  std::array<double,3> velocity = {0.,0.,0.};
+  std::array<double, 3> velocity = {0., 0., 0.};
   // parses the multiple Objects input of "testParsing.yaml" and generates a VTK File from the Input
   auto CubeGrid(parser.getCubeGrid());
   auto CubeGauss(parser.getCubeGauss());
@@ -103,15 +103,15 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   for (auto S : Sphere) {
     Generator::Sphere(autoPas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), S.getId(), S.getVelocity());
   }
-  //to see output:
-//  std::string SphereGeneration = "MultipleGeneration.vtu";
-//  writeVTKFile<decltype(autoPas)>(SphereGeneration, autoPas.getNumberOfParticles(), autoPas);
+  // to see output:
+  //  std::string SphereGeneration = "MultipleGeneration.vtu";
+  //  writeVTKFile<decltype(autoPas)>(SphereGeneration, autoPas.getNumberOfParticles(), autoPas);
   // checked VTK File
   EXPECT_EQ(parser.particlesTotal(), autoPas.getNumberOfParticles());
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-        EXPECT_EQ(velocity, iter->getV());
-    }
+  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+    EXPECT_EQ(velocity, iter->getV());
+  }
 }
