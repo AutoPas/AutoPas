@@ -9,7 +9,6 @@
 #include <cmath>
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
-#include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
@@ -245,7 +244,32 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
+  auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
+
+  auto &getTowerForParticleLocation(std::array<double, 3> location) {
+    std::array<size_t, 2> cellIndex{};
+
+    for (int dim = 0; dim < 2; dim++) {
+      const long int value =
+          (static_cast<long int>(floor((location[dim] - this->getBoxMin()[dim]) * _towerSideLengthReciprocal))) + 1l;
+      const size_t nonNegativeValue = static_cast<size_t>(std::max(value, 0l));
+      const size_t nonLargerValue = std::min(nonNegativeValue, _towersPerDim[dim] - 1);
+      cellIndex[dim] = nonLargerValue;
+      // @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
+      // flag manager
+      if (location[dim] >= this->getBoxMax()[dim]) {
+        cellIndex[dim] = _towersPerDim[dim] - 1;
+      } else if (location[dim] < this->getBoxMin()[dim]) {
+        cellIndex[dim] = 0;
+      }
+    }
+
+    return getTowerAtCoordinates(cellIndex[0], cellIndex[1]);
+  }
+
  protected:
+  size_t towerIndex2DTo1D(const size_t x, const size_t y) { return x + y * _towersPerDim[0]; }
+
   /**
    * Helper method to sequentially iterate over all clusters.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
@@ -255,9 +279,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void traverseClustersSequential(LoopBody &&loopBody) {
     for (size_t x = 0; x < _towersPerDim[0]; x++) {
       for (size_t y = 0; y < _towersPerDim[1]; y++) {
-        size_t index = VerletClusterMaths::index1D(x, y, _towersPerDim);
-        auto &tower = _towers[index];
-
+        auto &tower = getTowerAtCoordinates(x, y);
         for (auto &cluster : tower.getClusters()) {
           loopBody(cluster);
         }
@@ -282,8 +304,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 #endif
     for (size_t x = 0; x < _towersPerDim[0]; x++) {
       for (size_t y = 0; y < _towersPerDim[1]; y++) {
-        size_t index = VerletClusterMaths::index1D(x, y, _towersPerDim);
-        auto &tower = _towers[index];
+        auto &tower = getTowerAtCoordinates(x, y);
 
         for (auto &cluster : tower.getClusters()) {
           loopBody(cluster);
@@ -387,8 +408,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void sortParticlesIntoTowers(std::vector<Particle> &particles) {
     for (auto &particle : particles) {
       if (utils::inBox(particle.getR(), this->getBoxMin(), this->getBoxMax())) {
-        auto index = get1DIndexOfPosition(particle.getR());
-        _towers[index].addParticle(particle);
+        auto &tower = getTowerForParticleLocation(particle.getR());
+        tower.addParticle(particle);
       }
     }
   }
@@ -433,7 +454,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   void calculateNeighborsForTowerInRange(const int towerIndexX, const int towerIndexY, const int minX, const int maxX,
                                          const int minY, const int maxY) {
-    auto &tower = _towers[VerletClusterMaths::index1D(towerIndexX, towerIndexY, _towersPerDim)];
+    auto &tower = getTowerAtCoordinates(towerIndexX, towerIndexY);
     // for all neighbor towers
     for (int neighborIndexY = minY; neighborIndexY <= maxY; neighborIndexY++) {
       double distBetweenTowersY = std::max(0, std::abs(towerIndexY - neighborIndexY) - 1) * _towerSideLength;
@@ -449,7 +470,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
         // calculate distance in xy-plane and skip if already longer than cutoff
         auto distBetweenTowersXYsqr = distBetweenTowersX * distBetweenTowersX + distBetweenTowersY * distBetweenTowersY;
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
-          auto &neighborTower = _towers[VerletClusterMaths::index1D(neighborIndexX, neighborIndexY, _towersPerDim)];
+          auto &neighborTower = getTowerAtCoordinates(neighborIndexX, neighborIndexY);
 
           calculateNeighborsForTowerPair(tower, neighborTower, distBetweenTowersXYsqr);
         }
@@ -471,8 +492,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     auto interactionCellTowerIndex1D = get1DInteractionCellIndexForTower(towerIndexX, towerIndexY);
     auto interactionCellNeighborIndex1D = get1DInteractionCellIndexForTower(neighborIndexX, neighborIndexY);
 
-    auto towerIndex1D = VerletClusterMaths::index1D(towerIndexX, towerIndexY, _towersPerDim);
-    auto neighborIndex1D = VerletClusterMaths::index1D(neighborIndexX, neighborIndexY, _towersPerDim);
+    auto towerIndex1D = towerIndex2DTo1D(towerIndexX, towerIndexY);
+    auto neighborIndex1D = towerIndex2DTo1D(neighborIndexX, neighborIndexY);
 
     return interactionCellNeighborIndex1D > interactionCellTowerIndex1D or
            (interactionCellNeighborIndex1D == interactionCellTowerIndex1D and neighborIndex1D >= towerIndex1D);
@@ -524,37 +545,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
+  private :
       /**
-       * Gets the 1d tower index containing a particle in given position.
-       * @param pos the position of the particle
-       * @return the index of the tower containing the given position
+       * internal storage, particles are split into a grid in xy-dimension
        */
-      [[nodiscard]] size_t get1DIndexOfPosition(const std::array<double, 3> &pos) const {
-    std::array<size_t, 2> cellIndex{};
-
-    for (int dim = 0; dim < 2; dim++) {
-      const long int value =
-          (static_cast<long int>(floor((pos[dim] - this->getBoxMin()[dim]) * _towerSideLengthReciprocal))) + 1l;
-      const size_t nonNegativeValue = static_cast<size_t>(std::max(value, 0l));
-      const size_t nonLargerValue = std::min(nonNegativeValue, _towersPerDim[dim] - 1);
-      cellIndex[dim] = nonLargerValue;
-      // @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
-      // flag manager
-      if (pos[dim] >= this->getBoxMax()[dim]) {
-        cellIndex[dim] = _towersPerDim[dim] - 1;
-      } else if (pos[dim] < this->getBoxMin()[dim]) {
-        cellIndex[dim] = 0;
-      }
-    }
-
-    return VerletClusterMaths::index1D(cellIndex[0], cellIndex[1], _towersPerDim);
-  }
-
- private:
-  /**
-   * internal storage, particles are split into a grid in xy-dimension
-   */
-  std::vector<internal::ClusterTower<Particle, clusterSize>> _towers{1};
+      std::vector<internal::ClusterTower<Particle, clusterSize>> _towers{1};
 
   /**
    * Dimensions of the 2D xy-grid.

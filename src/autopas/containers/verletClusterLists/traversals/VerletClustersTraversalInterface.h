@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
-#include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
 
 namespace autopas {
 

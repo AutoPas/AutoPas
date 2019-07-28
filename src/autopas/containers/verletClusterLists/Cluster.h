@@ -10,6 +10,7 @@
 #include "autopas/utils/SoAView.h"
 
 namespace autopas::internal {
+
 template <class Particle, size_t clusterSize>
 class Cluster {
  public:
