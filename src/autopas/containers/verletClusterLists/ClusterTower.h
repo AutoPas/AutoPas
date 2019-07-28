@@ -12,25 +12,36 @@
 namespace autopas::internal {
 
 template <class Particle, size_t clusterSize>
-class ClusterTower {
+class ClusterTower : public ParticleCell<Particle> {
   static const Particle dummy;
 
  public:
-  void addParticle(const Particle &particle) { _particles.addParticle(particle); }
+  /**
+   * Adds a particle to the cluster tower. If generateClusters() has already been called on this ClusterTower, clear()
+   * must be called first, or dummies are messed up!
+   * @param particle The particle to add.
+   */
+  void addParticle(const Particle &particle) override { _particles.addParticle(particle); }
+
+  void clear() override {
+    _clusters.clear();
+    _particles.clear();
+    _numDummyParticles = 0;
+  }
 
   size_t generateClusters() {
-    if (getNumParticles() > 0) {
+    if (getNumActualParticles() > 0) {
       _particles.sortByDim(2);
 
-      auto sizeLastCluster = (getNumParticles() % clusterSize);
+      auto sizeLastCluster = (_particles.numParticles() % clusterSize);
       _numDummyParticles = sizeLastCluster != 0 ? clusterSize - sizeLastCluster : 0;
 
-      const auto &lastParticle = _particles[getNumParticles() - 1];
+      const auto &lastParticle = _particles[_particles.numParticles() - 1];
       for (size_t i = 0; i < _numDummyParticles; i++) {
         _particles.addParticle(lastParticle);
       }
 
-      size_t numClusters = getNumParticles() / clusterSize;
+      size_t numClusters = _particles.numParticles() / clusterSize;
       _clusters.reserve(numClusters);
       for (size_t index = 0; index < numClusters; index++) {
         _clusters.emplace_back(&(_particles[clusterSize * index]));
@@ -38,12 +49,6 @@ class ClusterTower {
     }
 
     return getNumClusters();
-  }
-
-  void clear() {
-    _clusters.clear();
-    _particles.clear();
-    _numDummyParticles = 0;
   }
 
   void fillUpWithDummyParticles(double dummyStartX, double dummyDistZ) {
@@ -70,27 +75,56 @@ class ClusterTower {
 
   [[nodiscard]] size_t getNumDummyParticles() const { return _numDummyParticles; }
 
-      [[nodiscard]] size_t getNumParticles() const {
-    return _particles.numParticles();
+      [[nodiscard]] size_t getNumActualParticles() const {
+    return _particles.numParticles() - _numDummyParticles;
   }
 
   [[nodiscard]] size_t getNumClusters() const { return _clusters.size(); }
 
-  decltype(auto) begin() {
-    return _particles.begin();
+      [[nodiscard]] auto &getClusters() {
+    return _clusters;
   }
-
-  [[nodiscard]] auto &getClusters() { return _clusters; }
 
   [[nodiscard]] auto &getCluster(size_t index) { return _clusters[index]; }
 
   [[nodiscard]] auto &getCluster(size_t index) const { return _clusters[index]; }
 
-  [[nodiscard]] bool isNotEmpty() const { return getNumParticles() > 0; }
+  [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
+
+      [[nodiscard]] SingleCellIteratorWrapper<Particle> begin() override {
+    return SingleCellIteratorWrapper<Particle>{
+        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>>(this)};
+  }
+
+  /**
+   * Returns the particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  decltype(auto) getParticle(size_t index) { return _particles._particles.at(index); }
+
+  // Methods from here on: Only to comply with ParticleCell interface. SingleCellIterators work on ParticleCells, and
+  // while those methods would not be needed, still complying to the whole interface should be helpful, if
+  // maybe someday new necessary pure virtual methods are introduced there.
+
+  [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
+
+  void deleteByIndex(size_t index) override {
+    autopas::utils::ExceptionHandler::exception("Not supported!");
+  }
+
+  void setCellLength(std::array<double, 3> &) override {
+    autopas::utils::ExceptionHandler::exception("Not supported!");
+  }
+
+  [[nodiscard]] std::array<double, 3> getCellLength() const override {
+    autopas::utils::ExceptionHandler::exception("Not supported!");
+    return {0, 0, 0};
+  }
 
   private : std::vector<Cluster<Particle, clusterSize>> _clusters;
   FullParticleCell<Particle> _particles;
-  size_t _numDummyParticles;
+  size_t _numDummyParticles{};
 };
 
 template <class Particle, size_t clusterSize>

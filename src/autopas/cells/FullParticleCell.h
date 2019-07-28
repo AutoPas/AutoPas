@@ -84,6 +84,13 @@ class FullParticleCell : public ParticleCell<Particle> {
   std::array<double, 3> getCellLength() const override { return _cellLength; }
 
   /**
+   * Returns the particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  decltype(auto) getParticle(size_t index) { return _particles.at(index); }
+
+  /**
    * Resizes the container so that it contains n elements.
    * @param n New container size
    */

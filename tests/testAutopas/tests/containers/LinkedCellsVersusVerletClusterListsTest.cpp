@@ -44,15 +44,13 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   // get and sort by id, skip id=0 to avoid dummy particles
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
-    if (m.getID() != 0) forcesVerlet.at(m.getID()) = m.getF();
+    forcesVerlet.at(m.getID()) = m.getF();
   }
-  forcesVerlet.at(0) = {1.0, 1.0, 1.0};
 
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
-    if (m.getID() != 0) forcesLinked.at(m.getID()) = m.getF();
+    forcesLinked.at(m.getID()) = m.getF();
   }
-  forcesLinked.at(0) = {1.0, 1.0, 1.0};
 
   for (unsigned long i = 0; i < numMolecules; ++i) {
     for (int d = 0; d < 3; ++d) {

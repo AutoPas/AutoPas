@@ -71,6 +71,13 @@ class SortedCellView : public ParticleCell<Particle> {
   std::array<double, 3> getCellLength() const override { return _cell->getCellLength(); }
 
   /**
+   * Returns the particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  decltype(auto) getParticle(size_t index) { return _particles.at(index); }
+
+  /**
    * Type of the internal iterator.
    */
   typedef internal::SingleCellIterator<Particle, SortedCellView<Particle, ParticleCellType>> iterator_t;

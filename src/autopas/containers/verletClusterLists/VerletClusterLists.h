@@ -82,12 +82,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * @copydoc VerletLists::addParticle()
+   * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
+   * @param p The particle to add.
    */
-  void addParticle(Particle &p) override {
-    // add particle somewhere, because lists will be rebuild anyways
-    _towers[0].addParticle(p);
-  }
+  void addParticle(Particle &p) override { _particlesToAdd.push_back(p); }
 
   /**
    * @copydoc VerletLists::addHaloParticle()
@@ -181,7 +179,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   unsigned long getNumParticles() override {
     unsigned long sum = 0;
     for (size_t index = 0; index < _towers.size(); index++) {
-      sum += _towers[index].getNumParticles();
+      sum += _towers[index].getNumActualParticles();
     }
     return sum;
   }
@@ -319,6 +317,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   void rebuild(bool useNewton3) {
     std::vector<Particle> invalidParticles = collectAllParticlesFromTowers();
+    invalidParticles.insert(invalidParticles.end(), _particlesToAdd.begin(), _particlesToAdd.end());
+    _particlesToAdd.clear();
 
     auto boxSize = ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
 
@@ -356,9 +356,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @return All particles in the container.
    */
   std::vector<Particle> collectAllParticlesFromTowers() {
-    // TODO: Optimize so not all particles are copied, but the vectors of the tower moved here
     std::vector<Particle> invalidParticles;
     for (auto &tower : _towers) {
+      invalidParticles.reserve(invalidParticles.size() + tower.getNumActualParticles());
       for (auto it = tower.begin(); it.isValid(); ++it) {
         invalidParticles.push_back(*it);
       }
@@ -586,6 +586,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * Specifies if the saved neighbors use newton 3 or not.
    */
   bool _neighborListIsNewton3;
+
+  /**
+   * Contains all particles that should be added to the container during the next rebuild.
+   */
+  std::vector<Particle> _particlesToAdd;
 };
 
 }  // namespace autopas

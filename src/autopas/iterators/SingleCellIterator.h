@@ -14,7 +14,8 @@ namespace autopas::internal {
  * SingleCellIterator class to loop over particles of a single cell.
  *
  * @tparam Particle type of the Particles
- * @tparam ParticleCell type of the ParticleCell
+ * @tparam ParticleCell type of the ParticleCell. Besides the methods of ParticleCell, a method Particle&
+ * getParticle(size_t index) is needed.
  */
 template <class Particle, class ParticleCell>
 class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
@@ -41,7 +42,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * this is the indirection operator
    * @return current particle
    */
-  inline Particle &operator*() const override { return _cell->_particles.at(_index); }
+  inline Particle &operator*() const override { return _cell->getParticle(_index); }
 
   /**
    * increment operator to get the next particle
