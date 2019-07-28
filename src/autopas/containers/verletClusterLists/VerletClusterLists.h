@@ -219,9 +219,31 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   /**
    * Returns the interaction length in towers. That is how many towers fit into one interaction length rounded up.
-   * @return the interaciton length in towers.
+   * @return the interaction length in towers.
    */
   auto getInteractionLengthInTowers() const { return _interactionLengthInTowers; }
+
+  template <class Functor>
+  void loadParticlesIntoSoAs(Functor *functor) {
+#if defined(AUTOPAS_OPENMP)
+    // @todo: find sensible chunksize
+#pragma omp parallel for schedule(dynamic) default(none) shared(functor)
+#endif
+    for (size_t index = 0; index < _towers.size(); index++) {
+      _towers[index].loadSoA(functor);
+    }
+  }
+
+  template <class Functor>
+  void extractParticlesFromSoAs(Functor *functor) {
+#if defined(AUTOPAS_OPENMP)
+    // @todo: find sensible chunksize
+#pragma omp parallel for schedule(dynamic) default(none) shared(functor)
+#endif
+    for (size_t index = 0; index < _towers.size(); index++) {
+      _towers[index].extractSoA(functor);
+    }
+  }
 
  protected:
   /**
@@ -256,7 +278,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void traverseClustersParallel(LoopBody &&loopBody) {
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) collapse(2)
+#pragma omp parallel for schedule(dynamic) collapse(2) default(none) shared(loopBody)
 #endif
     for (size_t x = 0; x < _towersPerDim[0]; x++) {
       for (size_t y = 0; y < _towersPerDim[1]; y++) {
@@ -382,7 +404,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
     const int maxTowerIndexX = _towersPerDim[0] - 1;
     const int maxTowerIndexY = _towersPerDim[1] - 1;
+
     // for all towers
+#if defined(AUTOPAS_OPENMP)
+    // @todo: find sensible chunksize
+#pragma omp parallel for schedule(dynamic) collapse(2) default(none) shared(maxTowerIndexX, maxTowerIndexY)
+#endif
     for (int towerIndexY = 0; towerIndexY <= maxTowerIndexY; towerIndexY++) {
       for (int towerIndexX = 0; towerIndexX <= maxTowerIndexX; towerIndexX++) {
         const int minX = std::max(towerIndexX - _interactionLengthInTowers, 0);
@@ -434,7 +461,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     const int interactionCellTowerX = towerIndexX / _interactionLengthInTowers;
     const int interactionCellTowerY = towerIndexY / _interactionLengthInTowers;
 
-    // TODO: Check if having this as member improves performance
     const int numInteractionCellsX = static_cast<int>(std::ceil(_towersPerDim[0] / (double)_interactionLengthInTowers));
 
     return interactionCellTowerX + numInteractionCellsX * interactionCellTowerY;
@@ -498,12 +524,12 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
-  /**
-   * Gets the 1d tower index containing a particle in given position.
-   * @param pos the position of the particle
-   * @return the index of the tower containing the given position
-   */
-  [[nodiscard]] size_t get1DIndexOfPosition(const std::array<double, 3> &pos) const {
+      /**
+       * Gets the 1d tower index containing a particle in given position.
+       * @param pos the position of the particle
+       * @return the index of the tower containing the given position
+       */
+      [[nodiscard]] size_t get1DIndexOfPosition(const std::array<double, 3> &pos) const {
     std::array<size_t, 2> cellIndex{};
 
     for (int dim = 0; dim < 2; dim++) {

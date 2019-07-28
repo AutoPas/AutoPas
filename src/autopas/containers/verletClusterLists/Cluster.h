@@ -23,9 +23,7 @@ class Cluster {
 
   const auto &getNeighbors() const { return _neighborClusters; }
 
-  void addNeighbor(Cluster<Particle, clusterSize> &neighbor) {
-    _neighborClusters.push_back(&neighbor);
-  }
+  void addNeighbor(Cluster<Particle, clusterSize> &neighbor) { _neighborClusters.push_back(&neighbor); }
 
  private:
   Particle *_firstParticle;

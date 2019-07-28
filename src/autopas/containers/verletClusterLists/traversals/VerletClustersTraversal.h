@@ -42,28 +42,16 @@ class VerletClustersTraversal : public TraversalInterface,
 
   void initTraversal() override {
     if (dataLayout != DataLayoutOption::soa) return;
-    // TODO: This and endTraversal(): implementation is the same for all traversals, so pull it in interface
-    auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
-    auto &towers = clusterList.getTowers();
-    const auto numTowers = towers.size();
 
-    // TODO: Parallelize
-    for (size_t index = 0; index < numTowers; index++) {
-      towers[index].loadSoA(_functor);
-    }
+    auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
+    clusterList.loadParticlesIntoSoAs(_functor);
   }
 
   void endTraversal() override {
     if (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
-    auto &towers = clusterList.getTowers();
-    const auto numTowers = towers.size();
-
-    // TODO: Parallelize
-    for (size_t index = 0; index < numTowers; index++) {
-      towers[index].extractSoA(_functor);
-    }
+    clusterList.extractParticlesFromSoAs(_functor);
   }
 
   void traverseParticlePairs() override {
