@@ -18,7 +18,7 @@ namespace autopas {
  template <typename floatType =double>
 class MoleculeLJ : public Particle {
  public:
-  MoleculeLJ() = default;
+  MoleculeLJ() :Particle() {}
 
   /**
    * constructor of a lennard jones molecule
@@ -27,6 +27,8 @@ class MoleculeLJ : public Particle {
    * @param id id of the molecule
    */
   explicit MoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id) : Particle(r, v, id) {}
+
+  MoleculeLJ(std::array<floatType,3> r,std::array<floatType,3> v, unsigned long id, unsigned long _typeid) : Particle(r,v,id) {this->_typeId=_typeid;}
 
   ~MoleculeLJ() override = default;
 

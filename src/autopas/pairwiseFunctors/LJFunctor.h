@@ -537,10 +537,10 @@ class LJFunctor
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 5>{
+  constexpr static const std::array<typename Particle::AttributeNames, 6> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
   }
 
   /**
