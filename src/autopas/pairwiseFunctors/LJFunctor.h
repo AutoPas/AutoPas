@@ -162,8 +162,8 @@ class LJFunctor
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::typeId>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::typeId>());
+    auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
       if (calculateGlobals) {
@@ -184,11 +184,12 @@ class LJFunctor
       floatPrecision fxacc = 0.;
       floatPrecision fyacc = 0.;
       floatPrecision fzacc = 0.;
-
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
+        const auto sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr[i],typeptr[j]);
+        const auto epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr[i],typeptr[j]);
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
         const floatPrecision drz = zptr[i] - zptr[j];
@@ -202,7 +203,6 @@ class LJFunctor
         const floatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
         const floatPrecision invdr2 = 1. / dr2;
-        //@todo sigma und epsilon pointer weiterlaufen lasse
         const floatPrecision lj2 = sigmasquare * invdr2;
         const floatPrecision lj6 = lj2 * lj2 * lj2;
         const floatPrecision lj12 = lj6 * lj6;
@@ -272,10 +272,9 @@ class LJFunctor
     auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    auto epsilon24 = (floatPrecision)_PCLibrary->mixing24E(*soa1.template begin<Particle::AttributeNames::typeId>(),
-                                                           *soa2.template begin<Particle::AttributeNames::typeId>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->mixingSS(*soa1.template begin<Particle::AttributeNames::typeId>(),
-                                                            *soa2.template begin<Particle::AttributeNames::typeId>());
+      auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
+      auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
+
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -307,6 +306,8 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+          const auto sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr1[i],typeptr2[j]);
+          const auto epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr1[i],typeptr2[j]);
         const floatPrecision drx = x1ptr[i] - x2ptr[j];
         const floatPrecision dry = y1ptr[i] - y2ptr[j];
         const floatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -320,7 +321,6 @@ class LJFunctor
         const floatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
 
         const floatPrecision invdr2 = 1. / dr2;
-          //@todo sigma epsilon pointer weiterlaufen lassen
           const floatPrecision lj2 = sigmasquare * invdr2;
         const floatPrecision lj6 = lj2 * lj2 * lj2;
         const floatPrecision lj12 = lj6 * lj6;
