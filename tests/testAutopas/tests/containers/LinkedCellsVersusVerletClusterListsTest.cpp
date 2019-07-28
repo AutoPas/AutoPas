@@ -40,7 +40,7 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   _verletLists.iteratePairwise(verletTraversal.get());
   _linkedCells.iteratePairwise(&traversalLinkedLJ);
 
-  std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
+  std::vector<std::array<double, 3>> forcesVerlet{numMolecules}, forcesLinked{numMolecules};
   // get and sort by id, skip id=0 to avoid dummy particles
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;

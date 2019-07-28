@@ -22,6 +22,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout
 class VerletClustersTraversal : public TraversalInterface,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
+  static constexpr size_t clusterSize = VerletClusterLists<Particle>::clusterSize;
 
  public:
   /**
@@ -41,71 +42,37 @@ class VerletClustersTraversal : public TraversalInterface,
 
   void initTraversal() override {
     if (dataLayout != DataLayoutOption::soa) return;
-
+    // TODO: This and endTraversal(): implementation is the same for all traversals, so pull it in interface
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
+    auto &towers = clusterList.getTowers();
+    const auto numTowers = towers.size();
 
-    auto numClusters = clusterList.getNumClusters();
-    const auto &aosToSoaMap = clusterList.getClusterIndexMap();
-
-    _clusterSoAs.resize(numClusters);
-
-    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart,
-                                                              std::vector<Particle *> &clusterNeighborList) {
-      constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
-      auto currentClusterIndex = aosToSoaMap.at(clusterStart);
-      FullParticleCell<Particle> cell{};
-      cell.reserve(clusterSize);
-      for (size_t i = 0; i < clusterSize; i++) {
-        cell.addParticle(*(clusterStart + i));
-      }
-      SoA<typename Particle::SoAArraysType> &soa = _clusterSoAs[currentClusterIndex];
-      soa.resizeArrays(clusterSize);
-      _functor->SoALoader(cell, soa);
-    };
-
-    clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
+    // TODO: Parallelize
+    for (size_t index = 0; index < numTowers; index++) {
+      towers[index].loadSoA(_functor);
+    }
   }
 
   void endTraversal() override {
     if (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
+    auto &towers = clusterList.getTowers();
+    const auto numTowers = towers.size();
 
-    const auto &aosToSoaMap = clusterList.getClusterIndexMap();
-
-    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart,
-                                                              std::vector<Particle *> &clusterNeighborList) {
-      constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
-      auto currentClusterIndex = aosToSoaMap.at(clusterStart);
-      FullParticleCell<Particle> cell{};
-      cell.reserve(clusterSize);
-      for (size_t i = 0; i < clusterSize; i++) {
-        cell.addParticle(*(clusterStart + i));
-      }
-      SoA<typename Particle::SoAArraysType> &soa = _clusterSoAs[currentClusterIndex];
-      _functor->SoAExtractor(cell, soa);
-      for (size_t i = 0; i < clusterSize; i++) {
-        *(clusterStart + i) = cell[i];
-      }
-    };
-
-    clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
+    // TODO: Parallelize
+    for (size_t index = 0; index < numTowers; index++) {
+      towers[index].extractSoA(_functor);
+    }
   }
 
   void traverseParticlePairs() override {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
-    const auto &aosToSoaMap = clusterList.getClusterIndexMap();
-
-    const auto _clusterTraverseFunctor = [this, &aosToSoaMap](Particle *clusterStart,
-                                                              std::vector<Particle *> &clusterNeighborList) {
-      for (auto neighborClusterStart : clusterNeighborList) {
-        // self pair
-        if (clusterStart == neighborClusterStart) {
-          traverseSingleCluster(clusterStart, aosToSoaMap);
-        } else {
-          traverseNeighborClusters(clusterStart, neighborClusterStart, aosToSoaMap);
-        }
+    const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle, clusterSize> &cluster) {
+      traverseSingleCluster(cluster);
+      for (auto *neighborCluster : cluster.getNeighbors()) {
+        traverseNeighborClusters(cluster, *neighborCluster);
       }
     };
 
@@ -113,14 +80,13 @@ class VerletClustersTraversal : public TraversalInterface,
   }
 
  private:
-  void traverseSingleCluster(Particle *clusterStart,
-                             const std::unordered_map<Particle *, VerletClusterMaths::index_t> &aosToSoaMap) {
+  void traverseSingleCluster(internal::Cluster<Particle, clusterSize> &cluster) {
     switch (dataLayout) {
       case DataLayoutOption::aos:
-        traverseSingleClusterAoS(clusterStart);
+        traverseSingleClusterAoS(cluster);
         break;
       case DataLayoutOption::soa:
-        traverseSingleClusterSoA(clusterStart, aosToSoaMap);
+        traverseSingleClusterSoA(cluster);
         break;
       default:
         autopas::utils::ExceptionHandler::exception(
@@ -128,31 +94,29 @@ class VerletClustersTraversal : public TraversalInterface,
     }
   }
 
-  void traverseSingleClusterAoS(Particle *clusterStart) {
-    constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
+  void traverseSingleClusterAoS(internal::Cluster<Particle, clusterSize> &cluster) {
     for (size_t i = 0; i < clusterSize; i++) {
       for (size_t j = i + 1; j < clusterSize; j++) {
-        Particle *iParticle = clusterStart + i;
-        Particle *jParticle = clusterStart + j;
-        _functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
-        if (not useNewton3) _functor->AoSFunctor(*jParticle, *iParticle, useNewton3);
+        auto &iParticle = cluster.getParticle(i);
+        auto &jParticle = cluster.getParticle(j);
+        _functor->AoSFunctor(iParticle, jParticle, useNewton3);
+        if (not useNewton3) _functor->AoSFunctor(jParticle, iParticle, useNewton3);
       }
     }
   }
 
-  void traverseSingleClusterSoA(Particle *clusterStart,
-                                const std::unordered_map<Particle *, VerletClusterMaths::index_t> &aosToSoaMap) {
-    _functor->SoAFunctor(_clusterSoAs[aosToSoaMap.at(clusterStart)], useNewton3);
+  void traverseSingleClusterSoA(internal::Cluster<Particle, clusterSize> &cluster) {
+    _functor->SoAFunctor(cluster.getSoAView(), useNewton3);
   }
 
-  void traverseNeighborClusters(Particle *firstClusterStart, Particle *secondClusterStart,
-                                const std::unordered_map<Particle *, VerletClusterMaths::index_t> &aosToSoaMap) {
+  void traverseNeighborClusters(internal::Cluster<Particle, clusterSize> &firstCluster,
+                                internal::Cluster<Particle, clusterSize> &secondCluster) {
     switch (dataLayout) {
       case DataLayoutOption::aos:
-        traverseNeighborClustersAoS(firstClusterStart, secondClusterStart);
+        traverseNeighborClustersAoS(firstCluster, secondCluster);
         break;
       case DataLayoutOption::soa:
-        traverseNeighborClustersSoA(firstClusterStart, secondClusterStart, aosToSoaMap);
+        traverseNeighborClustersSoA(firstCluster, secondCluster);
         break;
       default:
         autopas::utils::ExceptionHandler::exception(
@@ -160,26 +124,23 @@ class VerletClustersTraversal : public TraversalInterface,
     }
   }
 
-  void traverseNeighborClustersAoS(Particle *firstClusterStart, Particle *secondClusterStart) {
-    constexpr auto clusterSize = VerletClusterLists<Particle>::clusterSize;
+  void traverseNeighborClustersAoS(internal::Cluster<Particle, clusterSize> &firstCluster,
+                                   internal::Cluster<Particle, clusterSize> &secondCluster) {
     for (size_t i = 0; i < clusterSize; i++) {
       for (size_t j = 0; j < clusterSize; j++) {
-        Particle *iParticle = firstClusterStart + i;
-        Particle *jParticle = secondClusterStart + j;
-        _functor->AoSFunctor(*iParticle, *jParticle, useNewton3);
+        auto &iParticle = firstCluster.getParticle(i);
+        auto &jParticle = secondCluster.getParticle(j);
+        _functor->AoSFunctor(iParticle, jParticle, useNewton3);
       }
     }
   }
 
-  void traverseNeighborClustersSoA(Particle *firstClusterStart, Particle *secondClusterStart,
-                                   const std::unordered_map<Particle *, VerletClusterMaths::index_t> &aosToSoaMap) {
-    _functor->SoAFunctor(_clusterSoAs[aosToSoaMap.at(firstClusterStart)],
-                         _clusterSoAs[aosToSoaMap.at(secondClusterStart)], useNewton3);
+  void traverseNeighborClustersSoA(internal::Cluster<Particle, clusterSize> &firstCluster,
+                                   internal::Cluster<Particle, clusterSize> &secondCluster) {
+    _functor->SoAFunctor(firstCluster.getSoAView(), secondCluster.getSoAView(), useNewton3);
   }
 
  private:
   PairwiseFunctor *_functor;
-
-  std::vector<SoA<typename Particle::SoAArraysType>> _clusterSoAs;
 };
 }  // namespace autopas

@@ -41,7 +41,7 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 }
-
+/*
 int sumNumClusterNeighbors(
     const std::vector<std::vector<std::vector<autopas::ParticleBase<double, unsigned long> *>>> &neighborList) {
   int sum = 0;
@@ -155,4 +155,6 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
     }
   }
 }
+
 #endif  // AUTOPAS_OPENMP
+*/
