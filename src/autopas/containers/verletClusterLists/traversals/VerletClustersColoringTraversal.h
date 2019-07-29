@@ -36,8 +36,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
    *    N N N           4 5 6
    * Where C is the current cell, N are the neighbor cells that is worked on, and X is not worked on. The neighbor list
    * with newton 3 of the VerletClusterLists container is build in a way that the neighbor lists already contain only
-   * the neighbor clusters of these cells.
-   * @see VerletClusterLists::updateVerletLists(bool)
+   * the neighbor clusters of these cells.s
    */
   static constexpr std::array<unsigned long, 3> _stride{3ul, 2ul, 1ul};
 

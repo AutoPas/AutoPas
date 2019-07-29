@@ -17,6 +17,10 @@ class VerletClusterLists;
 
 namespace internal {
 
+/**
+ * Helper class for rebuilding the VerletClusterLists container.
+ * @tparam Particle The type of the particle the container contains.
+ */
 template <class Particle>
 class VerletClusterListsRebuilder {
  private:
@@ -35,6 +39,15 @@ class VerletClusterListsRebuilder {
   std::array<double, 3> _boxMax;
 
  public:
+  /**
+   * Constructs the builder from the cluster list.
+   *
+   * It uses clusterList.getTowers() to work on the cluster list.
+   *
+   * @param clusterList The cluster list to rebuild the neighbor lists for.
+   * @param particlesToAdd New particles to add.
+   * @param newton3 If the neighbor lists should use newton 3.
+   */
   VerletClusterListsRebuilder(VerletClusterLists<Particle> &clusterList, std::vector<Particle> &particlesToAdd,
                               bool newton3)
       : _particlesToAdd(particlesToAdd),
@@ -49,25 +62,40 @@ class VerletClusterListsRebuilder {
         _boxMin(clusterList.getBoxMin()),
         _boxMax(clusterList.getBoxMax()) {}
 
+  /**
+   * Aggregate to provide names for the return values of rebuild().
+   */
   struct BuildingReturnValues {
+    /**
+     * The new side length of each tower in xy-direction.
+     */
     double _towerSideLength;
+    /**
+     * The interaction length in towers using the new tower side length.
+     */
     int _interactionLengthInTowers;
+    /**
+     * The number of towers in each dimension using the new tower side length.
+     */
     std::array<size_t, 3> _towersPerDim;
+    /**
+     * The new number of clusters in the container.
+     */
     size_t _numClusters;
+    /**
+     * If the neighbor lists use newton 3.
+     */
     bool _neighborListIsNewton3;
   };
   /**
-   * Recalculate towers and clusters, build neighbor lists and pad clusters.
+   * Rebuilds the towers, clusters, and neighbor lists.
    *
-   * @returns tuple consisting of
+   * @return all new values for VerletClusterLists member variables.
    */
   BuildingReturnValues rebuild() {
-    utils::Timer timer;
-    timer.start();
     auto invalidParticles = collectAllParticlesFromTowers();
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
-    std::cout << timer.stop() << " for collecting particles" << std::endl;
 
     size_t numParticles = 0;
     for (auto &vector : invalidParticles) {
@@ -96,7 +124,6 @@ class VerletClusterListsRebuilder {
 
     updateNeighborLists();
 
-    // Make sure that each cluster contains a multiple of clusterSize particles, and that dummies don't interact.
     double dummyParticleDistance = _interactionLength * 2;
     double startDummiesX = 1000 * _boxMax[0];
     for (size_t index = 0; index < _towers.size(); index++) {
@@ -236,6 +263,13 @@ class VerletClusterListsRebuilder {
     }
   }
 
+  /**
+   * Returns the index of a imagined interaction cell with side length equal the interaction length that contains the
+   * given tower.
+   * @param towerIndexX The x-coordinate of the given tower.
+   * @param towerIndexY The y-coordinate of the given tower.
+   * @return The index of the interaction cell containing the given tower.
+   */
   int get1DInteractionCellIndexForTower(const int towerIndexX, const int towerIndexY) {
     const int interactionCellTowerX = towerIndexX / _interactionLengthInTowers;
     const int interactionCellTowerY = towerIndexY / _interactionLengthInTowers;
@@ -245,6 +279,19 @@ class VerletClusterListsRebuilder {
     return interactionCellTowerX + numInteractionCellsX * interactionCellTowerY;
   }
 
+  /**
+   * Decides if for a given tower and a neighbor tower, clusters of the tower should contain clusters of the neighbor
+   * tower as neighbors if newton 3 is enabled.
+   *
+   * Works in a way to help the VerletClustersColoringTraversal have no data races.
+   *
+   * @param towerIndexX The x-coordinate of the given tower.
+   * @param towerIndexY The y-coordinate of the given tower.
+   * @param neighborIndexX The x-coordinate of the given neighbor tower.
+   * @param neighborIndexY The y-coordinate of the given neighbor tower.
+   * @return True, if clusters of the given tower should contain clusters of the given neighbor tower as neighbors with
+   * newton 3 enabled.
+   */
   bool shouldTowerContainOtherAsNeighborWithNewton3(const int towerIndexX, const int towerIndexY,
                                                     const int neighborIndexX, const int neighborIndexY) {
     auto interactionCellTowerIndex1D = get1DInteractionCellIndexForTower(towerIndexX, towerIndexY);
@@ -257,6 +304,14 @@ class VerletClusterListsRebuilder {
            (interactionCellNeighborIndex1D == interactionCellTowerIndex1D and neighborIndex1D >= towerIndex1D);
   }
 
+  /**
+   * Calculates for all clusters in the given tower:
+   *    - all neighbor clusters within the interaction length that are contained in the given neighbor tower.
+   *
+   * @param tower The given tower.
+   * @param neighborTower The given neighbor tower.
+   * @param distBetweenTowersXYsqr The distance in the xy-plane between the towers.
+   */
   void calculateNeighborsForTowerPair(internal::ClusterTower<Particle, clusterSize> &tower,
                                       internal::ClusterTower<Particle, clusterSize> &neighborTower,
                                       double distBetweenTowersXYsqr) {
@@ -303,6 +358,14 @@ class VerletClusterListsRebuilder {
     }
   }
 
+  /**
+   * Returns the tower that should contain a particle at the given location.
+   *
+   * If the location is outside of the domain, the tower that is nearest is returned.
+   *
+   * @param location The location to get the responsible tower for.
+   * @return The tower that should contain a particle at the given location.
+   */
   auto &getTowerForParticleLocation(std::array<double, 3> location) {
     std::array<size_t, 2> cellIndex{};
 
@@ -324,10 +387,25 @@ class VerletClusterListsRebuilder {
     return getTowerAtCoordinates(cellIndex[0], cellIndex[1]);
   }
 
+  /**
+   * Returns the 1D index for the given 2D-coordinates of a tower.
+   *
+   * @param x The x-coordinate of the tower.
+   * @param y The y-coordinate of the tower.
+   * @return the 1D index for the given 2D-coordinates of a tower.
+   */
   size_t towerIndex2DTo1D(const size_t x, const size_t y) {
+    // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
+    // _towersPerDim does not have the new value yet in the container.
     return VerletClusterLists<Particle>::towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
+  /**
+   * Returns the tower for the given 2D-coordinates of a tower.
+   * @param x The x-coordinate of the tower.
+   * @param y The y-coordinate of the tower.
+   * @return The tower for the given 2D-coordinates of a tower.
+   */
   auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
 };
 

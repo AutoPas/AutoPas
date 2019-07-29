@@ -11,24 +11,71 @@
 
 namespace autopas::internal {
 
+/**
+ * This class represents a cluster in the VerletClusterLists container.
+ *
+ * It contains a pointer to the particles for AoS, a SoAView for SoA, and the neighbor list for this cluster.
+ *
+ * @tparam Particle The type of the particles this cluster consists of.
+ * @tparam clusterSize The number of particles in the cluster.
+ */
 template <class Particle, size_t clusterSize>
 class Cluster {
  public:
+  /**
+   * Constructs a cluster starting from firstParticle and going on for clusterSize particles.
+   *
+   * Caller is responsible that there are enough particles after this particle in memory.
+   *
+   * @param firstParticle A pointer to the first particle of the cluster.
+   */
   explicit Cluster(Particle *firstParticle) : _firstParticle(firstParticle) {}
 
+  /**
+   * Returns the particle at position index in the cluster.
+   *
+   * No index checking is performed!
+   *
+   * @param index The index of the particle to return.
+   * @return the particle at position index in the cluster.
+   */
   auto &getParticle(size_t index) { return *(_firstParticle + index); }
 
+  /**
+   * @copydoc getParticle(size_t)
+   */
   const auto &getParticle(size_t index) const { return *(_firstParticle + index); }
 
+  /**
+   * Returns the SoAView for this cluster.
+   * @return the SoAView for this cluster.
+   */
   auto &getSoAView() { return _soaView; }
 
+  /**
+   * Returns the neighbor list for this cluster.
+   * @return the neighbor list for this cluster.
+   */
   const auto &getNeighbors() const { return _neighborClusters; }
 
+  /**
+   * Adds the given cluster to the neighbor list of this cluster.
+   * @param neighbor The cluster to add as neighbor.
+   */
   void addNeighbor(Cluster<Particle, clusterSize> &neighbor) { _neighborClusters.push_back(&neighbor); }
 
  private:
+  /**
+   * A pointer to the first particle of the cluster.
+   */
   Particle *_firstParticle;
+  /**
+   * The SoAView for this cluster.
+   */
   SoAView<typename Particle::SoAArraysType> _soaView;
+  /**
+   * The list of neighbor clusters of this cluster.
+   */
   std::vector<Cluster *> _neighborClusters;
 };
 

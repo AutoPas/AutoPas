@@ -44,7 +44,6 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
-   * @param clusterSize size of clusters
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0)
@@ -213,6 +212,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   auto getInteractionLengthInTowers() const { return _interactionLengthInTowers; }
 
+  /**
+   * Loads all particles of the container in their correct SoA and generates the SoAViews for the clusters.
+   * @tparam Functor The type of the functor to use.
+   * @param functor The functor to use for loading the particles into the SoA.
+   */
   template <class Functor>
   void loadParticlesIntoSoAs(Functor *functor) {
     const auto numTowers = _towers.size();
@@ -225,6 +229,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
+  /**
+   * Extracts all SoAs of the container into the particles.
+   * @tparam Functor The type of the functor to use.
+   * @param functor The functor to use for extracting the SoAs into the particles..
+   */
   template <class Functor>
   void extractParticlesFromSoAs(Functor *functor) {
     const auto numTowers = _towers.size();
@@ -237,12 +246,33 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
+  /**
+   * Returns the tower for the given 2D-coordinates.
+   * @param x The x-coordinate of the tower.
+   * @param y The y-coordinate of the tower.
+   * @return The tower for the given 2D-coordinates.
+   */
   auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
 
+  /**
+   * Returns the 1D index for the given 2D-coordinates of a tower.
+   *
+   * @param x The x-coordinate of the tower.
+   * @param y The y-coordinate of the tower.
+   * @param towersPerDim The number of towers in each dimension.
+   * @return the 1D index for the given 2D-coordinates of a tower.
+   */
   static auto towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 3> towersPerDim) {
     return x + y * towersPerDim[0];
   }
 
+  /**
+   * Returns the 1D index for the given 2D-coordinates of a tower.
+   *
+   * @param x The x-coordinate of the tower.
+   * @param y The y-coordinate of the tower.
+   * @return the 1D index for the given 2D-coordinates of a tower.
+   */
   [[nodiscard]] size_t towerIndex2DTo1D(const size_t x, const size_t y) const {
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
