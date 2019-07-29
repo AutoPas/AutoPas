@@ -631,7 +631,7 @@ class LJFunctor
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
-
+                    //@todo FIX this with Mixing Rules  !!!
  private:
   template <bool newton3, bool duplicatedCalculations>
   void SoAFunctorImpl(SoA<SoAArraysType> &soa,
@@ -646,6 +646,7 @@ class LJFunctor
     auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+//      auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
 
     auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::typeId>());
     auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::typeId>());

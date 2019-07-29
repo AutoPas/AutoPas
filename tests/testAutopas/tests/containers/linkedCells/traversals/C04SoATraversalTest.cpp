@@ -21,11 +21,11 @@ ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,un
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  autopas::MoleculeLJ<> defaultParticle;
-  defaultParticle.setR({1.75, 2.1, 1.75});
-  cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 2ul, 1ul, edgeLength)].addParticle(defaultParticle);
-  defaultParticle.setR({1.75, 1.6, 1.75});
-  cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, edgeLength)].addParticle(defaultParticle);
+  autopas::MoleculeLJ<> default1 = Molecule({1.75, 2.1, 1.75},{0.,0.,0.},0);
+    autopas::MoleculeLJ<> default2 = Molecule({1.75, 1.6, 1.75},{0.,0.,0.},1);
+
+    cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 2ul, 1ul, edgeLength)].addParticle(default1);
+  cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, edgeLength)].addParticle(default2);
 
   NumThreadGuard numThreadGuard(1);
 
