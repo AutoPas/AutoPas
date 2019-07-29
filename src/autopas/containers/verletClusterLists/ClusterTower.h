@@ -19,6 +19,8 @@ class ClusterTower : public ParticleCell<Particle> {
   /**
    * Adds a particle to the cluster tower. If generateClusters() has already been called on this ClusterTower, clear()
    * must be called first, or dummies are messed up!
+   *
+   * Is allowed to be called in parallel since a lock is used on the internal cell.
    * @param particle The particle to add.
    */
   void addParticle(const Particle &particle) override { _particles.addParticle(particle); }
