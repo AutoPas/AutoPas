@@ -75,6 +75,11 @@ class ClusterTower : public ParticleCell<Particle> {
     functor->SoAExtractor(_particles, _particles._particleSoABuffer);
   }
 
+  std::vector<Particle> &&collectAllActualParticles() {
+    _particles._particles.resize(getNumActualParticles());
+    return std::move(_particles._particles);
+  }
+
   [[nodiscard]] size_t getNumDummyParticles() const { return _numDummyParticles; }
 
       [[nodiscard]] size_t getNumActualParticles() const {

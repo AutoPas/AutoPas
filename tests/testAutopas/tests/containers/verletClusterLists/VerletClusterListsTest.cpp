@@ -41,6 +41,9 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 }
+
+// TODO: Add test that rebuilds the container twice to check if particles are not lost during that
+
 /*
 int sumNumClusterNeighbors(
     const std::vector<std::vector<std::vector<autopas::ParticleBase<double, unsigned long> *>>> &neighborList) {

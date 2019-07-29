@@ -7,6 +7,7 @@
 #pragma once
 
 #include "VerletClusterLists.h"
+#include "autopas/utils/Timer.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -61,13 +62,21 @@ class VerletClusterListsRebuilder {
    * @returns tuple consisting of
    */
   BuildingReturnValues rebuild() {
-    std::vector<Particle> invalidParticles = collectAllParticlesFromTowers();
-    invalidParticles.insert(invalidParticles.end(), _particlesToAdd.begin(), _particlesToAdd.end());
+    utils::Timer timer;
+    timer.start();
+    auto invalidParticles = collectAllParticlesFromTowers();
+    invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
+    std::cout << timer.stop() << " for collecting particles" << std::endl;
+
+    size_t numParticles = 0;
+    for (auto &vector : invalidParticles) {
+      numParticles += vector.size();
+    }
 
     auto boxSize = ArrayMath::sub(_boxMax, _boxMin);
 
-    _towerSideLength = estimateOptimalGridSideLength(invalidParticles.size(), boxSize);
+    _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSize);
     _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength / _towerSideLength));
     _towerSideLengthReciprocal = 1 / _towerSideLength;
 
@@ -102,13 +111,12 @@ class VerletClusterListsRebuilder {
    * Takes all particles from all towers and returns them. Towers are cleared afterwards.
    * @return All particles in the container.
    */
-  std::vector<Particle> collectAllParticlesFromTowers() {
-    std::vector<Particle> invalidParticles;
-    for (auto &tower : _towers) {
-      invalidParticles.reserve(invalidParticles.size() + tower.getNumActualParticles());
-      for (auto it = tower.begin(); it.isValid(); ++it) {
-        invalidParticles.push_back(*it);
-      }
+  std::vector<std::vector<Particle>> collectAllParticlesFromTowers() {
+    std::vector<std::vector<Particle>> invalidParticles;
+    invalidParticles.resize(_towers.size());
+    for (size_t index = 0; index < _towers.size(); index++) {
+      auto &tower = _towers[index];
+      invalidParticles[index] = tower.collectAllActualParticles();
       tower.clear();
     }
     return invalidParticles;
@@ -152,17 +160,19 @@ class VerletClusterListsRebuilder {
    * Sorts all passed particles in the appropriate clusters.
    * @param particles The particles to sort in the clusters.
    */
-  void sortParticlesIntoTowers(const std::vector<Particle> &particles) {
-    const auto numParticles = particles.size();
+  void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles) {
+    const auto numVectors = particles.size();
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic, 1000) default(none) shared(particles, numParticles)
+#pragma omp parallel for schedule(dynamic) default(none) shared(particles, numVectors)
 #endif
-    for (size_t index = 0; index < numParticles; index++) {
-      const Particle &particle = particles[index];
-      if (utils::inBox(particle.getR(), _boxMin, _boxMax)) {
-        auto &tower = getTowerForParticleLocation(particle.getR());
-        tower.addParticle(particle);
+    for (size_t index = 0; index < numVectors; index++) {
+      const std::vector<Particle> &vector = particles[index];
+      for (const auto &particle : vector) {
+        if (utils::inBox(particle.getR(), _boxMin, _boxMax)) {
+          auto &tower = getTowerForParticleLocation(particle.getR());
+          tower.addParticle(particle);
+        }
       }
     }
   }
