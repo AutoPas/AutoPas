@@ -67,17 +67,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
           traversal->getTraversalType());
     }
 
-    utils::Timer timer;
-    static double initTime = 0, traversalTime = 0, endTime = 0;
-    timer.start();
     traversal->initTraversal();
-    std::cout << (initTime += timer.stop()) << " for init!" << std::endl;
-    timer.start();
     traversal->traverseParticlePairs();
-    std::cout << (traversalTime += timer.stop()) << " for traversal!" << std::endl;
-    timer.start();
     traversal->endTraversal();
-    std::cout << (endTime += timer.stop()) << " for end!" << std::endl;
   }
 
   // TODO: Somehow make the iterator also iterating over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest will
@@ -154,17 +146,11 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    utils::Timer timer;
-    static double rebuildTime = 0;
-    timer.start();
-
     internal::VerletClusterListsRebuilder<Particle> builder{*this, _particlesToAdd, traversal->getUseNewton3()};
     auto res = builder.rebuild();
     std::tie(_towerSideLength, _interactionLengthInTowers, _towersPerDim, _numClusters, _neighborListIsNewton3) = {
         res._towerSideLength, res._interactionLengthInTowers, res._towersPerDim, res._numClusters,
         res._neighborListIsNewton3};
-
-    std::cout << (rebuildTime += timer.stop()) << " for rebuild!" << std::endl;
   }
 
   /**
