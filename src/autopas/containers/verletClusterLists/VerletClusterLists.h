@@ -229,22 +229,24 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   template <class Functor>
   void loadParticlesIntoSoAs(Functor *functor) {
+    const auto numTowers = _towers.size();
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) default(none) shared(functor)
+#pragma omp parallel for schedule(dynamic) default(none) shared(functor, numTowers)
 #endif
-    for (size_t index = 0; index < _towers.size(); index++) {
+    for (size_t index = 0; index < numTowers; index++) {
       _towers[index].loadSoA(functor);
     }
   }
 
   template <class Functor>
   void extractParticlesFromSoAs(Functor *functor) {
+    const auto numTowers = _towers.size();
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) default(none) shared(functor)
+#pragma omp parallel for schedule(dynamic) default(none) shared(functor, numTowers)
 #endif
-    for (size_t index = 0; index < _towers.size(); index++) {
+    for (size_t index = 0; index < numTowers; index++) {
       _towers[index].extractSoA(functor);
     }
   }
@@ -288,12 +290,14 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   template <class LoopBody>
   void traverseClustersParallel(LoopBody &&loopBody) {
+    const auto towersPerDimX = _towersPerDim[0];
+    const auto towersPerDimY = _towersPerDim[1];
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) collapse(2) default(none) shared(loopBody)
+#pragma omp parallel for schedule(dynamic) collapse(2) default(none) shared(loopBody, towersPerDimX, towersPerDimY)
 #endif
-    for (size_t x = 0; x < _towersPerDim[0]; x++) {
-      for (size_t y = 0; y < _towersPerDim[1]; y++) {
+    for (size_t x = 0; x < towersPerDimX; x++) {
+      for (size_t y = 0; y < towersPerDimY; y++) {
         auto &tower = getTowerAtCoordinates(x, y);
 
         for (auto &cluster : tower.getClusters()) {

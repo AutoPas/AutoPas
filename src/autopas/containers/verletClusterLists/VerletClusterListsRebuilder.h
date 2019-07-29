@@ -153,11 +153,12 @@ class VerletClusterListsRebuilder {
    * @param particles The particles to sort in the clusters.
    */
   void sortParticlesIntoTowers(const std::vector<Particle> &particles) {
+    const auto numParticles = particles.size();
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic, 1000) default(none) shared(particles)
+#pragma omp parallel for schedule(dynamic, 1000) default(none) shared(particles, numParticles)
 #endif
-    for (size_t index = 0; index < particles.size(); index++) {
+    for (size_t index = 0; index < numParticles; index++) {
       const Particle &particle = particles[index];
       if (utils::inBox(particle.getR(), _boxMin, _boxMax)) {
         auto &tower = getTowerForParticleLocation(particle.getR());
