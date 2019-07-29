@@ -42,6 +42,8 @@ class KokkosHelper {
     return c;
   }
 
+
+
   static FloatVectorType mul(FloatVectorType const &a, FloatVectorType const &b) {
     FloatVectorType c("c", KOKKOS_DIM);
     Kokkos::parallel_for(

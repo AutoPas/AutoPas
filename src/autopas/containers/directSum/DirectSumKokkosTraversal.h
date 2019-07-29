@@ -83,8 +83,8 @@ void DirectSumKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
 #ifdef AUTOPAS_KOKKOS
   //processCell(cells[0]);
   //processCellPair(cells[0], cells[1]);
-  _cellFunctor.processCell(cells[0]);
-  _cellFunctor.processCellPair(cells[0], cells[1]);
+  _cellFunctor.processCellOneThread(cells[0]);
+  _cellFunctor.processCellPairOneThread(cells[0], cells[1]);
 #endif
 }
 

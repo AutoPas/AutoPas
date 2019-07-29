@@ -67,6 +67,7 @@ namespace autopas {
          * @param cells where the data should be loaded
          */
         void initTraversal(std::vector<ParticleCell> &cells) override {
+            /*
 #ifdef AUTOPAS_OPENMP
           // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
@@ -74,6 +75,7 @@ namespace autopas {
           for (size_t i = 0; i < cells.size(); ++i) {
             _dataLayoutConverter.loadDataLayout(cells[i]);
           }
+             */
         }
 
         /**
@@ -81,6 +83,7 @@ namespace autopas {
          * @param cells for which the data should be written back
          */
         void endTraversal(std::vector<ParticleCell> &cells) override {
+            /*
 #ifdef AUTOPAS_OPENMP
           // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
@@ -88,6 +91,7 @@ namespace autopas {
           for (size_t i = 0; i < cells.size(); ++i) {
             _dataLayoutConverter.storeDataLayout(cells[i]);
           }
+             */
         }
 
     protected:
@@ -157,6 +161,7 @@ namespace autopas {
 
           Kokkos::parallel_for(team_policy( iterationsZ, Kokkos::AUTO), KOKKOS_LAMBDA ( const member_type &teamMember){
               const int i = teamMember.league_rank();
+              //std::cout << "League Size: " << teamMember.team_size() <<"\n";
               Kokkos::parallel_for(iterationsY, [&] (const int l) {
                 for (unsigned long x = start_x; x < end_x; x += stride_x) {
                   // Don't exchange order of execution (x must be last!), it would break other code
