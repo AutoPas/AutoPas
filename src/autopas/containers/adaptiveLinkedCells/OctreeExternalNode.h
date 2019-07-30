@@ -139,7 +139,15 @@ OctreeNode<Particle, ParticleCell> *OctreeExternalNode<Particle, ParticleCell>::
 
 template <class Particle, class ParticleCell>
 bool OctreeExternalNode<Particle, ParticleCell>::isUpdateNeeded() const {
-  return getSize() > _maxElements;  //@Todo outliers
+  // Check for outliers
+  /*for (auto iter = this->_cells[this->_index].begin(); iter.isValid(); ++iter) {
+    if (not utils::inBox(iter->getR(), _boxMin, _boxMax)) {
+      return true;
+    }
+  }*/
+
+  // Check whether node must be split
+  return getSize() > _maxElements;
 }
 
 template <class Particle, class ParticleCell>
