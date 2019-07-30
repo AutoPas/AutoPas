@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   cout << endl;
 
   // Initialization
-  simulation.initialize(parser);
+  simulation.initialize(&parser);
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
   // Simulation
