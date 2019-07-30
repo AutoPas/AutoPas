@@ -57,6 +57,12 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
 
   void apply(std::function<void(OctreeNode<Particle, ParticleCell> &)> func, ExecutionPolicy policy) override;
 
+  operator std::string() const override {
+    /// @todo replace by ArrayUtils::toString()
+    return std::to_string(this->_level) + ":" + std::to_string(_center[0]) + std::to_string(_center[1]) +
+           std::to_string(_center[2]);
+  }
+
   bool isUpdateNeeded() const override;
 
   /**

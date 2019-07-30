@@ -55,6 +55,12 @@ class OctreeNode {
   virtual void apply(std::function<void(OctreeNode<Particle, ParticleCell> &)> func, ExecutionPolicy policy) = 0;
 
   /**
+   * Get a string representation of the OctreeNode
+   * @return string representation
+   */
+  virtual operator std::string() const = 0;
+
+  /**
    * Returns whether update() would change the tree.
    * @return
    */

@@ -39,6 +39,11 @@ class OctreeInternalNode : public OctreeNode<Particle, ParticleCell> {
 
   void apply(std::function<void(OctreeNode<Particle, ParticleCell> &)> func, ExecutionPolicy policy) override;
 
+  operator std::string() const override {
+    return std::accumulate(_children.cbegin(), _children.cend(), std::string(),
+                           [](auto &acc, auto elem) { return acc + static_cast<std::string>(*elem); });
+  }
+
   bool isUpdateNeeded() const override;
 
   /**

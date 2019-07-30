@@ -85,6 +85,8 @@ class Octree {
     root->apply(func, policy);
   }
 
+  operator std::string() const { return static_cast<std::string>(*root); }
+
   /**
    * Sets min. number of elements inside of each node.
    * @param minElements Min. number of elements.
