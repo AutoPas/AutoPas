@@ -66,7 +66,7 @@ bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
   // clang-format on
 }
 
-bool LJFunctorAVXTest::AoSParticlesEqual(FPCell &cell1, FPCell &cell2) {
+bool LJFunctorAVXTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   EXPECT_GT(cell1.numParticles(), 0);
   EXPECT_EQ(cell1.numParticles(), cell2.numParticles());
 
@@ -79,27 +79,24 @@ bool LJFunctorAVXTest::AoSParticlesEqual(FPCell &cell1, FPCell &cell2) {
 }
 
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
-  FPCell cell1AVX;
-  FPCell cell2AVX;
+  FMCell cell1AVX;
+  FMCell cell2AVX;
 
   size_t numParticles = 7;
 
-  Particle defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
   RandomGenerator::fillWithParticles(cell1AVX, defaultParticle, _lowCorner,
                                      {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   RandomGenerator::fillWithParticles(cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
                                      _highCorner, numParticles);
 
   // copy cells
-  FPCell cell1NoAVX(cell1AVX);
-  FPCell cell2NoAVX(cell2AVX);
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numParticles; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0);
-  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
+  FMCell cell1NoAVX(cell1AVX);
+  FMCell cell2NoAVX(cell2AVX);
+    double universalValue=1; //epsilon=sigma=mass=1.0
+    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0);
+  autopas::LJFunctorAVX<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
                                                                                             0.0);
 
   ljFunctorAVX.initTraversal();
@@ -143,22 +140,19 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
 }
 
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
-  FPCell cellAVX;
+  FMCell cellAVX;
 
   size_t numParticles = 7;
 
-  Particle defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
   RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner, numParticles);
 
   // copy cells
-  FPCell cellNoAVX(cellAVX);
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numParticles; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0);
-  autopas::LJFunctorAVX<Particle, FPCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
+  FMCell cellNoAVX(cellAVX);
+    double universalValue=1; //epsilon=sigma=mass=1.0
+    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0);
+  autopas::LJFunctorAVX<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
                                                                                             0.0);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";

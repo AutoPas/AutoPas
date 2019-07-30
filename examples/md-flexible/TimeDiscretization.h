@@ -13,7 +13,7 @@
 template <class AutoPasTemplate>
 class TimeDiscretization {
  public:
-  explicit TimeDiscretization(double particleDeltaT);
+  explicit TimeDiscretization(double particleDeltaT,ParticleClassLibrary &PCL);
 
   virtual ~TimeDiscretization() = default;
 
@@ -33,6 +33,7 @@ class TimeDiscretization {
   /**  Duration of a timestep
    * */
   double particle_delta_t;
+  ParticleClassLibrary _PCL;
 };
 
 template <class AutoPasTemplate>
@@ -44,8 +45,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto v = iter->getV();
-    //@todo anpassen zur PCL
-    auto m = iter->getMass();
+    auto m = _PCL.getMass(iter->getTypeId());
     auto f = iter->getF();
     iter->setOldf(f);
     v = autopas::ArrayMath::mulScalar(v, particle_delta_t);
@@ -66,8 +66,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas)
 #pragma omp parallel
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    //@todo anpassen zur PCL
-    auto m = iter->getMass();
+      auto m = _PCL.getMass(iter->getTypeId());
     auto force = iter->getF();
     auto old_force = iter->getOldf();
     auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force, old_force)), particle_delta_t / (2 * m));
@@ -79,7 +78,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas)
 }
 
 template <class AutoPasTemplate>
-TimeDiscretization<AutoPasTemplate>::TimeDiscretization(double particleDeltaT) : particle_delta_t(particleDeltaT) {}
+TimeDiscretization<AutoPasTemplate>::TimeDiscretization(double particleDeltaT,ParticleClassLibrary &PCL) : particle_delta_t(particleDeltaT),_PCL(PCL) {}
 
 template <class AutoPasTemplate>
 double TimeDiscretization<AutoPasTemplate>::getParticleDeltaT() const {

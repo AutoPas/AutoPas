@@ -18,16 +18,13 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int maxSamples = 2;
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 100; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Particle, FPCell> functor(cutoff, PCL, 0.);
+double universalValue=1; //epsilon=sigma=mass=1.0
+ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, 0.);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::allContainerOptions, std::set<double>({cellSizeFactor}), autopas::allTraversalOptions,
       autopas::allDataLayoutOptions, autopas::allNewton3Options);
-  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, std::move(tuningStrategy),
+  autopas::AutoTuner<Molecule, FMCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);

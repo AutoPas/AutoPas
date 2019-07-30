@@ -21,7 +21,7 @@ class Simulation {
   autopas::AutoPas<Particle, ParticleCell> _autopas;
   MDFlexParser *_parser;
   std::ofstream _logFile;
-  std::shared_ptr<ParticleClassLibrary> _PCL;
+  std::unique_ptr<ParticleClassLibrary> _PCL;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -135,26 +135,11 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   // double epsilon,sigma  = 1.0;
   //@todo schöner machen:
   _parser = parser;
-  double numP;
-  if (_parser->getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
-    numP = _parser->getParticlesPerDim() * _parser->getParticlesPerDim() * _parser->getParticlesPerDim();
-  } else {
-    numP = _parser->getParticlesTotal();
-  }
-  std::map<unsigned long, double> PC_Epsilon;
-  std::map<unsigned long, double> PC_Sigma;
-  std::map<unsigned long, double> PC_Mass;
-  // temporäre implemetierung mit nur einer particle Class
   double epsilon = _parser->getEpsilon();
   double sigma = _parser->getSigma();
   double mass = _parser->getMass();
-  for (unsigned long i = 0; i < numP; i++) {
-    PC_Epsilon.emplace(i, epsilon);
-    PC_Sigma.emplace(i, sigma);
-    PC_Mass.emplace(i, mass);
-  }
   // initialisierung of PCL
-  _PCL = std::make_shared<ParticleClassLibrary>(PC_Epsilon, PC_Sigma, PC_Mass);
+  _PCL = std::make_unique<ParticleClassLibrary>(epsilon,sigma, mass);
   auto logFileName(_parser->getLogFileName());
   auto particlesTotal(_parser->getParticlesTotal());
   auto particlesPerDim(_parser->getParticlesPerDim());
@@ -188,10 +173,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
     streamBuf = _logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
-  PrintableMolecule::setEpsilon(_parser->getEpsilon());
-  PrintableMolecule::setSigma(_parser->getSigma());
-  PrintableMolecule::setMass(_parser->getMass());
-
   _autopas.setCutoff(cutoff);
   _autopas.setVerletSkin(verletSkinRadius);
   _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
@@ -296,7 +277,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   double deltaT = _parser->getDeltaT();
   double simTimeNow = 0;
   double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
-  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT);
+  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT,*_PCL);
 
   // main simulation loop
   while (simTimeNow < simTimeEnd) {

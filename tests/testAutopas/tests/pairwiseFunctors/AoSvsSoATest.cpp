@@ -14,7 +14,7 @@ using namespace autopas;
  * @brief Generates a reproducible set of particles
  * @param particles Vector where particles will be stored.
  */
-void AoSvsSoATest::generateParticles(std::vector<autopas::Particle> *particles) {
+void AoSvsSoATest::generateParticles(std::vector<autopas::MoleculeLJ<>> *particles) {
   particles->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -32,16 +32,12 @@ void AoSvsSoATest::generateParticles(std::vector<autopas::Particle> *particles) 
  * same set of particles.
  */
 TEST_F(AoSvsSoATest, testAoSvsSoA) {
-  auto particlesAoS = std::vector<autopas::Particle>();
+  auto particlesAoS = std::vector<autopas::MoleculeLJ<>>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
-  unsigned long numParticles = PARTICLES_PER_DIM * PARTICLES_PER_DIM;
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numParticles; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  LJFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> ljFunctor(PARTICLES_PER_DIM * 10, PCL, 0);
+double universalValue=1; //epsilon=sigma=mass=1.0
+ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> ljFunctor(PARTICLES_PER_DIM * 10, PCL, 0);
 
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;
@@ -59,7 +55,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   std::cout << "AoS : " << duration << " \u03bcs" << std::endl;
 
   // SoA
-  autopas::FullParticleCell<autopas::Particle> cell;
+  autopas::FullParticleCell<autopas::MoleculeLJ<>> cell;
   for (auto &&p : particlesSoA) {
     cell.addParticle(p);
   }

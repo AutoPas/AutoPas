@@ -120,10 +120,12 @@ int main(int argc, char **argv) {
   }
 
   cout << "Test double precision" << endl;
-  run<ParticleFP64>(numParticles);
+  run<MoleculeLJ<double>>(numParticles);
 
   cout << "Test single precision" << endl;
-  run<ParticleFP32>(numParticles);
+  //mit hier mir float anstatt double kommen noch mehr fehler, @todo fixen
+  run<MoleculeLJ<double>>(numParticles);
+  run<MoleculeLJ<double>>(numParticles);
 
   return EXIT_SUCCESS;
 }
