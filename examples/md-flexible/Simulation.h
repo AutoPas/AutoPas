@@ -24,7 +24,7 @@ class Simulation {
   AutoPas<Particle, ParticleCell> _autopas;
   MDFlexParser _parser;
   std::ofstream _logFile;
-  shared_ptr<ParticleClassLibrary<double>> _PCL;
+  shared_ptr<ParticleClassLibrary> _PCL;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -140,7 +140,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
   double sigma = _parser.getSigma();
   double mass = _parser.getMass();
   // initialisierung of PCL
-  _PCL = make_shared<ParticleClassLibrary<double>>(epsilon,sigma, mass);
+  _PCL = make_shared<ParticleClassLibrary>(epsilon,sigma, mass);
   auto logFileName(_parser.getLogFileName());
   auto particlesTotal(_parser.getParticlesTotal());
   auto particlesPerDim(_parser.getParticlesPerDim());

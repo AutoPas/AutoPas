@@ -15,7 +15,7 @@ using namespace std;
 template <class AutoPasTemplate>
 class TimeDiscretization {
  public:
-  TimeDiscretization(double particleDeltaT,ParticleClassLibrary<double> &PCL);
+  TimeDiscretization(double particleDeltaT,ParticleClassLibrary &PCL);
 
   virtual ~TimeDiscretization() {}
 
@@ -33,7 +33,7 @@ class TimeDiscretization {
   /**  Duration of a timestep
    * */
   double particle_delta_t;
-  ParticleClassLibrary<double> _PCL;
+  ParticleClassLibrary _PCL;
 };
 
 template <class AutoPasTemplate>
@@ -78,7 +78,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas)
 }
 
 template <class AutoPasTemplate>
-TimeDiscretization<AutoPasTemplate>::TimeDiscretization(double particleDeltaT,ParticleClassLibrary<double> &PCL) : particle_delta_t(particleDeltaT),_PCL(PCL) {}
+TimeDiscretization<AutoPasTemplate>::TimeDiscretization(double particleDeltaT,ParticleClassLibrary &PCL) : particle_delta_t(particleDeltaT),_PCL(PCL) {}
 
 template <class AutoPasTemplate>
 double TimeDiscretization<AutoPasTemplate>::getParticleDeltaT() const {
