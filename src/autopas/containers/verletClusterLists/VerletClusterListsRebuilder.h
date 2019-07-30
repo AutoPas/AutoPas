@@ -191,7 +191,7 @@ class VerletClusterListsRebuilder {
     const auto numVectors = particles.size();
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) default(none) shared(particles, numVectors)
+#pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numVectors; index++) {
       const std::vector<Particle> &vector = particles[index];
@@ -214,7 +214,7 @@ class VerletClusterListsRebuilder {
     // for all towers
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) collapse(2) default(none) shared(maxTowerIndexX, maxTowerIndexY)
+#pragma omp parallel for schedule(dynamic) collapse(2)
 #endif
     for (int towerIndexY = 0; towerIndexY <= maxTowerIndexY; towerIndexY++) {
       for (int towerIndexX = 0; towerIndexX <= maxTowerIndexX; towerIndexX++) {

@@ -222,7 +222,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     const auto numTowers = _towers.size();
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) default(none) shared(functor, numTowers)
+#pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numTowers; index++) {
       _towers[index].loadSoA(functor);
@@ -239,7 +239,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     const auto numTowers = _towers.size();
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) default(none) shared(functor, numTowers)
+#pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numTowers; index++) {
       _towers[index].extractSoA(functor);
@@ -310,7 +310,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     const auto towersPerDimY = _towersPerDim[1];
 #if defined(AUTOPAS_OPENMP)
     // @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) collapse(2) default(none) shared(loopBody, towersPerDimX, towersPerDimY)
+#pragma omp parallel for schedule(dynamic) collapse(2)
 #endif
     for (size_t x = 0; x < towersPerDimX; x++) {
       for (size_t y = 0; y < towersPerDimY; y++) {
