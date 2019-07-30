@@ -141,8 +141,6 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
             default:
                 FAIL();
         }
-        std::cout << "typeOfMolecule 2 = " << p2.getTypeId() << std::endl;
-
     }
     // Load the particles into the soa.
     functor.SoALoader(cell1, cell1._particleSoABuffer);
@@ -255,11 +253,10 @@ TEST_F(LJFunctorTest, testSoAFunctorNoGlobals) {
     }
   }
 }
-//@todo test verlet interaction Type after fixing LJFunctor
 TEST_F(LJFunctorTest, testSoAMixingFunctorNoGlobals) {
-    for (InteractionType interactionType : {pair, own }) {
+    for (InteractionType interactionType : {pair, own,verlet}) {
         for (bool newton3 : {false, true}) {
-            testSoANoGlobals(newton3, own, true);
+            testSoANoGlobals(newton3, interactionType, true);
         }
     }
 }

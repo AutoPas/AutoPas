@@ -646,10 +646,11 @@ class LJFunctor
     auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-//      auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
-    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::typeId>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::typeId>());
+      double epsilon24;
+    double sigmasquare;
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
     floatPrecision upotSum = 0.;
@@ -714,9 +715,12 @@ class LJFunctor
             zArr[tmpj] = zptr[currentList[joff + tmpj]];
             ownedArr[tmpj] = ownedPtr[currentList[joff + tmpj]];
           }
+
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
+             sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr1[i],typeptr2[currentList[joff + j]]);
+             epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr1[i],typeptr2[currentList[joff + j]]);
             // const size_t j = currentList[jNeighIndex];
 
             const floatPrecision drx = xtmp[j] - xArr[j];
@@ -789,6 +793,8 @@ class LJFunctor
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
+          sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr1[i],typeptr2[j]);
+          epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr1[i],typeptr2[j]);
 
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
