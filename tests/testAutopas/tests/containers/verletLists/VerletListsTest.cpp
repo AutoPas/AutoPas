@@ -501,16 +501,16 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
 TEST_P(VerletListsTest, LoadExtractSoALJ) {
   const double cutoff = 2.;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3 /*skin*/,
-                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+  autopas::VerletLists<Molecule> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3 /*skin*/,
+                                             autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
-  Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
+  Molecule p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
 double universalValue=1; //epsilon=sigma=mass=1.0
 ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
-  autopas::LJFunctor<Particle, FPCell> ljFunctor(cutoff, PCL, 0 /*shift*/);
-  autopas::TraversalVerlet<FPCell, autopas::LJFunctor<Particle, FPCell>, autopas::DataLayoutOption::soa, false>
+  autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, PCL, 0 /*shift*/);
+  autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
       verletTraversal(&ljFunctor);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -520,22 +520,22 @@ ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,un
 TEST_P(VerletListsTest, SoAvsAoSLJ) {
   const double cutoff = 2.;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3,
-                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+  autopas::VerletLists<Molecule> verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3,
+                                              autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
                                               cellSizeFactor);
 
-  autopas::VerletLists<Particle> verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3,
-                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
+  autopas::VerletLists<Molecule> verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3,
+                                              autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
                                               cellSizeFactor);
 
-  RandomGenerator::fillWithParticles(verletLists1, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
-  RandomGenerator::fillWithParticles(verletLists2, Particle({0., 0., 0.}, {0., 0., 0.}, 0), 100);
+  RandomGenerator::fillWithParticles(verletLists1, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), 100);
+  RandomGenerator::fillWithParticles(verletLists2, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), 100);
 double universalValue=1; //epsilon=sigma=mass=1.0
 ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
-  autopas::LJFunctor<Particle, FPCell> ljFunctor(cutoff, PCL, 0);
-  autopas::TraversalVerlet<FPCell, autopas::LJFunctor<Particle, FPCell>, autopas::DataLayoutOption::aos, false>
+  autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, PCL, 0);
+  autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
       verletTraversal1(&ljFunctor);
-  autopas::TraversalVerlet<FPCell, autopas::LJFunctor<Particle, FPCell>, autopas::DataLayoutOption::soa, false>
+  autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
       soaTraversal(&ljFunctor);
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);
