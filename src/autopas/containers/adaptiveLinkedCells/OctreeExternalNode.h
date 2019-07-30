@@ -8,8 +8,9 @@
 
 #include <array>
 #include <memory>
-#include "autopas/cells/SortedCellView.h"
+#include <set>
 #include "autopas/containers/adaptiveLinkedCells/OctreeNode.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 namespace internal {
@@ -25,12 +26,24 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
  public:
   OctreeExternalNode() = default;
 
-  OctreeExternalNode(std::vector<ParticleCell> &cells, unsigned long index,
-                     std::array<OctreeNode<Particle, ParticleCell> *, 8> nodes, const std::array<double, 3> &center,
-                     const unsigned int level)
-      : OctreeNode<Particle, ParticleCell>(level, index),
-        _center(center),
-        _cellView(cells.at(index), std::array<double, 3>{1, 0, 0}) {
+  /**
+   * Create external node by combining the children of an internal node.
+   * @param parent Parent node (nullptr for root).
+   * @param cells
+   * @param index Start index of this node.
+   * @param nodes
+   * @param boxMin
+   * @param boxMax
+   * @param level
+   */
+  OctreeExternalNode(OctreeNode<Particle, ParticleCell> *parent, std::vector<ParticleCell> &cells, unsigned long index,
+                     std::array<OctreeNode<Particle, ParticleCell> *, 8> nodes, const std::array<double, 3> &boxMin,
+                     const std::array<double, 3> &boxMax)
+      : OctreeNode<Particle, ParticleCell>(parent, index),
+        _center(ArrayMath::mulScalar(ArrayMath::sub(boxMax, boxMin), 0.5)),
+        _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cell(&cells.at(index)) {
     for (auto *node : nodes) {
       const size_t index = node->getIndex();
       // Move all particles to base cell
@@ -39,17 +52,32 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
       }
       cells[index].clear();
     }
+    cells[index].setCellLength(ArrayMath::sub(boxMax, boxMin));
   }
 
-  OctreeExternalNode(std::vector<ParticleCell> &cells, unsigned long index, const std::array<double, 3> &center,
-                     const unsigned int level)
-      : OctreeNode<Particle, ParticleCell>(level, index),
-        _center(center),
-        _cellView(cells.at(index), std::array<double, 3>{1, 0, 0}){
-            // add all elements from content to underlying container
-        };
+  /**
+   * Create external node from particles in cell at position index.
+   * @param parent Parent node (nullptr for root).
+   * @param cells
+   * @param index
+   * @param boxMin
+   * @param boxMax
+   * @param level
+   */
+  OctreeExternalNode(OctreeNode<Particle, ParticleCell> *parent, std::vector<ParticleCell> &cells, unsigned long index,
+                     const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax)
+      : OctreeNode<Particle, ParticleCell>(parent, index),
+        _center(ArrayMath::mulScalar(ArrayMath::sub(boxMax, boxMin), 0.5)),
+        _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cell(&cells.at(index)) {
+    cells.at(index).setCellLength(ArrayMath::sub(boxMax, boxMin));
+    // add all elements from content to underlying container
+  };
 
   ParticleCell &getContainingCell(const std::array<double, 3> &pos) const override;
+
+  ParticleCell &getCell() const;
 
   size_t getSize() const override;
 
@@ -73,7 +101,10 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
 
  private:
   const std::array<double, 3> _center;
-  SortedCellView<Particle, ParticleCell> _cellView;
+  const std::array<double, 3> _boxMin;
+  const std::array<double, 3> _boxMax;
+  ParticleCell *_cell;
+  std::set<std::pair<unsigned long, std::array<double, 3>>> _neighbors;
   static unsigned long _maxElements;
 };
 
@@ -81,13 +112,18 @@ template <class Particle, class ParticleCell>
 unsigned long OctreeExternalNode<Particle, ParticleCell>::_maxElements = 0ul;
 
 template <class Particle, class ParticleCell>
-ParticleCell &OctreeExternalNode<Particle, ParticleCell>::getContainingCell(const std::array<double, 3> &pos) const {
-  return *(_cellView._cell);
+ParticleCell &OctreeExternalNode<Particle, ParticleCell>::getCell() const {
+  return *_cell;
+}
+
+template <class Particle, class ParticleCell>
+ParticleCell &OctreeExternalNode<Particle, ParticleCell>::getContainingCell(const std::array<double, 3> &) const {
+  return getCell();
 }
 
 template <class Particle, class ParticleCell>
 size_t OctreeExternalNode<Particle, ParticleCell>::getSize() const {
-  return _cellView._cell->numParticles();
+  return _cell->numParticles();
 }
 
 template <class Particle, class ParticleCell>
@@ -95,7 +131,7 @@ OctreeNode<Particle, ParticleCell> *OctreeExternalNode<Particle, ParticleCell>::
     std::vector<ParticleCell> &cells) {
   if (getSize() > _maxElements and this->_level > 0) {
     // split
-    return new OctreeInternalNode<Particle, ParticleCell>(cells, this->getIndex(), _center, this->_level - 3);
+    return new OctreeInternalNode<Particle, ParticleCell>(this, cells, this->getIndex(), _boxMin, _boxMax);
   } else {
     return this;
   }

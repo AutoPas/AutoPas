@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/adaptiveLinkedCells/OctreeNode.h"
+#include "autopas/containers/adaptiveLinkedCells/OctreeExternalNode.h"
 
 #include <array>
 #include <bitset>
@@ -14,9 +14,6 @@
 
 namespace autopas {
 namespace internal {
-
-template <class Particle, class ParticleCell>
-class OctreeExternalNode;
 
 /**
  * Class representing an internal node in an octree.
@@ -26,8 +23,8 @@ class OctreeInternalNode : public OctreeNode<Particle, ParticleCell> {
  public:
   OctreeInternalNode() = default;
 
-  OctreeInternalNode(std::vector<ParticleCell> &cells, unsigned long index, const std::array<double, 3> &center,
-                     const unsigned int level);
+  OctreeInternalNode(OctreeNode<Particle, ParticleCell> *parent, std::vector<ParticleCell> &cells, unsigned long index,
+                     const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 
   ~OctreeInternalNode() { delete[] _children.data(); }
 
@@ -54,29 +51,38 @@ class OctreeInternalNode : public OctreeNode<Particle, ParticleCell> {
 
  private:
   const std::array<double, 3> _center;
+  const std::array<double, 3> _boxMin;
+  const std::array<double, 3> _boxMax;
   std::array<OctreeNode<Particle, ParticleCell> *, 8> _children;
   static unsigned long _minElements;
+
+  static const int parallelizationLevel = 1;
 };
 
 template <class Particle, class ParticleCell>
 unsigned long OctreeInternalNode<Particle, ParticleCell>::_minElements = 0ul;
 
 template <class Particle, class ParticleCell>
-OctreeInternalNode<Particle, ParticleCell>::OctreeInternalNode(std::vector<ParticleCell> &cells, unsigned long index,
-                                                               const std::array<double, 3> &center,
-                                                               const unsigned int level)
-    : OctreeNode<Particle, ParticleCell>(level, index), _center(center) {
+OctreeInternalNode<Particle, ParticleCell>::OctreeInternalNode(OctreeNode<Particle, ParticleCell> *parent,
+                                                               std::vector<ParticleCell> &cells, unsigned long index,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax)
+    : OctreeNode<Particle, ParticleCell>(parent, index),
+      _center(ArrayMath::mulScalar(ArrayMath::sub(boxMax, boxMin), 0.5)),
+      _boxMin(boxMin),
+      _boxMax(boxMax) {
   for (unsigned int i = 0; i < 8; ++i) {
     std::bitset<3> index(i);
-    std::array<double, 3> childCenter{_center};
+    std::array<double, 3> childBoxMin{boxMin};
+    std::array<double, 3> childBoxMax{_center};
     for (unsigned int d = 0; d < 3; ++d) {
       if (index.test(d)) {
-        childCenter[d] += cells[index.to_ulong()].getCellLength()[d] / 2.0;
-      } else {
-        childCenter[d] -= cells[index.to_ulong()].getCellLength()[d] / 2.0;
+        childBoxMin[d] += cells[index.to_ulong()].getCellLength()[d] / 2.0;
+        childBoxMax[d] += cells[index.to_ulong()].getCellLength()[d] / 2.0;
       }
     }
-    //_children = std::make_unique<OctreeExternalNode>(, childCenter, this->_level + 1)
+    unsigned int childIndex = i * 1 << (this->_level);
+    _children[i] = new OctreeExternalNode<Particle, ParticleCell>(this, cells, childIndex, childBoxMin, childBoxMax);
   }
 }
 
@@ -103,7 +109,7 @@ OctreeNode<Particle, ParticleCell> *OctreeInternalNode<Particle, ParticleCell>::
     std::vector<ParticleCell> &cells) {
   if (getSize() < _minElements) {
     // combine
-    return new OctreeExternalNode<Particle, ParticleCell>(cells, this->getIndex(), _children, _center, this->_level);
+    return new OctreeExternalNode<Particle, ParticleCell>(this->_parent, cells, this->getIndex(), _boxMin, _boxMax);
   } else {
     // call update on all children
     std::transform(_children.begin(), _children.end(), _children.begin(), [&](auto e) { return e->update(cells); });
@@ -114,6 +120,7 @@ OctreeNode<Particle, ParticleCell> *OctreeInternalNode<Particle, ParticleCell>::
 template <class Particle, class ParticleCell>
 bool OctreeInternalNode<Particle, ParticleCell>::isUpdateNeeded() const {
   if (getSize() < _minElements) {
+    // Current node contains to many particles and should be split
     return true;
   } else {
     // call isUpdateNeeded on all children
@@ -133,7 +140,7 @@ void OctreeInternalNode<Particle, ParticleCell>::apply(std::function<void(Octree
     case ExecutionPolicy::par: {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
-#pragma omp taskloop if (this->_level > 1)
+#pragma omp taskloop if (this->_level > parallelizationLevel)
 #endif
       for (int i = 0; i < 8; ++i) {
         _children[i]->apply(func, policy);

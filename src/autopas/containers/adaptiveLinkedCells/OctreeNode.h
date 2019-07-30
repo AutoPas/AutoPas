@@ -6,9 +6,13 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
+#include <functional>
 #include <memory>
 #include <optional>
+
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
 namespace internal {
@@ -26,7 +30,8 @@ class OctreeNode {
    * @param level
    * @param index
    */
-  OctreeNode(const unsigned int level, const unsigned int index) : _level(level), _index(index) {}
+  OctreeNode(OctreeNode<Particle, ParticleCell> *parent, const unsigned int index)
+      : _parent(parent), _level((parent == nullptr) ? 0 : parent->_level + 1), _index(index) {}
 
   /**
    * Destructor of OctreeNode.
@@ -73,6 +78,7 @@ class OctreeNode {
   virtual size_t getIndex() const { return _index; }
 
  protected:
+  OctreeNode<Particle, ParticleCell> *_parent;
   const unsigned int _level;
   const unsigned int _index;
 };

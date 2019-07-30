@@ -29,12 +29,14 @@ class Octree {
    * @param boxMax
    */
   Octree(std::vector<ParticleCell> &cells, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax)
-      : _boxMin(boxMin), _boxMax(boxMax), _cells(&cells) {}
+      : _boxMin(boxMin), _boxMax(boxMax), root(nullptr), _cells(&cells) {}
 
   /**
    * Destructor of Octree.
    */
-  virtual ~Octree() { delete root; }
+  virtual ~Octree() {
+    if (root != nullptr) delete root;
+  }
 
   /**
    * Get the containing cell of a specified position.
@@ -65,8 +67,7 @@ class Octree {
     while (_cellsPerDimension[0] != (1ul << exp)) {
       ++exp;
     }
-    root = new internal::OctreeExternalNode<Particle, ParticleCell>(
-        *_cells, exp, ArrayMath::mulScalar(ArrayMath::sub(_boxMax, _boxMin), 0.5), 0);
+    root = new internal::OctreeExternalNode<Particle, ParticleCell>(nullptr, *_cells, exp, _boxMin, _boxMax);
   }
 
   /**
