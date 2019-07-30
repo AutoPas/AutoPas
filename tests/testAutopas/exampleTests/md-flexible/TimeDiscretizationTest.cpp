@@ -2,183 +2,146 @@
 // Created by nicola on 22.05.19.
 //
 #include "TimeDiscretizationTest.h"
-using namespace std;
-using namespace autopas;
 
-string arrayString(array<double, 3> input) {
-  std::ostringstream os;
-  for (double i : input) {
-    os << i;
-    os << " _ ";
-  }
-  std::string str(os.str());
-  return str;
-}
-
-double L2Norm(std::array<double, 3> array) {
-  double square_sum = 0;
-  for (unsigned int i = 0; i < array.size(); i++) {
-    square_sum += (array[i] * array[i]);
-  }
-  return sqrt(square_sum);
-}
-
-// Testet und visualisiert die Kräfte berechnungen und TimeDiscreatization Klasse
-TEST_F(TimeDiscretizationTest, GeneralForceTest) {
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
-  auto autoPas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
-  autoPas.setBoxMax(boxmax);
-  autoPas.setCutoff(cutoff);
-  // erstmal auf linked cells testen
-  autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
-  autoPas.init();
-  PrintableMolecule p1({1., 1., 1.}, {0.5, 0.5, 0.5}, 0);
-  autoPas.addParticle(p1);
-  PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
-  autoPas.addParticle(p2);
-  //  for (auto iter = autoPas.getContainer()->begin(); iter.isValid(); ++iter) {
-  //    cout << iter->toString() << endl;
-  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-  //  }
+void TimeDiscretizationTest::globalForceTest(
+    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto1,
+    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto2, int iterations) {
+  auto1.iteratePairwise(&functor);
+  auto2.iteratePairwise(&functor);
   double particleD = 0.01;
-  int iterations = 0;
-  // iterationen beginnend
-  TimeDiscretization<decltype(autoPas)> td(particleD);
-  // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(&functor);
-  // Dokumentation prints
-  //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  //  cout << "-----AFTER INITIALIZATION----" << endl;
-  //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  //  for (auto iter = autoPas.getContainer()->begin(); iter.isValid(); ++iter) {
-  //    cout << iter->toString() << "  __END" << endl;
-  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-  //  }
-  //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  //  cout << "-------ITERATIONS START------" << endl;
-  //  cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-
-  while (iterations < 10) {
-    td.VSCalculateX(autoPas);
-    autoPas.iteratePairwise(&functor);
-    td.VSCalculateV(autoPas);
-    iterations++;
-    //    for (auto iter = autoPas.getContainer()->begin(); iter.isValid(); ++iter) {
-    //      cout << iter->toString() << endl;
-    //      cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-    //    }
-    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-  }
-  ASSERT_TRUE(true);
-}
-
-TEST_F(TimeDiscretizationTest, CalcX) {
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
-  auto autoPas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
-  autoPas.setBoxMax(boxmax);
-  autoPas.setCutoff(cutoff);
-  // erstmal auf linked cells testen
-  autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
-  autoPas.init();
-  PrintableMolecule p1({1., 1., 1.}, {0.5, 0.5, 0.5}, 0);
-  autoPas.addParticle(p1);
-  PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
-  autoPas.addParticle(p2);
-  //  for (auto iter = autoPas.getContainer()->begin(); iter.isValid(); ++iter) {
-  //    cout << iter->toString() << endl;
-  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-  //  }
-  double particleD = 0.01;
-  int iterations = 0;
-  // iterationen beginnend
-  // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(&functor);
-  //  cout << "delta_t value =  " << particleD << endl;
-  while (iterations < 10) {
-    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-      auto v = iter->getV();
-      auto m = iter->getMass();
-      auto f = iter->getF();
-      iter->setOldf(f);
-      //      cout << "Particle ID: " << iter->getID() << endl;
-      //      cout << "initial Velocity: " << arrayString(v) << endl;
-      v = autopas::ArrayMath::mulScalar(v, particleD);
-      //      cout << "Velocity * delta_T= " << arrayString(v) << endl;
-      //      cout << "initial F = " << arrayString(f) << endl;
-      f = autopas::ArrayMath::mulScalar(f, (particleD * particleD / (2 * m)));
-      //      cout << "F * delta² / 2*m = " << arrayString(f) << endl;
-      //      cout << "Print old Positions:" << arrayString(iter->getR()) << endl;
-      auto newR = autopas::ArrayMath::add(v, f);
-      iter->addR(newR);
-      //      cout << "Print new Positions: " << arrayString(iter->getR()) << endl;
-      //      cout << endl;
+  TimeDiscretization<decltype(auto1)> td1(particleD);
+  // to compare OldForce entry of auto2 Particles with Force entries of auto1, perform one iteration on auto2
+  td1.VSCalculateX(auto2);
+  auto2.iteratePairwise(&functor);
+  ASSERT_EQ(auto1.getNumberOfParticles(), auto2.getNumberOfParticles());
+  for (int i = 0; i < iterations; i++) {
+    auto iter1 = auto1.begin();
+    auto iter2 = auto2.begin();
+    for (unsigned long ii = 0; ii < auto1.getNumberOfParticles(); ii++) {
+      EXPECT_EQ(iter1->getF(), iter2->getOldf());
+      ++iter1;
+      ++iter2;
     }
-    iterations++;
+    td1.VSCalculateX(auto1);
+    auto1.iteratePairwise(&functor);
+    td1.VSCalculateX(auto2);
+    auto2.iteratePairwise(&functor);
   }
-  ASSERT_TRUE(true);
 }
 
-TEST_F(TimeDiscretizationTest, CalcV) {
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
-  auto autoPas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>(std::cout);
-  PrintableMolecule::setEpsilon(epsilon);
-  PrintableMolecule::setSigma(sigma);
-  PrintableMolecule::setMass(1.0);
-  autoPas.setBoxMax(boxmax);
-  autoPas.setCutoff(cutoff);
-  // erstmal auf linked cells testen
-  autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
-  autoPas.init();
-  PrintableMolecule p1({1., 1., 1.}, {0.5, 0.5, 0.5}, 0);
-  autoPas.addParticle(p1);
-  PrintableMolecule p2({1.5, 1.5, 1.5}, {0., 0.5, 0.}, 1);
-  autoPas.addParticle(p2);
-  //  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-  //    cout << iter->toString() << endl;
-  //    cout << "ParticleOldF= " << arrayString(iter->getOldf()) << endl;
-  //  }
-  double particleD = 0.01;
-  int iterations = 0;
-  // iterationen beginnend
-  // domain vorbeireiten: -Force initialisieren
-  autoPas.iteratePairwise(&functor);
-  //  cout << "delta_t value =  " << particleD << endl;
-  while (iterations < 10) {
-    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-    //    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
+void TimeDiscretizationTest::initFillWithParticles(
+    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
+    std::array<unsigned long, 3> particlesPerDim) {
+  autopas.setBoxMin(boxmin);
+  autopas.setBoxMax(boxmax);
+  autopas.init();
+  PrintableMolecule dummy;
+  GridGenerator::fillWithParticles(autopas, particlesPerDim, dummy, {1, 1, 1}, {0., 0., 0.});
+}
 
-    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-      auto force = iter->getF();
-      auto old_force = iter->getOldf();
-      //      cout << "Particle ID: " << iter->getID() << endl;
-      //      cout << "Old forces: " << arrayString(old_force) << endl;
-      //      cout << "Current forces: " << arrayString(force) << endl;
-      auto addedF = autopas::ArrayMath::add(force, old_force);
-      //      cout << "OldF + Force =  " << arrayString(addedF) << endl;
-      auto newV = autopas::ArrayMath::mulScalar(addedF, particleD / (2 * 1));
-      //      cout << "Multiplied by delta_t and 2*m:" << endl << arrayString(newV) << endl;
-      //      cout << "old Velocity= " << arrayString(iter->getV()) << endl;
-      iter->addV(newV);
-      //      cout << "new Velocity " << arrayString(iter->getV()) << endl;
-      //      cout << endl;
+std::array<double, 3> TimeDiscretizationTest::nextPosition(std::array<double, 3> position, std::array<double, 3> force,
+                                                           std::array<double, 3> velocity, double particle_delta_t) {
+  auto m = 1.0;  // mass is =1 for all particles in test scope
+  velocity = autopas::ArrayMath::mulScalar(velocity, particle_delta_t);
+  force = autopas::ArrayMath::mulScalar(force, (particle_delta_t * particle_delta_t / (2 * m)));
+  auto newR = autopas::ArrayMath::add(velocity, force);
+  return autopas::ArrayMath::add(position, newR);
+}
+
+std::array<double, 3> TimeDiscretizationTest::nextVelocity(std::array<double, 3> velocity, std::array<double, 3> force,
+                                                           std::array<double, 3> oldf, double particle_delta_t) {
+  auto m = 1.0;
+  auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force, oldf)), particle_delta_t / (2 * m));
+  return autopas::ArrayMath::add(velocity, newV);
+}
+
+void TimeDiscretizationTest::Pos_and_Velo_Test(
+    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
+    size_t numberOfParticles, int iterations) {
+  // initialize the domain:
+  PrintableMolecule::setMass(1.0);
+  PrintableMolecule dummy;
+  autopas.setBoxMin(boxmin);
+  autopas.setBoxMax(boxmax);
+  autopas.init();
+  RandomGenerator::fillWithParticles(autopas, dummy, numberOfParticles);
+  double particleD = 0.01;
+  TimeDiscretization<decltype(autopas)> td1(particleD);
+  // initialize force and oldforce values:
+  autopas.iteratePairwise(&functor);
+  td1.VSCalculateX(autopas);
+
+  // comparing Position and Velocities values calculated in TimeDiscretization Class with calculated value using
+  // nextPosition and nextVelocity that implement störmer-verlet algorithm
+  std::vector<std::array<double, 3>> oldVelocityValues;
+  std::vector<std::array<double, 3>> oldPositionValues;
+  std::vector<std::array<double, 3>> forces;
+  std::vector<std::array<double, 3>> oldforces;
+  int i = 0;
+  // testing for each time Step: forces are static
+  // for each time step values used in the formula must be reset
+  for (int currentIteration = 0; i < iterations; currentIteration++) {
+    oldVelocityValues.clear();
+    oldPositionValues.clear();
+    forces.clear();
+    oldforces.clear();
+    i = 0;  // index to particleID to compare values in Vectors
+    ASSERT_EQ(oldVelocityValues.size(), 0);
+    ASSERT_EQ(oldPositionValues.size(), 0);
+    ASSERT_EQ(forces.size(), 0);
+    ASSERT_EQ(oldforces.size(), 0);
+    // filling vectors with values of timeStep i
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+      oldVelocityValues.emplace_back(iter->getV());
+      oldPositionValues.emplace_back(iter->getR());
+      forces.emplace_back(iter->getF());
+      oldforces.emplace_back(iter->getOldf());
     }
-    iterations++;
+    td1.VSCalculateX(autopas);
+    td1.VSCalculateV(autopas);
+    ASSERT_EQ(oldPositionValues.size(), autopas.getNumberOfParticles());
+    ASSERT_EQ(oldVelocityValues.size(), autopas.getNumberOfParticles());
+    ASSERT_EQ(forces.size(), autopas.getNumberOfParticles());
+    ASSERT_EQ(oldforces.size(), autopas.getNumberOfParticles());
+    // checking for equality of values calculated for timeStep i+1
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+      EXPECT_EQ(iter->getID(), i);
+      EXPECT_EQ(iter->getV(), nextVelocity(oldVelocityValues.at(i), forces.at(i), oldforces.at(i), particleD));
+      EXPECT_EQ(iter->getR(), nextPosition(oldPositionValues.at(i), forces.at(i), oldVelocityValues.at(i), particleD));
+      i++;
+    }
   }
-  ASSERT_TRUE(true);
+}
+
+TEST_F(TimeDiscretizationTest, GlobalForce) {
+  PrintableMolecule::setMass(1.);
+  auto auto1a = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  auto auto1b = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  auto auto2a = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  auto auto2b = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  std::array<unsigned long, 3> eightParticles = {2, 2, 2};
+  std::array<unsigned long, 3> hundred_twenty_fiveParticles = {5, 5, 5};
+  initFillWithParticles(auto1a, eightParticles);
+  initFillWithParticles(auto1b, eightParticles);
+  //    globalForceTest(auto1a,auto1b,10);
+  //    globalForceTest(auto1a,auto1b,20);
+  globalForceTest(auto1a, auto1b, 30);
+  initFillWithParticles(auto2a, hundred_twenty_fiveParticles);
+  initFillWithParticles(auto2b, hundred_twenty_fiveParticles);
+  //    globalForceTest(auto2a,auto2b,10);
+  //    globalForceTest(auto2a,auto2b,20);
+  globalForceTest(auto2a, auto2b, 30);
+}
+
+TEST_F(TimeDiscretizationTest, PositionsAndVelocity) {
+  PrintableMolecule::setMass(1.);
+  auto autopas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  Pos_and_Velo_Test(autopas, 25, 10);
+  Pos_and_Velo_Test(autopas, 100, 10);
 }

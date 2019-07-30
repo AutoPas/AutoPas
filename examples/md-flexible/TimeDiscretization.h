@@ -10,14 +10,12 @@
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 
-using namespace std;
-
 template <class AutoPasTemplate>
 class TimeDiscretization {
  public:
-  TimeDiscretization(double particleDeltaT);
+  explicit TimeDiscretization(double particleDeltaT);
 
-  virtual ~TimeDiscretization() {}
+  virtual ~TimeDiscretization() = default;
 
   /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    */
@@ -26,7 +24,9 @@ class TimeDiscretization {
   /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    */
   long VSCalculateV(AutoPasTemplate &autopas);
-
+  /**Getter for particleDeltaT
+   * @return particle_delta_t
+   * */
   double getParticleDeltaT() const;
 
  private:
@@ -44,6 +44,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto v = iter->getV();
+    //@todo anpassen zur PCL
     auto m = iter->getMass();
     auto f = iter->getF();
     iter->setOldf(f);
@@ -65,6 +66,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas)
 #pragma omp parallel
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    //@todo anpassen zur PCL
     auto m = iter->getMass();
     auto force = iter->getF();
     auto old_force = iter->getOldf();

@@ -15,16 +15,13 @@
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
 
-using namespace autopas;
-using namespace std;
-
 template <class Particle, class ParticleCell>
 class Simulation {
  private:
-  AutoPas<Particle, ParticleCell> _autopas;
+  autopas::AutoPas<Particle, ParticleCell> _autopas;
   MDFlexParser _parser;
   std::ofstream _logFile;
-  shared_ptr<ParticleClassLibrary> _PCL;
+  std::shared_ptr<ParticleClassLibrary> _PCL;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -47,25 +44,25 @@ class Simulation {
    * @param numParticles
    * @param autopas
    */
-  template <class AutoPasTemplate>
-  void writeVTKFile(int iteration, size_t numParticles, AutoPasTemplate &autopas) {
-    string filename = "VtkOutput";
-    stringstream strstr;
-    strstr << filename << "_" << setfill('0') << setw(4) << iteration << ".vtu";
+  void writeVTKFile(int iteration, size_t numParticles, autopas::AutoPas<Particle, ParticleCell> &autopas) {
+    std::string filename = "VtkOutput";
+    std::stringstream strstr;
+    strstr << filename << "_" << std::setfill('0') << std::setw(4) << iteration << ".vtu";
     // string path = "./vtk";
     std::ofstream vtkFile;
     vtkFile.open(strstr.str());
 
-    vtkFile << "# vtk DataFile Version 2.0" << endl;
-    vtkFile << "Timestep" << endl;
-    vtkFile << "ASCII" << endl;
-    vtkFile << "DATASET STRUCTURED_GRID" << endl;
-    vtkFile << "DIMENSIONS 1 1 1" << endl;
-    vtkFile << "POINTS " << numParticles << " double" << endl;
+    vtkFile << "# vtk DataFile Version 2.0" << std::endl;
+    vtkFile << "Timestep" << std::endl;
+    vtkFile << "ASCII" << std::endl;
+    //@todo adapt to current state
+    vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
+    vtkFile << "DIMENSIONS 1 1 1" << std::endl;
+    vtkFile << "POINTS " << numParticles << " double" << std::endl;
 
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       auto pos = iter->getR();
-      vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+      vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
     }
 
     vtkFile.close();
@@ -88,7 +85,7 @@ class Simulation {
   void initContainerGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, double boxLength, size_t numParticles,
                           double distributionMean, double distributionStdDev);
 
-  void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, array<double, 3> boxLength,
+  void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, std::array<double, 3> boxLength,
                             size_t numParticles);
 
   /** @brief This function
@@ -116,15 +113,17 @@ class Simulation {
   /**Getter for Autopas Oject
    * @return Autopas Object
    */
-  AutoPas<Particle, ParticleCell> *getAutopas() const;
-
+  autopas::AutoPas<Particle, ParticleCell> *getAutopas() const;
+  /**Return current number of Particles in AutoPas Object
+   * */
   size_t getNumParticles() { return _autopas.getNumberOfParticles(); }
-
+  /**Prints Statistics(duration of calculation, etc ..) of the Simulation
+   * */
   void printStatistics();
 };
 
 template <class Particle, class ParticleCell>
-AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas() const {
+autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas() const {
   return _autopas.get();
 }
 
@@ -142,9 +141,9 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
   } else {
     numP = _parser.getParticlesTotal();
   }
-  map<unsigned long, double> PC_Epsilon;
-  map<unsigned long, double> PC_Sigma;
-  map<unsigned long, double> PC_Mass;
+  std::map<unsigned long, double> PC_Epsilon;
+  std::map<unsigned long, double> PC_Sigma;
+  std::map<unsigned long, double> PC_Mass;
   // temporäre implemetierung mit nur einer particle Class
   double epsilon = _parser.getEpsilon();
   double sigma = _parser.getSigma();
@@ -155,7 +154,7 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
     PC_Mass.emplace(i, mass);
   }
   // initialisierung of PCL
-  _PCL = make_shared<ParticleClassLibrary>(PC_Epsilon, PC_Sigma, PC_Mass);
+  _PCL = std::make_shared<ParticleClassLibrary>(PC_Epsilon, PC_Sigma, PC_Mass);
   auto logFileName(_parser.getLogFileName());
   auto particlesTotal(_parser.getParticlesTotal());
   auto particlesPerDim(_parser.getParticlesPerDim());
@@ -283,10 +282,7 @@ void Simulation<Particle, ParticleCell>::CalcF() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
   //@ TODO: switch for other functors --> mit boolean object?
-
-  // auto functor = autopas::LJFunctor<Particle, ParticleCell, autopas::FunctorN3Modes::Both,
-  // true>(_autopas.getCutoff(),1., 1.0, 0.0,_autopas->getBoxMin(),_autopas->getBoxMax(),true);
-  auto functor = LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
+  auto functor = autopas::LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
@@ -307,8 +303,8 @@ void Simulation<Particle, ParticleCell>::simulate() {
     _timers.durationPositionUpdate += timeDiscretization.VSCalculateX(_autopas);
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      cout << "Iteration " << simTimeNow / deltaT << endl;
-      cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << endl;
+      std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
+      std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
     this->CalcF();
     _timers.durationVelocityUpdate += timeDiscretization.VSCalculateV(_autopas);
@@ -322,18 +318,20 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::printStatistics() {
+    using namespace std;
   size_t flopsPerKernelCall;
 
   // FlopsPerKernelCall ließt vom Functor
   switch (_parser.getFunctorOption()) {
     case MDFlexParser::FunctorOption ::lj12_6: {
-      flopsPerKernelCall =
-          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctor<PrintableMolecule,
+                                              autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexParser::FunctorOption ::lj12_6_AVX: {
       flopsPerKernelCall =
-          LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+          autopas::LJFunctorAVX<PrintableMolecule,
+                                autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -370,7 +368,8 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_parser.getMeasureFlops()) {
-    FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(_autopas.getCutoff());
+    autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
+        _autopas.getCutoff());
     _autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
@@ -378,7 +377,8 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
     if (_autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
-          FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
+          autopas::FlopCounterFunctor<PrintableMolecule,
+                                      autopas::FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
           floor(numIterations / _parser.getVerletRebuildFrequency());
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;

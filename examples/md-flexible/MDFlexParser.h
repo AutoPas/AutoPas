@@ -16,7 +16,6 @@
 
 #include <set>
 
-using namespace std;
 
 class MDFlexParser {
  public:

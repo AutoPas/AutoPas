@@ -11,6 +11,7 @@
 #include <iomanip>
 
 bool MDFlexParser::parseInput(int argc, char **argv) {
+    using namespace std;
   bool displayHelp = false;
   int option, option_index;
   static struct option long_options[] = {{"box-length", required_argument, nullptr, 'b'},
@@ -393,6 +394,7 @@ std::string iterableToString(T arr) {
 }
 
 void MDFlexParser::printConfig() {
+    using namespace std;
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
        << ":  " << iterableToString(containerOptions) << endl;
@@ -550,7 +552,7 @@ autopas::SelectorStrategyOption MDFlexParser::getSelectorStrategy() const { retu
 
 std::set<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
 
-const string &MDFlexParser::getLogFileName() const { return logFileName; }
+const std::string &MDFlexParser::getLogFileName() const { return logFileName; }
 
 double MDFlexParser::getEpsilon() const { return epsilon; }
 
