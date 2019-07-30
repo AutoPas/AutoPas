@@ -60,7 +60,7 @@ class LJFunctor
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(floatPrecision cutoff, ParticleClassLibrary &PCLibrary, floatPrecision shift,
+  explicit LJFunctor(floatPrecision cutoff, ParticleClassLibrary<floatPrecision > &PCLibrary, floatPrecision shift,
                      bool duplicatedCalculation = true)
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
@@ -905,7 +905,7 @@ class LJFunctor
   // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   floatPrecision _cutoffsquare;
-  ParticleClassLibrary *_PCLibrary;
+  ParticleClassLibrary<floatPrecision > *_PCLibrary;
   floatPrecision _shift6;
   // sum of the potential energy, only calculated if calculateGlobals is true
   floatPrecision _upotSum;

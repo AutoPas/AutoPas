@@ -24,7 +24,7 @@ class Simulation {
   AutoPas<Particle, ParticleCell> _autopas;
   MDFlexParser _parser;
   std::ofstream _logFile;
-  shared_ptr<ParticleClassLibrary> _PCL;
+  shared_ptr<ParticleClassLibrary<double>> _PCL;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -136,27 +136,11 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser &parser) {
   // double epsilon,sigma  = 1.0;
   //@todo schöner machen:
   _parser = parser;
-  double numP;
-  if (_parser.getGeneratorOption() == MDFlexParser::GeneratorOption::grid) {
-    numP = _parser.getParticlesPerDim() * _parser.getParticlesPerDim() * _parser.getParticlesPerDim();
-  } else {
-    numP = _parser.getParticlesTotal();
-  }
-  //@TODO MIT AKTUELLER TYPE_ID AKTUALISIEREN -> PARSER
-  map<unsigned long, double> PC_Epsilon;
-  map<unsigned long, double> PC_Sigma;
-  map<unsigned long, double> PC_Mass;
-  // temporäre implemetierung mit nur einer particle Class
   double epsilon = _parser.getEpsilon();
   double sigma = _parser.getSigma();
   double mass = _parser.getMass();
-  for (unsigned long i = 0; i < numP; i++) {
-    PC_Epsilon.emplace(i, epsilon);
-    PC_Sigma.emplace(i, sigma);
-    PC_Mass.emplace(i, mass);
-  }
   // initialisierung of PCL
-  _PCL = make_shared<ParticleClassLibrary>(PC_Epsilon, PC_Sigma, PC_Mass);
+  _PCL = make_shared<ParticleClassLibrary<double>>(epsilon,sigma, mass);
   auto logFileName(_parser.getLogFileName());
   auto particlesTotal(_parser.getParticlesTotal());
   auto particlesPerDim(_parser.getParticlesPerDim());

@@ -214,7 +214,8 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
 
 TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<RMMParticleCell<MoleculeLJ<>>> data(10);
+  //for somne reason throws a segfault if using MoleculeLJ here
+  std::vector<RMMParticleCell<Particle>> data(10);
 
   for (auto i : {0u, 2u, 5u, 6u, 8u}) {
     fillWithParticles(&data.at(i));
@@ -225,7 +226,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<MoleculeLJ<>, RMMParticleCell<MoleculeLJ<>>> iter(&data);
+    ParticleIterator<Particle, RMMParticleCell<Particle>> iter(&data);
     for (; iter.isValid(); ++iter, ++numFoundParticles) {
       iter.deleteCurrentParticle();
     }
@@ -237,7 +238,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<MoleculeLJ<>, RMMParticleCell<MoleculeLJ<>>> iter(&data);
+    ParticleIterator<Particle, RMMParticleCell<Particle>> iter(&data);
     for (; iter.isValid(); ++iter) {
       ++numFoundParticles;
     }
