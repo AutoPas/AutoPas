@@ -79,7 +79,7 @@ class ClusterTower : public ParticleCell<Particle> {
       auto sizeLastCluster = (_particles.numParticles() % clusterSize);
       _numDummyParticles = sizeLastCluster != 0 ? clusterSize - sizeLastCluster : 0;
 
-      const auto &lastParticle = _particles[_particles.numParticles() - 1];
+      const auto lastParticle = _particles[_particles.numParticles() - 1];
       for (size_t i = 0; i < _numDummyParticles; i++) {
         _particles.addParticle(lastParticle);
       }
