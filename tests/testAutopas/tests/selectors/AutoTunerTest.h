@@ -7,8 +7,8 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
+#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "testingHelpers/commonTypedefs.h"
 

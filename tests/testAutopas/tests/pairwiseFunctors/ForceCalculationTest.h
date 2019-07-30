@@ -9,9 +9,9 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <vector>
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
+#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "testingHelpers/GridGenerator.h"
 
 class ForceCalculationTest : public AutoPasTestBase {

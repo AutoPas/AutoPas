@@ -318,7 +318,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::printStatistics() {
-    using namespace std;
+  using namespace std;
   size_t flopsPerKernelCall;
 
   // FlopsPerKernelCall ließt vom Functor

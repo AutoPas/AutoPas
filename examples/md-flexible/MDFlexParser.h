@@ -16,7 +16,6 @@
 
 #include <set>
 
-
 class MDFlexParser {
  public:
   // options specific for the md-flex example

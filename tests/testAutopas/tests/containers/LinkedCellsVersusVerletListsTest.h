@@ -11,9 +11,9 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 

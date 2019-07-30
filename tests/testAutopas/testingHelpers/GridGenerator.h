@@ -48,7 +48,6 @@ class GridGenerator {
                                 const Particle &defaultParticle = autopas::Particle(),
                                 const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
                                 const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
-
 };
 
 template <class Particle, class ParticleCell>
@@ -85,4 +84,3 @@ void GridGenerator::fillWithParticles(Container &container, const std::array<siz
     }
   }
 }
-
