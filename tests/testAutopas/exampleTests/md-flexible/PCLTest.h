@@ -12,17 +12,19 @@ class PCLTest : public AutoPasTestBase {
   PCLTest() : AutoPasTestBase(),
     epsilon{1.0},
     sigma {1.0},
-    mass {1.0},
-    PCL { ParticleClassLibrary(epsilon,sigma, mass)}
+    epsilon2{2.0},
+    sigma2{2.0},
+    mass {1.0}
     {}
 
-  double mixingE(double e1, double e2);
-  double mixingS(double s1, double s2);
+  static double mixingE(double e1, double e2);
+  static double mixingS(double s1, double s2);
 
  protected:
-  PrintableMolecule dummyParticle;
   double epsilon;
   double sigma;
+  double epsilon2;
+  double sigma2;
   double mass;
   ParticleClassLibrary<double> PCL;
 };

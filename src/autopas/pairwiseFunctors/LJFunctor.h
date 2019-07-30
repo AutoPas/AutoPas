@@ -81,7 +81,6 @@ class LJFunctor
       _aosThreadData.resize(autopas_get_max_threads());
     }
 #if defined(AUTOPAS_CUDA)
-    // @TODO: FIXME: pass particle class lib instead of constant eps and sig
     LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _PCLibrary->get24Epsilon(0) /* epsilon24 */, _PCLibrary->getSSigma(0) /* sigmasquare */, _shift6);
     _cudawrapper.loadConstants(&constants);
 #endif
@@ -632,7 +631,6 @@ class LJFunctor
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
-                    //@todo FIX this with Mixing Rules  !!!
  private:
   template <bool newton3, bool duplicatedCalculations>
   void SoAFunctorImpl(SoA<SoAArraysType> &soa,

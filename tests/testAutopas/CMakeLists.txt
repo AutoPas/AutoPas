@@ -1,11 +1,17 @@
 file(
-    GLOB_RECURSE
+    GLOB
     MY_SRC
     "*.cpp"
     "*.h"
-    "../../examples/md-flexible/ParticleClassLibrary.cpp"
-    "../../examples/md-flexible/ParticleClassLibrary.h"
+        "../../examples/md-flexible/ParticleClassLibrary.cpp"
+        "../../examples/md-flexible/ParticleClassLibrary.h"
+    "exampleTests/md-flexible/*.cpp"
+    "exampleTests/md-flexible/*.h"
+        "testingHelpers/*.cpp"
+                "testingHelpers/*.h"
+
 )
+
 if (AUTOPAS_ENABLE_CUDA)
     file(
         GLOB_RECURSE
