@@ -79,7 +79,7 @@ class FullParticleCell : public ParticleCell<Particle> {
     particlesLock.unlock();
   }
 
-  void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }
+  void setCellLength(const std::array<double, 3> &cellLength) override { _cellLength = cellLength; }
 
   std::array<double, 3> getCellLength() const override { return _cellLength; }
 

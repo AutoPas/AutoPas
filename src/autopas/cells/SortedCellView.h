@@ -71,7 +71,7 @@ class SortedCellView : public ParticleCell<Particle> {
     _particles.pop_back();
   }
 
-  void setCellLength(std::array<double, 3> &cellLength) override { _cell->setCellLength(cellLength); }
+  void setCellLength(const std::array<double, 3> &cellLength) override { _cell->setCellLength(cellLength); }
 
   std::array<double, 3> getCellLength() const override { return _cell->getCellLength(); }
 

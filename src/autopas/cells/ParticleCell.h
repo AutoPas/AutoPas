@@ -72,7 +72,7 @@ class ParticleCell {
    * Set the side lengths of this cell.
    * @param cellLength cell side length
    */
-  virtual void setCellLength(std::array<double, 3> &cellLength) = 0;
+  virtual void setCellLength(const std::array<double, 3> &cellLength) = 0;
 
   /**
    * Get the side lengths of this cell.
