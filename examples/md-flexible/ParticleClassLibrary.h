@@ -27,7 +27,7 @@ class ParticleClassLibrary {
    * @param Particle
    * @return Sigma²
    */
-  double getSSigma(unsigned long i);
+  double getSigmaSquare(unsigned long i);
 
   /**Getter for Particle Mass
    * @param Particle
@@ -39,16 +39,16 @@ class ParticleClassLibrary {
    * @param Particles; i and j
    * @return 24*(Epsilon of both)
    * */
-  double mixing24E(unsigned long i, unsigned long j);
+  double mixing24Epsilon(unsigned long i, unsigned long j);
   /**Returns Sigma Square of the MixingRule of 2 Particles
    * @param Particles; i and j
    * @return (Sigma of both)²
    * */
-  double mixingSS(unsigned long i, unsigned long j);
+  double mixingSigmaSquare(unsigned long i, unsigned long j);
 
  private:
-  std::map<unsigned long, double> Epsilon24;
-  std::map<unsigned long, double> SigmaSquare;
+  std::map<unsigned long, double> Epsilon;
+  std::map<unsigned long, double> Sigma;
   std::map<unsigned long, double> Mass;
   std::map<std::pair<unsigned long,unsigned long>,double> computedMixing24Epsilon;
   std::map<std::pair<unsigned long,unsigned long>,double> computedMixingSigmaSquare;

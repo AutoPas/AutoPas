@@ -12,7 +12,7 @@ TEST_F(PCLTest, Functions) {
   PrintableMolecule p2({0., 0., 0.}, {0., 0., 0.}, 1);
     p2.setTypeId(1);
 ASSERT_EQ(mass, PCL.getMass(p1.getTypeId()));
-    ASSERT_EQ(PCL.mixing24E(p1.getTypeId(), p2.getTypeId()), 24 * mixingE(epsilon, epsilon2));
-    ASSERT_EQ(PCL.mixingSS(p1.getTypeId(), p2.getTypeId()),
-            mixingS(sigma,sigma)*mixingS(sigma,sigma2));
+    ASSERT_EQ(PCL.mixing24Epsilon(p1.getTypeId(), p2.getTypeId()), 24 * mixingE(epsilon, epsilon2));
+    ASSERT_EQ(PCL.mixingSigmaSquare(p1.getTypeId(), p2.getTypeId()),
+            mixingS(sigma,sigma2)*mixingS(sigma,sigma2));
 }

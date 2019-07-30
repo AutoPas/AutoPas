@@ -97,8 +97,8 @@ class LJFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    double _sigmasquare = _PCLibrary->mixingSS(i.getTypeId(), j.getTypeId());
-    double _epsilon24 = _PCLibrary->mixing24E(i.getTypeId(), j.getTypeId());
+    double _sigmasquare = _PCLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
+    double _epsilon24 = _PCLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     floatPrecision dr2 = ArrayMath::dot(dr, dr);
 
@@ -188,8 +188,8 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr[i],typeptr[j]);
-        epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr[i],typeptr[j]);
+        sigmasquare = (floatPrecision) _PCLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
+        epsilon24= (floatPrecision) _PCLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
         const floatPrecision drz = zptr[i] - zptr[j];
@@ -306,8 +306,8 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-          sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr1[i],typeptr2[j]);
-          epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr1[i],typeptr2[j]);
+          sigmasquare = (floatPrecision) _PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+          epsilon24= (floatPrecision) _PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
         const floatPrecision drx = x1ptr[i] - x2ptr[j];
         const floatPrecision dry = y1ptr[i] - y2ptr[j];
         const floatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -718,8 +718,8 @@ class LJFunctor
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
-             sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr1[i],typeptr2[currentList[joff + j]]);
-             epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr1[i],typeptr2[currentList[joff + j]]);
+             sigmasquare = (floatPrecision) _PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
+             epsilon24= (floatPrecision) _PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
             // const size_t j = currentList[jNeighIndex];
 
             const floatPrecision drx = xtmp[j] - xArr[j];
@@ -792,8 +792,8 @@ class LJFunctor
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
-          sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr1[i],typeptr2[j]);
-          epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr1[i],typeptr2[j]);
+          sigmasquare = (floatPrecision) _PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+          epsilon24= (floatPrecision) _PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
 
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
