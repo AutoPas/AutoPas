@@ -7,7 +7,7 @@
 #ifdef __AVX__
 #pragma once
 
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"

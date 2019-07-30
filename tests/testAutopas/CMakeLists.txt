@@ -3,8 +3,6 @@ file(
     MY_SRC
     "*.cpp"
     "*.h"
-    "../../examples/md-flexible/ParticleClassLibrary.cpp"
-    "../../examples/md-flexible/ParticleClassLibrary.h"
 )
 if (AUTOPAS_ENABLE_CUDA)
     file(

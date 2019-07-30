@@ -48,37 +48,7 @@ class GridGenerator {
                                 const Particle &defaultParticle = autopas::Particle(),
                                 const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
                                 const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
-  /**Fills Autopas Object with a Grid of Particles starting at
-   * @param autopas
-   * @param startingPositions
-   * @param particlesPerDim
-   * @param defaultParticle
-   * @param spacing
-   * @param offset
-   *
-   * */
-  template <class Particle, class ParticleCell>
-  static void fillWithParticlesOnR(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                   std::array<double, 3> startingPositions, std::array<size_t, 3> particlesPerDim,
-                                   const Particle &defaultParticle, std::array<double, 3> spacing,
-                                   std::array<double, 3> offset);
 
-  /**Fills Autopas Object with a Grid of Particles
-   * @param autopas
-   * @param startingPositions
-   * @param initialVelocity
-   * @param particlesPerDim
-   * @param defaultParticle
-   * @param spacing
-   * @param offset
-   *
-   * */
-  template <class Particle, class ParticleCell>
-  static void fillWithParticlesOnRInitialV(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                           std::array<double, 3> startingPositions,
-                                           std::array<double, 3> initialVelocity, std::array<size_t, 3> particlesPerDim,
-                                           const Particle &defaultParticle, std::array<double, 3> spacing,
-                                           std::array<double, 3> offset);
 };
 
 template <class Particle, class ParticleCell>
@@ -116,48 +86,3 @@ void GridGenerator::fillWithParticles(Container &container, const std::array<siz
   }
 }
 
-template <class Particle, class ParticleCell>
-void GridGenerator::fillWithParticlesOnR(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                         std::array<double, 3> startingPositions, std::array<size_t, 3> particlesPerDim,
-                                         const Particle &defaultParticle, std::array<double, 3> spacing,
-                                         std::array<double, 3> offset) {
-  size_t id = 0;
-  double S_x = startingPositions[0];
-  double S_y = startingPositions[1];
-  double S_z = startingPositions[2];
-
-  for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
-    for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
-      for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        Particle p(defaultParticle);
-        p.setR({S_x * spacing[0] + offset[0], S_y * spacing[1] + offset[1], S_z * spacing[2] + offset[2]});
-        p.setID(id++);
-        autopas.addParticle(p);
-      }
-    }
-  }
-}
-
-template <class Particle, class ParticleCell>
-void GridGenerator::fillWithParticlesOnRInitialV(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                                 std::array<double, 3> startingPositions,
-                                                 std::array<double, 3> initialVelocity,
-                                                 std::array<size_t, 3> particlesPerDim, const Particle &defaultParticle,
-                                                 std::array<double, 3> spacing, std::array<double, 3> offset) {
-  size_t id = 0;
-  double S_x = startingPositions[0];
-  double S_y = startingPositions[1];
-  double S_z = startingPositions[2];
-
-  for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
-    for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
-      for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        Particle p(defaultParticle);
-        p.setR({S_x * spacing[0] + offset[0], S_y * spacing[1] + offset[1], S_z * spacing[2] + offset[2]});
-        p.setV(initialVelocity);
-        p.setID(id++);
-        autopas.addParticle(p);
-      }
-    }
-  }
-}

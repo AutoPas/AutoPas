@@ -8,7 +8,7 @@
 #pragma once
 
 #include <array>
-#include "../../../examples/md-flexible/ParticleClassLibrary.h"
+#include "ParticleClassLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"

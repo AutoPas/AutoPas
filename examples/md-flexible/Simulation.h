@@ -265,7 +265,7 @@ void Simulation<Particle, ParticleCell>::initContainerGauss(autopas::AutoPas<Par
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas,
-                                                              array<double, 3> boxLength, size_t numParticles) {
+                                                              std::array<double, 3> boxLength, size_t numParticles) {
   std::array<double, 3> boxMin({0., 0., 0.});
 
   autopas.setBoxMin(boxMin);

@@ -1,7 +1,4 @@
-#pragma once
 #include <gtest/gtest.h>
-#include <math.h>
-//#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include <vector>
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/Simulation.h"

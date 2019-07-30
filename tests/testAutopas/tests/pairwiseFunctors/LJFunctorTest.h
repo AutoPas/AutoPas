@@ -7,9 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
-#include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "testingHelpers/RandomGenerator.h"
 
 class LJFunctorTest : public AutoPasTestBase {

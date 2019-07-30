@@ -6,11 +6,11 @@
 
 #include <iostream>
 #include <vector>
-#include "../md-flexible/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/utils/CudaDeviceVector.h"
 
 using namespace std;

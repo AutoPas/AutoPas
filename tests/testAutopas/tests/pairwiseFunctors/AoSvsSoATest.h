@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 #include <chrono>
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 

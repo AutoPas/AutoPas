@@ -16,25 +16,27 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   int option, option_index;
   static struct option long_options[] = {{"box-length", required_argument, nullptr, 'b'},
                                          {"container", required_argument, nullptr, 'c'},
-                                         {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"cutoff", required_argument, nullptr, 'C'},
                                          {"cell-size-factor", required_argument, nullptr, 'a'},
                                          {"distribution-mean", required_argument, nullptr, 'm'},
                                          {"distribution-stddeviation", required_argument, nullptr, 'z'},
                                          {"data-layout", required_argument, nullptr, 'd'},
+                                         {"distribution-mean", required_argument, nullptr, 'm'},
+                                         {"distribution-stddeviation", required_argument, nullptr, 'z'},
+                                         {"delta_t", required_argument, nullptr, 'D'},
+                                         {"epsilon", required_argument, nullptr, 'e'},
                                          {"functor", required_argument, nullptr, 'f'},
                                          {"help", no_argument, nullptr, 'h'},
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
                                          {"newton3", required_argument, nullptr, '3'},
-                                         {"delta_t", required_argument, nullptr, 'D'},
-                                         {"epsilon", required_argument, nullptr, 'e'},
-                                         {"sigma", required_argument, nullptr, 'A'},
                                          {"particle-mass", required_argument, nullptr, 'M'},
                                          {"particles-generator", required_argument, nullptr, 'g'},
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
+                                         {"sigma", required_argument, nullptr, 'A'},
+                                         {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
@@ -51,96 +53,102 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
-      case 'e': {
-        try {
-          epsilon = stod(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing epsilon value: " << optarg << endl;
-          displayHelp = true;
+        case '3': {
+            newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
+            if (newton3Options.empty()) {
+                cerr << "Unknown Newton3 option: " << strArg << endl;
+                cerr << "Please use 'enabled' or 'disabled'!" << endl;
+                displayHelp = true;
+            }
+            break;
         }
-        break;
-      }
       case 'A': {
         try {
           sigma = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing sigma value: " << optarg << endl;
+          cerr << "Error parsing sigma value: " << strArg << endl;
           displayHelp = true;
         }
         break;
       }
-      case 'M': {
-        try {
-          mass = stod(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing Particle Mass value: " << optarg << endl;
-          displayHelp = true;
+        case 'a': {
+            cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
+            if (cellSizeFactors->isEmpty()) {
+                cerr << "Error parsing cell size factors: " << strArg << endl;
+                displayHelp = true;
+            }
+            break;
         }
-        break;
-      }
-      case 'D': {
+        case 'b': {
+            try {
+                boxLength = stod(strArg);
+            } catch (const exception &) {
+                cerr << "Error parsing box length: " << strArg << endl;
+                displayHelp = true;
+            }
+            break;
+        }
+        case 'c': {
+            // overwrite default argument
+            containerOptions = autopas::utils::StringUtils::parseContainerOptions(strArg, false);
+            if (containerOptions.empty()) {
+                cerr << "Unknown container option: " << strArg << endl;
+                cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'VCells' or 'VCluster'!" << endl;
+                displayHelp = true;
+            }
+            break;
+        }
+        case 'C': {
+            try {
+                cutoff = stod(strArg);
+            } catch (const exception &) {
+                cerr << "Error parsing cutoff Radius: " << strArg << endl;
+                displayHelp = true;
+            }
+            break;
+        }
+
+        case 'D': {
         try {
           delta_t = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing epsilon value: " << optarg << endl;
+          cerr << "Error parsing epsilon value: " << strArg << endl;
           displayHelp = true;
         }
         break;
       }
-      case '3': {
-        newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
-        if (newton3Options.empty()) {
-          cerr << "Unknown Newton3 option: " << strArg << endl;
-          cerr << "Please use 'enabled' or 'disabled'!" << endl;
-          displayHelp = true;
+        case 'd': {
+            dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(strArg);
+            if (dataLayoutOptions.empty()) {
+                cerr << "Unknown data layouts: " << strArg << endl;
+                cerr << "Please use 'AoS' or 'SoA'!" << endl;
+                displayHelp = true;
+            }
+            break;
         }
-        break;
-      }
-      case 'b': {
-        try {
-          boxLength = stod(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing box length: " << optarg << endl;
-          displayHelp = true;
+        case 'e': {
+            try {
+                epsilon = stod(strArg);
+            } catch (const exception &) {
+                cerr << "Error parsing epsilon value: " << strArg << endl;
+                displayHelp = true;
+            }
+            break;
         }
-        break;
-      }
-      case 'c': {
-        // overwrite default argument
-        containerOptions = autopas::utils::StringUtils::parseContainerOptions(strArg, false);
-        if (containerOptions.empty()) {
-          cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'VCells' or 'VCluster'!" << endl;
-          displayHelp = true;
+
+        case 'E': {
+            try {
+                tuningMaxEvidence = (unsigned int)stoul(strArg);
+                if (tuningMaxEvidence < 1) {
+                    cerr << "Tuning max evidence has to be a positive integer!" << endl;
+                    displayHelp = true;
+                }
+            } catch (const exception &) {
+                cerr << "Error parsing number of tuning max evidence: " << strArg << endl;
+                displayHelp = true;
+            }
+            break;
         }
-        break;
-      }
-      case 'C': {
-        try {
-          cutoff = stod(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing cutoff Radius: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
-      case 'a': {
-        cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
-        if (cellSizeFactors->isEmpty()) {
-          cerr << "Error parsing cell size factors: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
-      case 'd': {
-        dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(strArg);
-        if (dataLayoutOptions.empty()) {
-          cerr << "Unknown data layouts: " << strArg << endl;
-          cerr << "Please use 'AoS' or 'SoA'!" << endl;
-          displayHelp = true;
-        }
-        break;
-      }
       case 'f': {
         if (strArg.find("avx") != string::npos) {
           functorOption = lj12_6_AVX;
@@ -183,7 +191,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
           }
         } catch (const exception &) {
-          cerr << "Error parsing number of iterations: " << optarg << endl;
+          cerr << "Error parsing number of iterations: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -196,20 +204,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
           }
         } catch (const exception &) {
-          cerr << "Error parsing tuning interval: " << optarg << endl;
+          cerr << "Error parsing tuning interval: " << strArg << endl;
           displayHelp = true;
         }
         break;
       }
-      case 'y': {
-        selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
-          cerr << "Unknown Selector Strategy: " << strArg << endl;
-          cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
-          displayHelp = true;
-        }
-        break;
-      }
+
       case 'l': {
         switch (strArg[0]) {
           case 't': {
@@ -252,11 +252,20 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         logFileName = strArg;
         break;
       }
+        case 'M': {
+            try {
+                mass = stod(strArg);
+            } catch (const exception &) {
+                cerr << "Error parsing Particle Mass value: " << strArg << endl;
+                displayHelp = true;
+            }
+            break;
+        }
       case 'm': {
         try {
           distributionMean = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing distribution mean: " << optarg << endl;
+          cerr << "Error parsing distribution mean: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -265,7 +274,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         try {
           particlesPerDim = stoul(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing number of particles per dimension: " << optarg << endl;
+          cerr << "Error parsing number of particles per dimension: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -274,7 +283,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         try {
           particlesTotal = stoul(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing total number of particles: " << optarg << endl;
+          cerr << "Error parsing total number of particles: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -283,7 +292,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         try {
           particleSpacing = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing separation of particles: " << optarg << endl;
+          cerr << "Error parsing separation of particles: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -296,24 +305,12 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
             displayHelp = true;
           }
         } catch (const exception &) {
-          cerr << "Error parsing number of tuning samples: " << optarg << endl;
+          cerr << "Error parsing number of tuning samples: " << strArg << endl;
           displayHelp = true;
         }
         break;
       }
-      case 'E': {
-        try {
-          tuningMaxEvidence = (unsigned int)stoul(strArg);
-          if (tuningMaxEvidence < 1) {
-            cerr << "Tuning max evidence has to be a positive integer!" << endl;
-            displayHelp = true;
-          }
-        } catch (const exception &) {
-          cerr << "Error parsing number of tuning max evidence: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
+
       case 't': {
         traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
@@ -336,7 +333,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         try {
           verletRebuildFrequency = (unsigned int)stoul(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+          cerr << "Error parsing verlet-rebuild-frequency: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -349,16 +346,25 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         try {
           verletSkinRadius = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+          cerr << "Error parsing verlet-skin-radius: " << strArg << endl;
           displayHelp = true;
         }
         break;
       }
+        case 'y': {
+            selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
+            if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
+                cerr << "Unknown Selector Strategy: " << strArg << endl;
+                cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
+                displayHelp = true;
+            }
+            break;
+        }
       case 'z': {
         try {
           distributionStdDev = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing distribution standard deviation: " << optarg << endl;
+          cerr << "Error parsing distribution standard deviation: " << strArg << endl;
           displayHelp = true;
         }
         break;

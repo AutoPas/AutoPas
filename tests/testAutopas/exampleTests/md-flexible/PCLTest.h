@@ -1,6 +1,6 @@
 #pragma once
 #include <gtest/gtest.h>
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticleClassLibrary.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
