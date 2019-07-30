@@ -28,7 +28,6 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam DataLayout
  * @tparam useNewton3
- * @tparam combineSoA
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
@@ -36,24 +35,15 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, 
  public:
   /**
    * Constructor of the c01 traversal.
-   * @param dims The dimensions of the cellblock
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff cutoff radius
-   * @param cellLength min. cell length
+   * @param info
    */
   explicit C01TraversalAdaptive(PairwiseFunctor *pairwiseFunctor,
                                 std::unique_ptr<TraversalSelectorInfo<ParticleCell>> info)
       : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(info->dims),
         _cellFunctor(pairwiseFunctor, info->cutoff),
-        _pairwiseFunctor(pairwiseFunctor),
-        _dataLayoutConverter(pairwiseFunctor) /*,
-         _octree(reinterpret_cast<TraversalSelectorInfoAdaptive<ParticleCell>*>(info.get())->octree)*/
-  {}
-
-  /**
-   * Computes pairs used in processBaseCell()
-   */
-  void computeOffsets();
+        _dataLayoutConverter(pairwiseFunctor),
+        _octree(reinterpret_cast<TraversalSelectorInfoAdaptive<ParticleCell> *>(info.get())->octree) {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -112,18 +102,23 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, 
   internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, false, false>
       _cellFunctor;
 
-  PairwiseFunctor *_pairwiseFunctor;
-
   /**
    * Data Layout Converter to be used with this traversal
    */
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+
+  Octree<typename ParticleCell::ParticleType, ParticleCell> &_octree;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 inline void C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, internal::OctreeNode<typename ParticleCell::ParticleType, ParticleCell> &node) {
-  /// @todo add implementation
+  auto &leaf = dynamic_cast<internal::OctreeExternalNode<typename ParticleCell::ParticleType, ParticleCell> &>(node);
+  auto &baseCell{leaf.getCell()};
+  for (auto const &[neighborIndex, r] : leaf.getNeighbors()) {
+    _cellFunctor.processCellPair(baseCell, cells[neighborIndex], r);
+    _cellFunctor.processCell(baseCell);
+  }
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
@@ -132,9 +127,7 @@ inline void C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useN
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception("The adaptive C01 traversal cannot work with enabled newton3");
   }
-  /// @todo add implementation
-
-  _cellFunctor.processCell(cells[0]);
+  _octree.apply([&](auto &node) { this->processBaseCell(cells, node); }, internal::ExecutionPolicy::par);
 }
 
 }  // namespace autopas

@@ -94,6 +94,21 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
   bool isUpdateNeeded() const override;
 
   /**
+   * Returns all neighbors of this Octree node.
+   * @return Neighbors of this Octree node.
+   */
+  const std::set<std::pair<unsigned long, std::array<double, 3>>> &getNeighbors() const { return _neighbors; }
+
+  /**
+   * Updates all Neighbors. This is necessary after splitting or combination of nodes.
+   */
+  void updateNeigbors() {
+    _neighbors.clear();
+    /*auto n1 = findSmallerNeighbors();
+    auto n2 = findGreaterEqualNeighbors();
+    std::merge(n1.begin(), n1.end(), n2.begin(), n2.end(), std::inserter(_neighbors, _neighbors.begin()));*/
+  }
+  /**
    * Sets max. number of elements inside of each node.
    * @param maxElements Max. number of elements.
    */
