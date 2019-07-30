@@ -163,7 +163,8 @@ class LJFunctor
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
     auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
-
+      double sigmasquare;
+      double epsilon24;
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
       if (calculateGlobals) {
@@ -188,8 +189,8 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        const auto sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr[i],typeptr[j]);
-        const auto epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr[i],typeptr[j]);
+        sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr[i],typeptr[j]);
+        epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr[i],typeptr[j]);
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
         const floatPrecision drz = zptr[i] - zptr[j];
@@ -274,8 +275,8 @@ class LJFunctor
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
       auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
       auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
-
-
+    double sigmasquare;
+    double epsilon24;
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
     // Checks whether the cells are halo cells.
@@ -306,8 +307,8 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-          const auto sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr1[i],typeptr2[j]);
-          const auto epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr1[i],typeptr2[j]);
+          sigmasquare = (floatPrecision) _PCLibrary->mixingSS(typeptr1[i],typeptr2[j]);
+          epsilon24= (floatPrecision) _PCLibrary->mixing24E(typeptr1[i],typeptr2[j]);
         const floatPrecision drx = x1ptr[i] - x2ptr[j];
         const floatPrecision dry = y1ptr[i] - y2ptr[j];
         const floatPrecision drz = z1ptr[i] - z2ptr[j];

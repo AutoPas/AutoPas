@@ -18,7 +18,7 @@ namespace autopas {
  template <typename floatType =double>
 class MoleculeLJ : public Particle {
  public:
-  MoleculeLJ() :Particle() {}
+  MoleculeLJ() = default;
 
   /**
    * constructor of a lennard jones molecule
@@ -54,8 +54,6 @@ class MoleculeLJ : public Particle {
         switch (attribute) {
             case AttributeNames::id:
                 return getID();
-            case AttributeNames::typeId:
-                return getTypeId();
             case AttributeNames::posX:
                 return getR()[0];
             case AttributeNames::posY:
@@ -68,6 +66,8 @@ class MoleculeLJ : public Particle {
                 return getF()[1];
             case AttributeNames::forceZ:
                 return getF()[2];
+            case AttributeNames::typeId:
+                return getTypeId();
             case AttributeNames::owned:
                 return isOwned() ? 1. : 0.;
             default:
@@ -88,9 +88,6 @@ class MoleculeLJ : public Particle {
             case AttributeNames::id:
                 setID(value);
                 break;
-            case AttributeNames::typeId:
-                setTypeId(value);
-                break;
             case AttributeNames::posX:
                 _r[0] = value;
                 break;
@@ -108,6 +105,9 @@ class MoleculeLJ : public Particle {
                 break;
             case AttributeNames::forceZ:
                 _f[2] = value;
+                break;
+            case AttributeNames::typeId:
+                setTypeId(value);
                 break;
             case AttributeNames::owned:
                 setOwned(value == 1.);
