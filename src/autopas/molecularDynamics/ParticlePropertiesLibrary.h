@@ -10,8 +10,6 @@
 #include <vector>
 #include "autopas/particles/Particle.h"
 
-//@todo soon: add template parameter to support 32 or 64 bit values-> did resolve into undefined references
-
 /**This Class is used to map the Particles to their Physical Properties used in the
  * Force calculations(epsilon,sigma) and in the timeDiscretization (mass)
  * The mapping key is the type of the Particles

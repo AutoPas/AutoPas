@@ -49,13 +49,15 @@ class RandomGenerator {
    * @tparam Container
    * @tparam Particle Type of particle to be generated
    * @param container
+   * @param typeId
+   * @param id
    * @param defaultParticle inserted particle
    * @param boxMin min. position
    * @param boxMax max. position
    * @param numParticles number of particles
    */
   template <class Container, class Particle>
-  static void fillWithParticles(Container &container, const Particle &defaultParticle,
+  static void fillWithParticles(Container &container,size_t typeId,size_t id,const Particle &defaultParticle,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                 unsigned long numParticles = 100ul,
                                 const std::array<double, 3> &velocity = {0., 0., 0.});
@@ -82,7 +84,7 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
 }
 
 template <class Container, class Particle>
-void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
+void RandomGenerator::fillWithParticles(Container &container,size_t typeId,size_t id, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                         unsigned long numParticles, const std::array<double, 3> &velocity) {
   srand(42);  // fixed seedpoint
@@ -90,9 +92,11 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
   for (unsigned long i = 0; i < numParticles; ++i) {
     Particle particle(defaultParticle);
     particle.setR(randomPosition(boxMin, boxMax));
-    particle.setID(i);
+    particle.setID(id);
+    particle.setTypeId(typeId);
     particle.setV(velocity);
     container.addParticle(particle);
+    id++;
   }
 }
 

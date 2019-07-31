@@ -34,11 +34,19 @@
 
 #Objects:
 #  CubeGrid:
+#    particle-typeId: 0
+#    particle-epsilon: 1.
+#    particle-sigma: 1.
+#    particle-mass: 1.
 #    particles-per-Dim: [10,10,10]
 #    particleSpacing: 0.5
 #    velocity: [10.,10.,10.]
 #    center: [5.,5.,5.]
 #  CubeGauss:
+#    particle-typeId: 0
+#    particle-epsilon: 1.
+#    particle-sigma: 1.
+#    particle-mass: 1.
 #    numberOfParticles: 100
 #    box-length: [8.,8.,8.]
 #    distribution-mean: 2.0
@@ -46,11 +54,19 @@
 #    velocity: [0.,0.,0.]
 #    center: [5.,5.,5.]
 #  CubeUniform:
+#    particle-typeId: 0
+#    particle-epsilon: 1.
+#    particle-sigma: 1.
+#    particle-mass: 1.
 #    numberOfParticles: 100
 #    box-length: [10.,10.,10.]
 #    velocity: [0.,0.,0.]
 #    center: [5.,5.,5.]
 #  Sphere:
+#    particle-typeId: 0
+#    particle-epsilon: 1.
+#    particle-sigma: 1.
+#    particle-mass: 1.
 #    center: [0.,0.,0.]
 #    radius: 10
 #    particleSpacing: 0.5

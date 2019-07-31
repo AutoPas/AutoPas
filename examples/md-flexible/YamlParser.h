@@ -54,6 +54,10 @@ class YamlParser {
    * */
   void calcAutopasBox();
 
+  /**Set up the data Structure for Particle types with their properties to be read by the Simulation
+   * */
+  void addType(unsigned long typeId,double epsilon,double sigma,double mass);
+
   [[nodiscard]] const std::set<autopas::ContainerOption> &getContainerOptions() const;
 
   [[nodiscard]] const std::set<autopas::DataLayoutOption> &getDataLayoutOptions() const;
@@ -92,13 +96,7 @@ class YamlParser {
 
   [[nodiscard]] double getVerletSkinRadius() const;
 
-  [[nodiscard]] double getEpsilon() const;
-
-  [[nodiscard]] double getSigma() const;
-
   [[nodiscard]] double getDeltaT() const;
-
-  [[nodiscard]] double getMass() const;
 
   [[nodiscard]] const std::vector<CubeGrid> &getCubeGrid() const;
 
@@ -108,7 +106,13 @@ class YamlParser {
 
   [[nodiscard]] const std::vector<Sphere> &getSphere() const;
 
- private:
+  const std::map<unsigned long, double> &getEpsilonMap() const;
+
+  const std::map<unsigned long, double> &getSigmaMap() const;
+
+  const std::map<unsigned long, double> &getMassMap() const;
+
+private:
  public:
   void setFilename(const std::string &inputFilename);
 
@@ -141,13 +145,13 @@ class YamlParser {
   FunctorOption functorOption = FunctorOption::lj12_6;
   size_t iterations = 10;
   bool measureFlops = true;
-  double epsilon = 5.0;
-  double sigma = 1.0;
   double delta_t = 0.001;
-  double mass = 1.0;
+  std::map<unsigned long, double> epsilonMap;
+  std::map<unsigned long, double> sigmaMap;
+  std::map<unsigned long, double> massMap;
 
-  // Object Generation:
-  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10, 10, 10}, 1., {0., 0., 0.}, {5., 5., 5.})};
+    // Object Generation:
+  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10, 10, 10}, 1., {0., 0., 0.}, {5., 5., 5.},0,1.0,1.0,1.0)};
   std::vector<CubeGauss> CubeGaussObjects = {};
   std::vector<CubeUniform> CubeUniformObjects = {};
   std::vector<Sphere> SphereObjects = {};

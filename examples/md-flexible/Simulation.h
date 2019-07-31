@@ -109,12 +109,20 @@ autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::ge
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
   _parser = std::make_unique<YamlParser>(parser);
-  double epsilon = _parser->getEpsilon();
-  double sigma = _parser->getSigma();
-  double mass = _parser->getMass();
-  // initialisierung of PPL
-  // this implementation doesnt support multiple particle Types, will be coming with PR md-parser
-  _PCL = std::make_unique<ParticlePropertiesLibrary>(epsilon, sigma, mass);
+  std::map<unsigned long, double> epsilonMap = _parser->getEpsilonMap();
+  std::map<unsigned long, double> sigmaMap = _parser->getSigmaMap();
+  std::map<unsigned long, double> massMap = _parser->getMassMap();
+  if(epsilonMap.empty()){
+      _PCL=std::make_unique<ParticlePropertiesLibrary>(1.0,1.0,1.0);
+  }else if(epsilonMap.size()==1){
+      _PCL=std::make_unique<ParticlePropertiesLibrary>(epsilonMap.at(0),sigmaMap.at(0),massMap.at(0));
+  }else {
+      //all 3 maps are well initialized in parser(parser catches exception if something is going wrong)
+//      for(auto it=epsilonMap.begin();it!=epsilonMap.end();++it){
+//          _PCL->addType(it->first,it->second,simgaMap.at())
+//      }
+  }
+
   auto logFileName(_parser->getLogFileName());
   auto verletRebuildFrequency(_parser->getVerletRebuildFrequency());
   auto logLevel(_parser->getLogLevel());
@@ -143,7 +151,6 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
     _logFile.open(logFileName);
     streamBuf = _logFile.rdbuf();
   }
-  //@todo autopas mit logfilename richtig initialisieren
   std::ostream outputStream(streamBuf);
 
   _autopas.setCutoff(cutoff);
@@ -162,22 +169,26 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
   _autopas.setBoxMax(_parser->getBoxMax());
   _autopas.setBoxMin(_parser->getBoxMin());
   _autopas.init();
-
+   size_t idcounter=0;
   for (auto C : CubeGrid) {
-    Generator::CubeGrid<Particle, ParticleCell>(_autopas, C.getBoxMin(), C.getParticlesPerDim(), C.getParticleSpacing(),
+    Generator::CubeGrid<Particle, ParticleCell>(_autopas,C.getTypeId(),idcounter, C.getBoxMin(), C.getParticlesPerDim(), C.getParticleSpacing(),
                                                 C.getVelocity());
+    idcounter=+C.getParticlesTotal();
   }
   for (auto C : CubeGauss) {
-    Generator::CubeGauss<Particle, ParticleCell>(_autopas, C.getBoxMin(), C.getBoxMax(), C.getNumParticles(),
+    Generator::CubeGauss<Particle, ParticleCell>(_autopas,C.getTypeId(),idcounter, C.getBoxMin(), C.getBoxMax(), C.getParticlesTotal(),
                                                  C.getDistributionMean(), C.getDistributionStdDev(), C.getVelocity());
+      idcounter=+C.getParticlesTotal();
   }
   for (auto C : CubeUniform) {
-    Generator::CubeRandom<Particle, ParticleCell>(_autopas, C.getBoxMin(), C.getBoxMax(), C.getNumParticles(),
+    Generator::CubeRandom<Particle, ParticleCell>(_autopas,C.getTypeId(),idcounter, C.getBoxMin(), C.getBoxMax(), C.getParticlesTotal(),
                                                   C.getVelocity());
+      idcounter=+C.getParticlesTotal();
   }
   for (auto S : Sphere) {
-    Generator::Sphere<Particle, ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), S.getId(),
+    Generator::Sphere<Particle, ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), idcounter,
                                               S.getVelocity());
+      idcounter=+S.getParticlesTotal();
   }
 }
 
