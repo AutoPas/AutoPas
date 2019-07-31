@@ -27,7 +27,13 @@ class MoleculeLJ : public Particle {
    * @param id id of the molecule
    */
   explicit MoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id) : Particle(r, v, id) {}
-
+  /**
+   * constructor of lennard jones molecule with initilization of typeID
+   * @param r position of the molecule
+   * @param v velocitiy of the molecule
+   * @param id id of the molecule
+   * @param _typeid typeId of the molecule
+   */
   MoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id, unsigned long _typeid)
       : Particle(r, v, id) {
     this->_typeId = _typeid;

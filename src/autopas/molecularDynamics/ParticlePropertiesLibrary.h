@@ -1,5 +1,5 @@
 /**
- * @file ParticleClassLibrary.h
+ * @file ParticlePropertiesLibrary.h
  * @author N. Fottner
  * @date 7/4/19
  */
@@ -21,11 +21,20 @@
 class ParticlePropertiesLibrary {
  public:
   ParticlePropertiesLibrary() = default;
-
+  /**Constructor if there is only one Type used
+   * @param epsilon
+   * @param sigma
+   * @param mass
+   * */
   ParticlePropertiesLibrary(double &epsilon, double &sigma, double mass);
-
+  /**Copy Constructor
+   * @param pcl
+   * */
   ParticlePropertiesLibrary(const ParticlePropertiesLibrary &pcl);
-
+  /**Copy assignment operator
+   * @param plc
+   * @return ParticlePropertiesLibrary
+   * */
   ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &plc);
 
   /**adds the Properties of a particle type to the class members
@@ -40,30 +49,32 @@ class ParticlePropertiesLibrary {
 
   ~ParticlePropertiesLibrary() = default;
   /**Getter for Particle Epsilon*24
-   * @param Particle
+   * @param i (typeId of Particle)
    * @return Epsilon*24
    */
   double get24Epsilon(unsigned long i);
   /**Getter for Particle Square Sigma
-   * @param Particle
+   * @param i (typeId of Particle)
    * @return Sigma²
    */
   double getSigmaSquare(unsigned long i);
 
   /**Getter for Particle Mass
-   * @param Particle
+   * @param i (typeId of Particle)
    * @return Sigma
    */
   double getMass(unsigned long i);
 
   /**Returns (Epsilon*24) of the MixingRule of 2 Particles precalculated in computedMixing24Epsilon
-   * @param Particles; i and j
-   * @return 24*(Epsilon of both)
+   * @param  i (typeId index)
+   * @param  j (typeId index)
+   * @return 24*(epsilonMixingRule)
    * */
   double mixing24Epsilon(unsigned long i, unsigned long j);
   /**Returns Sigma Square of the MixingRule of 2 Particles precalculated in computedMixingSigmaSquare
-   * @param Particles; i and j
-   * @return (Sigma of both)²
+   * @param i (typeId index)
+   * @param j (typeId index)
+   * @return (sigmaMixingRule)²
    * */
   double mixingSigmaSquare(unsigned long i, unsigned long j);
 

@@ -1,3 +1,9 @@
+/**
+ * @file ParticlePropertiesLibrary.cpp
+ * @author N. Fottner
+ * @date 7/4/19
+ */
+
 #include "ParticlePropertiesLibrary.h"
 
 /** Default constuktor wenn es nur ein Particle Type gibt
