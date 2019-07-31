@@ -64,16 +64,16 @@ int main(int argc, char **argv) {
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
 
   // Parsing
-  MDFlexParser parser;
-  if (not parser.parseInput(argc, argv)) {
+  auto parser = std::make_shared<MDFlexParser>();
+  if (not parser->parseInput(argc, argv)) {
     exit(-1);
   }
-  auto vtkFilename(parser.getWriteVTK());
-  parser.printConfig();
+  auto vtkFilename(parser->getWriteVTK());
+  parser->printConfig();
   cout << endl;
 
   // Initialization
-  simulation.initialize(&parser);
+  simulation.initialize(parser);
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
   // Simulation

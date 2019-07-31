@@ -32,6 +32,10 @@ class MDFlexParser {
 
   MDFlexParser() = default;
 
+  MDFlexParser(const MDFlexParser &mdparser) = default;
+
+  MDFlexParser &operator=(const MDFlexParser &mdfparser) = default;
+
   double getBoxLength();
   std::set<autopas::ContainerOption> getContainerOptions() const;
   autopas::SelectorStrategyOption getSelectorStrategy() const;
@@ -78,8 +82,8 @@ class MDFlexParser {
   std::set<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
-  std::unique_ptr<autopas::NumberSet<double>> cellSizeFactors =
-      std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{1.});
+  std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
+      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
 
   // Simulation Options:
   double boxLength = -1;

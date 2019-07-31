@@ -23,7 +23,7 @@ template <class Particle, class ParticleCell>
 class Simulation {
  private:
   autopas::AutoPas<Particle, ParticleCell> _autopas;
-  MDFlexParser *_parser;
+  std::shared_ptr<MDFlexParser> _parser;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibrary> _PCL;
 
@@ -95,7 +95,7 @@ class Simulation {
    * -sets/initializes the simulation domain with the particles generators
    * @todo -initialized Velocities and Positions (and forces?)
    */
-  void initialize(MDFlexParser *parser);
+  void initialize(std::shared_ptr<MDFlexParser> parser);
 
   /**
    * Does the ForceCalculation
@@ -129,7 +129,7 @@ autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::ge
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
+void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser> parser) {
   _parser = parser;
   double epsilon = _parser->getEpsilon();
   double sigma = _parser->getSigma();
