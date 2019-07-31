@@ -32,9 +32,27 @@ class GridGenerator {
                                 const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
                                 const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
 
-  /**
+    /**
    * Fills any container (also AutoPas object) with a cuboid mesh of particles.
    *
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+   * @tparam Particle Type of the default particle.
+   * @param container
+   * @param particlesPerDim Number of particles per dimension.
+   * @param defaultParticle
+   * @param spacing Factor for distance between two particles along one dimension (default is 1).
+   * @param offset Offset to move all particles.
+   */
+    template <class Container, class Particle>
+    static void fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
+                                  const Particle &defaultParticle = autopas::Particle(),
+                                  const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
+                                  const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
+
+  /**
+   * Fills any container (also AutoPas object) with a cuboid mesh of particles.
+   * Adapted to md-flexible with Particle Initialization on a specific id and typeId
+   * only supported by Particles inheriting from MoleculeLJ(or with similar characteristics)
    * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
    * @tparam Particle Type of the default particle.
    * @param container
@@ -87,4 +105,21 @@ void GridGenerator::fillWithParticles(Container &container, const std::array<siz
       }
     }
   }
+}
+
+template <class Container, class Particle>
+void GridGenerator::fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
+                                      const Particle &defaultParticle, const std::array<double, 3> &spacing,
+                                      const std::array<double, 3> &offset) {
+    size_t id = 0;
+    for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
+        for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
+            for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
+                Particle p(defaultParticle);
+                p.setR({x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]});
+                p.setID(id++);
+                container.addParticle(p);
+            }
+        }
+    }
 }

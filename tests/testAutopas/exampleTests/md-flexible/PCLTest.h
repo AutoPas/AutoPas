@@ -20,5 +20,5 @@ class PCLTest : public AutoPasTestBase {
   double epsilon2;
   double sigma2;
   double mass;
-  ParticlePropertiesLibrary PCL;
+  ParticlePropertiesLibrary PPL;
 };

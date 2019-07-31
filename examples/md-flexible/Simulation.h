@@ -26,7 +26,7 @@ class Simulation {
   autopas::AutoPas<Particle, ParticleCell> _autopas;
   std::unique_ptr<YamlParser> _parser;
   std::ofstream _logFile;
-  std::unique_ptr<ParticlePropertiesLibrary> _PCL;
+  std::unique_ptr<ParticlePropertiesLibrary> _PPL;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -113,16 +113,17 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
   std::map<unsigned long, double> sigmaMap = _parser->getSigmaMap();
   std::map<unsigned long, double> massMap = _parser->getMassMap();
   if(epsilonMap.empty()){
-      _PCL=std::make_unique<ParticlePropertiesLibrary>(1.0,1.0,1.0);
+      //initializing PPL with default values epsilon=sigma=mass=1.0
+      double epsi=1.0;double sig=1.0;
+      _PPL=std::make_unique<ParticlePropertiesLibrary>(epsi,sig, 1.0);
   }else if(epsilonMap.size()==1){
-      _PCL=std::make_unique<ParticlePropertiesLibrary>(epsilonMap.at(0),sigmaMap.at(0),massMap.at(0));
+      _PPL=std::make_unique<ParticlePropertiesLibrary>(epsilonMap.at(0), sigmaMap.at(0), massMap.at(0));
   }else {
-      //all 3 maps are well initialized in parser(parser catches exception if something is going wrong)
-//      for(auto it=epsilonMap.begin();it!=epsilonMap.end();++it){
-//          _PCL->addType(it->first,it->second,simgaMap.at())
-//      }
+      //all 3 maps are well initialized in parser(parser catches error and throws exception if something is going wrong)
+      for (auto eps : epsilonMap) {
+          _PPL->addType(eps.first, eps.second, sigmaMap.at(eps.first), massMap.at(eps.first));
+      }
   }
-
   auto logFileName(_parser->getLogFileName());
   auto verletRebuildFrequency(_parser->getVerletRebuildFrequency());
   auto logLevel(_parser->getLogLevel());
@@ -137,7 +138,6 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
   auto tuningInterval(_parser->getTuningInterval());
   auto tuningSamples(_parser->getTuningSamples());
   auto verletSkinRadius(_parser->getVerletSkinRadius());
-    auto particlesTotal(_parser->particlesTotal());
     auto CubeGrid(_parser->getCubeGrid());
     auto CubeGauss(_parser->getCubeGauss());
     auto CubeUniform(_parser->getCubeUniform());
@@ -186,7 +186,7 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
       idcounter=+C.getParticlesTotal();
   }
   for (auto S : Sphere) {
-    Generator::Sphere<Particle, ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), idcounter,
+    Generator::Sphere<Particle, ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), idcounter,S.getTypeId(),
                                               S.getVelocity());
       idcounter=+S.getParticlesTotal();
   }
@@ -197,7 +197,7 @@ void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
   //actually only acceps MoleculeLJ anymore
-  auto functor = autopas::LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
+  auto functor = autopas::LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PPL, 0.0);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
@@ -211,7 +211,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   double deltaT = _parser->getDeltaT();
   double simTimeNow = 0;
   double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
-  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_PCL);
+  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_PPL);
 
   // main simulation loop
   while (simTimeNow < simTimeEnd) {

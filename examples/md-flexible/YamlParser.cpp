@@ -463,7 +463,6 @@ void YamlParser::parseYamlFile() {
         Sphere S({it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                   it->second["center"][2].as<double>()},
                  it->second["radius"].as<int>(), it->second["particleSpacing"].as<double>(),
-                 it->second["firstId"].as<unsigned long>(),
                  {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
                   it->second["velocity"][2].as<double>()},
                  it->second["particle-typeId"].as<unsigned long>(),

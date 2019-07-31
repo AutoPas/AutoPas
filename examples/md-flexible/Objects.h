@@ -176,12 +176,6 @@ class CubeGauss {
     return {center[0] + 0.5 * boxLength[0], center[1] + 0.5 * boxLength[1], center[2] + 0.5 * boxLength[2]};
   }
 
-    /**Getter for typeId of Particles in Objet
-   * @return typeId
-   * */
-    unsigned long getTypeId() const {
-        return typeId;
-    }
 
     /**Prints the Configuration of the current Object
    * */
@@ -304,13 +298,12 @@ class Sphere {
      * @param center
      * @param radius
      * @param particleSpacing
-     * @param id
      * @param velocity
      * @param typeId
      * @param epsilon
      * @param sigma
      * @param mass*/
-  Sphere(const std::array<double, 3> &center, int radius, double particleSpacing, unsigned long id,
+  Sphere(const std::array<double, 3> &center, int radius, double particleSpacing,
          const std::array<double, 3> &velocity,const unsigned long &typeId,const double &epsilon,const double &sigma,const double &mass)
       : center(center),
         radius(radius),
@@ -341,11 +334,6 @@ class Sphere {
     unsigned long getTypeId() const {
         return typeId;
     }
-
-    /**Getter for initial Id of Sphere(id of first Particle Generated during generation Phase)
-   * @return id
-   * */
-  [[nodiscard]] unsigned long getId() const { return id; }
       /**Getter for initial velocity of Particles
        * @return velocity
        * */

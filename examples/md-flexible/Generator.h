@@ -85,7 +85,7 @@ void Generator::CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,size
   Particle dummyParticle;
 
   GaussianGenerator::fillWithParticles(autopas,typeId,id, BoxMin, BoxMax, numParticles, dummyParticle, distributionMean,
-                                       distributionStdDev, velocity);
+                                       distributionStdDev);
 }
 
 template <class Particle, class ParticleCell>
@@ -94,7 +94,7 @@ void Generator::CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas,siz
                            const std::array<double, 3> &velocity) {
   Particle dummyParticle;
     dummyParticle.setV(velocity);
-    RandomGenerator::fillWithParticles(autopas,typeId,id, dummyParticle, BoxMin, BoxMax, numParticles, velocity);
+    RandomGenerator::fillWithParticles(autopas,typeId,id, dummyParticle, BoxMin, BoxMax, numParticles);
 }
 
 template <class Particle, class ParticleCell>
@@ -114,7 +114,7 @@ void Generator::Sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const 
               double disCheck = L2Norm(autopas::ArrayMath::sub(posVector, center));
               if (disCheck <= (double)(radius + 1) * particleSpacing) {
                 Particle p(posVector, velocity, id);
-                p.setType(typeId);
+                p.setTypeId(typeId);
                 autopas.addParticle(p);
                 id++;
               }
