@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 #include <cstdlib>
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -29,8 +29,8 @@ class LinkedCellsVersusVerletListsCellsTest : public AutoPasTestBase {
  protected:
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  using vltype = autopas::VerletListsCells<autopas::MoleculeLJ>;
-  using lctype = autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>;
+  using vltype = autopas::VerletListsCells<autopas::MoleculeLJ<>>;
+  using lctype = autopas::LinkedCells<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>>;
   std::unique_ptr<vltype> _verletListsCells;
   std::unique_ptr<lctype> _linkedCells;
 };

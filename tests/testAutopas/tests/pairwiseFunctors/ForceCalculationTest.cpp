@@ -8,10 +8,7 @@
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
-  autopas::AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> autoPas;
-
-  double epsilon = 1.;
-  double sigma = 1.;
+  autopas::AutoPas<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> autoPas;
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {3., 3., 3.};
 
@@ -24,20 +21,14 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autoPas.setAllowedDataLayouts({dataLayoutOption});
 
   autoPas.init();
-  autopas::MoleculeLJ defaultParticle;
+  autopas::MoleculeLJ<> defaultParticle;
 
   GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
                                    {particleSpacing, particleSpacing, particleSpacing});
 
-  autopas::MoleculeLJ::setEpsilon(epsilon);
-  autopas::MoleculeLJ::setSigma(sigma);
-  unsigned long numParticles = autoPas.getNumberOfParticles();
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numParticles; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor(cutoff, PCL, 0.0);
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
+  autopas::LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> functor(cutoff, PCL, 0.0);
 
   autoPas.iteratePairwise(&functor);
 

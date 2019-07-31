@@ -15,24 +15,16 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   _verletListsCells = std::make_unique<vltype>(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18,
                                                0.1 * getCutoff(), 2);
 
-  RandomGenerator::fillWithParticles(*_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
+  RandomGenerator::fillWithParticles(*_verletListsCells, autopas::MoleculeLJ<>({0., 0., 0.}, {0., 0., 0.}, 0),
                                      numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _verletListsCells->begin(); it.isValid(); ++it) {
     _linkedCells->addParticle(*it);
   }
-
-  double eps = 1.0;
-  double sig = 1.0;
   double shift = 0.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numMolecules; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), PCL, shift);
 
   autopas::C18TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
@@ -47,12 +39,12 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id
   for (auto it = _verletListsCells->begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    autopas::MoleculeLJ<> &m = *it;
     forcesDirect.at(m.getID()) = m.getF();
   }
 
   for (auto it = _linkedCells->begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    autopas::MoleculeLJ<> &m = *it;
     forcesLinked.at(m.getID()) = m.getF();
   }
 

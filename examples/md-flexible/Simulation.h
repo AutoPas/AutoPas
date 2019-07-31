@@ -1,6 +1,10 @@
 //
 // Created by nicola on 12.05.19.
-//
+/**
+ * @file Simulation.h
+ * @author N. Fottner
+ * @date 7/3/19
+ */
 #pragma once
 #include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
@@ -20,9 +24,9 @@ template <class Particle, class ParticleCell>
 class Simulation {
  private:
   autopas::AutoPas<Particle, ParticleCell> _autopas;
-  YamlParser _parser;
+  std::unique_ptr<YamlParser> _parser;
   std::ofstream _logFile;
-  std::shared_ptr<ParticleClassLibrary> _PCL;
+  std::unique_ptr<ParticlePropertiesLibrary> _PCL;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -33,7 +37,7 @@ class Simulation {
   explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now(); };
 
   ~Simulation() {
-    if (not _parser.getLogFileName().empty()) {
+    if (not _parser->getLogFileName().empty()) {
       _logFile.close();
     }
   }
@@ -49,14 +53,12 @@ class Simulation {
     std::string filename = "VtkOutput";
     std::stringstream strstr;
     strstr << filename << "_" << std::setfill('0') << std::setw(4) << iteration << ".vtu";
-    // string path = "./vtk";
     std::ofstream vtkFile;
     vtkFile.open(strstr.str());
 
     vtkFile << "# vtk DataFile Version 2.0" << std::endl;
     vtkFile << "Timestep" << std::endl;
     vtkFile << "ASCII" << std::endl;
-    //@todo adapt to current state
     vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
     vtkFile << "DIMENSIONS 1 1 1" << std::endl;
     vtkFile << "POINTS " << numParticles << " double" << std::endl;
@@ -73,11 +75,11 @@ class Simulation {
    * -initializes the autopas Object with all member speizified in the YamlParser
    * -initializes the simulation domain with the Object Generators
    */
-  void initialize(YamlParser &parser);
+  void initialize(YamlParser parser);
 
   /**Does the ForceCalculation with the LJFunctor
    * */
-  void CalcF();
+  void calculateForces();
 
   /**
    * This function processes the main simulation loop
@@ -105,37 +107,33 @@ autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::ge
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
-  //@todo schöner machen:
-  _parser = parser;
-  //@todo lösen:
-  // temporäre implemetierung mit nur einer particle Class
-  double epsilon = _parser.getEpsilon();
-  double sigma = _parser.getSigma();
-  double mass = _parser.getMass();
-  //@todo PCL richtig initialisieren
-  _PCL = std::make_shared<ParticleClassLibrary>(epsilon, sigma, mass, _parser.particlesTotal());
-  // initialisierung of
-  auto logFileName(_parser.getLogFileName());
-  auto particlesTotal(_parser.particlesTotal());
-  auto verletRebuildFrequency(_parser.getVerletRebuildFrequency());
-  auto logLevel(_parser.getLogLevel());
-  auto &cellSizeFactors(_parser.getCellSizeFactors());
-  auto tuningStrategy(_parser.getTuningStrategyOption());
-  auto containerChoice(_parser.getContainerOptions());
-  auto selectorStrategy(_parser.getSelectorStrategy());
-  auto cutoff(_parser.getCutoff());
-  auto dataLayoutOptions(_parser.getDataLayoutOptions());
-  auto newton3Options(_parser.getNewton3Options());
-  auto traversalOptions(_parser.getTraversalOptions());
-  auto tuningInterval(_parser.getTuningInterval());
-  auto tuningSamples(_parser.getTuningSamples());
-  auto verletSkinRadius(_parser.getVerletSkinRadius());
-  auto CubeGrid(_parser.getCubeGrid());
-  auto CubeGauss(_parser.getCubeGauss());
-  auto CubeUniform(_parser.getCubeUniform());
-  auto Sphere(_parser.getSphere());
-
+void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
+  _parser = std::make_unique<YamlParser>(parser);
+  double epsilon = _parser->getEpsilon();
+  double sigma = _parser->getSigma();
+  double mass = _parser->getMass();
+  // initialisierung of PPL
+  // this implementation doesnt support multiple particle Types, will be coming with PR md-parser
+  _PCL = std::make_unique<ParticlePropertiesLibrary>(epsilon, sigma, mass);
+  auto logFileName(_parser->getLogFileName());
+  auto verletRebuildFrequency(_parser->getVerletRebuildFrequency());
+  auto logLevel(_parser->getLogLevel());
+  auto &cellSizeFactors(_parser->getCellSizeFactors());
+  auto tuningStrategy(_parser->getTuningStrategyOption());
+  auto containerChoice(_parser->getContainerOptions());
+  auto selectorStrategy(_parser->getSelectorStrategy());
+  auto cutoff(_parser->getCutoff());
+  auto dataLayoutOptions(_parser->getDataLayoutOptions());
+  auto newton3Options(_parser->getNewton3Options());
+  auto traversalOptions(_parser->getTraversalOptions());
+  auto tuningInterval(_parser->getTuningInterval());
+  auto tuningSamples(_parser->getTuningSamples());
+  auto verletSkinRadius(_parser->getVerletSkinRadius());
+    auto particlesTotal(_parser->particlesTotal());
+    auto CubeGrid(_parser->getCubeGrid());
+    auto CubeGauss(_parser->getCubeGauss());
+    auto CubeUniform(_parser->getCubeUniform());
+    auto Sphere(_parser->getSphere());
   // select either std::out or a logfile for autopas log output.
   // This does not affect md-flex output.
   std::streambuf *streamBuf;
@@ -161,8 +159,8 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
   _autopas.setTuningStrategyOption(tuningStrategy);
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
   autopas::Logger::get()->set_level(logLevel);
-  _autopas.setBoxMax(_parser.getBoxMax());
-  _autopas.setBoxMin(_parser.getBoxMin());
+  _autopas.setBoxMax(_parser->getBoxMax());
+  _autopas.setBoxMin(_parser->getBoxMin());
   _autopas.init();
 
   for (auto C : CubeGrid) {
@@ -184,10 +182,10 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser &parser) {
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::CalcF() {
+void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
-  //@ TODO: switch for other functors --> mit boolean object?
+  //actually only acceps MoleculeLJ anymore
   auto functor = autopas::LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
@@ -199,10 +197,10 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate() {
   std::chrono::high_resolution_clock::time_point startSim, stopSim;
   startSim = std::chrono::high_resolution_clock::now();
-  double deltaT = _parser.getDeltaT();
+  double deltaT = _parser->getDeltaT();
   double simTimeNow = 0;
-  double simTimeEnd = _parser.getDeltaT() * _parser.getIterations();
-  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT);
+  double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
+  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_PCL);
 
   // main simulation loop
   while (simTimeNow < simTimeEnd) {
@@ -212,7 +210,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
       std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    this->CalcF();
+    this->calculateForces();
     _timers.durationVelocityUpdate += timeDiscretization.VSCalculateV(_autopas);
     simTimeNow += deltaT;
     this->writeVTKFile(simTimeNow / deltaT, _autopas.getNumberOfParticles(), _autopas);
@@ -228,7 +226,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   size_t flopsPerKernelCall;
 
   // FlopsPerKernelCall ließt vom Functor
-  switch (_parser.getFunctorOption()) {
+  switch (_parser->getFunctorOption()) {
     case YamlParser::FunctorOption ::lj12_6: {
       flopsPerKernelCall = autopas::LJFunctor<PrintableMolecule,
                                               autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
@@ -236,8 +234,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
     }
     case YamlParser::FunctorOption ::lj12_6_AVX: {
       flopsPerKernelCall =
-          autopas::LJFunctorAVX<PrintableMolecule,
-                                autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+          autopas::LJFunctorAVX<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -264,7 +261,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   cout << "Velocity " << _timers.durationVelocityUpdate << " \u03bcs (" << _timers.durationVelocityUpdate * 1e-6 << "s)"
        << endl;
 
-  auto numIterations = _parser.getIterations();
+  auto numIterations = _parser->getIterations();
 
   if (numIterations > 0) {
     cout << "One iteration: " << _timers.durationSimulate / numIterations << " \u03bcs ("
@@ -273,7 +270,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec;
   cout << "MFUPs/sec    : " << mfups << endl;
 
-  if (_parser.getMeasureFlops()) {
+  if (_parser->getMeasureFlops()) {
     autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
         _autopas.getCutoff());
     _autopas.iteratePairwise(&flopCounterFunctor);
@@ -285,7 +282,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
           flopCounterFunctor.getDistanceCalculations() *
           autopas::FlopCounterFunctor<PrintableMolecule,
                                       autopas::FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
-          floor(numIterations / _parser.getVerletRebuildFrequency());
+          floor(numIterations / _parser->getVerletRebuildFrequency());
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationSimulateSec << endl;

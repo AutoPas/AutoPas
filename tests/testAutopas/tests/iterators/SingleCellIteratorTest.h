@@ -30,5 +30,5 @@ class SingleCellIteratorTest : public AutoPasTestBase {
  protected:
   // needs to be protected, because the test fixtures generate a derived class
   // for each unit test.
-  std::vector<autopas::MoleculeLJ> _vecOfMolecules;
+  std::vector<autopas::MoleculeLJ<>> _vecOfMolecules;
 };

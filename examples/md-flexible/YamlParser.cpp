@@ -686,4 +686,4 @@ const std::array<double, 3> &YamlParser::getBoxMin() const { return BoxMin; }
 
 const std::array<double, 3> &YamlParser::getBoxMax() const { return BoxMax; }
 
-void YamlParser::setFilename(const std::string &filename) { YamlParser::filename = filename; }
+void YamlParser::setFilename(const std::string &inputFilename) { this->filename = inputFilename; }

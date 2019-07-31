@@ -98,7 +98,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   auto container = containerSelector.getCurrentContainer();
 
-  autopas::MoleculeLJ defaultParticle;
+  autopas::MoleculeLJ<> defaultParticle;
   RandomGenerator::fillWithParticles(*container, defaultParticle, 100);
   RandomGenerator::fillWithHaloParticles(*container, defaultParticle, container->getCutoff(), 10);
 

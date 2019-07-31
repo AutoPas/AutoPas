@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 #include <cstdlib>
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class CudaTraversalVersusDirectSumTest : public AutoPasTestBase {
@@ -32,11 +32,11 @@ class CudaTraversalVersusDirectSumTest : public AutoPasTestBase {
 
   void fillContainerWithMolecules(
       unsigned long numMolecules,
-      autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
+      autopas::ParticleContainer<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> &cont) const;
 
   template <bool useNewton3>
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
-  autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
+  autopas::DirectSum<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> _directSum;
+  autopas::LinkedCells<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> _linkedCells;
 };

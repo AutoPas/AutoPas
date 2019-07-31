@@ -5,32 +5,47 @@
  */
 
 #include "LJFunctorTest.h"
-#include "autopas/particles/MoleculeLJ.h"
 #include "testingHelpers/commonTypedefs.h"
 
-void LJFunctorTest::testAoSNoGlobals(bool newton3) {
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 2; i++) {
-    universalMap.emplace(i, 1.0);
+void LJFunctorTest::testAoSNoGlobals(bool newton3, bool Mixing) {
+  ParticlePropertiesLibrary PCL;
+  if (Mixing) {
+    PCL = ParticlePropertiesLibrary();
+    PCL.addType(0, epsilon, sigma, 1.0);
+    PCL.addType(1, epsilon2, sigma2, 1.0);
+  } else {  // epsilon=sigma=mass=1.0
+    double universalValue = 1;
+    PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
 
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (Mixing) ? 1 : 0);
 
   functor.AoSFunctor(p1, p2, newton3);
 
   auto f1one = p1.getF();
   auto f2one = p2.getF();
-  EXPECT_NEAR(f1one[0], expectedForce[0], absDelta);
-  EXPECT_NEAR(f1one[1], expectedForce[1], absDelta);
-  EXPECT_NEAR(f1one[2], expectedForce[2], absDelta);
 
+  if (Mixing) {
+    EXPECT_NEAR(f1one[0], expectedForceMixing[0], absDelta);
+    EXPECT_NEAR(f1one[1], expectedForceMixing[1], absDelta);
+    EXPECT_NEAR(f1one[2], expectedForceMixing[2], absDelta);
+  } else {
+    EXPECT_NEAR(f1one[0], expectedForce[0], absDelta);
+    EXPECT_NEAR(f1one[1], expectedForce[1], absDelta);
+    EXPECT_NEAR(f1one[2], expectedForce[2], absDelta);
+  }
   if (newton3) {
-    EXPECT_NEAR(f2one[0], -expectedForce[0], absDelta);
-    EXPECT_NEAR(f2one[1], -expectedForce[1], absDelta);
-    EXPECT_NEAR(f2one[2], -expectedForce[2], absDelta);
+    if (Mixing) {
+      EXPECT_NEAR(f2one[0], -expectedForceMixing[0], absDelta);
+      EXPECT_NEAR(f2one[1], -expectedForceMixing[1], absDelta);
+      EXPECT_NEAR(f2one[2], -expectedForceMixing[2], absDelta);
+    } else {
+      EXPECT_NEAR(f2one[0], -expectedForce[0], absDelta);
+      EXPECT_NEAR(f2one[1], -expectedForce[1], absDelta);
+      EXPECT_NEAR(f2one[2], -expectedForce[2], absDelta);
+    }
   } else {
     EXPECT_DOUBLE_EQ(f2one[0], 0);
     EXPECT_DOUBLE_EQ(f2one[1], 0);
@@ -43,43 +58,66 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3) {
   auto f2two = p2.getF();
 
   double factor = newton3 ? 2. : 1.;
+  if (Mixing) {
+    EXPECT_NEAR(f1two[0], factor * expectedForceMixing[0], absDelta);
+    EXPECT_NEAR(f1two[1], factor * expectedForceMixing[1], absDelta);
+    EXPECT_NEAR(f1two[2], factor * expectedForceMixing[2], absDelta);
 
-  EXPECT_NEAR(f1two[0], factor * expectedForce[0], absDelta);
-  EXPECT_NEAR(f1two[1], factor * expectedForce[1], absDelta);
-  EXPECT_NEAR(f1two[2], factor * expectedForce[2], absDelta);
+    EXPECT_NEAR(f2two[0], -factor * expectedForceMixing[0], absDelta);
+    EXPECT_NEAR(f2two[1], -factor * expectedForceMixing[1], absDelta);
+    EXPECT_NEAR(f2two[2], -factor * expectedForceMixing[2], absDelta);
+  } else {
+    EXPECT_NEAR(f1two[0], factor * expectedForce[0], absDelta);
+    EXPECT_NEAR(f1two[1], factor * expectedForce[1], absDelta);
+    EXPECT_NEAR(f1two[2], factor * expectedForce[2], absDelta);
 
-  EXPECT_NEAR(f2two[0], -factor * expectedForce[0], absDelta);
-  EXPECT_NEAR(f2two[1], -factor * expectedForce[1], absDelta);
-  EXPECT_NEAR(f2two[2], -factor * expectedForce[2], absDelta);
+    EXPECT_NEAR(f2two[0], -factor * expectedForce[0], absDelta);
+    EXPECT_NEAR(f2two[1], -factor * expectedForce[1], absDelta);
+    EXPECT_NEAR(f2two[2], -factor * expectedForce[2], absDelta);
+  }
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsNoN3) {
   bool newton3 = false;
-  testAoSNoGlobals(newton3);
+  testAoSNoGlobals(newton3, false);
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   bool newton3 = true;
-  testAoSNoGlobals(newton3);
+  testAoSNoGlobals(newton3, false);
 }
 
-void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
-  // test is for the soa functors the forces are calculated correctly
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 2; i++) {
-    universalMap.emplace(i, 1.0);
+TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsNoN3) {
+  bool newton3 = false;
+  testAoSNoGlobals(newton3, true);
+}
+
+TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
+  bool newton3 = true;
+  testAoSNoGlobals(newton3, true);
+}
+
+void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType, bool Mixing) {
+  ParticlePropertiesLibrary PCL;
+  if (Mixing) {
+    PCL = ParticlePropertiesLibrary();
+    PCL.addType(0, epsilon, sigma, 1.0);
+    PCL.addType(1, epsilon2, sigma2, 1.0);
+  } else {  // epsilon=sigma=mass=1.0
+    double universalValue = 1;
+    PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, 0.1);
+  // test is for the soa functors the forces are calculated correctly
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
 
   FMCell cell1, cell2;
   {
     // particle 1 is always in cell1
-    Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
+    Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
     cell1.addParticle(p1);
 
     // The cell of particle 2 depends on the InteractionType.
-    Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+    Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (Mixing) ? 1 : 0);
     switch (interactionType) {
       case InteractionType::verlet:
         // same as for own
@@ -95,7 +133,6 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
         FAIL();
     }
   }
-
   // Load the particles into the soa.
   functor.SoALoader(cell1, cell1._particleSoABuffer);
   functor.SoALoader(cell2, cell2._particleSoABuffer);
@@ -126,9 +163,15 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   // force of particle 1
   auto f1 = cell1.begin()->getF();
 
-  EXPECT_NEAR(f1[0], expectedForce[0], absDelta);
-  EXPECT_NEAR(f1[1], expectedForce[1], absDelta);
-  EXPECT_NEAR(f1[2], expectedForce[2], absDelta);
+  if (Mixing) {
+    EXPECT_NEAR(f1[0], expectedForceMixing[0], absDelta);
+    EXPECT_NEAR(f1[1], expectedForceMixing[1], absDelta);
+    EXPECT_NEAR(f1[2], expectedForceMixing[2], absDelta);
+  } else {
+    EXPECT_NEAR(f1[0], expectedForce[0], absDelta);
+    EXPECT_NEAR(f1[1], expectedForce[1], absDelta);
+    EXPECT_NEAR(f1[2], expectedForce[2], absDelta);
+  }
 
   // force of particle 2
   std::array<double, 3> f2 = {0., 0., 0.};
@@ -143,9 +186,15 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   }
   // if the interactiontype is own, then the forces of the second particle should always be calculated!
   if (newton3 or interactionType != InteractionType::pair) {
-    EXPECT_NEAR(f2[0], -expectedForce[0], absDelta);
-    EXPECT_NEAR(f2[1], -expectedForce[1], absDelta);
-    EXPECT_NEAR(f2[2], -expectedForce[2], absDelta);
+    if (Mixing) {
+      EXPECT_NEAR(f2[0], -expectedForceMixing[0], absDelta);
+      EXPECT_NEAR(f2[1], -expectedForceMixing[1], absDelta);
+      EXPECT_NEAR(f2[2], -expectedForceMixing[2], absDelta);
+    } else {
+      EXPECT_NEAR(f2[0], -expectedForce[0], absDelta);
+      EXPECT_NEAR(f2[1], -expectedForce[1], absDelta);
+      EXPECT_NEAR(f2[2], -expectedForce[2], absDelta);
+    }
   } else {
     EXPECT_DOUBLE_EQ(f2[0], 0);
     EXPECT_DOUBLE_EQ(f2[1], 0);
@@ -163,14 +212,23 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
     f2 = cell2.begin()->getF();
 
     double factor = newton3 ? 2. : 1.;
+    if (Mixing) {
+      EXPECT_NEAR(f1[0], factor * expectedForceMixing[0], absDelta);
+      EXPECT_NEAR(f1[1], factor * expectedForceMixing[1], absDelta);
+      EXPECT_NEAR(f1[2], factor * expectedForceMixing[2], absDelta);
 
-    EXPECT_NEAR(f1[0], factor * expectedForce[0], absDelta);
-    EXPECT_NEAR(f1[1], factor * expectedForce[1], absDelta);
-    EXPECT_NEAR(f1[2], factor * expectedForce[2], absDelta);
+      EXPECT_NEAR(f2[0], -factor * expectedForceMixing[0], absDelta);
+      EXPECT_NEAR(f2[1], -factor * expectedForceMixing[1], absDelta);
+      EXPECT_NEAR(f2[2], -factor * expectedForceMixing[2], absDelta);
+    } else {
+      EXPECT_NEAR(f1[0], factor * expectedForce[0], absDelta);
+      EXPECT_NEAR(f1[1], factor * expectedForce[1], absDelta);
+      EXPECT_NEAR(f1[2], factor * expectedForce[2], absDelta);
 
-    EXPECT_NEAR(f2[0], -factor * expectedForce[0], absDelta);
-    EXPECT_NEAR(f2[1], -factor * expectedForce[1], absDelta);
-    EXPECT_NEAR(f2[2], -factor * expectedForce[2], absDelta);
+      EXPECT_NEAR(f2[0], -factor * expectedForce[0], absDelta);
+      EXPECT_NEAR(f2[1], -factor * expectedForce[1], absDelta);
+      EXPECT_NEAR(f2[2], -factor * expectedForce[2], absDelta);
+    }
   }
   if (::testing::Test::HasFailure()) {
     std::cerr << "Failures for options: " << std::endl
@@ -186,13 +244,17 @@ TEST_F(LJFunctorTest, testSoAFunctorNoGlobals) {
     }
   }
 }
+TEST_F(LJFunctorTest, testSoAMixingFunctorNoGlobals) {
+  for (InteractionType interactionType : {pair, own, verlet}) {
+    for (bool newton3 : {false, true}) {
+      testSoANoGlobals(newton3, interactionType, true);
+    }
+  }
+}
 
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 2; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  double universalValue = 1;  // epsilon=mass=sigma=1.0
+  auto PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   bool duplicatedCalculation = true;
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
 
@@ -216,11 +278,8 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
 }
 
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 2; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
                                                                                     duplicatedCalculation);
   double xOffset;
@@ -289,12 +348,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
-  unsigned long numP = additionalParticlesToVerletNumber + 2;
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numP; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
                                                                                     duplicatedCalculation);
   double xOffset;
@@ -460,11 +515,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
 
   Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
   Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 4; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  double universalValue = 1;  // epsilon=mass=sigma=1.0
+  auto PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
                                                                                     duplicatedCalculation);
 

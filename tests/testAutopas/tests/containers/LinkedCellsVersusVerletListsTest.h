@@ -11,9 +11,9 @@
 
 #include <gtest/gtest.h>
 
-#include "../../../../examples/md-flexible/ParticleClassLibrary.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -31,8 +31,8 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
   template <bool useNewton3, autopas::DataLayoutOption dataLayoutOption>
   void test(unsigned long numMolecules, double rel_err_tolerance, std::array<double, 3> boxMax);
 
-  using vltype = autopas::VerletLists<autopas::MoleculeLJ>;
-  using lctype = autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>;
+  using vltype = autopas::VerletLists<autopas::MoleculeLJ<>>;
+  using lctype = autopas::LinkedCells<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>>;
   std::unique_ptr<vltype> _verletLists;
   std::unique_ptr<lctype> _linkedCells;
 };

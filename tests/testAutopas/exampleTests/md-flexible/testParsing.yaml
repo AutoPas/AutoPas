@@ -6,7 +6,7 @@ Objects:
   CubeGrid:
     particles-per-Dim: [10,10,10]
     particleSpacing: 0.5
-    velocity: [10.,10.,10.]
+    velocity: [0.,0.,0.]
     center: [5.,5.,5.]
   CubeGauss:
     numberOfParticles: 100
@@ -25,6 +25,6 @@ Objects:
     radius: 10
     particleSpacing: 0.5
     firstId: 0
-    velocity: [5.,5.,5.]
+    velocity: [0.,0.,0.]
 
 

@@ -110,12 +110,12 @@ class YamlParser {
 
  private:
  public:
-  void setFilename(const std::string &filename);
+  void setFilename(const std::string &inputFilename);
 
  private:
   static constexpr size_t valueOffset = 32;
   // defaults:
-  std::string filename;  // not needed: "DefaultConfig.yaml";default configuration if CubeGrid
+  std::string filename;  // default configuration = CubeGrid
   // AutoPas options:
   std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
   std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;

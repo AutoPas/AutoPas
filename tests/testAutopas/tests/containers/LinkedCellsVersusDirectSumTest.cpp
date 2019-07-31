@@ -12,7 +12,7 @@ LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
       _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0., 1.) {}
 
 void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
-  autopas::MoleculeLJ defaultParticle;
+  autopas::MoleculeLJ<> defaultParticle;
   RandomGenerator::fillWithParticles(_directSum, defaultParticle, numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
@@ -20,17 +20,9 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
     _linkedCells.addParticle(*it);
   }
 
-  double eps = 1.0;
-  double sig = 1.0;
   double shift = 0.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numMolecules; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
-
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), PCL, shift);
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true> traversalLJ(
@@ -46,12 +38,12 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
   std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, the
   for (auto it = _directSum.begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    autopas::MoleculeLJ<> &m = *it;
     forcesDirect.at(m.getID()) = m.getF();
   }
 
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    autopas::MoleculeLJ<> &m = *it;
     forcesLinked.at(m.getID()) = m.getF();
   }
 

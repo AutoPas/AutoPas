@@ -95,10 +95,10 @@ class LJFunctorAVX
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, bool newton3)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
 #ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
 
@@ -291,9 +291,9 @@ class LJFunctorAVX
 
  public:
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
 #ifdef __AVX__
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -434,12 +434,12 @@ class LJFunctorAVX
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa,
+  void SoAFunctor(SoAView<SoAArraysType> soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
     utils::ExceptionHandler::exception("Verlet SoA functor not implemented!");

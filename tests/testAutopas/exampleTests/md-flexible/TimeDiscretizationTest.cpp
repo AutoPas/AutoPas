@@ -4,13 +4,14 @@
 #include "TimeDiscretizationTest.h"
 
 void TimeDiscretizationTest::globalForceTest(
+    // tests if oldforce entries and force entries are well writen in the particles
     autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto1,
     autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto2, int iterations) {
   auto1.iteratePairwise(&functor);
   auto2.iteratePairwise(&functor);
   double particleD = 0.01;
-  TimeDiscretization<decltype(auto1)> td1(particleD);
-  // to compare OldForce entry of auto2 Particles with Force entries of auto1, perform one iteration on auto2
+  TimeDiscretization<decltype(auto1)> td1(particleD, PCL);
+  // to compare OldForce entry of auto2 Particles with Force entries of auto1, perform one more iteration on auto2
   td1.VSCalculateX(auto2);
   auto2.iteratePairwise(&functor);
   ASSERT_EQ(auto1.getNumberOfParticles(), auto2.getNumberOfParticles());
@@ -59,14 +60,13 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
     autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
     size_t numberOfParticles, int iterations) {
   // initialize the domain:
-  PrintableMolecule::setMass(1.0);
   PrintableMolecule dummy;
   autopas.setBoxMin(boxmin);
   autopas.setBoxMax(boxmax);
   autopas.init();
-  RandomGenerator::fillWithParticles(autopas, dummy, numberOfParticles, {0., 0., 0.});
+  RandomGenerator::fillWithParticles(autopas, dummy, numberOfParticles);
   double particleD = 0.01;
-  TimeDiscretization<decltype(autopas)> td1(particleD);
+  TimeDiscretization<decltype(autopas)> td1(particleD, PCL);
   // initialize force and oldforce values:
   autopas.iteratePairwise(&functor);
   td1.VSCalculateX(autopas);
@@ -120,7 +120,6 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
 }
 
 TEST_F(TimeDiscretizationTest, GlobalForce) {
-  PrintableMolecule::setMass(1.);
   auto auto1a = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
   auto auto1b = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
   auto auto2a = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
@@ -140,7 +139,6 @@ TEST_F(TimeDiscretizationTest, GlobalForce) {
 }
 
 TEST_F(TimeDiscretizationTest, PositionsAndVelocity) {
-  PrintableMolecule::setMass(1.);
   auto autopas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
   Pos_and_Velo_Test(autopas, 25, 10);
   Pos_and_Velo_Test(autopas, 100, 10);

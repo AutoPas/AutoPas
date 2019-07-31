@@ -27,10 +27,10 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    * In all comparisons first is AVX2, second non-AVX2
    *
    * Checks CudaFunctor(soa1, soa2, newton3)
-   *
+   * LJFunctor works only with MoleculeLJ
    * @param newton3
    */
-  template <typename ParticleType, bool useNewton3>
+  template <bool useNewton3>
   void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2);
 
   /**
@@ -39,10 +39,10 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    * In all comparisons first is AVX2, second non-AVX2
    *
    * Checks CudaFunctor(soa, newton3)
-   *
+   * LJFunctor only works with MoleculeLJ
    * @param newton3
    */
-  template <typename ParticleType, bool useNewton3>
+  template <bool useNewton3>
   void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles);
 
   /**
@@ -61,7 +61,7 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    * @param cell2
    * @return
    */
-  bool AoSParticlesEqual(FPCell &cell1, FPCell &cell2);
+  bool AoSParticlesEqual(FMCell &cell1, FMCell &cell2);
 
   /**
    * Check that two particles are equal.

@@ -284,12 +284,8 @@ void testSimulationLoop(testingTuple options) {
     autoPas.addParticle(particle1);
     autoPas.addParticle(particle2);
   }
-  unsigned long numMolecules = autoPas.getNumberOfParticles();
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < numMolecules; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  double universalValue = 1;
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(cutoff, PCL,
                                                                                                           shift);
   // do first simulation loop
@@ -402,11 +398,8 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
       }
     }
   }
-  std::map<unsigned long, double> universalMap;
-  for (unsigned long i = 0; i < 2; i++) {
-    universalMap.emplace(i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  double universalValue = 1;
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor1(cutoff, PCL,
                                                                                                            shift);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor2(cutoff, PCL,

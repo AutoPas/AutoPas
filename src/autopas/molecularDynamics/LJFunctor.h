@@ -8,7 +8,7 @@
 #pragma once
 
 #include <array>
-#include "../../../examples/md-flexible/ParticleClassLibrary.h"
+#include "ParticlePropertiesLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -60,7 +60,7 @@ class LJFunctor
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(floatPrecision cutoff, ParticleClassLibrary &PCLibrary, floatPrecision shift,
+  explicit LJFunctor(floatPrecision cutoff, ParticlePropertiesLibrary &PCLibrary, floatPrecision shift,
                      bool duplicatedCalculation = true)
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
@@ -81,8 +81,8 @@ class LJFunctor
       _aosThreadData.resize(autopas_get_max_threads());
     }
 #if defined(AUTOPAS_CUDA)
-    // @TODO: FIXME: pass particle class lib instead of constant eps and sig
-    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, 1 /* epsilon24 */, 1 /* sigmasquare */, _shift6);
+    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _PCLibrary->get24Epsilon(0) /* epsilon24 */,
+                                                 _PCLibrary->getSigmaSquare(0) /* sigmasquare */, _shift6);
     _cudawrapper.loadConstants(&constants);
 #endif
   }
@@ -98,8 +98,8 @@ class LJFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    double _sigmasquare = _PCLibrary->mixingSS(i.getID(), j.getID());
-    double _epsilon24 = _PCLibrary->mixing24E(i.getID(), j.getID());
+    double _sigmasquare = _PCLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
+    double _epsilon24 = _PCLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     floatPrecision dr2 = ArrayMath::dot(dr, dr);
 
@@ -146,11 +146,11 @@ class LJFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, bool newton3)
    * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -162,14 +162,14 @@ class LJFunctor
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    //@TODO FAbio FRAGEN ob das richtig ist, oder was genau restrict ist(es gibt nicht mehrere pointer zu dem object~)
-    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
+    auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    double sigmasquare;
+    double epsilon24;
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
-
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
+      //_____man kann sich den Boolean hier noch sparen oder?___
       bool isHaloCell = ownedPtr[0] ? false : true;
       if (isHaloCell) {
         return;
@@ -185,11 +185,12 @@ class LJFunctor
       floatPrecision fxacc = 0.;
       floatPrecision fyacc = 0.;
       floatPrecision fzacc = 0.;
-
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
+        sigmasquare = (floatPrecision)_PCLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
+        epsilon24 = (floatPrecision)_PCLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
         const floatPrecision drz = zptr[i] - zptr[j];
@@ -252,9 +253,9 @@ class LJFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -272,11 +273,10 @@ class LJFunctor
     auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    auto epsilon24 = (floatPrecision)_PCLibrary->mixing24E(*soa1.template begin<Particle::AttributeNames::id>(),
-                                                           *soa2.template begin<Particle::AttributeNames::id>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->mixingSS(*soa1.template begin<Particle::AttributeNames::id>(),
-                                                            *soa2.template begin<Particle::AttributeNames::id>());
-
+    auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
+    double sigmasquare;
+    double epsilon24;
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
     // Checks whether the cells are halo cells.
@@ -307,6 +307,8 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+        sigmasquare = (floatPrecision)_PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+        epsilon24 = (floatPrecision)_PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
         const floatPrecision drx = x1ptr[i] - x2ptr[j];
         const floatPrecision dry = y1ptr[i] - y2ptr[j];
         const floatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -377,12 +379,12 @@ class LJFunctor
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa,
+  void SoAFunctor(SoAView<SoAArraysType> soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, const bool newton3) override {
     if (newton3) {
@@ -526,20 +528,20 @@ class LJFunctor
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 8>{
+  constexpr static const std::array<typename Particle::AttributeNames, 9> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 9>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 5>{
-        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+  constexpr static const std::array<typename Particle::AttributeNames, 6> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
   }
 
   /**
@@ -633,7 +635,7 @@ class LJFunctor
 
  private:
   template <bool newton3, bool duplicatedCalculations>
-  void SoAFunctorImpl(SoA<SoAArraysType> &soa,
+  void SoAFunctorImpl(SoAView<SoAArraysType> &soa,
                       const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                       size_t iFrom, size_t iTo) {
     if (soa.getNumParticles() == 0) return;
@@ -645,9 +647,11 @@ class LJFunctor
     auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
-    auto epsilon24 = (floatPrecision)_PCLibrary->get24Epsilon(*soa.template begin<Particle::AttributeNames::id>());
-    auto sigmasquare = (floatPrecision)_PCLibrary->getSSigma(*soa.template begin<Particle::AttributeNames::id>());
+    double epsilon24;
+    double sigmasquare;
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
     floatPrecision upotSum = 0.;
@@ -712,9 +716,12 @@ class LJFunctor
             zArr[tmpj] = zptr[currentList[joff + tmpj]];
             ownedArr[tmpj] = ownedPtr[currentList[joff + tmpj]];
           }
+
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
+            sigmasquare = (floatPrecision)_PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
+            epsilon24 = (floatPrecision)_PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
             // const size_t j = currentList[jNeighIndex];
 
             const floatPrecision drx = xtmp[j] - xArr[j];
@@ -787,6 +794,8 @@ class LJFunctor
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
+        sigmasquare = (floatPrecision)_PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+        epsilon24 = (floatPrecision)_PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
 
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
@@ -896,7 +905,7 @@ class LJFunctor
   // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   floatPrecision _cutoffsquare;
-  ParticleClassLibrary *_PCLibrary;
+  ParticlePropertiesLibrary *_PCLibrary;
   floatPrecision _shift6;
   // sum of the potential energy, only calculated if calculateGlobals is true
   floatPrecision _upotSum;

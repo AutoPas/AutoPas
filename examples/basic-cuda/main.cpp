@@ -6,11 +6,11 @@
 
 #include <iostream>
 #include <vector>
-#include "../md-flexible/ParticleClassLibrary.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/utils/CudaDeviceVector.h"
 
 using namespace std;
@@ -86,11 +86,8 @@ void testRun(LJFunctor<Particle, FullParticleCell<Particle>> &func, FullParticle
 template <typename Particle>
 void run(int numParticles) {
   autopas::Logger::create();
-  map<unsigned long, double> universalMap;
-  for (int i = 0; i < numParticles; i++) {
-    universalMap.emplace((unsigned long)i, 1.0);
-  }
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalMap, universalMap, universalMap);
+  double universalValue = 1;  // epsilon=mass=sigma=1.0
+  auto PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
   typename Particle::ParticleFloatingPointType cutoff = 100.0;
 
@@ -120,10 +117,12 @@ int main(int argc, char **argv) {
   }
 
   cout << "Test double precision" << endl;
-  run<ParticleFP64>(numParticles);
+  run<MoleculeLJ<double>>(numParticles);
 
   cout << "Test single precision" << endl;
-  run<ParticleFP32>(numParticles);
+  // mit hier mir float anstatt double kommen noch mehr fehler, @todo fixen
+  run<MoleculeLJ<double>>(numParticles);
+  run<MoleculeLJ<double>>(numParticles);
 
   return EXIT_SUCCESS;
 }

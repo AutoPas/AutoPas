@@ -4,6 +4,9 @@
 
 #include "GeneratorsTest.h"
 #include "autopas/utils/inBox.h"
+//the following test only work if testParsing.yaml is well set
+//all ParticleVelocities = {0.,0.,0.}
+
 TEST_F(GeneratorsTest, Gauss) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
   Particle dummyParticle;
@@ -63,7 +66,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
 
 TEST_F(GeneratorsTest, Sphere) {
   auto autoPas = autopas::AutoPas<Particle, FPCell>(std::cout);
-  autoPas.setBoxMax({3., 3., 3.});
+  autoPas.setBoxMax({3.1, 3.1, 3.1});
   autoPas.setBoxMin({-3., -3., -3.});
   autoPas.init();
   std::array<double, 3> velocity = {0., 0., 0.};
