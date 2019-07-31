@@ -31,7 +31,7 @@ class VerletClusterListsRebuilder {
   double _towerSideLength;
   int _interactionLengthInTowers;
   double _towerSideLengthReciprocal;
-  std::array<size_t, 3> _towersPerDim;
+  std::array<size_t, 2> _towersPerDim;
   bool _neighborListIsNewton3;
   double _interactionLength;
   double _interactionLengthSqr;
@@ -77,7 +77,7 @@ class VerletClusterListsRebuilder {
     /**
      * The number of towers in each dimension using the new tower side length.
      */
-    std::array<size_t, 3> _towersPerDim;
+    std::array<size_t, 2> _towersPerDim;
     /**
      * The new number of clusters in the container.
      */
@@ -109,7 +109,6 @@ class VerletClusterListsRebuilder {
     _towerSideLengthReciprocal = 1 / _towerSideLength;
 
     _towersPerDim = calculateTowersPerDim(boxSize);
-    // _towersPerDim[2] is always 1
     size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
 
     // resize to number of towers
@@ -172,14 +171,13 @@ class VerletClusterListsRebuilder {
    * @param boxSize the size of the domain.
    * @return the cells per dimension in the container.
    */
-  [[nodiscard]] std::array<size_t, 3> calculateTowersPerDim(std::array<double, 3> boxSize) const {
-    std::array<size_t, 3> towersPerDim{};
+  [[nodiscard]] std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize) const {
+    std::array<size_t, 2> towersPerDim{};
     for (int d = 0; d < 2; d++) {
       towersPerDim[d] = static_cast<size_t>(std::ceil(boxSize[d] * _towerSideLengthReciprocal));
       // at least one cell
       towersPerDim[d] = std::max(towersPerDim[d], 1ul);
     }
-    towersPerDim[2] = 1ul;
     return towersPerDim;
   }
 

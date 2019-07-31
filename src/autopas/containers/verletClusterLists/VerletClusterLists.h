@@ -129,7 +129,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return false;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() override { return TraversalSelectorInfo(_towersPerDim); }
+  TraversalSelectorInfo getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo({_towersPerDim[0], _towersPerDim[1], 1});
+  }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
@@ -262,7 +264,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param towersPerDim The number of towers in each dimension.
    * @return the 1D index for the given 2D-coordinates of a tower.
    */
-  static auto towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 3> towersPerDim) {
+  static auto towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> towersPerDim) {
     return x + y * towersPerDim[0];
   }
 
@@ -332,7 +334,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * Dimensions of the 2D xy-grid.
    */
-  std::array<size_t, 3> _towersPerDim{};
+  std::array<size_t, 2> _towersPerDim{};
 
   /**
    * Side length of xy-grid.

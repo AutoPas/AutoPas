@@ -90,8 +90,8 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
     const auto towersPerColoringCell = clusterList.getInteractionLengthInTowers();
-    std::array<unsigned long, 3> coloringCellsPerDim{};
-    for (int i = 0; i < 3; i++) {
+    std::array<unsigned long, 2> coloringCellsPerDim{};
+    for (int i = 0; i < 2; i++) {
       coloringCellsPerDim[i] =
           static_cast<unsigned long>(std::ceil(clusterList.getTowersPerDimension()[i] / (double)towersPerColoringCell));
     }
@@ -100,15 +100,10 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
       processColorCell(x, y, z, towersPerColoringCell);
     };
 
-    // We are only doing a 2D coloring.
-    if (coloringCellsPerDim[2] != 1) {
-      autopas::utils::ExceptionHandler::exception(
-          "VerletClusterColoringTraversal: Coloring should only be 2D, not in z-direction!");
-    }
-
     // localStride is necessary because stride is constexpr and cTraversal() wants a const &
     auto localStride = _stride;
-    this->cTraversal(std::forward<decltype(loopBody)>(loopBody), coloringCellsPerDim, localStride);
+    this->cTraversal(std::forward<decltype(loopBody)>(loopBody), {coloringCellsPerDim[0], coloringCellsPerDim[1], 1},
+                     localStride);
   }
 
  private:
