@@ -1,6 +1,10 @@
 //
 // Created by nicola on 12.05.19.
-//
+/**
+ * @file Simulation.h
+ * @author N. Fottner
+ * @date 7/3/19
+ */
 #pragma once
 #include <autopas/utils/MemoryProfiler.h>
 #include <chrono>
@@ -10,7 +14,7 @@
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "MDFlexParser.h"
-#include "PrintableMolecule.h"  // includes autopas.h
+#include "PrintableMolecule.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/LJFunctorAVX.h"
@@ -21,7 +25,7 @@ class Simulation {
   autopas::AutoPas<Particle, ParticleCell> _autopas;
   MDFlexParser *_parser;
   std::ofstream _logFile;
-  std::unique_ptr<ParticleClassLibrary> _PCL;
+  std::unique_ptr<ParticlePropertiesLibrary> _PCL;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -48,14 +52,12 @@ class Simulation {
     std::string filename = "VtkOutput";
     std::stringstream strstr;
     strstr << filename << "_" << std::setfill('0') << std::setw(4) << iteration << ".vtu";
-    // string path = "./vtk";
     std::ofstream vtkFile;
     vtkFile.open(strstr.str());
 
     vtkFile << "# vtk DataFile Version 2.0" << std::endl;
     vtkFile << "Timestep" << std::endl;
     vtkFile << "ASCII" << std::endl;
-    //@todo adapt to current state
     vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
     vtkFile << "DIMENSIONS 1 1 1" << std::endl;
     vtkFile << "POINTS " << numParticles << " double" << std::endl;
@@ -69,10 +71,10 @@ class Simulation {
   }
 
   /**
-   * @brief Constructs a container and fills it with particles.
+   * Constructs a container and fills it with particles.
    *
-   * According to the options passed, a %DirectSum or %'LinkedCells' container is
-   * built. It consists of %`FullParticleCells` and is filled with
+   * According to the options passed, a DirectSum or 'LinkedCells' container is
+   * built. It consists of FullParticleCells and is filled with
    * `PrintableMolecules`. The particles are aligned on a cuboid grid.
    *
    * @param autopas AutoPas object that should be initialized
@@ -88,7 +90,7 @@ class Simulation {
   void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, std::array<double, 3> boxLength,
                             size_t numParticles);
 
-  /** @brief This function
+  /**  This function
    * -initializes the autopas Object
    * -sets/initializes the simulation domain with the particles generators
    * @todo -initialized Velocities and Positions (and forces?)
@@ -98,9 +100,8 @@ class Simulation {
   /**
    * Does the ForceCalculation
    * @param Force Calculation Functor
-   * @return Duration of Calculation
    * */
-  void CalcF();
+  void calculateForces();
 
   /**
    * This function processes the main simulation loop
@@ -129,17 +130,13 @@ autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::ge
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
-  // werte die man später für die initialisierung der Funktoren braucht, temporäre implementierung
-  // std::array<double, 3> lowCorner = {0., 0., 0.};
-  // std::array<double, 3> highCorner = {5., 5., 5.};
-  // double epsilon,sigma  = 1.0;
-  //@todo schöner machen:
   _parser = parser;
   double epsilon = _parser->getEpsilon();
   double sigma = _parser->getSigma();
   double mass = _parser->getMass();
   // initialisierung of PCL
-  _PCL = std::make_unique<ParticleClassLibrary>(epsilon,sigma, mass);
+  // this implementation doesnt support multiple particle Types, will be coming with PR md-parser
+  _PCL = std::make_unique<ParticlePropertiesLibrary>(epsilon, sigma, mass);
   auto logFileName(_parser->getLogFileName());
   auto particlesTotal(_parser->getParticlesTotal());
   auto particlesPerDim(_parser->getParticlesPerDim());
@@ -183,8 +180,6 @@ void Simulation<Particle, ParticleCell>::initialize(MDFlexParser *parser) {
   _autopas.setAllowedTraversals(traversalOptions);
   _autopas.setAllowedDataLayouts(dataLayoutOptions);
   _autopas.setAllowedNewton3Options(newton3Options);
-  // so that a test in jenkins passes:
-
   _autopas.setTuningStrategyOption(tuningStrategy);
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
   autopas::Logger::get()->set_level(logLevel);
@@ -259,10 +254,9 @@ void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<P
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::CalcF() {
+void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
-  //@ TODO: switch for other functors --> mit boolean object?
   auto functor = autopas::LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
@@ -277,7 +271,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   double deltaT = _parser->getDeltaT();
   double simTimeNow = 0;
   double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
-  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT,*_PCL);
+  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_PCL);
 
   // main simulation loop
   while (simTimeNow < simTimeEnd) {
@@ -287,7 +281,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
       std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    this->CalcF();
+    this->calculateForces();
     _timers.durationVelocityUpdate += timeDiscretization.VSCalculateV(_autopas);
     simTimeNow += deltaT;
     this->writeVTKFile(simTimeNow / deltaT, _autopas.getNumberOfParticles(), _autopas);

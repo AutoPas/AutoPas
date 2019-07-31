@@ -35,9 +35,10 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   auto particlesAoS = std::vector<autopas::MoleculeLJ<>>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
-double universalValue=1; //epsilon=sigma=mass=1.0
-ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
-  LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> ljFunctor(PARTICLES_PER_DIM * 10, PCL, 0);
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
+  LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> ljFunctor(PARTICLES_PER_DIM * 10,
+                                                                                               PCL, 0);
 
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;

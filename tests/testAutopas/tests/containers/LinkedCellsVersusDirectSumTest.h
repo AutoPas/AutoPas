@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {

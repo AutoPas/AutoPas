@@ -8,7 +8,7 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"
 

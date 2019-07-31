@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "testingHelpers/commonTypedefs.h"
 

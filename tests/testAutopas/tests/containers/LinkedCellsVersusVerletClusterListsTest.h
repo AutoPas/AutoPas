@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 

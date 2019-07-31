@@ -487,15 +487,13 @@ void MDFlexParser::printConfig() {
        << ":  " << iterableToString(traversalOptions) << endl;
   cout << setw(valueOffset) << left << "Particles Mass"
        << ":  " << mass << endl;
-  cout << setw(valueOffset) << left
-       << "Particles Epsilon"  //@todo verändern wenn verschieden ParticleType in der Simulation sind
+  cout << setw(valueOffset) << left << "Particles Epsilon"
        << ":  " << epsilon << endl;
-  cout << setw(valueOffset) << left
-       << "Particles Sigma"  //@todo verändern wenn verschieden ParticleType in der Simulation sind
+  cout << setw(valueOffset) << left << "Particles Sigma"
        << ":  " << sigma << endl;
   cout << setw(valueOffset) << left << "delta_t"
        << ":  " << delta_t << endl;
-  cout << setw(valueOffset) << left << "Iterations"  // iterations * delta_t = time_end;
+  cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
   cout << setw(valueOffset) << left << "Tuning Strategy"
        << ":  " << autopas::utils::StringUtils::to_string(tuningStrategyOption) << endl;

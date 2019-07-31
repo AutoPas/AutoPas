@@ -26,8 +26,8 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
                                    {particleSpacing, particleSpacing, particleSpacing});
 
-    double universalValue=1; //epsilon=sigma=mass=1.0
-    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> functor(cutoff, PCL, 0.0);
 
   autoPas.iteratePairwise(&functor);

@@ -11,7 +11,7 @@
 #include <vector>
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/GridGenerator.h"
 
 class ForceCalculationTest : public AutoPasTestBase {

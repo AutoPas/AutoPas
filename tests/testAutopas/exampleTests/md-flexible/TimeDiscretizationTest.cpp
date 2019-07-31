@@ -4,13 +4,14 @@
 #include "TimeDiscretizationTest.h"
 
 void TimeDiscretizationTest::globalForceTest(
+    // tests if oldforce entries and force entries are well writen in the particles
     autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto1,
     autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto2, int iterations) {
   auto1.iteratePairwise(&functor);
   auto2.iteratePairwise(&functor);
   double particleD = 0.01;
-  TimeDiscretization<decltype(auto1)> td1(particleD,PCL);
-  // to compare OldForce entry of auto2 Particles with Force entries of auto1, perform one iteration on auto2
+  TimeDiscretization<decltype(auto1)> td1(particleD, PCL);
+  // to compare OldForce entry of auto2 Particles with Force entries of auto1, perform one more iteration on auto2
   td1.VSCalculateX(auto2);
   auto2.iteratePairwise(&functor);
   ASSERT_EQ(auto1.getNumberOfParticles(), auto2.getNumberOfParticles());
@@ -65,7 +66,7 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   autopas.init();
   RandomGenerator::fillWithParticles(autopas, dummy, numberOfParticles);
   double particleD = 0.01;
-  TimeDiscretization<decltype(autopas)> td1(particleD,PCL);
+  TimeDiscretization<decltype(autopas)> td1(particleD, PCL);
   // initialize force and oldforce values:
   autopas.iteratePairwise(&functor);
   td1.VSCalculateX(autopas);

@@ -19,7 +19,7 @@ class TimeDiscretizationTest : public AutoPasTestBase {
         cutoff{1.},
         boxmin{{0., 0., 0.}},
         boxmax{{5., 5., 5.}},
-        PCL{ParticleClassLibrary(epsilon, sigma, 1.0},
+        PCL{ParticlePropertiesLibrary(epsilon, sigma, 1.0)},
         functor{autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>,
                                    autopas::FunctorN3Modes::Both, true>(cutoff, PCL, 0.0)} {}
 
@@ -43,7 +43,7 @@ class TimeDiscretizationTest : public AutoPasTestBase {
   double cutoff;
   std::array<double, 3> boxmin;
   std::array<double, 3> boxmax;
-  ParticleClassLibrary PCL;
+  ParticlePropertiesLibrary PCL;
   autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both, true>
       functor;
 };

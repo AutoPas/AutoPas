@@ -214,7 +214,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
 
 TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  //for somne reason throws a segfault if using MoleculeLJ here
+  // for somne reason throws a segfault if using MoleculeLJ here
   std::vector<RMMParticleCell<Particle>> data(10);
 
   for (auto i : {0u, 2u, 5u, 6u, 8u}) {

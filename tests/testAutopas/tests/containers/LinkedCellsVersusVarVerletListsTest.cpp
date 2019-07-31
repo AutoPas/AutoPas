@@ -28,8 +28,8 @@ void LinkedCellsVersusVarVerletListsTest::test(unsigned long numMolecules, doubl
   }
 
   const double shift = 0.0;
-    double universalValue=1; //epsilon=sigma=mass=1.0
-    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), PCL, shift);
 
   autopas::VarVerletTraversalAsBuild<FMCell, autopas::MoleculeLJ<>, decltype(func), dataLayoutOption, useNewton3>

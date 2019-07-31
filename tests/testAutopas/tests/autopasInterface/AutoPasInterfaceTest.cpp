@@ -284,8 +284,8 @@ void testSimulationLoop(testingTuple options) {
     autoPas.addParticle(particle1);
     autoPas.addParticle(particle2);
   }
-  double universalValue=1;
-  ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  double universalValue = 1;
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(cutoff, PCL,
                                                                                                           shift);
   // do first simulation loop
@@ -398,8 +398,8 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
       }
     }
   }
-    double universalValue=1;
-    ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  double universalValue = 1;
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor1(cutoff, PCL,
                                                                                                            shift);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor2(cutoff, PCL,

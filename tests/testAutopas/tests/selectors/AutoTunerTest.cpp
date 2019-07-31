@@ -18,8 +18,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int maxSamples = 2;
-double universalValue=1; //epsilon=sigma=mass=1.0
-ParticleClassLibrary PCL = ParticleClassLibrary(universalValue,universalValue,universalValue);
+  double universalValue = 1;  // epsilon=sigma=mass=1.0
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, 0.);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::allContainerOptions, std::set<double>({cellSizeFactor}), autopas::allTraversalOptions,

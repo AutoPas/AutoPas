@@ -16,7 +16,7 @@ using namespace autopas;
  * @brief Generates a reproducible set of particles
  * @param particles Vector where particles will be stored.
  */
-void AoSvsCudaTest::generateParticles(std::vector<autopas::Particle> *particles) {
+void AoSvsCudaTest::generateParticles(std::vector<autopas::MoleculeLJ<>> *particles) {
   particles->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -34,13 +34,14 @@ void AoSvsCudaTest::generateParticles(std::vector<autopas::Particle> *particles)
  * same set of particles.
  */
 TEST_F(AoSvsCudaTest, testAoSvsCuda) {
-  auto particlesAoS = std::vector<autopas::Particle>();
+  auto particlesAoS = std::vector<autopas::MoleculeLJ<>>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
   double epsilon = 1.0;
   double sigma = 1.0;
-  ParticleClassLibrary PCL = ParticleClassLibrary(epsilon, sigma, 1.0, 256);
-  LJFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> ljFunctor(PARTICLES_PER_DIM * 10, PCL, 0);
+  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(epsilon, sigma, 1.0);
+  LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> ljFunctor(PARTICLES_PER_DIM * 10,
+                                                                                               PCL, 0);
 
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;
@@ -58,7 +59,7 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
   std::cout << "AoS : " << duration << " \u03bcs" << std::endl;
 
   // SoA
-  autopas::FullParticleCell<autopas::Particle> cell;
+  autopas::FullParticleCell<autopas::MoleculeLJ<>> cell;
   for (auto &&p : particlesSoA) {
     cell.addParticle(p);
   }

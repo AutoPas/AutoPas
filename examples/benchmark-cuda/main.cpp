@@ -10,17 +10,17 @@
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/ParticleClassLibrary.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 
 using namespace std;
 using namespace autopas;
 
-class MyMolecule : public Particle {
+class MyMolecule : public MoleculeLJ<> {
  public:
-  MyMolecule() : Particle(), _myvar(0) {}
+  MyMolecule() : MoleculeLJ<>(), _myvar(0) {}
 
   MyMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i, int myvar)
-      : Particle(r, v, i), _myvar(myvar) {}
+      : MoleculeLJ<>(r, v, i), _myvar(myvar) {}
 
   void print() {
     cout << "Molecule with position: ";
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
-  ParticleClassLibrary PCL = ParticleClassLibrary(epsilon, sigma, 1.0, 10000);
+  auto PCL = ParticlePropertiesLibrary(epsilon, sigma, 1.0);
   Func func(cutoff, PCL, 0.0);
 
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::aos, false> traversalAoS(&func);

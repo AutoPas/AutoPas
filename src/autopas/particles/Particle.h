@@ -24,5 +24,4 @@ typedef ParticleBase<double, unsigned long> ParticleFP64;
  */
 typedef ParticleFP64 Particle;
 
-
 }  // namespace autopas
