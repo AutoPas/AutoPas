@@ -98,7 +98,7 @@ class ParticleBase {
    * Get the position of the particle
    * @return current position
    */
-  const std::array<floatType, 3> &getR() const { return _r; }
+  virtual const std::array<floatType, 3> &getR() const { return _r; }
 
   /**
    * Set the position of the particle

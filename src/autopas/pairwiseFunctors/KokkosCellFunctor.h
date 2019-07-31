@@ -53,7 +53,7 @@ namespace autopas {
                 ParticleCell &cell) {
 #ifdef AUTOPAS_KOKKOS
             auto particles = cell._particles;
-            Kokkos::parallel_for(particles.size(), KOKKOS_LAMBDA(const int i) {
+            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, particles.size())/*particles.size()*/, KOKKOS_LAMBDA(const int i) {
                 for (unsigned int l = i + 1; l < particles.size(); l++) {
                     _functor->AoSFunctorInline(particles[i], particles[l]);
                     _functor->AoSFunctorInline(particles[l], particles[i]);
@@ -68,7 +68,8 @@ namespace autopas {
 #ifdef AUTOPAS_KOKKOS
             auto part0 = cell1._particles;
             auto part1 = cell2._particles;
-            Kokkos::parallel_for(part0.size(), KOKKOS_LAMBDA(const int i) {
+
+            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, part0.size()), KOKKOS_LAMBDA(const int i) {
                 for (unsigned int l = 0; l < part1.size(); l++) {
                     _functor->AoSFunctorInline(part0[i], part1[l]);
                     _functor->AoSFunctorInline(part1[l], part0[i]);
@@ -81,6 +82,7 @@ namespace autopas {
         void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor>::processCellOneThread(ParticleCell &cell) {
 #ifdef AUTOPAS_KOKKOS
             auto particles = cell._particles;
+            //std::cout << particles.size() << "\n";
             Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
                 for (unsigned int i = 0; i < particles.size(); i++) {
                     for (unsigned int l = i + 1; l < particles.size(); l++) {
@@ -96,14 +98,14 @@ namespace autopas {
         void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor>::processCellPairOneThread(ParticleCell &cell1,
                                                                                                   ParticleCell &cell2) {
 #ifdef AUTOPAS_KOKKOS
-            Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
+            //Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
                 for (unsigned int i = 0; i < cell1._particles.size(); i++) {
                     for (unsigned int l = 0; l < cell2._particles.size(); l++) {
                         _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l]);
                         _functor->AoSFunctorInline(cell2._particles[l], cell1._particles[i]);
                     }
                 }
-            });
+            //});
 #endif
 
 

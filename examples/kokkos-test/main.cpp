@@ -42,7 +42,6 @@ void initContainerGrid(autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosP
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
           {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
-
   autopas.setBoxMin(boxMin);
   autopas.setBoxMax(boxMax);
 
@@ -156,9 +155,16 @@ int main(int argc, char **argv){
 
 #ifdef AUTOPAS_KOKKOS
   //init
-  int argc1 = 0;
-  char **argx = new char *[1];
-  Kokkos::initialize(argc1, argx);
+  //int argc1 = 1;
+  //char **argx = new char*[1];
+  //std::string s = "--kokkos-threads=8";
+  //const char* s1 = s.c_str();
+ // argx[0] = (char *) alloca(s.size() + 1);
+  //memcpy(argx[0], s.c_str() , s.size()+ 1);
+
+    Kokkos::InitArguments args;
+    args.num_threads = 8;
+    Kokkos::initialize(args);
 
   /*
   std::chrono::high_resolution_clock::time_point startTotal, stopTotal;

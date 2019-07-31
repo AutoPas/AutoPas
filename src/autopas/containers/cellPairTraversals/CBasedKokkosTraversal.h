@@ -159,6 +159,11 @@ namespace autopas {
           unsigned int iterationsY = 1 + (end_y - 1 - start_y)/stride_y;
           if(end_y < start_y || iterationsY < 0) iterationsY = 0;
 
+            unsigned int iterationsX = 1 + (end_x - 1 - start_x)/stride_x;
+            if(end_x < start_x || iterationsX < 0) iterationsX = 0;
+
+
+
           Kokkos::parallel_for(team_policy( iterationsZ, Kokkos::AUTO), KOKKOS_LAMBDA ( const member_type &teamMember){
               const int i = teamMember.league_rank();
               //std::cout << "League Size: " << teamMember.team_size() <<"\n";
@@ -171,7 +176,7 @@ namespace autopas {
           });
 
           //std::cout << start_z <<" | " << end_z << " | " << stride_z << " | " << iterationsZ << "\n";
-            /*Kokkos::parallel_for(iterationsZ, KOKKOS_LAMBDA(const int i){
+            /*Kokkos::parallel_for(range_policy(0, iterationsZ), KOKKOS_LAMBDA(const int i){
               for (unsigned long y = start_y; y < end_y; y += stride_y) {
                 for (unsigned long x = start_x; x < end_x; x += stride_x) {
                   // Don't exchange order of execution (x must be last!), it would break other code

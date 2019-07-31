@@ -25,15 +25,18 @@ class KokkosParticle : public Particle {
  private:
 #ifdef AUTOPAS_KOKKOS
   FloatVectorType _r, _v, _f;
+
 #endif
   unsigned long _id;
+  std::array<double, 3> _r_arr;
 
  public:
-  KokkosParticle() : Particle() {
+  KokkosParticle() : Particle() ,_r_arr({0., 0., 0.}){
 #ifdef AUTOPAS_KOKKOS
     _r = FloatVectorType("_r", 3);
     _v = FloatVectorType("_v", 3);
     _f = FloatVectorType("_f", 3);
+
 #endif
   }
 
@@ -43,23 +46,24 @@ class KokkosParticle : public Particle {
    * @param v   velocity of the particle
    * @param id  id of the particle
    */
-  KokkosParticle(std::array<double, KOKKOS_DIM> r, std::array<double, KOKKOS_DIM> v, unsigned long id) : Particle() {
+  KokkosParticle(std::array<double, KOKKOS_DIM> r, std::array<double, KOKKOS_DIM> v, unsigned long id) : Particle(),_r_arr({0., 0., 0.}) {
 #ifdef AUTOPAS_KOKKOS
     // create views
     _r = FloatVectorType("_r", 3);
     _v = FloatVectorType("_v", 3);
     _f = FloatVectorType("_f", 3);
     // copy values from constructor
-    FloatVectorType::HostMirror h_r = Kokkos::create_mirror_view(_r);
+    //FloatVectorType::HostMirror h_r = Kokkos::create_mirror_view(_r);
     FloatVectorType::HostMirror h_v = Kokkos::create_mirror_view(_v);
     for (int i = 0; i < 3; i++) {
-      h_r(i) = r[i];
+      //h_r(i) = r[i];
       h_v(i) = v[i];
     }
     _id = id;
     // target, source
-    Kokkos::deep_copy(_r, h_r);
+    //Kokkos::deep_copy(_r, h_r);
     Kokkos::deep_copy(_v, h_v);
+    setR(r);
 #endif
     _id = id;
   }
@@ -167,9 +171,18 @@ class KokkosParticle : public Particle {
     for(unsigned int i = 0; i < 3; i++){
       h_r(i) = r[i];
     }
+    _r_arr = r;//save values in a normal array which is used in getR, purpose: autopas needs access to this data and values from the kokkos_view could not be copied in getR() (const qualifier)
     Kokkos::deep_copy(_r, h_r);
   }
 
+  /**
+   * copy data from kokkos view to an array
+   * required for placement to correct cell of the
+   * @return position of kokkos particle
+   */
+    const std::array<double, 3> &getR() const override {
+    return _r_arr;
+    }
 
 
 #endif

@@ -33,6 +33,8 @@ typedef double KOKKOS_FLOAT;
 #endif
 
 #ifdef AUTOPAS_KOKKOS
-typedef Kokkos::View<KOKKOS_FLOAT *> FloatVectorType;
+    typedef Kokkos::View<KOKKOS_FLOAT *, Kokkos::DefaultExecutionSpace> FloatVectorType;
+    typedef Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>  range_policy;
+    //typedef Kokkos::View<KOKKOS_FLOAT *> FloatVectorType;
 #endif
 }  // namespace autopas
