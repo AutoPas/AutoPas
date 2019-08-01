@@ -81,7 +81,10 @@ void GaussianGenerator::fillWithParticles(autopas::AutoPas<Particle, ParticleCel
   for (size_t i = 0; i < numParticles;i++) {
     std::array<double, 3> position = {distribution(generator), distribution(generator), distribution(generator)};
     // only increment loop var (and place particle) if position is valid
-    if (not autopas::utils::inBox(position, BoxMin, BoxMax)) continue;
+    if (not autopas::utils::inBox(position, BoxMin, BoxMax)){
+        i--;
+        continue;
+    }
     Particle p(defaultParticle);
     p.setR(position);
     p.setID(id);

@@ -22,6 +22,13 @@ class YamlParser {
   /**Constructor für YAMl Parser:
    * */
   YamlParser() = default;
+  /**Copy Contructor
+   * */
+  YamlParser(const YamlParser &parser)=default;
+  /**Copy assignment operator
+   * */
+   YamlParser &operator=(const YamlParser &parser)=default;
+
   /**Getter for BoxMin for Autopas Object, needed in autopas initialization
    * @return BoxMin
    * */

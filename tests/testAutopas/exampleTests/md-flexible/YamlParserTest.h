@@ -12,11 +12,8 @@
 class YamlParserTest : public AutoPasTestBase {
  public:
   YamlParserTest() : AutoPasTestBase(), parser{YamlParser()} {
-    parser.setFilename(filename);
-    parser.parseYamlFile();
   }
 
  protected:
   YamlParser parser;
-  std::string filename = "testParsing.yaml";
 };

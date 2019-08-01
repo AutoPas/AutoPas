@@ -24,10 +24,7 @@ class GeneratorsTest : public AutoPasTestBase {
         cutoff{1.},
         boxmin{{0., 0., 0.}},
         boxmax{{5., 5., 5.}},
-        parser{YamlParser()},
-        filename{"testParsing.yaml"} {
-    parser.setFilename(filename);
-    parser.parseYamlFile();
+        parser{YamlParser()} {
   }
 
   template <class AutoPasTemplate>
@@ -59,5 +56,4 @@ class GeneratorsTest : public AutoPasTestBase {
   std::array<double, 3> boxmin;
   std::array<double, 3> boxmax;
   YamlParser parser;
-  std::string filename;
 };

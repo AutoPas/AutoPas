@@ -15,8 +15,7 @@ ParticlePropertiesLibrary::ParticlePropertiesLibrary(double &epsilon, double &si
   this->computedMixing24Epsilon.emplace(std::make_pair(0, 0), 24 * epsilon);
   this->computedMixingSigmaSquare.emplace(std::make_pair(0, 0), (sigma * sigma));
 }
-//@todo need to initilized addType with ascending typeId
-//@todo when initializing, and there is only one type -> use appropriate constructor
+
 void ParticlePropertiesLibrary::addType(unsigned long typeID, double epsilon, double sigma, double mass) {
   for (auto e : Epsilon) {
     unsigned long indexOfExistingEpsilon = std::get<0>(e);

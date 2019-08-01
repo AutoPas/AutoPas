@@ -409,12 +409,12 @@ void YamlParser::parseYamlFile() {
                     it->second["velocity"][2].as<double>()},
                    {it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                     it->second["center"][2].as<double>()},
-                    it->second["particle-typeId"].as<unsigned long>(),
+                    it->second["particle-type"].as<unsigned long>(),
                    it->second["particle-epsilon"].as<double>(),
                    it->second["particle-sigma"].as<double>(),
                    it->second["particle-mass"].as<double>());
         CubeGridObjects.emplace_back(C);
-        this->addType(it->second["particle-typeId"].as<unsigned long>(),
+        this->addType(it->second["particle-type"].as<unsigned long>(),
                       it->second["particle-epsilon"].as<double>(),
                       it->second["particle-sigma"].as<double>(),
                       it->second["particle-mass"].as<double>());
@@ -429,12 +429,12 @@ void YamlParser::parseYamlFile() {
                      it->second["velocity"][2].as<double>()},
                     {it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                      it->second["center"][2].as<double>()},
-                    it->second["particle-typeId"].as<unsigned long>(),
+                    it->second["particle-type"].as<unsigned long>(),
                     it->second["particle-epsilon"].as<double>(),
                     it->second["particle-sigma"].as<double>(),
                     it->second["particle-mass"].as<double>());
         CubeGaussObjects.emplace_back(C);
-          this->addType(it->second["particle-typeId"].as<unsigned long>(),
+          this->addType(it->second["particle-type"].as<unsigned long>(),
                         it->second["particle-epsilon"].as<double>(),
                         it->second["particle-sigma"].as<double>(),
                         it->second["particle-mass"].as<double>());
@@ -448,12 +448,12 @@ void YamlParser::parseYamlFile() {
                        it->second["velocity"][2].as<double>()},
                       {it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                        it->second["center"][2].as<double>()},
-                      it->second["particle-typeId"].as<unsigned long>(),
+                      it->second["particle-type"].as<unsigned long>(),
                       it->second["particle-epsilon"].as<double>(),
                       it->second["particle-sigma"].as<double>(),
                       it->second["particle-mass"].as<double>());
         CubeUniformObjects.emplace_back(C);
-          this->addType(it->second["particle-typeId"].as<unsigned long>(),
+          this->addType(it->second["particle-type"].as<unsigned long>(),
                         it->second["particle-epsilon"].as<double>(),
                         it->second["particle-sigma"].as<double>(),
                         it->second["particle-mass"].as<double>());
@@ -465,12 +465,12 @@ void YamlParser::parseYamlFile() {
                  it->second["radius"].as<int>(), it->second["particleSpacing"].as<double>(),
                  {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
                   it->second["velocity"][2].as<double>()},
-                 it->second["particle-typeId"].as<unsigned long>(),
+                 it->second["particle-type"].as<unsigned long>(),
                  it->second["particle-epsilon"].as<double>(),
                  it->second["particle-sigma"].as<double>(),
                  it->second["particle-mass"].as<double>());
         SphereObjects.emplace_back(S);
-          this->addType(it->second["particle-typeId"].as<unsigned long>(),
+          this->addType(it->second["particle-type"].as<unsigned long>(),
                         it->second["particle-epsilon"].as<double>(),
                         it->second["particle-sigma"].as<double>(),
                         it->second["particle-mass"].as<double>());

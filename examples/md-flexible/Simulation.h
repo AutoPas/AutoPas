@@ -24,7 +24,7 @@ template <class Particle, class ParticleCell>
 class Simulation {
  private:
   autopas::AutoPas<Particle, ParticleCell> _autopas;
-  std::unique_ptr<YamlParser> _parser;
+  std::shared_ptr<YamlParser> _parser;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibrary> _PPL;
 
@@ -34,7 +34,7 @@ class Simulation {
   } _timers;
 
  public:
-  explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now(); };
+  explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now();_PPL=std::make_unique<ParticlePropertiesLibrary>();};
 
   ~Simulation() {
     if (not _parser->getLogFileName().empty()) {
@@ -70,6 +70,11 @@ class Simulation {
 
     vtkFile.close();
   }
+   /**Initialized the ParticlePropertiesLibrary for usage in functor
+    * during Simualtion::initialize call
+    * with the parsed values in the yamlParser
+    * */
+  void initializeParticlePropertiesLibrary();
 
   /** @brief This function
    * -initializes the autopas Object with all member speizified in the YamlParser
@@ -98,7 +103,16 @@ class Simulation {
   size_t getNumParticles() { return _autopas.getNumberOfParticles(); }
   /**Prints Statistics(duration of calculation, etc ..) of the Simulation
    * */
+
   void printStatistics();
+    /**Setter for parser Object
+     * @param parser
+     * */
+    void setParser(const YamlParser &parser);
+    /**Getter for ParticlePropertiesLibrary of Simulation
+     * @return unique_prt(ParticlePropertiesLibrary)
+     * */
+    const std::unique_ptr<ParticlePropertiesLibrary> &getPpl() const;
 };
 
 template <class Particle, class ParticleCell>
@@ -106,24 +120,29 @@ autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::ge
   return _autopas.get();
 }
 
+template <typename Particle,typename ParticleCell>
+void Simulation<Particle,ParticleCell>::initializeParticlePropertiesLibrary(){
+    std::map<unsigned long, double> epsilonMap = _parser->getEpsilonMap();
+    std::map<unsigned long, double> sigmaMap = _parser->getSigmaMap();
+    std::map<unsigned long, double> massMap = _parser->getMassMap();
+    if(epsilonMap.empty()){
+        //initializing PPL with default values epsilon=sigma=mass=1.0
+        double epsi=1.0;double sig=1.0;
+        _PPL=std::make_unique<ParticlePropertiesLibrary>(epsi,sig, 1.0);
+    }else if(epsilonMap.size()==1){
+        _PPL=std::make_unique<ParticlePropertiesLibrary>(epsilonMap.at(0), sigmaMap.at(0), massMap.at(0));
+    }else {
+        //all 3 maps are well initialized in parser(parser catches error and throws exception if something is going wrong)
+        for (auto eps : epsilonMap) {
+            _PPL->addType(eps.first, eps.second, sigmaMap.at(eps.first), massMap.at(eps.first));
+        }
+    }
+}
+
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
-  _parser = std::make_unique<YamlParser>(parser);
-  std::map<unsigned long, double> epsilonMap = _parser->getEpsilonMap();
-  std::map<unsigned long, double> sigmaMap = _parser->getSigmaMap();
-  std::map<unsigned long, double> massMap = _parser->getMassMap();
-  if(epsilonMap.empty()){
-      //initializing PPL with default values epsilon=sigma=mass=1.0
-      double epsi=1.0;double sig=1.0;
-      _PPL=std::make_unique<ParticlePropertiesLibrary>(epsi,sig, 1.0);
-  }else if(epsilonMap.size()==1){
-      _PPL=std::make_unique<ParticlePropertiesLibrary>(epsilonMap.at(0), sigmaMap.at(0), massMap.at(0));
-  }else {
-      //all 3 maps are well initialized in parser(parser catches error and throws exception if something is going wrong)
-      for (auto eps : epsilonMap) {
-          _PPL->addType(eps.first, eps.second, sigmaMap.at(eps.first), massMap.at(eps.first));
-      }
-  }
+  _parser = std::make_shared<YamlParser>(parser);
+  initializeParticlePropertiesLibrary();
   auto logFileName(_parser->getLogFileName());
   auto verletRebuildFrequency(_parser->getVerletRebuildFrequency());
   auto logLevel(_parser->getLogLevel());
@@ -299,4 +318,14 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationSimulateSec << endl;
     cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
   }
+}
+
+template<class Particle, class ParticleCell>
+void Simulation<Particle, ParticleCell>::setParser(const YamlParser &parser) {
+    _parser= std::make_shared<YamlParser>(parser);
+}
+
+template<class Particle, class ParticleCell>
+const std::unique_ptr<ParticlePropertiesLibrary> &Simulation<Particle, ParticleCell>::getPpl() const {
+    return _PPL;
 }
