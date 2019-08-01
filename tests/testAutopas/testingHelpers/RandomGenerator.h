@@ -33,8 +33,10 @@ class RandomGenerator {
 
   /**
    * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
-   * ascending particle ids will be initialized with id=0 and type=0, if needed otherwise: use other function with id parameter to be more precise
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle(). (Particle musst inherite of MoleculeLJ)
+   * ascending particle ids will be initialized with id=0 and type=0, if needed otherwise: use other function with id
+   * parameter to be more precise
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle(). (Particle musst
+   * inherite of MoleculeLJ)
    * @tparam Particle Type of the default particle.
    * @param container
    * @param defaultParticle
@@ -59,11 +61,11 @@ class RandomGenerator {
    * @param numParticles number of particles
    */
   template <class Container, class Particle>
-  static void fillWithParticles(Container &container,size_t typeId,size_t id,const Particle &defaultParticle,
+  static void fillWithParticles(Container &container, size_t typeId, size_t id, const Particle &defaultParticle,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                 unsigned long numParticles = 100ul);
 
-    /**
+  /**
    * Fills the given container with randomly distributed particles between boxMin and boxMax.
    * @tparam Container
    * @tparam Particle Type of particle to be generated
@@ -73,11 +75,10 @@ class RandomGenerator {
    * @param boxMax max. position
    * @param numParticles number of particles
    */
-    template <class Container, class Particle>
-    static void fillWithParticles(Container &container, const Particle &defaultParticle,
-                                  const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                  unsigned long numParticles = 100ul);
-
+  template <class Container, class Particle>
+  static void fillWithParticles(Container &container, const Particle &defaultParticle,
+                                const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                                unsigned long numParticles = 100ul);
 
   /**
    * Fills only a given part of a container (also AutoPas object) with randomly uniformly distributed particles.
@@ -101,7 +102,7 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
 }
 
 template <class Container, class Particle>
-void RandomGenerator::fillWithParticles(Container &container,size_t typeId,size_t id, const Particle &defaultParticle,
+void RandomGenerator::fillWithParticles(Container &container, size_t typeId, size_t id, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                         unsigned long numParticles) {
   srand(42);  // fixed seedpoint
@@ -120,14 +121,14 @@ template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                         unsigned long numParticles) {
-    srand(42);  // fixed seedpoint
+  srand(42);  // fixed seedpoint
 
-    for (unsigned long i = 0; i < numParticles; ++i) {
-        Particle particle(defaultParticle);
-        particle.setR(randomPosition(boxMin, boxMax));
-        particle.setID(i);
-        container.addParticle(particle);
-    }
+  for (unsigned long i = 0; i < numParticles; ++i) {
+    Particle particle(defaultParticle);
+    particle.setR(randomPosition(boxMin, boxMax));
+    particle.setID(i);
+    container.addParticle(particle);
+  }
 }
 
 template <class Container, class Particle>

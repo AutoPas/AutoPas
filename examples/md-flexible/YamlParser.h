@@ -24,10 +24,10 @@ class YamlParser {
   YamlParser() = default;
   /**Copy Contructor
    * */
-  YamlParser(const YamlParser &parser)=default;
+  YamlParser(const YamlParser &parser) = default;
   /**Copy assignment operator
    * */
-   YamlParser &operator=(const YamlParser &parser)=default;
+  YamlParser &operator=(const YamlParser &parser) = default;
 
   /**Getter for BoxMin for Autopas Object, needed in autopas initialization
    * @return BoxMin
@@ -63,7 +63,7 @@ class YamlParser {
 
   /**Set up the data Structure for Particle types with their properties to be read by the Simulation
    * */
-  void addType(unsigned long typeId,double epsilon,double sigma,double mass);
+  void addType(unsigned long typeId, double epsilon, double sigma, double mass);
 
   [[nodiscard]] const std::set<autopas::ContainerOption> &getContainerOptions() const;
 
@@ -119,7 +119,7 @@ class YamlParser {
 
   const std::map<unsigned long, double> &getMassMap() const;
 
-private:
+ private:
  public:
   void setFilename(const std::string &inputFilename);
 
@@ -157,8 +157,8 @@ private:
   std::map<unsigned long, double> sigmaMap;
   std::map<unsigned long, double> massMap;
 
-    // Object Generation:
-  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10, 10, 10}, 1., {0., 0., 0.}, {5., 5., 5.},0,1.0,1.0,1.0)};
+  // Object Generation:
+  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10, 10, 10}, 1., {0., 0., 0.}, {5., 5., 5.}, 0, 1.0, 1.0, 1.0)};
   std::vector<CubeGauss> CubeGaussObjects = {};
   std::vector<CubeUniform> CubeUniformObjects = {};
   std::vector<Sphere> SphereObjects = {};

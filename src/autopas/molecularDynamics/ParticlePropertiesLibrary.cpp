@@ -1,3 +1,9 @@
+/**
+ * @file ParticlePropertiesLibrary.cpp
+ * @author N. Fottner
+ * @date 7/4/19
+ */
+
 #include "ParticlePropertiesLibrary.h"
 
 /** Default constuktor wenn es nur ein Particle Type gibt
@@ -44,13 +50,3 @@ double ParticlePropertiesLibrary::getMass(unsigned long i) { return Mass.at(i); 
 double ParticlePropertiesLibrary::get24Epsilon(unsigned long i) { return 24 * Epsilon.at(i); }
 
 double ParticlePropertiesLibrary::getSigmaSquare(unsigned long i) { return (Sigma.at(i) * Sigma.at(i)); }
-
-double ParticlePropertiesLibrary::mixing24Epsilon(unsigned long i, unsigned long j) {
-  auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-  return computedMixing24Epsilon.at(key);
-}
-
-double ParticlePropertiesLibrary::mixingSigmaSquare(unsigned long i, unsigned long j) {
-  auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-  return computedMixingSigmaSquare.at(key);
-}

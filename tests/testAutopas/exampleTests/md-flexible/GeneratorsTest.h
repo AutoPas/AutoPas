@@ -24,8 +24,7 @@ class GeneratorsTest : public AutoPasTestBase {
         cutoff{1.},
         boxmin{{0., 0., 0.}},
         boxmax{{5., 5., 5.}},
-        parser{YamlParser()} {
-  }
+        parser{YamlParser()} {}
 
   template <class AutoPasTemplate>
   void writeVTKFile(std::string &vtkFilename, size_t numParticles, AutoPasTemplate &autopas) {

@@ -11,18 +11,20 @@
 
 class CubeGrid {
  public:
-    /**constructor for CubeGrid that is created in YamlParser and then included into the Simulation via the Generator class
-     * @param particlesPerDim
-     * @param particleSpacing
-     * @param velocity
-     * @param center
-     * @param typeId
-     * @param epsilon
-     * @param sigma
-     * @param mass
-     * */
+  /**constructor for CubeGrid that is created in YamlParser and then included into the Simulation via the Generator
+   * class
+   * @param particlesPerDim
+   * @param particleSpacing
+   * @param velocity
+   * @param center
+   * @param typeId
+   * @param epsilon
+   * @param sigma
+   * @param mass
+   * */
   CubeGrid(const std::array<size_t, 3> &particlesPerDim, double particleSpacing, const std::array<double, 3> &velocity,
-           const std::array<double, 3> &center,const unsigned long &typeId,const double &epsilon,const double &sigma,const double &mass)
+           const std::array<double, 3> &center, const unsigned long &typeId, const double &epsilon, const double &sigma,
+           const double &mass)
       : particlesPerDim(particlesPerDim),
         particleSpacing(particleSpacing),
         velocity(velocity),
@@ -31,12 +33,11 @@ class CubeGrid {
         typeId(typeId),
         epsilon(epsilon),
         sigma(sigma),
-        mass(mass)
-        {}
+        mass(mass){}
 
-        /**Getter for ParticlesPerDim
-                          * @return particlePerDim
-                          * */
+                /**Getter for ParticlesPerDim
+                 * @return particlePerDim
+                 * */
                 [[nodiscard]] const std::array<size_t, 3> &
             getParticlesPerDim() const {
     return particlesPerDim;
@@ -84,22 +85,23 @@ class CubeGrid {
          << ":  " << (particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]) << endl;
     cout << std::setw(valueOffset) << left << "Initial velocities"
          << ":  " << autopas::ArrayUtils::to_string(velocity) << endl;
-  cout << std::setw(valueOffset) << left << "Particle Properties in Object:" << endl;
-  cout << setw(valueOffset) << left << "Particle TypeId" << ":  " << typeId << endl;
-  cout << setw(valueOffset) << left << "Particles Epsilon" << ":  " << epsilon << endl;
-  cout << setw(valueOffset) << left<< "Particles Sigma"  << ":  " << sigma << endl;
-  cout << setw(valueOffset) << left << "Particles Mass"<< ":  " << mass << endl;
+    cout << std::setw(valueOffset) << left << "Particle Properties in Object:" << endl;
+    cout << setw(valueOffset) << left << "Particle TypeId"
+         << ":  " << typeId << endl;
+    cout << setw(valueOffset) << left << "Particles Epsilon"
+         << ":  " << epsilon << endl;
+    cout << setw(valueOffset) << left << "Particles Sigma"
+         << ":  " << sigma << endl;
+    cout << setw(valueOffset) << left << "Particles Mass"
+         << ":  " << mass << endl;
   }
 
-    /**Getter for typeId of Particles in Objet
-     * @return typeId
-     * */
-    unsigned long getTypeId() const {
-        return typeId;
-    }
+  /**Getter for typeId of Particles in Objet
+   * @return typeId
+   * */
+  unsigned long getTypeId() const { return typeId; }
 
-
-private:
+ private:
   static constexpr size_t valueOffset = 32;
   std::array<size_t, 3> particlesPerDim;
   double particleSpacing;
@@ -114,53 +116,54 @@ private:
 
 class CubeGauss {
  public:
-    /**constructor for CubeGauss that is created in YamlParser and then included into the Simulation via the Generator class
-     * @param numParticles
-     * @param boxLength
-     * @param distributionMean
-     * @param distributionStdDev
-     * @param velocity
-     * @param center
-     * @param typeId
-     * @param epsilon
-     * @param sigma
-     * @param mass
-    * */
+  /**constructor for CubeGauss that is created in YamlParser and then included into the Simulation via the Generator
+   * class
+   * @param numParticles
+   * @param boxLength
+   * @param distributionMean
+   * @param distributionStdDev
+   * @param velocity
+   * @param center
+   * @param typeId
+   * @param epsilon
+   * @param sigma
+   * @param mass
+   * */
   CubeGauss(size_t numParticles, const std::array<double, 3> &boxLength, double distributionMean,
-            double distributionStdDev, const std::array<double, 3> &velocity, const std::array<double, 3> &center,const unsigned long &typeId,const double &epsilon,const double &sigma,const double &mass)
+            double distributionStdDev, const std::array<double, 3> &velocity, const std::array<double, 3> &center,
+            const unsigned long &typeId, const double &epsilon, const double &sigma, const double &mass)
       : numParticles(numParticles),
         boxLength(boxLength),
         distributionMean(distributionMean),
         distributionStdDev(distributionStdDev),
         velocity(velocity),
-        center(center),        typeId(typeId),
+        center(center),
+        typeId(typeId),
         epsilon(epsilon),
         sigma(sigma),
         mass(mass){} /**Getter total number of Particles of Object
-                          * @return numParticles
-                          * */
-    [[nodiscard]] size_t getParticlesTotal() const {
+                      * @return numParticles
+                      * */
+            [[nodiscard]] size_t getParticlesTotal() const {
     return numParticles;
   }
-    /**Getter for typeId of Particles in Objet
-     * @return typeId
-     * */
-    unsigned long getTypeId() const {
-        return typeId;
-    }
+  /**Getter for typeId of Particles in Objet
+   * @return typeId
+   * */
+  unsigned long getTypeId() const { return typeId; }
 
-    /**Getter for distribution mean
-     * @return distributionMean
-     * */
+  /**Getter for distribution mean
+   * @return distributionMean
+   * */
   double getDistributionMean() const { return distributionMean; }
   /**Getter for distributionStdDev
    * @return distributionStdDev
    * */
   [[nodiscard]] double getDistributionStdDev() const { return distributionStdDev; }
-  /**Getter for velocities of the Particles generated
-   * @return velocity
-   * */
-  [[nodiscard]] const std::array<double, 3> &getVelocity() const {
+      /**Getter for velocities of the Particles generated
+       * @return velocity
+       * */
+      [[nodiscard]] const std::array<double, 3> &getVelocity() const {
     return velocity;
   }
   /**Getter for the smallest x,y,z coordinates for Object
@@ -176,8 +179,7 @@ class CubeGauss {
     return {center[0] + 0.5 * boxLength[0], center[1] + 0.5 * boxLength[1], center[2] + 0.5 * boxLength[2]};
   }
 
-
-    /**Prints the Configuration of the current Object
+  /**Prints the Configuration of the current Object
    * */
   void printConfig() {
     using namespace std;
@@ -192,11 +194,16 @@ class CubeGauss {
          << ":  " << autopas::ArrayUtils::to_string(boxLength) << endl;
     cout << std::setw(valueOffset) << left << "Initial velocities"
          << ":  " << autopas::ArrayUtils::to_string(velocity) << endl;
-      cout << std::setw(valueOffset) << left << "Particle Properties in Object:" << endl;
-      cout << setw(valueOffset) << left << "Particle TypeId" << ":  " << typeId << endl;
-      cout << setw(valueOffset) << left << "Particles Epsilon" << ":  " << epsilon << endl;
-      cout << setw(valueOffset) << left<< "Particles Sigma"  << ":  " << sigma << endl;
-      cout << setw(valueOffset) << left << "Particles Mass"<< ":  " << mass << endl<< endl;
+    cout << std::setw(valueOffset) << left << "Particle Properties in Object:" << endl;
+    cout << setw(valueOffset) << left << "Particle TypeId"
+         << ":  " << typeId << endl;
+    cout << setw(valueOffset) << left << "Particles Epsilon"
+         << ":  " << epsilon << endl;
+    cout << setw(valueOffset) << left << "Particles Sigma"
+         << ":  " << sigma << endl;
+    cout << setw(valueOffset) << left << "Particles Mass"
+         << ":  " << mass << endl
+         << endl;
   }
 
  private:
@@ -207,29 +214,32 @@ class CubeGauss {
   double distributionStdDev;
   std::array<double, 3> velocity;
   std::array<double, 3> center;
-    unsigned long typeId;
-    double epsilon;
-    double sigma;
-    double mass;
+  unsigned long typeId;
+  double epsilon;
+  double sigma;
+  double mass;
 };
 
 class CubeUniform {
  public:
-    /**constructor for CubeUniform that is created in YamlParser and then included into the Simulation via the Generator class
-     * @param numParticles
-     * @param boxLength
-     * @param velocity
-     * @param center
-     * @param typeId
-     * @param epsilon
-     * @param sigma
-     * @param mass*/
+  /**constructor for CubeUniform that is created in YamlParser and then included into the Simulation via the Generator
+   * class
+   * @param numParticles
+   * @param boxLength
+   * @param velocity
+   * @param center
+   * @param typeId
+   * @param epsilon
+   * @param sigma
+   * @param mass*/
   CubeUniform(size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &velocity,
-              const std::array<double, 3> &center,const unsigned long &typeId,const double &epsilon,const double &sigma,const double &mass)
+              const std::array<double, 3> &center, const unsigned long &typeId, const double &epsilon,
+              const double &sigma, const double &mass)
       : numParticles(numParticles),
         boxLength(boxLength),
         velocity(velocity),
-        center(center),        typeId(typeId),
+        center(center),
+        typeId(typeId),
         epsilon(epsilon),
         sigma(sigma),
         mass(mass){}
@@ -254,14 +264,12 @@ class CubeUniform {
   std::array<double, 3> getBoxMax() {
     return {center[0] + 0.5 * boxLength[0], center[1] + 0.5 * boxLength[1], center[2] + 0.5 * boxLength[2]};
   }
-    /**Getter for typeId of Particles in Objet
+  /**Getter for typeId of Particles in Objet
    * @return typeId
    * */
-    unsigned long getTypeId() const {
-        return typeId;
-    }
+  unsigned long getTypeId() const { return typeId; }
 
-    /**Prints the Configuration of the current Object
+  /**Prints the Configuration of the current Object
    * */
   void printConfig() {
     using namespace std;
@@ -272,13 +280,18 @@ class CubeUniform {
          << ":  " << numParticles << endl;
     cout << std::setw(valueOffset) << left << "BoxLength"
          << ":  " << autopas::ArrayUtils::to_string(boxLength) << endl;
-      cout << std::setw(valueOffset) << left << "Initial velocities"
-           << ":  " << autopas::ArrayUtils::to_string(velocity) << endl;
-      cout << std::setw(valueOffset) << left << "Particle Properties in Object:" << endl;
-      cout << setw(valueOffset) << left << "Particle TypeId" << ":  " << typeId << endl;
-      cout << setw(valueOffset) << left << "Particles Epsilon" << ":  " << epsilon << endl;
-      cout << setw(valueOffset) << left<< "Particles Sigma"  << ":  " << sigma << endl;
-      cout << setw(valueOffset) << left << "Particles Mass"<< ":  " << mass << endl<< endl;
+    cout << std::setw(valueOffset) << left << "Initial velocities"
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl;
+    cout << std::setw(valueOffset) << left << "Particle Properties in Object:" << endl;
+    cout << setw(valueOffset) << left << "Particle TypeId"
+         << ":  " << typeId << endl;
+    cout << setw(valueOffset) << left << "Particles Epsilon"
+         << ":  " << epsilon << endl;
+    cout << setw(valueOffset) << left << "Particles Sigma"
+         << ":  " << sigma << endl;
+    cout << setw(valueOffset) << left << "Particles Mass"
+         << ":  " << mass << endl
+         << endl;
   }
 
  private:
@@ -287,33 +300,34 @@ class CubeUniform {
   std::array<double, 3> boxLength;
   std::array<double, 3> velocity;
   std::array<double, 3> center;
-    unsigned long typeId;
-    double epsilon;
-    double sigma;
-    double mass;
+  unsigned long typeId;
+  double epsilon;
+  double sigma;
+  double mass;
 };
 class Sphere {
  public:
-    /**constructor for Sphere that is created in YamlParser and then included into the Simulation via the Generator class
-     * @param center
-     * @param radius
-     * @param particleSpacing
-     * @param velocity
-     * @param typeId
-     * @param epsilon
-     * @param sigma
-     * @param mass*/
-  Sphere(const std::array<double, 3> &center, int radius, double particleSpacing,
-         const std::array<double, 3> &velocity,const unsigned long &typeId,const double &epsilon,const double &sigma,const double &mass)
+  /**constructor for Sphere that is created in YamlParser and then included into the Simulation via the Generator class
+   * @param center
+   * @param radius
+   * @param particleSpacing
+   * @param velocity
+   * @param typeId
+   * @param epsilon
+   * @param sigma
+   * @param mass*/
+  Sphere(const std::array<double, 3> &center, int radius, double particleSpacing, const std::array<double, 3> &velocity,
+         const unsigned long &typeId, const double &epsilon, const double &sigma, const double &mass)
       : center(center),
         radius(radius),
         particleSpacing(particleSpacing),
-        velocity(velocity),        typeId(typeId),
+        velocity(velocity),
+        typeId(typeId),
         epsilon(epsilon),
         sigma(sigma),
         mass(mass){} /**Getter for center of Sphere
-                              * @return center
-                              * */
+                      * @return center
+                      * */
                 [[nodiscard]] const std::array<double, 3> &
             getCenter() const {
     return center;
@@ -328,23 +342,19 @@ class Sphere {
       [[nodiscard]] double getParticleSpacing() const {
     return particleSpacing;
   }
-    /**Getter for typeId of Particles in Objet
+  /**Getter for typeId of Particles in Objet
    * @return typeId
    * */
-    unsigned long getTypeId() const {
-        return typeId;
-    }
-      /**Getter for initial velocity of Particles
-       * @return velocity
-       * */
-      [[nodiscard]] const std::array<double, 3> &getVelocity() const {
-    return velocity;
-  }
+  unsigned long getTypeId() const { return typeId; }
+  /**Getter for initial velocity of Particles
+   * @return velocity
+   * */
+  [[nodiscard]] const std::array<double, 3> &getVelocity() const { return velocity; }
   /**Returns the number of particles that will be generated for this Object
    * @return totalNumberOfParticles
    * */
   int getParticlesTotal() {
-      //this should look different if the generator for spheres changes
+    // this should look different if the generator for spheres changes
     int counter = 0;
     for (int z = 0; z <= radius; ++z) {
       for (int y = 0; y <= radius; ++y) {
@@ -398,13 +408,18 @@ class Sphere {
          << ":  " << particleSpacing << endl;
     cout << std::setw(valueOffset) << left << "NumberOfParticles"
          << ":  " << this->getParticlesTotal() << endl;
-      cout << std::setw(valueOffset) << left << "Initial velocities"
-           << ":  " << autopas::ArrayUtils::to_string(velocity) << endl;
-      cout << std::setw(valueOffset) << left << "Particle Properties in Object:" << endl;
-      cout << setw(valueOffset) << left << "Particle TypeId" << ":  " << typeId << endl;
-      cout << setw(valueOffset) << left << "Particles Epsilon" << ":  " << epsilon << endl;
-      cout << setw(valueOffset) << left<< "Particles Sigma"  << ":  " << sigma << endl;
-      cout << setw(valueOffset) << left << "Particles Mass"<< ":  " << mass << endl<< endl;
+    cout << std::setw(valueOffset) << left << "Initial velocities"
+         << ":  " << autopas::ArrayUtils::to_string(velocity) << endl;
+    cout << std::setw(valueOffset) << left << "Particle Properties in Object:" << endl;
+    cout << setw(valueOffset) << left << "Particle TypeId"
+         << ":  " << typeId << endl;
+    cout << setw(valueOffset) << left << "Particles Epsilon"
+         << ":  " << epsilon << endl;
+    cout << setw(valueOffset) << left << "Particles Sigma"
+         << ":  " << sigma << endl;
+    cout << setw(valueOffset) << left << "Particles Mass"
+         << ":  " << mass << endl
+         << endl;
   }
 
  private:
@@ -413,8 +428,8 @@ class Sphere {
   int radius;
   double particleSpacing;
   std::array<double, 3> velocity;
-    unsigned long typeId;
-    double epsilon;
-    double sigma;
-    double mass;
+  unsigned long typeId;
+  double epsilon;
+  double sigma;
+  double mass;
 };

@@ -32,7 +32,7 @@ class GridGenerator {
                                 const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
                                 const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
 
-    /**
+  /**
    * Fills any container (also AutoPas object) with a cuboid mesh of particles.
    *
    * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
@@ -43,11 +43,11 @@ class GridGenerator {
    * @param spacing Factor for distance between two particles along one dimension (default is 1).
    * @param offset Offset to move all particles.
    */
-    template <class Container, class Particle>
-    static void fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
-                                  const Particle &defaultParticle = autopas::Particle(),
-                                  const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
-                                  const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
+  template <class Container, class Particle>
+  static void fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
+                                const Particle &defaultParticle = autopas::Particle(),
+                                const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
+                                const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
 
   /**
    * Fills any container (also AutoPas object) with a cuboid mesh of particles.
@@ -65,7 +65,8 @@ class GridGenerator {
    * @param velocity, to initilize velocities of all Particles created
    */
   template <class Container, class Particle>
-  static void fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim, unsigned long typeId,size_t id,
+  static void fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
+                                unsigned long typeId, size_t id,
                                 const Particle &defaultParticle = autopas::MoleculeLJ<>(),
                                 const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
                                 const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
@@ -90,9 +91,9 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const st
 }
 
 template <class Container, class Particle>
-void GridGenerator::fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim, unsigned long typeId,size_t id,
-                                      const Particle &defaultParticle, const std::array<double, 3> &spacing,
-                                      const std::array<double, 3> &offset) {
+void GridGenerator::fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
+                                      unsigned long typeId, size_t id, const Particle &defaultParticle,
+                                      const std::array<double, 3> &spacing, const std::array<double, 3> &offset) {
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
@@ -111,15 +112,15 @@ template <class Container, class Particle>
 void GridGenerator::fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
                                       const Particle &defaultParticle, const std::array<double, 3> &spacing,
                                       const std::array<double, 3> &offset) {
-    size_t id = 0;
-    for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
-        for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
-            for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-                Particle p(defaultParticle);
-                p.setR({x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]});
-                p.setID(id++);
-                container.addParticle(p);
-            }
-        }
+  size_t id = 0;
+  for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
+    for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
+      for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
+        Particle p(defaultParticle);
+        p.setR({x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]});
+        p.setID(id++);
+        container.addParticle(p);
+      }
     }
+  }
 }

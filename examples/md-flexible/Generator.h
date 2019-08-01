@@ -29,9 +29,9 @@ class Generator {
    * @param particleSpacing
    * */
   template <class Particle, class ParticleCell>
-  static void CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,size_t typeId,size_t id, const std::array<double, 3> &BoxMin,
-                       std::array<size_t, 3> particlesPerDim, double particleSpacing,
-                       const std::array<double, 3> &velocity);
+  static void CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
+                       const std::array<double, 3> &BoxMin, std::array<size_t, 3> particlesPerDim,
+                       double particleSpacing, const std::array<double, 3> &velocity);
 
   /**Fills Autopas Object with Particles with Gauss distribution
    * @param autopas
@@ -41,9 +41,9 @@ class Generator {
    * @param distributionStdDev
    * */
   template <class Particle, class ParticleCell>
-  static void CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,size_t typeId,size_t id, const std::array<double, 3> &BoxMin,
-                        const std::array<double, 3> &BoxMax, size_t numParticles, double distributionMean,
-                        double distributionStdDev, const std::array<double, 3> &velocity);
+  static void CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
+                        const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax, size_t numParticles,
+                        double distributionMean, double distributionStdDev, const std::array<double, 3> &velocity);
 
   /**Fills Autopas Object randomly with Particles
    * @param autopas
@@ -51,8 +51,8 @@ class Generator {
    * @param numParticles
    * */
   template <class Particle, class ParticleCell>
-  static void CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas,size_t typeId,size_t id, const std::array<double, 3> &BoxMin,
-                         const std::array<double, 3> &BoxMax, size_t numParticles,
+  static void CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
+                         const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax, size_t numParticles,
                          const std::array<double, 3> &velocity);
 
   /**Generates a Sphere with @param radius number of Particles with initial @param velocity
@@ -65,41 +65,43 @@ class Generator {
    * */
   template <class Particle, class ParticleCell>
   static void Sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const std::array<double, 3> &center, int radius,
-                     double particleSpacing, unsigned long id, unsigned long typeId,const std::array<double, 3> &velocity = {0., 0., 0.});
+                     double particleSpacing, unsigned long id, unsigned long typeId,
+                     const std::array<double, 3> &velocity = {0., 0., 0.});
 };
 
 template <class Particle, class ParticleCell>
-void Generator::CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas,size_t typeId,size_t id, const std::array<double, 3> &BoxMin,
-                         std::array<size_t, 3> particlesPerDim, double particleSpacing,
-                         const std::array<double, 3> &velocity) {
+void Generator::CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
+                         const std::array<double, 3> &BoxMin, std::array<size_t, 3> particlesPerDim,
+                         double particleSpacing, const std::array<double, 3> &velocity) {
   Particle dummyParticle;
   dummyParticle.setV(velocity);
-  GridGenerator::fillWithParticles(autopas, particlesPerDim,typeId,id, dummyParticle,
+  GridGenerator::fillWithParticles(autopas, particlesPerDim, typeId, id, dummyParticle,
                                    {particleSpacing, particleSpacing, particleSpacing}, BoxMin);
 }
 
 template <class Particle, class ParticleCell>
-void Generator::CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas,size_t typeId,size_t id, const std::array<double, 3> &BoxMin,
-                          const std::array<double, 3> &BoxMax, size_t numParticles, double distributionMean,
-                          double distributionStdDev, const std::array<double, 3> &velocity) {
+void Generator::CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
+                          const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax, size_t numParticles,
+                          double distributionMean, double distributionStdDev, const std::array<double, 3> &velocity) {
   Particle dummyParticle;
 
-  GaussianGenerator::fillWithParticles(autopas,typeId,id, BoxMin, BoxMax, numParticles, dummyParticle, distributionMean,
-                                       distributionStdDev);
+  GaussianGenerator::fillWithParticles(autopas, typeId, id, BoxMin, BoxMax, numParticles, dummyParticle,
+                                       distributionMean, distributionStdDev);
 }
 
 template <class Particle, class ParticleCell>
-void Generator::CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas,size_t typeId,size_t id, const std::array<double, 3> &BoxMin,
-                           const std::array<double, 3> &BoxMax, size_t numParticles,
-                           const std::array<double, 3> &velocity) {
+void Generator::CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
+                           const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax,
+                           size_t numParticles, const std::array<double, 3> &velocity) {
   Particle dummyParticle;
-    dummyParticle.setV(velocity);
-    RandomGenerator::fillWithParticles(autopas,typeId,id, dummyParticle, BoxMin, BoxMax, numParticles);
+  dummyParticle.setV(velocity);
+  RandomGenerator::fillWithParticles(autopas, typeId, id, dummyParticle, BoxMin, BoxMax, numParticles);
 }
 
 template <class Particle, class ParticleCell>
 void Generator::Sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const std::array<double, 3> &center,
-                       int radius, double particleSpacing, unsigned long id,unsigned long typeId, const std::array<double, 3> &velocity) {
+                       int radius, double particleSpacing, unsigned long id, unsigned long typeId,
+                       const std::array<double, 3> &velocity) {
   for (int z = 0; z <= radius; ++z) {      // generate circles along the z-axis; uses symmetry of sphere
     for (int y = 0; y <= radius; ++y) {    // generate lines among the y-axis
       for (int x = 0; x <= radius; ++x) {  // generate particles among the x-axis

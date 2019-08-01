@@ -34,7 +34,10 @@ class Simulation {
   } _timers;
 
  public:
-  explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now();_PPL=std::make_unique<ParticlePropertiesLibrary>();};
+  explicit Simulation() {
+    _timers.startTotal = std::chrono::high_resolution_clock::now();
+    _PPL = std::make_unique<ParticlePropertiesLibrary>();
+  };
 
   ~Simulation() {
     if (not _parser->getLogFileName().empty()) {
@@ -70,17 +73,17 @@ class Simulation {
 
     vtkFile.close();
   }
-   /**Initialized the ParticlePropertiesLibrary for usage in functor
-    * during Simualtion::initialize call
-    * with the parsed values in the yamlParser
-    * */
+  /**Initialized the ParticlePropertiesLibrary for usage in functor
+   * during Simualtion::initialize call
+   * with the parsed values in the yamlParser
+   * */
   void initializeParticlePropertiesLibrary();
 
   /** @brief This function
    * -initializes the autopas Object with all member speizified in the YamlParser
    * -initializes the simulation domain with the Object Generators
    */
-  void initialize(YamlParser parser);
+  void initialize(std::shared_ptr<YamlParser> parser);
 
   /**Does the ForceCalculation with the LJFunctor
    * */
@@ -88,8 +91,8 @@ class Simulation {
 
   /**
    * This function processes the main simulation loop
-   * -Calls the TimeDiscretization class and Force Calculations(CalcF) to proceed the discretization
-   * -Creates an VTK Output for each TimeStep
+   * -calls the time discretization class(calculate fores, etc ...)
+   * -do the output each timestep
    * -collects the duration of every Calculation(Position,Force,Velocity)
    */
   void simulate();
@@ -105,14 +108,14 @@ class Simulation {
    * */
 
   void printStatistics();
-    /**Setter for parser Object
-     * @param parser
-     * */
-    void setParser(const YamlParser &parser);
-    /**Getter for ParticlePropertiesLibrary of Simulation
-     * @return unique_prt(ParticlePropertiesLibrary)
-     * */
-    const std::unique_ptr<ParticlePropertiesLibrary> &getPpl() const;
+  /**Setter for parser Object
+   * @param parser
+   * */
+  void setParser(const YamlParser &parser);
+  /**Getter for ParticlePropertiesLibrary of Simulation
+   * @return unique_prt(ParticlePropertiesLibrary)
+   * */
+  const std::unique_ptr<ParticlePropertiesLibrary> &getPpl() const;
 };
 
 template <class Particle, class ParticleCell>
@@ -120,28 +123,30 @@ autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::ge
   return _autopas.get();
 }
 
-template <typename Particle,typename ParticleCell>
-void Simulation<Particle,ParticleCell>::initializeParticlePropertiesLibrary(){
-    std::map<unsigned long, double> epsilonMap = _parser->getEpsilonMap();
-    std::map<unsigned long, double> sigmaMap = _parser->getSigmaMap();
-    std::map<unsigned long, double> massMap = _parser->getMassMap();
-    if(epsilonMap.empty()){
-        //initializing PPL with default values epsilon=sigma=mass=1.0
-        double epsi=1.0;double sig=1.0;
-        _PPL=std::make_unique<ParticlePropertiesLibrary>(epsi,sig, 1.0);
-    }else if(epsilonMap.size()==1){
-        _PPL=std::make_unique<ParticlePropertiesLibrary>(epsilonMap.at(0), sigmaMap.at(0), massMap.at(0));
-    }else {
-        //all 3 maps are well initialized in parser(parser catches error and throws exception if something is going wrong)
-        for (auto eps : epsilonMap) {
-            _PPL->addType(eps.first, eps.second, sigmaMap.at(eps.first), massMap.at(eps.first));
-        }
+template <typename Particle, typename ParticleCell>
+void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
+  std::map<unsigned long, double> epsilonMap = _parser->getEpsilonMap();
+  std::map<unsigned long, double> sigmaMap = _parser->getSigmaMap();
+  std::map<unsigned long, double> massMap = _parser->getMassMap();
+  if (epsilonMap.empty()) {
+    // initializing PPL with default values epsilon=sigma=mass=1.0
+    double epsi = 1.0;
+    double sig = 1.0;
+    _PPL = std::make_unique<ParticlePropertiesLibrary>(epsi, sig, 1.0);
+  } else if (epsilonMap.size() == 1) {
+    _PPL = std::make_unique<ParticlePropertiesLibrary>(epsilonMap.at(0), sigmaMap.at(0), massMap.at(0));
+  } else {
+    // all 3 maps are well initialized in parser(parser catches error and throws exception if something is going wrong)
+    for (auto eps : epsilonMap) {
+      _PPL->addType(eps.first, eps.second, sigmaMap.at(eps.first), massMap.at(eps.first));
     }
+  }
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
-  _parser = std::make_shared<YamlParser>(parser);
+void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<YamlParser> parser) {
+  //  _parser = std::make_shared<YamlParser>(parser);
+  _parser = parser;
   initializeParticlePropertiesLibrary();
   auto logFileName(_parser->getLogFileName());
   auto verletRebuildFrequency(_parser->getVerletRebuildFrequency());
@@ -157,10 +162,10 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
   auto tuningInterval(_parser->getTuningInterval());
   auto tuningSamples(_parser->getTuningSamples());
   auto verletSkinRadius(_parser->getVerletSkinRadius());
-    auto CubeGrid(_parser->getCubeGrid());
-    auto CubeGauss(_parser->getCubeGauss());
-    auto CubeUniform(_parser->getCubeUniform());
-    auto Sphere(_parser->getSphere());
+  auto CubeGrid(_parser->getCubeGrid());
+  auto CubeGauss(_parser->getCubeGauss());
+  auto CubeUniform(_parser->getCubeUniform());
+  auto Sphere(_parser->getSphere());
   // select either std::out or a logfile for autopas log output.
   // This does not affect md-flex output.
   std::streambuf *streamBuf;
@@ -171,7 +176,6 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
     streamBuf = _logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
-
   _autopas.setCutoff(cutoff);
   _autopas.setVerletSkin(verletSkinRadius);
   _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
@@ -188,26 +192,27 @@ void Simulation<Particle, ParticleCell>::initialize(YamlParser parser) {
   _autopas.setBoxMax(_parser->getBoxMax());
   _autopas.setBoxMin(_parser->getBoxMin());
   _autopas.init();
-   size_t idcounter=0;
+  size_t idcounter = 0;
   for (auto C : CubeGrid) {
-    Generator::CubeGrid<Particle, ParticleCell>(_autopas,C.getTypeId(),idcounter, C.getBoxMin(), C.getParticlesPerDim(), C.getParticleSpacing(),
-                                                C.getVelocity());
-    idcounter=+C.getParticlesTotal();
+    Generator::CubeGrid<Particle, ParticleCell>(_autopas, C.getTypeId(), idcounter, C.getBoxMin(),
+                                                C.getParticlesPerDim(), C.getParticleSpacing(), C.getVelocity());
+    idcounter = +C.getParticlesTotal();
   }
   for (auto C : CubeGauss) {
-    Generator::CubeGauss<Particle, ParticleCell>(_autopas,C.getTypeId(),idcounter, C.getBoxMin(), C.getBoxMax(), C.getParticlesTotal(),
-                                                 C.getDistributionMean(), C.getDistributionStdDev(), C.getVelocity());
-      idcounter=+C.getParticlesTotal();
+    Generator::CubeGauss<Particle, ParticleCell>(_autopas, C.getTypeId(), idcounter, C.getBoxMin(), C.getBoxMax(),
+                                                 C.getParticlesTotal(), C.getDistributionMean(),
+                                                 C.getDistributionStdDev(), C.getVelocity());
+    idcounter = +C.getParticlesTotal();
   }
   for (auto C : CubeUniform) {
-    Generator::CubeRandom<Particle, ParticleCell>(_autopas,C.getTypeId(),idcounter, C.getBoxMin(), C.getBoxMax(), C.getParticlesTotal(),
-                                                  C.getVelocity());
-      idcounter=+C.getParticlesTotal();
+    Generator::CubeRandom<Particle, ParticleCell>(_autopas, C.getTypeId(), idcounter, C.getBoxMin(), C.getBoxMax(),
+                                                  C.getParticlesTotal(), C.getVelocity());
+    idcounter = +C.getParticlesTotal();
   }
   for (auto S : Sphere) {
-    Generator::Sphere<Particle, ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), idcounter,S.getTypeId(),
-                                              S.getVelocity());
-      idcounter=+S.getParticlesTotal();
+    Generator::Sphere<Particle, ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), idcounter,
+                                              S.getTypeId(), S.getVelocity());
+    idcounter = +S.getParticlesTotal();
   }
 }
 
@@ -215,7 +220,7 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
-  //actually only acceps MoleculeLJ anymore
+  // actually only acceps MoleculeLJ anymore
   auto functor = autopas::LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PPL, 0.0);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
@@ -264,7 +269,8 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
     }
     case YamlParser::FunctorOption ::lj12_6_AVX: {
       flopsPerKernelCall =
-          autopas::LJFunctorAVX<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+          autopas::LJFunctorAVX<PrintableMolecule,
+                                autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -320,12 +326,12 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   }
 }
 
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::setParser(const YamlParser &parser) {
-    _parser= std::make_shared<YamlParser>(parser);
+  _parser = std::make_shared<YamlParser>(parser);
 }
 
-template<class Particle, class ParticleCell>
+template <class Particle, class ParticleCell>
 const std::unique_ptr<ParticlePropertiesLibrary> &Simulation<Particle, ParticleCell>::getPpl() const {
-    return _PPL;
+  return _PPL;
 }

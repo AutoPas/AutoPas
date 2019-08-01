@@ -23,13 +23,23 @@
 
 int main(int argc, char **argv) {
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
-  YamlParser parser;
-  if (not parser.parseInput(argc, argv)) {
+  auto parser = std::make_shared<YamlParser>();
+  if (not parser->parseInput(argc, argv)) {
     exit(-1);
   }
-  parser.printConfig();
+  auto vtkFilename(parser->getWriteVtk());
+  parser->printConfig();
+  std::cout << std::endl;
+
+  // Initialization
   simulation.initialize(parser);
+  std::cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
+
+  // Simulation
+  std::cout << "Starting simulation... " << std::endl;
   simulation.simulate();
+  std::cout << "Simulation done!" << std::endl;
+
   simulation.printStatistics();
 
   return EXIT_SUCCESS;

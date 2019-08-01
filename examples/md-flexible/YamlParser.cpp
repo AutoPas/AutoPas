@@ -19,6 +19,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
                                          {"newton3", required_argument, nullptr, '3'},
+                                         {"particles-total",required_argument, nullptr,'P'},
                                          {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
@@ -207,6 +208,9 @@ bool YamlParser::parseInput(int argc, char **argv) {
       }
       case 'L': {
         logFileName = strArg;
+        break;
+      }
+      case 'P':{
         break;
       }
       case 'S': {
@@ -409,15 +413,11 @@ void YamlParser::parseYamlFile() {
                     it->second["velocity"][2].as<double>()},
                    {it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                     it->second["center"][2].as<double>()},
-                    it->second["particle-type"].as<unsigned long>(),
-                   it->second["particle-epsilon"].as<double>(),
-                   it->second["particle-sigma"].as<double>(),
-                   it->second["particle-mass"].as<double>());
+                   it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                   it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         CubeGridObjects.emplace_back(C);
-        this->addType(it->second["particle-type"].as<unsigned long>(),
-                      it->second["particle-epsilon"].as<double>(),
-                      it->second["particle-sigma"].as<double>(),
-                      it->second["particle-mass"].as<double>());
+        this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                      it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         continue;
       }
       if (it->first.as<std::string>() == "CubeGauss") {
@@ -429,15 +429,11 @@ void YamlParser::parseYamlFile() {
                      it->second["velocity"][2].as<double>()},
                     {it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                      it->second["center"][2].as<double>()},
-                    it->second["particle-type"].as<unsigned long>(),
-                    it->second["particle-epsilon"].as<double>(),
-                    it->second["particle-sigma"].as<double>(),
-                    it->second["particle-mass"].as<double>());
+                    it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                    it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         CubeGaussObjects.emplace_back(C);
-          this->addType(it->second["particle-type"].as<unsigned long>(),
-                        it->second["particle-epsilon"].as<double>(),
-                        it->second["particle-sigma"].as<double>(),
-                        it->second["particle-mass"].as<double>());
+        this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                      it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         continue;
       }
       if (it->first.as<std::string>() == "CubeUniform") {
@@ -448,15 +444,11 @@ void YamlParser::parseYamlFile() {
                        it->second["velocity"][2].as<double>()},
                       {it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                        it->second["center"][2].as<double>()},
-                      it->second["particle-type"].as<unsigned long>(),
-                      it->second["particle-epsilon"].as<double>(),
-                      it->second["particle-sigma"].as<double>(),
-                      it->second["particle-mass"].as<double>());
+                      it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                      it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         CubeUniformObjects.emplace_back(C);
-          this->addType(it->second["particle-type"].as<unsigned long>(),
-                        it->second["particle-epsilon"].as<double>(),
-                        it->second["particle-sigma"].as<double>(),
-                        it->second["particle-mass"].as<double>());
+        this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                      it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         continue;
       }
       if (it->first.as<std::string>() == "Sphere") {
@@ -465,15 +457,11 @@ void YamlParser::parseYamlFile() {
                  it->second["radius"].as<int>(), it->second["particleSpacing"].as<double>(),
                  {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
                   it->second["velocity"][2].as<double>()},
-                 it->second["particle-type"].as<unsigned long>(),
-                 it->second["particle-epsilon"].as<double>(),
-                 it->second["particle-sigma"].as<double>(),
-                 it->second["particle-mass"].as<double>());
+                 it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                 it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         SphereObjects.emplace_back(S);
-          this->addType(it->second["particle-type"].as<unsigned long>(),
-                        it->second["particle-epsilon"].as<double>(),
-                        it->second["particle-sigma"].as<double>(),
-                        it->second["particle-mass"].as<double>());
+        this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                      it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         continue;
       }
     }
@@ -641,19 +629,19 @@ void YamlParser::calcAutopasBox() {
   }
 }
 
-void YamlParser::addType(unsigned long typeId,double epsilon,double sigma,double mass) {
-//check if type id is already existing and if there no error in input
-    if (epsilonMap.count(typeId) == 1) {
-        if (epsilonMap.at(typeId) == epsilon && sigmaMap.at(typeId)==sigma && massMap.at(typeId)==mass){
-            return; //this Particle type is already included in the maps with all its properties
-        }else{ //wrong initialization:
-            throw std::runtime_error("Wrong Particle initializaition: using same typeId for different properties");
-        }
-    }else{
-        epsilonMap.emplace(typeId,epsilon);
-        sigmaMap.emplace(typeId,sigma);
-        massMap.emplace(typeId,mass);
+void YamlParser::addType(unsigned long typeId, double epsilon, double sigma, double mass) {
+  // check if type id is already existing and if there no error in input
+  if (epsilonMap.count(typeId) == 1) {
+    if (epsilonMap.at(typeId) == epsilon && sigmaMap.at(typeId) == sigma && massMap.at(typeId) == mass) {
+      return;  // this Particle type is already included in the maps with all its properties
+    } else {   // wrong initialization:
+      throw std::runtime_error("Wrong Particle initializaition: using same typeId for different properties");
     }
+  } else {
+    epsilonMap.emplace(typeId, epsilon);
+    sigmaMap.emplace(typeId, sigma);
+    massMap.emplace(typeId, mass);
+  }
 }
 
 const std::set<autopas::ContainerOption> &YamlParser::getContainerOptions() const { return containerOptions; }
@@ -710,14 +698,8 @@ const std::array<double, 3> &YamlParser::getBoxMax() const { return BoxMax; }
 
 void YamlParser::setFilename(const std::string &inputFilename) { this->filename = inputFilename; }
 
-const std::map<unsigned long, double> &YamlParser::getEpsilonMap() const {
-    return epsilonMap;
-}
+const std::map<unsigned long, double> &YamlParser::getEpsilonMap() const { return epsilonMap; }
 
-const std::map<unsigned long, double> &YamlParser::getSigmaMap() const {
-    return sigmaMap;
-}
+const std::map<unsigned long, double> &YamlParser::getSigmaMap() const { return sigmaMap; }
 
-const std::map<unsigned long, double> &YamlParser::getMassMap() const {
-    return massMap;
-}
+const std::map<unsigned long, double> &YamlParser::getMassMap() const { return massMap; }
