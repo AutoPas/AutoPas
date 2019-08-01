@@ -64,7 +64,7 @@ class LJFunctor
                      bool duplicatedCalculation = true)
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
-        _PCLibrary(&PCLibrary),
+        _PPLibrary(&PCLibrary),
         _shift6{shift * (floatPrecision)6.0},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
@@ -81,8 +81,8 @@ class LJFunctor
       _aosThreadData.resize(autopas_get_max_threads());
     }
 #if defined(AUTOPAS_CUDA)
-    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _PCLibrary->get24Epsilon(0) /* epsilon24 */,
-                                                 _PCLibrary->getSigmaSquare(0) /* sigmasquare */, _shift6);
+    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _PPLibrary->get24Epsilon(0) /* epsilon24 */,
+                                                 _PPLibrary->getSigmaSquare(0) /* sigmasquare */, _shift6);
     _cudawrapper.loadConstants(&constants);
 #endif
   }
@@ -98,8 +98,8 @@ class LJFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    double _sigmasquare = _PCLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
-    double _epsilon24 = _PCLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+    double _sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
+    double _epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     floatPrecision dr2 = ArrayMath::dot(dr, dr);
 
@@ -189,8 +189,8 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        sigmasquare = (floatPrecision)_PCLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
-        epsilon24 = (floatPrecision)_PCLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
+        sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
+        epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
         const floatPrecision drz = zptr[i] - zptr[j];
@@ -307,8 +307,8 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        sigmasquare = (floatPrecision)_PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
-        epsilon24 = (floatPrecision)_PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+        epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
         const floatPrecision drx = x1ptr[i] - x2ptr[j];
         const floatPrecision dry = y1ptr[i] - y2ptr[j];
         const floatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -720,8 +720,8 @@ class LJFunctor
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
-            sigmasquare = (floatPrecision)_PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
-            epsilon24 = (floatPrecision)_PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
+            sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
+            epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
             // const size_t j = currentList[jNeighIndex];
 
             const floatPrecision drx = xtmp[j] - xArr[j];
@@ -794,8 +794,8 @@ class LJFunctor
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
-        sigmasquare = (floatPrecision)_PCLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
-        epsilon24 = (floatPrecision)_PCLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+        epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
 
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
@@ -905,7 +905,7 @@ class LJFunctor
   // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   floatPrecision _cutoffsquare;
-  ParticlePropertiesLibrary *_PCLibrary;
+  ParticlePropertiesLibrary *_PPLibrary;
   floatPrecision _shift6;
   // sum of the potential energy, only calculated if calculateGlobals is true
   floatPrecision _upotSum;

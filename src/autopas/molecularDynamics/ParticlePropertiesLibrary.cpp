@@ -21,8 +21,6 @@ ParticlePropertiesLibrary::ParticlePropertiesLibrary(double &epsilon, double &si
   this->computedMixing24Epsilon.emplace(std::make_pair(0, 0), 24 * epsilon);
   this->computedMixingSigmaSquare.emplace(std::make_pair(0, 0), (sigma * sigma));
 }
-//@todo need to initilized addType with ascending typeId
-//@todo when initializing, and there is only one type -> use appropriate constructor
 void ParticlePropertiesLibrary::addType(unsigned long typeID, double epsilon, double sigma, double mass) {
   for (auto e : Epsilon) {
     unsigned long indexOfExistingEpsilon = std::get<0>(e);
@@ -51,13 +49,3 @@ double ParticlePropertiesLibrary::getMass(unsigned long i) { return Mass.at(i); 
 double ParticlePropertiesLibrary::get24Epsilon(unsigned long i) { return 24 * Epsilon.at(i); }
 
 double ParticlePropertiesLibrary::getSigmaSquare(unsigned long i) { return (Sigma.at(i) * Sigma.at(i)); }
-
-double ParticlePropertiesLibrary::mixing24Epsilon(unsigned long i, unsigned long j) {
-  auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-  return computedMixing24Epsilon.at(key);
-}
-
-double ParticlePropertiesLibrary::mixingSigmaSquare(unsigned long i, unsigned long j) {
-  auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-  return computedMixingSigmaSquare.at(key);
-}
