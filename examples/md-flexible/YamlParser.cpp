@@ -415,7 +415,7 @@ void YamlParser::parseYamlFile() {
   }
 
   if (config["Objects"]) {
-    CubeGridObjects = {};
+    CubeUniformObjects = {};
     for (YAML::const_iterator it = config["Objects"].begin(); it != config["Objects"].end(); ++it) {
       if (it->first.as<std::string>() == "CubeGrid") {
         CubeGrid C({it->second["particles-per-Dim"][0].as<unsigned long>(),
