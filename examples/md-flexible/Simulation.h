@@ -276,12 +276,11 @@ void Simulation<Particle, ParticleCell>::simulate() {
   // main simulation loop
   while (simTimeNow < simTimeEnd) {
     _timers.durationPositionUpdate += timeDiscretization.VSCalculateX(_autopas);
-
-    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
-      std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
-    }
     this->calculateForces();
+      if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+          std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
+          std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
+      }
     _timers.durationVelocityUpdate += timeDiscretization.VSCalculateV(_autopas);
     simTimeNow += deltaT;
     this->writeVTKFile(simTimeNow / deltaT, _autopas.getNumberOfParticles(), _autopas);
