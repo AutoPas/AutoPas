@@ -5,40 +5,44 @@
 #YamlParser
 Objects:
   CubeGrid:
-    particle-type: 0
-    particle-epsilon: 1.
-    particle-sigma: 1.
-    particle-mass: 1.
-    particles-per-Dim: [10,10,10]
-    particleSpacing: 0.5
-    velocity: [0.,0.,0.]
-    center: [5.,5.,5.]
+    0:
+      particle-type: 0
+      particle-epsilon: 1.
+      particle-sigma: 1.
+      particle-mass: 1.
+      particles-per-Dim: [10,10,10]
+      particleSpacing: 0.5
+      velocity: [0.,0.,0.]
+      center: [5.,5.,5.]
   CubeGauss:
-    particle-type: 1
-    particle-epsilon: 2.
-    particle-sigma: 2.
-    particle-mass: 2.
-    numberOfParticles: 100
-    box-length: [8.,8.,8.]
-    distribution-mean: 2.0
-    distribution-stddev: 5.0
-    velocity: [0.,0.,0.]
-    center: [15.,0.,5.]
+    0:
+      particle-type: 1
+      particle-epsilon: 2.
+      particle-sigma: 2.
+      particle-mass: 2.
+      numberOfParticles: 100
+      box-length: [8.,8.,8.]
+      distribution-mean: 2.0
+      distribution-stddev: 5.0
+      velocity: [0.,0.,0.]
+      center: [15.,0.,5.]
   CubeUniform:
-    particle-type: 2
-    particle-epsilon: 3.
-    particle-sigma: 3.
-    particle-mass: 3.
-    numberOfParticles: 100
-    box-length: [10.,10.,10.]
-    velocity: [0.,0.,0.]
-    center: [0.,0.,-15.]
+    0:
+      particle-type: 2
+      particle-epsilon: 3.
+      particle-sigma: 3.
+      particle-mass: 3.
+      numberOfParticles: 100
+      box-length: [10.,10.,10.]
+      velocity: [0.,0.,0.]
+      center: [0.,0.,-15.]
   Sphere:
-    particle-type: 3
-    particle-epsilon: 4.
-    particle-sigma: 4.
-    particle-mass: 4.
-    center: [5.,-10.,0.]
-    radius: 10
-    particleSpacing: 0.5
-    velocity: [0.,0.,0.]
+    0:
+      particle-type: 3
+      particle-epsilon: 4.
+      particle-sigma: 4.
+      particle-mass: 4.
+      center: [5.,-10.,0.]
+      radius: 10
+      particleSpacing: 0.5
+      velocity: [0.,0.,0.]

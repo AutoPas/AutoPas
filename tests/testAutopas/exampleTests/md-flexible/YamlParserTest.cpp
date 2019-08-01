@@ -32,3 +32,14 @@ TEST_F(YamlParserTest, wrongTypeParsingInput) {
   this->parser.setFilename(file);
   ASSERT_ANY_THROW(this->parser.parseYamlFile());
 }
+
+
+TEST_F(YamlParserTest,multipleSameObjectParsing){
+    std::string file= "multipleSimilarObjects.yaml";
+    parser.setFilename(file);
+    parser.parseYamlFile();
+    ASSERT_EQ(parser.getCubeGrid().size(),2);
+    ASSERT_EQ(parser.getCubeGrid().at(0).getTypeId(),0);
+    ASSERT_EQ(parser.getCubeGrid().at(0).getParticleSpacing(),0.5);
+    ASSERT_EQ(parser.getCubeGrid().at(1).getTypeId(),1);
+}

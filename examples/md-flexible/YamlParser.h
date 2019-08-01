@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <string>
 #include "Objects.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
