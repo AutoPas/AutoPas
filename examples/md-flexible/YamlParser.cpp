@@ -210,9 +210,22 @@ bool YamlParser::parseInput(int argc, char **argv) {
         logFileName = strArg;
         break;
       }
-      case 'P':{
-        break;
-      }
+      case 'P': {
+          //this option is disabled when using yaml parsing file
+          //only relevant for default generation without parsing file
+          if(yamlparsed)
+              break;
+            try {
+                defaultParticlesTotal = stoul(strArg);
+                //deletes the default Uniform Cube with the default particleTotal=1000 and sets the new
+                CubeUniformObjects.clear();
+                CubeUniformObjects.emplace_back(CubeUniform(defaultParticlesTotal,{10.,10.,10.},{0.,0.,0.},{5.,5.,5.},0,1.0,1.0,1.0));
+            } catch (const exception &) {
+                cerr << "Error parsing total number of particles: " << strArg << endl;
+                displayHelp = true;
+            }
+            break;
+        }
       case 'S': {
         try {
           tuningSamples = (unsigned int)stoul(strArg);
