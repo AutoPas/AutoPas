@@ -72,7 +72,7 @@ class ParticlePropertiesLibrary {
    * */
   inline double mixing24Epsilon(unsigned long i, unsigned long j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-    return computedMixing24Epsilon.at(key);
+    return _computedMixing24Epsilon.at(key);
   }
   /**Returns Sigma Square of the MixingRule of 2 Particles precalculated in computedMixingSigmaSquare
    * @param i (typeId index)
@@ -81,13 +81,13 @@ class ParticlePropertiesLibrary {
    * */
   inline double mixingSigmaSquare(unsigned long i, unsigned long j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-    return computedMixingSigmaSquare.at(key);
+    return _computedMixingSigmaSquare.at(key);
   }
 
  private:
-  std::map<unsigned long, double> Epsilon;
-  std::map<unsigned long, double> Sigma;
-  std::map<unsigned long, double> Mass;
-  std::map<std::pair<unsigned long, unsigned long>, double> computedMixing24Epsilon;
-  std::map<std::pair<unsigned long, unsigned long>, double> computedMixingSigmaSquare;
+  std::map<unsigned long, double> _epsilons;
+  std::map<unsigned long, double> _sigmas;
+  std::map<unsigned long, double> _masses;
+  std::map<std::pair<unsigned long, unsigned long>, double> _computedMixing24Epsilon;
+  std::map<std::pair<unsigned long, unsigned long>, double> _computedMixingSigmaSquare;
 };
