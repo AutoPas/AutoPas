@@ -185,12 +185,22 @@ class LJFunctor
       floatPrecision fxacc = 0.;
       floatPrecision fyacc = 0.;
       floatPrecision fzacc = 0.;
+
+      // preload all sigma and epsilons for next vectorized region
+      std::vector<floatPrecision, AlignedAllocator<floatPrecision>> sigmaSquares(soa.getNumParticles());
+      std::vector<floatPrecision, AlignedAllocator<floatPrecision>> epsilon24s(soa.getNumParticles());
+      for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
+        sigmaSquares[j] = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
+        epsilon24s[j] = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
+      }
+
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
-        epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
+        sigmasquare = sigmaSquares[j];
+        epsilon24 = epsilon24s[j];
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
         const floatPrecision drz = zptr[i] - zptr[j];
@@ -303,12 +313,20 @@ class LJFunctor
       floatPrecision fyacc = 0;
       floatPrecision fzacc = 0;
 
+      // preload all sigma and epsilons for next vectorized region
+      std::vector<floatPrecision, AlignedAllocator<floatPrecision>> sigmaSquares(soa2.getNumParticles());
+      std::vector<floatPrecision, AlignedAllocator<floatPrecision>> epsilon24s(soa2.getNumParticles());
+      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+        sigmaSquares[j] = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+        epsilon24s[j] = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+      }
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
-        epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        sigmasquare = sigmaSquares[j];
+        epsilon24 = epsilon24s[j];
         const floatPrecision drx = x1ptr[i] - x2ptr[j];
         const floatPrecision dry = y1ptr[i] - y2ptr[j];
         const floatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -708,6 +726,13 @@ class LJFunctor
           // vecsize particles in the neighborlist of particle i starting at
           // particle joff
 
+          alignas(DEFAULT_CACHE_LINE_SIZE) std::array<floatPrecision, vecsize> sigmaSquares;
+          alignas(DEFAULT_CACHE_LINE_SIZE) std::array<floatPrecision, vecsize> epsilon24s;
+          for (size_t j = 0; j < vecsize; j++) {
+            sigmaSquares[j] = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
+            epsilon24s[j] = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
+          }
+
           // gather position of particle j
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
@@ -720,8 +745,8 @@ class LJFunctor
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
-            sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
-            epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
+            sigmasquare = sigmaSquares[j];
+            epsilon24 = epsilon24s[j];
             // const size_t j = currentList[jNeighIndex];
 
             const floatPrecision drx = xtmp[j] - xArr[j];
