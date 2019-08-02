@@ -13,6 +13,7 @@
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
+#include "BoundaryConditions.h"
 #include "MDFlexParser.h"
 #include "PrintableMolecule.h"
 #include "TimeDiscretization.h"
@@ -272,7 +273,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   double simTimeNow = 0;
   double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
   TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_PCL);
-
+  BoundaryConditions<decltype(_autopas)> BoundaryConditions(_autopas);
   // main simulation loop
   while (simTimeNow < simTimeEnd) {
     _timers.durationPositionUpdate += timeDiscretization.VSCalculateX(_autopas);
