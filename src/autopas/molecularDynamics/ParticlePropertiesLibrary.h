@@ -70,7 +70,7 @@ class ParticlePropertiesLibrary {
    * @param  j (typeId index)
    * @return 24*(epsilonMixingRule)
    * */
-  inline double mixing24Epsilon(unsigned long i, unsigned long j) {
+  inline double mixing24Epsilon(unsigned long i, unsigned long j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
     return computedMixing24Epsilon.at(key);
   }
@@ -79,7 +79,7 @@ class ParticlePropertiesLibrary {
    * @param j (typeId index)
    * @return (sigmaMixingRule)²
    * */
-  inline double mixingSigmaSquare(unsigned long i, unsigned long j) {
+  inline double mixingSigmaSquare(unsigned long i, unsigned long j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
     return computedMixingSigmaSquare.at(key);
   }
