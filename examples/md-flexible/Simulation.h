@@ -13,6 +13,7 @@
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
+#include "BoundaryConditions.h"
 #include "Generator.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "TimeDiscretization.h"
@@ -236,17 +237,17 @@ void Simulation<Particle, ParticleCell>::simulate() {
   double simTimeNow = 0;
   double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
   TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_PPL);
-
+  BoundaryConditions<decltype(_autopas)> BoundaryConditions;
   // main simulation loop
   while (simTimeNow < simTimeEnd) {
-    _timers.durationPositionUpdate += timeDiscretization.VSCalculateX(_autopas);
-
+    BoundaryConditions.applyPeriodic(_autopas);
+    _timers.durationPositionUpdate += timeDiscretization.CalculateX(_autopas);
+    this->calculateForces();
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    this->calculateForces();
-    _timers.durationVelocityUpdate += timeDiscretization.VSCalculateV(_autopas);
+    _timers.durationVelocityUpdate += timeDiscretization.CalculateV(_autopas);
     simTimeNow += deltaT;
     this->writeVTKFile(simTimeNow / deltaT, _autopas.getNumberOfParticles(), _autopas);
   }

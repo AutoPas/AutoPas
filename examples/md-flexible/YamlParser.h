@@ -157,12 +157,13 @@ class YamlParser {
   std::map<unsigned long, double> epsilonMap;
   std::map<unsigned long, double> sigmaMap;
   std::map<unsigned long, double> massMap;
-  //for default generation when no parsing file is specified
-  size_t defaultParticlesTotal=1000;
+  // for default generation when no parsing file is specified
+  size_t defaultParticlesTotal = 1000;
 
   // Object Generation:
-  std::vector<CubeGrid> CubeGridObjects ={};
+  std::vector<CubeGrid> CubeGridObjects = {};
   std::vector<CubeGauss> CubeGaussObjects = {};
-  std::vector<CubeUniform> CubeUniformObjects = {CubeUniform(defaultParticlesTotal,{10.,10.,10.},{0.,0.,0.},{5.,5.,5.},0,1.0,1.0,1.0)};
+  std::vector<CubeUniform> CubeUniformObjects = {
+      CubeUniform(defaultParticlesTotal, {10., 10., 10.}, {0., 0., 0.}, {5., 5., 5.}, 0, 1.0, 1.0, 1.0)};
   std::vector<Sphere> SphereObjects = {};
 };
