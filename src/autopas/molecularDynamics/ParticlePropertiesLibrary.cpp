@@ -47,6 +47,6 @@ ParticlePropertiesLibrary &ParticlePropertiesLibrary::operator=(const ParticlePr
 
 double ParticlePropertiesLibrary::getMass(unsigned long i) { return _masses.at(i); }
 
-double ParticlePropertiesLibrary::get24Epsilon(unsigned long i) { return 24 * _epsilons.at(i); }
+double ParticlePropertiesLibrary::get24Epsilon(unsigned long i) { return _computedMixing24Epsilon[std::make_pair(i,i)]; }
 
-double ParticlePropertiesLibrary::getSigmaSquare(unsigned long i) { return (_sigmas.at(i) * _sigmas.at(i)); }
+double ParticlePropertiesLibrary::getSigmaSquare(unsigned long i) { return _computedMixingSigmaSquare[std::make_pair(i,i)]; }
