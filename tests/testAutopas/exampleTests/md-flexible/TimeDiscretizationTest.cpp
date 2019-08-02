@@ -12,7 +12,7 @@ void TimeDiscretizationTest::globalForceTest(
   double particleD = 0.01;
   TimeDiscretization<decltype(auto1)> td1(particleD, PCL);
   // to compare OldForce entry of auto2 Particles with Force entries of auto1, perform one more iteration on auto2
-  td1.VSCalculateX(auto2);
+    td1.CalculateX(auto2);
   auto2.iteratePairwise(&functor);
   ASSERT_EQ(auto1.getNumberOfParticles(), auto2.getNumberOfParticles());
   for (int i = 0; i < iterations; i++) {
@@ -23,9 +23,9 @@ void TimeDiscretizationTest::globalForceTest(
       ++iter1;
       ++iter2;
     }
-    td1.VSCalculateX(auto1);
+      td1.CalculateX(auto1);
     auto1.iteratePairwise(&functor);
-    td1.VSCalculateX(auto2);
+      td1.CalculateX(auto2);
     auto2.iteratePairwise(&functor);
   }
 }
@@ -69,7 +69,7 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   TimeDiscretization<decltype(autopas)> td1(particleD, PCL);
   // initialize force and oldforce values:
   autopas.iteratePairwise(&functor);
-  td1.VSCalculateX(autopas);
+    td1.CalculateX(autopas);
 
   // comparing Position and Velocities values calculated in TimeDiscretization Class with calculated value using
   // nextPosition and nextVelocity that implement störmer-verlet algorithm
@@ -100,8 +100,8 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
       forces.emplace_back(iter->getF());
       oldforces.emplace_back(iter->getOldf());
     }
-    td1.VSCalculateX(autopas);
-    td1.VSCalculateV(autopas);
+      td1.CalculateX(autopas);
+      td1.CalculateV(autopas);
     ASSERT_EQ(oldPositionValues.size(), autopas.getNumberOfParticles());
     ASSERT_EQ(oldVelocityValues.size(), autopas.getNumberOfParticles());
     ASSERT_EQ(forces.size(), autopas.getNumberOfParticles());

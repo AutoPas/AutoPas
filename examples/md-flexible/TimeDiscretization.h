@@ -19,11 +19,11 @@ class TimeDiscretization {
 
   /**Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    */
-  long VSCalculateX(AutoPasTemplate &autopas);
+  long CalculateX(AutoPasTemplate &autopas);
 
   /**Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    */
-  long VSCalculateV(AutoPasTemplate &autopas);
+  long CalculateV(AutoPasTemplate &autopas);
   /**Getter for particleDeltaT
    * @return particle_delta_t
    * */
@@ -37,7 +37,7 @@ class TimeDiscretization {
 };
 
 template <class AutoPasTemplate>
-long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas) {
+long TimeDiscretization<AutoPasTemplate>::CalculateX(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
@@ -59,7 +59,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas)
 }
 
 template <class AutoPasTemplate>
-long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas) {
+long TimeDiscretization<AutoPasTemplate>::CalculateV(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
