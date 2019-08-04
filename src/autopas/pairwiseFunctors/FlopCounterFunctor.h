@@ -23,18 +23,24 @@ namespace autopas {
  * @tparam ParticleCell
  */
 template <class Particle, class ParticleCell>
-class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
+class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
+                                          FlopCounterFunctor<Particle, ParticleCell>> {
   typedef typename Particle::SoAArraysType SoAArraysType;
 
  public:
   bool isRelevantForTuning() override { return false; }
 
+  bool allowsNewton3() override { return true; }
+
+  bool allowsNonNewton3() override { return true; }
+
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
-      : autopas::Functor<Particle, ParticleCell>(),
+  explicit FlopCounterFunctor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType cutoffRadius)
+      : autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
+                         FlopCounterFunctor<Particle, ParticleCell>>(cutoffRadius),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
@@ -52,7 +58,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     };
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -91,7 +97,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -133,7 +139,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
     }
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa,
+  void SoAFunctor(SoAView<SoAArraysType> soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
     auto numParts = soa.getNumParticles();
@@ -321,29 +327,27 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell> {
 #endif
   }
 
-  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
-                            // body start
-                            soa.resizeArrays(offset + cell.numParticles());
-
-                            if (cell.numParticles() == 0) return;
-
-                            double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-                            double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-                            double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-                            auto cellIter = cell.begin();
-                            // load particles in SoAs
-                            for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-                              xptr[i] = cellIter->getR()[0];
-                              yptr[i] = cellIter->getR()[1];
-                              zptr[i] = cellIter->getR()[2];
-                            })
+  /**
+   * @copydoc Functor::getNeededAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 3>{
+        Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ};
+  }
 
   /**
-   * Empty SoAExtractor.
-   * Nothing to be done yet.
+   * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , )
+  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr(std::false_type) {
+    return getNeededAttr();
+  }
+
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
+  }
 
   /**
    * get the hit rate of the pair-wise interaction, i.e. the ratio of the number

@@ -9,13 +9,13 @@
 TEST_F(C01TraversalAdaptiveTest, testIsApplicable) {
   MFunctor mFunctor;
   {
-    std::unique_ptr<autopas::TraversalSelectorInfoAdaptive<FPCell>> info;
+    std::unique_ptr<autopas::TraversalSelectorInfoAdaptive> info;
     autopas::C01TraversalAdaptive<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> C01TraversalAdaptiveN3On(
         &mFunctor, std::move(info));
     EXPECT_EQ(C01TraversalAdaptiveN3On.isApplicable(), false);
   }
   {
-    std::unique_ptr<autopas::TraversalSelectorInfoAdaptive<FPCell>> info;
+    std::unique_ptr<autopas::TraversalSelectorInfoAdaptive> info;
     autopas::C01TraversalAdaptive<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> C01TraversalAdaptiveN3On(
         &mFunctor, std::move(info));
     EXPECT_EQ(C01TraversalAdaptiveN3On.isApplicable(), true);

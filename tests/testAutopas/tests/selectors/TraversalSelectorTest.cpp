@@ -17,8 +17,8 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   // this should be high enough so that sliced is still valid for the current processors thread count.
   constexpr size_t domainSize = 900;
   {
-    auto traversalSelectorInfo = std::make_unique<autopas::TraversalSelectorInfo<FPCell>>(
-        std::array<size_t, 3>{domainSize, domainSize, domainSize});
+    auto traversalSelectorInfo =
+        std::make_unique<autopas::TraversalSelectorInfo>(std::array<size_t, 3>{domainSize, domainSize, domainSize});
 
     // expect an exception if nothing is selected yet
     EXPECT_THROW((autopas::TraversalSelector<FPCell>::template generateTraversal<MFunctor,
@@ -28,8 +28,8 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   }
 
   for (auto &traversalOption : autopas::allTraversalOptions) {
-    auto traversalSelectorInfo = std::make_unique<autopas::TraversalSelectorInfo<FPCell>>(
-        std::array<size_t, 3>{domainSize, domainSize, domainSize});
+    auto traversalSelectorInfo =
+        std::make_unique<autopas::TraversalSelectorInfo>(std::array<size_t, 3>{domainSize, domainSize, domainSize});
     auto traversal =
         autopas::TraversalSelector<FPCell>::template generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(
             traversalOption, functor, std::move(traversalSelectorInfo));

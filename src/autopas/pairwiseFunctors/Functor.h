@@ -7,10 +7,14 @@
 
 #pragma once
 
+#include "autopas/cells/ParticleCell.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SoA.h"
+#include "autopas/utils/SoAView.h"
+
+#include <type_traits>
+
 #if defined(AUTOPAS_CUDA)
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 #endif
@@ -19,6 +23,31 @@ namespace autopas {
 
 template <class Particle>
 class VerletListHelpers;
+
+namespace internal {
+/**
+ * Dummy class to provide empty arrays.
+ * This class is needed to provide a default argument to the implementation type (Impl_t) template parameter of Functor.
+ * @tparam Particle
+ */
+template <class Particle>
+class Dummy final {
+ public:
+  /**
+   * @copydoc Functor::getNeededAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
+
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
+};
+}  // namespace internal
 
 /**
  * Functor class. This class describes the pairwise interactions between
@@ -30,11 +59,18 @@ class VerletListHelpers;
  * overriding allowsNonNewton3 resp. allowsNewton3
  *
  * @tparam Particle the type of Particle
- * @tparam ParticleCell the type of ParticleCell
+ * @tparam ParticleCell_t the type of ParticleCell
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
+template <class Particle, class ParticleCell_t, class SoAArraysType = typename Particle::SoAArraysType,
+          typename Impl_t = internal::Dummy<Particle>>
 class Functor {
  public:
+  /**
+   * Constructor
+   * @param cutoff
+   */
+  Functor(typename Particle::ParticleFloatingPointType cutoff) : _cutoff(cutoff){};
+
   virtual ~Functor() = default;
 
   /**
@@ -65,6 +101,33 @@ class Functor {
   }
 
   /**
+   * Get attributes needed for computation.
+   * @return Attributes needed for computation.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
+
+  /**
+   * Get attributes needed for computation without N3 optimization.
+   * @return Attributes needed for computation.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
+    return Impl_t::getNeededAttr();
+  }
+
+  /**
+   * Get attributes computed by this functor.
+   * @return Attributes computed by this functor.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
+
+  /**
    * @brief Functor for structure of arrays (SoA)
    *
    * This functor should calculate the forces or any other pair-wise interaction
@@ -74,7 +137,7 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) {
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(one soa): not yet implemented");
   }
 
@@ -97,7 +160,7 @@ class Functor {
    * least iFrom and less than soa.size())
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa,
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa,
                           const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
                           size_t iFrom, size_t iTo, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
@@ -114,7 +177,7 @@ class Functor {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) {
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 
@@ -175,8 +238,8 @@ class Functor {
    * @param offset Offset within the SoA. The data of the cell should be added
    * to the SoA with the specified offset.
    */
-  virtual void SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
-    utils::ExceptionHandler::exception("Functor::SoALoader: not yet implemented");
+  virtual void SoALoader(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getNeededAttr().size()>{});
   }
 
   /**
@@ -187,8 +250,8 @@ class Functor {
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
-    utils::ExceptionHandler::exception("Functor::SoAExtractor: not yet implemented");
+  virtual void SoAExtractor(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+    SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getComputedAttr().size()>{});
   }
 
   /**
@@ -200,7 +263,7 @@ class Functor {
    * @return true if and only if this functor provides an interface to
    * Newton3-like functions.
    */
-  virtual bool allowsNewton3() { return true; }
+  virtual bool allowsNewton3() = 0;
 
   /**
    * Specifies whether the functor is capable of non-Newton3-like functors.
@@ -210,7 +273,7 @@ class Functor {
    * @return true if and only if this functor provides an interface to functions
    * that do not utilize Newton3.
    */
-  virtual bool allowsNonNewton3() { return false; }
+  virtual bool allowsNonNewton3() = 0;
 
   /**
    * Specifies whether the functor should be considered for the auto-tuning process.
@@ -234,50 +297,86 @@ class Functor {
     return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
   }
 #endif
+
+  /**
+   * Getter for the functor's cutoff
+   * @return
+   */
+  typename Particle::ParticleFloatingPointType getCutoff() const { return _cutoff; }
+
+ private:
+  /**
+   * Implements loading of SoA buffers.
+   * @tparam cell_t Cell type.
+   * @tparam I Attribute.
+   * @param cell Cell from where the data is loaded.
+   * @param soa  Structure of arrays where the data is copied to.
+   * @param offset Offset within the SoA. The data of the cell should be added
+   * to the SoA with the specified offset.
+   */
+  template <typename cell_t, std::size_t... I>
+  void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
+    soa.resizeArrays(offset + cell.numParticles());
+
+    if (cell.numParticles() == 0) return;
+
+    /**
+     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * in the following loop.
+     */
+    // maybe_unused necessary because gcc doesnt understand that pointer is used later
+    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::getNeededAttr()[I]>()...);
+
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      /**
+       * The following statement writes the values of all attributes defined in neededAttr into the respective position
+       * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
+       * times over the comma operator. E.g. like this (std::index_sequence<I...> = 0, 1):
+       * ((std::get<0>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[0]>()),
+       * (std::get<1>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[1]>()))
+       */
+      ((std::get<I>(pointer)[i] = cellIter->template get<Impl_t::getNeededAttr()[I]>()), ...);
+    }
+  }
+
+  /**
+   * Implements extraction of SoA buffers.
+   * @tparam cell_t Cell type.
+   * @tparam I Attribute.
+   * @param cell Cell.
+   * @param soa SoA buffer.
+   * @param offset Offset
+   */
+  template <typename cell_t, std::size_t... I>
+  void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
+    if (cell.numParticles() == 0) return;
+
+    /**
+     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * in the following loop.
+     */
+    // maybe_unused necessary because gcc doesnt understand that pointer is used later
+    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::getComputedAttr()[I]>()...);
+
+    auto cellIter = cell.begin();
+    // write values in SoAs back to particles
+    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+      /**
+       * The following statement writes the value of all attributes defined in computedAttr back into the particle.
+       * I represents the index inside computedAttr.
+       * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
+       * (std::index_sequence<I...> = 0, 1):
+       * (cellIter->template set<Impl_t::computedAttr[0]>(std::get<0>(pointer)[i]),
+       * cellIter->template set<Impl_t::computedAttr[1]>(std::get<1>(pointer)[i]))
+       */
+      (cellIter->template set<Impl_t::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+    }
+  }
+
+  typename Particle::ParticleFloatingPointType _cutoff;
 };
-
-/**
- * Macro to define the SoALoaders. The body to be executed is the variadic argument.
- * @param cell name for cell like parameter
- * @param soa name for soa
- * @param offset name for offset
- *
- * @note The last Argument is variadic such that commas pose no problem.
- * @note generates two loaders, one for verlet lists, one for the normal case.
- * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
- */
-#define AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, ...)                                                            \
-  void SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override { __VA_ARGS__ } \
-  /** @copydoc SoALoader(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) */                   \
-  template <typename = std::enable_if_t<not std::is_same<                                                            \
-                typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>>  \
-  void SoALoader(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,                  \
-                 ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {                                            \
-    __VA_ARGS__                                                                                                      \
-  }
-
-/**
- * Macro to define the SoAExtractors. The body to be executed is the variadic argument.
- * @param cell name for cell like parameter
- * @param soa name for soa
- * @param offset name for offset
- *
- * @note ParticleCell and SoAArraysType need defined via typedefs in the functor.
- * @note The last Argument is variadic such that commas pose no problem.
- * @note generates two extractors, one for verlet lists, one for the normal case.
- * @note the need for this could be removed if the soa's are removed from the particlecells (highly unlikely)
- */
-#define AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, ...)                                                        \
-  void SoAExtractor(ParticleCell &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) override {           \
-    __VA_ARGS__                                                                                                     \
-  }                                                                                                                 \
-  /** @copydoc SoAExtractor(ParticleCell &, ::autopas::SoA<SoAArraysType> &, size_t) */                             \
-  template <typename = std::enable_if_t<not std::is_same<                                                           \
-                typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell>::value>> \
-  void SoAExtractor(typename ::autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,              \
-                    ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {                                        \
-    __VA_ARGS__                                                                                                     \
-  }
 
 }  // namespace autopas
 

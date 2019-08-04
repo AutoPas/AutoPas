@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h>
+#include <autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h>
 #include <array>
 #include <vector>
 #include "autopas/containers/ParticleContainer.h"
@@ -79,38 +81,42 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
 
   switch (containerChoice) {
     case directSum: {
-      container = std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff);
+      container =
+          std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     case linkedCells: {
-      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff,
-                                                                        containerInfo.cellSizeFactor);
+      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
     case adaptiveLinkedCells: {
-      container = std::make_unique<AdaptiveLinkedCells<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff,
-                                                                                containerInfo.cellSizeFactor);
+      container = std::make_unique<AdaptiveLinkedCells<Particle, ParticleCell>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
     case verletLists: {
-      container = std::make_unique<VerletLists<Particle>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
-          VerletLists<Particle>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
+      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                                                          containerInfo.cellSizeFactor);
       break;
     }
     case verletListsCells: {
-      container = std::make_unique<VerletListsCells<Particle>>(
-          _boxMin, _boxMax, _cutoff, TraversalOption::c08, containerInfo.verletSkin,
-          containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::c08,
+                                                               containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
     case verletClusterLists: {
-      container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                 containerInfo.verletRebuildFrequency);
+      container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      break;
+    }
+    case varVerletListsAsBuild: {
+      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     default: {
-      utils::ExceptionHandler::exception("Container type {} is not a known type!",
+      utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
                                          utils::StringUtils::to_string(containerChoice));
     }
   }

@@ -49,7 +49,17 @@ class OctreeInternalNode : public OctreeNode<Particle, ParticleCell> {
    */
   static void setMinElements(const unsigned long minElements) { _minElements = minElements; }
 
- private:
+ protected:
+  std::bitset<3> relPosOfChild(const std::array<double, 3> childCenter) {
+    std::bitset<3> index;
+    for (unsigned int d = 0; d < 3; ++d) {
+      if (childCenter[d] > _center[d]) {
+        index.set(d);
+      }
+    }
+    return index;
+  }
+
   const std::array<double, 3> _center;
   const std::array<double, 3> _boxMin;
   const std::array<double, 3> _boxMax;

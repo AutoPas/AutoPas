@@ -50,7 +50,7 @@ class FullSearch : public TuningStrategyInterface {
     }
   }
 
-  inline Configuration getCurrentConfiguration() override { return *_currentConfig; }
+  inline const Configuration &getCurrentConfiguration() override { return *_currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
@@ -61,7 +61,7 @@ class FullSearch : public TuningStrategyInterface {
     _currentConfig = _searchSpace.begin();
   }
 
-  inline bool tune() override;
+  inline bool tune(bool = false) override;
 
   inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; }
 
@@ -96,18 +96,13 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
                                      const std::set<TraversalOption> &allowedTraversalOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                      const std::set<Newton3Option> &allowedNewton3Options) {
-  //@TODO dummyTraversal needed until all containers support propper traversals
-  auto dummySet = {TraversalOption::dummyTraversal};
-  std::set<TraversalOption> allowedTraversalOptionsPlusDummy;
-  std::set_union(allowedTraversalOptions.begin(), allowedTraversalOptions.end(), dummySet.begin(), dummySet.end(),
-                 std::inserter(allowedTraversalOptionsPlusDummy, allowedTraversalOptionsPlusDummy.begin()));
-
   // generate all potential configs
   for (auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
-    std::set<TraversalOption> allContainerTraversals = compatibleTraversals::allCompatibleTraversals(containerOption);
+    const std::set<TraversalOption> &allContainerTraversals =
+        compatibleTraversals::allCompatibleTraversals(containerOption);
     std::set<TraversalOption> allowedAndApplicable;
-    std::set_intersection(allowedTraversalOptionsPlusDummy.begin(), allowedTraversalOptionsPlusDummy.end(),
+    std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
@@ -121,6 +116,8 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
       }
   }
 
+  AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
+
   if (_searchSpace.empty()) {
     autopas::utils::ExceptionHandler::exception("FullSearch: No valid configurations could be created.");
   }
@@ -128,7 +125,7 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
   _currentConfig = _searchSpace.begin();
 }
 
-bool FullSearch::tune() {
+bool FullSearch::tune(bool) {
   // repeat as long as traversals are not applicable or we run out of configs
   ++_currentConfig;
   if (_currentConfig == _searchSpace.end()) {

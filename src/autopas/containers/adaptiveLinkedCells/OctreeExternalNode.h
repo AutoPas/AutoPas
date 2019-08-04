@@ -8,6 +8,7 @@
 
 #include <array>
 #include <memory>
+#include <optional>
 #include <set>
 #include "autopas/containers/adaptiveLinkedCells/OctreeNode.h"
 #include "autopas/utils/inBox.h"
@@ -99,15 +100,87 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
    */
   const std::set<std::pair<unsigned long, std::array<double, 3>>> &getNeighbors() const { return _neighbors; }
 
+  /*std::set<OctreeNode<Particle, ParticleCell>> findSmallerNeighborsDirection(
+      int xDir, int yDir, int zDir, std::set<OctreeNode<Particle, ParticleCell>> gEq) {
+    std::set<OctreeNode<Particle, ParticleCell>> neighbors;
+
+    if (gEq.isEmpty()) {
+      return neighbors;
+    }
+
+    while (not gEq.isEmpty()) {
+      auto begin = gEq.begin();
+      if (begin->isLeaf()) {
+        neighbors.insert(*begin);
+      } else {
+        auto relPos{this->_parent.relPosOfChild(this->_center)};
+        std::array<int, 3> relPosArray({relPos[0] + xDir, relPos[1] + yDir, relPos[2] + zDir});
+
+        std::bitset<3> neighborPos;
+        for (int i = 0; i < 3; i++) {
+          if (relPosArray[i] % 2 == 1) {
+            neighborPos.set(i);
+          }
+        }
+        begin->_children[neighborPos.to_ulong()];
+      }
+      gEq.erase(begin);
+    }
+
+    return neighbors;
+  }
+
+  std::optional<OctreeNode<Particle, ParticleCell>> findGreaterEqualNeighborDirection(int xDir, int yDir, int zDir) {
+    // code similar to https://geidav.wordpress.com/2017/12/02/advanced-octrees-4-finding-neighbor-nodes/
+    if (this->_parent == nullptr) return {};
+    auto relPos{this->_parent.relPosOfChild(this->_center)};
+    std::array<int, 3> relPosArray({relPos[0] + xDir, relPos[1] + yDir, relPos[2] + zDir});
+    if (std::any_of(relPosArray.cbegin(), relPosArray.cend(), [](auto e) { return e < 0 or e > 1; })) {
+      auto node = this->_parent.findGreaterEqualNeighborDirection(xDir, yDir, zDir);
+      if (node or node->isLeaf()) {
+        return {};
+      }
+      std::bitset<3> neighborPos;
+      for (int i = 0; i < 3; i++) {
+        if (relPosArray[i] % 2 == 1) {
+          neighborPos.set(i);
+        }
+      }
+      return std::make_optional(node->_children[neighborPos.to_ulong()]);
+    } else {
+      std::bitset<3> neighborPos;
+      for (int i = 0; i < 3; i++) {
+        if (relPosArray[i] == 1) {
+          neighborPos.set(i);
+        }
+      }
+
+      return std::make_optional(this->parent._children[neighborPos.to_ulong()]);
+    }
+  }
+*/
   /**
    * Updates all Neighbors. This is necessary after splitting or combination of nodes.
    */
-  void updateNeigbors() {
+  /*void updateNeigbors() {
     _neighbors.clear();
-    /*auto n1 = findSmallerNeighbors();
-    auto n2 = findGreaterEqualNeighbors();
-    std::merge(n1.begin(), n1.end(), n2.begin(), n2.end(), std::inserter(_neighbors, _neighbors.begin()));*/
-  }
+    std::set<OctreeNode<Particle, ParticleCell>> result;
+    for (int x = -1; x <= 1; x++) {
+      for (int y = -1; y <= 1; y++) {
+        for (int z = -1; z <= 1; z++) {
+          if (x == 0 and y == 0 and z == 0) {
+            continue;
+          }
+          auto n = findGreaterEqualNeighborDirection(x, y, z, result);
+          if (n) {
+            auto neighbors = findSmallerNeighborsDirection(x, y, z, *n);
+            std::merge(result.begin(), result.end(), neighbors.begin(), neighbors.end(),
+                       std::inserter(_neighbors, _neighbors.begin()))
+          }
+        }
+      }
+    }
+  }*/
   /**
    * Sets max. number of elements inside of each node.
    * @param maxElements Max. number of elements.

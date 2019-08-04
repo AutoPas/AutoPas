@@ -6,7 +6,9 @@
 
 #pragma once
 
+#include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/adaptiveLinkedCells/Octree.h"
+#include "autopas/particles/Particle.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
 
 #include <array>
@@ -16,8 +18,7 @@ namespace autopas {
  * Info for traversals of the adaptive LC container.
  * @tparam ParticleCell
  */
-template <class ParticleCell>
-class TraversalSelectorInfoAdaptive : public TraversalSelectorInfo<ParticleCell> {
+class TraversalSelectorInfoAdaptive : public TraversalSelectorInfo {
  public:
   /**
    * Constructor of the TraversalSelectorInfoAdaptive class.
@@ -27,13 +28,13 @@ class TraversalSelectorInfoAdaptive : public TraversalSelectorInfo<ParticleCell>
    * @param octree Octree used to organize adaptive cells.
    */
   explicit TraversalSelectorInfoAdaptive(const std::array<unsigned long, 3> &dims, const double cutoff,
-                                         const std::array<double, 3> &cellLength,
-                                         Octree<typename ParticleCell::ParticleType, ParticleCell> &octree)
-      : TraversalSelectorInfo<ParticleCell>(dims, cutoff, cellLength), octree(octree) {}
+                                         const std::array<double, 3> &cellLength/*,
+                                         Octree<Particle, ParticleCell<Particle>> &octree*/)
+      : TraversalSelectorInfo(dims, cutoff, cellLength)/*, octree(octree) */{}
 
   /**
    * Octree used to organize adaptive cells.
    */
-  Octree<typename ParticleCell::ParticleType, ParticleCell> &octree;
+  // Octree<Particle, ParticleCell<Particle>> &octree;
 };
 }  // namespace autopas

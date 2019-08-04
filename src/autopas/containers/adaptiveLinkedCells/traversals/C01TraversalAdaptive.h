@@ -30,51 +30,54 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
-                             public LinkedCellTraversalInterface<ParticleCell> {
+class C01TraversalAdaptive : public CellPairTraversal<ParticleCell>, public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param info
    */
-  explicit C01TraversalAdaptive(PairwiseFunctor *pairwiseFunctor,
-                                std::unique_ptr<TraversalSelectorInfo<ParticleCell>> info)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(info->dims),
-        _cellFunctor(pairwiseFunctor, info->cutoff),
-        _dataLayoutConverter(pairwiseFunctor),
-        _octree(reinterpret_cast<TraversalSelectorInfoAdaptive<ParticleCell> *>(info.get())->octree) {}
+  explicit C01TraversalAdaptive(PairwiseFunctor *pairwiseFunctor, std::unique_ptr<TraversalSelectorInfo> info)
+      : CellPairTraversal<ParticleCell>(info->dims),
+        _cellFunctor(pairwiseFunctor, info->interactionLength),
+        _dataLayoutConverter(pairwiseFunctor) /*,
+         _octree(reinterpret_cast<TraversalSelectorInfoAdaptive*>(info.get())->octree)*/
+  {}
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
    */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
 
   /**
-   * load Data Layouts required for this Traversal.
-   * @param cells where the data should be loaded
+   * load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
    */
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  void initTraversal() override {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.loadDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.loadDataLayout(cells[i]);
+      }
     }
   }
 
   /**
-   * write Data to AoS.
-   * @param cells for which the data should be written back
+   * write Data to AoS if cells have been set through setCellsToTraverse().
    */
-  void endTraversal(std::vector<ParticleCell> &cells) override {
+  void endTraversal() override {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.storeDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.storeDataLayout(cells[i]);
+      }
     }
   }
 
@@ -85,6 +88,10 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, 
   bool isApplicable() const override { return dataLayout != DataLayoutOption::cuda and not useNewton3; }
 
   TraversalOption getTraversalType() const override { return TraversalOption::c01Adaptive; }
+
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
  private:
   /**
@@ -107,7 +114,7 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell, dataLayout, 
    */
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 
-  Octree<typename ParticleCell::ParticleType, ParticleCell> &_octree;
+  // Octree<typename ParticleCell::ParticleType, ParticleCell> &_octree;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
@@ -122,12 +129,12 @@ inline void C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useN
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-inline void C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+inline void C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+  // auto &cells = *(this->_cells);
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception("The adaptive C01 traversal cannot work with enabled newton3");
   }
-  _octree.apply([&](auto &node) { this->processBaseCell(cells, node); }, internal::ExecutionPolicy::par);
+  //_octree.apply([&](auto &node) { this->processBaseCell(cells, node); }, internal::ExecutionPolicy::par);
 }
 
 }  // namespace autopas

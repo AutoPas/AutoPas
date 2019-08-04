@@ -10,6 +10,7 @@
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -35,21 +36,18 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
-                                                                                 cellLength),
-        _cellFunctor(pairwiseFunctor, cutoff) {
+                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                 interactionLength, cellLength),
+        _cellFunctor(pairwiseFunctor, interactionLength) {
     computeOffsets();
   }
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
 
   /**
    * Computes all interactions between the base
@@ -77,6 +75,10 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
     else
       return true;
   }
+
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
  private:
   /**
@@ -114,15 +116,15 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
 inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[1] + 1, std::vector<offsetArray_t>(2 * this->_overlap[0] + 1));
-  const std::array<long, 3> _overlap_s = ArrayMath::static_cast_array<long>(this->_overlap);
+  const std::array<long, 3> _overlap_s = ArrayUtils::static_cast_array<long>(this->_overlap);
 
-  const auto cutoffSquare(this->_cutoff * this->_cutoff);
+  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
 
   for (long z = 0l; z <= _overlap_s[2]; ++z) {
     for (long y = -_overlap_s[1]; y <= _overlap_s[1]; ++y) {
       for (long x = -_overlap_s[0]; x <= _overlap_s[0]; ++x) {
         const long offset = utils::ThreeDimensionalMapping::threeToOneD(
-            x, y, z, ArrayMath::static_cast_array<long>(this->_cellsPerDimension));
+            x, y, z, ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
 
         if (offset < 0l) {
           continue;
@@ -139,7 +141,7 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
                 // calculate distance between base cell and other cell
                 const double distSquare = ArrayMath::dot(pos, pos);
                 // only add cell offset if cell is within cutoff radius
-                if (distSquare <= cutoffSquare) {
+                if (distSquare <= interactionLengthSquare) {
                   _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].push_back(
                       std::make_pair(offset, ArrayMath::normalize(pos)));
                 }
@@ -176,21 +178,21 @@ void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
 
   ParticleCell &baseCell = cells[baseIndex];
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
-  for (const auto &offset : offsets) {
-    unsigned long otherIndex = baseIndex + offset.first;
+  for (auto const &[offset, r] : offsets) {
+    unsigned long otherIndex = baseIndex + offset;
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
       this->_cellFunctor.processCell(baseCell);
     } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell, offset.second);
+      this->_cellFunctor.processCellPair(baseCell, otherCell, r);
     }
   }
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
   this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }
 

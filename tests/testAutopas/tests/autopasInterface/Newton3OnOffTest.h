@@ -33,7 +33,6 @@ class Newton3OnOffTest : public AutoPasTestBase,
   double getCutoff() const { return 1.0; }
   double getCellSizeFactor() const { return 1.0; }
   double getVerletSkin() const { return 0.0; }
-  unsigned int getVerletRebuildFrequency() const { return 1; }
 
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                          autopas::DataLayoutOption dataLayout);
@@ -43,4 +42,17 @@ class Newton3OnOffTest : public AutoPasTestBase,
                autopas::Newton3Option newton3, ParticleFunctor *f);
 
   MockFunctor<Particle, FPCell> mockFunctor;
+
+  /**
+   * Determines how often the functor is called for single cells and pairs of cells und run additional checks.
+   * @tparam useNewton3 Enables or disables newton3.
+   * @tparam Container Type of container.
+   * @tparam Traversal Type of traversal.
+   * @param dataLayout Data layout.
+   * @param container Container.
+   * @param traversalOption Traversal option.
+   * @return [#calls single cell, #calls pair of cells]
+   */
+  template <bool useNewton3, class Container, class Traversal>
+  std::pair<size_t, size_t> eval(autopas::DataLayoutOption dataLayout, Container &container, Traversal traversalOption);
 };

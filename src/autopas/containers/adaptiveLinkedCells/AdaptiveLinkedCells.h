@@ -35,7 +35,7 @@ namespace autopas {
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
+class AdaptiveLinkedCells final : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
  public:
   /**
    * Constructor of the AdaptiveLinkedCells class.
@@ -46,8 +46,8 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
    * By default all applicable traversals are allowed.
    */
   AdaptiveLinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                      const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff),
+                      const double skin, const double cellSizeFactor = 1.0)
+      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         octree(this->_cells, boxMin, boxMax) {
     // set global values for tree
     Octree<Particle, ParticleCell>::setMaxElements(64);
@@ -89,6 +89,14 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
     }
   }
 
+  bool updateHaloParticle(Particle &haloParticle) override {
+    /// @todo add impl
+    return false;
+  }
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    // nothing to do.
+  }
+
   void deleteHaloParticles() override { this->_cells.back().clear(); }
 
   ContainerOption getContainerType() override { return ContainerOption::adaptiveLinkedCells; }
@@ -108,29 +116,32 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
   /**
    * @copydoc DirectSum::iteratePairwise
    */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal, bool useNewton3 = false) {
+  void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
-    traversal->initTraversal(this->_cells);
-    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
+    traversal->initTraversal();
+    /*if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->traverseCellPairs(this->_cells);
 
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in AdaptiveLinkedCells::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
-    }
-    traversal->endTraversal(this->_cells);
+    }*/
+    traversal->endTraversal();
   }
 
-  void updateContainer() override { octree.update(); }
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::vector<Particle> updateContainer() override {
+    octree.update();
+    return std::vector<Particle>{};
+  }
 
   bool isContainerUpdateNeeded() override { return octree.isUpdateNeeded(); }
 
-  std::unique_ptr<TraversalSelectorInfo<ParticleCell>> getTraversalSelectorInfo() override {
-    return std::make_unique<TraversalSelectorInfoAdaptive<ParticleCell>>(_cellsPerDimension, this->getCutoff(),
-                                                                         _cellLength, octree);
+  std::unique_ptr<TraversalSelectorInfo> getTraversalSelectorInfo() override {
+    return std::make_unique<TraversalSelectorInfoAdaptive>(_cellsPerDimension, this->getCutoff(),
+                                                           _cellLength /*, octree*/);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -138,10 +149,9 @@ class AdaptiveLinkedCells : public ParticleContainer<Particle, ParticleCell, SoA
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, nullptr, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                      const std::array<double, 3> &higherCorner,
-                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
-                                                      bool incSearchRegion = false) override {
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // @todo add implementation
     return ParticleIteratorWrapper<Particle>();
   }

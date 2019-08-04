@@ -16,10 +16,9 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
-  const unsigned int verletRebuildFrequency = 1;
 
   autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin);
 
   // expect an exception if nothing is selected yet
   EXPECT_THROW((containerSelector.getCurrentContainer()), autopas::utils::ExceptionHandler::AutoPasException);
@@ -69,10 +68,9 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0.1;
-  const unsigned int verletRebuildFrequency = 1;
 
   autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin);
   // select container from which we want to convert from
   containerSelector.selectContainer(from, containerInfo);
 
@@ -84,8 +82,8 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
                                    min - cutoff - verletSkin - 1e-3};
     };
     size_t id = 0;
-    const auto haloBoxMin = autopas::ArrayMath::subScalar(bBoxMin, cutoff);
-    const auto haloBoxMax = autopas::ArrayMath::addScalar(bBoxMax, cutoff);
+    // const auto haloBoxMin = autopas::ArrayMath::subScalar(bBoxMin, cutoff);
+    // const auto haloBoxMax = autopas::ArrayMath::addScalar(bBoxMax, cutoff);
 
     for (auto x : getPossible1DPositions(bBoxMin[0], bBoxMax[0])) {
       for (auto y : getPossible1DPositions(bBoxMin[1], bBoxMax[1])) {
@@ -95,13 +93,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
           if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
             container->addParticle(p);
           } else {
-            if (autopas::utils::inBox(pos, haloBoxMin, haloBoxMax) or
-                autopas::utils::StringUtils::to_string(container->getContainerType()).find("Verlet") !=
-                    std::string::npos) {
-              /// @todo: the above string comparison will most likely be unnecessary once the verlet interface is
-              /// properly introduced.
-              container->addHaloParticle(p);
-            }
+            container->addHaloParticle(p);
           }
           ++id;
         }
@@ -127,21 +119,20 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   }
 }
 
+/// @todo: use this instead of below to enable testing of VerletClusterLists.
+// INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
+//                         Combine(ValuesIn(autopas::allContainerOptions), ValuesIn(autopas::allContainerOptions)),
+//                         ContainerSelectorTest::PrintToStringParamName());
+
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
                          Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
                                    auto all = autopas::allContainerOptions;
-                                   /// @todo: remove below line to enable testing of verletClusterLists.
-                                   all.erase(autopas::ContainerOption::verletClusterLists);
-                                   /// @todo: remove below line to enable testing of adaptiveLinkedCells.
-                                   all.erase(autopas::ContainerOption::adaptiveLinkedCells);
+                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }()),
                                  ValuesIn([]() -> std::set<autopas::ContainerOption> {
                                    auto all = autopas::allContainerOptions;
-                                   /// @todo: remove below line to enable testing of verletClusterLists.
-                                   all.erase(autopas::ContainerOption::verletClusterLists);
-                                   /// @todo: remove below line to enable testing of adaptiveLinkedCells.
-                                   all.erase(autopas::ContainerOption::adaptiveLinkedCells);
+                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }())),
                          ContainerSelectorTest::PrintToStringParamName());

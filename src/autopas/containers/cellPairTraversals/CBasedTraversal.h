@@ -24,24 +24,24 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3> {
+class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
   /**
    * Constructor of the CBasedTraversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const double cutoff, const std::array<double, 3> &cellLength)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
-        _cutoff(cutoff),
+                           const double interactionLength, const std::array<double, 3> &cellLength)
+      : CellPairTraversal<ParticleCell>(dims),
+        _interactionLength(interactionLength),
         _cellLength(cellLength),
         _dataLayoutConverter(pairwiseFunctor) {
     for (unsigned int d = 0; d < 3; d++) {
-      _overlap[d] = std::ceil(_cutoff / _cellLength[d]);
+      _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     }
   }
 
@@ -52,30 +52,34 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
 
  public:
   /**
-   * load Data Layouts required for this Traversal.
-   * @param cells where the data should be loaded
+   * load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
    */
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  void initTraversal() override {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.loadDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.loadDataLayout(cells[i]);
+      }
     }
   }
 
   /**
-   * write Data to AoS.
-   * @param cells for which the data should be written back
+   * write Data to AoS if cells have been set through setCellsToTraverse().
    */
-  void endTraversal(std::vector<ParticleCell> &cells) override {
+  void endTraversal() override {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.storeDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.storeDataLayout(cells[i]);
+      }
     }
   }
 
@@ -95,9 +99,16 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNe
                          const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
 
   /**
-   * cutoff radius.
+   * This method is called when the color during the traversal has changed.
+   *
+   * @param newColor The new current color.
    */
-  const double _cutoff;
+  virtual void notifyColorChange(unsigned long newColor){};
+
+  /**
+   * Interaction length (cutoff + skin).
+   */
+  const double _interactionLength;
 
   /**
    * cell length in CellBlock3D.
@@ -127,6 +138,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
   {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
+      notifyColorChange(col);
       std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
       std::array<unsigned long, 3> start(ArrayMath::add(startWithoutOffset, offset));
 

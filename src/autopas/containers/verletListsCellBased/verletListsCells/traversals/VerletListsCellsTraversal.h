@@ -13,50 +13,50 @@
 namespace autopas {
 
 /**
- * A verlet list traversal.
+ * This class provides the Traversal Interface for the verlet lists cells container.
+ *
  * This class handles traversals through the cell structures with neighbor lists.
  * Derived classes handle the order through which the cells are traversed.
+ *
+ * The container only accepts traversals in its iteratePairwise() method that implement this interface.
  */
-template <class Particle, class PairwiseFunctor, bool useNewton3>
+template <class Particle>
 class VerletListsCellsTraversal {
  public:
   /// Verlet list storage
   typedef std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> verlet_storage_type;
 
   /**
-   * Constructor of the verlet traversal.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * Sets the verlet list for the traversal to iterate over.
+   * @param verlet The verlet list to iterate over.
    */
-  VerletListsCellsTraversal(PairwiseFunctor *pairwiseFunctor) : _pairwiseFunctor(pairwiseFunctor) {}
-
-  /**
-   * Traverse verlet lists of all cells.
-   * This function needs to be implemented by derived classes.
-   * @param verlet verlet lists for each cell
-   */
-  virtual void traverseCellVerlet(verlet_storage_type &verlet) = 0;
+  virtual void setVerletList(verlet_storage_type &verlet) { _verletList = &verlet; }
 
  protected:
   /**
    * Iterate over the verlet list of a given cell.
+   * @tparam PairwiseFunctor
+   * @tparam useNewton3
    * @param verlet
    * @param cellIndex
+   * @param pairwiseFunctor
    */
-  inline void iterateVerletListsCell(verlet_storage_type &verlet, unsigned long cellIndex) {
+  template <class PairwiseFunctor, bool useNewton3>
+  void iterateVerletListsCell(verlet_storage_type &verlet, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
     for (auto &list : verlet[cellIndex]) {
       Particle &i = *list.first;
       for (auto j_ptr : list.second) {
         Particle &j = *j_ptr;
-        _pairwiseFunctor->AoSFunctor(i, j, useNewton3);
+        pairwiseFunctor->AoSFunctor(i, j, useNewton3);
       }
     }
   }
 
- private:
+ protected:
   /**
-   * PairwiseFunctor to be used for the traversal defining the interaction between two particles.
+   * The verlet list to iterate over.
    */
-  PairwiseFunctor *_pairwiseFunctor;
+  verlet_storage_type *_verletList;
 };
 
 }  // namespace autopas

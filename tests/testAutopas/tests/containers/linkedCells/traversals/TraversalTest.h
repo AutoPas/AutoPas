@@ -41,8 +41,15 @@ class TraversalTest : public AutoPasTestBase,
    public:
     using SoAArraysType = Particle::SoAArraysType;
     using ParticleCell = FPCell;
+    using floatType = typename Particle::ParticleFloatingPointType;
+
+    CountFunctor(floatType cutoff) : autopas::Functor<Particle, ParticleCell>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
     bool isRelevantForTuning() override { return true; }
+
+    bool allowsNewton3() override { return true; }
+
+    bool allowsNonNewton3() override { return true; }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       const auto coordsI = i.getR();
@@ -51,7 +58,7 @@ class TraversalTest : public AutoPasTestBase,
       std::array<double, 3> dr = autopas::ArrayMath::sub(coordsI, coordsJ);
       const double dr2 = autopas::ArrayMath::dot(dr, dr);
 
-      if (dr2 > cutoffSquare) return;
+      if (dr2 > _cutoffSquare) return;
 
       countFunc(i.getID());
 
@@ -63,18 +70,7 @@ class TraversalTest : public AutoPasTestBase,
     // countFunc isn't a real function. It's just a declaration which is used to count the number of interactions.
     MOCK_METHOD1(countFunc, void(unsigned long id));
 
-    /**
-     * sets the cutoff radius.
-     * @param cutoff
-     */
-    void setCutoff(const double cutoff) { cutoffSquare = cutoff * cutoff; }
-
-    // The following definitions are needed to fullfill requirements of autopas::functor
-    AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , );
-
-    AUTOPAS_FUNCTOR_SOALOADER(, , , );
-
    private:
-    double cutoffSquare;
+    floatType _cutoffSquare;
   };
 };

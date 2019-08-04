@@ -34,21 +34,22 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, cutoff,
-                                                                                 cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
+                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                 interactionLength, cellLength),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
 
   TraversalOption getTraversalType() const override { return TraversalOption::c08; }
+
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C08 traversals are always usable.
@@ -70,8 +71,8 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+inline void C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     _cellHandler.processBaseCell(cells, baseIndex);
