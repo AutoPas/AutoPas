@@ -116,14 +116,17 @@ class LJFunctorAVX
 #ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
 
-    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    const auto *const __restrict__ typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -152,13 +155,13 @@ class LJFunctorAVX
       // floor soa numParticles to multiple of vecLength
       size_t j = 0;
       for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, false>(i, j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc,
-                               &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+        SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc,
+                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0)
-        SoAKernel<true, true>(i, j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, &virialSumX,
-                              &virialSumY, &virialSumZ, &upotSum, rest);
+        SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc,
+                              fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -217,19 +220,23 @@ class LJFunctorAVX
 
  private:
   template <bool newton3, bool masked>
-  inline void SoAKernel(size_t i, size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
-                        double *const x2ptr, double *const y2ptr, double *const z2ptr, double *const fx2ptr,
-                        double *const fy2ptr, double *const fz2ptr, __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
-                        __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
-                        const unsigned int rest = 0) {
+  inline void SoAKernel(const size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const x2ptr,
+                        const double *const y2ptr, const double *const z2ptr, double *const fx2ptr, double *const fy2ptr,
+                        double *const fz2ptr, const size_t *const typeID1ptr, const size_t *const type2IDptr, __m256d &fxacc,
+                        __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ,
+                        __m256d *upotSum, const unsigned int rest = 0) {
 #ifdef __AVX__
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquares = _sigmaSquare;
     if (useMixing) {
-      epsilon24s = _mm256_set_pd(_PPLibrary->mixing24Epsilon(i, j + 0), _PPLibrary->mixing24Epsilon(i, j + 1),
-                                 _PPLibrary->mixing24Epsilon(i, j + 2), _PPLibrary->mixing24Epsilon(i, j + 3));
-      sigmaSquares = _mm256_set_pd(_PPLibrary->mixingSigmaSquare(i, j + 0), _PPLibrary->mixingSigmaSquare(i, j + 1),
-                                   _PPLibrary->mixingSigmaSquare(i, j + 2), _PPLibrary->mixingSigmaSquare(i, j + 3));
+      epsilon24s = _mm256_set_pd(_PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 0)),
+                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 1)),
+                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 2)),
+                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 3)));
+      sigmaSquares = _mm256_set_pd(_PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 0)),
+                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 1)),
+                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 2)),
+                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 3)));
     }
 
     const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
@@ -319,22 +326,25 @@ class LJFunctorAVX
 #ifdef __AVX__
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
     const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
 
-    double *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    double *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+    const auto *const __restrict__ typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict__ typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -371,23 +381,23 @@ class LJFunctorAVX
       if (newton3) {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<true, false>(i, j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc,
+                                 fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<true, true>(i, j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc,
+                                fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       } else {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<false, false>(i, j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc,
+                                  fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<false, true>(i, j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc,
+                                 fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
       // horizontally reduce fDacc to sumfD

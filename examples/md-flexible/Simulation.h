@@ -101,6 +101,7 @@ class Simulation {
    * Does the ForceCalculation
    * @param Force Calculation Functor
    */
+  template <class FunctorType>
   void calculateForces();
 
   /**
@@ -275,11 +276,11 @@ void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<P
 }
 
 template <class Particle, class ParticleCell>
+template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
-  auto functor = autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>(_autopas.getCutoff(), 0.0,
-                                                                               *_particlePropertiesLibrary);
+  auto functor = FunctorType(_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
@@ -298,7 +299,17 @@ void Simulation<Particle, ParticleCell>::simulate() {
     }
 
     _timers.durationPositionUpdate += _timeDiscretization->VSCalculateX(_autopas);
-    this->calculateForces();
+
+    switch (this->_parser->getFunctorOption()) {
+      case MDFlexParser::FunctorOption::lj12_6: {
+        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();
+        break;
+      }
+      case MDFlexParser::FunctorOption::lj12_6_AVX: {
+        this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, /* mixing */ true>>();
+        break;
+      }
+    }
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
