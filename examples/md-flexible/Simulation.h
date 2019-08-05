@@ -100,7 +100,7 @@ class Simulation {
   /**
    * Does the ForceCalculation
    * @param Force Calculation Functor
-   * */
+   */
   void calculateForces();
 
   /**
@@ -111,15 +111,21 @@ class Simulation {
    */
   void simulate();
 
-  /**Getter for Autopas Oject
+  /**
+   * Getter for AutoPas object.
    * @return Autopas Object
    */
   autopas::AutoPas<Particle, ParticleCell> *getAutopas() const;
-  /**Return current number of Particles in AutoPas Object
-   * */
+
+  /**
+   * Return the current number of Particles in the AutoPas Object.
+   * @return
+   */
   size_t getNumParticles() { return _autopas.getNumberOfParticles(); }
-  /**Prints Statistics(duration of calculation, etc ..) of the Simulation
-   * */
+
+  /**
+   * Prints statistics like duration of calculation etc of the Simulation.
+   */
   void printStatistics();
 
  private:
