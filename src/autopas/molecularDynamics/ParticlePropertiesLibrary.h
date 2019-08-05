@@ -12,66 +12,82 @@
 
 //@todo soon: add template parameter to support 32 or 64 bit values-> did resolve into undefined references
 
-/**This Class is used to map the Particles to their Physical Properties used in the
- * Force calculations(epsilon,sigma) and in the timeDiscretization (mass)
- * The mapping key is the type of the Particles
- * for the lennard jones force Calculation this class provides the preprocessed values
- * of the mixing rules for epsilon and sigma values
- * */
+/**
+ * This class stores the (physical) properties of particle types.
+ *
+ * It also provides mixed values for (force) calculations between known types.
+ */
 class ParticlePropertiesLibrary {
  public:
-  ParticlePropertiesLibrary() = default;
-  /**Copy Constructor
-   * @param pcl
-   * */
-  ParticlePropertiesLibrary(const ParticlePropertiesLibrary &pcl);
-  /**Copy assignment operator
-   * @param plc
-   * @return ParticlePropertiesLibrary
-   * */
-  ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &plc);
 
-  /**adds the Properties of a particle type to the class members
-   * calculates and adds the values of the mixing rules between the added particle type and the existing ones to the
-   * appropriate members
+  /**
+   * Default constructor.
+   */
+  ParticlePropertiesLibrary() = default;
+
+  /**
+   * Copy Constructor.
+   * @param particlePropertiesLibrary
+   */
+  ParticlePropertiesLibrary(const ParticlePropertiesLibrary &particlePropertiesLibrary);
+
+  /**
+   * Copy assignment operator.
+   * @param particlePropertiesLibrary
+   * @return
+   */
+  ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &particlePropertiesLibrary);
+
+  /**
+   * Adds the properties of a particle type to the library.
+   *
+   * This function also precomputes all possible mixed values with already known particle types.
+   * If the type id already exists the values will be overwritten.
    * @param typeID
    * @param epsilon
    * @param sigma
    * @param mass
-   * */
+   */
   void addType(unsigned long typeID, double epsilon, double sigma, double mass);
 
   ~ParticlePropertiesLibrary() = default;
-  /**Getter for Particle Epsilon*24
-   * @param i (typeId of Particle)
-   * @return Epsilon*24
+
+  /**
+   * Getter for the particle's epsilon*24.
+   * @param i typeId of the particle.
+   * @return 24*epsilon_i
    */
   double get24Epsilon(unsigned long i);
-  /**Getter for Particle Square Sigma
-   * @param i (typeId of Particle)
-   * @return Sigma²
+
+  /**
+   * Getter for the particle's squared sigma.
+   * @param i typeId of the particle.
+   * @return sigma_i²
    */
   double getSigmaSquare(unsigned long i);
 
-  /**Getter for Particle Mass
-   * @param i (typeId of Particle)
-   * @return Sigma
+  /**
+   * Getter for the particle's mass.
+   * @param i typeId of the particle.
+   * @return mass_i
    */
   double getMass(unsigned long i);
 
-  /**Returns (Epsilon*24) of the MixingRule of 2 Particles precalculated in computedMixing24Epsilon
-   * @param  i (typeId index)
-   * @param  j (typeId index)
-   * @return 24*(epsilonMixingRule)
+  /**
+   * Returns the precomputed mixed epsilon24.
+   * @param  i typeId index of particle one.
+   * @param  j typeId index of particle two.
+   * @return 24*epsilon_ij
    * */
   inline double mixing24Epsilon(unsigned long i, unsigned long j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
     return _computedMixing24Epsilon.at(key);
   }
-  /**Returns Sigma Square of the MixingRule of 2 Particles precalculated in computedMixingSigmaSquare
-   * @param i (typeId index)
-   * @param j (typeId index)
-   * @return (sigmaMixingRule)²
+  /**
+   * Returns precomputed mixed squared sigma.
+   * @param i typeId index of particle one.
+   * @param j typeId index of particle two.
+   * @return sigma_ij²
    */
   inline double mixingSigmaSquare(unsigned long i, unsigned long j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j

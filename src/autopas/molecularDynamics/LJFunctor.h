@@ -653,7 +653,7 @@ class LJFunctor
   }
 
   /**
-   * Get the potential Energy
+   * Get the potential Energy.
    * @return the potential Energy
    */
   floatPrecision getUpot() {
@@ -669,8 +669,8 @@ class LJFunctor
   }
 
   /**
-   * Get the virial
-   * @return the virial
+   * Get the virial.
+   * @return
    */
   floatPrecision getVirial() {
     if constexpr (not calculateGlobals) {
@@ -684,10 +684,29 @@ class LJFunctor
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
+  /**
+   * Getter for 24*epsilon.
+   * @return 24*epsilon
+   */
   floatPrecision getEpsilon24() const { return _epsilon24; }
-  void setEpsilon24(floatPrecision epsilon) { _epsilon24 = epsilon; }
+
+  /**
+   * Setter for 24*epsilon.
+   * @param epsilon24
+   */
+  void setEpsilon24(floatPrecision epsilon24) { _epsilon24 = epsilon24; }
+
+  /**
+   * Getter for the squared sigma.
+   * @return squared sigma.
+   */
   floatPrecision getSigmaSquare() const { return _sigmasquare; }
-  void setSigmaSquare(floatPrecision sigma) { _sigmasquare = sigma; }
+
+  /**
+   * Setter for the squared sigma.
+   * @param sigmaSquare
+   */
+  void setSigmaSquare(floatPrecision sigmaSquare) { _sigmasquare = sigmaSquare; }
 
  private:
   template <bool newton3, bool duplicatedCalculations>
