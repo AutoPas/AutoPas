@@ -362,7 +362,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
     cout << "One iteration: " << _timers.durationSimulate / numIterations << " \u03bcs ("
          << durationSimulateSec / numIterations << "s)" << endl;
   }
-  auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec;
+  auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec * 1e-6;
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_parser->getMeasureFlops()) {
