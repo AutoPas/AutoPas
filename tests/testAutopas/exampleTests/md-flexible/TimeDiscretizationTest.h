@@ -51,6 +51,6 @@ class TimeDiscretizationTest : public AutoPasTestBase {
   double cutoff;
   std::array<double, 3> boxmin;
   std::array<double, 3> boxmax;
-  ParticlePropertiesLibrary _particlePropertiesLibrary;
+  ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
   autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>> functor;
 };

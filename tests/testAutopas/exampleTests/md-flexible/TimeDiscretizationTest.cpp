@@ -13,7 +13,7 @@ void TimeDiscretizationTest::globalForceTest(
   auto1.iteratePairwise(&functor);
   auto2.iteratePairwise(&functor);
   double particleD = 0.01;
-  TimeDiscretization<decltype(auto1)> td1(particleD, _particlePropertiesLibrary);
+  TimeDiscretization<decltype(auto1), double, size_t> td1(particleD, _particlePropertiesLibrary);
   // to compare OldForce entry of auto2 Particles with Force entries of auto1, perform one more iteration on auto2
   td1.VSCalculateX(auto2);
   auto2.iteratePairwise(&functor);
@@ -69,7 +69,7 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   autopas.init();
   RandomGenerator::fillWithParticles(autopas, dummy, numberOfParticles);
   double particleD = 0.01;
-  TimeDiscretization<decltype(autopas)> td1(particleD, _particlePropertiesLibrary);
+  TimeDiscretization<decltype(autopas), double, size_t> td1(particleD, _particlePropertiesLibrary);
   // initialize force and oldforce values:
   autopas.iteratePairwise(&functor);
   td1.VSCalculateX(autopas);

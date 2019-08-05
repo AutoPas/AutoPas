@@ -148,9 +148,10 @@ void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser
   double mass = _parser->getMass();
   // initialisierung of PCL
   // this implementation doesnt support multiple particle Types, will be coming with PR md-parser
-  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibrary>(epsilon, sigma, mass);
-  _timeDiscretization =
-      std::make_unique<TimeDiscretization<decltype(_autopas)>>(_parser->getDeltaT(), *_particlePropertiesLibrary);
+  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibrary<double, size_t>>();
+  _particlePropertiesLibrary->addType(0,epsilon, sigma, mass);
+  _timeDiscretization = std::make_unique<TimeDiscretization<decltype(_autopas), double, size_t>>(
+      _parser->getDeltaT(), *_particlePropertiesLibrary);
 
   auto logFileName(_parser->getLogFileName());
   auto particlesTotal(_parser->getParticlesTotal());
@@ -291,13 +292,13 @@ void Simulation<Particle, ParticleCell>::simulate() {
       std::cout << "Iteration " << iteration << std::endl;
     }
 
-    _timers.durationPositionUpdate += _timeDiscretization.VSCalculateX(_autopas);
+    _timers.durationPositionUpdate += _timeDiscretization->VSCalculateX(_autopas);
     this->calculateForces();
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    _timers.durationVelocityUpdate += _timeDiscretization.VSCalculateV(_autopas);
+    _timers.durationVelocityUpdate += _timeDiscretization->VSCalculateV(_autopas);
 
     // only write vtk files periodically and if a filename is given
     if ((not _parser->getVTKFilenName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {
