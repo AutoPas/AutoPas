@@ -90,12 +90,12 @@ class Simulation {
   void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, std::array<double, 3> boxLength,
                             size_t numParticles);
 
-  /**  This function
+  /**
+   * This function
    * -initializes the autopas Object
    * -sets/initializes the simulation domain with the particles generators
-   * @todo -initialized Velocities and Positions (and forces?)
    */
-  void initialize(std::shared_ptr<MDFlexParser> parser);
+  void initialize(const std::shared_ptr<MDFlexParser> &parser);
 
   /**
    * Does the ForceCalculation
@@ -149,7 +149,7 @@ autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::ge
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser> parser) {
+void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<MDFlexParser> &parser) {
   _parser = parser;
   double epsilon = _parser->getEpsilon();
   double sigma = _parser->getSigma();
@@ -174,7 +174,6 @@ void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser
   auto dataLayoutOptions(_parser->getDataLayoutOptions());
   auto distributionMean(_parser->getDistributionMean());
   auto distributionStdDev(_parser->getDistributionStdDev());
-  auto functorChoice(_parser->getFunctorOption());
   auto generatorChoice(_parser->getGeneratorOption());
   auto newton3Options(_parser->getNewton3Options());
   auto particleSpacing(_parser->getParticleSpacing());
