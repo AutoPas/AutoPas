@@ -13,7 +13,7 @@
 template <class AutoPasTemplate>
 class TimeDiscretization {
  public:
-  explicit TimeDiscretization(double particleDeltaT, ParticlePropertiesLibrary &PCL);
+  explicit TimeDiscretization(double particleDeltaT, ParticlePropertiesLibrary &particlePropertiesLibrary);
 
   virtual ~TimeDiscretization() = default;
 
@@ -33,7 +33,7 @@ class TimeDiscretization {
   /**  Duration of a timestep
    * */
   double particle_delta_t;
-  ParticlePropertiesLibrary _PCL;
+  ParticlePropertiesLibrary _particlePropertiesLibrary;
 };
 
 template <class AutoPasTemplate>
@@ -45,7 +45,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateX(AutoPasTemplate &autopas)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto v = iter->getV();
-    auto m = _PCL.getMass(iter->getTypeId());
+    auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto f = iter->getF();
     iter->setOldf(f);
     v = autopas::ArrayMath::mulScalar(v, particle_delta_t);
@@ -66,7 +66,7 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas)
 #pragma omp parallel
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    auto m = _PCL.getMass(iter->getTypeId());
+    auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
     auto old_force = iter->getOldf();
     auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force, old_force)), particle_delta_t / (2 * m));
@@ -78,8 +78,9 @@ long TimeDiscretization<AutoPasTemplate>::VSCalculateV(AutoPasTemplate &autopas)
 }
 
 template <class AutoPasTemplate>
-TimeDiscretization<AutoPasTemplate>::TimeDiscretization(double particleDeltaT, ParticlePropertiesLibrary &PCL)
-    : particle_delta_t(particleDeltaT), _PCL(PCL) {}
+TimeDiscretization<AutoPasTemplate>::TimeDiscretization(double particleDeltaT,
+                                                        ParticlePropertiesLibrary &particlePropertiesLibrary)
+    : particle_delta_t(particleDeltaT), _particlePropertiesLibrary(particlePropertiesLibrary) {}
 
 template <class AutoPasTemplate>
 double TimeDiscretization<AutoPasTemplate>::getParticleDeltaT() const {

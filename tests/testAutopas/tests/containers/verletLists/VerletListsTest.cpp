@@ -507,9 +507,7 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
 
   Molecule p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, PCL, 0 /*shift*/);
+  autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, 0 /*shift*/);
   autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
       verletTraversal(&ljFunctor);
 
@@ -530,9 +528,7 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
 
   RandomGenerator::fillWithParticles(verletLists1, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), 100);
   RandomGenerator::fillWithParticles(verletLists2, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), 100);
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, PCL, 0);
+  autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, 0);
   autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
       verletTraversal1(&ljFunctor);
   autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>

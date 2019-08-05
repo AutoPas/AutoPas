@@ -25,7 +25,7 @@ class Simulation {
   autopas::AutoPas<Particle, ParticleCell> _autopas;
   std::shared_ptr<MDFlexParser> _parser;
   std::ofstream _logFile;
-  std::unique_ptr<ParticlePropertiesLibrary> _PCL;
+  std::unique_ptr<ParticlePropertiesLibrary> _particlePropertiesLibrary;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -136,7 +136,7 @@ void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser
   double mass = _parser->getMass();
   // initialisierung of PCL
   // this implementation doesnt support multiple particle Types, will be coming with PR md-parser
-  _PCL = std::make_unique<ParticlePropertiesLibrary>(epsilon, sigma, mass);
+  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibrary>(epsilon, sigma, mass);
   auto logFileName(_parser->getLogFileName());
   auto particlesTotal(_parser->getParticlesTotal());
   auto particlesPerDim(_parser->getParticlesPerDim());
@@ -257,7 +257,8 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
-  auto functor = autopas::LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
+  auto functor = autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>(_autopas.getCutoff(), 0.0,
+                                                                               *_particlePropertiesLibrary);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
@@ -271,7 +272,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   double deltaT = _parser->getDeltaT();
   double simTimeNow = 0;
   double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
-  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_PCL);
+  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_particlePropertiesLibrary);
 
   // main simulation loop
   while (simTimeNow < simTimeEnd) {

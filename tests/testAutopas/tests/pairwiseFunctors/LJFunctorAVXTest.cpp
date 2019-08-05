@@ -93,9 +93,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   // copy cells
   FMCell cell1NoAVX(cell1AVX);
   FMCell cell2NoAVX(cell2AVX);
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, 0.0);
   autopas::LJFunctorAVX<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
                                                                                             0.0);
 
@@ -149,9 +147,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, 0.0);
   autopas::LJFunctorAVX<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
                                                                                             0.0);
 
