@@ -26,6 +26,7 @@ class Simulation {
   std::shared_ptr<MDFlexParser> _parser;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibrary> _particlePropertiesLibrary;
+  std::unique_ptr<TimeDiscretization<autopas::AutoPas<Particle, ParticleCell>>> _timeDiscretization;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -138,6 +139,9 @@ void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser
   // initialisierung of PCL
   // this implementation doesnt support multiple particle Types, will be coming with PR md-parser
   _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibrary>(epsilon, sigma, mass);
+  _timeDiscretization =
+      std::make_unique<TimeDiscretization<decltype(_autopas)>>(_parser->getDeltaT(), *_particlePropertiesLibrary);
+
   auto logFileName(_parser->getLogFileName());
   auto particlesTotal(_parser->getParticlesTotal());
   auto particlesPerDim(_parser->getParticlesPerDim());
@@ -270,18 +274,17 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate() {
   std::chrono::high_resolution_clock::time_point startSim, stopSim;
   startSim = std::chrono::high_resolution_clock::now();
-  double deltaT = _parser->getDeltaT();
-  double simTimeNow = 0;
-  double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
-  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_particlePropertiesLibrary);
 
   // main simulation loop
-  while (simTimeNow < simTimeEnd) {
-    _timers.durationPositionUpdate += timeDiscretization.VSCalculateX(_autopas);
+  for (size_t iteration = 0; iteration < _parser->getIterations(); ++iteration) {
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+      std::cout << "Iteration " << iteration << std::endl;
+    }
+
+    _timers.durationPositionUpdate += _timeDiscretization.VSCalculateX(_autopas);
     this->calculateForces();
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
     _timers.durationVelocityUpdate += _timeDiscretization.VSCalculateV(_autopas);
