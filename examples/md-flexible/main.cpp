@@ -60,7 +60,7 @@ void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
 }
 
 int main(int argc, char **argv) {
-  // starts
+  // start simulation timer
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
 
   // Parsing
@@ -81,8 +81,6 @@ int main(int argc, char **argv) {
   cout << "Simulation done!" << endl;
 
   simulation.printStatistics();
-  // frage FABIO, wenn ich hier manuel den destructor von simlation aufrufe; wieso kriege ich 4 invalid reads(autopas
-  // container-traversals usw) und 18 invalid free
 
   return EXIT_SUCCESS;
 }

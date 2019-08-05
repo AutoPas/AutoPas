@@ -28,9 +28,11 @@ void ParticlePropertiesLibrary::addType(unsigned long typeID, double epsilon, do
   _masses.emplace(typeID, mass);
 }
 
-ParticlePropertiesLibrary::ParticlePropertiesLibrary(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
+ParticlePropertiesLibrary::ParticlePropertiesLibrary(const ParticlePropertiesLibrary &particlePropertiesLibrary) =
+    default;
 
-ParticlePropertiesLibrary &ParticlePropertiesLibrary::operator=(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
+ParticlePropertiesLibrary &ParticlePropertiesLibrary::operator=(
+    const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
 
 double ParticlePropertiesLibrary::getMass(unsigned long i) { return _masses.at(i); }
 

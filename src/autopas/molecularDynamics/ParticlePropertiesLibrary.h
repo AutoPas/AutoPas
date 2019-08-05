@@ -19,7 +19,6 @@
  */
 class ParticlePropertiesLibrary {
  public:
-
   /**
    * Default constructor.
    */
