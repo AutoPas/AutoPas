@@ -40,8 +40,6 @@ class LJFunctorAVX
   /**
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
    * @param cutoff
-   * @param epsilon
-   * @param sigma
    * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
@@ -220,11 +218,12 @@ class LJFunctorAVX
 
  private:
   template <bool newton3, bool masked>
-  inline void SoAKernel(const size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const x2ptr,
-                        const double *const y2ptr, const double *const z2ptr, double *const fx2ptr, double *const fy2ptr,
-                        double *const fz2ptr, const size_t *const typeID1ptr, const size_t *const type2IDptr, __m256d &fxacc,
-                        __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ,
-                        __m256d *upotSum, const unsigned int rest = 0) {
+  inline void SoAKernel(const size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
+                        const double *const x2ptr, const double *const y2ptr, const double *const z2ptr,
+                        double *const fx2ptr, double *const fy2ptr, double *const fz2ptr,
+                        const size_t *const typeID1ptr, const size_t *const type2IDptr, __m256d &fxacc, __m256d &fyacc,
+                        __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
+                        const unsigned int rest = 0) {
 #ifdef __AVX__
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquares = _sigmaSquare;
@@ -381,23 +380,23 @@ class LJFunctorAVX
       if (newton3) {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc,
-                                 fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+                                 fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc,
-                                fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+                                fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       } else {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc,
-                                  fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+                                  fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc,
-                                 fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+                                 fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
       // horizontally reduce fDacc to sumfD

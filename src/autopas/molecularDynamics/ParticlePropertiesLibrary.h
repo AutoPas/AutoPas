@@ -20,7 +20,14 @@
 template <typename floatType = double, typename intType = unsigned long>
 class ParticlePropertiesLibrary {
  public:
+  /**
+   * Type for floating point numbers.
+   */
   using ParticlePropertiesLibraryFloatType = floatType;
+
+  /**
+   * Type for integer numbers.
+   */
   using ParticlePropertiesLibraryIntType = intType;
 
   /**

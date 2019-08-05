@@ -69,7 +69,8 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   autopas.init();
   RandomGenerator::fillWithParticles(autopas, dummy, numberOfParticles);
   double particleD = 0.01;
-  TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(particleD, _particlePropertiesLibrary);
+  TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(particleD,
+                                                                                  _particlePropertiesLibrary);
   // initialize force and oldforce values:
   autopas.iteratePairwise(&functor);
   td1.VSCalculateX(autopas);
