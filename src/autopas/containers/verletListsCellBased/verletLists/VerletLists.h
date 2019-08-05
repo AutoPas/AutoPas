@@ -178,6 +178,17 @@ class VerletLists
                                            _buildVerletListType);
         break;
     }
+
+    std::cout << "Neighbor list:" << std::endl;
+    for (auto &[key, list] : _aosNeighborLists) {
+      std::cout << "--------" << std::endl;
+      std::cout << "first:" << key->toString() << std::endl << "interacts with:" << std::endl;
+      for (auto &second : list) {
+        std::cout << "-" << second->toString() << std::endl;
+      }
+      std::cout << std::endl;
+    }
+
     _soaListIsValid = false;
   }
 
