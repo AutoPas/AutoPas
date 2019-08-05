@@ -20,7 +20,7 @@ void LinkedCellsVersusVarVerletListsTest::test(unsigned long numMolecules, doubl
   _verletLists = std::make_unique<vltype>(getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 4);
 
   // fill containers
-  RandomGenerator::fillWithParticles(*_verletLists, autopas::MoleculeLJ<>({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
+  RandomGenerator::fillWithParticles(*_verletLists, autopas::MoleculeLJ<>({0., 0., 0.}, {0., 0., 0.}, 0, 0), numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new and different particles
   for (auto it = _verletLists->begin(); it.isValid(); ++it) {

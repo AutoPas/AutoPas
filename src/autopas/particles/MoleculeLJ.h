@@ -13,7 +13,7 @@
 namespace autopas {
 
 /**
- * lennard jones molecule class
+ * Molecule class for the LJFunctor.
  */
 template <typename floatType = double>
 class MoleculeLJ : public Particle {
@@ -21,23 +21,14 @@ class MoleculeLJ : public Particle {
   MoleculeLJ() = default;
 
   /**
-   * constructor of a lennard jones molecule
-   * @param r position of the molecule
-   * @param v velocity of the molecule
-   * @param id id of the molecule
+   * Constructor of lennard jones molecule with initialization of typeID.
+   * @param r Position of the molecule.
+   * @param v Velocitiy of the molecule.
+   * @param id Id of the molecule.
+   * @param typeId TypeId of the molecule.
    */
-  explicit MoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id) : Particle(r, v, id) {}
-  /**
-   * constructor of lennard jones molecule with initilization of typeID
-   * @param r position of the molecule
-   * @param v velocitiy of the molecule
-   * @param id id of the molecule
-   * @param _typeid typeId of the molecule
-   */
-  MoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id, unsigned long _typeid)
-      : Particle(r, v, id) {
-    this->_typeId = _typeid;
-  }
+  explicit MoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id, unsigned long typeId)
+      : Particle(r, v, id), _typeId(typeId) {}
 
   ~MoleculeLJ() override = default;
 
@@ -47,7 +38,7 @@ class MoleculeLJ : public Particle {
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, typeId, owned };
 
   /**
-   * the type for the soa storage
+   * The type for the SoA storage.
    */
   typedef typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType,
                                            size_t, floatType>::Type SoAArraysType;
@@ -124,23 +115,28 @@ class MoleculeLJ : public Particle {
     }
   }
 
-  /**get OldForce
-   * @return OLDF
+  /**
+   * Get the old force.
+   * @return
    */
-  [[nodiscard]] std::array<double, 3> getOldf() const { return OLDF; }
+  [[nodiscard]] std::array<double, 3> getOldf() const { return _oldF; }
 
-  /**set OldForce
-   * @param oldf
+  /**
+   * Set old force.
+   * @param oldForce
    */
-  void setOldf(const std::array<double, 3> &oldf) {
-    OLDF = oldf;
+  void setOldF(const std::array<double, 3> &oldForce) {
+    _oldF = oldForce;
   }
 
-  /**get TypeId
-   * @return _typeId
-   * */
+  /**
+   * Get TypeId.
+   * @return
+   */
   [[nodiscard]] size_t getTypeId() const { return _typeId; }
-  /**set _TypeId of Particle
+
+  /**
+   * Set the type id of the Molecule.
    * @param typeId
    * */
   void setTypeId(size_t typeId) {
@@ -157,7 +153,7 @@ class MoleculeLJ : public Particle {
   /**
    * Old Force of the particle experiences as 3D vector.
    */
-  std::array<double, 3> OLDF = {0., 0., 0.};
+  std::array<double, 3> _oldF = {0., 0., 0.};
 };
 
 }  // namespace autopas

@@ -19,8 +19,8 @@ TEST_F(C04SoATraversalTest, testTraversal) {
   std::vector<FMCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  autopas::MoleculeLJ<> default1 = Molecule({1.75, 2.1, 1.75}, {0., 0., 0.}, 0);
-  autopas::MoleculeLJ<> default2 = Molecule({1.75, 1.6, 1.75}, {0., 0., 0.}, 1);
+  autopas::MoleculeLJ<> default1 = Molecule({1.75, 2.1, 1.75}, {0., 0., 0.}, 0, 0);
+  autopas::MoleculeLJ<> default2 = Molecule({1.75, 1.6, 1.75}, {0., 0., 0.}, 1, 0);
 
   cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 2ul, 1ul, edgeLength)].addParticle(default1);
   cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, edgeLength)].addParticle(default2);

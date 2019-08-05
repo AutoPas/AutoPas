@@ -306,9 +306,9 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
     default:
       FAIL() << "not in enum where_type";
   }
-  Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
   p1.setOwned(owned1);
-  Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
   p2.setOwned(owned2);
   functor.initTraversal();
 
@@ -376,12 +376,12 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
   }
   FMCell cell1, cell2;
   {
-    Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
+    Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
     p1.setOwned(owned1);
     cell1.addParticle(p1);
-    Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
+    Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
     p2.setOwned(owned2);
-    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, 2);
+    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, 2, 0);
     pAdditional.setOwned(owned2);
     switch (interactionType) {
       case InteractionType::verlet:
@@ -499,11 +499,11 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   double multiParticleFactor = 2.;  // two particles, so factor 2
   double whereFactor = 1.;          // all inside, so factor 1
   std::string where_str = "inside";
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
-  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
                                                                                            duplicatedCalculation);
 

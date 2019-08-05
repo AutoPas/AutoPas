@@ -34,7 +34,7 @@ void CudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
 
   for (unsigned long i = 0; i < numMolecules; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::MoleculeLJ<> m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
+    autopas::MoleculeLJ<> m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0);
     cont.addParticle(m);
   }
 }

@@ -17,9 +17,20 @@
 class PrintableMolecule
     : public autopas::MoleculeLJ<> /*apparently c++17 doesnt need <> but doesnt compile without it*/ {
  public:
+  /**
+   * Empty Constructor.
+   */
   PrintableMolecule() : MoleculeLJ() {}
 
-  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : MoleculeLJ(r, v, i) {}
+  /**
+   * Constructor.
+   * @param r Position
+   * @param v Veloctiy
+   * @param i Molecule ID
+   * @param typeID Molecule Type ID
+   */
+  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i, unsigned int typeID = 0)
+      : MoleculeLJ(r, v, i, typeID) {}
 
   /**
    * Print molecule properties to std out.

@@ -277,8 +277,8 @@ void testSimulationLoop(testingTuple options) {
   std::array<double, 3> pos2 = autopas::ArrayMath::add(pos1, distVec);
 
   {
-    Molecule particle1(pos1, {0., 0., 0.}, 0);
-    Molecule particle2(pos2, {0., 0., 0.}, 1);
+    Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, 1, 0);
 
     // add the two particles!
     autoPas.addParticle(particle1);
@@ -385,8 +385,8 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   std::array<double, 3> pos2 = autopas::ArrayMath::add(pos1, distVec);
 
   {
-    Molecule particle1(pos1, {0., 0., 0.}, 0);
-    Molecule particle2(pos2, {0., 0., 0.}, 1);
+    Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, 1, 0);
 
     // add the two particles!
     for (auto p : {&particle1, &particle2}) {

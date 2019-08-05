@@ -208,8 +208,7 @@ void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<MDFlex
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
-      this->initContainerGrid(_autopas, particlesPerDim,
-                              particleSpacing);  // particlesTotal wird in diesem fall in der main geupdated
+      this->initContainerGrid(_autopas, particlesPerDim, particleSpacing);
       break;
     }
     case MDFlexParser::GeneratorOption::uniform: {
@@ -321,7 +320,6 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   using namespace std;
   size_t flopsPerKernelCall;
 
-  // FlopsPerKernelCall ließt vom Functor
   switch (_parser->getFunctorOption()) {
     case MDFlexParser::FunctorOption ::lj12_6: {
       flopsPerKernelCall = autopas::LJFunctor<PrintableMolecule,
@@ -335,7 +333,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
       break;
     }
     default:
-      throw std::runtime_error("Not allowed Functor choice");
+      throw std::runtime_error("Invalid Functor choice");
   }
 
   _timers.stopTotal = std::chrono::high_resolution_clock::now();

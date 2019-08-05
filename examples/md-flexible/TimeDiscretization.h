@@ -59,7 +59,7 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::VSC
     auto v = iter->getV();
     auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto f = iter->getF();
-    iter->setOldf(f);
+    iter->setOldF(f);
     v = autopas::ArrayMath::mulScalar(v, particle_delta_t);
     f = autopas::ArrayMath::mulScalar(f, (particle_delta_t * particle_delta_t / (2 * m)));
     auto newR = autopas::ArrayMath::add(v, f);
