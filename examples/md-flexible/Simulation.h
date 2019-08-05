@@ -48,10 +48,10 @@ class Simulation {
    * @param autopas
    */
   void writeVTKFile(unsigned int iteration) {
-    std::string filename = "VtkOutput";
+    std::string fileBaseName = _parser->getVTKFilenName();
     std::stringstream strstr;
     auto maxNumDigits = std::to_string(_parser->getIterations()).length();
-    strstr << filename << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
+    strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
     std::ofstream vtkFile;
     vtkFile.open(strstr.str());
 
