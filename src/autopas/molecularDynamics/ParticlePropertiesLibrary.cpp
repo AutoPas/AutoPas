@@ -22,6 +22,7 @@ ParticlePropertiesLibrary::ParticlePropertiesLibrary(double &epsilon, double &si
   this->_computedMixingSigmaSquare.emplace(std::make_pair(0, 0), (sigma * sigma));
 }
 void ParticlePropertiesLibrary::addType(unsigned long typeID, double epsilon, double sigma, double mass) {
+  _epsilons.emplace(typeID, epsilon);
   for (auto &e : _epsilons) {
     unsigned long indexOfExistingEpsilon = std::get<0>(e);
     double secondEpsilon = std::get<1>(e);
@@ -29,7 +30,8 @@ void ParticlePropertiesLibrary::addType(unsigned long typeID, double epsilon, do
     auto newEntry = std::make_pair(indexOfExistingEpsilon, typeID);
     _computedMixing24Epsilon.emplace(newEntry, epsilon24);
   }
-  _epsilons.emplace(typeID, epsilon);
+
+  _sigmas.emplace(typeID, sigma);
   for (auto &s : _sigmas) {
     unsigned long indexOfExistingSigma = std::get<0>(s);
     double existingSigma = std::get<1>(s);
@@ -37,7 +39,7 @@ void ParticlePropertiesLibrary::addType(unsigned long typeID, double epsilon, do
     auto newEntry = std::make_pair(indexOfExistingSigma, typeID);
     _computedMixingSigmaSquare.emplace(newEntry, (newSigma * newSigma));
   }
-  _sigmas.emplace(typeID, sigma);
+
   _masses.emplace(typeID, mass);
 }
 
