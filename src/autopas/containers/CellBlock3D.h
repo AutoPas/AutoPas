@@ -193,12 +193,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
     auto lowIndex3D = get3DIndexOfPosition(ArrayMath::subScalar(position, allowedDistance));
     auto highIndex3D = get3DIndexOfPosition(ArrayMath::addScalar(position, allowedDistance));
-
-    // squeeze to proper domain.
-    for (size_t i = 0; i < 3; ++i) {
-      lowIndex3D[i] = std::max(lowIndex3D[i], 0ul);
-      highIndex3D[i] = std::min(highIndex3D[i], _cellsPerDimensionWithHalo[i] - 1);
-    }
+    // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
 
     auto currentIndex = lowIndex3D;
 
