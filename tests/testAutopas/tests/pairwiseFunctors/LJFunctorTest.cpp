@@ -5,7 +5,7 @@
  */
 
 #include "LJFunctorTest.h"
-#include "autopas/particles/MoleculeLJ.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "testingHelpers/commonTypedefs.h"
 
 template <bool mixing>

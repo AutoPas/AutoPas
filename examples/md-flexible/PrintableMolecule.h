@@ -9,7 +9,7 @@
 #include <array>
 #include <iomanip>
 #include <iostream>
-#include "autopas/particles/MoleculeLJ.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 
 /**
  * Example for a custom particle type derived from a autopas molecule type.
