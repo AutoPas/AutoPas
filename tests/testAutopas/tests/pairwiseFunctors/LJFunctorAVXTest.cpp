@@ -8,7 +8,7 @@
 
 #include "LJFunctorAVXTest.h"
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/RandomGenerator.h"
 

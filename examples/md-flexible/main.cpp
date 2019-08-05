@@ -16,7 +16,7 @@
 #include "MDFlexParser.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 
 using namespace std;
 using namespace autopas;

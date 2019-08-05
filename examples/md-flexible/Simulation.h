@@ -17,7 +17,7 @@
 #include "PrintableMolecule.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 
 template <class Particle, class ParticleCell>
 class Simulation {
