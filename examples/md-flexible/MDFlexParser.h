@@ -62,13 +62,13 @@ class MDFlexParser {
   unsigned int getTuningSamples() const;
   unsigned int getTuningMaxEvidence() const;
   autopas::TuningStrategyOption getTuningStrategyOption() const;
-  std::string getWriteVTK() const;
+  std::string getVTKFilenName() const;
+  size_t getVtkWriteFrequency() const;
   const std::set<autopas::TraversalOption> &getTraversalOptions() const;
   unsigned int getVerletRebuildFrequency() const;
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
   void printConfig();
-
   double getMass() const;
 
  private:
@@ -104,6 +104,8 @@ class MDFlexParser {
   std::string writeVTK = "";
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
+  std::string vtkFileName = "";
+  size_t vtkWriteFrequency = 100;
   double verletSkinRadius = .2;
   double epsilon = 5.0;
   double sigma = 1.0;

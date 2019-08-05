@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
   if (not parser->parseInput(argc, argv)) {
     exit(-1);
   }
-  auto vtkFilename(parser->getWriteVTK());
   parser->printConfig();
   cout << endl;
 

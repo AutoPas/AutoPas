@@ -48,10 +48,11 @@ class Simulation {
    * @param numParticles
    * @param autopas
    */
-  void writeVTKFile(int iteration, size_t numParticles, autopas::AutoPas<Particle, ParticleCell> &autopas) {
+  void writeVTKFile(unsigned int iteration) {
     std::string filename = "VtkOutput";
     std::stringstream strstr;
-    strstr << filename << "_" << std::setfill('0') << std::setw(4) << iteration << ".vtu";
+    auto maxNumDigits = std::to_string(_parser->getIterations()).length();
+    strstr << filename << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
     std::ofstream vtkFile;
     vtkFile.open(strstr.str());
 
@@ -60,9 +61,9 @@ class Simulation {
     vtkFile << "ASCII" << std::endl;
     vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
     vtkFile << "DIMENSIONS 1 1 1" << std::endl;
-    vtkFile << "POINTS " << numParticles << " double" << std::endl;
+    vtkFile << "POINTS " << _autopas.getNumberOfParticles() << " double" << std::endl;
 
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
       auto pos = iter->getR();
       vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
     }
@@ -278,13 +279,17 @@ void Simulation<Particle, ParticleCell>::simulate() {
   while (simTimeNow < simTimeEnd) {
     _timers.durationPositionUpdate += timeDiscretization.VSCalculateX(_autopas);
     this->calculateForces();
+
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    _timers.durationVelocityUpdate += timeDiscretization.VSCalculateV(_autopas);
-    simTimeNow += deltaT;
-    this->writeVTKFile(simTimeNow / deltaT, _autopas.getNumberOfParticles(), _autopas);
+    _timers.durationVelocityUpdate += _timeDiscretization.VSCalculateV(_autopas);
+
+    // only write vtk files periodically and if a filename is given
+    if ((not _parser->getVTKFilenName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {
+      this->writeVTKFile(iteration);
+    }
   }
 
   stopSim = std::chrono::high_resolution_clock::now();
