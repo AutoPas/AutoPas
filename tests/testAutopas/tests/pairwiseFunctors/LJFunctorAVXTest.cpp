@@ -93,9 +93,14 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   // copy cells
   FMCell cell1NoAVX(cell1AVX);
   FMCell cell2NoAVX(cell2AVX);
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, 0.0);
-  autopas::LJFunctorAVX<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
-                                                                                            0.0);
+  autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff,
+                                                                                                               0.0);
+  ljFunctorNoAVX.setEpsilon24(_epsilon * 24.0);
+  ljFunctorNoAVX.setSigmaSquare(_sigma * _sigma);
+  autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff,
+                                                                                                                0.0);
+  ljFunctorAVX.setEpsilon24(_epsilon * 24.0);
+  ljFunctorAVX.setSigmaSquare(_sigma * _sigma);
 
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
@@ -147,9 +152,14 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, 0.0);
-  autopas::LJFunctorAVX<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
-                                                                                            0.0);
+  autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff,
+                                                                                                               0.0);
+  ljFunctorNoAVX.setEpsilon24(_epsilon * 24.0);
+  ljFunctorNoAVX.setSigmaSquare(_sigma * _sigma);
+  autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff,
+                                                                                                                0.0);
+  ljFunctorAVX.setEpsilon24(_epsilon * 24.0);
+  ljFunctorAVX.setSigmaSquare(_sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
 
