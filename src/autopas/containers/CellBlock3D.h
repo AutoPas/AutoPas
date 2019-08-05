@@ -174,12 +174,32 @@ class CellBlock3D : public CellBorderAndFlagManager {
     auto index3d = get3DIndexOfPosition(position);
     std::array<int, 3> diff = {0, 0, 0};
     auto currentIndex = index3d;
+
     std::vector<ParticleCell *> closeHaloCells;
+
+    {
+      // always add the cell the particle is currently in first, for that we test if it is a halo cell.
+      bool isPossibleHaloCell = false;
+      for (int i = 0; i < 3; i++) {
+        isPossibleHaloCell |= currentIndex[i] < _cellsPerInteractionLength ||
+                              currentIndex[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength;
+      }
+      if (isPossibleHaloCell) {
+        closeHaloCells.push_back(&getCell(currentIndex));
+      }
+    }
+
+    // possible optimization: skip some of these loops by splitting the closeness check over all loops.
+    // i.e. check with diff[0] first, if it is already bad: skip inner loops.
     for (diff[0] = -1; diff[0] < 2; diff[0]++) {
       currentIndex[0] = index3d[0] + diff[0];
       for (diff[1] = -1; diff[1] < 2; diff[1]++) {
         currentIndex[1] = index3d[1] + diff[1];
         for (diff[2] = -1; diff[2] < 2; diff[2]++) {
+          if (diff[0] == 0 and diff[1] == 0 and diff[2] == 0) {
+            continue;
+            // we have already added the cell which normally would belong to the particle.
+          }
           currentIndex[2] = index3d[2] + diff[2];
           // check if there exists a cell with the specified coordinates
           bool isPossibleHaloCell = false;
@@ -190,16 +210,16 @@ class CellBlock3D : public CellBorderAndFlagManager {
             isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] && currentIndex[i] >= 0;
           }
           if (isPossibleHaloCell && isValidCell) {
-            std::array<std::array<double, 3>, 2> boxBound{};
-            getCellBoundingBox(index3d, boxBound[0], boxBound[1]);
+            std::array<double, 3> boxMin{}, boxMax{};
+            getCellBoundingBox(index3d, boxMin, boxMax);
             bool close = true;
             for (int i = 0; i < 3; i++) {
               if (diff[i] < 0) {
-                if (position[i] - boxBound[1][i] > allowedDistance) {
+                if (position[i] - boxMax[i] > allowedDistance) {
                   close = false;
                 }
               } else if (diff[i] > 0) {
-                if (boxBound[0][i] - position[i] > allowedDistance) {
+                if (boxMin[i] - position[i] > allowedDistance) {
                   close = false;
                 }
               }
