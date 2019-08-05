@@ -21,21 +21,19 @@
 
 template <class Particle, class ParticleCell>
 class Simulation {
- private:
-  autopas::AutoPas<Particle, ParticleCell> _autopas;
-  std::shared_ptr<MDFlexParser> _parser;
-  std::ofstream _logFile;
-  std::unique_ptr<ParticlePropertiesLibrary> _particlePropertiesLibrary;
-  std::unique_ptr<TimeDiscretization<autopas::AutoPas<Particle, ParticleCell>>> _timeDiscretization;
-
-  struct timers {
-    long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
-    std::chrono::system_clock::time_point startTotal, stopTotal;
-  } _timers;
-
  public:
+  /**
+   * Constructor.
+   *
+   * This starts the timer for total simulation time.
+   */
   explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now(); };
 
+  /**
+   * Destructor.
+   *
+   * Closes the log file if applicable.
+   */
   ~Simulation() {
     if (not _parser->getLogFileName().empty()) {
       _logFile.close();
@@ -123,6 +121,18 @@ class Simulation {
   /**Prints Statistics(duration of calculation, etc ..) of the Simulation
    * */
   void printStatistics();
+
+ private:
+  autopas::AutoPas<Particle, ParticleCell> _autopas;
+  std::shared_ptr<MDFlexParser> _parser;
+  std::ofstream _logFile;
+  std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> _particlePropertiesLibrary;
+  std::unique_ptr<TimeDiscretization<decltype(_autopas), double, size_t>> _timeDiscretization;
+
+  struct timers {
+    long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
+    std::chrono::system_clock::time_point startTotal, stopTotal;
+  } _timers;
 };
 
 template <class Particle, class ParticleCell>
