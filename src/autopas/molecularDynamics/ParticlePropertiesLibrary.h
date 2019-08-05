@@ -20,6 +20,9 @@
 template <typename floatType = double, typename intType = unsigned long>
 class ParticlePropertiesLibrary {
  public:
+  using ParticlePropertiesLibraryFloatType = floatType;
+  using ParticlePropertiesLibraryIntType = intType;
+
   /**
    * Default constructor.
    */

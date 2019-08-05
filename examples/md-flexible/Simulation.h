@@ -133,7 +133,9 @@ class Simulation {
   std::shared_ptr<MDFlexParser> _parser;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> _particlePropertiesLibrary;
-  std::unique_ptr<TimeDiscretization<decltype(_autopas), double, size_t>> _timeDiscretization;
+  std::unique_ptr<
+      TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>
+      _timeDiscretization;
 
   struct timers {
     long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
@@ -152,11 +154,10 @@ void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser
   double epsilon = _parser->getEpsilon();
   double sigma = _parser->getSigma();
   double mass = _parser->getMass();
-  // initialisierung of PCL
-  // this implementation doesnt support multiple particle Types, will be coming with PR md-parser
-  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibrary<double, size_t>>();
-  _particlePropertiesLibrary->addType(0,epsilon, sigma, mass);
-  _timeDiscretization = std::make_unique<TimeDiscretization<decltype(_autopas), double, size_t>>(
+  _particlePropertiesLibrary = std::make_unique<std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>();
+  _particlePropertiesLibrary->addType(0, epsilon, sigma, mass);
+  _timeDiscretization = std::make_unique<
+      TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
       _parser->getDeltaT(), *_particlePropertiesLibrary);
 
   auto logFileName(_parser->getLogFileName());
@@ -173,7 +174,7 @@ void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser
   auto dataLayoutOptions(_parser->getDataLayoutOptions());
   auto distributionMean(_parser->getDistributionMean());
   auto distributionStdDev(_parser->getDistributionStdDev());
-  // auto functorChoice(_parser->getFunctorOption());
+  auto functorChoice(_parser->getFunctorOption());
   auto generatorChoice(_parser->getGeneratorOption());
   auto newton3Options(_parser->getNewton3Options());
   auto particleSpacing(_parser->getParticleSpacing());

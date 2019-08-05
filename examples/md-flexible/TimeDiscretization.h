@@ -10,11 +10,15 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/MemoryProfiler.h"
 
-template <class AutoPasTemplate, typename floatType, typename intType>
+template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 class TimeDiscretization {
  public:
-  explicit TimeDiscretization(floatType particleDeltaT,
-                              ParticlePropertiesLibrary<floatType, intType> &particlePropertiesLibrary);
+  using TimeDiscretizationFloatType = typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryFloatType;
+  using TimeDiscretizationIntType = typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryIntType;
+
+  explicit TimeDiscretization(TimeDiscretizationFloatType particleDeltaT,
+                              ParticlePropertiesLibraryTemplate &particlePropertiesLibrary)
+      : particle_delta_t(particleDeltaT), _particlePropertiesLibrary(particlePropertiesLibrary){};
 
   virtual ~TimeDiscretization() = default;
 
@@ -34,17 +38,18 @@ class TimeDiscretization {
   /**Getter for particleDeltaT
    * @return particle_delta_t
    * */
-  floatType getParticleDeltaT() const;
+  TimeDiscretizationFloatType getParticleDeltaT() const;
 
  private:
-  /**  Duration of a timestep
-   * */
-  floatType particle_delta_t;
-  ParticlePropertiesLibrary<floatType, intType> _particlePropertiesLibrary;
+  /**
+   * Duration of a timestep
+   */
+  TimeDiscretizationFloatType particle_delta_t;
+  ParticlePropertiesLibraryTemplate _particlePropertiesLibrary;
 };
 
-template <class AutoPasTemplate, typename floatType, typename intType>
-long TimeDiscretization<AutoPasTemplate, floatType, intType>::VSCalculateX(AutoPasTemplate &autopas) {
+template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
+long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::VSCalculateX(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
@@ -64,8 +69,8 @@ long TimeDiscretization<AutoPasTemplate, floatType, intType>::VSCalculateX(AutoP
   return std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
 }
 
-template <class AutoPasTemplate, typename floatType, typename intType>
-long TimeDiscretization<AutoPasTemplate, floatType, intType>::VSCalculateV(AutoPasTemplate &autopas) {
+template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
+long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::VSCalculateV(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
@@ -82,12 +87,8 @@ long TimeDiscretization<AutoPasTemplate, floatType, intType>::VSCalculateV(AutoP
   return std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
 }
 
-template <class AutoPasTemplate, typename floatType, typename intType>
-TimeDiscretization<AutoPasTemplate, floatType, intType>::TimeDiscretization(
-    floatType particleDeltaT, ParticlePropertiesLibrary<floatType, intType> &particlePropertiesLibrary)
-    : particle_delta_t(particleDeltaT), _particlePropertiesLibrary(particlePropertiesLibrary) {}
-
-template <class AutoPasTemplate, typename floatType, typename intType>
-floatType TimeDiscretization<AutoPasTemplate, floatType, intType>::getParticleDeltaT() const {
+template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
+typename TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::TimeDiscretizationFloatType
+TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::getParticleDeltaT() const {
   return particle_delta_t;
 }
