@@ -345,7 +345,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   // time statistics
   cout << "Simulation duration without initilization: " << _timers.durationSimulate << " \u03bcs" << endl;
   // Statistics
-  cout << fixed << setprecision(2);
+  cout << fixed << setprecision(3);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
   cout << "Duration of Physics Calculations: " << endl;
