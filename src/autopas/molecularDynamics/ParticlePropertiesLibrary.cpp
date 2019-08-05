@@ -6,21 +6,6 @@
 
 #include "ParticlePropertiesLibrary.h"
 
-/** Default constuktor wenn es nur ein Particle Type gibt
- **/
-ParticlePropertiesLibrary::ParticlePropertiesLibrary(double &epsilon, double &sigma, double mass) {
-  std::map<unsigned long, double> EMap;
-  std::map<unsigned long, double> SMap;
-  std::map<unsigned long, double> MMap;
-  EMap.emplace(0, epsilon);
-  SMap.emplace(0, sigma);
-  MMap.emplace(0, mass);
-  this->_epsilons = EMap;
-  this->_sigmas = SMap;
-  this->_masses = MMap;
-  this->_computedMixing24Epsilon.emplace(std::make_pair(0, 0), 24 * epsilon);
-  this->_computedMixingSigmaSquare.emplace(std::make_pair(0, 0), (sigma * sigma));
-}
 void ParticlePropertiesLibrary::addType(unsigned long typeID, double epsilon, double sigma, double mass) {
   _epsilons.emplace(typeID, epsilon);
   for (auto &e : _epsilons) {

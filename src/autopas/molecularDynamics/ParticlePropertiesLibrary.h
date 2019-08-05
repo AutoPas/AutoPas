@@ -21,12 +21,6 @@
 class ParticlePropertiesLibrary {
  public:
   ParticlePropertiesLibrary() = default;
-  /**Constructor if there is only one Type used
-   * @param epsilon
-   * @param sigma
-   * @param mass
-   * */
-  ParticlePropertiesLibrary(double &epsilon, double &sigma, double mass);
   /**Copy Constructor
    * @param pcl
    * */
@@ -78,7 +72,7 @@ class ParticlePropertiesLibrary {
    * @param i (typeId index)
    * @param j (typeId index)
    * @return (sigmaMixingRule)²
-   * */
+   */
   inline double mixingSigmaSquare(unsigned long i, unsigned long j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
     return _computedMixingSigmaSquare.at(key);
