@@ -101,7 +101,8 @@ class VerletListsCells
       }
     }
 
-    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap, this->getCutoff());
+    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap,
+                                                           this->getCutoff() + this->getSkin());
 
     switch (_buildTraversal) {
       case c08: {
