@@ -70,6 +70,7 @@ class LJFunctorAVX
         _one{0},
         _masks{0, 0, 0},
         _cutoffsquare{0},
+        _shift6{0},
         _epsilon24{0},
         _sigmaSquare{0} {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
@@ -621,9 +622,9 @@ class LJFunctorAVX
   const __m256d _one;
   const __m256i _masks[3];
   const __m256d _cutoffsquare;
+  const __m256d _shift6;
   __m256d _epsilon24;
   __m256d _sigmaSquare;
-  const __m256d _shift6;
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
