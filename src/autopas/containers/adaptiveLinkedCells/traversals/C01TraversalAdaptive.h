@@ -40,9 +40,11 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell>, public Link
   explicit C01TraversalAdaptive(PairwiseFunctor *pairwiseFunctor, std::unique_ptr<TraversalSelectorInfo> info)
       : CellPairTraversal<ParticleCell>(info->dims),
         _cellFunctor(pairwiseFunctor, info->interactionLength),
-        _dataLayoutConverter(pairwiseFunctor) /*,
-         _octree(reinterpret_cast<TraversalSelectorInfoAdaptive*>(info.get())->octree)*/
-  {}
+        _dataLayoutConverter(pairwiseFunctor),
+        _octree(*static_cast<Octree<typename ParticleCell::ParticleType, ParticleCell> *>(
+            reinterpret_cast<TraversalSelectorInfoAdaptive *>(info.get())->octree)) {
+    std::cout << static_cast<std::string>(_octree) << std::endl;
+  }
 
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -114,7 +116,7 @@ class C01TraversalAdaptive : public CellPairTraversal<ParticleCell>, public Link
    */
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 
-  // Octree<typename ParticleCell::ParticleType, ParticleCell> &_octree;
+  Octree<typename ParticleCell::ParticleType, ParticleCell> &_octree;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
@@ -124,17 +126,17 @@ inline void C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useN
   auto &baseCell{leaf.getCell()};
   for (auto const &[neighborIndex, r] : leaf.getNeighbors()) {
     _cellFunctor.processCellPair(baseCell, cells[neighborIndex], r);
-    _cellFunctor.processCell(baseCell);
   }
+  _cellFunctor.processCell(baseCell);
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
 inline void C01TraversalAdaptive<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
-  // auto &cells = *(this->_cells);
+  auto &cells = *(this->_cells);
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception("The adaptive C01 traversal cannot work with enabled newton3");
   }
-  //_octree.apply([&](auto &node) { this->processBaseCell(cells, node); }, internal::ExecutionPolicy::par);
+  _octree.apply([&](auto &node) { this->processBaseCell(cells, node); }, internal::ExecutionPolicy::par);
 }
 
 }  // namespace autopas

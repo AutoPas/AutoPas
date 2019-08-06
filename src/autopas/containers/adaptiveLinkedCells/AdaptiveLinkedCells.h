@@ -119,15 +119,19 @@ class AdaptiveLinkedCells final : public ParticleContainer<Particle, ParticleCel
   void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
-    traversal->initTraversal();
-    /*if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
+    if (traversalInterface && cellPairTraversal) {
+      cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in AdaptiveLinkedCells::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
-    }*/
+    }
+
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
     traversal->endTraversal();
   }
 
@@ -140,8 +144,7 @@ class AdaptiveLinkedCells final : public ParticleContainer<Particle, ParticleCel
   bool isContainerUpdateNeeded() override { return octree.isUpdateNeeded(); }
 
   std::unique_ptr<TraversalSelectorInfo> getTraversalSelectorInfo() override {
-    return std::make_unique<TraversalSelectorInfoAdaptive>(_cellsPerDimension, this->getCutoff(),
-                                                           _cellLength /*, octree*/);
+    return std::make_unique<TraversalSelectorInfoAdaptive>(_cellsPerDimension, this->getCutoff(), _cellLength, &octree);
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

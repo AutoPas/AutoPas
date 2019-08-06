@@ -63,17 +63,23 @@ class Octree {
       utils::ExceptionHandler::exception("Octree: Cells per dimension is not a power of 2");
     }
 
-    unsigned int exp = 0ul;
+    size_t exp = 0ul;
     while (_cellsPerDimension[0] != (1ul << exp)) {
       ++exp;
     }
-    root = new internal::OctreeExternalNode<Particle, ParticleCell>(nullptr, *_cells, exp, _boxMin, _boxMax);
+    exp = exp + exp + exp;
+    internal::OctreeNode<Particle, ParticleCell>::setMaxExp(exp);
+    std::cout << "Octree: cellsPerDimension: " << _cellsPerDimension[0] << " exponent: " << exp << std::endl;
+    root = new internal::OctreeExternalNode<Particle, ParticleCell>(nullptr, *_cells, 0, _boxMin, _boxMax);
   }
 
   /**
    * Updates the tree.
    */
-  void update() { root = root->update(*_cells); }
+  void update() {
+    root = root->update(*_cells);
+    root->updateNeigbors();
+  }
 
   /**
    * Returns whether update() would change the tree.

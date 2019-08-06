@@ -30,8 +30,8 @@ class OctreeNode {
    * @param level
    * @param index
    */
-  OctreeNode(OctreeNode<Particle, ParticleCell> *parent, const unsigned int index)
-      : _parent(parent), _level((parent == nullptr) ? 0 : parent->_level + 1), _index(index) {}
+  OctreeNode(OctreeNode<Particle, ParticleCell> *parent, const unsigned int index, const std::array<double, 3> &center)
+      : _parent(parent), _level((parent == nullptr) ? _maxExp : parent->_level - 3), _index(index), _center(center) {}
 
   /**
    * Destructor of OctreeNode.
@@ -77,11 +77,39 @@ class OctreeNode {
    */
   virtual size_t getIndex() const { return _index; }
 
+  /**
+   * Return the base index.
+   * @return
+   */
+  virtual const std::array<double, 3> &getCenter() const { return _center; }
+
+  /**
+   * Updates all Neighbors. This is necessary after splitting or combination of nodes.
+   */
+  virtual void updateNeigbors() = 0;
+
+  /**
+   * Return the base index.
+   * @return
+   */
+  virtual size_t getLevel() const { return _level; }
+
+  virtual std::vector<Particle> getOutliers() = 0;
+
+  virtual bool isLeaf() const = 0;
+
+  static void setMaxExp(size_t exp) { _maxExp = exp; }
+
  protected:
   OctreeNode<Particle, ParticleCell> *_parent;
-  const unsigned int _level;
-  const unsigned int _index;
+  const size_t _level;
+  const size_t _index;
+  const std::array<double, 3> _center;
+  static size_t _maxExp;
 };
+
+template <class Particle, class ParticleCell>
+size_t OctreeNode<Particle, ParticleCell>::_maxExp = 0ul;
 
 }  // namespace internal
 }  // namespace autopas

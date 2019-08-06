@@ -28,13 +28,12 @@ class TraversalSelectorInfoAdaptive : public TraversalSelectorInfo {
    * @param octree Octree used to organize adaptive cells.
    */
   explicit TraversalSelectorInfoAdaptive(const std::array<unsigned long, 3> &dims, const double cutoff,
-                                         const std::array<double, 3> &cellLength/*,
-                                         Octree<Particle, ParticleCell<Particle>> &octree*/)
-      : TraversalSelectorInfo(dims, cutoff, cellLength)/*, octree(octree) */{}
+                                         const std::array<double, 3> &cellLength, void *octree)
+      : TraversalSelectorInfo(dims, cutoff, cellLength), octree(octree) {}
 
   /**
    * Octree used to organize adaptive cells.
    */
-  // Octree<Particle, ParticleCell<Particle>> &octree;
+  void *octree;
 };
 }  // namespace autopas
