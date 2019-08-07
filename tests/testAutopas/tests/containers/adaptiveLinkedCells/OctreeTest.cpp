@@ -14,7 +14,7 @@ TEST_F(OctreeTest, testToString) {
   std::array<double, 3> boxMax({8.0, 8.0, 8.0});
   autopas::Octree<Particle, FPCell> octree(cells, boxMin, boxMax);
   octree.init({2ul, 2ul, 2ul});
-  //EXPECT_EQ("0", static_cast<std::string>(octree));
+  // EXPECT_EQ("0", static_cast<std::string>(octree));
 }
 
 TEST_F(OctreeTest, testSplit) {

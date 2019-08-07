@@ -118,7 +118,8 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
       } else {
         auto relPos{
             dynamic_cast<OctreeInternalNode<Particle, ParticleCell> *>(this->_parent)->relPosOfChild(this->_center)};
-        std::array<int, 3> relPosArray({abs(relPos[0] + xDir), abs(relPos[1] + yDir), abs(relPos[2] + zDir)});
+        std::array<int, 3> relPosArray(
+            {relPos[0], relPos[1], relPos[2]} /*{relPos[0] + xDir, relPos[1] + yDir, relPos[2] + zDir}*/);
 
         std::bitset<3> neighborPos;
         for (int i = 0; i < 3; i++) {
@@ -164,9 +165,9 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
     std::array<int, 3> relPosArray({relPos[0] + xDir, relPos[1] + yDir, relPos[2] + zDir});
 
     if (std::any_of(relPosArray.cbegin(), relPosArray.cend(), [](auto e) { return e < 0 or e > 1; })) {
-      if (xDir != 0 and relPos[0] >= 0 and relPos[0] < 2) xDir = 0;
-      if (yDir != 0 and relPos[1] >= 0 and relPos[1] < 2) yDir = 0;
-      if (zDir != 0 and relPos[2] >= 0 and relPos[2] < 2) zDir = 0;
+      if (xDir != 0 and (relPos[0] >= 0 or relPos[0] < 2)) xDir = 0;
+      if (yDir != 0 and (relPos[1] >= 0 or relPos[1] < 2)) yDir = 0;
+      if (zDir != 0 and (relPos[2] >= 0 or relPos[2] < 2)) zDir = 0;
       auto node = dynamic_cast<OctreeInternalNode<Particle, ParticleCell> *>(this->_parent)
                       ->findGreaterEqualNeighborDirection(xDir, yDir, zDir);
       if (!node) {
@@ -212,8 +213,6 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
           }
           auto n = findGreaterEqualNeighborDirection(x, y, z);
           if (n) {
-            std::cout << "NI:" << (*n)->getIndex() << " Center: " << ArrayUtils::to_string((*n)->getCenter())
-                      << std::endl;
             if ((*n)->isLeaf()) {
               result.insert(dynamic_cast<OctreeExternalNode<Particle, ParticleCell> *>(*n));
             } else {
@@ -230,8 +229,11 @@ class OctreeExternalNode : public OctreeNode<Particle, ParticleCell> {
 
     for (auto e : result) {
       auto r = ArrayMath::normalize(ArrayMath::sub(this->_center, e->_center));
-      _neighbors.insert(std::make_pair(e->getIndex(), r));
-      // std::cout << "NI:" << e->getIndex() << std::endl;
+      if (this->getIndex() != e->getIndex() and std::none_of(_neighbors.cbegin(), _neighbors.cend(),
+                                                             [&](auto &elem) { return elem.first == e->getIndex(); })) {
+        _neighbors.insert(std::make_pair(e->getIndex(), r));
+        std::cout << "NI:" << e->getIndex() << " Center: " << ArrayUtils::to_string(e->getCenter()) << std::endl;
+      }
     }
   }
 
