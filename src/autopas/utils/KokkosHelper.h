@@ -96,7 +96,13 @@ class KokkosHelper {
     return res;
   }
 
-  // TODO: build several seperate functions
+  /**
+   *
+   * @param target
+   * @param source
+   * @param f       modify force here
+   * @param s       constant for calculation
+   */
   KOKKOS_INLINE_FUNCTION
   static void subDotMulScalarAddF(FloatVectorType const &target, FloatVectorType const &source,
                                   FloatVectorType const &f, KOKKOS_FLOAT const &s) {
@@ -107,6 +113,18 @@ class KokkosHelper {
       f(i) += temp;
     }
   }
+
+        KOKKOS_INLINE_FUNCTION
+        static void subDotMulScalarModifyF(FloatVectorType const &target, FloatVectorType const &source,
+                                        FloatVectorType const &f_add, FloatVectorType &f_sub, KOKKOS_FLOAT const &s) {
+            // Kokkos::parallel_for(KOKKOS_DIM, KOKKOS_LAMBDA(const int i){
+            KOKKOS_FLOAT temp;
+            for (int i = 0; i < KOKKOS_DIM; i++) {
+                temp = (target(i) - source(i)) * s;
+                f_add(i) += temp;
+                f_sub(i) -= temp;
+            }
+        }
 #endif
 };
 
