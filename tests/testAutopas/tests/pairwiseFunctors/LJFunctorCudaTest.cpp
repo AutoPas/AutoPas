@@ -77,26 +77,22 @@ bool LJFunctorCudaTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
 
 template <bool useNewton3>
 void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2) {
-  autopas::FullParticleCell<autopas::MoleculeLJ<>> cell1Cuda;
-  autopas::FullParticleCell<autopas::MoleculeLJ<>> cell2Cuda;
+  FMCell cell1Cuda;
+  FMCell cell2Cuda;
 
-  autopas::MoleculeLJ<> defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   RandomGenerator::fillWithParticles(cell1Cuda, defaultParticle, _lowCorner,
                                      {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   RandomGenerator::fillWithParticles(cell2Cuda, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
                                      _highCorner, numParticles2);
 
   // copy cells
-  autopas::FullParticleCell<autopas::MoleculeLJ<>> cell1NoCuda(cell1Cuda);
-  autopas::FullParticleCell<autopas::MoleculeLJ<>> cell2NoCuda(cell2Cuda);
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(_epsilon, _sigma, 1.0);
-  ParticlePropertiesLibrary PCL2 = ParticlePropertiesLibrary(_epsilon, _sigma, 1.0);
-  autopas::LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>,
-                     autopas::FunctorN3Modes::Both, false>
-      ljFunctorNoCuda(_cutoff, PCL, 0.0);
-  autopas::LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>,
-                     autopas::FunctorN3Modes::Both, false>
-      ljFunctorCuda(_cutoff, PCL2, 0.0);
+  FMCell cell1NoCuda(cell1Cuda);
+  FMCell cell2NoCuda(cell2Cuda);
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  particlePropertiesLibrary.addType(0, _epsilon, _sigma, 1);
+  autopas::LJFunctor<Molecule, FMCell> ljFunctorNoCuda(_cutoff, 0.0, particlePropertiesLibrary);
+  autopas::LJFunctor<Molecule, FMCell> ljFunctorCuda(_cutoff, 0.0, particlePropertiesLibrary);
 
   ASSERT_TRUE(AoSParticlesEqual(cell1Cuda, cell1NoCuda)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2Cuda, cell2NoCuda)) << "Cells 2 not equal after copy initialization.";
@@ -132,20 +128,17 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
 
 template <bool useNewton3>
 void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles) {
-  autopas::FullParticleCell<autopas::MoleculeLJ<>> cellCuda;
+  FMCell cellCuda;
 
-  autopas::MoleculeLJ<> defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   RandomGenerator::fillWithParticles(cellCuda, defaultParticle, _lowCorner, _highCorner, numParticles);
 
   // copy cells
-  autopas::FullParticleCell<autopas::MoleculeLJ<>> cellNoCuda(cellCuda);
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(_epsilon, _sigma, 1.0);
-  autopas::LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>,
-                     autopas::FunctorN3Modes::Both, false>
-      ljFunctorNoCuda(_cutoff, PCL, 0.0);
-  autopas::LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>,
-                     autopas::FunctorN3Modes::Both, false>
-      ljFunctorCuda(_cutoff, PCL, 0.0);
+  FMCell cellNoCuda(cellCuda);
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  particlePropertiesLibrary.addType(0, _epsilon, _sigma, 1);
+  autopas::LJFunctor<Molecule, FMCell> ljFunctorNoCuda(_cutoff, 0.0, particlePropertiesLibrary);
+  autopas::LJFunctor<Molecule, FMCell> ljFunctorCuda(_cutoff, 0.0, particlePropertiesLibrary);
 
   ASSERT_TRUE(AoSParticlesEqual(cellCuda, cellNoCuda)) << "Cells not equal after copy initialization.";
 

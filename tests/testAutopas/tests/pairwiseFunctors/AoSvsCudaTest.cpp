@@ -7,10 +7,11 @@
 #if defined(AUTOPAS_CUDA)
 
 #include "AoSvsCudaTest.h"
+#include <testingHelpers/commonTypedefs.h>
 
 using namespace autopas;
 
-#define PARTICLES_PER_DIM 16
+constexpr size_t PARTICLES_PER_DIM = 16;
 
 /**
  * @brief Generates a reproducible set of particles
@@ -34,20 +35,21 @@ void AoSvsCudaTest::generateParticles(std::vector<autopas::MoleculeLJ<>> *partic
  * same set of particles.
  */
 TEST_F(AoSvsCudaTest, testAoSvsCuda) {
-  auto particlesAoS = std::vector<autopas::MoleculeLJ<>>();
+  auto particlesAoS = std::vector<Molecule>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
   double epsilon = 1.0;
   double sigma = 1.0;
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(epsilon, sigma, 1.0);
-  LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> ljFunctor(PARTICLES_PER_DIM * 10,
-                                                                                               PCL, 0);
+  double mass = 1.0;
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  particlePropertiesLibrary.addType(0, epsilon, sigma, mass);
+  LJFunctor<Molecule, FMCell> ljFunctor(PARTICLES_PER_DIM * 10, 0, particlePropertiesLibrary);
 
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;
   start = std::chrono::high_resolution_clock::now();
-  for (unsigned int i = 0; i < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++i) {
-    for (unsigned int j = i + 1; j < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++j) {
+  for (size_t i = 0; i < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++i) {
+    for (size_t j = i + 1; j < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++j) {
       if (i != j) {
         ljFunctor.AoSFunctor(particlesAoS[i], particlesAoS[j], true);
       }
@@ -59,7 +61,7 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
   std::cout << "AoS : " << duration << " \u03bcs" << std::endl;
 
   // SoA
-  autopas::FullParticleCell<autopas::MoleculeLJ<>> cell;
+  FMCell cell;
   for (auto &&p : particlesSoA) {
     cell.addParticle(p);
   }
@@ -84,7 +86,7 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
   ASSERT_EQ(particlesAoS.size(), cell.numParticles());
 
   // compare particle vectors
-  for (unsigned int i = 0; i < particlesAoS.size(); ++i) {
+  for (size_t i = 0; i < particlesAoS.size(); ++i) {
     ASSERT_NEAR(particlesAoS[i].getF()[0], cell._particles[i].getF()[0], 1.0e-13);
     ASSERT_NEAR(particlesAoS[i].getF()[1], cell._particles[i].getF()[1], 1.0e-13);
     ASSERT_NEAR(particlesAoS[i].getF()[2], cell._particles[i].getF()[2], 1.0e-13);
