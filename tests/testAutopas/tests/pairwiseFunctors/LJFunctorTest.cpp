@@ -97,7 +97,7 @@ TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
 
 template <bool mixing>
 void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
-  ParticlePropertiesLibrary particlePropertiesLibrary;
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
   particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
   if constexpr (mixing) {
     particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
