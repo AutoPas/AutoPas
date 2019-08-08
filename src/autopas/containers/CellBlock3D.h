@@ -12,6 +12,7 @@
 #include <numeric>
 #include <vector>
 #include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
@@ -173,41 +174,40 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) {
     auto index3d = get3DIndexOfPosition(position);
-    std::array<int, 3> diff = {0, 0, 0};
-    auto currentIndex = index3d;
+
     std::vector<ParticleCell *> closeHaloCells;
-    for (diff[0] = -1; diff[0] < 2; diff[0]++) {
-      currentIndex[0] = index3d[0] + diff[0];
-      for (diff[1] = -1; diff[1] < 2; diff[1]++) {
-        currentIndex[1] = index3d[1] + diff[1];
-        for (diff[2] = -1; diff[2] < 2; diff[2]++) {
-          currentIndex[2] = index3d[2] + diff[2];
-          // check if there exists a cell with the specified coordinates
-          bool isPossibleHaloCell = false;
-          bool isValidCell = true;
-          for (int i = 0; i < 3; i++) {
-            isPossibleHaloCell |= currentIndex[i] < _cellsPerInteractionLength ||
-                                  currentIndex[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength;
-            isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] && currentIndex[i] >= 0;
+
+    auto isHaloCell = [&](const auto &index) {
+      for (size_t i = 0; i < 3; ++i) {
+        if (index[i] < _cellsPerInteractionLength or
+            index[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // always add the cell the particle is currently in first, for that we test if it is a halo cell.
+    if (isHaloCell(index3d)) {
+      closeHaloCells.push_back(&getCell(index3d));
+    }
+
+    auto lowIndex3D = get3DIndexOfPosition(ArrayMath::subScalar(position, allowedDistance));
+    auto highIndex3D = get3DIndexOfPosition(ArrayMath::addScalar(position, allowedDistance));
+    // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
+
+    auto currentIndex = lowIndex3D;
+
+    for (currentIndex[0] = lowIndex3D[0]; currentIndex[0] <= highIndex3D[0]; ++currentIndex[0]) {
+      for (currentIndex[1] = lowIndex3D[1]; currentIndex[1] <= highIndex3D[1]; ++currentIndex[1]) {
+        for (currentIndex[2] = lowIndex3D[2]; currentIndex[2] <= highIndex3D[2]; ++currentIndex[2]) {
+          // we have already added the cell which normally would belong to the particle, so skip here:
+          if (currentIndex == index3d) {
+            continue;
           }
-          if (isPossibleHaloCell && isValidCell) {
-            std::array<std::array<double, 3>, 2> boxBound{};
-            getCellBoundingBox(index3d, boxBound[0], boxBound[1]);
-            bool close = true;
-            for (int i = 0; i < 3; i++) {
-              if (diff[i] < 0) {
-                if (position[i] - boxBound[1][i] > allowedDistance) {
-                  close = false;
-                }
-              } else if (diff[i] > 0) {
-                if (boxBound[0][i] - position[i] > allowedDistance) {
-                  close = false;
-                }
-              }
-            }
-            if (close) {
-              closeHaloCells.push_back(&getCell(currentIndex));
-            }
+          // we need to return the cell is it is a halo cell.
+          if (isHaloCell(currentIndex)) {
+            closeHaloCells.push_back(&getCell(currentIndex));
           }
         }
       }
