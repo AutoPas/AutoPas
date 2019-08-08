@@ -13,8 +13,7 @@
 #include "cuda_runtime.h"
 #endif
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * Handles an Array of Cuda streams and provides different access Methods.
@@ -45,18 +44,18 @@ class CudaStreamHandler {
    * @param index
    * @return corresponding cuda stream
    */
-  cudaStream_t& getStream(int index) { return _streams.at(index); }
+  cudaStream_t &getStream(int index) { return _streams.at(index); }
   /**
    * @brief returns cuda stream at the hash value modulo the number of streams
    * @param hash
    * @return corresponding cuda stream
    */
-  cudaStream_t& getStreambyHash(size_t hash) { return _streams[hash % _streams.size()]; }
+  cudaStream_t &getStreambyHash(size_t hash) { return _streams[hash % _streams.size()]; }
   /**
    * @brief returns cuda stream at the least recently used index
    * @return ranodm cuda stream
    */
-  cudaStream_t& getStreamRandom() { return _streams[(++random_index) % _streams.size()]; }
+  cudaStream_t &getStreamRandom() { return _streams[(++random_index) % _streams.size()]; }
 
  private:
   std::vector<cudaStream_t> _streams;
@@ -66,9 +65,8 @@ class CudaStreamHandler {
   /**
    * @brief empty Dummy default Constructor in case there is no cuda support
    */
-  CudaStreamHandler() {}
+  CudaStreamHandler() = default;
 #endif
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils

@@ -30,9 +30,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class SlicedTraversalVerlet
-    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
-      public VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3> {
+class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
+                              public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -42,26 +41,27 @@ class SlicedTraversalVerlet
    */
   explicit SlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
-        VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, useNewton3>(pairwiseFunctor) {}
+        _functor(pairwiseFunctor) {}
 
-  /**
-   * @copydoc VerletListsCellsTraversal::traverseCellVerlet
-   */
-  void traverseCellVerlet(typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
-                                                             useNewton3>::verlet_storage_type &verlet) override;
+  void traverseParticlePairs() override;
 
-  TraversalOption getTraversalType() override { return TraversalOption::slicedVerlet; }
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
 
-  bool isApplicable() override { return DataLayout == DataLayoutOption::aos; }
+  bool getUseNewton3() const override { return useNewton3; }
+
+  TraversalOption getTraversalType() const override { return TraversalOption::slicedVerlet; }
+
+  bool isApplicable() const override { return DataLayout == DataLayoutOption::aos; }
+
+ private:
+  PairwiseFunctor *_functor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellVerlet(
-    typename VerletListsCellsTraversal<typename ParticleCell::ParticleType, PairwiseFunctor,
-                                       useNewton3>::verlet_storage_type &verlet) {
+inline void SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->iterateVerletListsCell(verlet, baseIndex);
+    this->template iterateVerletListsCell<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
   });
 }
 

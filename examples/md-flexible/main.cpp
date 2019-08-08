@@ -19,6 +19,8 @@
 using namespace std;
 using namespace autopas;
 
+typedef PrintableMoleculeBase<double> PrintableMolecule;
+
 /**
  * Prints position and forces of all particles in the autopas object.
  * @tparam AutoPasTemplate Template for the templetized autopas type.
@@ -38,32 +40,29 @@ void printMolecules(AutoPasTemplate &autopas) {
  * built. It consists of %`FullParticleCells` and is filled with
  * `PrintableMolecules`. The particles are aligned on a cuboid grid.
  *
- * @tparam Particle Type
  * @param autopas AutoPas object that should be initialized
  * @param particlesPerDim Number of desired particles per dimension.
- * @param particelSpacing Space between two particles along each axis of space.
+ * @param particleSpacing Space between two particles along each axis of space.
  */
-template <class Particle>
-void initContainerGrid(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, size_t particlesPerDim,
-                       double particelSpacing) {
+void initContainerGrid(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                       size_t particlesPerDim, double particleSpacing) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
-      {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
+      {(particlesPerDim)*particleSpacing, (particlesPerDim)*particleSpacing, (particlesPerDim)*particleSpacing});
 
   autopas.setBoxMin(boxMin);
   autopas.setBoxMax(boxMax);
 
   autopas.init();
 
-  Particle dummyParticle;
+  PrintableMolecule dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
-                                   {particelSpacing, particelSpacing, particelSpacing},
-                                   {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
+                                   {particleSpacing, particleSpacing, particleSpacing},
+                                   {particleSpacing / 2, particleSpacing / 2, particleSpacing / 2});
 }
 
-template <class Particle>
-void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, double boxLength,
-                        size_t numParticles, double distributionMean, double distributionStdDev) {
+void initContainerGauss(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                        double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
@@ -72,13 +71,12 @@ void initContainerGauss(autopas::AutoPas<Particle, FullParticleCell<Particle>> &
 
   autopas.init();
 
-  Particle dummyParticle;
+  PrintableMolecule dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
 
-template <class Particle>
-void initContainerUniform(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas, double boxLength,
-                          size_t numParticles) {
+void initContainerUniform(autopas::AutoPas<PrintableMolecule, FullParticleCell<PrintableMolecule>> &autopas,
+                          double boxLength, size_t numParticles) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
 
@@ -87,7 +85,7 @@ void initContainerUniform(autopas::AutoPas<Particle, FullParticleCell<Particle>>
 
   autopas.init();
 
-  Particle dummyParticle;
+  PrintableMolecule dummyParticle;
   RandomGenerator::fillWithParticles(autopas, dummyParticle, numParticles);
 }
 
@@ -128,9 +126,8 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
  * @return Time for all calculation iterations in microseconds.
  */
 template <class FunctorChoice, class AutoPasTemplate>
-long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations,
-               std::array<double, 3> lowCorner = {0., 0., 0.}, std::array<double, 3> highCorner = {0., 0., 0.}) {
-  auto functor = FunctorChoice(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0, lowCorner, highCorner);
+long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
+  auto functor = FunctorChoice(cutoff, MoleculeLJ::getEpsilon(), MoleculeLJ::getSigma(), 0.0);
 
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
 
@@ -150,19 +147,22 @@ long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations,
   return durationCalc;
 }
 
-/**
- * Thios function runs the tests with the requested floating point ytpe
- */
-template <typename PrintableMolecule, class FunctorChoice>
-int run(MDFlexParser &parser) {
+int main(int argc, char **argv) {
+  // Parsing
+  MDFlexParser parser;
+  if (not parser.parseInput(argc, argv)) {
+    exit(-1);
+  }
+
   auto boxLength(parser.getBoxLength());
   auto containerChoice(parser.getContainerOptions());
   auto selectorStrategy(parser.getSelectorStrategy());
   auto cutoff(parser.getCutoff());
-  auto cellSizeFactor(parser.getCellSizeFactor());
+  auto &cellSizeFactors(parser.getCellSizeFactors());
   auto dataLayoutOptions(parser.getDataLayoutOptions());
   auto distributionMean(parser.getDistributionMean());
   auto distributionStdDev(parser.getDistributionStdDev());
+  auto functorChoice(parser.getFunctorOption());
   auto generatorChoice(parser.getGeneratorOption());
   auto logLevel(parser.getLogLevel());
   string logFileName(parser.getLogFileName());
@@ -175,9 +175,11 @@ int run(MDFlexParser &parser) {
   auto traversalOptions(parser.getTraversalOptions());
   auto tuningInterval(parser.getTuningInterval());
   auto tuningSamples(parser.getTuningSamples());
+  auto tuningStrategy(parser.getTuningStrategyOption());
+  auto tuningMaxEvidence(parser.getTuningMaxEvidence());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
-  auto verletClusterSize(parser.getVerletClusterSize());
   auto verletSkinRadius(parser.getVerletSkinRadius());
+  auto verletClusterSize(parser.getVerletClusterSize());
   auto vtkFilename(parser.getWriteVTK());
 
   parser.printConfig();
@@ -202,17 +204,19 @@ int run(MDFlexParser &parser) {
   autopas::Logger::get()->set_level(logLevel);
 
   autopas.setCutoff(cutoff);
-  autopas.setCellSizeFactor(cellSizeFactor);
   autopas.setVerletSkin(verletSkinRadius);
   autopas.setVerletRebuildFrequency(verletRebuildFrequency);
+  autopas.setVerletClusterSize(verletClusterSize);
   autopas.setTuningInterval(tuningInterval);
+  autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
+  autopas.setMaxEvidence(tuningMaxEvidence);
   autopas.setSelectorStrategy(selectorStrategy);
   autopas.setAllowedContainers(containerChoice);
   autopas.setAllowedTraversals(traversalOptions);
   autopas.setAllowedDataLayouts(dataLayoutOptions);
   autopas.setAllowedNewton3Options(newton3Options);
-  autopas.setVerletClusterSize(verletClusterSize);
+  autopas.setAllowedCellSizeFactors(cellSizeFactors);
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
@@ -239,21 +243,8 @@ int run(MDFlexParser &parser) {
   cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
   cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
 
-  if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
-
-  // statistics for linked cells
-  if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
-    auto lcContainer = dynamic_cast<autopas::LinkedCells<PrintableMolecule, FullParticleCell<PrintableMolecule>> *>(
-        autopas.getContainer());
-    auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
-    std::array<size_t, 3> cellsPerDim{cellsPerDimHalo[0] - 2, cellsPerDimHalo[1] - 2, cellsPerDimHalo[2] - 2};
-    //    auto numCellsHalo = lcContainer->getCells().size();
-    auto numCells = cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2];
-
-    cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
-         << cellsPerDimHalo[2] << " (Total: " << numCells << ")" << endl;
-    cout << "Average Particles per cell: " << (particlesTotal) / (double)numCells << endl;
-    cout << endl;
+  if (not vtkFilename.empty()) {
+    writeVTKFile(vtkFilename, particlesTotal, autopas);
   }
 
   cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
@@ -262,9 +253,30 @@ int run(MDFlexParser &parser) {
   unsigned long flopsPerKernelCall = 0;
   cout << "Starting force calculation... " << endl;
 
-  durationApply =
-      calculate<FunctorChoice>(autopas, cutoff, numIterations, {0, 0, 0}, {boxLength, boxLength, boxLength});
-  flopsPerKernelCall = FunctorChoice::getNumFlopsPerKernelCall();
+  switch (functorChoice) {
+    case MDFlexParser::FunctorOption::lj12_6: {
+      durationApply =
+          calculate<LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff, numIterations);
+      flopsPerKernelCall =
+          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexParser::FunctorOption::lj12_6_AVX: {
+      durationApply = calculate<LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>>(autopas, cutoff,
+                                                                                                      numIterations);
+      flopsPerKernelCall =
+          LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexParser::FunctorOption::lj12_6_Globals: {
+      durationApply = calculate<
+          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both, true>>(
+          autopas, cutoff, numIterations);
+      flopsPerKernelCall =
+          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      break;
+    }
+  }
 
   stopTotal = std::chrono::high_resolution_clock::now();
   cout << "Force calculation done!" << endl;
@@ -287,13 +299,12 @@ int run(MDFlexParser &parser) {
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (measureFlops) {
-    FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-        autopas.getContainer()->getCutoff());
+    FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>> flopCounterFunctor(autopas.getCutoff());
     autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
     // approximation for flops of verlet list generation
-    if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::verletLists)
+    if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
           FlopCounterFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
@@ -309,52 +320,4 @@ int run(MDFlexParser &parser) {
   }
 
   return EXIT_SUCCESS;
-}
-
-int main(int argc, char **argv) {
-  // Parsing
-  MDFlexParser parser;
-  if (not parser.parseInput(argc, argv)) {
-    exit(-1);
-  }
-  switch (parser.getPrecisionOption()) {
-    case MDFlexParser::PrecisionOption::FP64:
-      switch (parser.getFunctorOption()) {
-        case MDFlexParser::FunctorOption::lj12_6: {
-          return run<
-              PrintableMoleculeBase<double>,
-              autopas::LJFunctor<PrintableMoleculeBase<double>, FullParticleCell<PrintableMoleculeBase<double>>>>(
-              parser);
-        }
-        case MDFlexParser::FunctorOption::lj12_6_AVX: {
-          return run<PrintableMoleculeBase<double>,
-                     LJFunctorAVX<PrintableMoleculeBase<double>, FullParticleCell<PrintableMoleculeBase<double>>>>(
-              parser);
-        }
-        case MDFlexParser::FunctorOption::lj12_6_Globals: {
-          return run<PrintableMoleculeBase<double>,
-                     LJFunctor<PrintableMoleculeBase<double>, FullParticleCell<PrintableMoleculeBase<double>>,
-                               autopas::FunctorN3Modes::Both, true>>(parser);
-        }
-      }
-      break;
-    case MDFlexParser::PrecisionOption::FP32: {
-      switch (parser.getFunctorOption()) {
-        case MDFlexParser::FunctorOption::lj12_6: {
-          return run<PrintableMoleculeBase<float>,
-                     autopas::LJFunctor<PrintableMoleculeBase<float>, FullParticleCell<PrintableMoleculeBase<float>>>>(
-              parser);
-        }
-        case MDFlexParser::FunctorOption::lj12_6_AVX: {
-          cout << "lj12_6_AVX has no FP32 version" << endl;
-          return EXIT_FAILURE;
-        }
-        case MDFlexParser::FunctorOption::lj12_6_Globals: {
-          return run<PrintableMoleculeBase<float>,
-                     LJFunctor<PrintableMoleculeBase<float>, FullParticleCell<PrintableMoleculeBase<float>>,
-                               autopas::FunctorN3Modes::Both, true>>(parser);
-        }
-      }
-    } break;
-  }
 }

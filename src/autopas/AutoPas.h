@@ -8,13 +8,20 @@
 
 #include <iostream>
 #include <memory>
+#include <set>
+#include <type_traits>
+#include "autopas/LogicHandler.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/BayesianSearch.h"
+#include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 
 /**
- * instance counter to help track the number of autopas instances. Needed for correct management of the logger.
+ * Instance counter to help track the number of autopas instances. Needed for correct management of the logger.
  */
 static unsigned int _instanceCounter = 0;
 
@@ -33,21 +40,23 @@ class AutoPas {
    * Constructor for the autopas class.
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
-  AutoPas(std::ostream &logOutputStream = std::cout)
+  explicit AutoPas(std::ostream &logOutputStream = std::cout)
       : _boxMin{0, 0, 0},
         _boxMax{0, 0, 0},
-        _cutoff(1),
-        _cellSizeFactor(1),
+        _cutoff(1.),
         _verletSkin(0.2),
         _verletRebuildFrequency(20),
         _verletClusterSize(64),
         _tuningInterval(5000),
         _numSamples(3),
-        _selectorStrategy(SelectorStrategy::fastestAbs),
+        _maxEvidence(10),
+        _tuningStrategyOption(TuningStrategyOption::fullSearch),
+        _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
         _allowedTraversals(allTraversalOptions),
         _allowedDataLayouts(allDataLayoutOptions),
-        _allowedNewton3Options(allNewton3Options) {
+        _allowedNewton3Options(allNewton3Options),
+        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -75,6 +84,7 @@ class AutoPas {
    */
   AutoPas &operator=(AutoPas &&other) noexcept {
     _autoTuner = std::move(other._autoTuner);
+    _logicHandler = std::move(other._logicHandler);
     return *this;
   }
 
@@ -88,49 +98,64 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-
-        _boxMin, _boxMax, _cutoff, _cellSizeFactor, _verletSkin, _verletRebuildFrequency, _verletClusterSize,
-        _allowedContainers, _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options, _selectorStrategy,
-        _tuningInterval, _numSamples);
+        _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize, std::move(generateTuningStrategy()),
+        _selectorStrategy, _tuningInterval, _numSamples);
+    _logicHandler =
+        std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
   }
 
   /**
-   * Updates the internal container.
-   * This is needed e.g. for linked-cells if particles move from one cell to another.
-   * It resorts particles into appropriate cells and moves them to the halo, if necessary.
+   * Potentially updates the internal container.
+   * On an update, halo particles are deleted, the particles are resorted into appropriate cells and particles that do
+   * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
+   * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
+   * else will happen.
+   * @return A pair of a vector of invalid particles that do no belong in the current container and a bool that
+   * specifies whether the container was updated. If the bool is false, the vector will be an empty vector. If the
+   * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
+   * left the container or not.
    */
-  void updateContainer() { _autoTuner->getContainer()->updateContainer(); }
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::pair<std::vector<Particle>, bool> updateContainer() { return _logicHandler->updateContainer(false); }
 
   /**
-   * Returns a pointer to the actual container.
-   * @todo do we need the whole container functionality available to the outside
-   * @return container
+   * Forces a container update.
+   * On an update, the particles are resorted into appropriate cells and will return particles that do no longer belong
+   * into the container.
+   * @return A vector of invalid particles that do no belong in the current container.
    */
-  // @todo: remove this once we are convinced all necessary container functions are wrapped
-  autopas::ParticleContainer<Particle, ParticleCell> *getContainer() const { return _autoTuner->getContainer().get(); }
+  AUTOPAS_WARN_UNUSED_RESULT
+  std::vector<Particle> updateContainerForced() { return std::get<0>(_logicHandler->updateContainer(true)); }
 
   /**
    * Adds a particle to the container.
+   * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
    */
-  void addParticle(Particle &p) { _autoTuner->getContainer()->addParticle(p); }
+  void addParticle(Particle &p) { _logicHandler->addParticle(p); }
 
   /**
-   * adds a particle to the container that lies in the halo region of the
-   * container
-   * @param haloParticle particle to be added
+   * Adds or updates a particle to/in the container that lies in the halo region of the container.
+   * If the neighbor lists inside of AutoPas are NOT valid, the halo particle will be added.
+   * If the neighbor lists of AutoPas are valid the particle will be used to update an already existing halo particle.
+   * In this case if there is no matching halo particle, the given haloParticle will be ignored.
+   * @note Exceptions are thrown in the following cases:
+   * 1. If the halo particle is added and it is insided of the owned domain (defined by boxmin and boxmax)of the
+   * container.
+   * 2. If the halo particle should be updated and the given haloParticle is too far inside of the domain (by more than
+   * skin/2)
+   * 3. If the halo particle should be updated, but no matching particle is found, even though the given haloParticle is
+   * close enough to the domain (at most cutoff + skin/2)
+   *
+   * @param haloParticle particle to be added or updated
    */
-  void addHaloParticle(Particle &haloParticle) { _autoTuner->getContainer()->addHaloParticle(haloParticle); }
+  void addOrUpdateHaloParticle(Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
 
   /**
-   * deletes all halo particles
+   * Deletes all particles.
+   * @note This invalidates the container, a rebuild is forced on the next iteratePairwise() call.
    */
-  void deleteHaloParticles() { _autoTuner->getContainer()->deleteHaloParticles(); }
-
-  /**
-   * deletes all particles
-   */
-  void deleteAllParticles() { _autoTuner->getContainer()->deleteAllParticles(); }
+  void deleteAllParticles() { _logicHandler->deleteAllParticles(); }
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -139,7 +164,14 @@ class AutoPas {
    */
   template <class Functor>
   void iteratePairwise(Functor *f) {
-    _autoTuner->iteratePairwise(f);
+    static_assert(not std::is_same<Functor, autopas::Functor<Particle, ParticleCell>>::value,
+                  "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
+                  "derived type instead, e.g. by using a dynamic_cast.");
+    if (f->getCutoff() > this->getCutoff()) {
+      utils::ExceptionHandler::exception("Functor cutoff ({}) must not be larger than container cutoff ({})",
+                                         f->getCutoff(), this->getCutoff());
+    }
+    _logicHandler->iteratePairwise(f);
   }
 
   /**
@@ -150,7 +182,7 @@ class AutoPas {
    * @return iterator to the first particle
    */
   autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _autoTuner->getContainer()->begin(behavior);
+    return _logicHandler->begin(behavior);
   }
 
   /**
@@ -166,7 +198,7 @@ class AutoPas {
   autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _autoTuner->getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**
@@ -174,6 +206,12 @@ class AutoPas {
    * @return the number of particles in this container.
    */
   unsigned long getNumberOfParticles() { return _autoTuner->getContainer()->getNumParticles(); }
+
+  /**
+   * Returns the type of the currently used container.
+   * @return The type of the used container is returned.
+   */
+  unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
 
   /**
    * Get the lower corner of the container.
@@ -218,13 +256,25 @@ class AutoPas {
   }
 
   /**
-   * Get cell size factor (only relevant for LinkedCells).
+   * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */
-  double getCellSizeFactor() const { return _cellSizeFactor; }
+  const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
 
   /**
-   * Set cell size factor (only relevant for LinkedCells).
+   * Set allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * @param allowedCellSizeFactors
+   */
+  void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
+    if (allowedCellSizeFactors.getMin() <= 0.0) {
+      AutoPasLog(error, "cell size <= 0.0");
+      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+    }
+    AutoPas::_allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
+  }
+
+  /**
+   * Set allowed cell size factors to one element (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @param cellSizeFactor
    */
   void setCellSizeFactor(double cellSizeFactor) {
@@ -232,7 +282,7 @@ class AutoPas {
       AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
-    AutoPas::_cellSizeFactor = cellSizeFactor;
+    AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
   /**
@@ -298,30 +348,42 @@ class AutoPas {
   void setNumSamples(unsigned int numSamples) { AutoPas::_numSamples = numSamples; }
 
   /**
+   * Get maximum number of evidence for tuning
+   * @return
+   */
+  unsigned int getMaxEvidence() const { return _maxEvidence; }
+
+  /**
+   * Set maximum number of evidence for tuning
+   * @param maxEvidence
+   */
+  void setMaxEvidence(unsigned int maxEvidence) { AutoPas::_maxEvidence = maxEvidence; }
+
+  /**
    * Get the selector configuration strategy.
    * @return
    */
-  SelectorStrategy getSelectorStrategy() const { return _selectorStrategy; }
+  SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
 
   /**
    * Set the selector configuration strategy.
    * For possible selector strategy choices see AutoPas::SelectorStrategy.
    * @param selectorStrategy
    */
-  void setSelectorStrategy(SelectorStrategy selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
+  void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
 
   /**
    * Get the list of allowed containers.
    * @return
    */
-  const std::vector<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
+  const std::set<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
 
   /**
    * Set the list of allowed containers.
    * For possible container choices see AutoPas::ContainerOption.
    * @param allowedContainers
    */
-  void setAllowedContainers(const std::vector<ContainerOption> &allowedContainers) {
+  void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
     AutoPas::_allowedContainers = allowedContainers;
   }
 
@@ -329,14 +391,14 @@ class AutoPas {
    * Get the list of allowed traversals.
    * @return
    */
-  const std::vector<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
+  const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
 
   /**
    * Set the list of allowed traversals.
    * For possible traversals choices see AutoPas::TraversalOption.
    * @param allowedTraversals
    */
-  void setAllowedTraversals(const std::vector<TraversalOption> &allowedTraversals) {
+  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
     AutoPas::_allowedTraversals = allowedTraversals;
   }
 
@@ -344,14 +406,14 @@ class AutoPas {
    * Get the list of allowed data layouts.
    * @return
    */
-  const std::vector<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
+  const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
 
   /**
    * Set the list of allowed data layouts.
    * For possible data layout choices see AutoPas::DataLayoutOption.
    * @param allowedDataLayouts
    */
-  void setAllowedDataLayouts(const std::vector<DataLayoutOption> &allowedDataLayouts) {
+  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
     AutoPas::_allowedDataLayouts = allowedDataLayouts;
   }
 
@@ -359,33 +421,15 @@ class AutoPas {
    * Get the list of allowed newton 3 options.
    * @return
    */
-  const std::vector<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+  const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
 
   /**
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see AutoPas::Newton3Option
    * @param allowedNewton3Options
    */
-  void setAllowedNewton3Options(const std::vector<Newton3Option> &allowedNewton3Options) {
+  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
     AutoPas::_allowedNewton3Options = allowedNewton3Options;
-  }
-
-  /**
-   * Checks if the container needs to be updated.
-   * Will return false if no lists are used.
-   * This function can indicate whether you should send only halo particles or whether you should send leaving particles
-   * as well.
-   * @return True if the lists are valid, false if a rebuild is needed.
-   */
-  bool needsContainerUpdate() {
-    if (_autoTuner->willRebuild()) {
-      return true;
-    }
-    if (auto container = dynamic_cast<VerletLists<Particle> *>(_autoTuner->getContainer().get())) {
-      return container->needsRebuild();
-    } else {
-      return true;
-    }
   }
 
   /**
@@ -394,7 +438,49 @@ class AutoPas {
    */
   const Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
 
+  /**
+   * Getter for the tuning strategy option.
+   * @return
+   */
+  TuningStrategyOption getTuningStrategyOption() const { return _tuningStrategyOption; }
+
+  /**
+   * Setter for the tuning strategy option.
+   * @param tuningStrategyOption
+   */
+  void setTuningStrategyOption(TuningStrategyOption tuningStrategyOption) {
+    _tuningStrategyOption = tuningStrategyOption;
+  }
+
  private:
+  /**
+   * Generates a new Tuning Strategy object from the member variables of this autopas object.
+   * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
+   */
+  std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
+    switch (_tuningStrategyOption) {
+      case TuningStrategyOption::fullSearch: {
+        if (not _allowedCellSizeFactors->isFinite()) {
+          autopas::utils::ExceptionHandler::exception(
+              "AutoPas::generateTuningStrategy: fullSearch can not handle infinite cellSizeFactors!");
+          return nullptr;
+        }
+
+        return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
+                                            _allowedDataLayouts, _allowedNewton3Options);
+      }
+
+      case TuningStrategyOption::bayesianSearch: {
+        return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+                                                _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
+      }
+    }
+
+    autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
+                                                _tuningStrategyOption);
+    return nullptr;
+  }
+
   /**
    * Lower corner of the container.
    */
@@ -408,10 +494,6 @@ class AutoPas {
    */
   double _cutoff;
   /**
-   * Cell size factor to be used in this container (only relevant for LinkedCells).
-   */
-  double _cellSizeFactor;
-  /**
    * Length added to the cutoff for the verlet lists' skin.
    */
   double _verletSkin;
@@ -420,7 +502,7 @@ class AutoPas {
    */
   unsigned int _verletRebuildFrequency;
   /**
-   * Specifies the size of clusters in verlet Cluster containers
+   * Specifies the size of clusters for verlet lists.
    */
   unsigned int _verletClusterSize;
   /**
@@ -432,30 +514,53 @@ class AutoPas {
    */
   unsigned int _numSamples;
   /**
+   * Tuning Strategies which work on a fixed number of evidence should use this value.
+   */
+  unsigned int _maxEvidence;
+
+  /**
+   * Strategy option for the auto tuner.
+   * For possible tuning strategy choices see AutoPas::TuningStrategy.
+   */
+  TuningStrategyOption _tuningStrategyOption;
+
+  /**
    * Strategy for the configuration selector.
    * For possible container choices see AutoPas::SelectorStrategy.
    */
-  SelectorStrategy _selectorStrategy;
+  SelectorStrategyOption _selectorStrategy;
   /**
    * List of container types AutoPas can choose from.
    * For possible container choices see AutoPas::ContainerOption.
    */
-  std::vector<ContainerOption> _allowedContainers;
+  std::set<ContainerOption> _allowedContainers;
   /**
    * List of traversals AutoPas can choose from.
    * For possible container choices see AutoPas::TraversalOption.
    */
-  std::vector<TraversalOption> _allowedTraversals;
+  std::set<TraversalOption> _allowedTraversals;
   /**
    * List of data layouts AutoPas can choose from.
    * For possible container choices see AutoPas::DataLayoutOption.
    */
-  std::vector<DataLayoutOption> _allowedDataLayouts;
+  std::set<DataLayoutOption> _allowedDataLayouts;
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  std::vector<Newton3Option> _allowedNewton3Options;
+  std::set<Newton3Option> _allowedNewton3Options;
+  /**
+   * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   */
+  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
 
+  /**
+   * LogicHandler of autopas.
+   */
+  std::unique_ptr<autopas::LogicHandler<Particle, ParticleCell>> _logicHandler;
+
+  /**
+   * This is the AutoTuner that owns the container, ...
+   */
   std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
-};  // namespace autopas
+};  // class AutoPas
 }  // namespace autopas

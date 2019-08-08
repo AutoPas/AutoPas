@@ -8,8 +8,7 @@
 
 #include "autopas/options/DataLayoutOption.h"
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * This converts cells to the target data Layout using the given functor
@@ -25,7 +24,7 @@ class DataLayoutConverter {
    * @tparam Functor Functor Type
    * @param functor responsible for the conversion
    */
-  DataLayoutConverter(Functor* functor) : _functor(functor) {}
+  explicit DataLayoutConverter(Functor *functor) : _functor(functor) {}
 
   /**
    * loads the target dataLayout in a cell
@@ -33,7 +32,7 @@ class DataLayoutConverter {
    * @param cell to load the data in
    */
   template <class ParticleCell>
-  void loadDataLayout(ParticleCell& cell) {
+  void loadDataLayout(ParticleCell &cell) {
     switch (dataLayout) {
       case DataLayoutOption::aos: {
         return;
@@ -56,7 +55,7 @@ class DataLayoutConverter {
    * @param cell to load the data in
    */
   template <class ParticleCell>
-  void storeDataLayout(ParticleCell& cell) {
+  void storeDataLayout(ParticleCell &cell) {
     switch (dataLayout) {
       case DataLayoutOption::aos: {
         return;
@@ -77,8 +76,7 @@ class DataLayoutConverter {
   /**
    *  Functor to convert cells
    */
-  Functor* _functor;
+  Functor *_functor;
 };
 
-} /* namespace utils */
-} /* namespace autopas */
+}  // namespace autopas::utils

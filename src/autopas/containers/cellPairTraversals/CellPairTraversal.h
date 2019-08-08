@@ -9,7 +9,7 @@
 
 #include <array>
 #include <vector>
-#include "autopas/containers/cellPairTraversals/TraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 
 namespace autopas {
 
@@ -26,7 +26,7 @@ class CellPairTraversal : public TraversalInterface {
    * Constructor of CellPairTraversal.
    * @param dims the dimensions of the cellblock.
    */
-  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims) {}
+  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims), _cells(nullptr) {}
 
   /**
    * Destructor of CellPairTraversal.
@@ -34,23 +34,10 @@ class CellPairTraversal : public TraversalInterface {
   ~CellPairTraversal() override = default;
 
   /**
-   * Resets the cell structure of the traversal.
-   * @param dims
+   * Sets the cells to iterate over. Should always be called before initTraversal().
+   * @param cells The cells to iterate over.
    */
-  virtual void rebuild(const std::array<unsigned long, 3> &dims) { _cellsPerDimension = dims; };
-
-  /**
-   * load Data Layouts required for this Traversal
-   * @param cells where the data should be loaded
-   */
-  virtual void initTraversal(std::vector<ParticleCell> &cells) = 0;
-
-  /**
-   * write Data to AoS
-   * @param cells for which the data should be written back
-   *
-   */
-  virtual void endTraversal(std::vector<ParticleCell> &cells) = 0;
+  virtual void setCellsToTraverse(std::vector<ParticleCell> &cells) { _cells = &cells; }
 
  protected:
   /**
@@ -58,6 +45,11 @@ class CellPairTraversal : public TraversalInterface {
    * The dimensions are the number of cells in x, y and z direction.
    */
   std::array<unsigned long, 3> _cellsPerDimension;
+
+  /**
+   * The cells to traverse.
+   */
+  std::vector<ParticleCell> *_cells;
 };
 
 }  // namespace autopas

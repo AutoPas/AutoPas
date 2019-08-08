@@ -17,6 +17,7 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
+namespace internal {
 /**
  * Class that manages a block of ParticleCells.
  * It is used to resize the cellblock and to handle the conversion of 3d to 1d
@@ -61,7 +62,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   CellBlock3D &operator=(const CellBlock3D) = delete;
 
-  bool isHaloCell(index_t index1d) const override {
+  bool cellCanContainHaloParticles(index_t index1d) const override {
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
@@ -74,7 +75,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return isHaloCell;
   }
 
-  bool isOwningCell(index_t index1d) const override { return not isHaloCell(index1d); }
+  bool cellCanContainOwnedParticles(index_t index1d) const override { return not cellCanContainHaloParticles(index1d); }
 
   /**
    * get the ParticleCell of a specified 1d index
@@ -259,8 +260,6 @@ class CellBlock3D : public CellBorderAndFlagManager {
   // 1 over above. Since this value is needed for sorting particles in cells, it
   // is computed quite often
   std::array<double, 3> _cellLengthReciprocal;
-
-  //	CellBorderAndFlagManager _cellBorderAndFlagManager;
 };
 
 template <class ParticleCell>
@@ -277,8 +276,8 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
   for (size_t dim = 0; dim < 3; dim++) {
     const long int value = (static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
                            _cellsPerInteractionLength;
-    const index_t nonnegativeValue = static_cast<index_t>(std::max(value, 0l));
-    const index_t nonLargerValue = std::min(nonnegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
+    const index_t nonNegativeValue = static_cast<index_t>(std::max(value, 0l));
+    const index_t nonLargerValue = std::min(nonNegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
 
     // this is a sanity check to prevent doubling of particles
@@ -339,12 +338,9 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   }
 
   _vec1D->resize(_numCells);
-
-  //	ParticleCell::_cellBorderAndFlagManager.init(
-  //		_cellsPerDimensionWithHalo,
-  //		_haloBoxMin, _haloBoxMax,
-  //		_boxMin, _boxMax,
-  //		_cellLength);
+  for (auto &cell : *_vec1D) {
+    cell.setCellLength(_cellLength);
+  }
 }
 
 template <class ParticleCell>
@@ -417,7 +413,7 @@ bool CellBlock3D<ParticleCell>::checkInHalo(const std::array<double, 3> &positio
 template <class ParticleCell>
 void CellBlock3D<ParticleCell>::clearHaloCells() {
   std::vector<index_t> haloSlices(2 * _cellsPerInteractionLength);
-  std::vector<index_t>::iterator mid(haloSlices.begin() + _cellsPerInteractionLength);
+  auto mid = haloSlices.begin() + _cellsPerInteractionLength;
   std::iota(haloSlices.begin(), mid, 0);
 
   // x: min and max of x
@@ -451,4 +447,5 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
     }
   }
 }
+}  // namespace internal
 }  // namespace autopas

@@ -9,7 +9,10 @@
 #include "VerletListHelpers.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VerletTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
@@ -49,67 +52,46 @@ class VerletLists
   /**
    * Constructor of the VerletLists class.
    * The neighbor lists are build using a search radius of cutoff + skin.
-   * The rebuildFrequency should be chosen, s.t. the particles do not move more
-   * than a distance of skin/2 between two rebuilds of the lists.
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius.
-   * @param rebuildFrequency Specifies after how many pair-wise traversals the
-   * neighbor lists are to be rebuild. A frequency of 1 means that they are
-   * always rebuild, 10 means they are rebuild after 10 traversals.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
+   * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const unsigned int rebuildFrequency = 1,
-              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA)
+              const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, rebuildFrequency, allVLApplicableTraversals()),
+            boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 
-  /**
-   * Lists all traversal options applicable for the Verlet Lists container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption>& allVLApplicableTraversals() {
-    static const std::vector<TraversalOption> v{TraversalOption::verletTraversal};
-    return v;
-  }
-
-  std::vector<TraversalOption> getAllTraversals() override { return allVLApplicableTraversals(); }
-
   ContainerOption getContainerType() override { return ContainerOption::verletLists; }
 
-  /**
-   * @copydoc LinkedCells::iteratePairwise
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor* f, Traversal* traversal, bool useNewton3 = true) {
-    if (this->needsRebuild()) {
-      rebuildVerletLists(useNewton3);
-    }
+  void iteratePairwise(TraversalInterface *traversal) override {
+    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
-    if (auto* traversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell>*>(traversal)) {
-      if (not _soaListIsValid and traversalInterface->getDataLayout() == DataLayoutOption::soa) {
-        // only do this if we need it, i.e., if we are using soa!
-        generateSoAListFromAoSVerletLists();
-      }
-      traversalInterface->initTraversal(this->_linkedCells.getCells());
-      traversalInterface->iterateVerletLists(_aosNeighborLists, _soaNeighborLists);
-      traversalInterface->endTraversal(this->_linkedCells.getCells());
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *verletTraversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal);
+    if (verletTraversalInterface) {
+      verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
+                                                         _soaNeighborLists);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletLists::iteratePairwise");
     }
-    this->_traversalsSinceLastRebuild++;
+
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   /**
    * get the actual neighbour list
    * @return the neighbour list
    */
-  typename verlet_internal::AoS_verletlist_storage_type& getVerletListsAoS() { return _aosNeighborLists; }
+  typename verlet_internal::AoS_verletlist_storage_type &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Checks whether the neighbor lists are valid.
@@ -133,44 +115,43 @@ class VerletLists
 
     // particles can also simply be very close already:
     typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell> validityCheckerFunctor(
-        _aosNeighborLists, ((this->getCutoff() - this->_skin) * (this->getCutoff() - this->_skin)));
+        _aosNeighborLists, (this->getCutoff()));
 
     auto traversal =
         C08Traversal<LinkedParticleCell,
                      typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>,
                      DataLayoutOption::aos, true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                   &validityCheckerFunctor);
-    this->_linkedCells.iteratePairwise(&validityCheckerFunctor, &traversal, useNewton3);
+    this->_linkedCells.iteratePairwise(&traversal);
 
     return validityCheckerFunctor.neighborlistsAreValid();
   }
 
-  TraversalSelector<ParticleCell> generateTraversalSelector() override {
-    // @FIXME dummyTraversal is a workaround because this container does not yet use traversals like it should
-    return TraversalSelector<ParticleCell>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
-  }
-
- protected:
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
    * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
-   * @param useNewton3
+   * @param traversal
    */
-  void rebuildVerletLists(bool useNewton3 = true) {
-    this->_verletBuiltNewton3 = useNewton3;
-    this->updateVerletListsAoS(useNewton3);
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    this->_verletBuiltNewton3 = traversal->getUseNewton3();
+    this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
-    this->_traversalsSinceLastRebuild = 0;
+
+    if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
+      // only do this if we need it, i.e., if we are using soa!
+      generateSoAListFromAoSVerletLists();
+    }
   }
 
+ protected:
   /**
    * Update the verlet lists for AoS usage
    * @param useNewton3
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     updateIdMapAoS();
-    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff());
+    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff() + this->getSkin());
 
     /// @todo autotune traversal
     switch (_buildVerletListType) {
@@ -179,7 +160,7 @@ class VerletLists
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, c_useNewton3>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&traversal);
         })
         break;
       }
@@ -188,7 +169,7 @@ class VerletLists
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::soa, c_useNewton3>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&f, &traversal);
+          this->_linkedCells.iteratePairwise(&traversal);
         })
         break;
       }
@@ -234,7 +215,7 @@ class VerletLists
       _aos2soaMap[&(*iter)] = i;
     }
     size_t accumulatedListSize = 0;
-    for (auto& aosList : _aosNeighborLists) {
+    for (auto &aosList : _aosNeighborLists) {
       accumulatedListSize += aosList.second.size();
       size_t i_id = _aos2soaMap[aosList.first];
       // each soa neighbor list should be of the same size as for aos
@@ -258,7 +239,7 @@ class VerletLists
 
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
-  std::unordered_map<Particle*, size_t> _aos2soaMap;
+  std::unordered_map<Particle *, size_t> _aos2soaMap;
 
   /// verlet list for SoA:
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;

@@ -16,6 +16,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
+#include "autopas/utils/SoAView.h"
 
 namespace autopas {
 
@@ -56,7 +57,53 @@ class SoA {
   }
 
   /**
-   * @brief Writes / updates values of attributes for a specific particle.
+   * @brief Writes / updates the value of an attribute for a specific particle.
+   * @tparam attribute Attribute to update.
+   * @tparam ValueType type of the attribute
+   * @param particleId Particle to update.
+   * @param value New value.
+   */
+  template <int attribute, class ValueType>
+  void write(size_t particleId, const ValueType &value) {
+    soaStorage.template get<attribute>().at(particleId) = value;
+  }
+
+  /**
+   * Appends the other SoA buffer to this.
+   * @param other Other buffer.
+   */
+  void append(const SoA<SoAArraysType> &other) {
+    if (other.getNumParticles() > 0) {
+      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+    }
+  }
+
+  /**
+   * Appends the other SoA buffer to this.
+   * @param other Other buffer.
+   */
+  void append(const SoAView<SoAArraysType> &other) {
+    if (other.getNumParticles() > 0) {
+      append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+    }
+  }
+
+  /**
+   * Appends the specified attributes from the other SoA buffer to this.
+   * @tparam attributes Attributes to append.
+   * @param other Other buffer.
+   */
+  template <int... attributes>
+  void append(const SoA<SoAArraysType> &other) {
+    if (other.getNumParticles() > 0) {
+      const auto newSize = getNumParticles() + other.getNumParticles();
+      append_impl(other.soaStorage, std::index_sequence<attributes...>{});
+      resizeArrays(newSize);
+    }
+  }
+
+  /**
+   * Writes or updates values of attributes for a specific particle.
    * @tparam attributes Array of attributes to update.
    * @tparam ValueArrayType type of the array
    * @param particleId Particle to update.
@@ -129,7 +176,7 @@ class SoA {
    *
    * @return Number of particles.
    */
-  size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
+  inline size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
 
   /**
    * delete all particles in the soa
@@ -148,11 +195,28 @@ class SoA {
   }
 
   /**
-   * delete the last particle in the soa
+   * Delete the last particle in the SoA.
    */
   void pop_back() {
     soaStorage.apply([](auto &list) { list.pop_back(); });
   }
+
+  /**
+   * Constructs a SoAView for the whole SoA and returns it.
+   * @return the constructed SoAView on the whole SoA.
+   */
+  SoAView<SoAArraysType> constructView() { return {this, 0, getNumParticles()}; }
+
+  /**
+   * Constructs a view that starts at \p startIndex (inclusive) and ends at \p endIndex (exclusive).
+   *
+   * \p startIndex and \p endIndex have to be between 0 (inclusive) and `this->getNumParticles()` (inclusive). \p
+   * endIndex has to be greater or equal to \p startIndex.
+   * @param startIndex The index of the first entry to view.
+   * @param endIndex The index of the entry after the last entry to view.
+   * @return the constructed SoAView from \p startIndex (inclusive) to \p endIndex (exclusive).
+   */
+  SoAView<SoAArraysType> constructView(size_t startIndex, size_t endIndex) { return {this, startIndex, endIndex}; }
 
  private:
   // actual implementation of read
@@ -178,9 +242,39 @@ class SoA {
   template <class ValueArrayType>
   void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {}
 
+  // helper function to append a single array
+  template <std::size_t attribute>
+  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
+    auto &currentVector = soaStorage.template get<attribute>();
+    auto &otherVector = valArrays.template get<attribute>();
+    currentVector.insert(currentVector.end(), otherVector.begin(), otherVector.end());
+  }
+
+  // helper function to append a single array
+  template <std::size_t attribute>
+  void appendSingleArray(const SoAView<SoAArraysType> &valArrays) {
+    auto &currentVector = soaStorage.template get<attribute>();
+    auto otherVectorIterator = valArrays.template begin<attribute>();
+    currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + valArrays.getNumParticles());
+  }
+
+  // actual implementation of append
+  template <std::size_t... Is>
+  void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+    // fold expression
+    (appendSingleArray<Is>(valArrays), ...);
+  }
+
+  // actual implementation of append
+  template <std::size_t... Is>
+  void append_impl(const SoAView<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+    // fold expression
+    (appendSingleArray<Is>(valArrays), ...);
+  }
+
   // ------------- members ---------------
 
   // storage container for the SoA's
   utils::SoAStorage<SoAArraysType> soaStorage;
-};
+};  // namespace autopas
 }  // namespace autopas

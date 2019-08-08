@@ -12,8 +12,7 @@
 #include "cuda_runtime.h"
 #endif
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * This class handles storage of vectors on the gpu.
@@ -33,16 +32,16 @@ class CudaDeviceVector {
    * @param max size to be allocated
    */
   CudaDeviceVector(size_t max) : _max_size(max), _size(0), _padToMultiple(1024) {
-    autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
+    autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void **)&_data, sizeof(T) * _max_size));
   }
 
   /**
    * @brief Copy Constructor
    * @param obj other object
    */
-  CudaDeviceVector(const CudaDeviceVector<T>& obj) : _max_size(obj._max_size), _size(obj._size) {
+  CudaDeviceVector(const CudaDeviceVector<T> &obj) : _max_size(obj._max_size), _size(obj._size) {
     if (obj._max_size > 0) {
-      autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
+      autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void **)&_data, sizeof(T) * _max_size));
       cudaMemcpy(_data, obj._data, _size * sizeof(T), cudaMemcpyDeviceToDevice);
     }
   }
@@ -58,7 +57,7 @@ class CudaDeviceVector {
    * @brief return Pointer to the data in the GPU Memory
    * @return Pointer to the data in the GPU Memory
    */
-  T* get() { return _data; }
+  T *get() { return _data; }
 
   /**
    * @brief return number of elemnts in the vector
@@ -72,13 +71,13 @@ class CudaDeviceVector {
    * @param hostData Pointer to host data
    * @param stream Cuda Stream to use for the copy
    */
-  void copyHostToDevice(const size_t n, T* hostData, const cudaStream_t stream = 0) {
+  void copyHostToDevice(const size_t n, T *hostData, const cudaStream_t stream = 0) {
     _size = n;
     if (n > _max_size) {
       if (_max_size > 0) autopas::utils::CudaExceptionHandler::checkErrorCode(cudaFree(_data));
       _max_size = (n / _padToMultiple + 1) * _padToMultiple;
 
-      autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void**)&_data, sizeof(T) * _max_size));
+      autopas::utils::CudaExceptionHandler::checkErrorCode(cudaMalloc((void **)&_data, sizeof(T) * _max_size));
     }
     autopas::utils::CudaExceptionHandler::checkErrorCode(
         cudaMemcpyAsync(_data, hostData, n * sizeof(T), cudaMemcpyHostToDevice, stream));
@@ -90,7 +89,7 @@ class CudaDeviceVector {
    * @param hostData Pointer to host data
    * @param stream Cuda Stream to use for the copy
    */
-  void copyDeviceToHost(const size_t n, T* hostData, const cudaStream_t stream = 0) {
+  void copyDeviceToHost(const size_t n, T *hostData, const cudaStream_t stream = 0) {
     autopas::utils::CudaExceptionHandler::checkErrorCode(
         cudaMemcpyAsync(hostData, _data, n * sizeof(T), cudaMemcpyDeviceToHost, stream));
   }
@@ -100,7 +99,7 @@ class CudaDeviceVector {
   size_t _size;
   size_t _padToMultiple;
 
-  T* _data;
+  T *_data;
 
 #else
  public:
@@ -118,9 +117,8 @@ class CudaDeviceVector {
    * @brief Dummy Copy Constructor
    * @param obj other object
    */
-  CudaDeviceVector(const CudaDeviceVector<T>& obj) {}
+  CudaDeviceVector(const CudaDeviceVector<T> &obj) {}
 #endif
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils

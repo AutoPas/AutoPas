@@ -6,7 +6,7 @@
 
 #include "SoATest.h"
 
-TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle> soa; }
+TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle::SoAArraysType> soa; }
 
 TEST_F(SoATest, SoATypeTest) {
   static_assert(std::is_same<autopas::utils::SoAType<size_t, double, double, double>::Type,
@@ -49,22 +49,22 @@ TEST_F(SoATest, SoAStorageTestAlignment) {
   typedef autopas::utils::SoAType<size_t, double, double, double>::Type soatype;
   autopas::utils::SoAStorage<soatype> soAStorage;
 
-  // check alignment to DEFAULT_CACHE_LINE_SIZE
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
+  // check alignment to autopas::DEFAULT_CACHE_LINE_SIZE
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
 
   soAStorage.get<0>().resize(4);
   soAStorage.get<1>().resize(5);
   soAStorage.get<2>().resize(6);
   soAStorage.get<3>().resize(7);
 
-  // check alignment to DEFAULT_CACHE_LINE_SIZE
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % DEFAULT_CACHE_LINE_SIZE, 0);
+  // check alignment to autopas::DEFAULT_CACHE_LINE_SIZE
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<0>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<1>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<2>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(soAStorage.get<3>().data()) % autopas::DEFAULT_CACHE_LINE_SIZE, 0);
 }
 
 TEST_F(SoATest, SoAStorageTestApply) {
@@ -110,20 +110,37 @@ TEST_F(SoATest, SoATestPush) {
   EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 0.07);
 }
 
-TEST_F(SoATest, SoATestClear) {
+TEST_F(SoATest, SoATestAppend) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  std::array<autopas::SoA<Particle::SoAArraysType>, 2> soaBuffer;
 
-  EXPECT_EQ(soa.getNumParticles(), 0);
+  soaBuffer[0].push<Particle::AttributeNames::id>(2);
+  soaBuffer[0].push<Particle::AttributeNames::posX>(0.3);
+  soaBuffer[0].push<Particle::AttributeNames::posY>(0.1);
+  soaBuffer[0].push<Particle::AttributeNames::posZ>(0.5);
+  soaBuffer[0].push<Particle::AttributeNames::forceX>(-0.2);
+  soaBuffer[0].push<Particle::AttributeNames::forceY>(0.7);
+  soaBuffer[0].push<Particle::AttributeNames::forceZ>(0.07);
 
-  soa.resizeArrays(2);
+  EXPECT_EQ(soaBuffer[0].getNumParticles(), 1);
+  EXPECT_EQ(soaBuffer[1].getNumParticles(), 0);
+  // Append to empty buffer
+  soaBuffer[1].append(soaBuffer[0]);
+  EXPECT_EQ(soaBuffer[0].getNumParticles(), 1);
+  EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
 
-  EXPECT_EQ(soa.getNumParticles(), 2);
-
-  soa.clear();
-
-  EXPECT_EQ(soa.getNumParticles(), 0);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::id>(0), 2);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posX>(0), 0.3);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posY>(0), 0.1);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posZ>(0), 0.5);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceX>(0), -0.2);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceY>(0), 0.7);
+  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceZ>(0), 0.07);
+  // Append to filled buffer
+  soaBuffer[0].append(soaBuffer[1]);
+  EXPECT_EQ(soaBuffer[0].getNumParticles(), 2);
+  EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
 }
 
 TEST_F(SoATest, SoATestSwap) {

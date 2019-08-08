@@ -4,6 +4,7 @@
  * @date 03.04.18
  */
 #include "RegionParticleIteratorTest.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 using namespace autopas;
@@ -11,7 +12,7 @@ using namespace autopas;
 /********************************** Linked Cells Tests **********************************/
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));
@@ -27,7 +28,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
 }
 
 void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOwned() {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
@@ -87,7 +88,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
 #endif
 
 void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHalo() {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
@@ -105,9 +106,8 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
     iterator->touch();
     bool isInRegionOfInterest = utils::inBox(iterator->getR(), testRegionMin, _regionMax);
     bool isInHalo = not utils::inBox(iterator->getR(), _boxMin, _boxMax);
-    EXPECT_TRUE(isInRegionOfInterest and isInHalo)
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << " in thread: " << autopas_get_thread_num() << std::endl;
+    EXPECT_TRUE(isInRegionOfInterest and isInHalo) << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]"
+                                                   << " in thread: " << autopas_get_thread_num() << std::endl;
   }
 
   // check the touch using the normal iterator (needed to check whether no particle was forgotten)
@@ -117,8 +117,7 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
     bool isInRegionOfInterest = utils::inBox(iterator->getR(), testRegionMin, _regionMax);
     bool isInHalo = not utils::inBox(iterator->getR(), _boxMin, _boxMax);
     EXPECT_EQ(isInRegionOfInterest and isInHalo ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -163,7 +162,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
 #endif
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add no particles
 
@@ -183,7 +182,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyConstructor) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));
@@ -204,13 +203,12 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyCons
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssignment) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));
@@ -241,8 +239,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssi
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -251,7 +248,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssi
  */
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDomain) {
   // box goes from {0,0,0} to {5,5,5} + one halo layer
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff);
+  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   size_t idShouldTouch = 0;
   TouchableParticle p({0, 0, 0}, idShouldTouch);
@@ -295,8 +292,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDo
   // no openmp for check!
   for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
     EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
     ++particlesChecked;
   }
   EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
@@ -306,7 +302,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDo
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDomain) {
   // box goes from {0,0,0} to {5,5,5} + one halo layer
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> dsContainer(_boxMin, _boxMax, _cutoff);
+  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> dsContainer(_boxMin, _boxMax, _cutoff, 0.);
 
   size_t idShouldTouch = 0;
   TouchableParticle p({0, 0, 0}, idShouldTouch);
@@ -349,15 +345,14 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDoma
   int particlesChecked = 0;
   for (auto iterator = dsContainer.begin(); iterator.isValid(); ++iterator) {
     EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
     ++particlesChecked;
   }
   EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff);
+  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0));
@@ -379,12 +374,12 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << "at: [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]";
+        << "at: [" << ArrayUtils::to_string(iterator->getR()) << "]";
   }
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOwned) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff);
+  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), 100);
@@ -410,13 +405,12 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOw
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHalo) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff);
+  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), 100);
@@ -445,13 +439,12 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
                   ? (utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
                   : 0,
               iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff);
+  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add no particles
 
@@ -473,15 +466,14 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
     i++;
   }
   EXPECT_EQ(i, 0);
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstructor) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff);
+  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0));
@@ -502,13 +494,12 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstr
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssignment) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff);
+  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0));
@@ -539,8 +530,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssign
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -601,8 +591,7 @@ TEST_F(RegionParticleIteratorTest, testVerletRegionParticleIteratorSparseDomain)
   int particlesChecked = 0;
   for (auto iterator = vlContainer.begin(); iterator.isValid(); ++iterator) {
     EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << iterator->getR()[0] << ", " << iterator->getR()[1] << ", " << iterator->getR()[2] << "]"
-        << std::endl;
+        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
     ++particlesChecked;
   }
   EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
@@ -613,12 +602,12 @@ void RegionParticleIteratorTest::checkTouches(LCTouch &lcContainer, std::array<d
   int numTouches = 0;
   // check the touch. Iterating over cells provides more debug info than normal iterator.
   for (size_t cellId = 0; cellId < lcContainer.getCells().size(); ++cellId) {
-    auto cellId3D = utils::ThreeDimensionalMapping::oneToThreeD(cellId, {7, 7, 7});
+    const auto cellId3D = utils::ThreeDimensionalMapping::oneToThreeD(cellId, {7, 7, 7});
     for (auto pIter = lcContainer.getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
       ++numTouches;
       EXPECT_EQ(utils::inBox(pIter->getR(), regionMin, regionMax) ? 1 : 0, pIter->getNumTouched())
-          << "at: [" << pIter->getR()[0] << ", " << pIter->getR()[1] << ", " << pIter->getR()[2] << "]" << std::endl
-          << "in cell: " << cellId << " [" << cellId3D[0] << " | " << cellId3D[1] << " | " << cellId3D[2] << "]";
+          << "at: [" << ArrayUtils::to_string(pIter->getR()) << "]" << std::endl
+          << "in cell: " << cellId << " [" << ArrayUtils::to_string(cellId3D) << "]";
     }
   }
   EXPECT_GE(numTouches, 0) << "No Particles were checked!";

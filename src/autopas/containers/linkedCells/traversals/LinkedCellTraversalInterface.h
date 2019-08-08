@@ -7,19 +7,17 @@
 #pragma once
 
 #include <vector>
+#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+
+namespace autopas {
 
 /**
  * Interface for traversals used by the LinkedCell class.
+ *
+ * The container only accepts traversals in its iteratePairwise() method that implement this interface.
  * @tparam ParticleCell
  */
 template <class ParticleCell>
-class LinkedCellTraversalInterface {
- public:
-  /**
-   * Traverse all pairs of cells.
-   * This function needs to be implemented by derived classes and handles to
-   * order in which the cells are traversed.
-   * @param cells Vector of cells to traverse
-   */
-  virtual void traverseCellPairs(std::vector<ParticleCell> &cells) = 0;
-};
+class LinkedCellTraversalInterface {};
+
+}  // namespace autopas

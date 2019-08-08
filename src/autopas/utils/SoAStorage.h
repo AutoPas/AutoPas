@@ -8,8 +8,7 @@
 
 #include <tuple>
 
-namespace autopas {
-namespace utils {
+namespace autopas::utils {
 
 /**
  * SoAStorage is a helper to access the stored SoA's.
@@ -18,14 +17,12 @@ namespace utils {
 template <class SoAArraysType>
 class SoAStorage {
  private:
-  // End of iteration/recursion.
-  template <std::size_t I = 0, typename FunctorT, typename... Tp>
-  inline typename std::enable_if<I == sizeof...(Tp), void>::type for_each(std::tuple<Tp...>&, FunctorT) {}
-
-  template <std::size_t I = 0, typename FunctorT, typename... Tp>
-  inline typename std::enable_if<(I < sizeof...(Tp)), void>::type for_each(std::tuple<Tp...>& t, FunctorT f) {
-    f(std::get<I>(t));
-    for_each<I + 1, FunctorT, Tp...>(t, f);
+  template <std::size_t I = 0, typename FunctorT>
+  inline void for_each(FunctorT f) {
+    if constexpr (I < std::tuple_size<SoAArraysType>::value) {
+      f(get<I>());
+      for_each<I + 1, FunctorT>(f);
+    }
   }
 
  public:
@@ -36,10 +33,11 @@ class SoAStorage {
    * @tparam FunctorT the type of the functor
    * @param func a functor, that should be applied on all vectors (e.g. lambda functions, should take `auto& list` as an
    * argument)
+   * @todo c++20: replace with expansion statement: `for... (auto& elem : tup) {}`
    */
   template <typename FunctorT>
   void apply(FunctorT func) {
-    for_each(soaStorageTuple, func);
+    for_each(func);
   }
 
   /**
@@ -48,7 +46,7 @@ class SoAStorage {
    * @return a reference to the vector for the specific attribute
    */
   template <size_t soaAttribute>
-  auto& get() {
+  inline constexpr auto &get() {
     return std::get<soaAttribute>(soaStorageTuple);
   }
 
@@ -57,7 +55,7 @@ class SoAStorage {
    * @note const variant
    */
   template <size_t soaAttribute>
-  const auto& get() const {
+  inline constexpr const auto &get() const {
     return std::get<soaAttribute>(soaStorageTuple);
   }
 
@@ -65,5 +63,4 @@ class SoAStorage {
   SoAArraysType soaStorageTuple;
 };
 
-}  // namespace utils
-}  // namespace autopas
+}  // namespace autopas::utils

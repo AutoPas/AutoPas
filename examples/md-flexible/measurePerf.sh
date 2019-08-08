@@ -53,7 +53,7 @@ traversals__DirectSum=directSumTraversal
 traversals__LinkedCells=c08
 traversals__VerletLists=verlet-lists
 traversals__VerletCells=verletC18
-traversals__VerletCluster=c01
+traversals__VerletCluster=verlet-clusters
 traversals__VerletClusterCells=verlet-cluster-cells
 
 # iterate over containers
@@ -104,8 +104,14 @@ do
 
                     filename="${filename}.csv"
 
-                    # workaround because there is no traversal for Verlet clusters with newton 3 yet.
+                    # workaround because the specified traversal for Verlet clusters does not support newton 3.
                     if [[ ${container} =~ 'VerletCluster' && ${newton3Opt} =~ 'on' ]];
+                    then
+                        continue
+                    fi
+
+                    # workaround because there is no traversal for Verlet cells with soa yet.
+                    if [[ ${container} =~ 'VerletCells' && ${dataLayout} =~ 'SoA' ]];
                     then
                         continue
                     fi

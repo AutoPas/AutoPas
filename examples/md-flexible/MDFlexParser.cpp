@@ -30,6 +30,8 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
+                                         {"tuning-max-evidence", required_argument, nullptr, 'E'},
+                                         {"tuning-strategy", required_argument, nullptr, 'T'},
                                          {"log-level", required_argument, nullptr, 'l'},
                                          {"log-file", required_argument, nullptr, 'L'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
@@ -81,10 +83,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'a': {
-        try {
-          cellSizeFactor = stod(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing cell size: " << optarg << endl;
+        cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
+        if (cellSizeFactors->isEmpty()) {
+          cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -176,7 +177,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'y': {
         selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (selectorStrategy == autopas::SelectorStrategy(-1)) {
+        if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
           cerr << "Unknown Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
@@ -274,11 +275,33 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'E': {
+        try {
+          tuningMaxEvidence = (unsigned int)stoul(strArg);
+          if (tuningMaxEvidence < 1) {
+            cerr << "Tuning max evidence has to be a positive integer!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing number of tuning max evidence: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 't': {
         traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal: " << strArg << endl;
           cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'T': {
+        tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(strArg);
+        if (tuningStrategyOption == autopas::TuningStrategyOption(-1)) {
+          cerr << "Unknown Tuning Strategy: " << strArg << endl;
+          cerr << "Please use 'full-search' or 'bayesian-search'!" << endl;
           displayHelp = true;
         }
         break;
@@ -402,7 +425,7 @@ void MDFlexParser::printConfig() {
        << ":  " << cutoff << endl;
 
   cout << setw(valueOffset) << left << "Cell size factor"
-       << ":  " << cellSizeFactor << endl;
+       << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
 
   cout << setw(valueOffset) << left << "Particle Generator"
        << ":  ";
@@ -463,19 +486,23 @@ void MDFlexParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
+  cout << setw(valueOffset) << left << "Tuning Strategy"
+       << ":  " << autopas::utils::StringUtils::to_string(tuningStrategyOption) << endl;
   cout << setw(valueOffset) << left << "Tuning Interval"
        << ":  " << tuningInterval << endl;
   cout << setw(valueOffset) << left << "Tuning Samples"
        << ":  " << tuningSamples << endl;
+  cout << setw(valueOffset) << left << "Tuning Max evidence"
+       << ":  " << tuningMaxEvidence << endl;
 }
 
-std::vector<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
+std::set<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
 
 double MDFlexParser::getCutoff() const { return cutoff; }
 
-double MDFlexParser::getCellSizeFactor() const { return cellSizeFactor; }
+const autopas::NumberSet<double> &MDFlexParser::getCellSizeFactors() const { return *cellSizeFactors; }
 
-vector<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
+std::set<autopas::DataLayoutOption> MDFlexParser::getDataLayoutOptions() const { return dataLayoutOptions; }
 
 MDFlexParser::FunctorOption MDFlexParser::getFunctorOption() const { return functorOption; }
 
@@ -487,7 +514,7 @@ double MDFlexParser::getParticleSpacing() const { return particleSpacing; }
 
 size_t MDFlexParser::getParticlesTotal() const { return particlesTotal; }
 
-const vector<autopas::TraversalOption> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
+const std::set<autopas::TraversalOption> &MDFlexParser::getTraversalOptions() const { return traversalOptions; }
 
 unsigned int MDFlexParser::getVerletRebuildFrequency() const { return verletRebuildFrequency; }
 
@@ -503,7 +530,7 @@ double MDFlexParser::getDistributionMean() const { return distributionMean; }
 
 double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; }
 
-string MDFlexParser::getWriteVTK() const { return writeVTK; }
+std::string MDFlexParser::getWriteVTK() const { return writeVTK; }
 
 double MDFlexParser::getBoxLength() {
   if (boxLength == -1) boxLength = ceil(2 * distributionMean);
@@ -516,10 +543,14 @@ unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
 
 unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
 
+unsigned int MDFlexParser::getTuningMaxEvidence() const { return tuningMaxEvidence; }
+
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 
-autopas::SelectorStrategy MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
+autopas::SelectorStrategyOption MDFlexParser::getSelectorStrategy() const { return selectorStrategy; }
 
-std::vector<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
+std::set<autopas::Newton3Option> MDFlexParser::getNewton3Options() const { return newton3Options; }
 
 const string &MDFlexParser::getLogFileName() const { return logFileName; }
+
+autopas::TuningStrategyOption MDFlexParser::getTuningStrategyOption() const { return tuningStrategyOption; }

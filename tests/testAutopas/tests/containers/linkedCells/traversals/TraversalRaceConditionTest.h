@@ -30,8 +30,16 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
    public:
     using SoAArraysType = Particle::SoAArraysType;
     using ParticleCell = FPCell;
+    using floatType = double;
+
+    SimpleFunctor(floatType cutoff)
+        : autopas::Functor<Particle, ParticleCell>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
     bool isRelevantForTuning() override { return true; }
+
+    bool allowsNewton3() override { return true; }
+
+    bool allowsNonNewton3() override { return false; }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto coordsI = i.getR();
@@ -39,8 +47,8 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
       std::array<double, 3> dr = autopas::ArrayMath::sub(coordsI, coordsJ);
       double dr2 = autopas::ArrayMath::dot(dr, dr);
-
-      if (dr2 > CUTOFFSQUARE) return;
+      // in a grid with separation 1 this includes all neighbors with a Chebyshev distance of 1
+      if (dr2 > _cutoffSquare) return;
 
       std::array<double, 3> f = {};
 
@@ -58,13 +66,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
       j.subF(f);
     }
 
-    AUTOPAS_FUNCTOR_SOAEXTRACTOR(, , , );
-
-    AUTOPAS_FUNCTOR_SOALOADER(, , , );
-
    private:
-    // in a grid with separation 1 this includes all neighbors with a Chebyshev
-    // distance of 1
-    constexpr static double CUTOFFSQUARE = 3;
+    const double _cutoffSquare;
   };
 };

@@ -12,7 +12,7 @@ using namespace autopas::internal;
 void ParticleIteratorTest::SetUp() {
   for (int i = 0; i < 20; ++i) {
     std::array<double, 3> arr{};
-    for (auto& a : arr) {
+    for (auto &a : arr) {
       a = static_cast<double>(i);
     }
     MoleculeLJ m(arr, {0., 0., 0.}, static_cast<unsigned long>(i));
@@ -300,7 +300,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
  * @param haloMol
  */
 template <class Container, class Molecule>
-void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule& haloMol) {
+void testContainerIteratorBehavior(Container &container, Molecule &mol, Molecule &haloMol) {
   // default
   int count = 0;
 #ifdef AUTOPAS_OPENMP
@@ -345,7 +345,7 @@ void testContainerIteratorBehavior(Container& container, Molecule& mol, Molecule
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
-  DirectSum<MoleculeLJ, FullParticleCell<MoleculeLJ>> ds({0., 0., 0.}, {10., 10., 10.}, 3);
+  DirectSum<MoleculeLJ, FullParticleCell<MoleculeLJ>> ds({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   ds.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
@@ -355,7 +355,7 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
-  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3);
+  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1.);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   linkedCells.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
@@ -365,7 +365,7 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
-  VerletLists<MoleculeLJ> verletLists({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1);
+  VerletLists<MoleculeLJ> verletLists({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   verletLists.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);

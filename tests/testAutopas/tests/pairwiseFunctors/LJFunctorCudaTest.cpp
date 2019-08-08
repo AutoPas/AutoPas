@@ -91,9 +91,9 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   autopas::FullParticleCell<ParticleType> cell2NoCuda(cell2Cuda);
 
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorNoCuda(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+      ljFunctorNoCuda(_cutoff, _epsilon, _sigma, 0.0);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorCuda(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+      ljFunctorCuda(_cutoff, _epsilon, _sigma, 0.0);
 
   ljFunctorCuda.getCudaWrapper()->setNumThreads(32);
 
@@ -151,9 +151,9 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   autopas::FullParticleCell<ParticleType> cellNoCuda(cellCuda);
 
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorNoCuda(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+      ljFunctorNoCuda(_cutoff, _epsilon, _sigma, 0.0);
   autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorCuda(_cutoff, _epsilon, _sigma, 0.0, _lowCorner, _highCorner);
+      ljFunctorCuda(_cutoff, _epsilon, _sigma, 0.0);
   ljFunctorCuda.getCudaWrapper()->setNumThreads(32);
 
   ljFunctorNoCuda.initTraversal();

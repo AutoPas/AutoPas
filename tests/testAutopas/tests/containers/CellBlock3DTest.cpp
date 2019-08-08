@@ -5,16 +5,17 @@
  */
 
 #include "CellBlock3DTest.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/GridGenerator.h"
 
-void testIndex(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>>& cellBlock,
-               std::array<double, 3>& start, std::array<double, 3>& dr, std::array<int, 3>& numParts) {
+void testIndex(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
+               std::array<double, 3> &start, std::array<double, 3> &dr, std::array<int, 3> &numParts) {
   auto mesh = CellBlock3DTest::getMesh(start, dr, numParts);
 
   unsigned long counter = 0ul;
-  for (auto& m : mesh) {
+  for (auto &m : mesh) {
     unsigned long index = cellBlock.get1DIndexOfPosition(m);
-    ASSERT_EQ(index, counter) << "Pos: [" << m[0] << ", " << m[1] << ", " << m[2] << "]";
+    ASSERT_EQ(index, counter) << "Pos: [" << autopas::ArrayUtils::to_string(m) << "]";
     ++counter;
   }
 }
@@ -49,7 +50,7 @@ TEST_F(CellBlock3DTest, test3x3x3) {
   testIndex(_cells_3x3x3, start, dr, numParts);
 }
 
-void testBoundary(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>>& cellBlock,
+void testBoundary(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
                   std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
   std::array<std::array<double, 4>, 3> possibleShifts = {};
   for (unsigned short dim = 0; dim < 3; ++dim) {
@@ -137,12 +138,14 @@ std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3
   return ret;
 }
 
-size_t getNumberOfParticlesInBox(autopas::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>>& cellBlock,
-                                 std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>>& vec) {
+size_t getNumberOfParticlesInBox(
+    autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
+    std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>> &vec) {
   const autopas::MoleculeLJ defaultParticle;
-  GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
+  GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(),
+                                   cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
   cellBlock.clearHaloCells();
-  return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto& e) { return acc + e.numParticles(); });
+  return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.numParticles(); });
 }
 
 TEST_F(CellBlock3DTest, testClearHaloParticles) {

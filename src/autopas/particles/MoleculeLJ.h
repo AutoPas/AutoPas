@@ -16,7 +16,7 @@ namespace autopas {
  * lennard jones molecule class
  */
 template <typename floatType>
-class MoleculeLJBase : public ParticleBase<floatType> {
+class MoleculeLJBase : public ParticleBase<floatType, unsigned long> {
  public:
   MoleculeLJBase() = default;
 
@@ -27,7 +27,7 @@ class MoleculeLJBase : public ParticleBase<floatType> {
    * @param id id of the molecule
    */
   explicit MoleculeLJBase(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
-      : ParticleBase<floatType>(r, v, id) {}
+      : ParticleBase<floatType, unsigned long>(r, v, id) {}
 
   virtual ~MoleculeLJBase() = default;
 
