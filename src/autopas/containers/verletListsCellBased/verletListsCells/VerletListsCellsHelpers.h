@@ -37,7 +37,7 @@ class VerletListsCellsHelpers {
      * Constructor
      * @param verletLists a verletlist for each cell
      * @param cellMap used to get the verletlist of a particle
-     * @param cutoffskin
+     * @param cutoffskin cutoff + skin
      */
     VerletListGeneratorFunctor(VerletList_storage_type &verletLists,
                                std::unordered_map<Particle *, std::pair<size_t, size_t>> &cellMap, double cutoffskin)
