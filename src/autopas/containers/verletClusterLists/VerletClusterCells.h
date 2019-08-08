@@ -70,16 +70,13 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * Function to iterate over all pairs of particles.
    * This function only handles short-range interactions.
-   * @tparam the type of ParticleFunctor
-   * @tparam Traversal
-   * @param f functor that describes the pair-potential
-   * @param traversal not used
-   * @param useNewton3 whether newton 3 optimization should be used
+   * @param traversal to be used used
    */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+  void iteratePairwise(TraversalInterface *traversal) override {
     auto *traversalInterface = dynamic_cast<VerletClusterTraversalInterface<FullParticleCell<Particle>> *>(traversal);
-    if (!traversalInterface) {
+    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<FullParticleCell<Particle>> *>(traversal);
+
+    if ((!traversalInterface) or (!cellPairTraversal)) {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
     }
@@ -96,9 +93,10 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       _lastTraversalSig = traversalInterface->getSignature();
     }
 
-    traversal->initTraversal(this->_cells);
-    traversalInterface->traverseCellPairs(this->_cells);
-    traversal->endTraversal(this->_cells);
+    cellPairTraversal->setCellsToTraverse(this->_cells);
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   /**
@@ -108,7 +106,6 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
       this->_cells[0].resize(_dummyStarts[0]);
-      p.setOwned(true);
       // add particle somewhere, because lists will be rebuild anyways
       this->_cells[0].addParticle(p);
       ++_dummyStarts[0];
@@ -122,19 +119,14 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @copydoc VerletLists::addHaloParticle()
    */
   void addHaloParticle(Particle &haloParticle) override {
-    _isValid = false;
-    if (autopas::utils::notInBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
-      if (autopas::utils::inBox(haloParticle.getR(), _boxMinWithHalo, _boxMaxWithHalo)) {
-        this->_cells[0].resize(_dummyStarts[0]);
-        haloParticle.setOwned(false);
-        // add particle somewhere, because lists will be rebuild anyways
-        this->_cells[0].addParticle(haloParticle);
-        ++_dummyStarts[0];
-      } else {
-        utils::ExceptionHandler::exception(
-            "VerletCluster: trying to add halo particle that is not near the bounding box.\n" +
-            haloParticle.toString());
-      }
+    Particle p_copy = haloParticle;
+    if (autopas::utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
+      _isValid = false;
+      this->_cells[0].resize(_dummyStarts[0]);
+      p_copy.setOwned(false);
+      // add particle somewhere, because lists will be rebuild anyways
+      this->_cells[0].addParticle(p_copy);
+      ++_dummyStarts[0];
     } else {
       utils::ExceptionHandler::exception(
           "VerletCluster: trying to add halo particle that is inside the bounding box.\n" + haloParticle.toString());
@@ -147,36 +139,55 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
   bool updateHaloParticle(Particle &haloParticle) override {
-    int xt = (int)((haloParticle.getR()[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal);
-    int yt = (int)((haloParticle.getR()[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal);
+    // check proximity first
+    Particle pCopy = haloParticle;
+    pCopy.setOwned(false);
+
+    int xt = (int)((pCopy.getR()[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal);
+    int yt = (int)((pCopy.getR()[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal);
     for (int x = -1; x <= 1; ++x) {
       for (int y = -1; y <= 1; ++y) {
         size_t index = xt + yt * _cellsPerDim[0];
         if (0 <= index && index < this->_cells.size()) {
-          Particle range = haloParticle;
-          auto pos = haloParticle.getR();
-          pos[2] -= this->getSkin();
-          range.setR(pos);
-          auto lower =
-              std::lower_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), range,
-                               [](const Particle &a, const Particle &b) { return a.getR()[2] < b.getR()[2]; });
+          double zpos = pCopy.getR()[2];
+          zpos -= this->getSkin();
 
-          pos = haloParticle.getR();
-          pos[2] += this->getSkin();
-          range.setR(pos);
-          auto upper =
-              std::upper_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), range,
-                               [](const Particle &a, const Particle &b) { return a.getR()[2] < b.getR()[2]; });
+          auto lower = std::lower_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(),
+                                        zpos, [](const Particle &a, const double &b) { return a.getR()[2] < b; });
+
+          zpos += 2 * this->getSkin();
+          auto upper = std::upper_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(),
+                                        zpos, [](const double &a, const Particle &b) { return a < b.getR()[2]; });
 
           for (; lower != upper; ++lower) {
-            if (haloParticle.getID() == lower->getID()) {
-              *lower = haloParticle;
+            if (pCopy.getID() == lower->getID() and !lower->isOwned()) {
+              *lower = pCopy;
               return true;
             }
           }
         }
       }
     }
+    // check other cells
+    for (size_t index = 0; index < this->_cells.size(); ++index) {
+      double zpos = haloParticle.getR()[2];
+      zpos -= this->getSkin();
+
+      auto lower = std::lower_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), zpos,
+                                    [](const Particle &a, const double &b) { return a.getR()[2] < b; });
+
+      zpos += 2 * this->getSkin();
+      auto upper = std::upper_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), zpos,
+                                    [](const double &a, const Particle &b) { return a < b.getR()[2]; });
+
+      for (; lower != upper; ++lower) {
+        if (haloParticle.getID() == lower->getID() and !lower->isOwned()) {
+          *lower = haloParticle;
+          return true;
+        }
+      }
+    }
+
     return false;
   }
 
@@ -190,9 +201,10 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
     }
-    if (!_isValid) {
+    if (not _isValid) {
       rebuild();
     }
+
     traversalInterface->setVerletListPointer(&_clusterSize, &_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
 
     traversalInterface->rebuildVerlet(_cellsPerDim, this->_cells, _boundingBoxes,
@@ -205,11 +217,19 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
-    _isValid = false;
-
     for (size_t i = 0; i < this->_cells.size(); ++i) {
-      std::remove_if(this->_cells[i]._particles.begin(), this->_cells[i]._particles.end(),
-                     [](Particle &p) { return not p.isOwned(); });
+      for (size_t j = 0; j < _dummyStarts[i];) {
+        if (not this->_cells[i]._particles[j].isOwned()) {
+          // move to dummy particles
+          auto pos = this->_cells[i]._particles[j].getR();
+          pos[0] += _boxMaxWithHalo[2] + 8 * this->getInteractionLength();
+          this->_cells[i]._particles[j].setR(pos);
+          --_dummyStarts[i];
+          std::swap(this->_cells[i]._particles[j], this->_cells[i]._particles[_dummyStarts[i]]);
+        }else{
+        	++j;
+        }
+      }
     }
   }
 
@@ -218,15 +238,24 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
    */
   std::vector<Particle> updateContainer() override {
     AutoPasLog(debug, "updating container");
-    _isValid = false;
 
-    return rebuild();
+    deleteHaloParticles();
+
+    std::vector<Particle> outsideParticles;
+    for (auto iter = begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    	if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+    	outsideParticles.push_back(*iter);
+        iter.deleteCurrentParticle();
+      }
+    }
+
+    return outsideParticles;
   }
 
   bool isContainerUpdateNeeded() override {
-    if (not _isValid) {
-      return true;
-    }
+	  if(not _isValid){
+		  return true;
+	  }
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       size_t pid = 0;
       const size_t end = (_boundingBoxes[i].size() > 0) ? _boundingBoxes[i].size() - 1 : 0;
@@ -254,33 +283,39 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+	    if (not _isValid) {
+	      rebuild();
+	    }
     return ParticleIteratorWrapper<Particle>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>>(
-            &this->_cells, &_dummyStarts, behavior));
+            &this->_cells, &_dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                      const std::array<double, 3> &higherCorner,
-                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
-                                                      bool incSearchRegion = false) override {
-    int xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal);
-    int ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal);
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+	    if (not _isValid) {
+	      rebuild();
+	    }
+    int xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
+    int ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1]- this->getSkin()) * _gridSideLengthReciprocal);
 
-    int xlength = (int)((higherCorner[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal) - xmin + 1;
-    int ylength = (int)((higherCorner[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal) - ymin + 1;
+    int xlength = ((int)((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
+    int ylength = ((int)((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
 
     std::vector<size_t> cellsOfInterest(xlength * ylength);
 
     auto cellsOfInterestIterator = cellsOfInterest.begin();
-
+    int start = xmin + ymin * _cellsPerDim[0];
     for (int i = 0; i < ylength; ++i) {
-      std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength + 1, xmin + i * _cellsPerDim[0]);
+      std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength, start + i * _cellsPerDim[0]);
       cellsOfInterestIterator += xlength;
     }
 
     return ParticleIteratorWrapper<Particle>(
         new internal::VerletClusterCellsRegionParticleIterator<Particle, FullParticleCell<Particle>>(
-            &this->_cells, &_dummyStarts, lowerCorner, higherCorner, cellsOfInterest, behavior));
+            &this->_cells, &_dummyStarts, lowerCorner, higherCorner, cellsOfInterest,
+            _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior, this->getSkin()));
   }
 
   /**
@@ -297,6 +332,7 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   /**
    * Recalculate grids and clusters,
    * build verlet lists and pad clusters.
+   * @return Vector of particles containing particles no longer in the box
    */
   std::vector<Particle> rebuild() {
     deleteDummyParticles();
@@ -366,18 +402,20 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
     for (size_t i = 0; i < sizeGrid; ++i) {
       this->_cells[i].sortByDim(2);
       const auto numParticles = this->_cells[i].numParticles();
+
       _dummyStarts[i] = numParticles;
       unsigned int numDummys = _clusterSize;
       if (numParticles > 0) {
-        numDummys -= (numParticles % _clusterSize);
+        numDummys -= (numParticles % (size_t)_clusterSize);
       }
 
+      Particle dummyParticle = Particle();
       for (unsigned int j = 0; j < numDummys; ++j) {
-        Particle dummyParticle = Particle();
         dummyParticle.setR({_boxMaxWithHalo[0] + 8 * this->getInteractionLength() + static_cast<double>(i),
                             _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
                             _boxMaxWithHalo[2] + 8 * this->getInteractionLength()});
         dummyParticle.setID(ULONG_MAX);
+        dummyParticle.setOwned(false);
         this->_cells[i].addParticle(dummyParticle);
       }
     }

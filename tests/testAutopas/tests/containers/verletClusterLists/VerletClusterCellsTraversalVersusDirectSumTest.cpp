@@ -68,11 +68,11 @@ void VerletClusterCellsTraversalVersusDirectSumTest::test(unsigned long numMolec
       traversalDS(&funcDS);
 
   funcDS.initTraversal();
-  _directSum.iteratePairwise(&funcDS, &traversalDS);
+  _directSum.iteratePairwise(&traversalDS);
   funcDS.endTraversal(useNewton3);
 
   funcVC.initTraversal();
-  _verletCluster.iteratePairwise(&funcVC, &traversalVerletCluster);
+  _verletCluster.iteratePairwise(&traversalVerletCluster);
   funcVC.endTraversal(useNewton3);
 
   _verletCluster.deleteDummyParticles();

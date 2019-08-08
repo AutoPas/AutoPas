@@ -30,7 +30,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3> {
+class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -43,7 +43,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double interactionLength = 1.0,
                                 const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims),
+      : CellPairTraversal<ParticleCell>(dims),
         _overlap{},
         _dimsPerLength{},
         _interactionLength(interactionLength),
@@ -60,42 +60,38 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
    * @return true iff the traversal can be applied.
    */
   bool isApplicable() const override {
-    if (dataLayout == DataLayoutOption::cuda) {
-      int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-      cudaGetDeviceCount(&nDevices);
+    return not(dataLayout == DataLayoutOption::cuda) and this->_sliceThickness.size() > 0;
+  }
+
+  /**
+   * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
+   */
+  void initTraversal() override {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
+#ifdef AUTOPAS_OPENMP
+      // @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
 #endif
-      return (this->_sliceThickness.size() > 0) && (nDevices > 0);
-    } else {
-      return this->_sliceThickness.size() > 0;
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.loadDataLayout(cells[i]);
+      }
     }
   }
 
   /**
-   * Load Data Layouts required for this Traversal.
-   * @param cells where the data should be loaded.
+   * Write Data to AoS if cells have been set through setCellsToTraverse().
    */
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  void endTraversal() override {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
+      // @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.loadDataLayout(cells[i]);
-    }
-  }
-
-  /**
-   * Write Data to AoS.
-   * @param cells for which the data should be written back.
-   */
-  void endTraversal(std::vector<ParticleCell> &cells) override {
-#ifdef AUTOPAS_OPENMP
-    // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < cells.size(); ++i) {
-      _dataLayoutConverter.storeDataLayout(cells[i]);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.storeDataLayout(cells[i]);
+      }
     }
   }
 
@@ -114,7 +110,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
   inline void slicedTraversal(LoopBody &&loopBody);
 
   /**
-   * overlap of interacting cells. Array allows asymmetric cell sizes.
+   * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   std::array<unsigned long, 3> _overlap;
 
@@ -130,12 +126,12 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
   double _interactionLength;
 
   /**
-   * cell length in CellBlock3D.
+   * Cell length in CellBlock3D.
    */
   std::array<double, 3> _cellLength;
 
   /**
-   * overlap of interacting cells along the longest axis.
+   * Overlap of interacting cells along the longest axis.
    */
   unsigned long _overlapLongestAxis;
 
@@ -146,7 +142,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell, dataLayout, 
   std::vector<AutoPasLock> locks;
 
   /**
-   * Data Layout Converter to be used with this traversal
+   * Data Layout Converter to be used with this traversal.
    */
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };

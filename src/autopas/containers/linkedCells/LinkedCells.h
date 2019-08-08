@@ -92,23 +92,23 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     // nothing to do.
   }
 
-  /**
-   * @copydoc DirectSum::iteratePairwise
-   */
-  template <class ParticleFunctor, class Traversal>
-  void iteratePairwise(ParticleFunctor *f, Traversal *traversal) {
+  void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
 
-    traversal->initTraversal(this->_cells);
-    if (auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal)) {
-      traversalInterface->traverseCellPairs(this->_cells);
-
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
+    if (traversalInterface && cellPairTraversal) {
+      cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
     }
-    traversal->endTraversal(this->_cells);
+
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   AUTOPAS_WARN_UNUSED_RESULT
@@ -200,24 +200,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
         new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                      const std::array<double, 3> &higherCorner,
-                                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
-                                                      bool incSearchRegion = false) override {
-    size_t startIndex;
-    // this is needed when used through verlet lists since particles can move over cell borders.
-    // only lower corner needed since we increase the upper corner anyways.
-    if (incSearchRegion) {
-      startIndex = this->_cellBlock.get1DIndexOfPosition(ArrayMath::subScalar(lowerCorner, (double)1.0));
-    } else {
-      startIndex = this->_cellBlock.get1DIndexOfPosition(lowerCorner);
-    }
-    auto stopIndex = this->_cellBlock.get1DIndexOfPosition(higherCorner);
-
-    auto startIndex3D =
-        utils::ThreeDimensionalMapping::oneToThreeD(startIndex, this->_cellBlock.getCellsPerDimensionWithHalo());
-    auto stopIndex3D =
-        utils::ThreeDimensionalMapping::oneToThreeD(stopIndex, this->_cellBlock.getCellsPerDimensionWithHalo());
+  ParticleIteratorWrapper<Particle> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    // We increase the search region by skin, as particles can move over cell borders.
+    auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(ArrayMath::addScalar(higherCorner, this->getSkin()));
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);

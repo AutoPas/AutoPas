@@ -44,13 +44,15 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
     // domain SoA with halo
     EXPECT_CALL(functor, SoAFunctor(_, _, true)).Times(1);
     std::for_each(cells.begin(), cells.end(), [](auto &c) { c._particleSoABuffer.resizeArrays(2); });
-    traversal.traverseCellPairs(cells);
+    traversal.setCellsToTraverse(cells);
+    traversal.traverseParticlePairs();
   } else {
     autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(&functor);
     // interactions in main cell + interactions with halo.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;
     EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((int)expectedFunctorCalls);
-    traversal.traverseCellPairs(cells);
+    traversal.setCellsToTraverse(cells);
+    traversal.traverseParticlePairs();
   }
 }
 
@@ -82,7 +84,8 @@ TEST_F(DirectSumTraversalTest, testTraversalCuda) {
   EXPECT_CALL(functor, CudaFunctor(_, true)).Times(1);
   // domain SoA with halo
   EXPECT_CALL(functor, CudaFunctor(_, _, true)).Times(1);
-  traversal.traverseCellPairs(cells);
+  traversal.setCellsToTraverse(cells);
+  traversal.traverseParticlePairs();
 }
 
 #endif

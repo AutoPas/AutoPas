@@ -49,12 +49,6 @@ class VerletClusterTraversalInterface {
                                     utils::CudaDeviceVector<unsigned int> *neighborMatrix) = 0;
 
   /**
-   * This function interacts all cells with the other cells with their index in neighborCellIds
-   * @param cells containing the particles
-   */
-  virtual void traverseCellPairs(std::vector<ParticleCell> &cells) = 0;
-
-  /**
    * This function returns the Data Layout Option and use of newton3 to identify a Traversal object
    * @return pair with DataLayoutOption and use of newton3
    */

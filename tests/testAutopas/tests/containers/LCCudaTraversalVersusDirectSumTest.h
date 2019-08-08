@@ -1,5 +1,5 @@
 /**
- * @file CudaTraversalVersusDirectSumTest.cpp
+ * @file LCCudaTraversalVersusDirectSumTest.h
  * @author jspahl
  * @date 11.03.19
  */
@@ -12,11 +12,11 @@
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class CudaTraversalVersusDirectSumTest : public AutoPasTestBase {
+class LCCudaTraversalVersusDirectSumTest : public AutoPasTestBase {
  public:
-  CudaTraversalVersusDirectSumTest();
+  LCCudaTraversalVersusDirectSumTest();
 
-  ~CudaTraversalVersusDirectSumTest() override = default;
+  ~LCCudaTraversalVersusDirectSumTest() override = default;
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 

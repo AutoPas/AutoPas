@@ -13,6 +13,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/CudaDeviceVector.h"
+#include "autopas/utils/SoAView.h"
 #if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
 #endif
@@ -28,7 +29,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataLayout, useNewton3>,
+class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
                                     public VerletClusterTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -38,7 +39,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   VerletClusterCellsTraversal(PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell, DataLayout, useNewton3>({1, 1, 1}),
+      : CellPairTraversal<ParticleCell>({1, 1, 1}),
         _functor(pairwiseFunctor),
         _neighborMatrixDim(nullptr),
         _clusterSize(nullptr) {}
@@ -56,6 +57,10 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
     } else
       return true;
   }
+
+  bool getUseNewton3() const override { return useNewton3; }
+
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
 
   std::tuple<TraversalOption, DataLayoutOption, bool> getSignature() override {
     return std::make_tuple(TraversalOption::verletClusterCellsTraversal, DataLayout, useNewton3);
@@ -178,23 +183,23 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
     }
   }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  void initTraversal() override {
     switch (DataLayout) {
       case DataLayoutOption::aos: {
         return;
       }
       case DataLayoutOption::soa: {
-        for (size_t i = 0; i < cells.size(); ++i) {
-          _functor->SoALoader(cells[i], cells[i]._particleSoABuffer);
+        for (size_t i = 0; i < (*this->_cells).size(); ++i) {
+          _functor->SoALoader((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer);
         }
 
         return;
       }
       case DataLayoutOption::cuda: {
         size_t partSum = 0;
-        for (size_t i = 0; i < cells.size(); ++i) {
-          _functor->SoALoader(cells[i], _storageCell._particleSoABuffer, partSum);
-          partSum += cells[i].numParticles();
+        for (size_t i = 0; i < (*this->_cells).size(); ++i) {
+          _functor->SoALoader((*this->_cells)[i], _storageCell._particleSoABuffer, partSum);
+          partSum += (*this->_cells)[i].numParticles();
         }
         _functor->deviceSoALoader(_storageCell._particleSoABuffer, _storageCell._particleSoABufferDevice);
 #ifdef AUTOPAS_CUDA
@@ -205,7 +210,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
     }
   }
 
-  void endTraversal(std::vector<ParticleCell> &cells) override {
+  void endTraversal() override {
     switch (DataLayout) {
       case DataLayoutOption::aos: {
         return;
@@ -214,8 +219,8 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for
 #endif
-        for (size_t i = 0; i < cells.size(); ++i) {
-          _functor->SoAExtractor(cells[i], cells[i]._particleSoABuffer);
+        for (size_t i = 0; i < (*this->_cells).size(); ++i) {
+          _functor->SoAExtractor((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer);
         }
 
         return;
@@ -226,50 +231,46 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
         utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
 #endif
         size_t partSum = 0;
-        for (size_t i = 0; i < cells.size(); ++i) {
-          _functor->SoAExtractor(cells[i], _storageCell._particleSoABuffer, partSum);
-          partSum += cells[i].numParticles();
+        for (size_t i = 0; i < (*this->_cells).size(); ++i) {
+          _functor->SoAExtractor((*this->_cells)[i], _storageCell._particleSoABuffer, partSum);
+          partSum += (*this->_cells)[i].numParticles();
         }
         return;
       }
     }
   }
 
-  /**
-   * This function interacts all cells with the other cells with their index in neighborCellIds
-   * @param cells containing the particles
-   */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override {
+  void traverseParticlePairs() override {
     switch (DataLayout) {
       case DataLayoutOption::aos: {
-        traverseCellPairsAoS(cells);
+        traverseCellPairsAoS(this->_cells);
         return;
       }
       case DataLayoutOption::soa: {
-        traverseCellPairsSoA(cells);
+        traverseCellPairsSoA(this->_cells);
         return;
       }
       case DataLayoutOption::cuda: {
-        traverseCellPairsGPU(cells);
+        traverseCellPairsGPU();
         return;
       }
     }
   }
 
  private:
-  void traverseCellPairsAoS(std::vector<ParticleCell> &cells) {
+  void traverseCellPairsAoS(std::vector<ParticleCell> *cells) {
     const auto clusterSize = *_clusterSize;
 
     // grid
-    for (size_t i = 0; i < cells.size(); ++i) {
+    for (size_t i = 0; i < cells->size(); ++i) {
       // clusters
       for (size_t clusterId = 0; clusterId < (*_neighborCellIds)[i].size(); ++clusterId) {
         for (auto &neighbor : (*_neighborCellIds)[i][clusterId]) {
           // loop in cluster
           for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
             for (size_t otherPid = 0; otherPid < clusterSize; ++otherPid) {
-              _functor->AoSFunctor(cells[i]._particles[clusterSize * clusterId + ownPid],
-                                   cells[neighbor.first]._particles[clusterSize * neighbor.second + otherPid],
+              _functor->AoSFunctor((*cells)[i]._particles[clusterSize * clusterId + ownPid],
+                                   (*cells)[neighbor.first]._particles[clusterSize * neighbor.second + otherPid],
                                    useNewton3);
             }
           }
@@ -278,16 +279,16 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
         if (useNewton3) {
           for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
             for (size_t otherPid = ownPid + 1; otherPid < clusterSize; ++otherPid) {
-              _functor->AoSFunctor(cells[i]._particles[clusterSize * clusterId + ownPid],
-                                   cells[i]._particles[clusterSize * clusterId + otherPid], useNewton3);
+              _functor->AoSFunctor((*cells)[i]._particles[clusterSize * clusterId + ownPid],
+                                   (*cells)[i]._particles[clusterSize * clusterId + otherPid], useNewton3);
             }
           }
         } else {
           for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
             for (size_t otherPid = 0; otherPid < clusterSize; ++otherPid) {
               if (ownPid != otherPid) {
-                _functor->AoSFunctor(cells[i]._particles[clusterSize * clusterId + ownPid],
-                                     cells[i]._particles[clusterSize * clusterId + otherPid], useNewton3);
+                _functor->AoSFunctor((*cells)[i]._particles[clusterSize * clusterId + ownPid],
+                                     (*cells)[i]._particles[clusterSize * clusterId + otherPid], useNewton3);
               }
             }
           }
@@ -296,26 +297,30 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell, DataL
     }
   }
 
-  void traverseCellPairsSoA(std::vector<ParticleCell> &cells) {
+  void traverseCellPairsSoA(std::vector<ParticleCell> *cells) {
     auto clusterSize = *_clusterSize;
     // grid
-    for (size_t i = 0; i < cells.size(); ++i) {
+    for (size_t i = 0; i < cells->size(); ++i) {
       // clusters
       for (size_t clusterId = 0; clusterId < (*_neighborCellIds)[i].size(); ++clusterId) {
         for (auto &neighbor : (*_neighborCellIds)[i][clusterId]) {
-          // loop in cluster
+          const size_t c1start = clusterSize * clusterId;
+          SoAView cluster1(&(*cells)[i]._particleSoABuffer, c1start, c1start + clusterSize);
 
-          cells[i]._particleSoABuffer.setViewStart(clusterSize * clusterId);
-          cells[neighbor.first]._particleSoABuffer.setViewStart(clusterSize * neighbor.second);
+          const size_t c2start = clusterSize * neighbor.second;
+          SoAView cluster2(&(*cells)[neighbor.first]._particleSoABuffer, c2start, c2start + clusterSize);
 
-          _functor->SoAFunctor(cells[i]._particleSoABuffer, cells[neighbor.first]._particleSoABuffer, useNewton3);
+          _functor->SoAFunctor(cluster1, cluster2, useNewton3);
         }
         // same cluster
+        SoAView clusterSelf(&(*cells)[i]._particleSoABuffer, clusterId * clusterSize,
+                            clusterId * clusterSize + clusterSize);
+        _functor->SoAFunctor(clusterSelf, useNewton3);
       }
     }
   }
 
-  void traverseCellPairsGPU(std::vector<ParticleCell> &cells) {
+  void traverseCellPairsGPU() {
 #ifdef AUTOPAS_CUDA
     if (!_functor->getCudaWrapper()) {
       _functor->CudaFunctor(_storageCell._particleSoABufferDevice, useNewton3);

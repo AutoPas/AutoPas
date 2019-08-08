@@ -14,6 +14,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/BayesianSearch.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/utils/NumberSet.h"
 
@@ -48,6 +49,7 @@ class AutoPas {
         _verletClusterSize(64),
         _tuningInterval(5000),
         _numSamples(3),
+        _maxEvidence(10),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
@@ -108,10 +110,13 @@ class AutoPas {
    * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
    * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
    * else will happen.
-   * @return A vector of invalid particles that do no belong in the current container.
+   * @return A pair of a vector of invalid particles that do no belong in the current container and a bool that
+   * specifies whether the container was updated. If the bool is false, the vector will be an empty vector. If the
+   * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
+   * left the container or not.
    */
   AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<Particle> updateContainer() { return _logicHandler->updateContainer(false); }
+  std::pair<std::vector<Particle>, bool> updateContainer() { return _logicHandler->updateContainer(false); }
 
   /**
    * Forces a container update.
@@ -120,7 +125,7 @@ class AutoPas {
    * @return A vector of invalid particles that do no belong in the current container.
    */
   AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<Particle> updateContainerForced() { return _logicHandler->updateContainer(true); }
+  std::vector<Particle> updateContainerForced() { return std::get<0>(_logicHandler->updateContainer(true)); }
 
   /**
    * Adds a particle to the container.
@@ -162,7 +167,10 @@ class AutoPas {
     static_assert(not std::is_same<Functor, autopas::Functor<Particle, ParticleCell>>::value,
                   "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                   "derived type instead, e.g. by using a dynamic_cast.");
-
+    if (f->getCutoff() > this->getCutoff()) {
+      utils::ExceptionHandler::exception("Functor cutoff ({}) must not be larger than container cutoff ({})",
+                                         f->getCutoff(), this->getCutoff());
+    }
     _logicHandler->iteratePairwise(f);
   }
 
@@ -340,6 +348,18 @@ class AutoPas {
   void setNumSamples(unsigned int numSamples) { AutoPas::_numSamples = numSamples; }
 
   /**
+   * Get maximum number of evidence for tuning
+   * @return
+   */
+  unsigned int getMaxEvidence() const { return _maxEvidence; }
+
+  /**
+   * Set maximum number of evidence for tuning
+   * @param maxEvidence
+   */
+  void setMaxEvidence(unsigned int maxEvidence) { AutoPas::_maxEvidence = maxEvidence; }
+
+  /**
    * Get the selector configuration strategy.
    * @return
    */
@@ -439,7 +459,7 @@ class AutoPas {
    */
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
     switch (_tuningStrategyOption) {
-      case TuningStrategyOption::fullSearch:
+      case TuningStrategyOption::fullSearch: {
         if (not _allowedCellSizeFactors->isFinite()) {
           autopas::utils::ExceptionHandler::exception(
               "AutoPas::generateTuningStrategy: fullSearch can not handle infinite cellSizeFactors!");
@@ -448,6 +468,12 @@ class AutoPas {
 
         return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
                                             _allowedDataLayouts, _allowedNewton3Options);
+      }
+
+      case TuningStrategyOption::bayesianSearch: {
+        return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+                                                _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
+      }
     }
 
     autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
@@ -487,6 +513,10 @@ class AutoPas {
    * Number of samples the tuner should collect for each combination.
    */
   unsigned int _numSamples;
+  /**
+   * Tuning Strategies which work on a fixed number of evidence should use this value.
+   */
+  unsigned int _maxEvidence;
 
   /**
    * Strategy option for the auto tuner.

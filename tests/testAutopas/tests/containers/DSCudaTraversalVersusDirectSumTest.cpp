@@ -1,24 +1,22 @@
 /**
- * @file CudaTraversalVersusDirectSumTest.cpp
+ * @file DSCudaTraversalVersusDirectSumTest.cpp
  * @author jspahl
  * @date 11.03.19
  */
 
-#include "CudaTraversalVersusDirectSumTest.h"
-#include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
-//#include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "DSCudaTraversalVersusDirectSumTest.h"
 
-CudaTraversalVersusDirectSumTest::CudaTraversalVersusDirectSumTest()
+DSCudaTraversalVersusDirectSumTest::DSCudaTraversalVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.),
-      _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0., 1. /*cell size factor*/) {}
+      _directSumCuda(getBoxMin(), getBoxMax(), getCutoff(), 0.) {}
 
-double CudaTraversalVersusDirectSumTest::fRand(double fMin, double fMax) const {
+double DSCudaTraversalVersusDirectSumTest::fRand(double fMin, double fMax) const {
   double f = static_cast<double>(rand()) / RAND_MAX;
   return fMin + f * (fMax - fMin);
 }
 
-std::array<double, 3> CudaTraversalVersusDirectSumTest::randomPosition(const std::array<double, 3> &boxMin,
-                                                                       const std::array<double, 3> &boxMax) const {
+std::array<double, 3> DSCudaTraversalVersusDirectSumTest::randomPosition(const std::array<double, 3> &boxMin,
+                                                                         const std::array<double, 3> &boxMax) const {
   std::array<double, 3> r{};
   for (int d = 0; d < 3; ++d) {
     r[d] = fRand(boxMin[d], boxMax[d]);
@@ -26,7 +24,7 @@ std::array<double, 3> CudaTraversalVersusDirectSumTest::randomPosition(const std
   return r;
 }
 
-void CudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
+void DSCudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
     unsigned long numMolecules,
     autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
   srand(42);  // fixed seedpoint
@@ -41,12 +39,12 @@ void CudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
 }
 
 template <bool useNewton3, bool calculateGlobals>
-void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
+void DSCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   fillContainerWithMolecules(numMolecules, _directSum);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _directSum.begin(); it.isValid(); ++it) {
-    _linkedCells.addParticle(*it);
+    _directSumCuda.addParticle(*it);
   }
 
   double eps = 1.0;
@@ -56,28 +54,28 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
   autopas::MoleculeLJ::setSigma(sig);
   autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(getCutoff(), eps, sig,
                                                                                                shift);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcLC(getCutoff(), eps, sig,
-                                                                                               shift);
+  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcDScuda(getCutoff(), eps,
+                                                                                                   sig, shift);
 
-  autopas::C01CudaTraversal<FMCell,
-                            autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals>,
-                            autopas::DataLayoutOption::cuda, useNewton3>
-      traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &funcLC);
+  autopas::DirectSumTraversal<FMCell,
+                              autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals>,
+                              autopas::DataLayoutOption::cuda, useNewton3>
+      traversalDSCuda(&funcDScuda);
   autopas::DirectSumTraversal<FMCell,
                               autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals>,
                               autopas::DataLayoutOption::aos, useNewton3>
       traversalDS(&funcDS);
 
   funcDS.initTraversal();
-  _directSum.iteratePairwise(&funcDS, &traversalDS);
+  _directSum.iteratePairwise(&traversalDS);
   funcDS.endTraversal(useNewton3);
 
-  funcLC.initTraversal();
-  _linkedCells.iteratePairwise(&funcLC, &traversalLJ);
-  funcLC.endTraversal(useNewton3);
+  funcDScuda.initTraversal();
+  _directSumCuda.iteratePairwise(&traversalDSCuda);
+  funcDScuda.endTraversal(useNewton3);
 
   auto itDirect = _directSum.begin();
-  auto itLinked = _linkedCells.begin();
+  auto itLinked = _directSumCuda.begin();
 
   std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, the
@@ -86,7 +84,7 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
     forcesDirect.at(m.getID()) = m.getF();
   }
 
-  for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
+  for (auto it = _directSumCuda.begin(); it.isValid(); ++it) {
     autopas::MoleculeLJ &m = *it;
     forcesLinked.at(m.getID()) = m.getF();
   }
@@ -102,12 +100,12 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
   }
 
   if (calculateGlobals) {
-    EXPECT_LT(std::abs((funcDS.getUpot() - funcLC.getUpot()) / funcDS.getUpot()), rel_err_tolerance);
-    EXPECT_LT(std::abs((funcDS.getVirial() - funcLC.getVirial()) / funcDS.getVirial()), rel_err_tolerance);
+    EXPECT_LT(std::abs((funcDS.getUpot() - funcDScuda.getUpot()) / funcDS.getUpot()), rel_err_tolerance);
+    EXPECT_LT(std::abs((funcDS.getVirial() - funcDScuda.getVirial()) / funcDS.getVirial()), rel_err_tolerance);
   }
 }
 #if defined(AUTOPAS_CUDA)
-TEST_F(CudaTraversalVersusDirectSumTest, test100) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, test100) {
   unsigned long numMolecules = 100;
 
   // empirically determined and set near the minimal possible value
@@ -118,7 +116,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, test100) {
   test<false>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, test500) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, test500) {
   unsigned long numMolecules = 500;
 
   // empirically determined and set near the minimal possible value
@@ -129,7 +127,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, test500) {
   test<false>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, test1000) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, test1000) {
   unsigned long numMolecules = 1000;
 
   // empirically determined and set near the minimal possible value
@@ -139,7 +137,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, test1000) {
   test<false>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, testN3100) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, testN3100) {
   unsigned long numMolecules = 100;
 
   // empirically determined and set near the minimal possible value
@@ -150,7 +148,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, testN3100) {
   test<true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, testN3500) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, testN3500) {
   unsigned long numMolecules = 500;
 
   // empirically determined and set near the minimal possible value
@@ -161,7 +159,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, testN3500) {
   test<true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, testN31000) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, testN31000) {
   unsigned long numMolecules = 1000;
 
   // empirically determined and set near the minimal possible value
@@ -171,7 +169,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, testN31000) {
   test<true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, test100Globals) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, test100Globals) {
   unsigned long numMolecules = 100;
 
   // empirically determined and set near the minimal possible value
@@ -182,7 +180,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, test100Globals) {
   test<false, true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, test500Globals) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, test500Globals) {
   unsigned long numMolecules = 500;
 
   // empirically determined and set near the minimal possible value
@@ -193,7 +191,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, test500Globals) {
   test<false, true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, test1000Globals) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, test1000Globals) {
   unsigned long numMolecules = 1000;
 
   // empirically determined and set near the minimal possible value
@@ -203,7 +201,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, test1000Globals) {
   test<false, true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, testN3100Globals) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, testN3100Globals) {
   unsigned long numMolecules = 100;
 
   // empirically determined and set near the minimal possible value
@@ -214,7 +212,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, testN3100Globals) {
   test<true, true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, testN3500Globals) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, testN3500Globals) {
   unsigned long numMolecules = 500;
 
   // empirically determined and set near the minimal possible value
@@ -225,7 +223,7 @@ TEST_F(CudaTraversalVersusDirectSumTest, testN3500Globals) {
   test<true, true>(numMolecules, rel_err_tolerance);
 }
 
-TEST_F(CudaTraversalVersusDirectSumTest, testN31000Globals) {
+TEST_F(DSCudaTraversalVersusDirectSumTest, testN31000Globals) {
   unsigned long numMolecules = 1000;
 
   // empirically determined and set near the minimal possible value

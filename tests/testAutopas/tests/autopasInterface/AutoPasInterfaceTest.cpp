@@ -10,9 +10,7 @@
 constexpr double cutoff = 1.;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
-constexpr std::array<double, 3> haloBoxMin{0. - skin - cutoff, 0. - skin - cutoff, 0. - skin - cutoff};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
-constexpr std::array<double, 3> haloBoxMax{10. + skin + cutoff, 10. + skin + cutoff, 10. + skin + cutoff};
 constexpr double eps = 1.;
 constexpr double sigma = 1.;
 constexpr double shift = 0.1;
@@ -149,16 +147,17 @@ void addHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::vector<M
 template <typename Functor>
 void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor) {
   // 1. update Container; return value is vector of invalid == leaving particles!
-  auto invalidParticles = autoPas.updateContainer();
+  auto [invalidParticles, updated] = autoPas.updateContainer();
 
-  // 2. leaving and entering particles
-  const auto &sendLeavingParticles = invalidParticles;
-  // 2b. get+add entering particles (addParticle)
-  const auto &enteringParticles = convertToEnteringParticles(sendLeavingParticles);
-  auto numAdded = addEnteringParticles(autoPas, enteringParticles);
+  if (updated) {
+    // 2. leaving and entering particles
+    const auto &sendLeavingParticles = invalidParticles;
+    // 2b. get+add entering particles (addParticle)
+    const auto &enteringParticles = convertToEnteringParticles(sendLeavingParticles);
+    auto numAdded = addEnteringParticles(autoPas, enteringParticles);
 
-  EXPECT_EQ(numAdded, enteringParticles.size());
-
+    EXPECT_EQ(numAdded, enteringParticles.size());
+  }
   // 3. halo particles
   // 3a. identify and send inner particles that are in the halo of other autopas instances or itself.
   auto sendHaloParticles = identifyAndSendHaloParticles(autoPas);
@@ -175,25 +174,27 @@ template <typename Functor>
 void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas<Molecule, FMCell> &autoPas2,
                       Functor *functor1, Functor *functor2) {
   // 1. update Container; return value is vector of invalid = leaving particles!
-  auto invalidParticles1 = autoPas1.updateContainer();
-  auto invalidParticles2 = autoPas2.updateContainer();
+  auto [invalidParticles1, updated1] = autoPas1.updateContainer();
+  auto [invalidParticles2, updated2] = autoPas2.updateContainer();
 
-  // 2. leaving and entering particles
-  const auto &sendLeavingParticles1 = invalidParticles1;
-  const auto &sendLeavingParticles2 = invalidParticles2;
-  // 2b. get+add entering particles (addParticle)
-  const auto &enteringParticles2 = convertToEnteringParticles(sendLeavingParticles1);
-  const auto &enteringParticles1 = convertToEnteringParticles(sendLeavingParticles2);
+  ASSERT_EQ(updated1, updated2);
+  if (updated1) {
+    // 2. leaving and entering particles
+    const auto &sendLeavingParticles1 = invalidParticles1;
+    const auto &sendLeavingParticles2 = invalidParticles2;
+    // 2b. get+add entering particles (addParticle)
+    const auto &enteringParticles2 = convertToEnteringParticles(sendLeavingParticles1);
+    const auto &enteringParticles1 = convertToEnteringParticles(sendLeavingParticles2);
 
-  // the particles may either still be in the same container (just going over periodic boundaries) or in the other.
-  size_t numAdded = 0;
-  numAdded += addEnteringParticles(autoPas1, enteringParticles1);
-  numAdded += addEnteringParticles(autoPas1, enteringParticles2);
-  numAdded += addEnteringParticles(autoPas2, enteringParticles1);
-  numAdded += addEnteringParticles(autoPas2, enteringParticles2);
+    // the particles may either still be in the same container (just going over periodic boundaries) or in the other.
+    size_t numAdded = 0;
+    numAdded += addEnteringParticles(autoPas1, enteringParticles1);
+    numAdded += addEnteringParticles(autoPas1, enteringParticles2);
+    numAdded += addEnteringParticles(autoPas2, enteringParticles1);
+    numAdded += addEnteringParticles(autoPas2, enteringParticles2);
 
-  ASSERT_EQ(numAdded, enteringParticles1.size() + enteringParticles2.size());
-
+    ASSERT_EQ(numAdded, enteringParticles1.size() + enteringParticles2.size());
+  }
   // 3. halo particles
   // 3a. identify and send inner particles that are in the halo of other autopas instances or itself.
   auto sendHaloParticles1 = identifyAndSendHaloParticles(autoPas1);
@@ -332,117 +333,6 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
       throw;
     }
   }
-}
-
-/**
- * Tests the addition and iteration over particles.
- * @param containerOption
- */
-void testAdditionAndIteration(testingTuple options) {
-  // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas;
-
-  auto containerOption = std::get<0>(std::get<0>(options));
-  auto traversalOption = std::get<1>(std::get<0>(options));
-  auto dataLayoutOption = std::get<1>(options);
-  auto newton3Option = std::get<2>(options);
-  auto cellSizeOption = std::get<3>(options);
-
-  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(std::set<autopas::TraversalOption>{traversalOption});
-  autoPas.setAllowedDataLayouts(std::set<autopas::DataLayoutOption>{dataLayoutOption});
-  autoPas.setAllowedNewton3Options(std::set<autopas::Newton3Option>{newton3Option});
-  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
-
-  defaultInit(autoPas);
-
-  auto getPossible1DPositions = [&](double min, double max) -> auto {
-    // ensure that all particles are at most skin away from halo!
-    return std::array<double, 6>{min - cutoff, min, min + skin, max - skin, max, max + cutoff - 1e-3};
-  };
-  size_t id = 0;
-  for (auto x : getPossible1DPositions(boxMin[0], boxMax[0])) {
-    for (auto y : getPossible1DPositions(boxMin[1], boxMax[1])) {
-      for (auto z : getPossible1DPositions(boxMin[2], boxMax[2])) {
-        std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id);
-        ++id;
-        // add the two particles!
-        if (autopas::utils::inBox(pos, boxMin, boxMax)) {
-          autoPas.addParticle(p);
-        } else {
-          autoPas.addOrUpdateHaloParticle(p);
-        }
-      }
-    }
-  }
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      ++count;
-      EXPECT_TRUE(iter->isOwned());
-    }
-
-    EXPECT_EQ(count, 3 * 3 * 3);
-  }
-
-  // check number of halo particles
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-      ++count;
-      EXPECT_FALSE(iter->isOwned());
-    }
-
-    EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
-  }
-
-  // check number of particles
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
-      ++count;
-    }
-    EXPECT_EQ(count, 6 * 6 * 6);
-  }
-
-  // check number of halo particles for region iterator
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly);
-         iter.isValid(); ++iter) {
-      ++count;
-      EXPECT_FALSE(iter->isOwned());
-    }
-
-    EXPECT_EQ(count, 6 * 6 * 6 - 3 * 3 * 3);
-  }
-
-  // check number of particles for region iterator
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned);
-         iter.isValid(); ++iter) {
-      ++count;
-    }
-    EXPECT_EQ(count, 6 * 6 * 6);
-  }
-
-  // check number of owned particles for region iterator
-  {
-    size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::ownedOnly);
-         iter.isValid(); ++iter) {
-      ++count;
-    }
-
-    EXPECT_EQ(count, 3 * 3 * 3);
-  }
-}
-
-TEST_P(AutoPasInterfaceTest, ParticleAdditionAndIteratorTestNormal) {
-  auto options = GetParam();
-  testAdditionAndIteration(options);
 }
 
 using ::testing::Combine;

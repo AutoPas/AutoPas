@@ -106,6 +106,9 @@ inline std::string to_string(const ContainerOption &option) {
     case autopas::ContainerOption::verletClusterCells: {
       return "VerletClusterCells";
     }
+    case autopas::ContainerOption::varVerletListsAsBuild: {
+      return "VarVerletListsAsBuild";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown ContainerOption (" + std::to_string(option) + ")";
@@ -118,11 +121,11 @@ inline std::string to_string(const ContainerOption &option) {
  */
 inline std::string to_string(const TraversalOption &option) {
   switch (option) {
-    case autopas::TraversalOption::dummyTraversal: {
-      return "dummyTraversal";
-    }
     case autopas::TraversalOption::c01: {
       return "c01";
+    }
+    case autopas::TraversalOption::c04SoA: {
+      return "c04SoA";
     }
     case autopas::TraversalOption::c04: {
       return "c04";
@@ -160,6 +163,15 @@ inline std::string to_string(const TraversalOption &option) {
     case autopas::TraversalOption::c01CombinedSoA: {
       return "c01-combined-SoA";
     }
+    case autopas::TraversalOption::verletClusters: {
+      return "verlet-clusters";
+    }
+    case autopas::TraversalOption::varVerletTraversalAsBuild: {
+      return "var-verlet-lists-as-build";
+    }
+    case autopas::TraversalOption::verletClustersColoring: {
+      return "verlet-clusters-coloring";
+    }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TraversalOption (" + std::to_string(option) + ")";
@@ -174,6 +186,9 @@ inline std::string to_string(const TuningStrategyOption &option) {
   switch (option) {
     case autopas::TuningStrategyOption::fullSearch: {
       return "full-Search";
+    }
+    case autopas::TuningStrategyOption::bayesianSearch: {
+      return "bayesian-Search";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -269,7 +284,15 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
   auto words = tokenize(traversalOptionsString, delimiters);
 
   for (auto &word : words) {
-    if (word.find("verlet-lists") != std::string::npos) {
+    if (word.find("var") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::varVerletTraversalAsBuild);
+    } else if (word.find("verlet-clusters") != std::string::npos) {
+      if (word.find("coloring") != std::string::npos) {
+        traversalOptions.insert(autopas::TraversalOption::verletClustersColoring);
+      } else {
+        traversalOptions.insert(autopas::TraversalOption::verletClusters);
+      }
+    } else if (word.find("verlet-lists") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::verletTraversal);
 
     } else if (word.find("verlet-cluster-cells") != std::string::npos) {
@@ -284,10 +307,12 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
       } else {
         traversalOptions.insert(autopas::TraversalOption::c01);
       }
-    } else if (word.find("c04") != std::string::npos) {
-      traversalOptions.insert(autopas::TraversalOption::c04);
     } else if (word.find("c08") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::c08);
+    } else if (word.find("c04s") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::c04SoA);
+    } else if (word.find("c04") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::c04);
     } else if (word.find("18") != std::string::npos) {
       if (word.find('v') != std::string::npos)
         traversalOptions.insert(autopas::TraversalOption::c18Verlet);
@@ -338,6 +363,8 @@ inline std::set<autopas::ContainerOption> parseContainerOptions(const std::strin
           containerOptions.insert(autopas::ContainerOption::verletClusterLists);
       } else if (word.find("cel") != std::string::npos) {
         containerOptions.insert(autopas::ContainerOption::verletListsCells);
+      } else if (word.find("uild") != std::string::npos) {
+        containerOptions.insert(autopas::ContainerOption::varVerletListsAsBuild);
       } else {
         containerOptions.insert(autopas::ContainerOption::verletLists);
       }
@@ -419,6 +446,8 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
   auto tuningStrategy(autopas::TuningStrategyOption(-1));
   if (tuningStrategyString.find("full") != std::string::npos or tuningStrategyString.find("ex") != std::string::npos) {
     tuningStrategy = autopas::TuningStrategyOption::fullSearch;
+  } else if (tuningStrategyString.find("bayes") != std::string::npos) {
+    tuningStrategy = autopas::TuningStrategyOption::bayesianSearch;
   }
   return tuningStrategy;
 }

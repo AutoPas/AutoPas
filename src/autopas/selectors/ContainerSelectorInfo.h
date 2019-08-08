@@ -26,7 +26,7 @@ class ContainerSelectorInfo {
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    */
   explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin)
-      : cellSizeFactor(cellSizeFactor), verletSkin(verletSkin) {}
+      : cellSizeFactor(cellSizeFactor), verletSkin(verletSkin), verletClusterSize(64) {}
 
   /**
    * Constructor.

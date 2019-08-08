@@ -27,15 +27,14 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class DirectSumTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
-                           public DirectSumTraversalInterface<ParticleCell> {
+class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  DirectSumTraversal(PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({2, 1, 1}),
+  explicit DirectSumTraversal(PairwiseFunctor *pairwiseFunctor)
+      : CellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
                                            dataLayout, useNewton3, true>(pairwiseFunctor)),
         _dataLayoutConverter(pairwiseFunctor) {}
@@ -53,23 +52,29 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell, dataLayout, us
       return true;
   }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {
+  bool getUseNewton3() const override { return useNewton3; };
+
+  DataLayoutOption getDataLayout() const override { return dataLayout; };
+
+  void initTraversal() override {
+    auto &cells = *(this->_cells);
     for (auto &cell : cells) {
       _dataLayoutConverter.loadDataLayout(cell);
     }
   }
 
-  void endTraversal(std::vector<ParticleCell> &cells) override {
+  void endTraversal() override {
+    auto &cells = *(this->_cells);
     for (auto &cell : cells) {
       _dataLayoutConverter.storeDataLayout(cell);
     }
   }
 
   /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
+   * @copydoc TraversalInterface::traverseParticlePairs()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
 
  private:
   /**
@@ -86,8 +91,8 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell, dataLayout, us
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-void DirectSumTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+void DirectSumTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);
   _cellFunctor.processCellPair(cells[0], cells[1]);

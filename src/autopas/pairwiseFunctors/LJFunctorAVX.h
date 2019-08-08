@@ -27,7 +27,8 @@ namespace autopas {
  */
 template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
-class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType> {
+class LJFunctorAVX
+    : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctorAVX<Particle, ParticleCell>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -47,7 +48,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    */
   explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift, bool duplicatedCalculation = false)
 #ifdef __AVX__
-      : _one{_mm256_set1_pd(1.)},
+      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
+        _one{_mm256_set1_pd(1.)},
         _masks{
             _mm256_set_epi64x(0, 0, 0, -1),
             _mm256_set_epi64x(0, 0, -1, -1),
@@ -68,7 +70,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
   }
 #else
-      : _one{0}, _masks{0, 0, 0}, _cutoffsquare{0}, _epsilon24{0}, _sigmasquare{0} {
+      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
+        _one{0},
+        _masks{0, 0, 0},
+        _cutoffsquare{0},
+        _epsilon24{0},
+        _sigmasquare{0} {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -88,10 +95,10 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, bool newton3)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
 #ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
 
@@ -284,9 +291,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
  public:
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, const bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
 #ifdef __AVX__
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -427,77 +434,43 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType> &soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa,
+  void SoAFunctor(SoAView<SoAArraysType> soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
     utils::ExceptionHandler::exception("Verlet SoA functor not implemented!");
   }
 
   /**
-   * SoALoader
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr()
    */
-  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset,
-                            // @todo it is probably better to resize the soa only once, before calling
-                            // SoALoader (verlet-list only)
-                            soa.resizeArrays(offset + cell.numParticles());
-
-                            if (cell.numParticles() == 0) return;
-
-                            auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-                            double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-                            double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-                            double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-                            double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-                            double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-                            double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-                            auto *const __restrict__ ownedptr = soa.template begin<Particle::AttributeNames::owned>();
-
-                            auto cellIter = cell.begin();
-                            // load particles in SoAs
-                            for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-                              idptr[i] = cellIter->getID();
-                              xptr[i] = cellIter->getR()[0];
-                              yptr[i] = cellIter->getR()[1];
-                              zptr[i] = cellIter->getR()[2];
-                              fxptr[i] = cellIter->getF()[0];
-                              fyptr[i] = cellIter->getF()[1];
-                              fzptr[i] = cellIter->getF()[2];
-                              ownedptr[i] = cellIter->isOwned() ? 1. : 0.;
-                            })
+  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 8>{
+        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+  }
 
   /**
-   * soaextractor
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(
-      cell, soa, offset,
-      // body start
-      if (soa.getNumParticles() == 0) return;
+  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 5>{
+        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+  }
 
-      auto cellIter = cell.begin();
-
-#ifndef NDEBUG
-      auto *const __restrict__ idptr = soa.template begin<Particle::AttributeNames::id>();
-#endif
-
-      double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-      double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-      double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-      for (size_t i = offset; cellIter.isValid(); ++i, ++cellIter) {
-        assert(idptr[i] == cellIter->getID());
-        cellIter->setF({fxptr[i], fyptr[i], fzptr[i]});
-      })
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static const std::array<typename Particle::AttributeNames, 3> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 3>{
+        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+  }
 
   /**
    * Get the number of flops used per kernel call. This should count the

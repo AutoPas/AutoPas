@@ -6,11 +6,12 @@
 
 #pragma once
 
-#include <random>
 #include <set>
 #include <sstream>
 #include <vector>
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Random.h"
 
 namespace autopas {
 
@@ -47,6 +48,13 @@ class NumberSet {
   virtual bool isFinite() const = 0;
 
   /**
+   * Get size of set.
+   * Only usable if set is finite.
+   * @return size of set
+   */
+  virtual size_t size() const = 0;
+
+  /**
    * Get the smallest number in the set
    * @return
    */
@@ -71,7 +79,7 @@ class NumberSet {
    * @param rng random number generator
    * @return samples
    */
-  virtual std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const = 0;
+  virtual std::vector<Number> uniformSample(size_t n, Random &rng) const = 0;
 };
 
 /**
@@ -100,52 +108,18 @@ class NumberSetFinite : public NumberSet<Number> {
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberSetFinite>(*this); }
 
-  operator std::string() const override {
-    auto it = _set.begin();
-    std::stringstream ss;
-    ss << "{" << *it;
-    for (++it; it != _set.end(); ++it) {
-      ss << ", " << *it;
-    }
-    ss << "}";
+  operator std::string() const override { return "{" + ArrayUtils::to_string(_set) + "}"; }
 
-    return ss.str();
-  }
+  inline bool isEmpty() const override { return _set.empty(); }
+  inline bool isFinite() const override { return true; }
+  inline size_t size() const override { return _set.size(); }
 
-  bool isEmpty() const override { return _set.empty(); }
-  bool isFinite() const override { return true; }
+  inline Number getMin() const override { return *_set.begin(); }
+  inline Number getMax() const override { return *_set.rbegin(); }
 
-  Number getMin() const override { return *_set.begin(); }
-  Number getMax() const override { return *_set.rbegin(); }
+  inline std::set<Number> getAll() const override { return _set; }
 
-  std::set<Number> getAll() const override { return _set; }
-
-  std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const override {
-    std::vector<Number> result;
-    result.reserve(n + _set.size());
-
-    // copy the whole set until result is full
-    while (result.size() < n) {
-      for (auto val : _set) {
-        result.push_back(val);
-      }
-    }
-
-    // if too many elements added
-    if (result.size() > n) {
-      // randomize the last copy of the set
-      size_t extra = result.size() - n;
-      std::shuffle(std::end(result) - extra, std::end(result), rng);
-
-      // truncate the rest
-      result.resize(n);
-    }
-
-    // randomize the sample
-    std::shuffle(std::begin(result), std::end(result), rng);
-
-    return result;
-  }
+  std::vector<Number> uniformSample(size_t n, Random &rng) const override { return rng.uniformSample(_set, n); }
 };
 
 /**
@@ -181,25 +155,31 @@ class NumberInterval : public NumberSet<Number> {
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberInterval>(*this); }
 
   operator std::string() const override {
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "[" << _min << ", " << _max << "]";
     return ss.str();
   }
 
-  Number getMin() const override { return _min; }
-  Number getMax() const override { return _max; }
+  inline bool isEmpty() const override { return false; }
+  inline bool isFinite() const override { return _max == _min; }
+  size_t size() const override {
+    if (isFinite()) return 1ul;
 
-  bool isEmpty() const override { return false; }
-  bool isFinite() const override { return _max == _min; }
+    utils::ExceptionHandler::exception("NumberInterval.size: Interval is not finite [{}, {}]", _min, _max);
+    return 0ul;
+  }
+
+  inline Number getMin() const override { return _min; }
+  inline Number getMax() const override { return _max; }
 
   std::set<Number> getAll() const override {
     if (isFinite()) return {_min};
 
-    utils::ExceptionHandler::exception("NumberInterval: Interval is not finite [{}, {}]", _min, _max);
+    utils::ExceptionHandler::exception("NumberInterval.getAll: Interval is not finite [{}, {}]", _min, _max);
     return {};
   }
 
-  std::vector<Number> uniformSample(unsigned n, std::default_random_engine &rng) const override {
+  std::vector<Number> uniformSample(size_t n, Random &rng) const override {
     std::vector<Number> result;
     if (n == 0) {
       return result;
@@ -208,14 +188,14 @@ class NumberInterval : public NumberSet<Number> {
     result.reserve(n);
 
     Number distance = (_max - _min) / (n - 1);
-    for (unsigned i = 0; i < (n - 1); ++i) {
+    for (size_t i = 0; i < (n - 1); ++i) {
       result.push_back(_min + distance * i);
     }
     // add max separatly, avoiding possible rounding errors
     result.push_back(_max);
 
     // randomize the sample
-    std::shuffle(std::begin(result), std::end(result), rng);
+    rng.shuffle(std::begin(result), std::end(result));
 
     return result;
   }

@@ -214,7 +214,8 @@ class AutoTuner {
 template <class Particle, class ParticleCell>
 void AutoTuner<Particle, ParticleCell>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
-  _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
+  _containerSelector.selectContainer(conf.container,
+                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
 }
 
 template <class Particle, class ParticleCell>
@@ -323,20 +324,16 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
         "is trivial, but no traversals are applicable. Config: {}",
         _tuningStrategy->getCurrentConfiguration().toString());
   }
-  auto iterateLambda = [&](auto containerPtr) {
-    if (doListRebuild) {
-      containerPtr->rebuildNeighborLists(traversal.get());
-    }
-    containerPtr->iteratePairwise(f, traversal.get());
-  };
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
     auto start = std::chrono::high_resolution_clock::now();
 
     f->initTraversal();
-
-    withStaticContainerType(containerPtr, iterateLambda);
+    if (doListRebuild) {
+      containerPtr->rebuildNeighborLists(traversal.get());
+    }
+    containerPtr->iteratePairwise(traversal.get());
     f->endTraversal(useNewton3);
 
     auto stop = std::chrono::high_resolution_clock::now();
@@ -345,7 +342,10 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     addTimeMeasurement(*f, runtime);
   } else {
     f->initTraversal();
-    withStaticContainerType(containerPtr, iterateLambda);
+    if (doListRebuild) {
+      containerPtr->rebuildNeighborLists(traversal.get());
+    }
+    containerPtr->iteratePairwise(traversal.get());
     f->endTraversal(useNewton3);
   }
 }
@@ -366,8 +366,6 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }
-  // samples are no longer needed. Delete them here so willRebuild() works as expected.
-  _samples.clear();
 
   // repeat as long as traversals are not applicable or we run out of configs
   while (true) {
@@ -385,9 +383,16 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
         // we found a valid config!
         break;
       } else {
-        stillTuning = _tuningStrategy->tune();
+        AutoPasLog(debug, "Skip not applicable configuration {}",
+                   _tuningStrategy->getCurrentConfiguration().toString());
+        stillTuning = _tuningStrategy->tune(true);
       }
     }
+  }
+  // samples should only be cleared if we are still tuning, see `if (_samples.size() < _maxSamples)` from before.
+  if (stillTuning) {
+    // samples are no longer needed. Delete them here so willRebuild() works as expected.
+    _samples.clear();
   }
 
   selectCurrentContainer();
@@ -397,6 +402,12 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 template <class Particle, class ParticleCell>
 template <class PairwiseFunctor>
 bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
+  auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
+  if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
+    // container and traversal mismatch
+    return false;
+  }
+
   _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 

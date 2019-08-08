@@ -43,4 +43,17 @@ class Newton3OnOffTest : public AutoPasTestBase,
                autopas::Newton3Option newton3, ParticleFunctor *f);
 
   MockFunctor<Particle, FPCell> mockFunctor;
+
+  /**
+   * Determines how often the functor is called for single cells and pairs of cells und run additional checks.
+   * @tparam useNewton3 Enables or disables newton3.
+   * @tparam Container Type of container.
+   * @tparam Traversal Type of traversal.
+   * @param dataLayout Data layout.
+   * @param container Container.
+   * @param traversalOption Traversal option.
+   * @return [#calls single cell, #calls pair of cells]
+   */
+  template <bool useNewton3, class Container, class Traversal>
+  std::pair<size_t, size_t> eval(autopas::DataLayoutOption dataLayout, Container &container, Traversal traversalOption);
 };

@@ -30,8 +30,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-class C01CudaTraversal : public CellPairTraversal<ParticleCell, dataLayout, useNewton3>,
-                         public LinkedCellTraversalInterface<ParticleCell> {
+class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -40,7 +39,7 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell, dataLayout, useN
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit C01CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell, dataLayout, useNewton3>(dims), _functor(pairwiseFunctor) {
+      : CellPairTraversal<ParticleCell>(dims), _functor(pairwiseFunctor) {
     computeOffsets();
   }
 
@@ -49,10 +48,11 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell, dataLayout, useN
    */
   void computeOffsets();
 
-  /**
-   * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
-   */
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
+
+  void initTraversal() override {}
+
+  void endTraversal() override {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::c01Cuda; }
 
@@ -70,9 +70,9 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell, dataLayout, useN
 #endif
   }
 
-  void initTraversal(std::vector<ParticleCell> &cells) override {}
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  void endTraversal(std::vector<ParticleCell> &cells) override {}
+  bool getUseNewton3() const override { return useNewton3; }
 
  private:
   /**
@@ -118,34 +118,36 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
     }
   }
 
-  std::vector<unsigned int> nonHaloCells(this->_cellsPerDimension[0] * this->_cellsPerDimension[1] *
-                                         this->_cellsPerDimension[2]);
-  const unsigned long end_x = this->_cellsPerDimension[0] - 1;
+  std::vector<unsigned int> nonHaloCells((this->_cellsPerDimension[0] - 2) * (this->_cellsPerDimension[1] - 2) *
+                                         (this->_cellsPerDimension[2] - 2));
   const unsigned long end_y = this->_cellsPerDimension[1] - 1;
   const unsigned long end_z = this->_cellsPerDimension[2] - 1;
+  const unsigned long length_x = this->_cellsPerDimension[0] - 2;
 
-  size_t i = 0;
+  auto it = nonHaloCells.begin();
   for (unsigned long z = 1; z < end_z; ++z) {
     for (unsigned long y = 1; y < end_y; ++y) {
-      std::iota(nonHaloCells.begin() + i, nonHaloCells.begin() + i + end_x - 1,
-                utils::ThreeDimensionalMapping::threeToOneD(0ul, y, z, this->_cellsPerDimension));
+      std::iota(it, it + length_x, utils::ThreeDimensionalMapping::threeToOneD(1ul, y, z, this->_cellsPerDimension));
+      it += length_x;
     }
   }
 #if defined(AUTOPAS_CUDA)
-  if (_functor->getCudaWrapper())
-    _functor->getCudaWrapper()->loadLinkedCellsOffsets(_cellOffsets.size(), _cellOffsets.data());
-  _nonHaloCells.copyHostToDevice(nonHaloCells.size(), nonHaloCells.data());
+  if (dataLayout == DataLayoutOption::cuda) {
+    if (_functor->getCudaWrapper())
+      _functor->getCudaWrapper()->loadLinkedCellsOffsets(_cellOffsets.size(), _cellOffsets.data());
+    _nonHaloCells.copyHostToDevice(nonHaloCells.size(), nonHaloCells.data());
+  }
 #endif
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
-  if (not this->isApplicable()) {
+inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+  if (not(dataLayout == DataLayoutOption::cuda)) {
     utils::ExceptionHandler::exception(
         "The Cuda traversal cannot work with Data Layouts other than DataLayoutOption::cuda!");
   }
 #if defined(AUTOPAS_CUDA)
+  auto &cells = *(this->_cells);
   // load CUDA SOA
   std::vector<size_t> cellSizePartialSum = {0};
   size_t maxParticlesInCell = 0;

@@ -39,7 +39,9 @@ INSTANTIATE_TEST_SUITE_P(
                 // @TODO: let verlet lists support Newton 3
                 if (containerOption == autopas::ContainerOption::verletLists ||
                     containerOption == autopas::ContainerOption::verletListsCells ||
-                    containerOption == autopas::ContainerOption::verletClusterLists) {
+                    containerOption == autopas::ContainerOption::verletClusterLists ||
+                    containerOption == autopas::ContainerOption::varVerletListsAsBuild ||
+                    containerOption == autopas::ContainerOption::verletClusterCells) {
                   continue;
                 }
 
@@ -86,13 +88,16 @@ INSTANTIATE_TEST_SUITE_P(
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
+  if (traversalOption == autopas::TraversalOption::c04SoA and dataLayout == autopas::DataLayoutOption::aos) {
+    return;
+  }
+
   autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
   autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin());
 
   containerSelector.selectContainer(containerOption, containerInfo);
 
   auto container = containerSelector.getCurrentContainer();
-  auto traversalSelectorInfo = container->getTraversalSelectorInfo();
 
   autopas::MoleculeLJ defaultParticle;
   RandomGenerator::fillWithParticles(*container, defaultParticle, 100);
@@ -108,114 +113,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
     EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
   }
 
-  // with newton 3:
-  std::atomic<unsigned int> callsNewton3SC(0ul);    // same cell
-  std::atomic<unsigned int> callsNewton3Pair(0ul);  // pair of cells
-  EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(true));
-  EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(false));
-
-  switch (dataLayout) {
-    case autopas::DataLayoutOption::soa: {
-      // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, true))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3SC++; }));
-
-      // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3Pair++; }));
-
-      // non newton3 variant should not happen
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false)).Times(0);
-      iterate(container,
-              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                             autopas::DataLayoutOption::soa, true>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
-              dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
-      break;
-    }
-    case autopas::DataLayoutOption::aos: {
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNewton3Pair++; }));
-      // non newton3 variant should not happen
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false)).Times(0);
-      iterate(container,
-              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                             autopas::DataLayoutOption::aos, true>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
-              dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
-      break;
-      case autopas::DataLayoutOption::cuda: {
-        // supresses Warning
-        // TODO implement suitable test
-        iterate(container,
-                autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                               autopas::DataLayoutOption::aos, true>(
-                    traversalOption, mockFunctor, traversalSelectorInfo),
-                dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
-        break;
-      }
-    }
-    default:
-      FAIL() << "This test does not support data layout : " << autopas::utils::StringUtils::to_string(dataLayout);
-  }
-
-  // without newton 3:
-  std::atomic<unsigned int> callsNonNewton3SC(0ul);
-  std::atomic<unsigned int> callsNonNewton3Pair(0ul);
-  EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(false));
-  EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(true));
-
-  switch (dataLayout) {
-    case autopas::DataLayoutOption::soa: {
-      // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, false))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3SC++; }));
-
-      // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, false))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3Pair++; }));
-
-      // newton3 variant should not happen
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, true)).Times(0);
-      iterate(container,
-              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                             autopas::DataLayoutOption::soa, false>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
-              dataLayout, autopas::Newton3Option::disabled, &mockFunctor);
-      break;
-    }
-    case autopas::DataLayoutOption::aos: {
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, false))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsNonNewton3Pair++; }));
-
-      // newton3 variant should not happen
-      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true)).Times(0);
-      iterate(container,
-              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                             autopas::DataLayoutOption::aos, false>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
-              dataLayout, autopas::Newton3Option::disabled, &mockFunctor);
-      break;
-    }
-    case autopas::DataLayoutOption::cuda: {
-      // supresses Warning
-      // TODO implement suitable test
-      iterate(container,
-              autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                             autopas::DataLayoutOption::aos, true>(
-                  traversalOption, mockFunctor, traversalSelectorInfo),
-              dataLayout, autopas::Newton3Option::enabled, &mockFunctor);
-      break;
-    }
-    default:
-      FAIL() << "This test does not support data layout : " << autopas::utils::StringUtils::to_string(dataLayout);
-  }
+  const auto [callsNewton3SC, callsNewton3Pair] = eval<true>(dataLayout, container, traversalOption);
+  const auto [callsNonNewton3SC, callsNonNewton3Pair] = eval<false>(dataLayout, container, traversalOption);
 
   if (autopas::DataLayoutOption::soa) {
     // within one cell no N3 optimization
@@ -234,5 +133,73 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 template <class ParticleFunctor, class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
                                autopas::Newton3Option newton3, ParticleFunctor *f) {
-  withStaticContainerType(container, [&](auto container) { container->iteratePairwise(f, traversal.get()); });
+  container->iteratePairwise(traversal.get());
+}
+
+template <bool useNewton3, class Container, class Traversal>
+std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataLayout, Container &container,
+                                                 Traversal traversalOption) {
+  std::atomic<unsigned int> callsSC(0ul);
+  std::atomic<unsigned int> callsPair(0ul);
+  EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(useNewton3));
+  EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(not useNewton3));
+
+  auto traversalSelectorInfo = container->getTraversalSelectorInfo();
+  const autopas::Newton3Option n3option =
+      (useNewton3) ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled;
+
+  switch (dataLayout) {
+    case autopas::DataLayoutOption::soa: {
+      // single cell
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, useNewton3))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsSC++; }));
+
+      // pair of cells
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, useNewton3))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
+
+      // non useNewton3 variant should not happen
+      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, not useNewton3)).Times(0);
+      iterate(
+          container,
+          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                         autopas::DataLayoutOption::soa, useNewton3>(
+              traversalOption, mockFunctor, traversalSelectorInfo),
+          dataLayout, n3option, &mockFunctor);
+      break;
+    }
+    case autopas::DataLayoutOption::aos: {
+      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, useNewton3))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
+
+      // non useNewton3 variant should not happen
+      EXPECT_CALL(mockFunctor, AoSFunctor(_, _, not useNewton3)).Times(0);
+      iterate(
+          container,
+          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                         autopas::DataLayoutOption::aos, useNewton3>(
+              traversalOption, mockFunctor, traversalSelectorInfo),
+          dataLayout, n3option, &mockFunctor);
+      break;
+    }
+    case autopas::DataLayoutOption::cuda: {
+      // supresses Warning
+      // TODO implement suitable test
+      iterate(
+          container,
+          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+                                                                         autopas::DataLayoutOption::cuda, useNewton3>(
+              traversalOption, mockFunctor, traversalSelectorInfo),
+          dataLayout, n3option, &mockFunctor);
+      break;
+    }
+    default:
+      ADD_FAILURE() << "This test does not support data layout : "
+                    << autopas::utils::StringUtils::to_string(dataLayout);
+  }
+
+  return std::make_pair(callsSC.load(), callsPair.load());
 }

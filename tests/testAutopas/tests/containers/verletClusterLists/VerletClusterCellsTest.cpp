@@ -64,46 +64,35 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor);
-  verletLists.updateContainer();
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
 
   int numOwn = 0;
-  int numDummyOwn = 0;
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    if (iter->getID() < 500)
-      ++particlesOwn[iter->getID()];
-    else
-      ++numDummyOwn;
+    EXPECT_TRUE(iter->getID() < 500);
+    ++particlesOwn[iter->getID()];
     ++numOwn;
   }
   EXPECT_GT(numOwn, 499);
-  EXPECT_EQ(numOwn - numDummyOwn, 500);
+  EXPECT_EQ(numOwn, 500);
 
   int numHalo = 0;
-  int numDummyHalo = 0;
 
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-    if (iter->getID() < 50)
-      ++particlesHalo[iter->getID()];
-    else
-      ++numDummyHalo;
+    EXPECT_TRUE(iter->getID() < 50);
+    ++particlesHalo[iter->getID()];
     ++numHalo;
   }
   EXPECT_GT(numHalo, 49);
-  EXPECT_EQ(numHalo - numDummyHalo, 50);
+  EXPECT_EQ(numHalo, 50);
 
   int numBoth = 0;
-  int numDummyBoth = 0;
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
-    if (iter->getID() < 500)
-      ++particlesBoth[iter->getID()];
-    else
-      ++numDummyBoth;
+    EXPECT_TRUE(iter->getID() < 500);
+    ++particlesBoth[iter->getID()];
     ++numBoth;
   }
-  EXPECT_EQ(numBoth - numDummyBoth, 550);
   EXPECT_EQ(numBoth, numOwn + numHalo);
-  EXPECT_GT(verletLists.getNumParticles(), 549);
+  EXPECT_GT(verletLists.getNumParticles(), 550);
 
   for (auto &it : particlesOwn) {
     EXPECT_EQ(it, 1);
@@ -117,6 +106,63 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
   }
   for (; i < 500; ++i) {
     EXPECT_EQ(particlesBoth[i], 1) << "on index " << i << std::endl;
+  }
+
+  verletLists.deleteHaloParticles();
+  EXPECT_FALSE(verletLists.begin(autopas::IteratorBehavior::haloOnly).isValid());
+
+  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
+    EXPECT_TRUE(iter->getID() < 500);
+    ++particlesBoth[iter->getID()];
+  }
+  i = 0;
+    for (; i < 50; ++i) {
+      EXPECT_EQ(particlesBoth[i], 3) << "on index " << i << std::endl;
+    }
+    for (; i < 500; ++i) {
+      EXPECT_EQ(particlesBoth[i], 2) << "on index " << i << std::endl;
+    }
+}
+
+TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.2;
+  int clusterSize = 64;
+  autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
+
+  RandomGenerator::fillWithParticles(verletLists, Particle(), 500);
+  RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
+
+  std::vector<int> particlesBoth(500, 0);
+
+  MockFunctor<Particle, FPCell> emptyFunctor;
+  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+      verletClusterCellsTraversal(&emptyFunctor);
+  verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
+
+  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
+    if (iter->getID() % 2 == 0) {
+      iter.deleteCurrentParticle();
+    }
+  }
+
+  int numBoth = 0;
+  int numDummyBoth = 0;
+  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
+    ++particlesBoth[iter->getID()];
+    ++numBoth;
+  }
+  EXPECT_EQ(numBoth, 550 / 2);
+  EXPECT_GT(verletLists.getNumParticles(), 549 / 2);
+
+  int i = 0;
+  for (; i < 50; ++i) {
+    EXPECT_EQ(particlesBoth[i], ((i % 2) == 0) ? 0 : 2) << "on index " << i << std::endl;
+  }
+  for (; i < 500; ++i) {
+    EXPECT_EQ(particlesBoth[i], ((i % 2) == 0) ? 0 : 1) << "on index " << i << std::endl;
   }
 }
 
@@ -138,7 +184,7 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor);
-  verletLists.iteratePairwise(&emptyFunctor, &verletClusterCellsTraversal);
+  verletLists.iteratePairwise(&verletClusterCellsTraversal);
 
   int numOwn = 0;
   int numDummyOwn = 0;
@@ -182,9 +228,9 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     iter->setR(RandomGenerator::randomPosition(min, max));
   }
-  verletLists.iteratePairwise(&emptyFunctor, &verletClusterCellsTraversal);
-  verletLists.iteratePairwise(&emptyFunctor, &verletClusterCellsTraversal);
-  verletLists.iteratePairwise(&emptyFunctor, &verletClusterCellsTraversal);
+  verletLists.iteratePairwise(&verletClusterCellsTraversal);
+  verletLists.iteratePairwise(&verletClusterCellsTraversal);
+  verletLists.iteratePairwise(&verletClusterCellsTraversal);
 
   numOwn = 0;
   numDummyOwn = 0;
@@ -316,6 +362,8 @@ TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
       }
     }
     verletClusterCells.updateContainer();
+    //trigger rebuild
+    verletClusterCells.begin();
     EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
   }
   {
@@ -340,6 +388,8 @@ TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
       }
     }
     verletClusterCells.updateContainer();
+    //trigger rebuild
+    verletClusterCells.begin();
     EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
   }
 }
@@ -355,6 +405,8 @@ TEST_F(VerletClusterCellsTest, testIsContainerUpdateNeeded) {
   Particle p({1, 1, 1}, {0, 0, 0}, 42);
   container.addParticle(p);
   container.updateContainer();
+  //trigger rebuild
+  container.begin();
 
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 
@@ -368,6 +420,8 @@ TEST_F(VerletClusterCellsTest, testIsContainerUpdateNeeded) {
   EXPECT_TRUE(container.isContainerUpdateNeeded());
 
   container.updateContainer();
+  //trigger rebuild
+  container.begin();
   // Particle still in halo cell and container update called -> no update
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 }
