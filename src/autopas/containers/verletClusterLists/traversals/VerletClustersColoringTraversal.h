@@ -219,7 +219,6 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
     Particle *clusterStart, Particle *neighborClusterStart) {
   auto clusterView = _clusterToSoAViewMap[clusterStart];
 
-  // std::cout << autopas_get_thread_num() << " " << clusterStart << " " << neighborClusterStart << std::endl;
   const bool isClusterInteractionWithItself = clusterStart == neighborClusterStart;
   if (isClusterInteractionWithItself) {
     _functor->SoAFunctor(clusterView, useNewton3);
