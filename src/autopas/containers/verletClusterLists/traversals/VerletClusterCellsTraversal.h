@@ -47,6 +47,10 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCellsTraversal; }
 
   bool isApplicable() const override {
+    // TODO enable when functors use owned pointers correctly for soas and global calculation
+    if (DataLayout == DataLayoutOption::soa) {
+      return false;
+    }
     if (DataLayout == DataLayoutOption::cuda) {
       int nDevices = 0;
 #if defined(AUTOPAS_CUDA)

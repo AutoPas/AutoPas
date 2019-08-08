@@ -226,8 +226,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
           this->_cells[i]._particles[j].setR(pos);
           --_dummyStarts[i];
           std::swap(this->_cells[i]._particles[j], this->_cells[i]._particles[_dummyStarts[i]]);
-        }else{
-        	++j;
+        } else {
+          ++j;
         }
       }
     }
@@ -243,8 +243,8 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
 
     std::vector<Particle> outsideParticles;
     for (auto iter = begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    	if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-    	outsideParticles.push_back(*iter);
+      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+        outsideParticles.push_back(*iter);
         iter.deleteCurrentParticle();
       }
     }
@@ -253,9 +253,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   bool isContainerUpdateNeeded() override {
-	  if(not _isValid){
-		  return true;
-	  }
+    if (not _isValid) {
+      return true;
+    }
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       size_t pid = 0;
       const size_t end = (_boundingBoxes[i].size() > 0) ? _boundingBoxes[i].size() - 1 : 0;
@@ -283,9 +283,9 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-	    if (not _isValid) {
-	      rebuild();
-	    }
+    if (not _isValid) {
+      rebuild();
+    }
     return ParticleIteratorWrapper<Particle>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>>(
             &this->_cells, &_dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
@@ -294,14 +294,16 @@ class VerletClusterCells : public ParticleContainer<Particle, FullParticleCell<P
   ParticleIteratorWrapper<Particle> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-	    if (not _isValid) {
-	      rebuild();
-	    }
+    if (not _isValid) {
+      rebuild();
+    }
     int xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
-    int ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1]- this->getSkin()) * _gridSideLengthReciprocal);
+    int ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
 
-    int xlength = ((int)((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
-    int ylength = ((int)((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
+    int xlength =
+        ((int)((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
+    int ylength =
+        ((int)((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
 
     std::vector<size_t> cellsOfInterest(xlength * ylength);
 

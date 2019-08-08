@@ -116,12 +116,12 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
     ++particlesBoth[iter->getID()];
   }
   i = 0;
-    for (; i < 50; ++i) {
-      EXPECT_EQ(particlesBoth[i], 3) << "on index " << i << std::endl;
-    }
-    for (; i < 500; ++i) {
-      EXPECT_EQ(particlesBoth[i], 2) << "on index " << i << std::endl;
-    }
+  for (; i < 50; ++i) {
+    EXPECT_EQ(particlesBoth[i], 3) << "on index " << i << std::endl;
+  }
+  for (; i < 500; ++i) {
+    EXPECT_EQ(particlesBoth[i], 2) << "on index " << i << std::endl;
+  }
 }
 
 TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
@@ -362,7 +362,7 @@ TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
       }
     }
     verletClusterCells.updateContainer();
-    //trigger rebuild
+    // trigger rebuild
     verletClusterCells.begin();
     EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
   }
@@ -388,7 +388,7 @@ TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
       }
     }
     verletClusterCells.updateContainer();
-    //trigger rebuild
+    // trigger rebuild
     verletClusterCells.begin();
     EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
   }
@@ -405,7 +405,7 @@ TEST_F(VerletClusterCellsTest, testIsContainerUpdateNeeded) {
   Particle p({1, 1, 1}, {0, 0, 0}, 42);
   container.addParticle(p);
   container.updateContainer();
-  //trigger rebuild
+  // trigger rebuild
   container.begin();
 
   EXPECT_FALSE(container.isContainerUpdateNeeded());
@@ -420,7 +420,7 @@ TEST_F(VerletClusterCellsTest, testIsContainerUpdateNeeded) {
   EXPECT_TRUE(container.isContainerUpdateNeeded());
 
   container.updateContainer();
-  //trigger rebuild
+  // trigger rebuild
   container.begin();
   // Particle still in halo cell and container update called -> no update
   EXPECT_FALSE(container.isContainerUpdateNeeded());

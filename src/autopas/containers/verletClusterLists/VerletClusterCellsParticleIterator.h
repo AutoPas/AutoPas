@@ -171,7 +171,7 @@ class VerletClusterCellsRegionParticleIterator : public VerletClusterCellsPartic
         _endRegion(endRegion),
         _indicesInRegion(indicesInRegion),
         _currentRegionIndex(0),
-        _skin(skin){
+        _skin(skin) {
     _indicesInRegion.push_back(cont->size() + 1);
     this->cellId = _indicesInRegion[_currentRegionIndex];
     this->cellIter = (*this->_vectorOfCells)[this->cellId]._particles.begin();
@@ -195,7 +195,7 @@ class VerletClusterCellsRegionParticleIterator : public VerletClusterCellsPartic
         this->cellIter = std::lower_bound(
             (*this->_vectorOfCells)[this->cellId]._particles.begin(),
             (*this->_vectorOfCells)[this->cellId]._particles.begin() + (*this->_dummyStarts)[this->cellId],
-            _startRegion[2]- _skin, [](const Particle &a, const double b) { return a.getR()[2] < b; });
+            _startRegion[2] - _skin, [](const Particle &a, const double b) { return a.getR()[2] < b; });
         this->cellEnd = std::upper_bound(
             (*this->_vectorOfCells)[this->cellId]._particles.begin(),
             (*this->_vectorOfCells)[this->cellId]._particles.begin() + (*this->_dummyStarts)[this->cellId],
