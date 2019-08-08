@@ -10,7 +10,7 @@
 
 template <bool mixing>
 void LJFunctorTest::testAoSNoGlobals(bool newton3) {
-  ParticlePropertiesLibrary particlePropertiesLibrary;
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
   particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
   if (mixing) {
     particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
