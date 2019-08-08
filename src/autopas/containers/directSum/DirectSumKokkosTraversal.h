@@ -42,7 +42,7 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, dataLayo
  public:
   DirectSumKokkosTraversal(PairwiseFunctor *pairwiseFunctor)
       : CellPairTraversal<ParticleCell, dataLayout, useNewton3>({2, 1, 1}),
-        _cellFunctor(internal::KokkosCellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor>
+        _cellFunctor(internal::KokkosCellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useNewton3>
                 (pairwiseFunctor)),
         _dataLayoutConverter(pairwiseFunctor) {}
 
@@ -69,7 +69,7 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, dataLayo
   /**
    * KokkosCellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::KokkosCellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor>
+  internal::KokkosCellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useNewton3>
       _cellFunctor;
 
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;

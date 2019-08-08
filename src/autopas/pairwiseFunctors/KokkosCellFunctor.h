@@ -11,7 +11,7 @@ namespace autopas {
     namespace internal {
 
 
-        template<class Particle, class ParticleCell, class ParticleFunctor>
+        template<class Particle, class ParticleCell, class ParticleFunctor, bool useNewton3 = true>
         class KokkosCellFunctor {
         public:
             /**
@@ -48,8 +48,10 @@ namespace autopas {
         };
 
 
-        template<class Particle, class ParticleCell, class ParticleFunctor>
-        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor>::processCell(
+
+
+        template<class Particle, class ParticleCell, class ParticleFunctor, bool useNewton3>
+        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor, useNewton3>::processCell(
                 ParticleCell &cell) {
 #ifdef AUTOPAS_KOKKOS
             auto particles = cell._particles;
@@ -62,18 +64,22 @@ namespace autopas {
             });
 */
             //new implementation - newton 3 off
-            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, particles.size()), KOKKOS_LAMBDA(const int i) {
-                for (unsigned int l = 0; l < particles.size(); l++) {
-                    if(i != l) {
-                        _functor->AoSFunctorInline(particles[i], particles[l]);
+            if(useNewton3){
+                processCellOneThread(cell);
+            }else{
+                Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, particles.size()), KOKKOS_LAMBDA(const unsigned int i) {
+                    for (unsigned int l = 0; l < particles.size(); l++) {
+                        if(i != l) {
+                            _functor->AoSFunctorInline(particles[i], particles[l], useNewton3);
+                        }
                     }
-                }
-            });
+                });
+            }//end newton3 off
 #endif
         }
 
-        template<class Particle, class ParticleCell, class ParticleFunctor>
-        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor>::processCellPair(
+        template<class Particle, class ParticleCell, class ParticleFunctor, bool useNewton3>
+        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor, useNewton3>::processCellPair(
                 ParticleCell &cell1, ParticleCell &cell2) {
 #ifdef AUTOPAS_KOKKOS
             auto part0 = cell1._particles;
@@ -81,55 +87,63 @@ namespace autopas {
             /*
             Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, part0.size()), KOKKOS_LAMBDA(const int i) {
                 for (unsigned int l = 0; l < part1.size(); l++) {
-                    _functor->AoSFunctorInline(part0[i], part1[l]);
-                    _functor->AoSFunctorInline(part1[l], part0[i]);
+                    _functor->AoSFunctorInline(part0[i], part1[l], useNewton3);
+                    _functor->AoSFunctorInline(part1[l], part0[i], useNewton3);
                 }
             });*/
-            //Newton 3 off
-            Kokkos::parallel_for(2, KOKKOS_LAMBDA(const int x){
-                if(x == 0){
-                    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, part0.size()), KOKKOS_LAMBDA(const int i) {
-                        for (unsigned int l = 0; l < part1.size(); l++) {
-                            _functor->AoSFunctorInline(part0[i], part1[l]);
 
-                        }
-                    });
-                 }else {
-                    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, part1.size()), KOKKOS_LAMBDA(const int i) {
-                        for (unsigned int l = 0; l < part0.size(); l++) {
-                            _functor->AoSFunctorInline(part1[i], part0[l]);
-                        }
-                    });
-                }
-            });
+            if(useNewton3){
+                processCellPairOneThread(cell1, cell2);
+            }else{
+                //Newton 3 off
+                Kokkos::parallel_for(2, KOKKOS_LAMBDA(const int x){
+                    if(x == 0){
+                        Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, part0.size()), KOKKOS_LAMBDA(const int i) {
+                            for (unsigned int l = 0; l < part1.size(); l++) {
+                                _functor->AoSFunctorInline(part0[i], part1[l], useNewton3);
+
+                            }
+                        });
+                    }else {
+                        Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, part1.size()), KOKKOS_LAMBDA(const int i) {
+                            for (unsigned int l = 0; l < part0.size(); l++) {
+                                _functor->AoSFunctorInline(part1[i], part0[l], useNewton3);
+                            }
+                        });
+                    }
+                });
+            }//end newton3 off
+
 #endif
         }
 
-        template<class Particle, class ParticleCell, class ParticleFunctor>
-        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor>::processCellOneThread(ParticleCell &cell) {
+        template<class Particle, class ParticleCell, class ParticleFunctor, bool useNewton3>
+        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor, useNewton3>::processCellOneThread(ParticleCell &cell) {
 #ifdef AUTOPAS_KOKKOS
             auto particles = cell._particles;
             //std::cout << particles.size() << "\n";
+            //always uses newton3
             Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
                 for (unsigned int i = 0; i < particles.size(); i++) {
                     for (unsigned int l = i + 1; l < particles.size(); l++) {
-                        _functor->AoSFunctorInline(particles[i], particles[l]);
-                        _functor->AoSFunctorInline(particles[l], particles[i]);
+                        _functor->AoSFunctorInline(particles[i], particles[l], true);
+                        //_functor->AoSFunctorInline(particles[l], particles[i], useNewton3);
                     }
                 }
             });
 #endif
         }
 
-        template<class Particle, class ParticleCell, class ParticleFunctor>
-        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor>::processCellPairOneThread(ParticleCell &cell1,
+        template<class Particle, class ParticleCell, class ParticleFunctor, bool useNewton3>
+        void KokkosCellFunctor<Particle, ParticleCell, ParticleFunctor, useNewton3>::processCellPairOneThread(ParticleCell &cell1,
                                                                                                   ParticleCell &cell2) {
 #ifdef AUTOPAS_KOKKOS
             //Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
+            //always uses newton3
                 for (unsigned int i = 0; i < cell1._particles.size(); i++) {
                     for (unsigned int l = 0; l < cell2._particles.size(); l++) {
-                        _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l]);
-                        _functor->AoSFunctorInline(cell2._particles[l], cell1._particles[i]);
+                        _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l], true);
+                        //_functor->AoSFunctorInline(cell2._particles[l], cell1._particles[i]);
                     }
                 }
             //});
