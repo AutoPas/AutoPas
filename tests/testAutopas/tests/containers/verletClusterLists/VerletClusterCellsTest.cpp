@@ -149,7 +149,6 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
   }
 
   int numBoth = 0;
-  int numDummyBoth = 0;
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
     ++particlesBoth[iter->getID()];
     ++numBoth;
@@ -449,12 +448,10 @@ TEST_F(VerletClusterCellsTest, testVerletListRegionIterator) {
   std::array<double, 3> minRegion = {3, 3, 3};
   std::array<double, 3> maxRegion = {7, 7, 5};
 
-  int numOwn = 0;
   for (auto iter = verletLists.getRegionIterator(minRegion, maxRegion, autopas::IteratorBehavior::haloAndOwned);
        iter.isValid(); ++iter) {
     EXPECT_TRUE(iter->getID() < 500);
     ++particlesOwn[iter->getID()];
-    ++numOwn;
   }
 
   EXPECT_FALSE(verletLists.getRegionIterator(minRegion, maxRegion, autopas::IteratorBehavior::haloOnly).isValid());
