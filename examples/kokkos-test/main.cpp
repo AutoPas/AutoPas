@@ -163,7 +163,7 @@ int main(int argc, char **argv){
   //memcpy(argx[0], s.c_str() , s.size()+ 1);
 
     Kokkos::InitArguments args;
-    args.num_threads = 8;
+    //args.num_threads = autopas::autopas_get_max_threads();
     Kokkos::initialize(args);
 
   /*
