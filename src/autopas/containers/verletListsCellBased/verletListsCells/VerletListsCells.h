@@ -155,17 +155,6 @@ class VerletListsCells
                                            _buildTraversal);
         break;
     }
-    std::cout << "Neighbor list:" << std::endl;
-    for (auto &cellList : _neighborLists) {
-      for (auto &pair : cellList) {
-        std::cout << "--------" << std::endl;
-        std::cout << "first:" << pair.first->toString() << std::endl << "interacts with:" << std::endl;
-        for (auto &second : pair.second) {
-          std::cout << "-" << second->toString() << std::endl;
-        }
-        std::cout << std::endl;
-      }
-    }
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
   }
