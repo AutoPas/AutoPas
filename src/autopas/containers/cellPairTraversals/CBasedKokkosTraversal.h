@@ -153,7 +153,7 @@ namespace autopas {
           typedef Kokkos::TeamPolicy<> team_policy;
           typedef Kokkos::TeamPolicy<>::member_type member_type;
 
-          unsigned int iterationsZ = 1 + (end_z - 1 - start_z)/stride_z;
+          int iterationsZ = 1 + (end_z - 1 - start_z)/stride_z;
           if(end_z < start_z || iterationsZ < 0) iterationsZ = 0;
 
           unsigned int iterationsY = 1 + (end_y - 1 - start_y)/stride_y;
@@ -162,8 +162,7 @@ namespace autopas {
             unsigned int iterationsX = 1 + (end_x - 1 - start_x)/stride_x;
             if(end_x < start_x || iterationsX < 0) iterationsX = 0;
 
-
-
+/*
           Kokkos::parallel_for(team_policy( iterationsZ, Kokkos::AUTO), KOKKOS_LAMBDA ( const member_type &teamMember){
               const int i = teamMember.league_rank();
               //std::cout << "League Size: " << teamMember.team_size() <<"\n";
@@ -174,6 +173,31 @@ namespace autopas {
                 }
               });
           });
+*/
+/*
+            Kokkos::parallel_for(team_policy( iterationsZ, Kokkos::AUTO), KOKKOS_LAMBDA ( const member_type &teamMember){
+                const int i = teamMember.league_rank();
+                //std::cout << "League Size: " << teamMember.team_size() <<"\n";
+                Kokkos::parallel_for(Kokkos::TeamVectorRange(teamMember, iterationsY), [&] (const int l) {
+                    for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                        // Don't exchange order of execution (x must be last!), it would break other code
+                        loopBody(x, start_y + l * stride_y, start_z + i * stride_z);
+                    }
+                });
+            });
+*/
+
+            //Test version, currently decreases perormance in OpenMP Kokkos, perhaps useful for CUDA?
+            //best result
+            Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {iterationsZ, iterationsY, iterationsX}),
+                    KOKKOS_LAMBDA(int z, int y, int x){
+                        //std::cout << x << ", " << y << ", " << z << "\n";
+                        // Don't exchange order of execution (x must be last!), it would break other code
+                        loopBody(start_x + x * stride_x, start_y + y * stride_y, start_z + z * stride_z);
+            });
+
+
+
 
           //std::cout << start_z <<" | " << end_z << " | " << stride_z << " | " << iterationsZ << "\n";
             /*Kokkos::parallel_for(range_policy(0, iterationsZ), KOKKOS_LAMBDA(const int i){

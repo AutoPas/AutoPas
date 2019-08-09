@@ -65,7 +65,13 @@ namespace autopas {
 */
             //new implementation - newton 3 off
             if(useNewton3){
-                processCellOneThread(cell);
+                //no parallelization possible
+                for (unsigned int i = 0; i < particles.size(); i++) {
+                    for (unsigned int l = i + 1; l < particles.size(); l++) {
+                        _functor->AoSFunctorInline(particles[i], particles[l], useNewton3);
+                        //_functor->AoSFunctorInline(particles[l], particles[i], useNewton3);
+                    }
+                }
             }else{
                 Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, particles.size()), KOKKOS_LAMBDA(const unsigned int i) {
                     for (unsigned int l = 0; l < particles.size(); l++) {
@@ -93,7 +99,12 @@ namespace autopas {
             });*/
 
             if(useNewton3){
-                processCellPairOneThread(cell1, cell2);
+                //no parallelization possible
+                for (unsigned int i = 0; i < cell1._particles.size(); i++) {
+                    for (unsigned int l = 0; l < cell2._particles.size(); l++) {
+                        _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l], useNewton3);
+                    }
+                }
             }else{
                 //Newton 3 off
                 Kokkos::parallel_for(2, KOKKOS_LAMBDA(const int x){
@@ -123,14 +134,23 @@ namespace autopas {
             auto particles = cell._particles;
             //std::cout << particles.size() << "\n";
             //always uses newton3
-            Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
+            if(useNewton3){
                 for (unsigned int i = 0; i < particles.size(); i++) {
                     for (unsigned int l = i + 1; l < particles.size(); l++) {
-                        _functor->AoSFunctorInline(particles[i], particles[l], true);
+                            _functor->AoSFunctorInline(particles[i], particles[l], true);
                         //_functor->AoSFunctorInline(particles[l], particles[i], useNewton3);
                     }
                 }
-            });
+            }else{
+                //no parallel for used here
+                for(unsigned int i = 0; i < particles.size(); i++) {
+                    for (unsigned int l = 0; l < particles.size(); l++) {
+                        if(i != l) {
+                            _functor->AoSFunctorInline(particles[i], particles[l], useNewton3);
+                        }
+                    }
+                };
+            }
 #endif
         }
 
@@ -139,13 +159,18 @@ namespace autopas {
                                                                                                   ParticleCell &cell2) {
 #ifdef AUTOPAS_KOKKOS
             //Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
-            //always uses newton3
                 for (unsigned int i = 0; i < cell1._particles.size(); i++) {
                     for (unsigned int l = 0; l < cell2._particles.size(); l++) {
-                        _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l], true);
+                        if(useNewton3){
+                            _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l], true);
+                        }else{
+                            _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l], useNewton3);
+                            _functor->AoSFunctorInline(cell2._particles[l], cell1._particles[i], useNewton3);
+                        }
                         //_functor->AoSFunctorInline(cell2._particles[l], cell1._particles[i]);
                     }
                 }
+
             //});
 #endif
 
