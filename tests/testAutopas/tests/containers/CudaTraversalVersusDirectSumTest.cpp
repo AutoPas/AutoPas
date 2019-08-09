@@ -58,7 +58,7 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
   autopas::C01CudaTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::cuda, useNewton3>
       traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, useNewton3>
-      traversalDS(&func);
+      traversalDS(&func, _directSum.getCutoff());
   _directSum.iteratePairwise(&traversalDS);
   _linkedCells.iteratePairwise(&traversalLJ);
 
