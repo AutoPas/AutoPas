@@ -88,9 +88,9 @@ int main(int argc, char **argv) {
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalCudaN3(&func, cutoff);
 
   C08Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, true> traversalc08N3(
-      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func, cutoff+skin, lc.getCellBlock().getCellLength());
+      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func, cutoff + skin, lc.getCellBlock().getCellLength());
   C01Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> C01Cuda(
-      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func, cutoff+skin, lc.getCellBlock().getCellLength());
+      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func, cutoff + skin, lc.getCellBlock().getCellLength());
   C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalLCcuda(
       lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalLCcudaN3(
