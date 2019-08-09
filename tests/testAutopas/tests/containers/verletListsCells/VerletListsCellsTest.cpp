@@ -3,7 +3,7 @@
  * @author nguyen
  * @date 02.09.18
  */
-
+#define protected public
 #include "VerletListsCellsTest.h"
 
 using ::testing::_;
@@ -25,7 +25,8 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
   verletLists.addParticle(p2);
 
   autopas::C18TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
-      verletLists.getCellsPerDimension(), &functor);
+      verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(),
+      verletLists._linkedCells.getCellBlock().getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.iteratePairwise(&traversal);

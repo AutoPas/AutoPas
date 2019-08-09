@@ -121,7 +121,8 @@ class VerletLists
         C08Traversal<LinkedParticleCell,
                      typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>,
                      DataLayoutOption::aos, true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
-                                                  &validityCheckerFunctor);
+                                                  &validityCheckerFunctor, this->getInteractionLength(),
+                                                  this->_linkedCells.getCellBlock().getCellLength());
     this->_linkedCells.iteratePairwise(&traversal);
 
     return validityCheckerFunctor.neighborlistsAreValid();
@@ -159,7 +160,8 @@ class VerletLists
         AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, c_useNewton3>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
         })
         break;
@@ -168,7 +170,8 @@ class VerletLists
         AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::soa, c_useNewton3>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
         })
         break;

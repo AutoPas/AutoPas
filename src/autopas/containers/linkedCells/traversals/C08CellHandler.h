@@ -37,9 +37,8 @@ class C08CellHandler {
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
   explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
-                          const double interactionLength = 1.0,
-                          const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
-                          const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
+                          const double interactionLength, const std::array<double, 3> &cellLength,
+                          const std::array<unsigned long, 3> &overlap)
       : _cellFunctor(pairwiseFunctor, interactionLength),
         _cellPairOffsets{},
         _interactionLength(interactionLength),

@@ -39,7 +39,7 @@ class C04SoACellHandler {
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
   explicit C04SoACellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
-                             const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
+                             const double cutoff, const std::array<double, 3> &cellLength,
                              const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _cutoff(cutoff),
         _cellLength(cellLength),

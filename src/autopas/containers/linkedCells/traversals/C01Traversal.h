@@ -45,7 +45,7 @@ class C01Traversal
    * @param cellLength cell length in CellBlock3D
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double interactionLength, const std::array<double, 3> &cellLength)
       : C01BasedTraversal < ParticleCell,
       PairwiseFunctor, DataLayout, useNewton3,
       (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, interactionLength, cellLength),

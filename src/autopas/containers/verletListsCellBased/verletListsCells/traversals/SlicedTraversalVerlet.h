@@ -39,8 +39,10 @@ class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, Pairwise
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit SlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
+  explicit SlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                                 double interactionLength, const std::array<double, 3> &cellLength)
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                    interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;

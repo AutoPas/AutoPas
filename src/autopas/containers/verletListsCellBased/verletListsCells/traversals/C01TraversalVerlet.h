@@ -33,8 +33,10 @@ class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFuncto
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
+  explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                              double interactionLength, const std::array<double, 3> &cellLength)
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                 interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;
