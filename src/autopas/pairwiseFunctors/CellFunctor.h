@@ -33,12 +33,12 @@ class CellFunctor {
  public:
   /**
    * The constructor of CellFunctor.
-   * @param f The particlefunctor which should be used for the interaction.
-   * @param interactionLength Interaction length = Cutoff radius + skin. This parameter is only relevant for
-   * optimization (sorting).
+   * @param f The ParticleFunctor which should be used for the interaction.
+   * @param sortingCutoff This paramater indicates the maximal distance the sorted particles are to interact. This
+   * parameter is only relevant for optimization (sorting). This parameter normally should be the cutoff, for building
+   * verlet lists, this should be cutoff+skin.
    */
-  explicit CellFunctor(ParticleFunctor *f, const double interactionLength)
-      : _functor(f), _interactionLength(interactionLength) {}
+  explicit CellFunctor(ParticleFunctor *f, const double sortingCutoff) : _functor(f), _sortingCutoff(sortingCutoff) {}
 
   /**
    * Process the interactions inside one cell.
@@ -106,7 +106,7 @@ class CellFunctor {
 
   ParticleFunctor *_functor;
 
-  const double _interactionLength;
+  const double _sortingCutoff;
 
   /**
    * Min. number of particles to start sorting.
@@ -195,7 +195,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       auto inner = outer;
       ++inner;
       for (; inner != cellSorted._particles.end(); ++inner) {
-        if (std::abs(outer->first - inner->first) > _interactionLength) {
+        if (std::abs(outer->first - inner->first) > _sortingCutoff) {
           break;
         }
         Particle &p2 = *inner->second;
@@ -240,7 +240,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       Particle &p1 = *outer.second;
 
       for (auto &inner : outerSorted._particles) {
-        if (std::abs(outer.first - inner.first) > _interactionLength) {
+        if (std::abs(outer.first - inner.first) > _sortingCutoff) {
           break;
         }
         Particle &p2 = *inner.second;
@@ -276,7 +276,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       Particle &p1 = *outer.second;
 
       for (auto &inner : outerSorted._particles) {
-        if (std::abs(outer.first - inner.first) > _interactionLength) {
+        if (std::abs(outer.first - inner.first) > _sortingCutoff) {
           break;
         }
         Particle &p2 = *inner.second;

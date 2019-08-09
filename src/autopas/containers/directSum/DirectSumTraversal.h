@@ -32,12 +32,11 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   /**
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param interactionLength Interaction length = cutoff + skin
+   * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
    */
-  explicit DirectSumTraversal(PairwiseFunctor *pairwiseFunctor, double interactionLength)
+  explicit DirectSumTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
-        _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
-                                           dataLayout, useNewton3, true>(pairwiseFunctor, interactionLength)),
+        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::directSumTraversal; }

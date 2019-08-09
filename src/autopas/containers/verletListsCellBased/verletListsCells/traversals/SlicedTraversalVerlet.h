@@ -37,6 +37,8 @@ class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, Pairwise
    * Constructor of the sliced traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
+   * @param interactionLength cutoff + skin
+   * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit SlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,

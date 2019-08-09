@@ -39,7 +39,7 @@ class C08CellHandler {
   explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
                           const double interactionLength, const std::array<double, 3> &cellLength,
                           const std::array<unsigned long, 3> &overlap)
-      : _cellFunctor(pairwiseFunctor, interactionLength),
+      : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
         _cellPairOffsets{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),

@@ -9,7 +9,6 @@
 #include "C04SoACellHandler.h"
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C04BasedTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {

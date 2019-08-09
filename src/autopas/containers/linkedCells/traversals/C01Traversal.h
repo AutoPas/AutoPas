@@ -49,8 +49,8 @@ class C01Traversal
       : C01BasedTraversal < ParticleCell,
       PairwiseFunctor, DataLayout, useNewton3,
       (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, interactionLength, cellLength),
-      _cellFunctor(pairwiseFunctor, interactionLength), _pairwiseFunctor(pairwiseFunctor),
-      _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
+      _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
+      _pairwiseFunctor(pairwiseFunctor), _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
     computeOffsets();
   }
 
