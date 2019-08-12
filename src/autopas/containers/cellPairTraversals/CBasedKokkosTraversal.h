@@ -8,17 +8,12 @@
 */
 
 
-/**
- * @file CBasedTraversal.h
- * @author C. Menges
- * @date 26.04.2019
- */
 
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/DataLayoutConverter.h"
+#include "autopas/utils/KokkosDataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -67,15 +62,20 @@ namespace autopas {
          * @param cells where the data should be loaded
          */
         void initTraversal(std::vector<ParticleCell> &cells) override {
-            /*
-#ifdef AUTOPAS_OPENMP
-          // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-          for (size_t i = 0; i < cells.size(); ++i) {
-            _dataLayoutConverter.loadDataLayout(cells[i]);
-          }
-             */
+            if(dataLayout == DataLayoutOption::kokkos){
+                //copy data to particle
+                /*check particle attributes
+                for (unsigned int c = 0; c < cells.size(); c++) {
+                    for(Particle p:cells[c]._particles){
+                        std::cout << p.toString() << "\n";
+                    }
+                }
+                 */
+                //std::cout << "--------------------\n";
+                for (unsigned int c = 0; c < cells.size(); c++) {
+                    _dataLayoutConverter.storeDataLayout(cells[c]);
+                }
+            }
         }
 
         /**
@@ -83,15 +83,21 @@ namespace autopas {
          * @param cells for which the data should be written back
          */
         void endTraversal(std::vector<ParticleCell> &cells) override {
+            if(dataLayout == DataLayoutOption::kokkos){
+                //copy data to particle
+                for (unsigned int c = 0; c < cells.size(); c++) {
+                    _dataLayoutConverter.loadDataLayout(cells[c]);
+                }
+            }
+            //check particle attributes
             /*
-#ifdef AUTOPAS_OPENMP
-          // @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-          for (size_t i = 0; i < cells.size(); ++i) {
-            _dataLayoutConverter.storeDataLayout(cells[i]);
-          }
+            for (unsigned int c = 0; c < cells.size(); c++) {
+                for(Particle p:cells[c]._particles){
+                    std::cout << p.toString() << "\n";
+                }
+            }
              */
+
         }
 
     protected:
@@ -128,7 +134,7 @@ namespace autopas {
         /**
          * Data Layout Converter to be used with this traversal
          */
-        utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+        utils::KokkosDataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
     };
 
     template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3, int collapseDepth>

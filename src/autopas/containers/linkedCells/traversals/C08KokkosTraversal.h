@@ -40,7 +40,6 @@ namespace autopas {
                                    const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
                 : C08BasedKokkosTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff, cellLength),
                      _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap),
-                  _dataLayoutConverter(pairwiseFunctor),
                      _functor(pairwiseFunctor){}
 
         TraversalOption getTraversalType() const override {
@@ -51,41 +50,10 @@ namespace autopas {
           return std::is_same<typename ParticleCell::ParticleType, KokkosParticle>::value;
         }
 
-        void initTraversal(std::vector<ParticleCell> &cells) override {
-            if(DataLayout == DataLayoutOption::kokkos){
-                //copy data to particle
-                /*check particle attributes
-                for (unsigned int c = 0; c < cells.size(); c++) {
-                    for(Particle p:cells[c]._particles){
-                        std::cout << p.toString() << "\n";
-                    }
-                }
-                 */
-                //std::cout << "--------------------\n";
-                for (unsigned int c = 0; c < cells.size(); c++) {
-                    _dataLayoutConverter.storeDataLayout(cells[c]);
-                }
-            }
-        }
 
-        void endTraversal(std::vector<ParticleCell> &cells) override {
-            if(DataLayout == DataLayoutOption::kokkos){
-                //copy data to particle
-                for (unsigned int c = 0; c < cells.size(); c++) {
-                    _dataLayoutConverter.loadDataLayout(cells[c]);
-                }
-            }
-            /*check particle attributes
-            for (unsigned int c = 0; c < cells.size(); c++) {
-                for(Particle p:cells[c]._particles){
-                    std::cout << p.toString() << "\n";
-                }
-            }
-             */
-        }
         void traverseCellPairs(std::vector<ParticleCell> &cells) override;
     private:
-        utils::KokkosDataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
+
 
     protected:
 

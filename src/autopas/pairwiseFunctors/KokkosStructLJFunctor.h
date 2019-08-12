@@ -176,10 +176,9 @@ namespace autopas {
 
         KOKKOS_FLOAT dr2 = 0.0;
         // Kokkos::parallel_for(KOKKOS_DIM, KOKKOS_LAMBDA(const int i){
-        auto temp = 0.0;
+        KOKKOS_FLOAT temp;
         for (unsigned int i = 0; i < KOKKOS_DIM; i++) {
-            temp = pcell1._particleKokkosBuffer(index1, 0, i);
-            temp -= pcell2._particleKokkosBuffer(index2, 0, i);
+            temp = pcell1._particleKokkosBuffer(index1, 0, i) - pcell2._particleKokkosBuffer(index2, 0, i);
             dr2 += (temp * temp);
         }
         //KOKKOS_FLOAT dr2 = KokkosHelper::subDot(i.get_r_inline(), j.get_r_inline());
@@ -253,9 +252,11 @@ namespace autopas {
             Kokkos::deep_copy(h_matrix, buffer);
             for(unsigned int x = 0; x < cell._particles.size(); x++){
                 //position
-                auto arr_r = cell._particles[x].getR();
-                auto arr_f = cell._particles[x].getF();
-                auto arr_v = cell._particles[x].getV();
+                std::array<double, 3> arr_r{};
+                std::array<double, 3> arr_f{};
+                std::array<double, 3> arr_v{};
+                //auto arr_f = cell._particles[x].getF();
+                //auto arr_v = cell._particles[x].getV();
                 for(unsigned int i = 0; i < KOKKOS_DIM; i++){
                     arr_r[i] = h_matrix(x, 0, i);//position
                     arr_f[i] = h_matrix(x, 1, i);//force

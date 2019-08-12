@@ -287,14 +287,13 @@ int main(int argc, char **argv){
       cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
 
       long durationApply = 0;
-      unsigned long flopsPerKernelCall = 0;
+      //unsigned long flopsPerKernelCall = 0;
       cout << "Starting force calculation... " << endl;
 
       //use KokkosFunctor only
       durationApply =
               calculate<KokkosLJFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>>(autopas, cutoff, epsilon, sigma, numIterations);
-      flopsPerKernelCall =
-              KokkosLJFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>::getNumFlopsPerKernelCall();
+      //flopsPerKernelCall = KokkosLJFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>::getNumFlopsPerKernelCall();
 
 
 
@@ -437,9 +436,9 @@ int main(int argc, char **argv){
       }
       auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
       cout << "MFUPs/sec    : " << mfups << endl;
-      /*
+/*
       if (measureFlops) {
-        FlopCounterFunctor<KokkosParticle, FullParticleCell<KokkosParticle>> flopCounterFunctor(
+        FlopCounterFunctor<Particle, FullParticleCell<Particle>> flopCounterFunctor(
                 autopas.getContainer()->getCutoff());
         autopas.iteratePairwise(&flopCounterFunctor);
 
@@ -448,14 +447,14 @@ int main(int argc, char **argv){
         if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::verletLists)
           flops +=
                   flopCounterFunctor.getDistanceCalculations() *
-                  FlopCounterFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>::numFlopsPerDistanceCalculation *
+                  FlopCounterFunctor<Particle, FullParticleCell<Particle>>::numFlopsPerDistanceCalculation *
                   floor(numIterations / verletRebuildFrequency);
 
         cout << "GFLOPs       : " << flops * 1e-9 << endl;
         cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
         cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
       }
-       */
+*/
 
 
       if (not logFileName.empty()) {

@@ -156,7 +156,7 @@ namespace autopas {
                     //no parallelization possible
                     for (unsigned int i = 0; i < cell1._particles.size(); i++) {
                         for (unsigned int l = 0; l < cell2._particles.size(); l++) {
-                            _functor->AoSFunctorInline(cell1._particles[i], cell2._particles[l], useNewton3);
+                            _functor->SoAFunctorInline(cell1, cell2, i, l, useNewton3);
                         }
                     }
                 }else{
@@ -234,7 +234,7 @@ namespace autopas {
                                                                                                   ParticleCell &cell2) {
 #ifdef AUTOPAS_KOKKOS
             //Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int i) {
-            if(DataLayout == DataLayoutOption::soa) {
+            if(DataLayout == DataLayoutOption::aos) {
                 for (unsigned int i = 0; i < cell1._particles.size(); i++) {
                     for (unsigned int l = 0; l < cell2._particles.size(); l++) {
                         if (useNewton3) {
@@ -247,17 +247,23 @@ namespace autopas {
                     }
                 }
             }else if(DataLayout == DataLayoutOption::kokkos){
+
+                if (useNewton3) {
                     for (unsigned int i = 0; i < cell1._particles.size(); i++) {
                         for (unsigned int l = 0; l < cell2._particles.size(); l++) {
-                            if (useNewton3) {
                                 _functor->SoAFunctorInline(cell1, cell2, i, l, true);
-                            } else {
-                                _functor->SoAFunctorInline(cell1, cell2, i, l, useNewton3);
-                                _functor->SoAFunctorInline(cell2, cell1, l, i, useNewton3);
-                            }
-                            //_functor->AoSFunctorInline(cell2._particles[l], cell1._particles[i]);
                         }
                     }
+                }else{
+                    for (unsigned int i = 0; i < cell1._particles.size(); i++) {
+                        for (unsigned int l = 0; l < cell2._particles.size(); l++) {
+                            _functor->SoAFunctorInline(cell1, cell2, i, l, useNewton3);
+                            _functor->SoAFunctorInline(cell2, cell1, l, i, useNewton3);
+                        }
+                    }
+                }//end newton3
+            } else {
+
             }
             //});
 #endif
