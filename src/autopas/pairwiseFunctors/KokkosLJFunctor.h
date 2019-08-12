@@ -132,6 +132,10 @@ class KokkosLJFunctor : public Functor<Particle, ParticleCell, typename Particle
 #ifdef AUTOPAS_KOKKOS
   KOKKOS_INLINE_FUNCTION
   void AoSFunctorInline(const Particle &i, const Particle &j, bool newton3) const;
+    KOKKOS_INLINE_FUNCTION
+    void SoAFunctorInline(const ParticleCell &cell1, const ParticleCell &cell2, unsigned int index1, unsigned int index2, bool newton3) const;
+        void kokkosLoader(ParticleCell &cell);
+        void kokkosExtractor(ParticleCell &cell);
 #endif
 };
 
@@ -164,6 +168,24 @@ class KokkosLJFunctor : public Functor<Particle, ParticleCell, typename Particle
       }else{
           KokkosHelper::subDotMulScalarAddF(i.get_r_inline(), j.get_r_inline(), i.get_f_inline(), fac);  // to parallel_for
       }
+    }
+
+    template<class Particle, class ParticleCell, FunctorN3Modes useNewton3>
+    void KokkosLJFunctor<Particle, ParticleCell, useNewton3>::SoAFunctorInline(const ParticleCell &cell1,
+                                                                               const ParticleCell &cell2,
+                                                                               unsigned int index1, unsigned int index2,
+                                                                               bool newton3) const {
+        //not implemented here
+    }
+
+    template<class Particle, class ParticleCell, FunctorN3Modes useNewton3>
+    void KokkosLJFunctor<Particle, ParticleCell, useNewton3>::kokkosLoader(ParticleCell &cell) {
+        //not implemented here
+    }
+
+    template<class Particle, class ParticleCell, FunctorN3Modes useNewton3>
+    void KokkosLJFunctor<Particle, ParticleCell, useNewton3>::kokkosExtractor(ParticleCell &cell) {
+        //not implemented here
     }
 
 #endif

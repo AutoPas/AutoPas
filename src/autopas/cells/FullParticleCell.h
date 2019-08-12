@@ -107,6 +107,13 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
 
+#ifdef AUTOPAS_KOKKOS
+  /**
+   * SoABuffer for kokkos implementation
+   */
+   FloatMatrix3Type _particleKokkosBuffer;
+#endif
+
  private:
   AutoPasLock particlesLock;
 };

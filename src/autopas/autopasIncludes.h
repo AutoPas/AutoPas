@@ -64,4 +64,5 @@
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/pairwiseFunctors/KokkosLJFunctor.h"
+#include "autopas/pairwiseFunctors/KokkosStructLJFunctor.h"
 #include "autopas/pairwiseFunctors/LJFunctor.h"

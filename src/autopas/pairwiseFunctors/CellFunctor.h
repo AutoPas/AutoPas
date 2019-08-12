@@ -133,6 +133,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
         processCellCudaNoN3(cell);
       }
       break;
+      case DataLayoutOption::kokkos:
+          //functionality implemented in class KokkosCellFunctor
+          break;
   }
 }
 
@@ -168,6 +171,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
         processCellPairCudaNoN3(cell1, cell2);
       }
       break;
+      case DataLayoutOption::kokkos:
+          //functionality implemented in class KokkosCellFunctor
+          break;
   }
 }
 

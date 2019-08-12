@@ -80,6 +80,8 @@ inline std::string to_string(const DataLayoutOption &option) {
     }
     case autopas::DataLayoutOption::cuda: {
       return "Structure-of-Arrays on Cuda capable device";
+    }case autopas::DataLayoutOption::kokkos: {
+        return "KokkosView Structure";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -394,7 +396,9 @@ inline std::set<autopas::DataLayoutOption> parseDataLayout(const std::string &da
     } else if (word.find("soa") != std::string::npos or word.find("-of-array") != std::string::npos) {
       dataLayouts.insert(autopas::DataLayoutOption::soa);
     } else if (word.find("cuda") != std::string::npos) {
-      dataLayouts.insert(autopas::DataLayoutOption::cuda);
+        dataLayouts.insert(autopas::DataLayoutOption::cuda);
+    }else if (word.find("kokkos") != std::string::npos) {
+        dataLayouts.insert(autopas::DataLayoutOption::kokkos);
     } else if (not ignoreUnknownOptions) {
       // hack to initialize the enum out of range as an error value.
       dataLayouts.insert(autopas::DataLayoutOption(-1));

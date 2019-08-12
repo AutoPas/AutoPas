@@ -47,6 +47,10 @@ class DataLayoutConverter {
         _functor->deviceSoALoader(cell._particleSoABuffer, cell._particleSoABufferDevice);
         return;
       }
+        case DataLayoutOption::kokkos: {
+            //functionality implemented in class KokkosDataLayoutConverter
+            return;
+        }
     }
   }
 
@@ -70,6 +74,10 @@ class DataLayoutConverter {
         _functor->SoAExtractor(cell, cell._particleSoABuffer);
         return;
       }
+        case DataLayoutOption::kokkos: {
+        //Functionality implemented in class KokkosDataLayoutConverter
+        return;
+    }
     }
   }
 

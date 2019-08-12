@@ -37,7 +37,8 @@ using namespace autopas;
  * @param particlesPerDim Number of desired particles per dimension.
  * @param particelSpacing Space between two particles along each axis of space.
  */
-void initContainerGrid(autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosParticle>> &autopas,
+ template< class Particle>
+void initContainerGrid(autopas::AutoPas<Particle, FullParticleCell<Particle>> &autopas,
                        size_t particlesPerDim, double particelSpacing) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax(
@@ -47,13 +48,14 @@ void initContainerGrid(autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosP
 
   autopas.init();
 
-  KokkosParticle dummyParticle;
+  Particle dummyParticle;
   GridGenerator::fillWithParticles(autopas, {particlesPerDim, particlesPerDim, particlesPerDim}, dummyParticle,
                                    {particelSpacing, particelSpacing, particelSpacing},
                                    {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
 }
-
-void initContainerGauss(autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosParticle>> &autopas,
+/*
+template <class ParticleBase>
+void initContainerGauss(autopas::AutoPas<ParticleBase, FullParticleCell<ParticleBase>> &autopas,
                         double boxLength, size_t numParticles, double distributionMean, double distributionStdDev) {
   std::array<double, 3> boxMin({0., 0., 0.});
   std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
@@ -66,6 +68,7 @@ void initContainerGauss(autopas::AutoPas<KokkosParticle, FullParticleCell<Kokkos
   KokkosParticle dummyParticle;
   GaussianGenerator::fillWithParticles(autopas, numParticles, dummyParticle, distributionMean, distributionStdDev);
 }
+ */
 
 /*
 void initContainerUniform(autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosParticle>> &autopas,
@@ -166,77 +169,7 @@ int main(int argc, char **argv){
     //args.num_threads = autopas::autopas_get_max_threads();
     Kokkos::initialize(args);
 
-  /*
-  std::chrono::high_resolution_clock::time_point startTotal, stopTotal;
 
-  startTotal = std::chrono::high_resolution_clock::now();
-  string logFileName = "log_kokkos.txt";
-
-  // select either std::out or a logfile for autopas log output.
-  // This does not affect md-flex output.
-  std::ofstream logFile;
-  std::streambuf *streamBuf;
-  if (logFileName.empty()) {
-    streamBuf = std::cout.rdbuf();
-  } else {
-    logFile.open(logFileName);
-    streamBuf = logFile.rdbuf();
-  }
-  std::ostream outputStream(streamBuf);
-  // Initialization
-  autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosParticle>> autopas(outputStream);
-  //autopas::Logger::get()->set_level(logLevel);
-
-
-
-
-  auto functor = KokkosLJFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>(cutoff, epsilon, sigma, newton3);
-
-  autopas.setCutoff(cutoff);
-  autopas.setVerletSkin(verletSkinRadius);
-  autopas.setVerletRebuildFrequency(verletRebuildFrequency);
-  autopas.setTuningInterval(tuningInterval);
-  autopas.setTuningStrategyOption(tuningStrategy);
-  autopas.setNumSamples(tuningSamples);
-  autopas.setSelectorStrategy(selectorStrategy);
-  std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::directSum, autopas::ContainerOption::linkedCells};
-  std::set<autopas::TraversalOption> traversalOptions{autopas::TraversalOption::kokkosDirectSumTraversal, autopas::TraversalOption::kokkosc08};
-  std::set<autopas::DataLayoutOption > dataLayoutOptions{};
-  dataLayoutOptions.insert(autopas::DataLayoutOption::aos);
-  std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
-
-
-  autopas.setAllowedContainers(containerOptions);
-  autopas.setAllowedTraversals(traversalOptions);
-  autopas.setAllowedDataLayouts(dataLayoutOptions);
-  autopas.setAllowedNewton3Options(newton3Options);
-  autopas.setCutoff(cutoff);
-
-  //autopas.setAllowedCellSizeFactors(cellSizeFactors);
-
-  //set boxMin and boxMax
-  double boxLength = 10;
-  std::array<double, 3> boxMin({0., 0., 0.});
-  std::array<double, 3> boxMax({boxLength, boxLength, boxLength});
-
-  autopas.setBoxMin(boxMin);
-  autopas.setBoxMax(boxMax);
-
-  autopas.init();//init autopas before particles are added
-
-  std::array<KokkosParticle, 5> arrParticles{};
-  for (int i = 0; i < 5; ++i) {
-    arrParticles[i] = KokkosParticle({0.1 * i , 0.2 * i, 0.3 * i},{0.0, 0.0, 0.0}, i);
-  }
-  for (int i = 0; i < 5; ++i) {
-    autopas.addParticle(arrParticles[i]);
-  }
-  autopas.iteratePairwise(&functor);//iterate
-  for (int i = 0; i < 5; ++i) {
-    std::cout <<arrParticles[i].toString() << "\n";
-
-  }
-  */
 // Parsing
   MDFlexParser parser;
   if (not parser.parseInput(argc, argv)) {
@@ -288,123 +221,250 @@ int main(int argc, char **argv){
   }
   std::ostream outputStream(streamBuf);
   // Initialization
-  autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosParticle>> autopas(outputStream);
-  autopas::Logger::get()->set_level(logLevel);
 
-  autopas.setCutoff(cutoff);
-  autopas.setVerletSkin(verletSkinRadius);
-  autopas.setVerletRebuildFrequency(verletRebuildFrequency);
-  autopas.setTuningInterval(tuningInterval);
-  autopas.setTuningStrategyOption(tuningStrategy);
-  autopas.setNumSamples(tuningSamples);
-  autopas.setSelectorStrategy(selectorStrategy);
-  autopas.setAllowedContainers(containerChoice);//directsum, linkedcells
-  autopas.setAllowedTraversals(traversalOptions);//c08 kokkos, directsum
+  if(dataLayoutOptions.find(DataLayoutOption::aos)!= dataLayoutOptions.end()){
+    //found element aos
+      autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosParticle>> autopas(outputStream);
+      autopas::Logger::get()->set_level(logLevel);
+
+      autopas.setCutoff(cutoff);
+      autopas.setVerletSkin(verletSkinRadius);
+      autopas.setVerletRebuildFrequency(verletRebuildFrequency);
+      autopas.setTuningInterval(tuningInterval);
+      autopas.setTuningStrategyOption(tuningStrategy);
+      autopas.setNumSamples(tuningSamples);
+      autopas.setSelectorStrategy(selectorStrategy);
+      autopas.setAllowedContainers(containerChoice);//directsum, linkedcells
+      autopas.setAllowedTraversals(traversalOptions);//c08 kokkos, directsum
 
 
-  autopas.setAllowedDataLayouts(dataLayoutOptions);
-  autopas.setAllowedNewton3Options(newton3Options);
-  autopas.setAllowedCellSizeFactors(cellSizeFactors);
+      autopas.setAllowedDataLayouts(dataLayoutOptions);
+      autopas.setAllowedNewton3Options(newton3Options);
+      autopas.setAllowedCellSizeFactors(cellSizeFactors);
 
-  switch (generatorChoice) {
-    case MDFlexParser::GeneratorOption::grid: {
-      initContainerGrid(autopas, particlesPerDim, particleSpacing);
-      particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
-      break;
-    }
-    /*case MDFlexParser::GeneratorOption::uniform: {
-      initContainerUniform(autopas, boxLength, particlesTotal);
-      break;
-    }*/
-    case MDFlexParser::GeneratorOption::gaussian: {
-      initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
-      break;
-    }
-    default:
-      std::cerr << "Unknown generator choice" << std::endl;
-      return -1;
+      switch (generatorChoice) {
+          case MDFlexParser::GeneratorOption::grid: {
+              initContainerGrid(autopas, particlesPerDim, particleSpacing);
+              particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
+              break;
+          }
+              /*case MDFlexParser::GeneratorOption::uniform: {
+                initContainerUniform(autopas, boxLength, particlesTotal);
+                break;
+              }*/
+          case MDFlexParser::GeneratorOption::gaussian: {
+              //initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
+              break;
+          }
+          default:
+              std::cerr << "Unknown generator choice" << std::endl;
+              return -1;
+      }
+
+      //KokkosParticle::setEpsilon(1.0);
+      //KokkosParticle::setSigma(1.0);
+      cout << endl;
+      //cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
+      //cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
+
+      if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
+
+      // statistics for linked cells
+      if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
+          auto lcContainer = dynamic_cast<autopas::LinkedCells<KokkosParticle, FullParticleCell<KokkosParticle>> *>(
+                  autopas.getContainer());
+          auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
+          std::array<size_t, 3> cellsPerDim{cellsPerDimHalo[0] - 2, cellsPerDimHalo[1] - 2, cellsPerDimHalo[2] - 2};
+          //    auto numCellsHalo = lcContainer->getCells().size();
+          auto numCells = cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2];
+
+          cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
+               << cellsPerDimHalo[2] << " (Total: " << numCells << ")" << endl;
+          cout << "Average Particles per cell: " << (particlesTotal) / (double)numCells << endl;
+          cout << endl;
+      }
+
+      cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
+
+      long durationApply = 0;
+      unsigned long flopsPerKernelCall = 0;
+      cout << "Starting force calculation... " << endl;
+
+      //use KokkosFunctor only
+      durationApply =
+              calculate<KokkosLJFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>>(autopas, cutoff, epsilon, sigma, numIterations);
+      flopsPerKernelCall =
+              KokkosLJFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>::getNumFlopsPerKernelCall();
+
+
+
+      stopTotal = std::chrono::high_resolution_clock::now();
+      cout << "Force calculation done!" << endl;
+
+      //  printMolecules(autopas);
+
+      auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();
+      auto durationTotalSec = durationTotal * 1e-6;
+      auto durationApplySec = durationApply * 1e-6;
+
+      // Statistics
+      cout << fixed << setprecision(2);
+      cout << endl << "Measurements:" << endl;
+      cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
+      if (numIterations > 0) {
+          cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
+               << "s)" << endl;
+      }
+      auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
+      cout << "MFUPs/sec    : " << mfups << endl;
+      /*
+      if (measureFlops) {
+        FlopCounterFunctor<KokkosParticle, FullParticleCell<KokkosParticle>> flopCounterFunctor(
+                autopas.getContainer()->getCutoff());
+        autopas.iteratePairwise(&flopCounterFunctor);
+
+        auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
+        // approximation for flops of verlet list generation
+        if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::verletLists)
+          flops +=
+                  flopCounterFunctor.getDistanceCalculations() *
+                  FlopCounterFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>::numFlopsPerDistanceCalculation *
+                  floor(numIterations / verletRebuildFrequency);
+
+        cout << "GFLOPs       : " << flops * 1e-9 << endl;
+        cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
+        cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+      }
+       */
+
+
+      if (not logFileName.empty()) {
+          logFile.close();
+      }
+  }else if(dataLayoutOptions.find(DataLayoutOption::kokkos)!= dataLayoutOptions.end()){
+      //-------------------------------- soa -------------------------------------
+      autopas::AutoPas<Particle, FullParticleCell<Particle>> autopas(outputStream);
+
+      autopas::Logger::get()->set_level(logLevel);
+
+      autopas.setCutoff(cutoff);
+      autopas.setVerletSkin(verletSkinRadius);
+      autopas.setVerletRebuildFrequency(verletRebuildFrequency);
+      autopas.setTuningInterval(tuningInterval);
+      autopas.setTuningStrategyOption(tuningStrategy);
+      autopas.setNumSamples(tuningSamples);
+      autopas.setSelectorStrategy(selectorStrategy);
+      autopas.setAllowedContainers(containerChoice);//directsum, linkedcells
+      autopas.setAllowedTraversals(traversalOptions);//c08 kokkos, directsum
+
+
+      autopas.setAllowedDataLayouts(dataLayoutOptions);
+      autopas.setAllowedNewton3Options(newton3Options);
+      autopas.setAllowedCellSizeFactors(cellSizeFactors);
+
+      switch (generatorChoice) {
+          case MDFlexParser::GeneratorOption::grid: {
+              initContainerGrid(autopas, particlesPerDim, particleSpacing);
+              particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
+              break;
+          }
+              /*case MDFlexParser::GeneratorOption::uniform: {
+                initContainerUniform(autopas, boxLength, particlesTotal);
+                break;
+              }*/
+          case MDFlexParser::GeneratorOption::gaussian: {
+              //initContainerGauss(autopas, boxLength, particlesTotal, distributionMean, distributionStdDev);
+              break;
+          }
+          default:
+              std::cerr << "Unknown generator choice" << std::endl;
+              return -1;
+      }
+
+      //KokkosParticle::setEpsilon(1.0);
+      //KokkosParticle::setSigma(1.0);
+      cout << endl;
+      //cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
+      //cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
+
+      if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
+
+      // statistics for linked cells
+      if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
+          auto lcContainer = dynamic_cast<autopas::LinkedCells<Particle, FullParticleCell<Particle>> *>(
+                  autopas.getContainer());
+          auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
+          std::array<size_t, 3> cellsPerDim{cellsPerDimHalo[0] - 2, cellsPerDimHalo[1] - 2, cellsPerDimHalo[2] - 2};
+          //    auto numCellsHalo = lcContainer->getCells().size();
+          auto numCells = cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2];
+
+          cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
+               << cellsPerDimHalo[2] << " (Total: " << numCells << ")" << endl;
+          cout << "Average Particles per cell: " << (particlesTotal) / (double)numCells << endl;
+          cout << endl;
+      }
+
+      cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
+
+      long durationApply = 0;
+      unsigned long flopsPerKernelCall = 0;
+      cout << "Starting force calculation... " << endl;
+
+      //use KokkosFunctor only
+      durationApply =
+              calculate<KokkosStructLJFunctor<Particle, FullParticleCell<Particle>>>(autopas, cutoff, epsilon, sigma, numIterations);
+      flopsPerKernelCall =
+              KokkosStructLJFunctor<Particle, FullParticleCell<Particle>>::getNumFlopsPerKernelCall();
+
+
+
+      stopTotal = std::chrono::high_resolution_clock::now();
+      cout << "Force calculation done!" << endl;
+
+      //  printMolecules(autopas);
+
+      auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();
+      auto durationTotalSec = durationTotal * 1e-6;
+      auto durationApplySec = durationApply * 1e-6;
+
+      // Statistics
+      cout << fixed << setprecision(2);
+      cout << endl << "Measurements:" << endl;
+      cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
+      if (numIterations > 0) {
+          cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
+               << "s)" << endl;
+      }
+      auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
+      cout << "MFUPs/sec    : " << mfups << endl;
+      /*
+      if (measureFlops) {
+        FlopCounterFunctor<KokkosParticle, FullParticleCell<KokkosParticle>> flopCounterFunctor(
+                autopas.getContainer()->getCutoff());
+        autopas.iteratePairwise(&flopCounterFunctor);
+
+        auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
+        // approximation for flops of verlet list generation
+        if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::verletLists)
+          flops +=
+                  flopCounterFunctor.getDistanceCalculations() *
+                  FlopCounterFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>::numFlopsPerDistanceCalculation *
+                  floor(numIterations / verletRebuildFrequency);
+
+        cout << "GFLOPs       : " << flops * 1e-9 << endl;
+        cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
+        cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
+      }
+       */
+
+
+      if (not logFileName.empty()) {
+          logFile.close();
+      }
   }
 
-  //KokkosParticle::setEpsilon(1.0);
-  //KokkosParticle::setSigma(1.0);
-  cout << endl;
-  //cout << "epsilon: " << PrintableMolecule::getEpsilon() << endl;
-  //cout << "sigma  : " << PrintableMolecule::getSigma() << endl << endl;
-
-  if (not vtkFilename.empty()) writeVTKFile(vtkFilename, particlesTotal, autopas);
-
-  // statistics for linked cells
-  if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::linkedCells) {
-    auto lcContainer = dynamic_cast<autopas::LinkedCells<KokkosParticle, FullParticleCell<KokkosParticle>> *>(
-            autopas.getContainer());
-    auto cellsPerDimHalo = lcContainer->getCellBlock().getCellsPerDimensionWithHalo();
-    std::array<size_t, 3> cellsPerDim{cellsPerDimHalo[0] - 2, cellsPerDimHalo[1] - 2, cellsPerDimHalo[2] - 2};
-    //    auto numCellsHalo = lcContainer->getCells().size();
-    auto numCells = cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2];
-
-    cout << "Cells per dimension with Halo: " << cellsPerDimHalo[0] << " x " << cellsPerDimHalo[1] << " x "
-         << cellsPerDimHalo[2] << " (Total: " << numCells << ")" << endl;
-    cout << "Average Particles per cell: " << (particlesTotal) / (double)numCells << endl;
-    cout << endl;
-  }
-
-  cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
-
-  long durationApply = 0;
-  unsigned long flopsPerKernelCall = 0;
-  cout << "Starting force calculation... " << endl;
-
-  //use KokkosFunctor only
-  durationApply =
-          calculate<KokkosLJFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>>(autopas, cutoff, epsilon, sigma, numIterations);
-  flopsPerKernelCall =
-          KokkosLJFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>::getNumFlopsPerKernelCall();
 
 
-
-  stopTotal = std::chrono::high_resolution_clock::now();
-  cout << "Force calculation done!" << endl;
-
-  //  printMolecules(autopas);
-
-  auto durationTotal = std::chrono::duration_cast<std::chrono::microseconds>(stopTotal - startTotal).count();
-  auto durationTotalSec = durationTotal * 1e-6;
-  auto durationApplySec = durationApply * 1e-6;
-
-  // Statistics
-  cout << fixed << setprecision(2);
-  cout << endl << "Measurements:" << endl;
-  cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
-  if (numIterations > 0) {
-    cout << "One iteration: " << durationApply / numIterations << " \u03bcs (" << durationApplySec / numIterations
-         << "s)" << endl;
-  }
-  auto mfups = particlesTotal * numIterations / durationApplySec * 1e-6;
-  cout << "MFUPs/sec    : " << mfups << endl;
-  /*
-  if (measureFlops) {
-    FlopCounterFunctor<KokkosParticle, FullParticleCell<KokkosParticle>> flopCounterFunctor(
-            autopas.getContainer()->getCutoff());
-    autopas.iteratePairwise(&flopCounterFunctor);
-
-    auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
-    // approximation for flops of verlet list generation
-    if (autopas.getContainer()->getContainerType() == autopas::ContainerOption::verletLists)
-      flops +=
-              flopCounterFunctor.getDistanceCalculations() *
-              FlopCounterFunctor<KokkosParticle, FullParticleCell<KokkosParticle>>::numFlopsPerDistanceCalculation *
-              floor(numIterations / verletRebuildFrequency);
-
-    cout << "GFLOPs       : " << flops * 1e-9 << endl;
-    cout << "GFLOPs/sec   : " << flops * 1e-9 / durationApplySec << endl;
-    cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
-  }
-   */
-
-
-  if (not logFileName.empty()) {
-    logFile.close();
-  }
 
 
 

@@ -42,7 +42,7 @@ namespace autopas {
         explicit C08KokkosCellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
                                 const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
                                 const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
-                : _cellFunctor(internal::KokkosCellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useNewton3>(pairwiseFunctor)),
+                : _cellFunctor(internal::KokkosCellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(pairwiseFunctor)),
                   _cellPairOffsets{},
                   _cutoff(cutoff),
                   _cellLength(cellLength),
@@ -72,7 +72,7 @@ namespace autopas {
          */
         //internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3>
         //        _cellFunctor;
-        internal::KokkosCellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, useNewton3> _cellFunctor;
+        internal::KokkosCellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellFunctor;
         /**
          * Pair sets for processBaseCell().
          */

@@ -150,8 +150,8 @@ namespace autopas {
           const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 #ifdef AUTOPAS_KOKKOS
 
-          typedef Kokkos::TeamPolicy<> team_policy;
-          typedef Kokkos::TeamPolicy<>::member_type member_type;
+          //typedef Kokkos::TeamPolicy<> team_policy;
+          //typedef Kokkos::TeamPolicy<>::member_type member_type;
 
           int iterationsZ = 1 + (end_z - 1 - start_z)/stride_z;
           if(end_z < start_z || iterationsZ < 0) iterationsZ = 0;

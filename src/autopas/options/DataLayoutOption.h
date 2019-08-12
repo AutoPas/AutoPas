@@ -12,7 +12,7 @@ namespace autopas {
 /**
  * Possible choices for the particle data layout.
  */
-enum DataLayoutOption { aos, soa, cuda };
+enum DataLayoutOption { aos, soa, cuda, kokkos};
 
 /**
  * Provides a way to iterate over the possible choices of data layouts.
@@ -20,6 +20,9 @@ enum DataLayoutOption { aos, soa, cuda };
 static const std::set<DataLayoutOption> allDataLayoutOptions = {
     DataLayoutOption::aos,
     DataLayoutOption::soa,
+#ifdef AUTOPAS_KOKKOS
+    DataLayoutOption::kokkos,
+#endif
 #if defined(AUTOPAS_CUDA)
     DataLayoutOption::cuda,
 #endif

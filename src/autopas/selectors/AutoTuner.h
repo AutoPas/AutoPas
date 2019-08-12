@@ -297,6 +297,28 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f) {
       break;
     }
 #endif
+#ifdef AUTOPAS_KOKKOS
+case DataLayoutOption::kokkos: {
+    if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
+        if (isTuning) {
+            iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::kokkos, /*Newton3*/ true,
+                    /*tuning*/ true>(f);
+        } else {
+            iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::kokkos, /*Newton3*/ true,
+                    /*tuning*/ false>(f);
+        }
+    } else {
+        if (isTuning) {
+            iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::kokkos, /*Newton3*/ false,
+                    /*tuning*/ true>(f);
+        } else {
+            iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::kokkos, /*Newton3*/ false,
+                    /*tuning*/ false>(f);
+        }
+    }
+    break;
+}
+#endif
     default:
       utils::ExceptionHandler::exception("AutoTuner: Unknown data layout : {}",
                                          _tuningStrategy->getCurrentConfiguration().dataLayout);

@@ -10,7 +10,7 @@
 #pragma once
 #include "C08KokkosCellHandler.h"
 #include "autopas/containers/cellPairTraversals/C08BasedKokkosTraversal.h"
-
+#include "autopas/utils/KokkosDataLayoutConverter.h"
 namespace autopas {
 
 /**
@@ -24,8 +24,8 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-    template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-    class C08KokkosTraversal :  public C08BasedKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+    template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+    class C08KokkosTraversal :  public C08BasedKokkosTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
                                 public LinkedCellTraversalInterface<ParticleCell>{
     public:
         /**
@@ -38,9 +38,10 @@ namespace autopas {
          */
         C08KokkosTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                    const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
-                : C08BasedKokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, cutoff, cellLength),
+                : C08BasedKokkosTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor, cutoff, cellLength),
                      _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap),
-                     _functor(pairwiseFunctor) {}
+                  _dataLayoutConverter(pairwiseFunctor),
+                     _functor(pairwiseFunctor){}
 
         TraversalOption getTraversalType() const override {
           return TraversalOption::kokkosc08;
@@ -51,16 +52,40 @@ namespace autopas {
         }
 
         void initTraversal(std::vector<ParticleCell> &cells) override {
-
+            if(DataLayout == DataLayoutOption::kokkos){
+                //copy data to particle
+                /*check particle attributes
+                for (unsigned int c = 0; c < cells.size(); c++) {
+                    for(Particle p:cells[c]._particles){
+                        std::cout << p.toString() << "\n";
+                    }
+                }
+                 */
+                //std::cout << "--------------------\n";
+                for (unsigned int c = 0; c < cells.size(); c++) {
+                    _dataLayoutConverter.storeDataLayout(cells[c]);
+                }
+            }
         }
 
         void endTraversal(std::vector<ParticleCell> &cells) override {
-
+            if(DataLayout == DataLayoutOption::kokkos){
+                //copy data to particle
+                for (unsigned int c = 0; c < cells.size(); c++) {
+                    _dataLayoutConverter.loadDataLayout(cells[c]);
+                }
+            }
+            /*check particle attributes
+            for (unsigned int c = 0; c < cells.size(); c++) {
+                for(Particle p:cells[c]._particles){
+                    std::cout << p.toString() << "\n";
+                }
+            }
+             */
         }
         void traverseCellPairs(std::vector<ParticleCell> &cells) override;
     private:
-
-
+        utils::KokkosDataLayoutConverter<PairwiseFunctor, DataLayout> _dataLayoutConverter;
 
     protected:
 
@@ -74,7 +99,7 @@ namespace autopas {
         /***
          * KokkosCellHandler for c08
          */
-        C08KokkosCellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
+        C08KokkosCellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
 
         /**
          * Pairwise Functor to be used
@@ -85,8 +110,8 @@ namespace autopas {
 
     };
 
-    template<class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-    void C08KokkosTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseCellPairs(
+    template<class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+    void C08KokkosTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
             std::vector<ParticleCell> &cells) {
       this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
           unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

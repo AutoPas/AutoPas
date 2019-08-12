@@ -180,6 +180,17 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
                                                                                   traversalInfo);
       }
     }
+    case DataLayoutOption::kokkos:{
+        if (newton3 == Newton3Option::enabled) {
+            return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::kokkos,
+                    true>(traversalType, pairwiseFunctor,
+                          traversalInfo);
+        } else {
+            return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::kokkos,
+                    false>(traversalType, pairwiseFunctor,
+                           traversalInfo);
+        }
+    }
   }
 
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
