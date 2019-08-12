@@ -35,7 +35,7 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   verletLists.addParticle(p2);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor);
   verletLists.rebuildNeighborLists(&verletTraversal);

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/verletClusterLists/traversals/ClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 
 namespace autopas {
@@ -29,7 +30,8 @@ class VerletClustersTraversal : public TraversalInterface,
    * Constructor of the VerletClustersTraversal.
    * @param pairwiseFunctor The functor to use for the traveral.
    */
-  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
+  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor)
+      : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::verletClusters; }
 
@@ -58,9 +60,9 @@ class VerletClustersTraversal : public TraversalInterface,
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
     const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle, clusterSize> &cluster) {
-      traverseSingleCluster(cluster);
+      _clusterFunctor.traverseCluster(cluster);
       for (auto *neighborCluster : cluster.getNeighbors()) {
-        traverseNeighborClusters(cluster, *neighborCluster);
+        _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
       }
     };
 
@@ -68,67 +70,7 @@ class VerletClustersTraversal : public TraversalInterface,
   }
 
  private:
-  void traverseSingleCluster(internal::Cluster<Particle, clusterSize> &cluster) {
-    switch (dataLayout) {
-      case DataLayoutOption::aos:
-        traverseSingleClusterAoS(cluster);
-        break;
-      case DataLayoutOption::soa:
-        traverseSingleClusterSoA(cluster);
-        break;
-      default:
-        autopas::utils::ExceptionHandler::exception(
-            "Wrong data layout of VerletClustersTraversal. Only AoS and SoA are supported!");
-    }
-  }
-
-  void traverseSingleClusterAoS(internal::Cluster<Particle, clusterSize> &cluster) {
-    for (size_t i = 0; i < clusterSize; i++) {
-      for (size_t j = i + 1; j < clusterSize; j++) {
-        auto &iParticle = cluster.getParticle(i);
-        auto &jParticle = cluster.getParticle(j);
-        _functor->AoSFunctor(iParticle, jParticle, useNewton3);
-        if (not useNewton3) _functor->AoSFunctor(jParticle, iParticle, useNewton3);
-      }
-    }
-  }
-
-  void traverseSingleClusterSoA(internal::Cluster<Particle, clusterSize> &cluster) {
-    _functor->SoAFunctor(cluster.getSoAView(), useNewton3);
-  }
-
-  void traverseNeighborClusters(internal::Cluster<Particle, clusterSize> &firstCluster,
-                                internal::Cluster<Particle, clusterSize> &secondCluster) {
-    switch (dataLayout) {
-      case DataLayoutOption::aos:
-        traverseNeighborClustersAoS(firstCluster, secondCluster);
-        break;
-      case DataLayoutOption::soa:
-        traverseNeighborClustersSoA(firstCluster, secondCluster);
-        break;
-      default:
-        autopas::utils::ExceptionHandler::exception(
-            "Wrong data layout of VerletClustersTraversal. Only AoS and SoA are supported!");
-    }
-  }
-
-  void traverseNeighborClustersAoS(internal::Cluster<Particle, clusterSize> &firstCluster,
-                                   internal::Cluster<Particle, clusterSize> &secondCluster) {
-    for (size_t i = 0; i < clusterSize; i++) {
-      for (size_t j = 0; j < clusterSize; j++) {
-        auto &iParticle = firstCluster.getParticle(i);
-        auto &jParticle = secondCluster.getParticle(j);
-        _functor->AoSFunctor(iParticle, jParticle, useNewton3);
-      }
-    }
-  }
-
-  void traverseNeighborClustersSoA(internal::Cluster<Particle, clusterSize> &firstCluster,
-                                   internal::Cluster<Particle, clusterSize> &secondCluster) {
-    _functor->SoAFunctor(firstCluster.getSoAView(), secondCluster.getSoAView(), useNewton3);
-  }
-
- private:
   PairwiseFunctor *_functor;
+  ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
 };
 }  // namespace autopas
