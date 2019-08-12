@@ -60,7 +60,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _gp(FeatureVector::featureSpaceDims, 0.01, _rng),
+        _gp(FeatureVector::oneHotDims, 0.01, _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumSamples(predNumSamples) {
@@ -92,7 +92,7 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override { _gp.addEvidence(_currentConfig, time); }
+  inline void addEvidence(long time) override { _gp.addEvidence(_currentConfig.oneHotEncode(), time); }
 
   inline void reset() override {
     _gp.clear();
@@ -130,7 +130,7 @@ class BayesianSearch : public TuningStrategyInterface {
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
 
   Random _rng;
-  GaussianProcess<FeatureVector> _gp;
+  GaussianProcess<Eigen::VectorXd> _gp;
   size_t _maxEvidence;
   AcquisitionFunctionOption _predAcqFunction;
   size_t _predNumSamples;
@@ -149,7 +149,8 @@ bool BayesianSearch::tune(bool currentInvalid) {
 
   if (_gp.numEvidence() >= _maxEvidence) {
     // select best config
-    _currentConfig = _gp.getEvidenceMin();
+    _currentConfig = FeatureVector::oneHotDecode(_gp.getEvidenceMin());
+    _currentConfig.container = _traversalContainerMap[_currentConfig.traversal];
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }
@@ -169,7 +170,7 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
     std::map<FeatureVector, double> acquisitions;
     for (auto &sample : samples) {
       sample.container = _traversalContainerMap[sample.traversal];
-      acquisitions[sample] = _gp.calcAcquisition(af, sample);
+      acquisitions[sample] = _gp.calcAcquisition(af, sample.oneHotEncode());
     }
 
     // sort by acquisition
