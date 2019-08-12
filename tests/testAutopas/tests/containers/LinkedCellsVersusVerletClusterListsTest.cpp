@@ -69,6 +69,7 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
       traversalOption, flopsVerlet, _verletLists.getTraversalSelectorInfo(), dataLayout,
       useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
 
+  _verletLists.rebuildNeighborLists(&*traversalFLOPSVerlet);
   _verletLists.iteratePairwise(&*traversalFLOPSVerlet);
   _linkedCells.iteratePairwise(&traversalFLOPS);
 
@@ -200,5 +201,53 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest2000) 
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
     test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
                                                 autopas::TraversalOption::verletClustersColoring, boxMax);
+  }
+}
+
+TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersStaticTest100) {
+  unsigned long numMolecules = 100;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1.5e-14;
+
+  for (auto boxMax : {getBoxMaxBig(), getBoxMaxSmall()}) {
+    test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersStatic, boxMax);
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersStatic, boxMax);
+  }
+}
+
+TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersStaticTest1000) {
+  unsigned long numMolecules = 1000;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 2e-12;
+
+  for (auto boxMax : {getBoxMaxBig(), getBoxMaxSmall()}) {
+    test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersStatic, boxMax);
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersStatic, boxMax);
+  }
+}
+
+TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersStaticTest2000) {
+  unsigned long numMolecules = 2000;
+
+  // empirically determined and set near the minimal possible value
+  // i.e. if something changes, it may be needed to increase value
+  // (and OK to do so)
+  double rel_err_tolerance = 1e-10;
+
+  for (auto boxMax : {getBoxMaxBig(), getBoxMaxSmall()}) {
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersStatic, boxMax);
+    test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersStatic, boxMax);
   }
 }

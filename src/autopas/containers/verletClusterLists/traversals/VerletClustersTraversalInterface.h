@@ -29,6 +29,11 @@ class VerletClustersTraversalInterface {
     _verletClusterLists = &verletClusterLists;
   }
 
+  /**
+   * Returns whether this traversal needs the static cluster thread partiton of the cluster list.
+   */
+  virtual bool needsStaticClusterThreadPartition() { return false; };
+
  protected:
   /**
    * The cluster list to iterate over.

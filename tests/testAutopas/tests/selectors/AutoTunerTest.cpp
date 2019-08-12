@@ -50,13 +50,14 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        verlet-c01                  (AoS, noNewton3)                     = 1
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
   //                        verlet-clusters-coloring    (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        verlet-clusters-static      (AoS <=> SoA, noNewton3)             = 2
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                                                                                    --------
-  //                                                                                          44
+  //                                                                                          46
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 44 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 46 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 57 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 59 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;
