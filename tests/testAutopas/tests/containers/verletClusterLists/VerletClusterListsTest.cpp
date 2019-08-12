@@ -162,6 +162,59 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   compareParticlePairs(referenceParticlePairsAfterMove, calculatedParticlePairsAfterMove);
 }
 
+auto getClusterNeighbors(autopas::VerletClusterLists<Particle> &verletLists) {
+  std::unordered_map<size_t, std::vector<size_t>> neighbors;
+  verletLists.traverseClusters<false>([&neighbors](auto &cluster) {
+    auto idFirstParticleInCluster = cluster.getParticle(0).getID();
+    for (const auto &neighborCluster : cluster.getNeighbors()) {
+      neighbors[idFirstParticleInCluster].push_back(neighborCluster->getParticle(0).getID());
+    }
+  });
+  return neighbors;
+}
+
+size_t getNumNeighbors(const std::unordered_map<size_t, std::vector<size_t>> &neighborList) {
+  size_t sum = 0;
+  for (auto [id, neighbors] : neighborList) {
+    sum += neighbors.size();
+  }
+  return sum;
+}
+
+TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
+  std::array<double, 3> min = {0, 0, 0};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.1;
+  int numParticles = 2431;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+
+  RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, numParticles);
+
+  MockFunctor<Particle, FPCell> functor;
+  autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(
+      &functor);
+  verletLists.rebuildNeighborLists(&traversalNoN3);
+  auto neighborsNoN3 = getClusterNeighbors(verletLists);
+
+  autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversalN3(
+      &functor);
+  verletLists.rebuildNeighborLists(&traversalN3);
+  auto neighborsN3 = getClusterNeighbors(verletLists);
+
+  EXPECT_EQ(getNumNeighbors(neighborsNoN3), getNumNeighbors(neighborsN3) * 2);
+
+  for (auto [idN3, neighbors] : neighborsN3) {
+    for (auto idN3Neighbor : neighbors) {
+      const auto &idNoN3Neighbors = neighborsNoN3[idN3];
+      const auto &idNoN3NeighborNeighbors = neighborsNoN3[idN3Neighbor];
+      EXPECT_TRUE(std::find(idNoN3Neighbors.begin(), idNoN3Neighbors.end(), idN3Neighbor) != idNoN3Neighbors.end());
+      EXPECT_TRUE(std::find(idNoN3NeighborNeighbors.begin(), idNoN3NeighborNeighbors.end(), idN3) !=
+                  idNoN3NeighborNeighbors.end());
+    }
+  }
+}
+
 #if defined(AUTOPAS_OPENMP)
 TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace) {
   std::array<double, 3> min = {0, 0, 0};
