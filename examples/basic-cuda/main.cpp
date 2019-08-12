@@ -86,8 +86,6 @@ void testRun(LJFunctor<Particle, FullParticleCell<Particle>> &func, FullParticle
 template <typename Particle>
 void run(int numParticles) {
   autopas::Logger::create();
-  double universalValue = 1;  // epsilon=mass=sigma=1.0
-  auto PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   std::array<typename Particle::ParticleFloatingPointType, 3> boxMin({0., 0., 0.}), boxMax({10., 10., 10.});
   typename Particle::ParticleFloatingPointType cutoff = 100.0;
 
@@ -98,7 +96,7 @@ void run(int numParticles) {
   fillSpaceWithGrid<FullParticleCell<Particle>, Particle>(fpc2, {9.2, 0, 0}, {18.2, 9, 9}, 0.19, numParticles);
 
   typedef LJFunctor<Particle, FullParticleCell<Particle>> Func;
-  Func func(cutoff, PCL, 0.0);
+  Func func(cutoff, 0.0);
 
   // number of threads used per block by the device
   vector<int> v = {32, 64, 128, 256, 512, 1024};

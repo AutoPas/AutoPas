@@ -35,10 +35,13 @@ class LJFunctorTest : public AutoPasTestBase {
   void TearDown() override{};
 
  protected:
-  void testAoSNoGlobals(bool newton3, bool Mixing = false);
+  template <bool Mixing>
+  void testAoSNoGlobals(bool newton3);
 
   enum InteractionType { own, pair, verlet };
-  void testSoANoGlobals(bool newton3, InteractionType interactionType, bool Mixing = false);
+
+  template <bool Mixing>
+  void testSoANoGlobals(bool newton3, InteractionType interactionType);
 
   enum where_type { inside, boundary, outside };
   void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);

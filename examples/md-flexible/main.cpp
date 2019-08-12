@@ -19,15 +19,17 @@
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "YamlParser.h"
 #include "autopas/AutoPas.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 
 int main(int argc, char **argv) {
+  // start simulation timer
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
+  // Parsing
   auto parser = std::make_shared<YamlParser>();
   if (not parser->parseInput(argc, argv)) {
     exit(-1);
   }
-  auto vtkFilename(parser->getWriteVtk());
+  auto vtkFilename(parser->getVTKFileName());
   parser->printConfig();
   std::cout << std::endl;
 

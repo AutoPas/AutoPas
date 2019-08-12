@@ -15,14 +15,12 @@ using ::testing::_;
  */
 TEST_F(C04SoATraversalTest, testTraversal) {
   std::array<size_t, 3> edgeLength = {3, 3, 3};
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell> functor(1., PCL, 1.);
+  autopas::LJFunctor<Molecule, FMCell> functor(1., 1.);
   std::vector<FMCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  autopas::MoleculeLJ<> default1 = Molecule({1.75, 2.1, 1.75}, {0., 0., 0.}, 0);
-  autopas::MoleculeLJ<> default2 = Molecule({1.75, 1.6, 1.75}, {0., 0., 0.}, 1);
+  autopas::MoleculeLJ<> default1 = Molecule({1.75, 2.1, 1.75}, {0., 0., 0.}, 0, 0);
+  autopas::MoleculeLJ<> default2 = Molecule({1.75, 1.6, 1.75}, {0., 0., 0.}, 1, 0);
 
   cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 2ul, 1ul, edgeLength)].addParticle(default1);
   cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(1ul, 1ul, 1ul, edgeLength)].addParticle(default2);

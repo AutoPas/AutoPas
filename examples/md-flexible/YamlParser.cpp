@@ -19,7 +19,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"iterations", required_argument, nullptr, 'i'},
                                          {"no-flops", no_argument, nullptr, 'F'},
                                          {"newton3", required_argument, nullptr, '3'},
-                                         {"particles-total",required_argument, nullptr,'P'},
+                                         {"particles-total", required_argument, nullptr, 'P'},
                                          {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
@@ -211,21 +211,21 @@ bool YamlParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'P': {
-          //this option is disabled when using yaml parsing file
-          //only relevant for default generation without parsing file
-          if(yamlparsed)
-              break;
-            try {
-                defaultParticlesTotal = stoul(strArg);
-                //deletes the default Uniform Cube with the default particleTotal=1000 and sets the new
-                CubeUniformObjects.clear();
-                CubeUniformObjects.emplace_back(CubeUniform(defaultParticlesTotal,{10.,10.,10.},{0.,0.,0.},{5.,5.,5.},0,1.0,1.0,1.0));
-            } catch (const exception &) {
-                cerr << "Error parsing total number of particles: " << strArg << endl;
-                displayHelp = true;
-            }
-            break;
+        // this option is disabled when using yaml parsing file
+        // only relevant for default generation without parsing file
+        if (yamlparsed) break;
+        try {
+          defaultParticlesTotal = stoul(strArg);
+          // deletes the default Uniform Cube with the default particleTotal=1000 and sets the new
+          CubeUniformObjects.clear();
+          CubeUniformObjects.emplace_back(
+              CubeUniform(defaultParticlesTotal, {10., 10., 10.}, {0., 0., 0.}, {5., 5., 5.}, 0, 1.0, 1.0, 1.0));
+        } catch (const exception &) {
+          cerr << "Error parsing total number of particles: " << strArg << endl;
+          displayHelp = true;
         }
+        break;
+      }
       case 'S': {
         try {
           tuningSamples = (unsigned int)stoul(strArg);
@@ -277,7 +277,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'w': {
-        writeVTK = strArg;
+        VTKFileName = strArg;
         break;
       }
       case 'y': {
@@ -411,33 +411,33 @@ void YamlParser::parseYamlFile() {
     this->verletSkinRadius = config["verlet-skin-raduis"].as<double>();
   }
   if (config["vtk"]) {
-    this->writeVTK = config["vtk"].as<std::string>();
+    this->VTKFileName = config["vtk"].as<std::string>();
   }
 
   if (config["Objects"]) {
     CubeUniformObjects = {};
     for (YAML::const_iterator Obj_it = config["Objects"].begin(); Obj_it != config["Objects"].end(); ++Obj_it) {
-        if (Obj_it->first.as<std::string>() == "CubeGrid") {
-            for(YAML::const_iterator it=Obj_it->second.begin();it!=Obj_it->second.end();++it){
-                CubeGrid C({it->second["particles-per-Dim"][0].as<unsigned long>(),
-                            it->second["particles-per-Dim"][1].as<unsigned long>(),
-                            it->second["particles-per-Dim"][2].as<unsigned long>()},
-                           it->second["particleSpacing"].as<double>(),
-                           {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                            it->second["velocity"][2].as<double>()},
-                           {it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
-                            it->second["center"][2].as<double>()},
-                           it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-                           it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-                CubeGridObjects.emplace_back(C);
-                this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-                              it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-            }
-            continue;
+      if (Obj_it->first.as<std::string>() == "CubeGrid") {
+        for (YAML::const_iterator it = Obj_it->second.begin(); it != Obj_it->second.end(); ++it) {
+          CubeGrid C({it->second["particles-per-Dim"][0].as<unsigned long>(),
+                      it->second["particles-per-Dim"][1].as<unsigned long>(),
+                      it->second["particles-per-Dim"][2].as<unsigned long>()},
+                     it->second["particleSpacing"].as<double>(),
+                     {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                      it->second["velocity"][2].as<double>()},
+                     {it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
+                      it->second["center"][2].as<double>()},
+                     it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                     it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          CubeGridObjects.emplace_back(C);
+          this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                        it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
         }
-      if (Obj_it->first.as<std::string>()  == "CubeGauss") {
-          for(YAML::const_iterator it=Obj_it->second.begin();it!=Obj_it->second.end();++it){
-              CubeGauss C(it->second["numberOfParticles"].as<size_t>(),
+        continue;
+      }
+      if (Obj_it->first.as<std::string>() == "CubeGauss") {
+        for (YAML::const_iterator it = Obj_it->second.begin(); it != Obj_it->second.end(); ++it) {
+          CubeGauss C(it->second["numberOfParticles"].as<size_t>(),
                       {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
                        it->second["box-length"][2].as<double>()},
                       it->second["distribution-mean"].as<double>(), it->second["distribution-stddev"].as<double>(),
@@ -450,12 +450,12 @@ void YamlParser::parseYamlFile() {
           CubeGaussObjects.emplace_back(C);
           this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                         it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-      }
+        }
         continue;
       }
-      if (Obj_it->first.as<std::string>()  == "CubeUniform") {
-          for(YAML::const_iterator it=Obj_it->second.begin();it!=Obj_it->second.end();++it){
-              CubeUniform C(it->second["numberOfParticles"].as<size_t>(),
+      if (Obj_it->first.as<std::string>() == "CubeUniform") {
+        for (YAML::const_iterator it = Obj_it->second.begin(); it != Obj_it->second.end(); ++it) {
+          CubeUniform C(it->second["numberOfParticles"].as<size_t>(),
                         {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
                          it->second["box-length"][2].as<double>()},
                         {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
@@ -467,12 +467,12 @@ void YamlParser::parseYamlFile() {
           CubeUniformObjects.emplace_back(C);
           this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                         it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-      }
+        }
         continue;
       }
-      if (Obj_it->first.as<std::string>()  == "Sphere") {
-          for(YAML::const_iterator it=Obj_it->second.begin();it!=Obj_it->second.end();++it){
-              Sphere S({it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
+      if (Obj_it->first.as<std::string>() == "Sphere") {
+        for (YAML::const_iterator it = Obj_it->second.begin(); it != Obj_it->second.end(); ++it) {
+          Sphere S({it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
                     it->second["center"][2].as<double>()},
                    it->second["radius"].as<int>(), it->second["particleSpacing"].as<double>(),
                    {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
@@ -482,7 +482,7 @@ void YamlParser::parseYamlFile() {
           SphereObjects.emplace_back(S);
           this->addType(it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                         it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-      }
+        }
         continue;
       }
     }
@@ -695,7 +695,7 @@ unsigned int YamlParser::getTuningSamples() const { return tuningSamples; }
 
 unsigned int YamlParser::getTuningMaxEvidence() const { return tuningMaxEvidence; }
 
-const std::string &YamlParser::getWriteVtk() const { return writeVTK; }
+const std::string &YamlParser::getVTKFileName() const { return VTKFileName; }
 
 const std::string &YamlParser::getLogFileName() const { return logFileName; }
 
@@ -724,3 +724,7 @@ const std::map<unsigned long, double> &YamlParser::getEpsilonMap() const { retur
 const std::map<unsigned long, double> &YamlParser::getSigmaMap() const { return sigmaMap; }
 
 const std::map<unsigned long, double> &YamlParser::getMassMap() const { return massMap; }
+
+size_t YamlParser::getVtkWriteFrequency() const { return vtkWriteFrequency; }
+
+void YamlParser::setVtkWriteFrequency(size_t vtkWriteFrequency) { YamlParser::vtkWriteFrequency = vtkWriteFrequency; }

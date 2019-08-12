@@ -34,7 +34,7 @@ void CudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
 
   for (unsigned long i = 0; i < numMolecules; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::MoleculeLJ<> m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
+    autopas::MoleculeLJ<> m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0);
     cont.addParticle(m);
   }
 }
@@ -48,9 +48,7 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
     _linkedCells.addParticle(*it);
   }
   double shift = 0.0;
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), PCL, shift);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), shift);
 
   autopas::C01CudaTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::cuda, useNewton3>
       traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
