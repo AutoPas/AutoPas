@@ -8,15 +8,8 @@
 
 #include <autopas/utils/MemoryProfiler.h>
 #include <yaml-cpp/yaml.h>
-#include <chrono>
-#include <fstream>
 #include <iostream>
-#include <vector>
-#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
-#include "Objects.h"
-#include "PrintableMolecule.h"  // includes autopas.h
+#include "PrintableMolecule.h"
 #include "YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"

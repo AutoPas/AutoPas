@@ -10,6 +10,7 @@ file(
         "../../examples/md-flexible/Simulation.cpp"
         "../../examples/md-flexible/Objects.h"
         "../../examples/md-flexible/Generator.h"
+        "../../examples/md-flexible/BoundaryConditions.h"
         "testingHelpers/*"
 )
 if (AUTOPAS_ENABLE_CUDA)

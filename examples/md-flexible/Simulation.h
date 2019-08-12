@@ -254,7 +254,7 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate() {
   std::chrono::high_resolution_clock::time_point startSim, stopSim;
   startSim = std::chrono::high_resolution_clock::now();
-  BoundaryConditions<decltype(_autopas)> BoundaryConditions;
+  BoundaryConditions<Particle,ParticleCell> BoundaryConditions;
 
   // main simulation loop
   for (size_t iteration = 0; iteration < _parser->getIterations(); ++iteration) {
