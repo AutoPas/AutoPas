@@ -53,6 +53,40 @@ void initContainerGrid(autopas::AutoPas<Particle, FullParticleCell<Particle>> &a
                                    {particelSpacing, particelSpacing, particelSpacing},
                                    {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2});
 }
+
+void initContainerGridKokkos(autopas::AutoPas<KokkosParticle, FullParticleCell<KokkosParticle>> &autopas,
+                       size_t particlesPerDim, double particelSpacing) {
+    std::array<double, 3> boxMin({0., 0., 0.});
+    std::array<double, 3> boxMax(
+            {(particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing, (particlesPerDim)*particelSpacing});
+    autopas.setBoxMin(boxMin);
+    autopas.setBoxMax(boxMax);
+
+    autopas.init();
+
+
+    //GridGenerator method, without dummy particle
+    std::array<size_t, 3> particlesPerDim2 = {particlesPerDim, particlesPerDim, particlesPerDim};
+    std::array<double, 3> spacing2 = {particelSpacing, particelSpacing, particelSpacing};
+    std::array<double, 3> offset2 = {particelSpacing / 2, particelSpacing / 2, particelSpacing / 2};
+
+    size_t id = 0;
+    for (unsigned int z = 0; z < particlesPerDim2[2]; ++z) {
+        for (unsigned int y = 0; y < particlesPerDim2[1]; ++y) {
+            for (unsigned int x = 0; x < particlesPerDim2[0]; ++x) {
+                KokkosParticle p{};
+                p.setR({x * spacing2[0] + offset2[0], y * spacing2[1] + offset2[1], z * spacing2[2] + offset2[2]});
+                p.setID(id++);
+                autopas.addParticle(p);
+            }
+        }
+    }
+}
+
+
+
+
+
 /*
 template <class ParticleBase>
 void initContainerGauss(autopas::AutoPas<ParticleBase, FullParticleCell<ParticleBase>> &autopas,
@@ -244,7 +278,7 @@ int main(int argc, char **argv){
 
       switch (generatorChoice) {
           case MDFlexParser::GeneratorOption::grid: {
-              initContainerGrid(autopas, particlesPerDim, particleSpacing);
+              initContainerGridKokkos(autopas, particlesPerDim, particleSpacing);
               particlesTotal = particlesPerDim * particlesPerDim * particlesPerDim;
               break;
           }

@@ -62,7 +62,7 @@ class KokkosHelper {
     FloatVectorType c("c", KOKKOS_DIM);
     Kokkos::parallel_for(
         KOKKOS_DIM, KOKKOS_LAMBDA(const int i) { c(i) = a(i) * s; });
-    KokkosHelper::print(c);
+    //KokkosHelper::print(c);
     return c;
   }
 

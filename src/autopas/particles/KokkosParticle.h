@@ -27,7 +27,7 @@ class KokkosParticle : public Particle {
   FloatVectorType _r, _v, _f;
 
 #endif
-  unsigned long _id;
+  //unsigned long _id;
   std::array<double, 3> _r_arr;
 
  public:
@@ -59,7 +59,6 @@ class KokkosParticle : public Particle {
       //h_r(i) = r[i];
       h_v(i) = v[i];
     }
-    _id = id;
     // target, source
     //Kokkos::deep_copy(_r, h_r);
     Kokkos::deep_copy(_v, h_v);
@@ -167,12 +166,15 @@ class KokkosParticle : public Particle {
    * @param r set new position of particle
    */
   void setR(const std::array<floatType, 3> &r) override{
+    //std::cout<< r[0] << ", " << r[1] << r[2] << "\n";
     FloatVectorType::HostMirror h_r = Kokkos::create_mirror_view(_r);
+      _r_arr = r;//save values in a normal array which is used in getR, purpose: autopas needs access to this data and values from the kokkos_view could not be copied in getR() (const qualifier)
     for(unsigned int i = 0; i < 3; i++){
-      h_r(i) = r[i];
+      h_r(i) = _r_arr[i];
     }
-    _r_arr = r;//save values in a normal array which is used in getR, purpose: autopas needs access to this data and values from the kokkos_view could not be copied in getR() (const qualifier)
+
     Kokkos::deep_copy(_r, h_r);
+    //std::cout << toString() << "\n";
   }
 
   /**

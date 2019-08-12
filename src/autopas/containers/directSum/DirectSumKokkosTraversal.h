@@ -49,7 +49,7 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, DataLayo
   TraversalOption getTraversalType() const override { return TraversalOption::kokkosDirectSumTraversal; }
 
   bool isApplicable() const override {
-    return std::is_same<typename ParticleCell::ParticleType, KokkosParticle>::value;
+    return true;//std::is_same<typename ParticleCell::ParticleType, KokkosParticle>::value;
   }
   /**
    * @copydoc LinkedCellTraversalInterface::traverseCellPairs()
@@ -107,16 +107,32 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, DataLayo
       //buffer = cells[1]._particleKokkosBuffer;
       //std::cout << buffer.extent(0) << ", " << buffer.extent(1) << ", " << buffer.extent(2) << "\n";
       //std::cout << "-------------init end-------------\n";
+      /*for (unsigned int c = 0; c < cells.size(); c++) {
+          for(unsigned int i = 0; i  < cells[c]._particles.size(); i++){
+              std::cout << cells[c]._particles[i].toString() << "\n";
+          }
+      }
+      std::cout << "-------------------end 1 --------------------------------------\n";
+       */
 #endif
   }
   void endTraversal(std::vector<ParticleCell> &cells) override {
 #ifdef AUTOPAS_KOKKOS
     // nothing to do here
     //std::cout << "endTraversal" << "\n";
-      if(DataLayout == DataLayoutOption::kokkos){
-          //copy data to particle
-          for (unsigned int c = 0; c < cells.size(); c++) {
-              _dataLayoutConverter.loadDataLayout(cells[c]);
+      switch (DataLayout) {
+          case DataLayoutOption::kokkos: {
+              //copy data to particle
+              for (unsigned int c = 0; c < cells.size(); c++) {
+                  _dataLayoutConverter.loadDataLayout(cells[c]);
+              }
+              break;
+          }
+          default:;
+      }
+      for (unsigned int c = 0; c < cells.size(); c++) {
+          for(unsigned int i = 0; i  < cells[c]._particles.size(); i++){
+              std::cout << cells[c]._particles[i].toString() << "\n";
           }
       }
 #endif
