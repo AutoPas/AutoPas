@@ -16,7 +16,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)
-#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include "autopas/molecularDynamics/LJFunctorCuda.cuh"
 #include "autopas/utils/CudaStreamHandler.h"
 #else
 #include "autopas/utils/ExceptionHandler.h"
