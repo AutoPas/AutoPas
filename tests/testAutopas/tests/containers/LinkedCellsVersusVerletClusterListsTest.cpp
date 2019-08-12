@@ -78,10 +78,9 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
     unsigned long linkedKernelCalls = flopsLinked.getKernelCalls();
     unsigned long verletKernelCalls = flopsVerlet.getKernelCalls();
 
-    // Special case: The coloring traversal always uses newton 3 for particles inside the same cluster, so the number of
+    // Special case: The traversals always use newton 3 for particles inside the same cluster, so the number of
     // kernel calls of the verlet cluster list here might be lower.
-    if (traversalOption == autopas::TraversalOption::verletClustersColoring and not useNewton3 and
-        dataLayout == autopas::DataLayoutOption::aos) {
+    if (not useNewton3 and dataLayout == autopas::DataLayoutOption::aos) {
       int maxNumKernelCallsInsideOneCluster = _verletLists.getClusterSize() * (_verletLists.getClusterSize() - 1);
       auto maxVerletLeftOutKernelCalls = _verletLists.getNumClusters() * (maxNumKernelCallsInsideOneCluster / 2);
       auto linkedVerletKernelCallsDiff = linkedKernelCalls - verletKernelCalls;
